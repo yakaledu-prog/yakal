@@ -28,7 +28,7 @@ export default function Faq({ scrollTo }: { scrollTo: (id: string) => void }) {
           </button>
         </Reveal>
 
-        {/* Accordion column — flex-1 so it never exceeds available space */}
+        {/* Accordion column - flex-1 so it never exceeds available space */}
         <div className="w-full min-w-0 overflow-hidden md:flex-1 md:max-w-[630px] space-y-[16px] md:space-y-[28px]">
           {faqs.map((faq, idx) => (
             <FaqItem

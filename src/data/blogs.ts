@@ -42,7 +42,7 @@ export const blogs: Blog[] = [
     content: [
       { heading: null, body: "Standardized tests like the SAT and ACT can feel overwhelming, but with the right approach, students can walk in confident and perform at their best." },
       { heading: "1. Start Early", body: "Give yourself at least 3–6 months of preparation time. This allows for thorough content review, multiple practice tests, and time to address weak areas without cramming." },
-      { heading: "2. Take Full Practice Tests", body: "Simulate real test conditions — timed, uninterrupted, using official materials. Review every wrong answer in detail to understand the mistake, not just the correct answer." },
+      { heading: "2. Take Full Practice Tests", body: "Simulate real test conditions - timed, uninterrupted, using official materials. Review every wrong answer in detail to understand the mistake, not just the correct answer." },
       { heading: "3. Focus on Weak Areas", body: "After each practice test, categorize your errors by topic. Spend the majority of your study time on the categories with the most mistakes." },
       { heading: "4. Learn Test Strategy", body: "Beyond content knowledge, understand how the test works. Learn to eliminate answer choices, manage your time per question, and identify trap answers." },
       { heading: "5. Take Care of Yourself", body: "Sleep, nutrition, and stress management directly affect test performance. Prioritize sleep the week before the exam and arrive well-rested on test day." },
@@ -59,7 +59,7 @@ export const blogs: Blog[] = [
       { heading: null, body: "Good study habits are the foundation of academic success. Students who develop these habits early tend to perform better across all subjects and experience less stress." },
       { heading: "1. Create a Dedicated Study Space", body: "A quiet, organized, distraction-free environment signals to your brain that it's time to focus. Keep all study materials within reach and minimize phone distractions." },
       { heading: "2. Use Active Recall", body: "Instead of re-reading notes, test yourself on the material. Flashcards, practice questions, and self-quizzing are far more effective than passive review." },
-      { heading: "3. Space Out Your Learning", body: "Spaced repetition — reviewing material at increasing intervals — dramatically improves long-term retention." },
+      { heading: "3. Space Out Your Learning", body: "Spaced repetition - reviewing material at increasing intervals - dramatically improves long-term retention." },
       { heading: "4. Break Tasks Into Chunks", body: "Large assignments feel overwhelming. Break them into smaller steps and tackle one chunk at a time. This builds momentum and prevents procrastination." },
     ],
   },

@@ -1,15 +1,14 @@
 import Navbar from "@/components/Navbar";
-import imgHeader from "@/assets/images/hero-background.png";
 import imgHeader1 from "@/assets/images/hero-overlay.png";
 
 export default function Hero({ onNav }: { onNav: (id: string) => void }) {
   return (
-    <div id="home" className="relative rounded-[20px] rounded-t-0 md:rounded-[30px] w-full max-w-[1440px]">
+    <div id="home" className="relative rounded-[20px] md:rounded-[30px] w-full max-w-[1440px]">
       <div className="absolute inset-0 pointer-events-none rounded-[20px] md:rounded-[30px]">
-        <div className="absolute inset-0 overflow-hidden rounded-[20px] md:rounded-[30px]">
+        {/* <div className="absolute inset-0 overflow-hidden rounded-[20px] md:rounded-[30px]">
           <img alt="" className="absolute h-full left-0 max-w-none top-0 w-full object-cover" src={imgHeader} />
-        </div>
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] md:rounded-[30px] size-full" src={imgHeader1} />
+        </div> */}
+        <img alt="" className="absolute max-w-none object-cover rounded-[20px] rounded-t-[0px] md:rounded-[30px] size-full" src={imgHeader1} />
         <div className="absolute bg-gradient-to-b from-[rgba(0,0,0,0)] inset-0 rounded-[20px] md:rounded-[30px] to-[rgba(0,0,0,0.87)]" />
       </div>
 
