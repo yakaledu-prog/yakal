@@ -19,7 +19,7 @@ export default function Contact() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[40px] md:gap-[80px]">
           {/* Form */}
           <form className="space-y-[20px] md:space-y-[24px]" onSubmit={(e) => { e.preventDefault(); toast.success("Message sent! We'll be in touch soon."); (e.target as HTMLFormElement).reset(); }}>
-            <div className="grid grid-cols-2 gap-[16px] md:gap-[32px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] md:gap-[32px]">
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">First Name*</label>
                 <input type="text" placeholder="First name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
@@ -47,7 +47,7 @@ export default function Contact() {
               <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Message</label>
               <textarea placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition resize-none"></textarea>
             </div>
-            <button type="submit" className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition">
+            <button type="submit" className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto block">
               Submit Now
             </button>
           </form>

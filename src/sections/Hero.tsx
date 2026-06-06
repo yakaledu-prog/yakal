@@ -12,11 +12,11 @@ export default function Hero({ onNav }: { onNav: (id: string) => void }) {
         <div className="absolute bg-gradient-to-b from-[rgba(0,0,0,0)] inset-0 rounded-[20px] md:rounded-[30px] to-[rgba(0,0,0,0.87)]" />
       </div>
 
-      <div className="relative flex flex-col items-start px-[24px] md:px-[73px] py-[20px]">
+      <div className="relative flex flex-col items-start py-[20px]">
         <Navbar onNav={onNav} />
 
         {/* Hero */}
-        <div className="max-w-[986px] pb-[40px] md:pb-0">
+        <div className="max-w-[986px] pb-[40px] md:pb-0 px-[24px] md:px-[73px]">
           <h1 className="text-white text-[36px] md:text-[68px] font-semibold leading-[46px] md:leading-[86px] mb-[20px] md:mb-[26px]">
             Personalized Tutoring for Students Who Want to Excel
           </h1>

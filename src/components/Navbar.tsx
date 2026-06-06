@@ -19,7 +19,7 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
   }
 
   return (
-    <div className="flex items-center justify-between w-full mb-[20px] md:mb-[397px]">
+    <div className="flex items-center justify-between w-full mb-[20px] md:mb-[397px] px-[20px] md:px-[50px] pt-[0px] md:pt-[0px]">
       <div className="h-[40px] md:h-[46.8px] w-[110px] md:w-[130px]">
         <img alt="Yakal" className="w-full h-full object-cover" src={logo} />
       </div>

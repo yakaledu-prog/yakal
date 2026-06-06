@@ -19,23 +19,26 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
       <div className="bg-[#f4f4f4] rounded-[20px] md:rounded-[30px] p-[24px] md:p-[56px] mb-[40px] md:mb-[70px]">
         <div className="flex flex-col md:flex-row items-center justify-between gap-[32px]">
           <div className="w-full md:max-w-[520px]">
-            <div className="flex items-center gap-[12px] mb-[12px]">
+            <div className="flex md:hidden w-full md:w-[500px] md:h-[500px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden">
+              <img src={featured.img} alt="Blog" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex items-center gap-[12px] mb-[12px] mt-[14px] px-2">
               <span className="text-[#4a4a4a] text-[14px] md:text-[18px]">{featured.readTime}</span>
               <div className="w-[5px] h-[5px] bg-[#4a4a4a] rounded-full"></div>
               <span className="text-[#4a4a4a] text-[14px] md:text-[18px]">{featured.date}</span>
             </div>
-            <h3 className="text-[28px] md:text-[46px] font-medium leading-[36px] md:leading-[56px] mb-[12px] md:mb-[16px]">{featured.title}</h3>
-            <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[28px] md:mb-[48px]">
+            <h3 className="text-[28px] md:text-[46px] font-medium leading-[36px] md:leading-[56px] mb-[12px] md:mb-[16px] px-2 truncate md:whitespace-normal md:overflow-visible md:text-clip">{featured.title}</h3>
+            <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[28px] md:mb-[48px] px-2 text-justify">
               {featured.desc}
             </p>
             <button
               onClick={() => onNavigate({ type: "blog", slug: featured.slug, scrollY: window.scrollY })}
-              className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition"
+              className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto md:mx-0 block"
             >
               Read the Article
             </button>
           </div>
-          <div className="w-full md:w-[500px] md:h-[500px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden">
+          <div className="hidden md:flex w-full md:w-[500px] md:h-[500px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden">
             <img src={featured.img} alt="Blog" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -45,20 +48,20 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] md:gap-[30px] px-[12px] md:px-0">
         {blogs.slice(1).map((blog, idx) => (
           <Reveal key={idx} delay={idx * 100}>
-            <div>
+            <div className="px-2">
               <div className="h-[220px] md:h-[350px] rounded-[20px] md:rounded-[30px] overflow-hidden mb-[16px] md:mb-[20px]">
                 <SkeletonImg src={blog.img} alt={blog.title} className="w-full h-full object-cover" />
               </div>
-              <div className="flex items-center gap-[12px] mb-[12px]">
+              <div className="flex items-center gap-[12px] mb-[12px] px-2">
                 <span className="text-[#4a4a4a] text-[14px] md:text-[18px]">{blog.readTime}</span>
                 <div className="w-[5px] h-[5px] bg-[#4a4a4a] rounded-full"></div>
                 <span className="text-[#4a4a4a] text-[14px] md:text-[18px]">{blog.date}</span>
               </div>
-              <h4 className="text-[20px] md:text-[24px] font-medium leading-[28px] md:leading-[34px] mb-[8px] md:mb-[10px]">{blog.title}</h4>
-              <p className="text-[#4a4a4a] text-[15px] md:text-[18px] leading-[24px] md:leading-[30px] mb-[12px] md:mb-[16px]">{blog.desc}</p>
+              <h4 className="text-[20px] md:text-[24px] font-medium leading-[28px] md:leading-[34px] mb-[8px] md:mb-[10px] px-2 truncate md:whitespace-normal md:overflow-visible md:text-clip">{blog.title}</h4>
+              <p className="text-[#4a4a4a] text-[15px] md:text-[18px] leading-[24px] md:leading-[30px] mb-[12px] md:mb-[16px] px-2">{blog.desc}</p>
               <button
                 onClick={() => onNavigate({ type: "blog", slug: blog.slug, scrollY: window.scrollY })}
-                className="text-[#1099a1] text-[15px] md:text-[18px] uppercase font-medium hover:underline bg-transparent border-none cursor-pointer"
+                className="text-[#1099a1] text-[15px] md:text-[18px] uppercase font-medium hover:underline bg-transparent border-none cursor-pointer px-2"
               >
                 Learn More
               </button>

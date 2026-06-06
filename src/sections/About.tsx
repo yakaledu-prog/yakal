@@ -19,11 +19,11 @@ const steps = [
 
 export default function About() {
   return (
-    <div id="about" className="w-full max-w-[1440px] flex flex-col gap-[60px] md:gap-[120px]">
-      <div className="flex flex-col gap-[40px] md:gap-[70px] items-center">
+    <div id="about" className="w-full max-w-[1440px] flex flex-col gap-[60px] md:gap-[120px] items-center px-[24px] md:px-0">
+      <div className="flex flex-col gap-[40px] md:gap-[40px] items-center">
         <Reveal className="flex flex-col md:flex-col items-start md:items-start justify-between w-full max-w-[1254px] gap-[24px] px-[24px] md:px-0">
-          <h2 className="text-[44px] md:text-[76px] font-medium leading-[52px] md:leading-[86px]">About Yakal</h2>
-          <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px]">
+          <h2 className="text-[44px] md:text-[76px] font-medium leading-[52px] md:leading-[86px] text-center md:text-left mx-auto md:mx-0">About Yakal</h2>
+          <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-center md:text-left">
             Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
           </p>
         </Reveal>
@@ -35,7 +35,7 @@ export default function About() {
       {/* What We Offer */}
       <div className="bg-[#f4f4f4] rounded-[20px] md:rounded-[30px] px-[24px] md:px-[73px] py-[48px] md:py-[100px]">
         <div className="flex flex-col md:flex-row items-center justify-between gap-[40px]">
-          <div className="w-full md:w-[594px] h-[280px] md:h-[594px] rounded-[20px] md:rounded-[30px] overflow-hidden">
+          <div className="w-full md:w-[594px] h-[280px] md:h-[594px] rounded-[20px] md:rounded-[30px] overflow-hidden  hidden md:inline-block">
             <img src={imgImg2_1} alt="What We Offer" className="w-full h-full object-cover" />
           </div>
           <div className="md:max-w-[560px]">

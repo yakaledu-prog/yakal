@@ -5,20 +5,20 @@ import imgUser5 from "@/assets/images/testimonial-sarah.png";
 import imgUser6 from "@/assets/images/testimonial-ellyse.png";
 
 const items: Testimonial[] = [
-  { name: "David Warner", text: "Yakal's tutoring completely changed my approach to learning. I was struggling with Algebra, but my tutor broke concepts into easy-to-understand steps.", img: imgUser1 },
-  { name: "Sarah Taylor", text: "I used to struggle with Physics and Calculus, but Yakal made these subjects understandable and even enjoyable. The personalized approach meant I was always working on my weaknesses.", img: imgUser5 },
-  { name: "Ellyse Perry", text: "I loved how flexible Yakal's sessions were. Each lesson was tailored to my pace and learning style. I finally feel like I'm learning efficiently and achieving real results.", img: imgUser6 },
+  { name: "David Warner", role: "Algebra Student", text: "Yakal's tutoring completely changed my approach to learning. I was struggling with Algebra, but my tutor broke concepts into easy-to-understand steps.", img: imgUser1 },
+  { name: "Sarah Taylor", role: "Physics & Calculus Student", text: "I used to struggle with Physics and Calculus, but Yakal made these subjects understandable and even enjoyable. The personalized approach meant I was always working on my weaknesses.", img: imgUser5 },
+  { name: "Ellyse Perry", role: "SAT Prep Student", text: "I loved how flexible Yakal's sessions were. Each lesson was tailored to my pace and learning style. I finally feel like I'm learning efficiently and achieving real results.", img: imgUser6 },
 ];
 
 export default function Testimonials() {
   return (
     <div className="bg-[#1099a1] rounded-[20px] md:rounded-[30px] py-[48px] md:py-[100px] px-[24px] md:px-[55px] w-full max-w-[1440px] overflow-hidden">
       <div className="max-w-[1290px] mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-[24px] mb-[40px] md:mb-[70px]">
-          <h2 className="text-white text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px] md:max-w-[520px]">
+        <div className="flex flex-col items-start gap-[24px] mb-[40px] md:mb-[70px]">
+          <h2 className="text-white text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px]">
             What Our Students Say
           </h2>
-          <p className="text-white text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] md:max-w-[494px]">
+          <p className="text-white text-[16px] md:text-[18px] leading-[26px] md:leading-[30px]">
             Real stories of improved grades, confidence, and learning experiences with Yakal.
           </p>
         </div>
@@ -38,7 +38,7 @@ export default function Testimonials() {
                   </div>
                   <div>
                     <p className="text-[18px] font-medium">{testimonial.name}</p>
-                    <p className="text-[#4a4a4a] text-[14px]">Pro Member</p>
+                    <p className="text-[#1099a1] text-[14px]">{testimonial.role}</p>
                   </div>
                 </div>
               </div>
