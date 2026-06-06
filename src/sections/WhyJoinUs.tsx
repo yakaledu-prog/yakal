@@ -2,9 +2,9 @@ import { ClipboardList, CalendarCheck, TrendingUp } from "lucide-react";
 import Reveal from "@/components/Reveal";
 
 const features = [
-  { title: "Personalized Learning Plans", description: "Each student receives a tailored study plan designed around their strengths, weaknesses, and academic goals.", icon: <ClipboardList size={32} strokeWidth={1.7} className="text-[#1099a1]" /> },
-  { title: "Flexible Scheduling", description: "We understand how busy high school life can be. Choose virtual or in-person sessions to fit your schedule without stress.", icon: <CalendarCheck size={32} strokeWidth={1.7} className="text-[#1099a1]" /> },
-  { title: "Progress Tracking", description: "Students and parents receive regular updates that show improvements, learning pace, and areas to work on making progress visible and measurable.", icon: <TrendingUp size={32} strokeWidth={1.7} className="text-[#1099a1]" /> },
+  { title: "Personalized Learning Plans", description: "Each student receives a tailored study plan designed around their strengths, weaknesses, and academic goals.", icon: <ClipboardList size={32} strokeWidth={1.7} className="text-[#1099a1] transition-colors duration-300" /> },
+  { title: "Flexible Scheduling", description: "We understand how busy high school life can be. Choose virtual or in-person sessions to fit your schedule without stress.", icon: <CalendarCheck size={32} strokeWidth={1.7} className="text-[#1099a1] transition-colors duration-300" /> },
+  { title: "Progress Tracking", description: "Students and parents receive regular updates that show improvements, learning pace, and areas to work on making progress visible and measurable.", icon: <TrendingUp size={32} strokeWidth={1.7} className="text-[#1099a1] transition-colors duration-300" /> },
 ];
 
 export default function WhyJoinUs() {
@@ -20,11 +20,11 @@ export default function WhyJoinUs() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[20px] md:gap-[30px]">
           {features.map((feature, idx) => (
             <Reveal key={idx} delay={idx * 100}>
-              <div className="bg-white rounded-[20px] md:rounded-[30px] p-[30px] md:p-[45px] shadow-[0px_24px_50px_rgba(0,0,0,0.05)] h-full flex flex-col items-center text-center">
-                <div className="w-[60px] h-[60px] md:w-[70px] md:h-[70px] bg-[rgba(16,153,161,0.1)] rounded-[15px] flex items-center justify-center mb-[28px] md:mb-[44px]">
+              <div className="group bg-white rounded-[20px] md:rounded-[30px] p-[30px] md:p-[45px] shadow-[0px_24px_50px_rgba(0,0,0,0.05)] h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-[6px] hover:shadow-[0px_30px_60px_rgba(0,0,0,0.10)]">
+                <div className="w-[60px] h-[60px] md:w-[70px] md:h-[70px] bg-[#1099a11a] rounded-[15px] flex items-center justify-center mb-[28px] md:mb-[44px] transition ease-in-out duration-300 group-hover:bg-[#1099a110] group-hover:ring-[#30b9c1] ring-transparent ring-4">
                   {feature.icon}
                 </div>
-                <h3 className="text-[22px] md:text-[28px] font-medium leading-[32px] md:leading-[40px] mb-[12px] md:mb-[16px]">{feature.title}</h3>
+                <h3 className="text-[22px] md:text-[28px] font-medium leading-[32px] md:leading-[40px] mb-[12px] md:mb-[16px] transition-colors duration-300 group-hover:text-[#1099a1]">{feature.title}</h3>
                 <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px]">{feature.description}</p>
               </div>
             </Reveal>

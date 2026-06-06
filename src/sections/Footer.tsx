@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { toast } from "react-hot-toast";
 import logo from "@/assets/images/logo.png";
 
 const quickLinks = [
@@ -17,6 +19,18 @@ const socials = [
 ];
 
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
+  const [email, setEmail] = useState("");
+
+  function handleSubscribe(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+    toast.success("Thanks for joining our newsletter.");
+    setEmail("");
+  }
+
   return (
     <footer id="footer" className="bg-black text-white rounded-[20px] md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-[40px] mb-[48px] md:mb-[80px]">
@@ -52,10 +66,16 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
 
         <div className="col-span-2 md:col-span-2 md:ml-18">
           <h4 className="text-[16px] md:text-[20px] font-semibold mb-[16px] md:mb-[24px]">Subscribe Our Newsletter</h4>
-          <div className="flex flex-col sm:flex-row gap-[10px]">
-            <input type="email" placeholder="Email address" className="flex-1 px-[14px] py-[12px] rounded-[500px] bg-[rgba(255,255,255,0.2)] border-none text-white placeholder:text-[rgba(255,255,255,0.75)] text-[14px]" />
-            <button className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap">Subscribe</button>
-          </div>
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-[10px]">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1 px-[14px] py-[12px] rounded-[500px] bg-[rgba(255,255,255,0.2)] border-none text-white placeholder:text-[rgba(255,255,255,0.75)] text-[14px] outline-none focus:bg-[rgba(255,255,255,0.28)] transition-colors"
+            />
+            <button type="submit" className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap">Subscribe</button>
+          </form>
         </div>
       </div>
 
