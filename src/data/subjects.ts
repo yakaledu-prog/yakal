@@ -1,8 +1,8 @@
-import imgAlgebra from "@/assets/images/subject-algebra.png";
-import imgPhysics from "@/assets/images/subject-physics.png";
-import imgCalculus from "@/assets/images/subject-calculus.png";
-import imgGeometry from "@/assets/images/subject-geometry.png";
-import imgSatPrep from "@/assets/images/subject-sat-prep.png";
+import imgAlgebra from "@/assets/images/subject-algebra.webp";
+import imgPhysics from "@/assets/images/subject-physics.webp";
+import imgCalculus from "@/assets/images/subject-calculus.webp";
+import imgGeometry from "@/assets/images/subject-geometry.webp";
+import imgSatPrep from "@/assets/images/subject-sat-prep.webp";
 
 export type Subject = { name: string; img: string };
 

@@ -1,7 +1,7 @@
-import imgBlogMathGrades from "@/assets/images/blog-math-grades.png";
-import imgBlogStandardizedTests from "@/assets/images/blog-standardized-tests.png";
-import imgBlogStudyHabits from "@/assets/images/blog-study-habits.png";
-import imgBlogOnlineTutoring from "@/assets/images/blog-online-tutoring.png";
+import imgBlogMathGrades from "@/assets/images/blog-math-grades.webp";
+import imgBlogStandardizedTests from "@/assets/images/blog-standardized-tests.webp";
+import imgBlogStudyHabits from "@/assets/images/blog-study-habits.webp";
+import imgBlogOnlineTutoring from "@/assets/images/blog-online-tutoring.webp";
 
 export type BlogSection = { heading: string | null; body: string };
 

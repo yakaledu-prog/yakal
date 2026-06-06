@@ -1,7 +1,7 @@
 import { CheckCircle, ArrowRight } from "lucide-react";
 import Reveal from "@/components/Reveal";
-import imgAboutBanner1 from "@/assets/images/about-banner.png";
-import imgImg2_1 from "@/assets/images/about-offer.png";
+import imgAboutBanner1 from "@/assets/images/about-banner.webp";
+import imgImg2_1 from "@/assets/images/about-offer.webp";
 
 const offerings = [
   { title: "Subject-Specific Tutoring:", desc: "Focused support in Algebra, Geometry, Physics, pre-calculus, calculus, and other STEM subjects." },

@@ -1,9 +1,9 @@
 import { MapPin, Mail, Phone } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Reveal from "@/components/Reveal";
-import imgTeam1 from "@/assets/images/team-eyasu.png";
-import imgTeam2 from "@/assets/images/team-daniel.png";
-import imgTeam3 from "@/assets/images/team-bethlehem.png";
+import imgTeam1 from "@/assets/images/team-eyasu.webp";
+import imgTeam2 from "@/assets/images/team-daniel.webp";
+import imgTeam3 from "@/assets/images/team-bethlehem.webp";
 
 const contactInfo = [
   { label: "Address:", value: "123 Design Street, New York, United States", icon: <MapPin size={18} strokeWidth={2} /> },

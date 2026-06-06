@@ -1,8 +1,8 @@
 import Reveal from "@/components/Reveal";
 import TestimonialCarousel, { type Testimonial } from "@/components/TestimonialCarousel";
-import imgUser1 from "@/assets/images/testimonial-david.png";
-import imgUser5 from "@/assets/images/testimonial-sarah.png";
-import imgUser6 from "@/assets/images/testimonial-ellyse.png";
+import imgUser1 from "@/assets/images/testimonial-david.webp";
+import imgUser5 from "@/assets/images/testimonial-sarah.webp";
+import imgUser6 from "@/assets/images/testimonial-ellyse.webp";
 
 const items: Testimonial[] = [
   { name: "David Warner", role: "Algebra Student", text: "Yakal's tutoring completely changed my approach to learning. I was struggling with Algebra, but my tutor broke concepts into easy-to-understand steps.", img: imgUser1 },

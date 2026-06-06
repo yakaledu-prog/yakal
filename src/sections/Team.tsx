@@ -1,9 +1,9 @@
 import Reveal from "@/components/Reveal";
 import Carousel from "@/components/Carousel";
-import imgTeam1 from "@/assets/images/team-eyasu.png";
-import imgTeam2 from "@/assets/images/team-daniel.png";
-import imgTeam3 from "@/assets/images/team-bethlehem.png";
-import imgTeam4 from "@/assets/images/team-hana.png";
+import imgTeam1 from "@/assets/images/team-eyasu.webp";
+import imgTeam2 from "@/assets/images/team-daniel.webp";
+import imgTeam3 from "@/assets/images/team-bethlehem.webp";
+import imgTeam4 from "@/assets/images/team-hana.webp";
 
 type Member = { name: string; subjects: string; img: string };
 

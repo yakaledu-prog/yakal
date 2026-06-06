@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
-import imgPrograms1 from "@/assets/images/resource-book-session.png";
-import imgPrograms3 from "@/assets/images/resource-blogs.png";
+import imgPrograms1 from "@/assets/images/resource-book-session.webp";
+import imgPrograms3 from "@/assets/images/resource-blogs.webp";
 
 export default function ParentResources({ scrollTo }: { scrollTo: (id: string) => void }) {
   return (

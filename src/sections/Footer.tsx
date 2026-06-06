@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import { toast } from "react-hot-toast";
-import logo from "@/assets/images/logo.png";
+import logo from "@/assets/images/logo.webp";
 
 const quickLinks = [
   { label: "Home", id: "home" },
