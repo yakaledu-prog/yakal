@@ -1,0 +1,47 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* ── Shimmer button (hover only) ── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.btn-shimmer {
+  background-color: #1099a1;
+  background-image: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-shimmer:hover {
+  background: linear-gradient(105deg,
+      #1099a1 35%,
+      #5de0e8 50%,
+      #1099a1 65%);
+  background-size: 200% auto;
+  animation: shimmer 5s linear infinite;
+  /* animation-delay: 3s; */
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes skeleton-pulse {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease infinite;
+}

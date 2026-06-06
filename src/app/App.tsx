@@ -1,0 +1,43 @@
+import { useState, useEffect, useRef } from "react";
+import HomePage from "@/pages/HomePage";
+import SubjectPage from "@/pages/SubjectPage";
+import BlogPage from "@/pages/BlogPage";
+import { blogs } from "@/data/blogs";
+import type { Page } from "@/types";
+
+export default function App() {
+  const [page, setPage] = useState<Page>({ type: "home" });
+  const savedScrollY = useRef(0);
+
+  // Restore scroll position when returning home
+  useEffect(() => {
+    if (page.type === "home") {
+      const target = page.scrollY ?? 0;
+      // small delay to let render complete
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: target, behavior: "instant" as ScrollBehavior });
+      });
+    }
+  }, [page]);
+
+  function navigateTo(nextPage: Page) {
+    savedScrollY.current = window.scrollY;
+    window.scrollTo(0, 0);
+    setPage(nextPage);
+  }
+
+  function goHome() {
+    setPage({ type: "home", scrollY: savedScrollY.current });
+  }
+
+  if (page.type === "subject") {
+    return <SubjectPage subject={{ name: page.name, img: page.img }} onBack={goHome} />;
+  }
+
+  if (page.type === "blog") {
+    const blog = blogs.find((b) => b.slug === page.slug);
+    if (blog) return <BlogPage blog={blog} onBack={goHome} />;
+  }
+
+  return <HomePage onNavigate={navigateTo} />;
+}
