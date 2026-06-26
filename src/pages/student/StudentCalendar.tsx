@@ -1,45 +1,69 @@
-import { useState } from "react";
+import React, { useRef, useState } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const mockEvents = [
-  { id: 1, title: "AP Calculus AB", time: "4:00 PM", date: 15, tutor: "Dr. Alex" },
-  { id: 2, title: "Physics Lab Review", time: "5:30 PM", date: 17, tutor: "Sarah J." },
-  { id: 3, title: "College Essay Draft", time: "3:00 PM", date: 20, tutor: "Prof. Miller" },
+  { id: "1", title: "AP Calculus AB with Dr. Alex", start: "2023-10-15T16:00:00", end: "2023-10-15T17:00:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
+  { id: "2", title: "Physics Lab Review", start: "2023-10-17T17:30:00", end: "2023-10-17T18:30:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
+  { id: "3", title: "College Essay Draft Review", start: "2023-10-20T15:00:00", end: "2023-10-20T16:00:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
 ];
 
 export function StudentCalendar() {
-  const [currentDate] = useState(new Date(2023, 9, 1)); // Mock October 2023
-  const [viewMode, setViewMode] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
+  const calendarRef = useRef<FullCalendar>(null);
+  const [viewMode, setViewMode] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
+  const [currentDateTitle, setCurrentDateTitle] = useState("October 2023");
 
-  const daysInMonth = 31;
-  const startDay = 0; // Sunday
+  const handleDatesSet = (arg: any) => {
+    setCurrentDateTitle(arg.view.title);
+  };
+
+  const handlePrev = () => {
+    const calendarApi = calendarRef.current?.getApi();
+    calendarApi?.prev();
+  };
+
+  const handleNext = () => {
+    const calendarApi = calendarRef.current?.getApi();
+    calendarApi?.next();
+  };
+
+  const handleViewChange = (view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay') => {
+    const calendarApi = calendarRef.current?.getApi();
+    if (calendarApi) {
+      calendarApi.changeView(view);
+      setViewMode(view);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon"><ChevronLeft size={16} /></Button>
-          <span className="font-medium px-4 text-lg">October 2023</span>
-          <Button variant="outline" size="icon"><ChevronRight size={16} /></Button>
+          <Button variant="outline" size="icon" onClick={handlePrev}><ChevronLeft size={16} /></Button>
+          <span className="font-medium px-4 text-lg min-w-[150px] text-center">{currentDateTitle}</span>
+          <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight size={16} /></Button>
         </div>
         <div className="flex p-1 bg-muted rounded-md w-fit">
           <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded ${viewMode === 'daily' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
-            onClick={() => setViewMode('daily')}
+            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'timeGridDay' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+            onClick={() => handleViewChange('timeGridDay')}
           >
             Daily
           </button>
           <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded ${viewMode === 'weekly' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
-            onClick={() => setViewMode('weekly')}
+            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'timeGridWeek' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+            onClick={() => handleViewChange('timeGridWeek')}
           >
             Weekly
           </button>
           <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded ${viewMode === 'monthly' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'}`}
-            onClick={() => setViewMode('monthly')}
+            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'dayGridMonth' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+            onClick={() => handleViewChange('dayGridMonth')}
           >
             Monthly
           </button>
@@ -47,96 +71,39 @@ export function StudentCalendar() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          {viewMode === 'monthly' && (
-            <>
-              <div className="grid grid-cols-7 border-b text-center text-sm font-medium text-muted-foreground">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                  <div key={day} className="py-3 border-r last:border-r-0">{day}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 auto-rows-[120px]">
-                {Array.from({ length: 35 }).map((_, i) => {
-                  const date = i - startDay + 1;
-                  const isCurrentMonth = date > 0 && date <= daysInMonth;
-                  const events = isCurrentMonth ? mockEvents.filter(e => e.date === date) : [];
-                  
-                  return (
-                    <div key={i} className={`border-r border-b last:border-r-0 p-2 ${!isCurrentMonth ? 'bg-muted/30' : 'bg-card'}`}>
-                      {isCurrentMonth && (
-                        <>
-                          <div className={`text-sm mb-1 ${date === 15 ? 'h-6 w-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold' : 'text-muted-foreground'}`}>
-                            {date}
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            {events.map(event => (
-                              <div key={event.id} className="text-xs bg-primary/10 text-primary p-1.5 rounded flex flex-col cursor-pointer hover:bg-primary/20 transition-colors">
-                                <span className="font-medium truncate">{event.title}</span>
-                                <span className="truncate">{event.time}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {viewMode === 'weekly' && (
-            <div className="flex border-t h-[600px] overflow-y-auto">
-              <div className="w-16 flex-shrink-0 border-r bg-muted/10">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="h-16 border-b text-xs text-muted-foreground text-center pt-2">
-                    {i + 8}:00 AM
-                  </div>
-                ))}
-              </div>
-              <div className="flex-1 grid grid-cols-7">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dIdx) => (
-                  <div key={day} className="border-r last:border-r-0 relative">
-                    <div className="sticky top-0 bg-card border-b py-2 text-center text-sm font-medium z-10 shadow-sm">{day} 1{dIdx+1}</div>
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="h-16 border-b border-border/50" />
-                    ))}
-                    {dIdx === 2 && (
-                      <div className="absolute top-[32px] left-1 right-1 bg-primary/20 border border-primary text-primary text-xs rounded p-1.5 z-0 shadow-sm">
-                        <div className="font-semibold">Physics Lab</div>
-                        <div>5:30 PM</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {viewMode === 'daily' && (
-            <div className="flex border-t h-[600px] overflow-y-auto relative">
-              <div className="w-16 flex-shrink-0 border-r bg-muted/10">
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <div key={i} className="h-20 border-b text-xs text-muted-foreground text-center pt-2">
-                    {i + 8}:00
-                  </div>
-                ))}
-              </div>
-              <div className="flex-1 relative">
-                <div className="sticky top-0 bg-card border-b py-3 text-center font-medium z-10 shadow-sm">
-                  Tuesday, October 17, 2023
-                </div>
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <div key={i} className="h-20 border-b border-border/50" />
-                ))}
-                
-                <div className="absolute top-[190px] left-4 right-4 bg-primary/10 border-l-4 border-l-primary text-foreground rounded-r p-3 z-0 shadow-sm">
-                  <div className="font-semibold text-primary">Physics Lab Review</div>
-                  <div className="text-sm text-muted-foreground">5:30 PM - 6:30 PM with Sarah J.</div>
-                </div>
-              </div>
-            </div>
-          )}
+        <CardContent className="p-4 sm:p-6">
+          <style>{`
+            .fc-toolbar.fc-header-toolbar { display: none; }
+            .fc-theme-standard td, .fc-theme-standard th { border-color: hsl(var(--border) / 0.6); }
+            .fc-day-today { background-color: hsl(var(--primary) / 0.03) !important; }
+            .fc-col-header-cell-cushion { padding: 8px 4px !important; font-weight: 500; font-size: 0.875rem; color: hsl(var(--foreground)); }
+            .fc-daygrid-day-number { font-size: 0.875rem; font-weight: 400; padding: 4px 8px !important; color: hsl(var(--muted-foreground)); }
+            .fc-event { border-radius: 4px; padding: 2px 6px; border-width: 1px; font-weight: 500; border-left-width: 3px; }
+            .fc-timegrid-event .fc-event-main { padding: 2px; }
+            .fc-daygrid-event { font-size: 0.75rem; }
+            .fc-timegrid-axis-cushion, .fc-timegrid-slot-label-cushion { font-size: 0.75rem; color: hsl(var(--muted-foreground)); font-weight: 400; }
+          `}</style>
+          <div className="h-[700px]">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              initialDate="2023-10-15"
+              events={mockEvents}
+              headerToolbar={false}
+              datesSet={handleDatesSet}
+              height="100%"
+              dayMaxEvents={true}
+              slotMinTime="07:00:00"
+              slotMaxTime="22:00:00"
+              allDaySlot={false}
+              eventTimeFormat={{
+                hour: 'numeric',
+                minute: '2-digit',
+                meridiem: 'short'
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
