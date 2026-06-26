@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ChartCard } from "@/components/feature/ChartCard";
 import { studentService } from "@/services/studentService";
-import { Video, ArrowRight, Clock, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { Video, ArrowRight, Clock, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
@@ -22,6 +22,8 @@ const studyHoursData = [
 
 export function StudentHome() {
   const [data, setData] = useState<any>(null);
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
+  const [showAnnouncementDialog, setShowAnnouncementDialog] = useState(false);
   const { sidebarOpen } = useOutletContext<{ sidebarOpen: boolean }>();
 
   useEffect(() => {
@@ -171,17 +173,64 @@ export function StudentHome() {
         </div>
       </div>
 
-      {data.announcements.length > 0 && (
+      {showAnnouncement && data.announcements.length > 0 && (
         <div 
           className={cn(
-            "fixed bottom-0 right-0 z-50 transition-all duration-300 left-0",
+            "fixed bottom-0 right-0 z-40 transition-all duration-300 left-0",
             sidebarOpen ? "md:left-60" : "md:left-20"
           )}
         >
-          <div className="bg-orange-50/95 dark:bg-orange-950/95 backdrop-blur border-t border-orange-200 dark:border-orange-900/50 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2 text-orange-800 dark:text-orange-200">
-            <span className="font-bold">Notice:</span>
-            <span>{data.announcements[0].title} on {data.announcements[0].date}. Check your inbox for details.</span>
+          <div className="bg-orange-50/95 dark:bg-orange-950/95 backdrop-blur border-t border-orange-200 dark:border-orange-900/50 px-4 sm:px-6 py-3 text-sm font-medium flex items-center justify-between text-orange-800 dark:text-orange-200">
+            <div className="flex items-center gap-2">
+              <span className="font-bold">Notice:</span>
+              <span>{data.announcements[0].title} on {data.announcements[0].date}. Check your inbox for details.</span>
+            </div>
+            <button 
+              onClick={() => setShowAnnouncementDialog(true)}
+              className="p-1 hover:bg-orange-200/50 dark:hover:bg-orange-900/50 rounded-md transition-colors shrink-0"
+              aria-label="Close announcement"
+            >
+              <X size={16} />
+            </button>
           </div>
+        </div>
+      )}
+
+      {showAnnouncementDialog && data.announcements.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-lg border-muted animate-in fade-in zoom-in-95 duration-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex justify-between items-start text-lg">
+                <span>{data.announcements[0].title}</span>
+                <button 
+                  onClick={() => setShowAnnouncementDialog(false)} 
+                  className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
+                <p className="font-medium text-foreground mb-1">Date: {data.announcements[0].date}</p>
+                <p>Please make sure to check your inbox for the registration link and further details regarding this upcoming seminar. Preparation materials will be sent out 24 hours prior.</p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setShowAnnouncementDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setShowAnnouncement(false);
+                    setShowAnnouncementDialog(false);
+                  }}
+                >
+                  Mark as Read
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
