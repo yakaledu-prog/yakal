@@ -4,9 +4,9 @@ import { cn } from "@/utils/cn";
 import { 
   Bell, 
   Search, 
-  Settings,
   ChevronRight,
-  ChevronLeft,
+  PanelLeftClose,
+  PanelLeft,
   Moon,
   Sun,
   Menu
@@ -59,18 +59,27 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           sidebarOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full md:w-20 md:translate-x-0"
         )}
       >
-        {/* Toggle Button on Border (Desktop only) */}
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="hidden md:flex absolute -right-3 top-6 bg-background border shadow-sm rounded-full p-1 text-muted-foreground hover:text-foreground z-30"
-        >
-          {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-        </button>
-
-        <div className="h-16 flex items-center justify-between px-4">
-          <div className={cn("flex items-center gap-2", !sidebarOpen && "justify-center w-full")}>
-            <img src="/src/assets/images/logo.webp" alt="Yakal" className={cn("object-contain", sidebarOpen ? "h-10" : "h-6")} />
-          </div>
+        <div className={cn("h-16 flex items-center px-4", sidebarOpen ? "justify-between" : "justify-center")}>
+          {sidebarOpen ? (
+            <>
+              <div className="flex items-center gap-2">
+                <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-10 object-contain" />
+              </div>
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="hidden md:flex text-muted-foreground hover:bg-accent p-1.5 rounded-md transition-colors"
+              >
+                <PanelLeftClose size={18} />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="hidden md:flex text-muted-foreground hover:bg-accent p-1.5 rounded-md transition-colors"
+            >
+              <PanelLeft size={18} />
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
@@ -96,19 +105,16 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 border-t">
-          {/* Profile & Settings Card */}
-          <div className={cn("flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/50", !sidebarOpen && "justify-center px-0 bg-transparent border-none items-center")}>
-            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="h-10 w-10 rounded-full bg-background ring-2 ring-background shadow-sm" />
+        <div className="p-4 mt-auto border-t">
+          {/* Profile Card */}
+          <div className={cn("flex items-center gap-3", !sidebarOpen && "justify-center")}>
+            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm" />
             {sidebarOpen && (
-              <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">Demo User</p>
-                <p className="text-xs text-muted-foreground truncate mb-1.5">Student</p>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <Link to="/settings" className="hover:text-foreground flex items-center gap-1 transition-colors">
-                    <Settings size={12} /> Settings
-                  </Link>
-                  <button onClick={() => document.documentElement.classList.toggle("dark")} className="hover:text-foreground transition-colors">
+                <div className="flex items-center justify-between mt-0.5">
+                  <p className="text-xs text-muted-foreground truncate">Student</p>
+                  <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1">
                     <Moon size={12} className="hidden dark:block" />
                     <Sun size={12} className="block dark:hidden" />
                   </button>
@@ -173,8 +179,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative">
-          <Outlet />
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 lg:p-8 pb-20">
+            <Outlet context={{ sidebarOpen }} />
+          </div>
         </div>
 
         {/* Floating Search Modal */}

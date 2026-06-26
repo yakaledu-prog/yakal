@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ChartCard } from "@/components/feature/ChartCard";
 import { studentService } from "@/services/studentService";
 import { Video, ArrowRight, Clock, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import { cn } from "@/utils/cn";
 
 // Mock chart data
 const studyHoursData = [
@@ -20,6 +22,7 @@ const studyHoursData = [
 
 export function StudentHome() {
   const [data, setData] = useState<any>(null);
+  const { sidebarOpen } = useOutletContext<{ sidebarOpen: boolean }>();
 
   useEffect(() => {
     studentService.getDashboardSummary().then(setData);
@@ -169,8 +172,13 @@ export function StudentHome() {
       </div>
 
       {data.announcements.length > 0 && (
-        <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 -mb-4 sm:-mb-6 lg:-mb-8 mt-8 bg-orange-50/95 dark:bg-orange-950/95 backdrop-blur border-t border-orange-200 dark:border-orange-900/50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <div className="px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2 text-orange-800 dark:text-orange-200">
+        <div 
+          className={cn(
+            "fixed bottom-0 right-0 z-50 transition-all duration-300 left-0",
+            sidebarOpen ? "md:left-60" : "md:left-20"
+          )}
+        >
+          <div className="bg-orange-50/95 dark:bg-orange-950/95 backdrop-blur border-t border-orange-200 dark:border-orange-900/50 px-4 py-3 text-center text-sm font-medium flex items-center justify-center gap-2 text-orange-800 dark:text-orange-200">
             <span className="font-bold">Notice:</span>
             <span>{data.announcements[0].title} on {data.announcements[0].date}. Check your inbox for details.</span>
           </div>
