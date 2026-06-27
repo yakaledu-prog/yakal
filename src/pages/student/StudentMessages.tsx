@@ -35,6 +35,7 @@ const AVATAR_MAP: Record<string, string> = {
   "u4": "https://i.pravatar.cc/96?img=47",
   "u5": "https://i.pravatar.cc/96?img=53",
   "current-user": "https://i.pravatar.cc/96?img=5",
+  "ai-assistant": "https://api.dicebear.com/7.x/bottts/svg?seed=yakal",
 };
 
 function avatarUrl(id: string): string {
@@ -429,7 +430,7 @@ export function StudentMessages() {
     );
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const text = inputText.trim();
     if (!text) return;
     const newMsg: Message = {
@@ -445,6 +446,54 @@ export function StudentMessages() {
       prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
     );
     setInputText("");
+
+    if (activeConvId === "conv-ai") {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        setTimeout(() => {
+          setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
+            ...c,
+            messages: [...c.messages, {
+              id: `msg-ai-${Date.now()}`,
+              conversationId: activeConvId,
+              senderId: "ai-assistant",
+              text: "I'm sorry, my API key isn't configured yet. Please add VITE_GEMINI_API_KEY to your .env file to enable AI responses.",
+              timestamp: new Date(),
+              status: "delivered",
+              isRead: true,
+            }]
+          } : c));
+        }, 1000);
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text }] }]
+          })
+        });
+        const data = await response.json();
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't process that.";
+        
+        setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
+          ...c,
+          messages: [...c.messages, {
+            id: `msg-ai-${Date.now()}`,
+            conversationId: activeConvId,
+            senderId: "ai-assistant",
+            text: aiText,
+            timestamp: new Date(),
+            status: "delivered",
+            isRead: true,
+          }]
+        } : c));
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -466,8 +515,8 @@ export function StudentMessages() {
 
         {/* Search bar only – tall */}
         <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 bg-[#f0f2f5] dark:bg-[#202c33] rounded-xl px-3 py-2.5">
-            <Search size={16} className="text-[#54656f] dark:text-[#aebac1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
+            <Search size={18} className="text-[#1099A1] shrink-0" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

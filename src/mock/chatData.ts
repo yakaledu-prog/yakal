@@ -16,7 +16,7 @@ export type Message = {
 export type Contact = {
   id: string;
   name: string;
-  role: "Tutor" | "Peer" | "Admin";
+  role: "Tutor" | "Peer" | "Admin" | "AI";
   avatar: string;
   isOnline: boolean;
   lastSeen: Date;
@@ -49,6 +49,30 @@ export function lastMessage(messages: Message[]): Message | undefined {
 
 // ─── Mock Conversations (tutoring context) ────────────────────────────────────
 export const mockConversations: Conversation[] = [
+  {
+    id: "conv-ai",
+    isPinned: true,
+    unreadCount: 0,
+    contact: {
+      id: "ai-assistant",
+      name: "Yakal AI Assistant",
+      role: "AI",
+      avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=yakal",
+      isOnline: true,
+      lastSeen: new Date(),
+    },
+    messages: [
+      {
+        id: "msg-ai-1",
+        conversationId: "conv-ai",
+        senderId: "ai-assistant",
+        text: "Hi Brooklyn! I'm the Yakal AI Assistant. I can help you summarize courses, find resources, or answer any questions you have. How can I help you today?",
+        timestamp: new Date(new Date().getTime() - 60000),
+        status: "read",
+        isRead: true,
+      }
+    ],
+  },
   {
     id: "conv-1",
     isPinned: false,
