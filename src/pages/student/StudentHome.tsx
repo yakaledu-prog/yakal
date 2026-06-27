@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ChartCard } from "@/components/feature/ChartCard";
 import { studentService } from "@/services/studentService";
+import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Video, ArrowRight, Clock, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { cn } from "@/utils/cn";
@@ -32,18 +33,21 @@ export function StudentHome() {
 
   if (!data) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-[200px] w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-[300px] col-span-2" />
-          <Skeleton className="h-[300px]" />
+      <PageWrapper>
+        <div className="space-y-6">
+          <Skeleton className="h-[200px] w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-[300px] col-span-2" />
+            <Skeleton className="h-[300px]" />
+          </div>
         </div>
-      </div>
+      </PageWrapper>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PageWrapper>
+      <div className="space-y-6">
       {/* Welcome Banner */}
       <div className="rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm relative overflow-hidden">
         <div className="relative z-10 space-y-2">
@@ -233,6 +237,7 @@ export function StudentHome() {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </PageWrapper>
   );
 }

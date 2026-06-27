@@ -6,6 +6,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PageWrapper } from "@/components/ui/PageWrapper";
 
 const mockEvents = [
   { id: "1", title: "AP Calculus AB with Dr. Alex", start: "2023-10-15T16:00:00", end: "2023-10-15T17:00:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
@@ -41,7 +42,7 @@ export function StudentCalendar() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageWrapper>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={handlePrev}><ChevronLeft size={16} /></Button>
@@ -106,6 +107,6 @@ export function StudentCalendar() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageWrapper>
   );
 }

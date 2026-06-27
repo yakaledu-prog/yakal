@@ -179,10 +179,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 lg:p-8 pb-20">
-            <Outlet context={{ sidebarOpen }} />
-          </div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <Outlet context={{ sidebarOpen }} />
         </div>
 
         {/* Floating Search Modal */}

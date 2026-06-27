@@ -190,7 +190,7 @@ export function StudentMessages() {
 
   return (
     // Full-height container that fills the parent's scrollable content area
-    <div className="flex h-[calc(100vh-130px)] overflow-hidden rounded-xl bg-[#f0f2f5] dark:bg-[#111b21]">
+    <div className="flex flex-1 overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21]">
 
       {/* ── Left Pane ─────────────────────────────────────────── */}
       <div className="w-[360px] flex-shrink-0 flex flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/feature/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { PageWrapper } from "@/components/ui/PageWrapper";
 
 interface Task {
   id: string;
@@ -37,12 +38,14 @@ export function StudentTasks() {
   ];
 
   return (
-    <div className="space-y-6 pt-2">
-      <DataTable 
-        data={data} 
-        columns={columns} 
-        searchPlaceholder="Search tasks..." 
-      />
-    </div>
+    <PageWrapper>
+      <div className="space-y-6 pt-2">
+        <DataTable 
+          data={data} 
+          columns={columns} 
+          searchPlaceholder="Search tasks..." 
+        />
+      </div>
+    </PageWrapper>
   );
 }
