@@ -3,7 +3,7 @@ import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff, ArrowLeft,
+  BellOff,
 } from "lucide-react";
 import {
   mockConversations,
@@ -104,7 +104,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         className={cn(
           "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-xl text-[14.5px] leading-relaxed shadow-sm",
           isMe
-            ? "bg-[#CAA25F]/90 text-white rounded-tr-none"
+            ? "bg-[#1099A1] text-white rounded-tr-none"
             : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] rounded-tl-none"
         )}
       >
@@ -121,7 +121,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         </div>
         {/* Bubble tail */}
         {isMe ? (
-          <svg className="absolute -right-[7px] top-0 text-[#CAA25F]/90" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
+          <svg className="absolute -right-[7px] top-0 text-[#1099A1]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
             <path d="M5.188.039C5.063-.052 0 0 0 0l.825 5.975C1.813 3.477 4.45 1.109 5.188.039z" />
           </svg>
         ) : (
@@ -134,9 +134,58 @@ function MessageBubble({ msg }: { msg: Message }) {
   );
 }
 
+// ─── Tutor Mock Data ─────────────────────────────────────────────────────────
+const TUTOR_COURSES: Record<string, { subject: string; level: string; sessions: number }[]> = {
+  u1: [
+    { subject: "Calculus II", level: "Intermediate", sessions: 34 },
+    { subject: "Calculus I", level: "Beginner", sessions: 51 },
+    { subject: "Pre-Calculus", level: "Beginner", sessions: 18 },
+  ],
+  u3: [
+    { subject: "Physics (Mechanics)", level: "Intermediate", sessions: 27 },
+    { subject: "Physics (Electromagnetism)", level: "Advanced", sessions: 14 },
+  ],
+  u5: [
+    { subject: "Data Structures", level: "Intermediate", sessions: 42 },
+    { subject: "Algorithms", level: "Advanced", sessions: 29 },
+    { subject: "Python Basics", level: "Beginner", sessions: 56 },
+  ],
+};
+
+const TUTOR_AVAILABILITY: Record<string, { day: string; slots: string[] }[]> = {
+  u1: [
+    { day: "Mon", slots: ["10:00 AM", "2:00 PM"] },
+    { day: "Tue", slots: [] },
+    { day: "Wed", slots: ["11:00 AM"] },
+    { day: "Thu", slots: ["3:00 PM", "5:00 PM"] },
+    { day: "Fri", slots: ["10:00 AM"] },
+    { day: "Sat", slots: [] },
+  ],
+  u3: [
+    { day: "Mon", slots: ["9:00 AM"] },
+    { day: "Tue", slots: ["1:00 PM", "4:00 PM"] },
+    { day: "Wed", slots: [] },
+    { day: "Thu", slots: ["9:00 AM"] },
+    { day: "Fri", slots: [] },
+    { day: "Sat", slots: ["10:00 AM", "12:00 PM"] },
+  ],
+  u5: [
+    { day: "Mon", slots: ["3:00 PM"] },
+    { day: "Tue", slots: ["3:00 PM"] },
+    { day: "Wed", slots: ["3:00 PM"] },
+    { day: "Thu", slots: ["3:00 PM"] },
+    { day: "Fri", slots: [] },
+    { day: "Sat", slots: [] },
+  ],
+};
+
 // ─── Contact Profile Panel (Telegram-style) ───────────────────────────────────
 function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<"media" | "links" | "files">("media");
+  const isTutor = conv.contact.role === "Tutor";
+  const [activeTab, setActiveTab] = useState<"media" | "links" | "files" | "courses" | "availability">("media");
+
+  const tutorCourses = TUTOR_COURSES[conv.contact.id] ?? [];
+  const tutorAvailability = TUTOR_AVAILABILITY[conv.contact.id] ?? [];
 
   const mockMedia = [
     "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=150&q=70",
@@ -158,6 +207,12 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
     { name: "Study_Guide_Midterm.docx", size: "1.1 MB" },
     { name: "Session_Transcript.txt", size: "48 KB" },
   ];
+
+  const levelColor = (level: string) => {
+    if (level === "Beginner") return "bg-[#97CE9D]/20 text-[#2d7a54]";
+    if (level === "Intermediate") return "bg-[#1099A1]/10 text-[#1099A1]";
+    return "bg-[#CAA25F]/15 text-[#8a6a2a]";
+  };
 
   return (
     <div className="w-[300px] flex-shrink-0 flex flex-col border-l border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] overflow-y-auto animate-in slide-in-from-right duration-200">
@@ -210,22 +265,27 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#e9edef] dark:border-[#2a3942]">
-        {(["media", "links", "files"] as const).map((tab) => (
+      <div className="flex overflow-x-auto border-b border-[#e9edef] dark:border-[#2a3942] scrollbar-none">
+        {([
+          { key: "media", label: "Media", icon: <ImageIcon size={12} /> },
+          { key: "links", label: "Links", icon: <LinkIcon size={12} /> },
+          { key: "files", label: "Files", icon: <FileText size={12} /> },
+          ...(isTutor ? [
+            { key: "courses", label: "Courses", icon: <Volume2 size={12} /> },
+            { key: "availability", label: "Hours", icon: <Phone size={12} /> },
+          ] : []),
+        ] as { key: typeof activeTab; label: string; icon: React.ReactNode }[]).map(({ key, label, icon }) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={key}
+            onClick={() => setActiveTab(key)}
             className={cn(
-              "flex-1 py-3 text-[13px] font-medium transition-colors capitalize",
-              activeTab === tab
+              "flex-shrink-0 px-3 py-2.5 text-[12px] font-medium transition-colors flex items-center gap-1",
+              activeTab === key
                 ? "text-[#1099A1] border-b-2 border-[#1099A1]"
                 : "text-[#667781] dark:text-[#8696a0] hover:text-[#111] dark:hover:text-white"
             )}
           >
-            {tab === "media" && <ImageIcon size={14} className="inline mr-1" />}
-            {tab === "links" && <LinkIcon size={14} className="inline mr-1" />}
-            {tab === "files" && <FileText size={14} className="inline mr-1" />}
-            {tab}
+            {icon}{label}
           </button>
         ))}
       </div>
@@ -258,8 +318,8 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
           <div className="space-y-2">
             {mockFiles.map((file, i) => (
               <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#f0f2f5] dark:hover:bg-[#202c33] cursor-pointer transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-[#CAA25F]/15 flex items-center justify-center shrink-0">
-                  <FileText size={16} className="text-[#CAA25F]" />
+                <div className="w-9 h-9 rounded-lg bg-[#1099A1]/10 flex items-center justify-center shrink-0">
+                  <FileText size={16} className="text-[#1099A1]" />
                 </div>
                 <div>
                   <p className="text-[13px] font-medium text-[#111] dark:text-white truncate">{file.name}</p>
@@ -267,6 +327,61 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === "courses" && (
+          <div className="space-y-3">
+            {tutorCourses.length === 0 ? (
+              <p className="text-[13px] text-[#667781] text-center py-4">No courses listed.</p>
+            ) : tutorCourses.map((c, i) => (
+              <div key={i} className="p-3 rounded-xl border border-[#e9edef] dark:border-[#2a3942] hover:bg-[#f0f2f5] dark:hover:bg-[#202c33] transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[13px] font-semibold text-[#111] dark:text-white leading-tight">{c.subject}</p>
+                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0", levelColor(c.level))}>
+                    {c.level}
+                  </span>
+                </div>
+                <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-1">{c.sessions} sessions completed</p>
+                <button className="mt-2 w-full py-1.5 rounded-lg bg-[#1099A1]/10 text-[#1099A1] text-[12px] font-medium hover:bg-[#1099A1]/20 transition-colors">
+                  Book a session
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "availability" && (
+          <div className="space-y-2">
+            <p className="text-[11px] text-[#667781] dark:text-[#8696a0] mb-3">Weekly availability (1-hour slots)</p>
+            {tutorAvailability.length === 0 ? (
+              <p className="text-[13px] text-[#667781] text-center py-4">No schedule listed.</p>
+            ) : tutorAvailability.map((day, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="w-8 text-[12px] font-semibold text-[#111] dark:text-white pt-0.5 shrink-0">{day.day}</span>
+                <div className="flex-1">
+                  {day.slots.length === 0 ? (
+                    <span className="text-[12px] text-[#8696a0] italic">Unavailable</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {day.slots.map((slot, j) => (
+                        <button
+                          key={j}
+                          className="px-2.5 py-1 rounded-lg bg-[#97CE9D]/20 text-[#2d7a54] dark:text-[#97CE9D] text-[12px] font-medium hover:bg-[#97CE9D]/40 transition-colors"
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="mt-4 pt-3 border-t border-[#e9edef] dark:border-[#2a3942]">
+              <button className="w-full py-2 rounded-xl bg-[#1099A1] text-white text-[13px] font-semibold hover:bg-[#0d7f86] transition-colors">
+                Request a Session
+              </button>
+            </div>
           </div>
         )}
       </div>
