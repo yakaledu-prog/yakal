@@ -329,15 +329,11 @@ export function StudentMessages() {
           </div>
         </div>
 
-        {/* Message history – WhatsApp tiled background */}
+        {/* Message history – WhatsApp patterned background */}
         <div
           className="flex-1 overflow-y-auto px-[5%] py-4 space-y-1"
-          style={{
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%23e5ddd5'/%3E%3C/svg%3E\")",
-            backgroundSize: "auto",
-          }}
+          style={{ backgroundColor: "#e5ddd5" }}
         >
-          <div className="dark:hidden absolute inset-0 pointer-events-none" style={{ background: "#e5ddd5" }} />
 
           {messageGroups.map((group) => (
             <div key={group.label} className="space-y-1">
