@@ -3,7 +3,7 @@ import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff,
+  BellOff, ArrowLeft,
 } from "lucide-react";
 import {
   mockConversations,
@@ -109,10 +109,10 @@ function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?
       )}
       <div
         className={cn(
-          "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-xl text-[14.5px] leading-relaxed shadow-sm",
+          "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-md text-[14.5px] leading-relaxed shadow-sm",
           isMe
-            ? "bg-[#1099A1] text-white rounded-tr-none"
-            : cn("bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0]", !isConsecutive ? "rounded-bl-none" : "rounded-xl")
+            ? "bg-[#1099A1] text-white border-b-[3px] border-[#087b82] rounded-br-sm"
+            : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] border-b-[3px] border-black/10 dark:border-black/30 rounded-bl-sm"
         )}
       >
         {!isMe && contact && !isConsecutive && (
@@ -129,18 +129,6 @@ function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?
             </span>
           )}
         </div>
-        {/* Bubble tail */}
-        {isMe ? (
-          <svg className="absolute -right-[7px] top-0 text-[#1099A1]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
-            <path d="M5.188.039C5.063-.052 0 0 0 0l.825 5.975C1.813 3.477 4.45 1.109 5.188.039z" />
-          </svg>
-        ) : (
-          !isConsecutive && (
-            <svg className="absolute -left-[7px] bottom-0 text-white dark:text-[#1f3a3d]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
-              <path d="M2.812 12.961C2.937 13.052 8 13 8 13L7.175 7.025C6.187 9.523 3.55 11.891 2.812 12.961z" />
-            </svg>
-          )
-        )}
       </div>
     </div>
   );
@@ -408,6 +396,7 @@ export function StudentMessages() {
   const [inputText, setInputText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -430,6 +419,7 @@ export function StudentMessages() {
   function openConversation(convId: string) {
     setActiveConvId(convId);
     setShowProfile(false);
+    setShowChatOnMobile(true);
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
@@ -469,7 +459,10 @@ export function StudentMessages() {
     <div className="flex flex-1 overflow-hidden">
 
       {/* ── Left Pane ────────────────────────────────────────────── */}
-      <div className="w-[340px] flex-shrink-0 flex flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">
+      <div className={cn(
+        "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
+        showChatOnMobile ? "hidden md:flex" : "flex"
+      )}>
 
         {/* Search bar only – tall */}
         <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
@@ -535,15 +528,24 @@ export function StudentMessages() {
       </div>
 
       {/* ── Right: Chat + Profile ─────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden min-w-0">
+      <div className={cn(
+        "flex-1 overflow-hidden min-w-0",
+        showChatOnMobile ? "flex" : "hidden md:flex"
+      )}>
 
         {/* Chat Pane */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
           {/* Chat Header */}
-          <div className="flex items-center justify-between px-4 py-2 bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
+            <button 
+              className="md:hidden p-1.5 -ml-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
+              onClick={() => setShowChatOnMobile(false)}
+            >
+              <ArrowLeft size={20} />
+            </button>
             <button
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer text-left"
+              className="flex-1 flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer text-left"
               onClick={() => setShowProfile((v) => !v)}
             >
               <div className="relative">
@@ -553,13 +555,13 @@ export function StudentMessages() {
                 )}
               </div>
               <div>
-                <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef]">{activeConv.contact.name}</h2>
+                <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef] truncate">{activeConv.contact.name}</h2>
                 <p className={cn("text-[12px]", activeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
                   {activeConv.contact.isOnline ? "online" : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
                 </p>
               </div>
             </button>
-            <div className="flex items-center gap-0.5 text-[#54656f] dark:text-[#aebac1]">
+            <div className="flex items-center gap-0.5 text-[#54656f] dark:text-[#aebac1] shrink-0">
               <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Video size={20} /></button>
               <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Phone size={20} /></button>
               <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Search size={20} /></button>
