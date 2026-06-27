@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import {
   Search, MoreVertical, Phone, Video,
-  Paperclip, Smile, Mic, Check, CheckCheck,
+  Paperclip, Smile, Mic, Check, CheckCheck, X,
+  Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
+  BellOff, ArrowLeft,
 } from "lucide-react";
 import {
   mockConversations,
@@ -13,8 +15,33 @@ import {
 } from "@/mock/chatData";
 import { cn } from "@/utils/cn";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Brand Colors ─────────────────────────────────────────────────────────────
+// Primary: #1099A1 | Mint: #97CE9D | Gold: #CAA25F
 
+// ─── Chat Background Pattern (brand-colored dot grid) ─────────────────────────
+const CHAT_BG_LIGHT = "#f0faf0"; // very light mint
+const CHAT_BG_DARK = "#0d2528";  // very dark teal
+
+// SVG dot-grid pattern encoded as data URI
+const dotPatternLight = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%2397CE9D' opacity='0.35'/%3E%3C/svg%3E")`;
+const dotPatternDark  = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%231099A1' opacity='0.25'/%3E%3C/svg%3E")`;
+
+// ─── Reliable avatar helper ────────────────────────────────────────────────────
+// pravatar.cc is extremely reliable – we map contact id → img index
+const AVATAR_MAP: Record<string, string> = {
+  "u1": "https://i.pravatar.cc/96?img=11",
+  "u2": "https://i.pravatar.cc/96?img=16",
+  "u3": "https://i.pravatar.cc/96?img=33",
+  "u4": "https://i.pravatar.cc/96?img=47",
+  "u5": "https://i.pravatar.cc/96?img=53",
+  "current-user": "https://i.pravatar.cc/96?img=5",
+};
+
+function avatarUrl(id: string): string {
+  return AVATAR_MAP[id] ?? `https://i.pravatar.cc/96?u=${id}`;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
 }
@@ -24,8 +51,7 @@ function formatListDate(date: Date): string {
   const diffDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
   if (diffDays === 0) return formatTime(date);
   if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7)
-    return date.toLocaleDateString([], { weekday: "short" });
+  if (diffDays < 7) return date.toLocaleDateString([], { weekday: "short" });
   return date.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
@@ -37,7 +63,6 @@ function formatDaySeparator(date: Date): string {
   return date.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
 }
 
-/** Group messages by day for day-separator rendering */
 function groupByDay(messages: Message[]): { label: string; messages: Message[] }[] {
   const groups: { label: string; messages: Message[] }[] = [];
   let currentLabel = "";
@@ -52,55 +77,55 @@ function groupByDay(messages: Message[]): { label: string; messages: Message[] }
   return groups;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-/** The read-receipt / status tick rendered inside sent messages */
+// ─── Status Tick ──────────────────────────────────────────────────────────────
 function StatusTick({ status }: { status: Message["status"] }) {
   if (status === "sending") return <Check size={12} className="opacity-50" />;
-  if (status === "sent") return <Check size={12} />;
+  if (status === "sent")    return <Check size={12} />;
   if (status === "delivered") return <CheckCheck size={12} />;
-  // "read" → blue double-tick
-  return <CheckCheck size={12} className="text-blue-400" />;
+  return <CheckCheck size={12} className="text-[#34b7f1]" />;
 }
 
-/** Single message bubble */
+// ─── Unread Badge ─────────────────────────────────────────────────────────────
+function UnreadBadge({ count }: { count: number }) {
+  if (!count) return null;
+  return (
+    <span className="min-w-[20px] h-5 px-1.5 bg-[#1099A1] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none">
+      {count}
+    </span>
+  );
+}
+
+// ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({ msg }: { msg: Message }) {
   const isMe = msg.senderId === currentUser.id;
   return (
     <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-lg text-[14.5px] leading-relaxed shadow-sm",
+          "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-xl text-[14.5px] leading-relaxed shadow-sm",
           isMe
-            ? "bg-[#d9fdd3] dark:bg-[#005c4b] text-[#111] dark:text-white rounded-tr-none"
-            : "bg-white dark:bg-[#202c33] text-[#111] dark:text-white rounded-tl-none"
+            ? "bg-[#CAA25F]/90 text-white rounded-tr-none"
+            : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] rounded-tl-none"
         )}
       >
-        <p className="whitespace-pre-wrap break-words pr-10">{msg.text}</p>
-        {/* Timestamp + read receipt row — floated to bottom-right inside bubble */}
+        <p className="whitespace-pre-wrap break-words pr-12">{msg.text}</p>
         <div className="flex items-center justify-end gap-1 mt-0.5 select-none">
-          <span className="text-[11px] text-[#667781] dark:text-[#8696a0]">
+          <span className={cn("text-[11px]", isMe ? "text-white/70" : "text-[#667781] dark:text-[#8696a0]")}>
             {formatTime(msg.timestamp)}
           </span>
           {isMe && (
-            <span className="text-[#667781] dark:text-[#8696a0]">
+            <span className="text-white/70">
               <StatusTick status={msg.status} />
             </span>
           )}
         </div>
-        {/* Corner tail */}
+        {/* Bubble tail */}
         {isMe ? (
-          <svg
-            className="absolute -right-[7px] top-0 text-[#d9fdd3] dark:text-[#005c4b]"
-            width="8" height="13" viewBox="0 0 8 13" fill="currentColor"
-          >
+          <svg className="absolute -right-[7px] top-0 text-[#CAA25F]/90" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
             <path d="M5.188.039C5.063-.052 0 0 0 0l.825 5.975C1.813 3.477 4.45 1.109 5.188.039z" />
           </svg>
         ) : (
-          <svg
-            className="absolute -left-[7px] top-0 text-white dark:text-[#202c33]"
-            width="8" height="13" viewBox="0 0 8 13" fill="currentColor"
-          >
+          <svg className="absolute -left-[7px] top-0 text-white dark:text-[#1f3a3d]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
             <path d="M2.812.039C2.937-.052 8 0 8 0L7.175 5.975C6.187 3.477 3.55 1.109 2.812.039z" />
           </svg>
         )}
@@ -109,45 +134,179 @@ function MessageBubble({ msg }: { msg: Message }) {
   );
 }
 
-/** Unread count badge */
-function UnreadBadge({ count }: { count: number }) {
-  if (!count) return null;
+// ─── Contact Profile Panel (Telegram-style) ───────────────────────────────────
+function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"media" | "links" | "files">("media");
+
+  const mockMedia = [
+    "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=150&q=70",
+    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=150&q=70",
+    "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=150&q=70",
+    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=150&q=70",
+    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=150&q=70",
+    "https://images.unsplash.com/photo-1546521343-4eb2c01aa44b?w=150&q=70",
+  ];
+
+  const mockLinks = [
+    { title: "Calc II Problem Set 4", url: "portal.yakal.edu/files/calc-ps4" },
+    { title: "Physics Lab Report Template", url: "portal.yakal.edu/files/lab-template" },
+    { title: "Session Recording – Nov 14", url: "portal.yakal.edu/recordings/nov14" },
+  ];
+
+  const mockFiles = [
+    { name: "Integration_Notes.pdf", size: "2.4 MB" },
+    { name: "Study_Guide_Midterm.docx", size: "1.1 MB" },
+    { name: "Session_Transcript.txt", size: "48 KB" },
+  ];
+
   return (
-    <span className="min-w-[18px] h-[18px] px-1 bg-[#25d366] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none">
-      {count}
-    </span>
+    <div className="w-[300px] flex-shrink-0 flex flex-col border-l border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] overflow-y-auto animate-in slide-in-from-right duration-200">
+      {/* Panel Header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
+        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[#54656f] dark:text-[#aebac1]">
+          <X size={18} />
+        </button>
+        <span className="text-[15px] font-semibold text-[#111] dark:text-white">Contact info</span>
+      </div>
+
+      {/* Avatar + Name */}
+      <div className="flex flex-col items-center gap-2 py-6 px-4 border-b border-[#e9edef] dark:border-[#2a3942]">
+        <img
+          src={avatarUrl(conv.contact.id)}
+          alt={conv.contact.name}
+          className="w-24 h-24 rounded-full object-cover ring-4 ring-[#97CE9D]/30"
+        />
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-[#111] dark:text-white">{conv.contact.name}</h2>
+          <span className={cn(
+            "text-xs font-medium px-2.5 py-0.5 rounded-full",
+            conv.contact.role === "Tutor"
+              ? "bg-[#1099A1]/10 text-[#1099A1]"
+              : "bg-[#97CE9D]/20 text-[#2d7a54]"
+          )}>
+            {conv.contact.role}
+          </span>
+          <p className={cn("text-[13px] mt-1", conv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
+            {conv.contact.isOnline ? "online" : `last seen ${formatListDate(conv.contact.lastSeen)}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-around py-4 border-b border-[#e9edef] dark:border-[#2a3942]">
+        {[
+          { icon: <Phone size={20} />, label: "Audio" },
+          { icon: <Video size={20} />, label: "Video" },
+          { icon: <BellOff size={20} />, label: "Mute" },
+          { icon: <Search size={20} />, label: "Search" },
+        ].map(({ icon, label }) => (
+          <button key={label} className="flex flex-col items-center gap-1 text-[#1099A1] hover:opacity-75 transition-opacity">
+            <div className="w-10 h-10 rounded-full bg-[#1099A1]/10 flex items-center justify-center">
+              {icon}
+            </div>
+            <span className="text-[11px] text-[#667781] dark:text-[#8696a0]">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-[#e9edef] dark:border-[#2a3942]">
+        {(["media", "links", "files"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "flex-1 py-3 text-[13px] font-medium transition-colors capitalize",
+              activeTab === tab
+                ? "text-[#1099A1] border-b-2 border-[#1099A1]"
+                : "text-[#667781] dark:text-[#8696a0] hover:text-[#111] dark:hover:text-white"
+            )}
+          >
+            {tab === "media" && <ImageIcon size={14} className="inline mr-1" />}
+            {tab === "links" && <LinkIcon size={14} className="inline mr-1" />}
+            {tab === "files" && <FileText size={14} className="inline mr-1" />}
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 p-3">
+        {activeTab === "media" && (
+          <div className="grid grid-cols-3 gap-1">
+            {mockMedia.map((src, i) => (
+              <img key={i} src={src} alt="" className="w-full aspect-square object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity" />
+            ))}
+          </div>
+        )}
+        {activeTab === "links" && (
+          <div className="space-y-3">
+            {mockLinks.map((link, i) => (
+              <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#f0f2f5] dark:hover:bg-[#202c33] cursor-pointer transition-colors">
+                <div className="w-8 h-8 rounded-full bg-[#1099A1]/10 flex items-center justify-center shrink-0">
+                  <LinkIcon size={14} className="text-[#1099A1]" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-[#1099A1] truncate">{link.title}</p>
+                  <p className="text-[11px] text-[#667781]">{link.url}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {activeTab === "files" && (
+          <div className="space-y-2">
+            {mockFiles.map((file, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#f0f2f5] dark:hover:bg-[#202c33] cursor-pointer transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-[#CAA25F]/15 flex items-center justify-center shrink-0">
+                  <FileText size={16} className="text-[#CAA25F]" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-[#111] dark:text-white truncate">{file.name}</p>
+                  <p className="text-[11px] text-[#667781]">{file.size}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-
 export function StudentMessages() {
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
   const [activeConvId, setActiveConvId] = useState<string>(conversations[0].id);
   const [inputText, setInputText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const activeConv = conversations.find((c) => c.id === activeConvId)!;
+  const messageGroups = groupByDay(activeConv.messages);
 
-  // Scroll to bottom whenever the active conversation or messages change
+  // Detect dark mode
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConvId, activeConv?.messages.length]);
 
-  // Mark messages as read when switching conversations
   function openConversation(convId: string) {
     setActiveConvId(convId);
+    setShowProfile(false);
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
-          ? {
-              ...c,
-              unreadCount: 0,
-              messages: c.messages.map((m) =>
-                m.senderId !== currentUser.id ? { ...m, isRead: true } : m
-              ),
-            }
+          ? { ...c, unreadCount: 0, messages: c.messages.map((m) => m.senderId !== currentUser.id ? { ...m, isRead: true } : m) }
           : c
       )
     );
@@ -156,7 +315,6 @@ export function StudentMessages() {
   function sendMessage() {
     const text = inputText.trim();
     if (!text) return;
-
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConvId,
@@ -166,52 +324,29 @@ export function StudentMessages() {
       status: "sent",
       isRead: false,
     };
-
     setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c
-      )
+      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
     );
     setInputText("");
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
 
   const filtered = conversations.filter((c) =>
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const messageGroups = groupByDay(activeConv.messages);
-
   return (
-    // Full-height container that fills the parent's scrollable content area
-    <div className="flex flex-1 overflow-hidden bg-[#f0f2f5] dark:bg-[#111b21]">
+    <div className="flex flex-1 overflow-hidden">
 
-      {/* ── Left Pane ─────────────────────────────────────────── */}
-      <div className="w-[360px] flex-shrink-0 flex flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">
+      {/* ── Left Pane ────────────────────────────────────────────── */}
+      <div className="w-[340px] flex-shrink-0 flex flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
-          <img
-            src={currentUser.avatar}
-            alt={currentUser.name}
-            className="w-10 h-10 rounded-full object-cover cursor-pointer"
-          />
-          <div className="flex items-center gap-2 text-[#54656f] dark:text-[#aebac1]">
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-              <MoreVertical size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="px-3 py-2 bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 bg-[#f0f2f5] dark:bg-[#202c33] rounded-lg px-3 py-1.5">
+        {/* Search bar only – tall */}
+        <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+          <div className="flex items-center gap-2 bg-[#f0f2f5] dark:bg-[#202c33] rounded-xl px-3 py-2.5">
             <Search size={16} className="text-[#54656f] dark:text-[#aebac1] shrink-0" />
             <input
               value={searchQuery}
@@ -222,7 +357,7 @@ export function StudentMessages() {
           </div>
         </div>
 
-        {/* Conversation list */}
+        {/* Conversation List */}
         <div className="flex-1 overflow-y-auto">
           {filtered.map((conv) => {
             const last = lastMessage(conv.messages);
@@ -233,46 +368,32 @@ export function StudentMessages() {
                 key={conv.id}
                 onClick={() => openConversation(conv.id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors",
-                  isActive
-                    ? "bg-[#f0f2f5] dark:bg-[#2a3942]"
-                    : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
+                  "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
+                  isActive ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
                 )}
               >
-                {/* Avatar + online dot */}
                 <div className="relative shrink-0">
                   <img
-                    src={conv.contact.avatar}
+                    src={avatarUrl(conv.contact.id)}
                     alt={conv.contact.name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   {conv.contact.isOnline && (
-                    <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
+                    <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
                   )}
                 </div>
-
-                {/* Name + snippet */}
-                <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3">
+                <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
                   <div className="flex items-baseline justify-between mb-0.5">
-                    <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">
-                      {conv.contact.name}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[12px] shrink-0",
-                        unread > 0
-                          ? "text-[#25d366] font-medium"
-                          : "text-[#667781] dark:text-[#8696a0]"
-                      )}
-                    >
+                    <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{conv.contact.name}</span>
+                    <span className={cn("text-[12px] shrink-0 ml-1", unread > 0 ? "text-[#1099A1] font-medium" : "text-[#667781] dark:text-[#8696a0]")}>
                       {last ? formatListDate(last.timestamp) : ""}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
+                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate flex-1">
                       {last?.senderId === currentUser.id && (
-                        <span className="mr-0.5 text-[#667781]">
-                          <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-blue-400" : "")} />
+                        <span className="mr-0.5">
+                          <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-[#1099A1]" : "text-[#667781]")} />
                         </span>
                       )}
                       {last?.text}
@@ -286,114 +407,102 @@ export function StudentMessages() {
         </div>
       </div>
 
-      {/* ── Right Pane ────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* ── Right: Chat + Profile ─────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden min-w-0">
 
-        {/* Chat header */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#f0f2f5] dark:bg-[#202c33]">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img
-                src={activeConv.contact.avatar}
-                alt={activeConv.contact.name}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              {activeConv.contact.isOnline && (
-                <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#25d366] border-2 border-[#f0f2f5] dark:border-[#202c33] rounded-full" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef]">
-                {activeConv.contact.name}
-              </h2>
-              <p className="text-[12px] text-[#667781] dark:text-[#8696a0]">
-                {activeConv.contact.isOnline
-                  ? "online"
-                  : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-[#54656f] dark:text-[#aebac1]">
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-              <Video size={20} />
-            </button>
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-              <Phone size={20} />
-            </button>
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-              <Search size={20} />
-            </button>
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
-              <MoreVertical size={20} />
-            </button>
-          </div>
-        </div>
+        {/* Chat Pane */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-        {/* Message history – WhatsApp patterned background */}
-        <div
-          className="flex-1 overflow-y-auto px-[5%] py-4 space-y-1"
-          style={{ backgroundColor: "#e5ddd5" }}
-        >
-
-          {messageGroups.map((group) => (
-            <div key={group.label} className="space-y-1">
-              {/* Day separator */}
-              <div className="flex justify-center my-4">
-                <span className="bg-white dark:bg-[#182229] text-[#667781] dark:text-[#8696a0] text-[12.5px] font-medium px-3 py-1 rounded-full shadow-sm select-none">
-                  {group.label}
-                </span>
-              </div>
-
-              {group.messages.map((msg) => (
-                <MessageBubble key={msg.id} msg={msg} />
-              ))}
-            </div>
-          ))}
-
-          {/* Scroll anchor */}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input bar */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
-          <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white transition-colors">
-            <Smile size={24} />
-          </button>
-          <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white transition-colors">
-            <Paperclip size={24} />
-          </button>
-
-          {/* Single-line textarea that grows with content like WhatsApp */}
-          <textarea
-            value={inputText}
-            onChange={(e) => {
-              setInputText(e.target.value);
-              // Auto-resize: reset then set to scrollHeight (capped at ~120px)
-              e.target.style.height = "auto";
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message"
-            rows={1}
-            className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-lg px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
-            style={{ height: "40px" }}
-          />
-
-          {inputText.trim() ? (
+          {/* Chat Header */}
+          <div className="flex items-center justify-between px-4 py-2 bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
             <button
-              onClick={sendMessage}
-              className="w-10 h-10 rounded-full bg-[#00a884] dark:bg-[#00a884] flex items-center justify-center text-white hover:bg-[#02926f] transition-colors shrink-0"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer text-left"
+              onClick={() => setShowProfile((v) => !v)}
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
-                <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
-              </svg>
+              <div className="relative">
+                <img src={avatarUrl(activeConv.contact.id)} alt={activeConv.contact.name} className="w-10 h-10 rounded-full object-cover" />
+                {activeConv.contact.isOnline && (
+                  <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#97CE9D] border-2 border-[#f0f2f5] dark:border-[#202c33] rounded-full" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef]">{activeConv.contact.name}</h2>
+                <p className={cn("text-[12px]", activeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
+                  {activeConv.contact.isOnline ? "online" : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
+                </p>
+              </div>
             </button>
-          ) : (
-            <button className="w-10 h-10 rounded-full bg-[#00a884] flex items-center justify-center text-white hover:bg-[#02926f] transition-colors shrink-0">
-              <Mic size={20} />
+            <div className="flex items-center gap-0.5 text-[#54656f] dark:text-[#aebac1]">
+              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Video size={20} /></button>
+              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Phone size={20} /></button>
+              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Search size={20} /></button>
+              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><MoreVertical size={20} /></button>
+            </div>
+          </div>
+
+          {/* Message History with branded pattern bg */}
+          <div
+            className="flex-1 overflow-y-auto px-[5%] py-4 space-y-1"
+            style={{
+              backgroundColor: isDark ? CHAT_BG_DARK : CHAT_BG_LIGHT,
+              backgroundImage: isDark ? dotPatternDark : dotPatternLight,
+            }}
+          >
+            {messageGroups.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <div className="flex justify-center my-4">
+                  <span className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur text-[#667781] dark:text-[#8696a0] text-[12.5px] font-medium px-3 py-1 rounded-full shadow-sm select-none">
+                    {group.label}
+                  </span>
+                </div>
+                {group.messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input Bar */}
+          <div className="flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
+            <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors">
+              <Smile size={24} />
             </button>
-          )}
+            <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors">
+              <Paperclip size={24} />
+            </button>
+            <textarea
+              value={inputText}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message"
+              rows={1}
+              className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
+              style={{ height: "42px" }}
+            />
+            {inputText.trim() ? (
+              <button
+                onClick={sendMessage}
+                className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
+                  <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
+                </svg>
+              </button>
+            ) : (
+              <button className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0">
+                <Mic size={20} />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Profile Panel */}
+        {showProfile && (
+          <ContactProfilePanel conv={activeConv} onClose={() => setShowProfile(false)} />
+        )}
       </div>
     </div>
   );

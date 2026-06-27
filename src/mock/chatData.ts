@@ -35,7 +35,7 @@ export type Conversation = {
 export const currentUser = {
   id: "current-user",
   name: "Brooklyn",
-  avatar: "https://loremfaces.net/96/id/5.jpg",
+  avatar: "https://i.pravatar.cc/96?img=5",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ export const mockConversations: Conversation[] = [
       id: "u1",
       name: "Alex Thompson",
       role: "Tutor",
-      avatar: "https://loremfaces.net/96/id/1.jpg",
+      avatar: "https://i.pravatar.cc/96?img=11",
       isOnline: true,
       lastSeen: new Date("2024-11-16T17:30:00"),
     },
@@ -108,7 +108,7 @@ export const mockConversations: Conversation[] = [
       id: "u2",
       name: "Maya Patel",
       role: "Peer",
-      avatar: "https://loremfaces.net/96/id/16.jpg",
+      avatar: "https://i.pravatar.cc/96?img=16",
       isOnline: true,
       lastSeen: new Date(),
     },
@@ -150,7 +150,7 @@ export const mockConversations: Conversation[] = [
       id: "u3",
       name: "Jordan Lee",
       role: "Tutor",
-      avatar: "https://loremfaces.net/96/id/30.jpg",
+      avatar: "https://i.pravatar.cc/96?img=33",
       isOnline: false,
       lastSeen: new Date("2024-11-16T16:00:00"),
     },
@@ -201,7 +201,7 @@ export const mockConversations: Conversation[] = [
       id: "u4",
       name: "Sarah Kim",
       role: "Peer",
-      avatar: "https://loremfaces.net/96/id/40.jpg",
+      avatar: "https://i.pravatar.cc/96?img=47",
       isOnline: true,
       lastSeen: new Date(),
     },
@@ -252,7 +252,7 @@ export const mockConversations: Conversation[] = [
       id: "u5",
       name: "Liam Nakamura",
       role: "Tutor",
-      avatar: "https://loremfaces.net/96/id/52.jpg",
+      avatar: "https://i.pravatar.cc/96?img=53",
       isOnline: false,
       lastSeen: new Date("2024-11-15T20:00:00"),
     },
