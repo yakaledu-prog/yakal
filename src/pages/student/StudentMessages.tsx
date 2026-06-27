@@ -948,9 +948,9 @@ export function StudentMessages() {
                 {inputText.trim() ? (
                   <button
                     onClick={sendMessage}
-                    className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                    className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
                   >
-                    <Send size={20} className="ml-1 text-white" />
+                    <Send size={18} className="text-white -ml-0.5 mt-0.5" />
                   </button>
                 ) : (
                   <button 
@@ -970,17 +970,19 @@ export function StudentMessages() {
                   <Trash2 size={24} />
                 </button>
                 
-                <div className="flex-1 flex items-center justify-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2.5 px-4 overflow-hidden">
-                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
-                  <span className="text-[#111] dark:text-white font-medium shrink-0">
-                    {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
-                  </span>
+                <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-[#111] dark:text-white font-medium text-[15px]">
+                      {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
+                    </span>
+                  </div>
                   
                   {mediaRecorderRef.current && (
-                    <div className="h-6 flex-1 max-w-[150px] overflow-hidden hidden sm:block">
+                    <div className="h-6 flex-1 overflow-hidden hidden sm:flex items-center">
                       <LiveAudioVisualizer
                         mediaRecorder={mediaRecorderRef.current}
-                        width={150}
+                        width={400}
                         height={24}
                         barWidth={2}
                         gap={2}
@@ -992,9 +994,9 @@ export function StudentMessages() {
                 
                 <button 
                   onClick={sendRecording}
-                  className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                  className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
                 >
-                  <Send size={20} className="ml-1 text-white" />
+                  <Send size={18} className="text-white -ml-0.5 mt-0.5" />
                 </button>
               </div>
             )}
