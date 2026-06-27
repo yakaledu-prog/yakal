@@ -24,7 +24,7 @@ const CHAT_BG_DARK = "#0d2528";  // very dark teal
 
 // SVG dot-grid pattern encoded as data URI
 const dotPatternLight = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%2397CE9D' opacity='0.35'/%3E%3C/svg%3E")`;
-const dotPatternDark  = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%231099A1' opacity='0.25'/%3E%3C/svg%3E")`;
+const dotPatternDark = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%231099A1' opacity='0.25'/%3E%3C/svg%3E")`;
 
 // ─── Reliable avatar helper ────────────────────────────────────────────────────
 // pravatar.cc is extremely reliable – we map contact id → img index
@@ -80,7 +80,7 @@ function groupByDay(messages: Message[]): { label: string; messages: Message[] }
 // ─── Status Tick ──────────────────────────────────────────────────────────────
 function StatusTick({ status }: { status: Message["status"] }) {
   if (status === "sending") return <Check size={12} className="opacity-50" />;
-  if (status === "sent")    return <Check size={12} />;
+  if (status === "sent") return <Check size={12} />;
   if (status === "delivered") return <CheckCheck size={12} />;
   return <CheckCheck size={12} className="text-[#34b7f1]" />;
 }
@@ -96,18 +96,28 @@ function UnreadBadge({ count }: { count: number }) {
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
-function MessageBubble({ msg }: { msg: Message }) {
+function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean }) {
   const isMe = msg.senderId === currentUser.id;
   return (
-    <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
+    <div className={cn("flex gap-2 w-full", isMe ? "justify-end" : "justify-start items-end")}>
+      {!isMe && (
+        <div className="w-8 shrink-0 flex items-end pb-0.5">
+          {contact && !isConsecutive && (
+            <img src={avatarUrl(contact.id)} alt={contact.name} className="w-8 h-8 rounded-full object-cover" />
+          )}
+        </div>
+      )}
       <div
         className={cn(
           "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-xl text-[14.5px] leading-relaxed shadow-sm",
           isMe
             ? "bg-[#1099A1] text-white rounded-tr-none"
-            : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] rounded-tl-none"
+            : cn("bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0]", !isConsecutive ? "rounded-bl-none" : "rounded-xl")
         )}
       >
+        {!isMe && contact && !isConsecutive && (
+          <div className="text-[13px] font-semibold text-[#1099A1] mb-0.5 leading-tight">{contact.name}</div>
+        )}
         <p className="whitespace-pre-wrap break-words pr-12">{msg.text}</p>
         <div className="flex items-center justify-end gap-1 mt-0.5 select-none">
           <span className={cn("text-[11px]", isMe ? "text-white/70" : "text-[#667781] dark:text-[#8696a0]")}>
@@ -125,9 +135,11 @@ function MessageBubble({ msg }: { msg: Message }) {
             <path d="M5.188.039C5.063-.052 0 0 0 0l.825 5.975C1.813 3.477 4.45 1.109 5.188.039z" />
           </svg>
         ) : (
-          <svg className="absolute -left-[7px] top-0 text-white dark:text-[#1f3a3d]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
-            <path d="M2.812.039C2.937-.052 8 0 8 0L7.175 5.975C6.187 3.477 3.55 1.109 2.812.039z" />
-          </svg>
+          !isConsecutive && (
+            <svg className="absolute -left-[7px] bottom-0 text-white dark:text-[#1f3a3d]" width="8" height="13" viewBox="0 0 8 13" fill="currentColor">
+              <path d="M2.812 12.961C2.937 13.052 8 13 8 13L7.175 7.025C6.187 9.523 3.55 11.891 2.812 12.961z" />
+            </svg>
+          )
         )}
       </div>
     </div>
@@ -557,20 +569,30 @@ export function StudentMessages() {
 
           {/* Message History with branded pattern bg */}
           <div
-            className="flex-1 overflow-y-auto px-[5%] py-4 space-y-1"
+            className="flex-1 overflow-y-auto px-[5%] py-4 space-y-3"
             style={{
               backgroundColor: isDark ? CHAT_BG_DARK : CHAT_BG_LIGHT,
               backgroundImage: isDark ? dotPatternDark : dotPatternLight,
             }}
           >
             {messageGroups.map((group) => (
-              <div key={group.label} className="space-y-1">
+              <div key={group.label} className="space-y-3">
                 <div className="flex justify-center my-4">
                   <span className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur text-[#667781] dark:text-[#8696a0] text-[12.5px] font-medium px-3 py-1 rounded-full shadow-sm select-none">
                     {group.label}
                   </span>
                 </div>
-                {group.messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
+                {group.messages.map((msg, idx) => {
+                  const isConsecutive = idx > 0 && group.messages[idx - 1].senderId === msg.senderId;
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      contact={activeConv.contact}
+                      isConsecutive={isConsecutive}
+                    />
+                  );
+                })}
               </div>
             ))}
             <div ref={bottomRef} />
