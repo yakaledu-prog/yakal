@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { 
-  Bell, 
-  Search, 
+import {
+  Bell,
+  Search,
   ChevronRight,
   PanelLeftClose,
   PanelLeft,
@@ -46,9 +46,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
     <div className="flex h-screen bg-muted/20 overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden" 
-          onClick={() => setSidebarOpen(false)} 
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
@@ -65,7 +65,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               <div className="flex items-center gap-2">
                 <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-10 object-contain" />
               </div>
-              <button 
+              <button
                 onClick={() => setSidebarOpen(false)}
                 className="hidden md:flex text-muted-foreground hover:bg-accent p-1.5 rounded-md transition-colors"
               >
@@ -73,7 +73,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               </button>
             </>
           ) : (
-            <button 
+            <button
               onClick={() => setSidebarOpen(true)}
               className="hidden md:flex text-muted-foreground hover:bg-accent p-1.5 rounded-md transition-colors"
             >
@@ -91,8 +91,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 to={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
-                  isActive 
-                    ? "bg-primary text-primary-foreground" 
+                  isActive
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   !sidebarOpen && "justify-center px-0"
                 )}
@@ -141,9 +141,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 {location.pathname.split('/').pop() || 'Home'}
               </span>
             </div>
-            
+
             {/* Streak & Info */}
-            <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l">
+            {/* <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l">
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <span className="text-amber-500 text-lg leading-none">🔥</span>
                 <span>4 Day Streak</span>
@@ -153,23 +153,23 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 <span className="text-emerald-500 font-bold">A-</span>
                 <span className="text-muted-foreground">Avg</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-center gap-4">
             {/* Global Search Mock */}
-            <div 
+            {/* <div
               className="relative hidden md:flex items-center w-80 cursor-pointer group"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 readOnly
                 placeholder="Search Yakal... (Ctrl+K)"
                 className="w-full bg-muted/50 rounded-full pl-10 pr-4 py-1.5 text-sm text-muted-foreground border border-transparent group-hover:border-primary/20 transition-all cursor-pointer focus:outline-none"
               />
-            </div>
+            </div> */}
 
             <button className="relative text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent transition-colors">
               <Bell size={20} />
