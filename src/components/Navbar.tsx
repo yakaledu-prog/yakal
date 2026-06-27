@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/images/logo.webp";
 
 const links = [
@@ -38,9 +39,9 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
         ))}
       </nav>
 
-      <button className="hidden md:block bg-[#1099a1] px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
+      <Link to="/login" className="hidden md:block bg-[#1099a1] px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
         Get Started
-      </button>
+      </Link>
 
       {/* Hamburger */}
       <button
@@ -61,9 +62,9 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
               {l.label}
             </button>
           ))}
-          <button className="mt-[12px] bg-[#1099a1] px-[24px] py-[12px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[16px]">
+          <Link to="/login" className="mt-[12px] bg-[#1099a1] px-[24px] py-[12px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[16px] text-center">
             Get Started
-          </button>
+          </Link>
         </div>
       )}
     </div>
