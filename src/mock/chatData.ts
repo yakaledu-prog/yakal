@@ -2,6 +2,14 @@
 export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
 // ─── Single Message ──────────────────────────────────────────────────────────
+export type Attachment = {
+  type: "image" | "video" | "audio" | "file";
+  url: string;
+  name?: string;
+  size?: number;
+  duration?: number; // for audio/video in seconds
+};
+
 export type Message = {
   id: string;
   conversationId: string;
@@ -10,6 +18,7 @@ export type Message = {
   timestamp: Date;
   status: MessageStatus;
   isRead: boolean;
+  attachment?: Attachment;
 };
 
 // ─── Contact ─────────────────────────────────────────────────────────────────

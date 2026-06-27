@@ -3,9 +3,11 @@ import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff, ArrowLeft, Trash2
+  BellOff, ArrowLeft, Trash2, Send, Play, Pause
 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
+import { LiveAudioVisualizer } from 'react-audio-visualize';
+import WaveSurfer from 'wavesurfer.js';
 import {
   mockConversations,
   currentUser,
@@ -97,9 +99,91 @@ function UnreadBadge({ count }: { count: number }) {
   );
 }
 
+// ─── Audio Player Component ───────────────────────────────────────────────────
+function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const waveSurferRef = useRef<WaveSurfer | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState("0:00");
+  const [currentTime, setCurrentTime] = useState("0:00");
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ws = WaveSurfer.create({
+      container: containerRef.current,
+      waveColor: isMe ? 'rgba(255,255,255,0.5)' : 'rgba(16,153,161,0.5)',
+      progressColor: isMe ? '#ffffff' : '#087b82',
+      barWidth: 2,
+      barGap: 2,
+      barRadius: 2,
+      height: 30,
+      url,
+    });
+    
+    ws.on('ready', () => {
+      const d = ws.getDuration();
+      setDuration(`${Math.floor(d / 60)}:${Math.floor(d % 60).toString().padStart(2, '0')}`);
+    });
+    
+    ws.on('audioprocess', () => {
+      const t = ws.getCurrentTime();
+      setCurrentTime(`${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, '0')}`);
+    });
+
+    ws.on('finish', () => setIsPlaying(false));
+
+    waveSurferRef.current = ws;
+    return () => ws.destroy();
+  }, [url, isMe]);
+
+  const togglePlay = () => {
+    if (waveSurferRef.current) {
+      waveSurferRef.current.playPause();
+      setIsPlaying(waveSurferRef.current.isPlaying());
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 w-[200px] md:w-[250px]">
+      <button onClick={togglePlay} className="w-10 h-10 shrink-0 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center hover:scale-105 transition-transform">
+        {isPlaying ? <Pause size={20} className={isMe ? "text-white" : "text-[#111] dark:text-white"} /> : <Play size={20} className={isMe ? "text-white ml-1" : "text-[#111] dark:text-white ml-1"} />}
+      </button>
+      <div className="flex-1 overflow-hidden">
+        <div ref={containerRef} className="w-full" />
+        <div className="text-[11px] mt-1 opacity-70">
+          {isPlaying ? currentTime : duration}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean }) {
   const isMe = msg.senderId === currentUser.id;
+  const isOnlyEmoji = !msg.attachment && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text || "");
+
+  if (isOnlyEmoji && msg.text.trim().length > 0) {
+    return (
+      <div className={cn("flex gap-2 w-full", isMe ? "justify-end" : "justify-start items-end")}>
+        {!isMe && (
+          <div className="w-8 shrink-0 flex items-end pb-0.5">
+            {contact && !isConsecutive && (
+              <img src={avatarUrl(contact.id)} alt={contact.name} className="w-8 h-8 rounded-full object-cover" />
+            )}
+          </div>
+        )}
+        <div className="flex flex-col mb-1 relative group pr-2">
+          <div className="text-5xl leading-none">{msg.text}</div>
+          <div className="flex justify-end gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-4 right-0">
+            <span className="text-[10px] text-[#667781] dark:text-[#aebac1] drop-shadow-sm">{formatTime(msg.timestamp)}</span>
+            {isMe && <span className="text-[#667781] dark:text-[#aebac1] drop-shadow-sm"><StatusTick status={msg.status} /></span>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex gap-2 w-full", isMe ? "justify-end" : "justify-start items-end")}>
       {!isMe && (
@@ -120,17 +204,45 @@ function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?
         {!isMe && contact && !isConsecutive && (
           <div className="text-[13px] font-semibold text-[#1099A1] mb-0.5 leading-tight">{contact.name}</div>
         )}
-        <p className="whitespace-pre-wrap break-words pr-12">{msg.text}</p>
-        <div className="flex items-center justify-end gap-1 mt-0.5 select-none">
-          <span className={cn("text-[11px]", isMe ? "text-white/70" : "text-[#667781] dark:text-[#8696a0]")}>
+
+        {msg.attachment && (
+          <div className={cn("mb-1", msg.text ? "pb-2" : "")}>
+            {msg.attachment.type === 'image' && (
+              <img src={msg.attachment.url} alt="Attachment" className="rounded-md max-h-[250px] object-cover" />
+            )}
+            {msg.attachment.type === 'video' && (
+              <video src={msg.attachment.url} controls className="rounded-md max-h-[250px] w-full bg-black" />
+            )}
+            {msg.attachment.type === 'audio' && (
+              <AudioPlayer url={msg.attachment.url} isMe={isMe} />
+            )}
+            {msg.attachment.type === 'file' && (
+              <div className="flex items-center gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-md min-w-[200px]">
+                <div className="p-2 bg-[#1099A1] text-white rounded-full"><FileText size={20} /></div>
+                <div className="overflow-hidden flex-1">
+                  <div className="font-medium text-[13.5px] truncate">{msg.attachment.name || 'File'}</div>
+                  <div className="text-[11px] opacity-70 mt-0.5">
+                    {msg.attachment.size ? `${(msg.attachment.size / 1024).toFixed(1)} KB` : 'Unknown size'} • {msg.attachment.type.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
+        
+        <div className={cn("flex items-center justify-end gap-1 mt-0.5 select-none", msg.text ? "float-right relative top-1 ml-3" : "")}>
+          <span className={cn("text-[10px]", isMe ? "text-white/80" : "text-[#667781] dark:text-[#8696a0]")}>
             {formatTime(msg.timestamp)}
           </span>
           {isMe && (
-            <span className="text-white/70">
+            <span className="text-white/80">
               <StatusTick status={msg.status} />
             </span>
           )}
         </div>
+        <div className="clear-both" />
       </div>
     </div>
   );
@@ -407,11 +519,16 @@ export function StudentMessages() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
   // Stop recording when component unmounts
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
     };
   }, []);
 
@@ -521,14 +638,22 @@ export function StudentMessages() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    const url = URL.createObjectURL(file);
+    let type: "image" | "video" | "audio" | "file" = "file";
+    if (file.type.startsWith("image/")) type = "image";
+    else if (file.type.startsWith("video/")) type = "video";
+    else if (file.type.startsWith("audio/")) type = "audio";
+
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConvId,
       senderId: currentUser.id,
-      text: `📎 [File: ${file.name}]`,
+      text: "",
       timestamp: new Date(),
       status: "sent",
       isRead: false,
+      attachment: { type, url, name: file.name, size: file.size }
     };
     setConversations((prev) =>
       prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
@@ -536,17 +661,47 @@ export function StudentMessages() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setRecordingSeconds(0);
-    recordingIntervalRef.current = setInterval(() => {
-      setRecordingSeconds((prev) => prev + 1);
-    }, 1000);
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Mic access denied", err);
+      // Fallback if no mic
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+  };
+
+  const stopTracks = () => {
+    if (mediaRecorderRef.current?.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+    }
   };
 
   const cancelRecording = () => {
     setIsRecording(false);
     if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    stopTracks();
     setRecordingSeconds(0);
   };
 
@@ -554,22 +709,43 @@ export function StudentMessages() {
     setIsRecording(false);
     if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     
-    const mins = Math.floor(recordingSeconds / 60);
-    const secs = recordingSeconds % 60;
-    const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
-    
-    const newMsg: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: activeConvId,
-      senderId: currentUser.id,
-      text: `🎤 [Audio Message: ${duration}]`,
-      timestamp: new Date(),
-      status: "sent",
-      isRead: false,
-    };
-    setConversations((prev) =>
-      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
-    );
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        
+        const newMsg: Message = {
+          id: `msg-${Date.now()}`,
+          conversationId: activeConvId,
+          senderId: currentUser.id,
+          text: "",
+          timestamp: new Date(),
+          status: "sent",
+          isRead: false,
+          attachment: { type: 'audio', url, duration: recordingSeconds }
+        };
+        setConversations((prev) =>
+          prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+        );
+        stopTracks();
+      };
+      mediaRecorderRef.current.stop();
+    } else {
+      // Mock sending if no mic
+      const newMsg: Message = {
+        id: `msg-${Date.now()}`,
+        conversationId: activeConvId,
+        senderId: currentUser.id,
+        text: `🎤 [Audio Message: ${Math.floor(recordingSeconds / 60)}:${recordingSeconds % 60}]`,
+        timestamp: new Date(),
+        status: "sent",
+        isRead: false,
+      };
+      setConversations((prev) =>
+        prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+      );
+      stopTracks();
+    }
     setRecordingSeconds(0);
   };
 
@@ -774,9 +950,7 @@ export function StudentMessages() {
                     onClick={sendMessage}
                     className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
                   >
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
-                      <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
-                    </svg>
+                    <Send size={20} className="ml-1 text-white" />
                   </button>
                 ) : (
                   <button 
@@ -796,20 +970,31 @@ export function StudentMessages() {
                   <Trash2 size={24} />
                 </button>
                 
-                <div className="flex-1 flex items-center justify-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2.5">
-                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-[#111] dark:text-white font-medium">
+                <div className="flex-1 flex items-center justify-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2.5 px-4 overflow-hidden">
+                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+                  <span className="text-[#111] dark:text-white font-medium shrink-0">
                     {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
                   </span>
+                  
+                  {mediaRecorderRef.current && (
+                    <div className="h-6 flex-1 max-w-[150px] overflow-hidden hidden sm:block">
+                      <LiveAudioVisualizer
+                        mediaRecorder={mediaRecorderRef.current}
+                        width={150}
+                        height={24}
+                        barWidth={2}
+                        gap={2}
+                        barColor="#f87171"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 <button 
                   onClick={sendRecording}
                   className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
-                    <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
-                  </svg>
+                  <Send size={20} className="ml-1 text-white" />
                 </button>
               </div>
             )}
