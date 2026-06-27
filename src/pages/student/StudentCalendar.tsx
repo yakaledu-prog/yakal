@@ -1,112 +1,359 @@
-import React, { useRef, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
+import { cn } from "@/utils/cn";
 
-const mockEvents = [
-  { id: "1", title: "AP Calculus AB with Dr. Alex", start: "2023-10-15T16:00:00", end: "2023-10-15T17:00:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
-  { id: "2", title: "Physics Lab Review", start: "2023-10-17T17:30:00", end: "2023-10-17T18:30:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
-  { id: "3", title: "College Essay Draft Review", start: "2023-10-20T15:00:00", end: "2023-10-20T16:00:00", backgroundColor: "hsl(var(--primary) / 0.1)", borderColor: "hsl(var(--primary))", textColor: "hsl(var(--primary))" },
+// --- Mock Data ---
+const today = new Date();
+const currentMonth = today.getMonth();
+const currentYear = today.getFullYear();
+const pad = (n: number) => n.toString().padStart(2, '0');
+const dateStr = (d: number) => `${currentYear}-${pad(currentMonth + 1)}-${pad(d)}`;
+
+const mockSessions = [
+  { id: "1", subject: "AP Calculus AB", date: dateStr(15), startTime: "16:00", duration: 60, tutorName: "Dr. Alex", status: "Upcoming" },
+  { id: "2", subject: "Physics Lab Review", date: dateStr(17), startTime: "17:30", duration: 60, tutorName: "Dr. Alex", status: "Upcoming" },
+  { id: "3", subject: "College Essay Draft", date: dateStr(20), startTime: "15:00", duration: 60, tutorName: "Jane Doe", status: "Upcoming" },
 ];
 
 export function StudentCalendar() {
-  const calendarRef = useRef<FullCalendar>(null);
-  const [viewMode, setViewMode] = useState<'dayGridMonth' | 'timeGridWeek' | 'timeGridDay'>('dayGridMonth');
-  const [currentDateTitle, setCurrentDateTitle] = useState("October 2023");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('month');
+  const [filterText, setFilterText] = useState('');
 
-  const handleDatesSet = (arg: any) => {
-    setCurrentDateTitle(arg.view.title);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+  const date = currentDate.getDate();
+  const monthString = monthNames[month];
+
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+  const getDaysArray = () => {
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+    const daysArray: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) daysArray.push(null);
+    for (let i = 1; i <= daysInMonth; i++) daysArray.push(i);
+    // Fill remainder for full weeks
+    while (daysArray.length % 7 !== 0) daysArray.push(null);
+    return daysArray;
   };
 
-  const handlePrev = () => {
-    const calendarApi = calendarRef.current?.getApi();
-    calendarApi?.prev();
-  };
+  const getWeekDays = () => {
+    const weekDays = [];
+    const currentDay = currentDate.getDay();
+    const currentDateNum = currentDate.getDate();
+    const firstDayOfWeek = new Date(currentDate);
+    firstDayOfWeek.setDate(currentDateNum - currentDay);
 
-  const handleNext = () => {
-    const calendarApi = calendarRef.current?.getApi();
-    calendarApi?.next();
-  };
-
-  const handleViewChange = (view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay') => {
-    const calendarApi = calendarRef.current?.getApi();
-    if (calendarApi) {
-      calendarApi.changeView(view);
-      setViewMode(view);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(firstDayOfWeek);
+      d.setDate(firstDayOfWeek.getDate() + i);
+      weekDays.push({ date: d.getDate(), month: d.getMonth(), year: d.getFullYear(), fullDate: d });
     }
+    return weekDays;
+  };
+
+  const getDayHours = () => {
+    const hours = [];
+    for (let i = 8; i <= 20; i++) {
+      hours.push({ hour: i, label: i > 12 ? `${i - 12} PM` : i === 12 ? '12 PM' : `${i} AM` });
+    }
+    return hours;
+  };
+
+  const navigatePrev = () => {
+    const newDate = new Date(currentDate);
+    if (calendarView === 'month') newDate.setMonth(newDate.getMonth() - 1);
+    else if (calendarView === 'week') newDate.setDate(newDate.getDate() - 7);
+    else newDate.setDate(newDate.getDate() - 1);
+    setCurrentDate(newDate);
+  };
+
+  const navigateNext = () => {
+    const newDate = new Date(currentDate);
+    if (calendarView === 'month') newDate.setMonth(newDate.getMonth() + 1);
+    else if (calendarView === 'week') newDate.setDate(newDate.getDate() + 7);
+    else newDate.setDate(newDate.getDate() + 1);
+    setCurrentDate(newDate);
+  };
+
+  const getSessionsForDay = (d: number | null, checkMonth = month, checkYear = year) => {
+    if (!d) return [];
+    const targetDateStr = `${checkYear}-${pad(checkMonth + 1)}-${pad(d)}`;
+    return mockSessions.filter(s => s.date === targetDateStr && s.subject.toLowerCase().includes(filterText.toLowerCase()));
+  };
+
+  const isToday = (d: number | null, checkMonth = month, checkYear = year) => {
+    if (!d) return false;
+    const t = new Date();
+    return d === t.getDate() && checkMonth === t.getMonth() && checkYear === t.getFullYear();
+  };
+
+  const formatTime = (time: string) => {
+    const [h, m] = time.split(':');
+    const hour = parseInt(h, 10);
+    return `${hour % 12 || 12}:${m}${hour >= 12 ? 'pm' : 'am'}`;
+  };
+
+  const getHeaderText = () => {
+    if (calendarView === 'month') return `${monthString} ${year}`;
+    if (calendarView === 'week') {
+      const weekDays = getWeekDays();
+      const first = weekDays[0];
+      const last = weekDays[6];
+      if (first.month !== last.month) return `${monthNames[first.month]} ${first.date} - ${monthNames[last.month]} ${last.date}, ${last.year}`;
+      return `${monthNames[first.month]} ${first.date} - ${last.date}, ${first.year}`;
+    }
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return `${weekdays[currentDate.getDay()]}, ${monthString} ${date}, ${year}`;
+  };
+
+  const downloadICS = () => {
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Yakal//Student Calendar//EN\n";
+    mockSessions.forEach(s => {
+      const [y, m, d] = s.date.split('-');
+      const [h, min] = s.startTime.split(':');
+      const startDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+      const endDate = new Date(startDate.getTime() + s.duration * 60000);
+      const formatICSDate = (dt: Date) => dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      icsContent += "BEGIN:VEVENT\n";
+      icsContent += `UID:${s.id}@yakal.com\n`;
+      icsContent += `DTSTAMP:${formatICSDate(new Date())}\n`;
+      icsContent += `DTSTART:${formatICSDate(startDate)}\n`;
+      icsContent += `DTEND:${formatICSDate(endDate)}\n`;
+      icsContent += `SUMMARY:${s.subject}\n`;
+      icsContent += `DESCRIPTION:Tutor: ${s.tutorName}\n`;
+      icsContent += "END:VEVENT\n";
+    });
+    icsContent += "END:VCALENDAR";
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'yakal_calendar.ics';
+    link.click();
+  };
+
+  const downloadCSV = () => {
+    let csvContent = "Subject,Date,Time,Duration,Tutor,Status\n";
+    mockSessions.forEach(s => {
+      csvContent += `"${s.subject}","${s.date}","${s.startTime}",${s.duration},"${s.tutorName}","${s.status}"\n`;
+    });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'yakal_calendar.csv';
+    link.click();
+  };
+
+  const renderMonthView = () => {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return (
+      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden bg-white dark:bg-[#111b21] mt-4 shadow-sm">
+        <div className="grid grid-cols-7 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
+          {weekdays.map(day => (
+            <div key={day} className="text-center text-[13px] font-medium text-[#111] dark:text-[#e9edef] py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {getDaysArray().map((day, index) => (
+            <div
+              key={index}
+              className={cn(
+                "min-h-[140px] p-2 border-r border-b border-[#e9edef] dark:border-[#2a3942] relative group",
+                !day ? "bg-[#f9fafb] dark:bg-[#202c33]" : "bg-white dark:bg-[#111b21] hover:bg-[#f9fafb] dark:hover:bg-[#202c33]",
+                index % 7 === 6 ? "border-r-0" : "",
+                index >= getDaysArray().length - 7 ? "border-b-0" : ""
+              )}
+            >
+              {day && (
+                <>
+                  <div className="text-right mb-1">
+                    <span className={cn(
+                      "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
+                      isToday(day) ? "bg-[#1099A1] text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
+                    )}>
+                      {day}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {getSessionsForDay(day).map(session => (
+                      <div key={session.id} className="flex items-start gap-1.5 px-1 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#111] dark:bg-[#e9edef] shrink-0 mt-1.5" />
+                        <span className="text-[12.5px] font-semibold text-[#111] dark:text-[#e9edef] truncate">
+                          {formatTime(session.startTime)} {session.subject}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderWeekView = () => {
+    const weekDays = getWeekDays();
+    const hours = getDayHours();
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-x-auto bg-white dark:bg-[#111b21] mt-4 shadow-sm">
+        <div className="min-w-[800px]">
+          <div className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
+            <div className="border-r border-[#e9edef] dark:border-[#2a3942]"></div>
+            {weekDays.map((day, index) => (
+              <div key={index} className="text-center py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
+                <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">{weekdays[index]}</div>
+                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-[#1099A1] font-bold" : "text-[#111] dark:text-white")}>
+                  {day.date}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="relative">
+            {hours.map((hour, idx) => (
+              <div key={idx} className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
+                <div className="py-3 px-2 text-[12px] text-right text-[#54656f] dark:text-[#aebac1] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
+                  {hour.label}
+                </div>
+                {weekDays.map((day, dayIdx) => {
+                  const timeStr = `${pad(hour.hour)}:00`;
+                  const sessions = getSessionsForDay(day.date, day.month, day.year).filter(s => s.startTime === timeStr);
+
+                  return (
+                    <div key={dayIdx} className="h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1">
+                      {sessions.map(s => (
+                        <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-[#1099A1]/15 transition-colors">
+                          {formatTime(s.startTime)} {s.subject}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDayView = () => {
+    const hours = getDayHours();
+    return (
+      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg bg-white dark:bg-[#111b21] mt-4 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-[100px_1fr] bg-[#f8f9fa] dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942]">
+          <div className="p-3 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
+          <div className="p-3 text-[15px] font-medium text-[#111] dark:text-white">
+            {getHeaderText()}
+          </div>
+        </div>
+        <div>
+          {hours.map((hour, idx) => {
+            const timeStr = `${pad(hour.hour)}:00`;
+            const sessions = getSessionsForDay(date).filter(s => s.startTime === timeStr);
+            return (
+              <div key={idx} className="grid grid-cols-[100px_1fr] border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
+                <div className="py-4 px-3 text-[13px] text-right text-[#54656f] dark:text-[#aebac1] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
+                  {hour.label}
+                </div>
+                <div className="p-2 min-h-[60px]">
+                  {sessions.map(s => (
+                    <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded-md p-3 text-[13px] hover:bg-[#1099A1]/15 transition-colors cursor-pointer w-full max-w-md">
+                      <div className="font-bold">{s.subject}</div>
+                      <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px]">
+                        <span>{formatTime(s.startTime)}</span>
+                        <span>•</span>
+                        <span>{s.tutorName}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
     <PageWrapper>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handlePrev}><ChevronLeft size={16} /></Button>
-          <span className="font-medium px-4 text-lg min-w-[150px] text-center">{currentDateTitle}</span>
-          <Button variant="outline" size="icon" onClick={handleNext}><ChevronRight size={16} /></Button>
-        </div>
-        <div className="flex p-1 bg-muted rounded-md w-fit">
-          <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'timeGridDay' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-            onClick={() => handleViewChange('timeGridDay')}
-          >
-            Daily
-          </button>
-          <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'timeGridWeek' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-            onClick={() => handleViewChange('timeGridWeek')}
-          >
-            Weekly
-          </button>
-          <button 
-            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${viewMode === 'dayGridMonth' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
-            onClick={() => handleViewChange('dayGridMonth')}
-          >
-            Monthly
-          </button>
-        </div>
-      </div>
+      <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto py-2">
 
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <style>{`
-            .fc-toolbar.fc-header-toolbar { display: none; }
-            .fc-theme-standard td, .fc-theme-standard th { border-color: hsl(var(--border) / 0.6); }
-            .fc-day-today { background-color: hsl(var(--primary) / 0.03) !important; }
-            .fc-col-header-cell-cushion { padding: 8px 4px !important; font-weight: 500; font-size: 0.875rem; color: hsl(var(--foreground)); }
-            .fc-daygrid-day-number { font-size: 0.875rem; font-weight: 400; padding: 4px 8px !important; color: hsl(var(--muted-foreground)); }
-            .fc-event { border-radius: 4px; padding: 2px 6px; border-width: 1px; font-weight: 500; border-left-width: 3px; }
-            .fc-timegrid-event .fc-event-main { padding: 2px; }
-            .fc-daygrid-event { font-size: 0.75rem; }
-            .fc-timegrid-axis-cushion, .fc-timegrid-slot-label-cushion { font-size: 0.75rem; color: hsl(var(--muted-foreground)); font-weight: 400; }
-          `}</style>
-          <div className="h-[700px]">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              initialDate="2023-10-15"
-              events={mockEvents}
-              headerToolbar={false}
-              datesSet={handleDatesSet}
-              height="100%"
-              dayMaxEvents={true}
-              slotMinTime="07:00:00"
-              slotMaxTime="22:00:00"
-              allDaySlot={false}
-              eventTimeFormat={{
-                hour: 'numeric',
-                minute: '2-digit',
-                meridiem: 'short'
-              }}
-            />
+        {/* Header Controls */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white dark:bg-[#111b21] p-2 pl-4 pr-2 rounded-xl shadow-sm border border-[#e9edef] dark:border-[#2a3942]">
+          <div className="flex bg-[#f0f2f5] dark:bg-[#202c33] p-1 rounded-lg">
+            <button
+              className={cn("px-3 py-1 text-[13px] font-medium rounded-md transition-colors", calendarView === 'day' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+              onClick={() => setCalendarView('day')}
+            >
+              Daily
+            </button>
+            <button
+              className={cn("px-3 py-1 text-[13px] font-medium rounded-md transition-colors", calendarView === 'week' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+              onClick={() => setCalendarView('week')}
+            >
+              Weekly
+            </button>
+            <button
+              className={cn("px-3 py-1 text-[13px] font-medium rounded-md transition-colors", calendarView === 'month' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+              onClick={() => setCalendarView('month')}
+            >
+              Monthly
+            </button>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-[#e9edef] dark:border-[#2a3942]"><ChevronLeft size={18} /></Button>
+            <span className="font-semibold text-lg min-w-[160px] text-center text-[#111] dark:text-white">{getHeaderText()}</span>
+            <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-[#e9edef] dark:border-[#2a3942]"><ChevronRight size={18} /></Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search sessions..."
+                className="pl-9 pr-3 py-1.5 h-9 bg-[#f0f2f5] dark:bg-[#202c33] text-[#111] dark:text-white placeholder:text-[#54656f] dark:placeholder:text-[#aebac1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1099A1] w-full sm:w-[200px] md:w-80 text-[14px]"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download ICS" onClick={downloadICS}>
+                <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+                <span className="text-[13px] font-medium hidden sm:inline">ICS</span>
+              </Button>
+              <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download CSV" onClick={downloadCSV}>
+                <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+                <span className="text-[13px] font-medium hidden sm:inline">CSV</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="w-full">
+          {calendarView === 'month' && renderMonthView()}
+          {calendarView === 'week' && renderWeekView()}
+          {calendarView === 'day' && renderDayView()}
+        </div>
+
+      </div>
     </PageWrapper>
   );
 }
