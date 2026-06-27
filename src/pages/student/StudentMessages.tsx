@@ -3,8 +3,9 @@ import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff, ArrowLeft,
+  BellOff, ArrowLeft, Trash2
 } from "lucide-react";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 import {
   mockConversations,
   currentUser,
@@ -398,8 +399,21 @@ export function StudentMessages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isDark, setIsDark] = useState(false);
+  
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Stop recording when component unmounts
+  useEffect(() => {
+    return () => {
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    };
+  }, []);
 
   const activeConv = conversations.find((c) => c.id === activeConvId)!;
   const messageGroups = groupByDay(activeConv.messages);
@@ -448,7 +462,7 @@ export function StudentMessages() {
     setInputText("");
 
     if (activeConvId === "conv-ai") {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
       if (!apiKey) {
         setTimeout(() => {
           setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
@@ -457,7 +471,7 @@ export function StudentMessages() {
               id: `msg-ai-${Date.now()}`,
               conversationId: activeConvId,
               senderId: "ai-assistant",
-              text: "I'm sorry, my API key isn't configured yet. Please add VITE_GEMINI_API_KEY to your .env file to enable AI responses.",
+              text: "I am currently running in offline mode. To use my full AI capabilities, please configure the system settings by adding GEMINI_API_KEY.",
               timestamp: new Date(),
               status: "delivered",
               isRead: true,
@@ -499,6 +513,65 @@ export function StudentMessages() {
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
+
+  const handleEmojiClick = (emojiObj: any) => {
+    setInputText((prev) => prev + emojiObj.emoji);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const newMsg: Message = {
+      id: `msg-${Date.now()}`,
+      conversationId: activeConvId,
+      senderId: currentUser.id,
+      text: `📎 [File: ${file.name}]`,
+      timestamp: new Date(),
+      status: "sent",
+      isRead: false,
+    };
+    setConversations((prev) =>
+      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+    );
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const startRecording = () => {
+    setIsRecording(true);
+    setRecordingSeconds(0);
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingSeconds((prev) => prev + 1);
+    }, 1000);
+  };
+
+  const cancelRecording = () => {
+    setIsRecording(false);
+    if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    setRecordingSeconds(0);
+  };
+
+  const sendRecording = () => {
+    setIsRecording(false);
+    if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    
+    const mins = Math.floor(recordingSeconds / 60);
+    const secs = recordingSeconds % 60;
+    const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
+    
+    const newMsg: Message = {
+      id: `msg-${Date.now()}`,
+      conversationId: activeConvId,
+      senderId: currentUser.id,
+      text: `🎤 [Audio Message: ${duration}]`,
+      timestamp: new Date(),
+      status: "sent",
+      isRead: false,
+    };
+    setConversations((prev) =>
+      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+    );
+    setRecordingSeconds(0);
+  };
 
   const filtered = conversations.filter((c) =>
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -650,39 +723,95 @@ export function StudentMessages() {
           </div>
 
           {/* Input Bar */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
-            <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors">
-              <Smile size={24} />
-            </button>
-            <button className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors">
-              <Paperclip size={24} />
-            </button>
-            <textarea
-              value={inputText}
-              onChange={(e) => {
-                setInputText(e.target.value);
-                e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message"
-              rows={1}
-              className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
-              style={{ height: "42px" }}
-            />
-            {inputText.trim() ? (
-              <button
-                onClick={sendMessage}
-                className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
-                  <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
-                </svg>
-              </button>
+          <div className="relative flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
+            {showEmojiPicker && (
+              <div className="absolute bottom-[60px] left-4 z-50 shadow-lg rounded-xl overflow-hidden">
+                <EmojiPicker 
+                  onEmojiClick={handleEmojiClick} 
+                  theme={isDark ? Theme.DARK : Theme.LIGHT}
+                />
+              </div>
+            )}
+            
+            {!isRecording ? (
+              <>
+                <button 
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={cn("p-2 transition-colors", showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]")}
+                >
+                  <Smile size={24} />
+                </button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors"
+                >
+                  <Paperclip size={24} />
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
+                
+                <textarea
+                  value={inputText}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setShowEmojiPicker(false)}
+                  placeholder="Type a message"
+                  rows={1}
+                  className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
+                  style={{ height: "42px" }}
+                />
+                
+                {inputText.trim() ? (
+                  <button
+                    onClick={sendMessage}
+                    className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
+                      <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={startRecording}
+                    className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                  >
+                    <Mic size={20} />
+                  </button>
+                )}
+              </>
             ) : (
-              <button className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0">
-                <Mic size={20} />
-              </button>
+              <div className="flex-1 flex items-center gap-3">
+                <button 
+                  onClick={cancelRecording}
+                  className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                >
+                  <Trash2 size={24} />
+                </button>
+                
+                <div className="flex-1 flex items-center justify-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2.5">
+                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-[#111] dark:text-white font-medium">
+                    {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
+                  </span>
+                </div>
+                
+                <button 
+                  onClick={sendRecording}
+                  className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 rotate-45 -translate-x-0.5">
+                    <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z" />
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
         </div>
