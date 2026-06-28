@@ -10,8 +10,10 @@ import {
   Moon,
   Sun,
   Menu,
-  FlameIcon
+  FlameIcon,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface NavItem {
   name: string;
@@ -28,6 +30,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
+  const { profile, user, signOut } = useAuth();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -109,16 +112,21 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         <div className="p-4 mt-auto border-t dark:border-[#2a3942]">
           {/* Profile Card */}
           <div className={cn("flex items-center gap-3", !sidebarOpen && "justify-center")}>
-            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm" />
+            <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d"} alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">Demo User</p>
+                <p className="text-sm font-semibold truncate">{profile?.full_name || user?.email || "User"}</p>
                 <div className="flex items-center justify-between mt-0.5">
-                  <p className="text-xs text-muted-foreground truncate">Student</p>
-                  <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1">
-                    <Moon size={12} className="hidden dark:block" />
-                    <Sun size={12} className="block dark:hidden" />
-                  </button>
+                  <p className="text-xs text-muted-foreground truncate capitalize">{profile?.role || "Student"}</p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1" title="Toggle Theme">
+                      <Moon size={12} className="hidden dark:block" />
+                      <Sun size={12} className="block dark:hidden" />
+                    </button>
+                    <button onClick={() => signOut()} className="text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted p-1" title="Log Out">
+                      <LogOut size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

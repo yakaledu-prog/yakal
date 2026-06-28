@@ -1,6 +1,9 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
+import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
+import { OnboardingPage } from "../pages/shared/OnboardingPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
@@ -12,43 +15,83 @@ import { StudentResources } from "../pages/student/StudentResources";
 import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
+
+function ProtectedRoute() {
+  const { user, profile, loading } = useAuth();
+  const location = useLocation();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-muted/20">Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If profile is loaded but not onboarded, and we aren't already on the onboarding page, redirect to /onboarding
+  if (profile && !profile.is_onboarded && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // If profile is onboarded, and we are trying to access /onboarding, redirect to dashboard
+  if (profile && profile.is_onboarded && location.pathname === '/onboarding') {
+    return <Navigate to={`/${profile.role || 'student'}`} replace />;
+  }
+  
+  return <Outlet />;
+}
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App />, // The original state-based app handles the landing page and blogs
+    element: <App />, 
   },
   {
     path: "/login",
     element: <AuthPage />,
   },
   {
-    path: "/admin/*",
-    element: <div>Admin Dashboard (Placeholder)</div>,
+    path: "/confirm-email",
+    element: <EmailConfirmationPage />,
   },
   {
-    path: "/tutor/*",
-    element: <div>Tutor Dashboard (Placeholder)</div>,
-  },
-  {
-    path: "/student",
-    element: <StudentLayout />,
+    path: "/",
+    element: <ProtectedRoute />,
     children: [
-      { path: "", element: <StudentHome /> },
-      { path: "calendar", element: <StudentCalendar /> },
-      { path: "tasks", element: <StudentTasks /> },
-      { path: "session/:id", element: <StudentSessionDetail /> },
-      { path: "messages", element: <StudentMessages /> },
-      { path: "sessions", element: <StudentSessions /> },
-      { path: "courses", element: <StudentCourses /> },
-      { path: "resources", element: <StudentResources /> },
-      { path: "notifications", element: <StudentNotifications /> },
-      { path: "*", element: <NotFoundPage /> },
+      {
+        path: "onboarding",
+        element: <OnboardingPage />,
+      },
+      {
+        path: "admin/*",
+        element: <div>Admin Dashboard (Placeholder)</div>,
+      },
+      {
+        path: "tutor/*",
+        element: <div>Tutor Dashboard (Placeholder)</div>,
+      },
+      {
+        path: "parent/*",
+        element: <div>Parent Dashboard (Placeholder)</div>,
+      },
+      {
+        path: "student",
+        element: <StudentLayout />,
+        children: [
+          { path: "", element: <StudentHome /> },
+          { path: "calendar", element: <StudentCalendar /> },
+          { path: "tasks", element: <StudentTasks /> },
+          { path: "session/:id", element: <StudentSessionDetail /> },
+          { path: "messages", element: <StudentMessages /> },
+          { path: "sessions", element: <StudentSessions /> },
+          { path: "courses", element: <StudentCourses /> },
+          { path: "resources", element: <StudentResources /> },
+          { path: "notifications", element: <StudentNotifications /> },
+          { path: "*", element: <NotFoundPage /> },
+        ]
+      }
     ]
-  },
-  {
-    path: "/parent/*",
-    element: <div>Parent Dashboard (Placeholder)</div>,
   },
   {
     path: "*",
@@ -57,5 +100,10 @@ const router = createBrowserRouter([
 ]);
 
 export function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <Toaster position="top-center" />
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
