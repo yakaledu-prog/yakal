@@ -23,7 +23,7 @@ const mockCourses: Course[] = [
 export function StudentCourses() {
   return (
     <PageWrapper>
-      <div className="mx-auto w-full p-4">
+      <div className="mx-auto w-full p-4 h-full dark:bg-[#111b21]">
 
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">

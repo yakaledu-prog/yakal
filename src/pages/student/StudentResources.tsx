@@ -47,7 +47,7 @@ export function StudentResources() {
 
   return (
     <PageWrapper>
-      <div className="mx-auto w-full p-4 pb-12">
+      <div className="mx-auto w-full p-4 pb-12 h-full dark:bg-[#111b21]">
 
         {/* Header Section */}
         {/* Categories */}

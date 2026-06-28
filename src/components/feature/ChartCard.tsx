@@ -20,14 +20,14 @@ export function ChartCard({ title, data, dataKey, xAxisKey }: ChartCardProps) {
             <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1099a1" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#1099a1" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#1099a1" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#1099a1" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey={xAxisKey} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
               />

@@ -47,18 +47,18 @@ export function StudentHome() {
 
   return (
     <PageWrapper>
-      <div className="space-y-6 p-5">
+      <div className="space-y-6 p-5 dark:bg-[#111b21]">
         {/* Welcome Banner */}
         <div className="rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm relative overflow-hidden">
           <div className="relative z-10 space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">Welcome back, Brooklyn!</h1>
-            <p className="text-primary-foreground/80 max-w-lg">
+            <p className="text-primary-foreground/80">
               You have a calculus session coming up today. Keep up the great work on your learning streak.
             </p>
           </div>
-          <div className="relative z-10 mt-6 sm:mt-0">
-            <Button variant="secondary" size="lg" className="gap-2">
-              Continue Learning <ArrowRight size={18} />
+          <div className="relative z-10 mt-auto -mb-1">
+            <Button variant="secondary" size="lg" className="gap-2 dark:bg-[#111b21]">
+              Continue Learning <ChevronRight size={18} />
             </Button>
           </div>
           {/* Decorative background shapes */}
@@ -68,8 +68,8 @@ export function StudentHome() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Next Session (Priority Info) */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden border-0 shadow-md">
+          <div className="lg:col-span-2 space-y-6 dark:bg-[#111b21]">
+            <Card className="overflow-hidden border-0 shadow-md dark:bg-[#111b21]">
               <div className="flex flex-col sm:flex-row h-full">
                 <div className="w-full sm:w-2/5 h-48 sm:h-auto relative">
                   <img
@@ -81,7 +81,7 @@ export function StudentHome() {
                     <Badge className="bg-primary/90 text-white backdrop-blur-sm border-0">Next Up</Badge>
                   </div>
                 </div>
-                <div className="p-6 flex flex-col justify-between flex-1 bg-card">
+                <div className="p-6 flex flex-col justify-between flex-1 bg-card  dark:bg-[#182329]">
                   <div>
                     <h3 className="text-2xl font-bold mb-1">{data.nextSession.subject}</h3>
                     <p className="text-muted-foreground flex items-center gap-2 mb-4">

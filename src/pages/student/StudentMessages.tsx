@@ -119,12 +119,12 @@ function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
       height: 30,
       url,
     });
-    
+
     ws.on('ready', () => {
       const d = ws.getDuration();
       setDuration(`${Math.floor(d / 60)}:${Math.floor(d % 60).toString().padStart(2, '0')}`);
     });
-    
+
     ws.on('audioprocess', () => {
       const t = ws.getCurrentTime();
       setCurrentTime(`${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, '0')}`);
@@ -231,7 +231,7 @@ function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?
         )}
 
         {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
-        
+
         <div className={cn("flex items-center justify-end gap-1 mt-0.5 select-none", msg.text ? "float-right relative top-1 ml-3" : "")}>
           <span className={cn("text-[10px]", isMe ? "text-white/80" : "text-[#667781] dark:text-[#8696a0]")}>
             {formatTime(msg.timestamp)}
@@ -515,7 +515,7 @@ export function StudentMessages() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isDark, setIsDark] = useState(false);
-  
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -608,7 +608,7 @@ export function StudentMessages() {
         });
         const data = await response.json();
         const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't process that.";
-        
+
         setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
           ...c,
           messages: [...c.messages, {
@@ -638,7 +638,7 @@ export function StudentMessages() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const url = URL.createObjectURL(file);
     let type: "image" | "video" | "audio" | "file" = "file";
     if (file.type.startsWith("image/")) type = "image";
@@ -708,12 +708,12 @@ export function StudentMessages() {
   const sendRecording = () => {
     setIsRecording(false);
     if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-    
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
-        
+
         const newMsg: Message = {
           id: `msg-${Date.now()}`,
           conversationId: activeConvId,
@@ -836,7 +836,7 @@ export function StudentMessages() {
 
           {/* Chat Header */}
           <div className="flex items-center gap-2 px-4 py-2 bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
-            <button 
+            <button
               className="md:hidden p-1.5 -ml-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
               onClick={() => setShowChatOnMobile(false)}
             >
@@ -902,34 +902,34 @@ export function StudentMessages() {
           <div className="relative flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
             {showEmojiPicker && (
               <div className="absolute bottom-[60px] left-4 z-50 shadow-lg rounded-xl overflow-hidden">
-                <EmojiPicker 
-                  onEmojiClick={handleEmojiClick} 
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
                   theme={isDark ? Theme.DARK : Theme.LIGHT}
                 />
               </div>
             )}
-            
+
             {!isRecording ? (
               <>
-                <button 
+                <button
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className={cn("p-2 transition-colors", showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]")}
                 >
                   <Smile size={24} />
                 </button>
-                <button 
+                <button
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors"
                 >
                   <Paperclip size={24} />
                 </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
                 />
-                
+
                 <textarea
                   value={inputText}
                   onChange={(e) => {
@@ -944,7 +944,7 @@ export function StudentMessages() {
                   className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
                   style={{ height: "42px" }}
                 />
-                
+
                 {inputText.trim() ? (
                   <button
                     onClick={sendMessage}
@@ -953,7 +953,7 @@ export function StudentMessages() {
                     <Send size={18} className="text-white -ml-0.5 mt-0.5" />
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={startRecording}
                     className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
                   >
@@ -963,13 +963,13 @@ export function StudentMessages() {
               </>
             ) : (
               <div className="flex-1 flex items-center gap-3">
-                <button 
+                <button
                   onClick={cancelRecording}
                   className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
                 >
                   <Trash2 size={24} />
                 </button>
-                
+
                 <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
@@ -977,7 +977,7 @@ export function StudentMessages() {
                       {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
                     </span>
                   </div>
-                  
+
                   {mediaRecorderRef.current && (
                     <div className="h-6 flex-1 overflow-hidden hidden sm:flex items-center">
                       <LiveAudioVisualizer
@@ -991,8 +991,8 @@ export function StudentMessages() {
                     </div>
                   )}
                 </div>
-                
-                <button 
+
+                <button
                   onClick={sendRecording}
                   className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
                 >

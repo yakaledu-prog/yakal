@@ -288,7 +288,7 @@ export function StudentCalendar() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col w-full mx-auto p-4">
+      <div className="flex flex-col w-full mx-auto">
 
         {/* Header Controls */}
         {/* <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white dark:bg-[#111b21] p-2 pl-4 pr-2 rounded-xl shadow-sm border border-[#e9edef] dark:border-[#2a3942]">
@@ -296,7 +296,7 @@ export function StudentCalendar() {
         </div> */}
 
         {/* Calendar Grid */}
-        <div className="w-full p-4 rounded-xl bg-white">
+        <div className="w-full p-4 bg-white dark:bg-[#111b21]">
           <div className="flex items-center justify-between border-b pb-2 mb-2">
             <div className="flex bg-[#f0f2f5] dark:bg-[#202c33] p-0.5 rounded-lg">
               <button
@@ -320,9 +320,9 @@ export function StudentCalendar() {
             </div>
 
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-[#e9edef] dark:border-[#2a3942]"><ChevronLeft size={18} /></Button>
+              <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent"><ChevronLeft size={18} /></Button>
               <span className="text-md text-center text-[#111] dark:text-white">{getHeaderText()}</span>
-              <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-[#e9edef] dark:border-[#2a3942]"><ChevronRight size={18} /></Button>
+              <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent"><ChevronRight size={18} /></Button>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">

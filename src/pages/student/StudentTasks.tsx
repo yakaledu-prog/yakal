@@ -75,7 +75,7 @@ const mockTasks: Task[] = [
 export function StudentTasks() {
   return (
     <PageWrapper>
-      <div className="mx-auto w-full p-8 pb-12">
+      <div className="mx-auto w-full p-8 pb-12  dark:bg-[#111b21]">
         {/* Tasks List */}
         <div className="space-y-8">
           {mockTasks.map((task) => (

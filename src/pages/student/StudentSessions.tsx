@@ -35,7 +35,7 @@ export function StudentSessions() {
 
   return (
     <PageWrapper>
-      <div className="w-full p-8 pb-12">
+      <div className="w-full p-8 pb-12 h-full dark:bg-[#111b21]">
 
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">

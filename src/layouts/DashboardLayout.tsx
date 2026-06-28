@@ -9,7 +9,8 @@ import {
   PanelLeft,
   Moon,
   Sun,
-  Menu
+  Menu,
+  FlameIcon
 } from "lucide-react";
 
 interface NavItem {
@@ -55,16 +56,16 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 md:relative md:flex flex-col transition-all duration-300 bg-card border-r",
+          "fixed inset-y-0 left-0 z-50 md:relative md:flex flex-col transition-all duration-300 bg-card dark:bg-[#111b21] border-r dark:border-[#2a3942]",
           sidebarOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full md:w-20 md:translate-x-0"
         )}
       >
         <div className={cn("h-16 flex items-center px-4", sidebarOpen ? "justify-between" : "justify-center")}>
           {sidebarOpen ? (
             <>
-              <div className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2">
                 <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-10 object-contain" />
-              </div>
+              </Link>
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="hidden md:flex text-muted-foreground hover:bg-accent p-1.5 rounded-md transition-colors"
@@ -105,7 +106,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 mt-auto border-t">
+        <div className="p-4 mt-auto border-t dark:border-[#2a3942]">
           {/* Profile Card */}
           <div className={cn("flex items-center gap-3", !sidebarOpen && "justify-center")}>
             <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm" />
@@ -128,7 +129,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Topbar */}
-        <header className="h-16 bg-card border-b flex items-center justify-between px-4 sm:px-6">
+        <header className="h-16 bg-card dark:bg-[#111b21] border-b dark:border-[#2a3942] flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4">
             <button className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground" onClick={() => setSidebarOpen(true)}>
               <Menu size={20} />
@@ -171,15 +172,18 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               />
             </div> */}
 
-            <button className="relative text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full" />
+            {/* <button className="flex relative text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent transition-colors"> */}
+            <button className="flex relative text-muted-foreground">
+              <FlameIcon className="text-[#1099A1] dark:text-[#97CE9D]" size={20} />
+              {/* <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full" /> */}
+              {/* TODO: add real streak value here */}
+              <span className="text-[#1099A1] dark:text-[#97CE9D] inline font-semibold"> &nbsp;5</span> &nbsp;days
             </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col dark:bg-[#111b21]">
           <Outlet context={{ sidebarOpen }} />
         </div>
 
