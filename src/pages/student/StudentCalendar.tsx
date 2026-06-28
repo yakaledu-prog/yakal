@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight, Search, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 // --- Mock Data ---
@@ -16,11 +16,9 @@ const mockSessions = [
   { id: "2", subject: "Physics Lab Review", date: dateStr(17), startTime: "17:30", duration: 60, tutorName: "Dr. Alex", status: "Upcoming" },
   { id: "3", subject: "College Essay Draft", date: dateStr(20), startTime: "15:00", duration: 60, tutorName: "Jane Doe", status: "Upcoming" },
 ];
-
 export function StudentCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('month');
-  const [filterText, setFilterText] = useState('');
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const month = currentDate.getMonth();
@@ -84,7 +82,7 @@ export function StudentCalendar() {
   const getSessionsForDay = (d: number | null, checkMonth = month, checkYear = year) => {
     if (!d) return [];
     const targetDateStr = `${checkYear}-${pad(checkMonth + 1)}-${pad(d)}`;
-    return mockSessions.filter(s => s.date === targetDateStr && s.subject.toLowerCase().includes(filterText.toLowerCase()));
+    return mockSessions.filter(s => s.date === targetDateStr);
   };
 
   const isToday = (d: number | null, checkMonth = month, checkYear = year) => {
@@ -134,18 +132,6 @@ export function StudentCalendar() {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = 'yakal_calendar.ics';
-    link.click();
-  };
-
-  const downloadCSV = () => {
-    let csvContent = "Subject,Date,Time,Duration,Tutor,Status\n";
-    mockSessions.forEach(s => {
-      csvContent += `"${s.subject}","${s.date}","${s.startTime}",${s.duration},"${s.tutorName}","${s.status}"\n`;
-    });
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'yakal_calendar.csv';
     link.click();
   };
 

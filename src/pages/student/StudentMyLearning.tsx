@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { Link } from "react-router-dom";

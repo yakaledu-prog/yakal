@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
-  Bell,
   Search,
   ChevronRight,
   PanelLeftClose,
@@ -10,8 +9,7 @@ import {
   Moon,
   Sun,
   Menu,
-  FlameIcon,
-  LogOut
+  FlameIcon
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -30,7 +28,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
-  const { profile, user, signOut } = useAuth();
+  const { profile, user } = useAuth();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

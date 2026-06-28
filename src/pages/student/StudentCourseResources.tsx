@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { PageWrapper } from "@/components/ui/PageWrapper";
+import { useState } from "react";
 import { Search, LayoutGrid, List, FileText, Video, Link as LinkIcon, Download, ExternalLink } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/Button";

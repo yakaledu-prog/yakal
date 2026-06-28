@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ChartCard } from "@/components/feature/ChartCard";
 import { studentService } from "@/services/studentService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, ArrowRight, Clock, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Video, Clock, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { cn } from "@/utils/cn";
 

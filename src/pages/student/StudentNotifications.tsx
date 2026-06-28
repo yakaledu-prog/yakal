@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { Search, Inbox, Archive, Trash2, Clock, Mail, ArrowLeftIcon } from "lucide-react";
+import { Inbox, Archive, Trash2, Clock, Mail, ArrowLeftIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 interface Notification {
@@ -95,7 +95,6 @@ const mockNotifications: Notification[] = [
 export function StudentNotifications() {
   const [notifications, setNotifications] = useState(mockNotifications);
   const [activeTab, setActiveTab] = useState<"inbox" | "unread" | "archived">("inbox");
-  const [filterText, setFilterText] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Filter Logic
@@ -105,10 +104,7 @@ export function StudentNotifications() {
     if (activeTab === "unread") matchesTab = !n.read && !n.archived;
     if (activeTab === "archived") matchesTab = n.archived;
 
-    const matchesSearch = n.subject.toLowerCase().includes(filterText.toLowerCase()) ||
-      n.sender.toLowerCase().includes(filterText.toLowerCase());
-
-    return matchesTab && matchesSearch;
+    return matchesTab;
   });
 
   const activeNotification = notifications.find(n => n.id === selectedId);

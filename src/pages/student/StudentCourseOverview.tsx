@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Megaphone, PlayCircle, CheckCircle, FileText, CheckSquare, Plus, Minus } from "lucide-react";
+import { useState } from "react";
+import { PlayCircle, CheckCircle, FileText, CheckSquare, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 

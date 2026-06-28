@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Calendar, CheckSquare, BookOpen, Bell, History, Library, MessagesSquareIcon } from "lucide-react";
+import { Home, Calendar, CheckSquare, Bell, History, Library, MessagesSquareIcon } from "lucide-react";
 
 export function StudentLayout() {
   const navItems = [

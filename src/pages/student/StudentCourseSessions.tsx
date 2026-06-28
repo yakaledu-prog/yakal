@@ -1,5 +1,4 @@
-import React from "react";
-import { PlayCircle, Calendar, Video, Clock, ChevronRight } from "lucide-react";
+import { PlayCircle, Clock, Calendar, Video } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/Button";
 

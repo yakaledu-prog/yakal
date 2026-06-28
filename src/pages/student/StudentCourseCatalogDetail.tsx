@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Link, useParams } from "react-router-dom";
 import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -30,7 +30,7 @@ const courseData = {
 };
 
 export function StudentCourseCatalogDetail() {
-  const { courseId } = useParams();
+  useParams();
   const [isBooking, setIsBooking] = useState(false);
   const [expandedModules, setExpandedModules] = useState<number[]>([0]);
 
