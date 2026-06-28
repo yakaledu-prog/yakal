@@ -10,6 +10,10 @@ import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
 import { StudentMyLearning } from "../pages/student/StudentMyLearning";
 import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
+import { StudentCourseDashboard } from "../pages/student/StudentCourseDashboard";
+import { StudentCourseOverview } from "../pages/student/StudentCourseOverview";
+import { StudentCourseSessions } from "../pages/student/StudentCourseSessions";
+import { StudentCourseResources } from "../pages/student/StudentCourseResources";
 import { StudentCourses } from "../pages/student/StudentCourses";
 import { StudentCourseCatalogDetail } from "../pages/student/StudentCourseCatalogDetail";
 import { StudentSessions } from "../pages/student/StudentSessions";
@@ -84,7 +88,17 @@ const router = createBrowserRouter([
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
           { path: "my-learning", element: <StudentMyLearning /> },
-          { path: "my-learning/:courseId/tasks", element: <StudentCourseTasks /> },
+          { 
+            path: "my-learning/:courseId", 
+            element: <StudentCourseDashboard />,
+            children: [
+              { index: true, element: <Navigate to="overview" replace /> },
+              { path: "overview", element: <StudentCourseOverview /> },
+              { path: "tasks", element: <StudentCourseTasks /> },
+              { path: "sessions", element: <StudentCourseSessions /> },
+              { path: "resources", element: <StudentCourseResources /> },
+            ]
+          },
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "sessions", element: <StudentSessions /> },

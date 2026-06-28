@@ -79,7 +79,7 @@ export function StudentMyLearning() {
           {mockCourses.map(course => (
             <Link 
               key={course.id} 
-              to={`/student/my-learning/${course.id}/tasks`}
+              to={`/student/my-learning/${course.id}/overview`}
               className={cn(
                 "group bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50 flex flex-col",
                 viewMode === "list" ? "sm:flex-row" : ""
