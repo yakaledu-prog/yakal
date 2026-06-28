@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { User, GraduationCap, Users } from "lucide-react";
@@ -97,10 +97,9 @@ export function AuthPage() {
       <Card className="w-full max-w-[420px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-lg p-6">
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6 justify-center">
+        <Link to="/" className="flex items-center gap-3 mb-6 justify-center hover:opacity-80 transition-opacity">
           <img src={logoImg} alt="Yakal" className="h-12 object-contain" />
-          {/* <h1 className="text-[17px] font-bold text-[#111] dark:text-white">Yakal Portal</h1> */}
-        </div>
+        </Link>
 
         {/* Toggle */}
         <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-xl mb-6">

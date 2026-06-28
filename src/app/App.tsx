@@ -4,10 +4,13 @@ import SubjectPage from "@/pages/SubjectPage";
 import BlogPage from "@/pages/BlogPage";
 import { blogs } from "@/data/blogs";
 import type { Page } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 
 export default function App() {
   const [page, setPage] = useState<Page>({ type: "home" });
   const savedScrollY = useRef(0);
+  const { user, profile, loading } = useAuth();
 
   // Restore scroll position when returning home
   useEffect(() => {
@@ -19,6 +22,14 @@ export default function App() {
       });
     }
   }, [page]);
+
+  if (!loading && user) {
+    if (profile && profile.is_onboarded) {
+      return <Navigate to={`/${profile.role || 'student'}`} replace />;
+    } else if (profile && !profile.is_onboarded) {
+      return <Navigate to="/onboarding" replace />;
+    }
+  }
 
   function navigateTo(nextPage: Page) {
     savedScrollY.current = window.scrollY;
