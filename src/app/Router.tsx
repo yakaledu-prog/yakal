@@ -8,8 +8,10 @@ import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
-import { StudentTasks } from "../pages/student/StudentTasks";
+import { StudentMyLearning } from "../pages/student/StudentMyLearning";
+import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
 import { StudentCourses } from "../pages/student/StudentCourses";
+import { StudentCourseCatalogDetail } from "../pages/student/StudentCourseCatalogDetail";
 import { StudentSessions } from "../pages/student/StudentSessions";
 import { StudentResources } from "../pages/student/StudentResources";
 import { StudentNotifications } from "../pages/student/StudentNotifications";
@@ -81,11 +83,13 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "tasks", element: <StudentTasks /> },
+          { path: "my-learning", element: <StudentMyLearning /> },
+          { path: "my-learning/:courseId/tasks", element: <StudentCourseTasks /> },
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "courses", element: <StudentCourses /> },
+          { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "resources", element: <StudentResources /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "*", element: <NotFoundPage /> },

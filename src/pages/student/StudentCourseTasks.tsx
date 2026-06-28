@@ -2,6 +2,8 @@ import React from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Link, useParams } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 
 interface Task {
   id: string;
@@ -17,7 +19,7 @@ interface Task {
 const mockTasks: Task[] = [
   {
     id: "T-00",
-    index: 0,
+    index: 1,
     title: "Limits and Continuity Review",
     type: "Mandatory",
     description: (
@@ -38,7 +40,7 @@ const mockTasks: Task[] = [
   },
   {
     id: "T-01",
-    index: 1,
+    index: 2,
     title: "Derivatives Practice Set 1",
     type: "Mandatory",
     description: (
@@ -55,7 +57,7 @@ const mockTasks: Task[] = [
   },
   {
     id: "T-02",
-    index: 2,
+    index: 3,
     title: "Chain Rule Word Problems",
     type: "Optional Practice",
     description: (
@@ -72,10 +74,14 @@ const mockTasks: Task[] = [
   }
 ];
 
-export function StudentTasks() {
+export function StudentCourseTasks() {
+  const { courseId } = useParams();
+  // Mock course title lookup
+  const courseTitle = courseId === "C-01" ? "Unit 3: Limits and Derivatives" : "Course Name";
+
   return (
     <PageWrapper>
-      <div className="mx-auto w-full p-8 pb-12  dark:bg-[#111b21]">
+      <div className="mx-auto w-full p-8 pb-12 dark:bg-[#111b21]">
         {/* Tasks List */}
         <div className="space-y-8">
           {mockTasks.map((task) => (
@@ -98,42 +104,54 @@ export function StudentTasks() {
               </div>
 
               {/* Task Body */}
-              <div className="p-5 text-[#333] dark:text-[#e9edef]">
-                {task.description}
+              <div className="p-5 flex flex-col md:flex-row gap-6">
+                <div className="flex-1 text-[#111] dark:text-[#e9edef]">
+                  {task.description}
 
-                {/* Materials & Resources Box */}
-                <div className="mt-6 bg-[#f8f9fa] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded p-4 text-[13px]">
-                  <div className="font-bold text-[#111] dark:text-white mb-2">Materials & Resources:</div>
-                  <div className="flex flex-col gap-1.5">
-                    {task.materials.map((mat, i) => (
-                      <a key={i} href={mat.link} className="text-[#1099A1] hover:underline flex items-center gap-1.5 w-fit">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                        {mat.title}
-                      </a>
-                    ))}
+                  {/* Materials */}
+                  <div className="mt-5">
+                    <h4 className="text-[12px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-2">Materials</h4>
+                    <div className="space-y-2">
+                      {task.materials.map((mat, i) => (
+                        <a
+                          key={i}
+                          href={mat.link}
+                          className="flex items-center text-[14px] text-primary hover:underline font-medium"
+                        >
+                          <svg className="w-4 h-4 mr-2 text-[#54656f] dark:text-[#aebac1]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                          {mat.title}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-6 flex items-center gap-3">
-                  <Button
-                    className="bg-[#111] hover:bg-black/80 text-white dark:bg-[#e9edef] dark:text-[#111] dark:hover:bg-white px-6 font-semibold"
-                  >
-                    {task.actionLabel}
-                  </Button>
-                  {task.status === 'Completed' && (
-                    <span className="text-green-600 dark:text-green-400 text-[13px] font-bold flex items-center gap-1">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                      Done
-                    </span>
-                  )}
-                </div>
+                {/* Task Action & Status */}
+                <div className="w-full md:w-[220px] flex flex-col justify-between border-t md:border-t-0 md:border-l border-[#e9edef] dark:border-[#2a3942] pt-4 md:pt-0 md:pl-6">
+                  <div>
+                    <h4 className="text-[12px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-1">Status</h4>
+                    <div className="flex items-center">
+                      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${task.status === 'Completed' ? 'bg-[#38A169]' : task.status === 'In Progress' ? 'bg-[#1099A1]' : 'bg-[#54656f] dark:bg-[#aebac1]'}`}></span>
+                      <span className="text-[14px] font-semibold text-[#111] dark:text-white">{task.status}</span>
+                    </div>
+                  </div>
 
+                  <div className="mt-6 md:mt-0">
+                    {task.status === 'Completed' ? (
+                      <Button variant="outline" className="w-full h-10 border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1]" disabled>
+                        Done
+                      </Button>
+                    ) : (
+                      <Button className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-semibold">
+                        {task.actionLabel}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
-
       </div>
     </PageWrapper>
   );

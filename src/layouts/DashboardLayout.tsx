@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
@@ -143,12 +143,36 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               <Menu size={20} />
             </button>
             {/* Breadcrumbs */}
-            <div className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
-              <span className="capitalize">{basePath.replace('/', '')}</span>
-              <ChevronRight size={14} />
-              <span className="text-foreground font-medium capitalize">
-                {location.pathname.split('/').pop() || 'Home'}
-              </span>
+            <div className="hidden sm:flex items-center text-sm text-muted-foreground">
+              {(() => {
+                const segments = location.pathname.split('/').filter(Boolean);
+                const items = segments.map((segment, index) => ({
+                  label: segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                  path: '/' + segments.slice(0, index + 1).join('/')
+                }));
+                
+                if (items.length === 1) {
+                  items.push({ label: 'Home', path: items[0].path });
+                }
+
+                return items.map((item, index, array) => {
+                  const isLast = index === array.length - 1;
+                  return (
+                    <React.Fragment key={index}>
+                      {index > 0 && <ChevronRight size={14} className="mx-1 shrink-0" />}
+                      {isLast ? (
+                        <span className="text-foreground font-medium truncate max-w-[150px]">
+                          {item.label}
+                        </span>
+                      ) : (
+                        <Link to={item.path} className="text-muted-foreground hover:text-foreground transition-colors truncate max-w-[150px]">
+                          {item.label}
+                        </Link>
+                      )}
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </div>
 
             {/* Streak & Info */}
