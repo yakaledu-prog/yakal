@@ -12,7 +12,7 @@ type RoleType = "student" | "parent" | "tutor";
 
 const DEMO_ACCOUNTS = [
   { email: "admin@yakal.com", name: "Almaz T.", role: "Administrator", img: "https://i.pravatar.cc/150?u=admin_yakal" },
-  { email: "parent@yakal.com", name: "Tigist Worku", role: "Parent", img: "https://i.pravatar.cc/150?u=parent_yakal" },
+  { email: "parent@yakal.com", name: "Tigist Worku", role: "Parent", img: "https://randomuser.me/api/portraits/women/44.jpg" },
   { email: "student@yakal.com", name: "Amen Worku", role: "Student", img: "https://i.pravatar.cc/150?u=student_yakal" },
   { email: "tutor@yakal.com", name: "Bethlehem A.", role: "Tutor", img: "https://i.pravatar.cc/150?u=tutor_yakal" },
 ];
@@ -75,7 +75,7 @@ export function AuthPage() {
           }
         });
         if (error) throw error;
-        
+
         if (data?.session === null) {
           // Email confirmation is required
           navigate(`/confirm-email?email=${encodeURIComponent(email)}`);

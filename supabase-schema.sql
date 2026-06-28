@@ -76,7 +76,7 @@ VALUES
     'parent@yakal.com',
     crypt('demo123', gen_salt('bf')),
     now(),
-    '{"full_name":"Tigist Worku","role":"parent","avatar_url":"https://i.pravatar.cc/150?u=parent_yakal"}'::jsonb,
+    '{"full_name":"Tigist Worku","role":"parent","avatar_url":"https://randomuser.me/api/portraits/women/44.jpg"}'::jsonb,
     now(),
     now(),
     '', '', '', ''

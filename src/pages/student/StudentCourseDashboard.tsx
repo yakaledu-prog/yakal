@@ -12,6 +12,7 @@ export function StudentCourseDashboard() {
     { id: "overview", label: "Overview", icon: <LayoutDashboard size={16} /> },
     { id: "tasks", label: "Tasks", icon: <CheckSquare size={16} /> },
     { id: "sessions", label: "Sessions", icon: <History size={16} /> },
+    { id: "resources", label: "Resources", icon: <BookOpen size={16} /> },
   ];
 
   return (

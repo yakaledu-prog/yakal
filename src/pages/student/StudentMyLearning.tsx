@@ -31,30 +31,30 @@ export function StudentMyLearning() {
 
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 bg-white dark:bg-[#111b21] p-4 rounded-xl border border-[#e9edef] dark:border-[#2a3942] shadow-sm">
-          
+
           <div className="flex items-center gap-4 w-full sm:w-auto">
             {/* View Toggles */}
             <div className="flex bg-[#f8f9fa] dark:bg-[#182329] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942] shrink-0">
-              <button 
+              <button
                 onClick={() => setViewMode("grid")}
                 className={cn(
-                  "p-2 rounded-md transition-colors", 
+                  "p-2 rounded-md transition-colors",
                   viewMode === "grid" ? "bg-white dark:bg-[#202c33] text-primary shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
                 )}
               >
                 <LayoutGrid size={18} />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode("list")}
                 className={cn(
-                  "p-2 rounded-md transition-colors", 
+                  "p-2 rounded-md transition-colors",
                   viewMode === "list" ? "bg-white dark:bg-[#202c33] text-primary shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
                 )}
               >
                 <List size={18} />
               </button>
             </div>
-            
+
             {/* Search */}
             <div className="relative flex-1 sm:w-[300px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -72,13 +72,13 @@ export function StudentMyLearning() {
         {/* Course List/Grid */}
         <div className={cn(
           "grid gap-4",
-          viewMode === "grid" 
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+          viewMode === "grid"
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             : "grid-cols-1"
         )}>
           {mockCourses.map(course => (
-            <Link 
-              key={course.id} 
+            <Link
+              key={course.id}
               to={`/student/my-learning/${course.id}/overview`}
               className={cn(
                 "group bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50 flex flex-col",
@@ -86,16 +86,15 @@ export function StudentMyLearning() {
               )}
             >
               {/* Thumbnail */}
-              <div className={cn(
-                "relative overflow-hidden shrink-0",
-                viewMode === "list" ? "w-full sm:w-[240px] aspect-video" : "w-full aspect-video"
-              )}>
-                <img 
-                  src={course.thumbnail} 
-                  alt={course.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
+              {viewMode === "grid" && (
+                <div className="relative overflow-hidden shrink-0 w-full aspect-video">
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              )}
 
               {/* Info */}
               <div className="p-5 flex flex-col flex-1">
@@ -107,7 +106,7 @@ export function StudentMyLearning() {
                     {course.status}
                   </Badge>
                 </div>
-                
+
                 <div className="text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6">
                   <span className="font-semibold text-[#111] dark:text-[#e9edef]">Subject:</span> {course.subject}
                 </div>

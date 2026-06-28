@@ -5,6 +5,7 @@ import { AuthPage } from "../pages/shared/AuthPage";
 import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
 import { OnboardingPage } from "../pages/shared/OnboardingPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
+import { SettingsPage } from "../pages/shared/SettingsPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
@@ -21,6 +22,7 @@ import { StudentResources } from "../pages/student/StudentResources";
 import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
+import { StudentProfile } from "../pages/student/StudentProfile";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 function ProtectedRoute() {
@@ -105,6 +107,8 @@ const router = createBrowserRouter([
           { path: "courses", element: <StudentCourses /> },
           { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "resources", element: <StudentResources /> },
+          { path: "profile", element: <StudentProfile /> },
+          { path: "settings", element: <SettingsPage /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "*", element: <NotFoundPage /> },
         ]

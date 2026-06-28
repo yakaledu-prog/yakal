@@ -88,8 +88,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
           {navItems.map((item) => {
-            const isActive = item.href === basePath 
-              ? location.pathname === item.href 
+            const isActive = item.href === basePath
+              ? location.pathname === item.href
               : location.pathname.startsWith(item.href);
             return (
               <Link
@@ -111,28 +111,28 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 mt-auto border-t dark:border-[#2a3942]">
-          {/* Profile Card */}
-          <div className={cn("flex items-center gap-3", !sidebarOpen && "justify-center")}>
+        {/* Profile Card */}
+        <div className="p-2 border-t dark:border-[#2a3942]">
+          <Link to={`/${profile?.role || 'student'}/profile`} className={cn("flex items-center gap-3 w-full p-4 rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", !sidebarOpen && "justify-center")}>
             <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d"} alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
-              <div className="flex-1 min-w-0">
+              <div className="flex flex-col gap-1 w-full">
                 <p className="text-sm font-semibold truncate">{profile?.full_name || user?.email || "User"}</p>
-                <div className="flex items-center justify-between mt-0.5">
+                <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground truncate capitalize">{profile?.role || "Student"}</p>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
                     <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1" title="Toggle Theme">
                       <Moon size={12} className="hidden dark:block" />
                       <Sun size={12} className="block dark:hidden" />
                     </button>
-                    <button onClick={() => signOut()} className="text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted p-1" title="Log Out">
+                    {/* <button onClick={() => signOut()} className="text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted p-1" title="Log Out">
                       <LogOut size={12} />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
             )}
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -152,7 +152,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                   label: segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
                   path: '/' + segments.slice(0, index + 1).join('/')
                 }));
-                
+
                 if (items.length === 1) {
                   items.push({ label: 'Home', path: items[0].path });
                 }
