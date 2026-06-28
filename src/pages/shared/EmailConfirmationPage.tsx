@@ -29,7 +29,7 @@ export function EmailConfirmationPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans" style={{ backgroundImage: "url(/src/assets/images/background.webp)", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <Card className="w-full max-w-[500px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-2xl relative overflow-hidden">
         
         {/* Close Button */}

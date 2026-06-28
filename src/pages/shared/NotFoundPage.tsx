@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+
+import logoImg from "@/assets/images/logo.webp";
 import { Button } from "@/components/ui/Button";
 
 export function NotFoundPage() {
@@ -7,7 +9,7 @@ export function NotFoundPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
       <div className="mb-8 flex items-center justify-center">
-        <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-32 object-contain" />
+        <img src={logoImg} alt="Yakal" className="h-32 object-contain" />
       </div>
 
       <h1 className="text-6xl sm:text-8xl font-bold text-primary mb-4">404</h1>

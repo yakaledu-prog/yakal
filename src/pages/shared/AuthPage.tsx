@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { User, GraduationCap, Users } from "lucide-react";
+import logoImg from "@/assets/images/logo.webp";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
@@ -92,12 +93,12 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans" style={{ backgroundImage: "url(/src/assets/images/background.webp)", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <Card className="w-full max-w-[420px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-lg p-6">
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 justify-center">
-          <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-12 object-contain" />
+          <img src={logoImg} alt="Yakal" className="h-12 object-contain" />
           {/* <h1 className="text-[17px] font-bold text-[#111] dark:text-white">Yakal Portal</h1> */}
         </div>
 
@@ -212,7 +213,7 @@ export function AuthPage() {
             </div>
 
             <p className="text-center text-[13px] text-[#54656f] dark:text-[#aebac1] mb-4">
-              Explore instantly with a demo account
+              try demo accounts
             </p>
 
             <div className="grid grid-cols-2 gap-3">

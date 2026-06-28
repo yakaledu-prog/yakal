@@ -12,6 +12,7 @@ import {
   FlameIcon
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import logoImg from "@/assets/images/logo.webp";
 
 interface NavItem {
   name: string;
@@ -65,7 +66,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           {sidebarOpen ? (
             <>
               <Link to="/" className="flex items-center gap-2">
-                <img src="/src/assets/images/logo.webp" alt="Yakal" className="h-10 object-contain" />
+                <img src={logoImg} alt="Yakal" className="h-10 object-contain" />
               </Link>
               <button
                 onClick={() => setSidebarOpen(false)}
