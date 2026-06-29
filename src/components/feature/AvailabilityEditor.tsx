@@ -134,7 +134,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                     key={day} 
                     onClick={() => toggleDisabledDay(c)}
                     className={cn(
-                      "flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-0",
+                      "flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0",
                       disabledDays.includes(c) ? "text-[#aebac1] dark:text-[#54656f] bg-[#f0f2f5] dark:bg-[#111b21]" : "text-[#54656f] dark:text-[#aebac1] hover:bg-[#e9edef]/50 dark:hover:bg-white/5"
                     )}
                     title={disabledDays.includes(c) ? "Click to enable this day" : "Click to mark as off-day"}
@@ -152,7 +152,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                   </div>
                   {weekdays.map((_, c) => {
                     const isDisabled = disabledDays.includes(c);
-                    const mode = isDisabled ? 0 : timeGrid[r][c];
+                    const mode = timeGrid[r][c];
                     return (
                       <div
                         key={c}
@@ -162,12 +162,10 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                           if (!isDisabled) handlePointerDown(r, c, e);
                         }}
                         className={cn(
-                          "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 transition-colors flex items-center justify-center border-b",
-                          isDisabled ? "bg-[#f0f2f5] dark:bg-[#111b21]/50 cursor-not-allowed" : cn(
-                            isDragging ? "cursor-grabbing" : "cursor-grab",
-                            getSlotColor(mode),
-                            mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]'
-                          )
+                          "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 transition-colors flex items-center justify-center border-b",
+                          isDisabled ? "opacity-40 grayscale cursor-not-allowed" : (isDragging ? "cursor-grabbing" : "cursor-grab"),
+                          getSlotColor(mode),
+                          mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : (!isDisabled ? 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]' : '')
                         )}
                       >
                         {getSlotIcon(mode)}
