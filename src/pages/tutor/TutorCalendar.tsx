@@ -3,7 +3,8 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
-import { getTutorAvailability, saveTutorAvailability } from "@/mock/db";
+import { getTutorAvailability, saveTutorAvailability } from "@/services/availability";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 
 // --- Mock Data ---
@@ -25,13 +26,19 @@ export function TutorCalendar() {
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
   const [disabledDays, setDisabledDays] = useState<number[]>([]);
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    const data = getTutorAvailability();
-    if (data) {
-      setAvailabilityData(data.timeGrid);
-      setDisabledDays(data.disabledDays);
-    }
-  }, []);
+    if (!user) return;
+    const fetchAvail = async () => {
+      const data = await getTutorAvailability(user.id);
+      if (data) {
+        setAvailabilityData(data.time_grid);
+        setDisabledDays(data.disabled_days);
+      }
+    };
+    fetchAvail();
+  }, [user]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const month = currentDate.getMonth();
@@ -379,7 +386,9 @@ export function TutorCalendar() {
         onSave={(data, disabled) => {
           setAvailabilityData(data);
           setDisabledDays(disabled);
-          saveTutorAvailability(data, disabled);
+          if (user) {
+            saveTutorAvailability(user.id, data, disabled);
+          }
         }}
         initialData={availabilityData}
         initialDisabledDays={disabledDays}
