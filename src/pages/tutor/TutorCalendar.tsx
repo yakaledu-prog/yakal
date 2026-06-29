@@ -19,7 +19,7 @@ const mockSessions = [
 ];
 export function TutorCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('day');
+  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('week');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
   const [disabledDays, setDisabledDays] = useState<number[]>([]);
@@ -224,7 +224,10 @@ export function TutorCalendar() {
                   return (
                     <div key={dIndex} className={cn("h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1 flex flex-col gap-1 overflow-hidden", isDisabled && "opacity-40 grayscale bg-[#f0f2f5] dark:bg-[#111b21]/50")}>
                       {mode > 0 && sessions.length === 0 && (
-                        <div className={cn("flex-1 rounded border border-dashed flex items-center justify-center pointer-events-none opacity-80", getModeClasses(mode))}>
+                        <div className={cn("flex-1 rounded border border-dashed flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
+                          <div className="flex items-center gap-1 text-[10px] font-semibold">
+                            {renderModeIcon(mode)} <span className="uppercase tracking-wider hidden md:inline">{getModeLabel(mode)}</span>
+                          </div>
                         </div>
                       )}
                       {sessions.map(s => (
