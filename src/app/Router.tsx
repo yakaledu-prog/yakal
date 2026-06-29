@@ -23,6 +23,24 @@ import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
+
+import { TutorLayout } from "../pages/tutor/TutorLayout";
+import { TutorHome } from "../pages/tutor/TutorHome";
+import { TutorCalendar } from "../pages/tutor/TutorCalendar";
+import { TutorMyLearning } from "../pages/tutor/TutorMyLearning";
+import { TutorCourseTasks } from "../pages/tutor/TutorCourseTasks";
+import { TutorCourseDashboard } from "../pages/tutor/TutorCourseDashboard";
+import { TutorCourseOverview } from "../pages/tutor/TutorCourseOverview";
+import { TutorCourseSessions } from "../pages/tutor/TutorCourseSessions";
+import { TutorCourseResources } from "../pages/tutor/TutorCourseResources";
+import { TutorCourses } from "../pages/tutor/TutorCourses";
+import { TutorCourseCatalogDetail } from "../pages/tutor/TutorCourseCatalogDetail";
+import { TutorSessions } from "../pages/tutor/TutorSessions";
+import { TutorResources } from "../pages/tutor/TutorResources";
+import { TutorNotifications } from "../pages/tutor/TutorNotifications";
+import { TutorMessages } from "../pages/tutor/TutorMessages";
+import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
+import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 function ProtectedRoute() {
@@ -76,8 +94,34 @@ const router = createBrowserRouter([
         element: <div>Admin Dashboard (Placeholder)</div>,
       },
       {
-        path: "tutor/*",
-        element: <div>Tutor Dashboard (Placeholder)</div>,
+        path: "tutor",
+        element: <TutorLayout />,
+        children: [
+          { path: "", element: <TutorHome /> },
+          { path: "calendar", element: <TutorCalendar /> },
+          { path: "my-learning", element: <TutorMyLearning /> },
+          { 
+            path: "my-learning/:courseId", 
+            element: <TutorCourseDashboard />,
+            children: [
+              { index: true, element: <Navigate to="overview" replace /> },
+              { path: "overview", element: <TutorCourseOverview /> },
+              { path: "tasks", element: <TutorCourseTasks /> },
+              { path: "sessions", element: <TutorCourseSessions /> },
+              { path: "resources", element: <TutorCourseResources /> },
+            ]
+          },
+          { path: "session/:id", element: <TutorSessionDetail /> },
+          { path: "messages", element: <TutorMessages /> },
+          { path: "sessions", element: <TutorSessions /> },
+          { path: "courses", element: <TutorCourses /> },
+          { path: "courses/:courseId", element: <TutorCourseCatalogDetail /> },
+          { path: "resources", element: <TutorResources /> },
+          { path: "profile", element: <TutorProfile /> },
+          { path: "settings", element: <SettingsPage /> },
+          { path: "notifications", element: <TutorNotifications /> },
+          { path: "*", element: <NotFoundPage /> },
+        ]
       },
       {
         path: "parent/*",
