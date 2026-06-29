@@ -86,7 +86,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
     switch (mode) {
       case 1: return 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
-      case 3: return 'bg-purple-100 dark:bg-purple-900/40 border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400';
+      case 3: return 'bg-[#e7f5f6] dark:bg-[#1099A1]/20 border-[#1099A1]/30 dark:border-[#1099A1]/50 text-[#1099A1] dark:text-[#1099A1]';
       default: return 'bg-white dark:bg-[#202c33] border-[#e9edef] dark:border-[#2a3942]';
     }
   };
@@ -132,7 +132,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
             </button>
             <button 
               onClick={() => setToolMode(3)}
-              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#111b21] text-purple-600 dark:text-purple-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#111b21] text-[#1099A1] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
             >
               <Layers size={16} /> Both
             </button>
@@ -146,7 +146,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
           </div>
 
           {/* Grid Container */}
-          <div className="overflow-x-auto pb-4">
+          <div className="overflow-x-auto pb-4 select-none">
             <div className="min-w-[700px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden touch-none" onPointerMove={handlePointerMove}>
               {/* Header Row */}
               <div className="flex bg-[#f8f9fa] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
@@ -173,7 +173,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                         data-c={c}
                         onPointerDown={(e) => handlePointerDown(r, c, e)}
                         className={cn(
-                          "flex-1 h-12 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 cursor-crosshair transition-colors flex items-center justify-center border-b border-b-transparent",
+                          "flex-1 h-12 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 cursor-grab active:cursor-grabbing transition-colors flex items-center justify-center border-b border-b-transparent",
                           getSlotColor(mode),
                           mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]'
                         )}

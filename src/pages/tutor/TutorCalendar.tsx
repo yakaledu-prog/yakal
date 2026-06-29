@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight, Download, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
 import { cn } from "@/utils/cn";
 
@@ -113,6 +113,7 @@ export function TutorCalendar() {
     return `${weekdays[currentDate.getDay()]}, ${monthString} ${date}, ${year}`;
   };
 
+  /*
   const downloadICS = () => {
     let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Yakal//Tutor Calendar//EN\n";
     mockSessions.forEach(s => {
@@ -137,9 +138,16 @@ export function TutorCalendar() {
     link.download = 'yakal_calendar.ics';
     link.click();
   };
+  */
 
   const renderMonthView = () => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const hasAvailabilityOnDay = (dayIndex: number) => {
+      if (!availabilityData) return false;
+      return availabilityData.some(row => row[dayIndex] > 0);
+    };
+
     return (
       <div className="border border-[#e9edef] dark:border-[#2a3942] rounded overflow-hidden bg-white dark:bg-[#111b21] mt-4 shadow-sm">
         <div className="grid grid-cols-7 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
@@ -162,7 +170,12 @@ export function TutorCalendar() {
             >
               {day && (
                 <>
-                  <div className="text-right mb-1">
+                  <div className="text-right mb-1 flex justify-between items-start">
+                    <div>
+                      {hasAvailabilityOnDay(index % 7) && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#1099A1] mt-2 ml-1" title="You have availability marked on this day"></div>
+                      )}
+                    </div>
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
                       isToday(day) ? "bg-[#CAA25F]/85 text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
@@ -329,18 +342,18 @@ export function TutorCalendar() {
             </div> */}
 
               <div className="flex gap-2">
-                <Button 
-                  variant="default" 
-                  className="h-9 flex items-center gap-2 bg-[#1099A1] hover:bg-[#0e8a91] text-white" 
+                <Button
+                  variant="default"
+                  className="h-9 flex items-center gap-2 bg-[#1099A1] hover:bg-[#0e8a91] text-white"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
                   <span className="text-[13px] font-medium hidden sm:inline">Set Availability</span>
                 </Button>
-                <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download ICS" onClick={downloadICS}>
+                {/* <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download ICS" onClick={downloadICS}>
                   <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
                   <span className="text-[13px] font-medium hidden sm:inline">Export</span>
-                </Button>
+                </Button> */}
                 {/* <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download CSV" onClick={downloadCSV}>
                 <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
                 <span className="text-[13px] font-medium hidden sm:inline">CSV</span>
@@ -354,8 +367,8 @@ export function TutorCalendar() {
         </div>
 
       </div>
-      <AvailabilityEditor 
-        isOpen={isAvailabilityOpen} 
+      <AvailabilityEditor
+        isOpen={isAvailabilityOpen}
         onClose={() => setIsAvailabilityOpen(false)}
         onSave={(data) => {
           setAvailabilityData(data);
