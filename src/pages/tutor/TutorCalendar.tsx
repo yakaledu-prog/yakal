@@ -246,11 +246,25 @@ export function TutorCalendar() {
     
     const renderModeIcon = (mode: number) => {
       switch (mode) {
-        case 1: return <Video size={12} className="text-sky-500" />;
-        case 2: return <MapPin size={12} className="text-emerald-500" />;
-        case 3: return <Layers size={12} className="text-[#CAA25F]" />;
+        case 1: return <Video size={14} />;
+        case 2: return <MapPin size={14} />;
+        case 3: return <Layers size={14} />;
         default: return null;
       }
+    };
+
+    const getModeLabel = (mode: number) => {
+      if (mode === 1) return 'Online';
+      if (mode === 2) return 'In-Person';
+      if (mode === 3) return 'Both';
+      return '';
+    };
+
+    const getModeClasses = (mode: number) => {
+      if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400';
+      if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400';
+      if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400';
+      return 'border-[#e9edef] text-[#54656f]';
     };
 
     const getAvailabilityForHour = (hourIndex: number, dayIndex: number) => {
@@ -282,9 +296,9 @@ export function TutorCalendar() {
                 </div>
                 <div className="p-2 min-h-[60px] relative">
                   {mode > 0 && sessions.length === 0 && (
-                    <div className="absolute inset-2 border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] rounded-md flex items-center justify-center text-[#54656f] dark:text-[#aebac1] opacity-50 pointer-events-none">
-                      <div className="flex items-center gap-2 text-[13px]">
-                        {renderModeIcon(mode)} Available to Book
+                    <div className={cn("absolute inset-2 border border-dashed rounded-md flex items-center justify-center pointer-events-none", getModeClasses(mode))}>
+                      <div className="flex items-center gap-2 text-[13px] font-semibold opacity-90">
+                        {renderModeIcon(mode)} <span className="uppercase tracking-wider text-[11px]">{getModeLabel(mode)} Availability</span>
                       </div>
                     </div>
                   )}
