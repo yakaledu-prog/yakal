@@ -45,7 +45,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
   });
 
   const toggleDisabledDay = (dayIndex: number) => {
-    setDisabledDays(prev => 
+    setDisabledDays(prev =>
       prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]
     );
   };
@@ -95,7 +95,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
     switch (mode) {
       case 1: return 'bg-sky-100 dark:bg-sky-900/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
-      case 3: return 'bg-amber-100 dark:bg-amber-900/40 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400';
+      case 3: return 'bg-orange-100 dark:bg-orange-900/40 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400';
       default: return 'bg-neutral-50 dark:bg-[#202c33]/20 border-[#e9edef] dark:border-[#2a3942]';
     }
   };
@@ -131,8 +131,8 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
               <div className="flex bg-[#f8f9fa] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
                 <div className="w-20 shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
                 {weekdays.map((day, c) => (
-                  <div 
-                    key={day} 
+                  <div
+                    key={day}
                     onClick={() => toggleDisabledDay(c)}
                     className={cn(
                       "flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0",
@@ -163,7 +163,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
                           if (!isDisabled) handlePointerDown(r, c, e);
                         }}
                         className={cn(
-                          "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 transition-colors flex items-center justify-center border-b",
+                          "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] transition-colors flex items-center justify-center border-b",
                           isDisabled ? "opacity-40 grayscale cursor-not-allowed" : (isDragging ? "cursor-grabbing" : "cursor-grab"),
                           getSlotColor(mode),
                           mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : (!isDisabled ? 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]' : 'bg-[#f0f2f5] dark:bg-[#111b21]/50')

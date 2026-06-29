@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
+import { getTutorAvailability, saveTutorAvailability } from "@/mock/db";
 import { cn } from "@/utils/cn";
 
 // --- Mock Data ---
@@ -23,6 +24,14 @@ export function TutorCalendar() {
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
   const [disabledDays, setDisabledDays] = useState<number[]>([]);
+
+  useEffect(() => {
+    const data = getTutorAvailability();
+    if (data) {
+      setAvailabilityData(data.timeGrid);
+      setDisabledDays(data.disabledDays);
+    }
+  }, []);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const month = currentDate.getMonth();
@@ -370,6 +379,7 @@ export function TutorCalendar() {
         onSave={(data, disabled) => {
           setAvailabilityData(data);
           setDisabledDays(disabled);
+          saveTutorAvailability(data, disabled);
         }}
         initialData={availabilityData}
         initialDisabledDays={disabledDays}
