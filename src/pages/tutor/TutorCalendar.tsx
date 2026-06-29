@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
 import { cn } from "@/utils/cn";
 
@@ -143,9 +143,22 @@ export function TutorCalendar() {
   const renderMonthView = () => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    const hasAvailabilityOnDay = (dayIndex: number) => {
-      if (!availabilityData) return false;
-      return availabilityData.some(row => row[dayIndex] > 0);
+    const getAvailableModesOnDay = (dayIndex: number): number[] => {
+      if (!availabilityData) return [];
+      const modes = new Set<number>();
+      availabilityData.forEach(row => {
+        if (row[dayIndex] > 0) modes.add(row[dayIndex]);
+      });
+      return Array.from(modes);
+    };
+
+    const renderModeIcon = (mode: number) => {
+      switch (mode) {
+        case 1: return <Video size={12} className="text-sky-500" />;
+        case 2: return <MapPin size={12} className="text-emerald-500" />;
+        case 3: return <Layers size={12} className="text-[#CAA25F]" />;
+        default: return null;
+      }
     };
 
     return (
@@ -171,10 +184,12 @@ export function TutorCalendar() {
               {day && (
                 <>
                   <div className="text-right mb-1 flex justify-between items-start">
-                    <div>
-                      {hasAvailabilityOnDay(index % 7) && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#1099A1] mt-2 ml-1" title="You have availability marked on this day"></div>
-                      )}
+                    <div className="flex gap-1 mt-1.5 ml-1 flex-wrap w-[40px]">
+                      {getAvailableModesOnDay(index % 7).map(mode => (
+                        <div key={mode} className="bg-white dark:bg-[#111b21] rounded shadow-sm p-0.5 border border-[#e9edef] dark:border-[#2a3942]" title={mode === 1 ? 'Online' : mode === 2 ? 'In-Person' : 'Both'}>
+                          {renderModeIcon(mode)}
+                        </div>
+                      ))}
                     </div>
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",

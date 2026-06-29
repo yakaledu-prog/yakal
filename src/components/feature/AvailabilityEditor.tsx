@@ -22,7 +22,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
 
   const [toolMode, setToolMode] = useState<SlotMode>(1); // default to Online paint
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const lastCell = useRef<{ r: number; c: number } | null>(null);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
   const handlePointerDown = (r: number, c: number, e: React.PointerEvent) => {
     // Left click only
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    
+
     e.currentTarget.releasePointerCapture(e.pointerId); // allow drag over other elements
     setIsDragging(true);
     updateCell(r, c);
@@ -53,7 +53,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
-    
+
     const element = document.elementFromPoint(e.clientX, e.clientY);
     if (!element) return;
 
@@ -72,22 +72,22 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
 
   const updateCell = (r: number, c: number) => {
     if (lastCell.current?.r === r && lastCell.current?.c === c) return;
-    
+
     setTimeGrid(prev => {
       const next = prev.map(row => [...row]);
       next[r][c] = toolMode;
       return next;
     });
-    
+
     lastCell.current = { r, c };
   };
 
   const getSlotColor = (mode: SlotMode) => {
     switch (mode) {
-      case 1: return 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400';
+      case 1: return 'bg-sky-100 dark:bg-sky-900/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
-      case 3: return 'bg-[#e7f5f6] dark:bg-[#1099A1]/20 border-[#1099A1]/30 dark:border-[#1099A1]/50 text-[#1099A1] dark:text-[#1099A1]';
-      default: return 'bg-white dark:bg-[#202c33] border-[#e9edef] dark:border-[#2a3942]';
+      case 3: return 'bg-[#CAA25F]/10 border-[#CAA25F]/30 dark:border-[#CAA25F]/50 text-[#CAA25F] dark:text-[#CAA25F]';
+      default: return 'bg-neutral-50 dark:bg-[#202c33]/20 border-[#e9edef] dark:border-[#2a3942]';
     }
   };
 
@@ -102,13 +102,12 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm"
-         onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
+      onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
       <div className="bg-white dark:bg-[#111b21] rounded-2xl shadow-xl w-full max-w-5xl max-h-full flex flex-col overflow-hidden">
-        
+
         <div className="p-4 sm:p-6 border-b border-[#e9edef] dark:border-[#2a3942] flex justify-between items-center bg-[#f8f9fa] dark:bg-[#202c33]">
           <div>
             <h2 className="text-xl font-bold text-[#111] dark:text-white">Set Availability</h2>
-            <p className="text-sm text-[#54656f] dark:text-[#aebac1] mt-1">Click and drag on the calendar to mark your available time slots.</p>
           </div>
           <button onClick={onClose} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
             <X size={24} />
@@ -116,35 +115,6 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
         </div>
 
         <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
-          {/* Toolbar */}
-          <div className="flex flex-wrap gap-3 mb-6 p-2 bg-[#f0f2f5] dark:bg-[#202c33] rounded-xl">
-            <button 
-              onClick={() => setToolMode(1)}
-              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#111b21] text-blue-600 dark:text-blue-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Video size={16} /> Online
-            </button>
-            <button 
-              onClick={() => setToolMode(2)}
-              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#111b21] text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <MapPin size={16} /> In-Person
-            </button>
-            <button 
-              onClick={() => setToolMode(3)}
-              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#111b21] text-[#1099A1] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Layers size={16} /> Both
-            </button>
-            <div className="w-px bg-[#d1d7db] dark:bg-[#2a3942] mx-1 my-1"></div>
-            <button 
-              onClick={() => setToolMode(0)}
-              className={cn("flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#111b21] text-red-600 dark:text-red-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Eraser size={16} /> Eraser
-            </button>
-          </div>
-
           {/* Grid Container */}
           <div className="overflow-x-auto pb-4 select-none">
             <div className="min-w-[700px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden touch-none" onPointerMove={handlePointerMove}>
@@ -167,13 +137,14 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                   {weekdays.map((_, c) => {
                     const mode = timeGrid[r][c];
                     return (
-                      <div 
+                      <div
                         key={c}
                         data-r={r}
                         data-c={c}
                         onPointerDown={(e) => handlePointerDown(r, c, e)}
                         className={cn(
-                          "flex-1 h-12 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 cursor-grab active:cursor-grabbing transition-colors flex items-center justify-center border-b border-b-transparent",
+                          "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 transition-colors flex items-center justify-center border-b",
+                          isDragging ? "cursor-grabbing" : "cursor-grab",
                           getSlotColor(mode),
                           mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]'
                         )}
@@ -188,14 +159,48 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 border-t border-[#e9edef] dark:border-[#2a3942] flex justify-end gap-3 bg-[#f8f9fa] dark:bg-[#202c33]">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button className="flex items-center gap-2" onClick={() => {
-            onSave(timeGrid);
-            onClose();
-          }}>
-            <Save size={18} /> Save Availability
-          </Button>
+        <div className="p-4 sm:p-6 border-t border-[#e9edef] dark:border-[#2a3942] flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 bg-[#f8f9fa] dark:bg-[#202c33]">
+          
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">Click and drag on the calendar to mark your available time slots.</p>
+            <div className="flex flex-wrap gap-1 p-1 bg-[#e9edef]/50 dark:bg-[#111b21]/50 rounded-lg w-fit">
+            <button
+              onClick={() => setToolMode(1)}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#2a3942] text-sky-600 dark:text-sky-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+            >
+              <Video size={14} /> <span className="hidden sm:inline">Online</span>
+            </button>
+            <button
+              onClick={() => setToolMode(2)}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#2a3942] text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+            >
+              <MapPin size={14} /> <span className="hidden sm:inline">In-Person</span>
+            </button>
+            <button
+              onClick={() => setToolMode(3)}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+            >
+              <Layers size={14} /> <span className="hidden sm:inline">Both</span>
+            </button>
+            <div className="w-px bg-[#d1d7db] dark:bg-[#2a3942] mx-1 my-1"></div>
+            <button
+              onClick={() => setToolMode(0)}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#2a3942] text-neutral-600 dark:text-neutral-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+            >
+              <Eraser size={14} /> <span className="hidden sm:inline">Eraser</span>
+            </button>
+            </div>
+          </div>
+
+          <div className="flex gap-3 w-full sm:w-auto justify-end">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button className="flex items-center gap-2" onClick={() => {
+              onSave(timeGrid);
+              onClose();
+            }}>
+              <Save size={18} /> Save
+            </Button>
+          </div>
         </div>
 
       </div>
