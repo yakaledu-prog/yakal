@@ -6,23 +6,24 @@ import { cn } from '@/utils/cn';
 interface AvailabilityEditorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: number[][]) => void;
+  onSave: (data: number[][], disabledDays: number[]) => void;
   initialData?: number[][];
+  initialDisabledDays?: number[];
 }
 
 // 0: None, 1: Online, 2: In-Person, 3: Both
 type SlotMode = 0 | 1 | 2 | 3;
 
-export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: AvailabilityEditorProps) {
-  // Grid is 12 rows (9 AM to 8 PM) x 7 cols (Sun to Sat)
+export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initialDisabledDays }: AvailabilityEditorProps) {
+  // Grid is 13 rows (8 AM to 8 PM) x 7 cols (Sun to Sat)
   const [timeGrid, setTimeGrid] = useState<SlotMode[][]>(() => {
-    if (initialData) return initialData;
-    return Array(12).fill(null).map(() => Array(7).fill(0));
+    if (initialData && initialData.length === 13) return initialData as SlotMode[][];
+    return Array(13).fill(null).map(() => Array(7).fill(0));
   });
 
   const [toolMode, setToolMode] = useState<SlotMode>(1); // default to Online paint
   const [isDragging, setIsDragging] = useState(false);
-  const [disabledDays, setDisabledDays] = useState<number[]>([]);
+  const [disabledDays, setDisabledDays] = useState<number[]>(initialDisabledDays || []);
 
   const lastCell = useRef<{ r: number; c: number } | null>(null);
 
@@ -38,8 +39,8 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
   if (!isOpen) return null;
 
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const timeSlots = Array.from({ length: 12 }, (_, i) => {
-    const hour = i + 9;
+  const timeSlots = Array.from({ length: 13 }, (_, i) => {
+    const hour = i + 8;
     return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
   });
 
@@ -163,7 +164,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                         }}
                         className={cn(
                           "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 transition-colors flex items-center justify-center border-b",
-                          isDisabled ? "opacity-40 saturate-50 cursor-not-allowed" : (isDragging ? "cursor-grabbing" : "cursor-grab"),
+                          isDisabled ? "opacity-40 grayscale cursor-not-allowed" : (isDragging ? "cursor-grabbing" : "cursor-grab"),
                           getSlotColor(mode),
                           mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : (!isDisabled ? 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]' : 'bg-[#f0f2f5] dark:bg-[#111b21]/50')
                         )}
@@ -214,7 +215,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
           <div className="flex gap-3 w-full sm:w-auto justify-end">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button className="flex items-center gap-2" onClick={() => {
-              onSave(timeGrid);
+              onSave(timeGrid, disabledDays);
               onClose();
             }}>
               <Save size={18} /> Save

@@ -22,6 +22,7 @@ export function TutorCalendar() {
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('day');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
+  const [disabledDays, setDisabledDays] = useState<number[]>([]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const month = currentDate.getMonth();
@@ -100,6 +101,29 @@ export function TutorCalendar() {
     return `${hour % 12 || 12}:${m}${hour >= 12 ? 'pm' : 'am'}`;
   };
 
+  const renderModeIcon = (mode: number) => {
+    switch (mode) {
+      case 1: return <Video size={14} />;
+      case 2: return <MapPin size={14} />;
+      case 3: return <Layers size={14} />;
+      default: return null;
+    }
+  };
+
+  const getModeLabel = (mode: number) => {
+    if (mode === 1) return 'Online';
+    if (mode === 2) return 'In-Person';
+    if (mode === 3) return 'Both';
+    return '';
+  };
+
+  const getModeClasses = (mode: number) => {
+    if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400';
+    if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400';
+    if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400';
+    return 'border-[#e9edef] text-[#54656f]';
+  };
+
   const getHeaderText = () => {
     if (calendarView === 'month') return `${monthString} ${year}`;
     if (calendarView === 'week') {
@@ -112,33 +136,6 @@ export function TutorCalendar() {
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return `${weekdays[currentDate.getDay()]}, ${monthString} ${date}, ${year}`;
   };
-
-  /*
-  const downloadICS = () => {
-    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Yakal//Tutor Calendar//EN\n";
-    mockSessions.forEach(s => {
-      const [y, m, d] = s.date.split('-');
-      const [h, min] = s.startTime.split(':');
-      const startDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-      const endDate = new Date(startDate.getTime() + s.duration * 60000);
-      const formatICSDate = (dt: Date) => dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      icsContent += "BEGIN:VEVENT\n";
-      icsContent += `UID:${s.id}@yakal.com\n`;
-      icsContent += `DTSTAMP:${formatICSDate(new Date())}\n`;
-      icsContent += `DTSTART:${formatICSDate(startDate)}\n`;
-      icsContent += `DTEND:${formatICSDate(endDate)}\n`;
-      icsContent += `SUMMARY:${s.subject}\n`;
-      icsContent += `DESCRIPTION:Tutor: ${s.tutorName}\n`;
-      icsContent += "END:VEVENT\n";
-    });
-    icsContent += "END:VCALENDAR";
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'yakal_calendar.ics';
-    link.click();
-  };
-  */
 
   const renderMonthView = () => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -177,7 +174,6 @@ export function TutorCalendar() {
                   </div>
                   <div className="space-y-1">
                     {getSessionsForDay(day).map(session => (
-                      // <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-[#1099A1]/10 dark:hover:bg-white/5 cursor-pointer">
                       <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-[#1099A1]/10 dark:hover:bg-white/5 cursor-pointer">
                         <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate">
                           {formatTime(session.startTime)} {session.subject}
@@ -214,17 +210,23 @@ export function TutorCalendar() {
             ))}
           </div>
           <div className="relative">
-            {hours.map((hour, idx) => (
-              <div key={idx} className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
+            {hours.map((hour, hIndex) => (
+              <div key={hIndex} className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
                 <div className="py-3 px-2 text-[12px] text-right text-[#54656f] dark:text-[#aebac1] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
                   {hour.label}
                 </div>
-                {weekDays.map((day, dayIdx) => {
-                  const timeStr = `${pad(hour.hour)}:00`;
-                  const sessions = getSessionsForDay(day.date, day.month, day.year).filter(s => s.startTime === timeStr);
+                {weekDays.map((day, dIndex) => {
+                  const sessions = getSessionsForDay(day.date, day.month, day.year).filter(s => s.startTime === `${pad(hour.hour)}:00`);
+                  const isAvailable = availabilityData && availabilityData[hIndex]?.[dIndex] > 0;
+                  const mode = isAvailable ? availabilityData[hIndex][dIndex] : 0;
+                  const isDisabled = disabledDays.includes(dIndex);
 
                   return (
-                    <div key={dayIdx} className="h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1">
+                    <div key={dIndex} className={cn("h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1 flex flex-col gap-1 overflow-hidden", isDisabled && "opacity-40 grayscale bg-[#f0f2f5] dark:bg-[#111b21]/50")}>
+                      {mode > 0 && sessions.length === 0 && (
+                        <div className={cn("flex-1 rounded border border-dashed flex items-center justify-center pointer-events-none opacity-80", getModeClasses(mode))}>
+                        </div>
+                      )}
                       {sessions.map(s => (
                         <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-[#1099A1]/15 transition-colors">
                           {formatTime(s.startTime)} {s.subject}
@@ -243,40 +245,18 @@ export function TutorCalendar() {
 
   const renderDayView = () => {
     const hours = getDayHours();
-    
-    const renderModeIcon = (mode: number) => {
-      switch (mode) {
-        case 1: return <Video size={14} />;
-        case 2: return <MapPin size={14} />;
-        case 3: return <Layers size={14} />;
-        default: return null;
-      }
-    };
-
-    const getModeLabel = (mode: number) => {
-      if (mode === 1) return 'Online';
-      if (mode === 2) return 'In-Person';
-      if (mode === 3) return 'Both';
-      return '';
-    };
-
-    const getModeClasses = (mode: number) => {
-      if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400';
-      if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400';
-      if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400';
-      return 'border-[#e9edef] text-[#54656f]';
-    };
 
     const getAvailabilityForHour = (hourIndex: number, dayIndex: number) => {
       if (!availabilityData) return 0;
-      if (hourIndex < 9 || hourIndex > 20) return 0; // We only support 9AM to 8PM
-      return availabilityData[hourIndex - 9][dayIndex];
+      if (hourIndex < 8 || hourIndex > 20) return 0; // We only support 8AM to 8PM
+      return availabilityData[hourIndex - 8]?.[dayIndex] || 0;
     };
 
     const dayIndex = currentDate.getDay();
+    const isDayDisabled = disabledDays.includes(dayIndex);
 
     return (
-      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded bg-white dark:bg-[#111b21] mt-4 shadow-sm overflow-hidden">
+      <div className={cn("border border-[#e9edef] dark:border-[#2a3942] rounded bg-white dark:bg-[#111b21] mt-4 shadow-sm overflow-hidden", isDayDisabled && "opacity-50 grayscale bg-[#f8f9fa] dark:bg-[#182329] pointer-events-none")}>
         <div className="grid grid-cols-[100px_1fr] bg-[#f8f9fa] dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="p-3 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
           <div className="p-3 text-[15px] font-medium text-[#111] dark:text-white">
@@ -291,7 +271,7 @@ export function TutorCalendar() {
             
             return (
               <div key={idx} className="grid grid-cols-[100px_1fr] border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
-                <div className="py-4 px-3 text-[13px] text-right text-[#54656f] dark:text-[#aebac1] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
+                <div className="py-4 px-3 text-[13px] text-right text-[#54656f] dark:border-[#2a3942] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
                   {hour.label}
                 </div>
                 <div className="p-2 min-h-[60px] relative">
@@ -363,19 +343,6 @@ export function TutorCalendar() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {/* <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search sessions..."
-                className="pl-9 pr-3 py-1.5 h-9 bg-[#f0f2f5] dark:bg-[#202c33] text-[#111] dark:text-white placeholder:text-[#54656f] dark:placeholder:text-[#aebac1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1099A1] w-full sm:w-[200px] md:w-80 text-[14px]"
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-              />
-            </div> */}
-
               <div className="flex gap-2">
                 <Button
                   variant="default"
@@ -385,14 +352,6 @@ export function TutorCalendar() {
                   <Clock size={16} />
                   <span className="text-[13px] font-medium hidden sm:inline">Set Availability</span>
                 </Button>
-                {/* <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download ICS" onClick={downloadICS}>
-                  <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                  <span className="text-[13px] font-medium hidden sm:inline">Export</span>
-                </Button> */}
-                {/* <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download CSV" onClick={downloadCSV}>
-                <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                <span className="text-[13px] font-medium hidden sm:inline">CSV</span>
-              </Button> */}
               </div>
             </div>
           </div>
@@ -405,11 +364,12 @@ export function TutorCalendar() {
       <AvailabilityEditor
         isOpen={isAvailabilityOpen}
         onClose={() => setIsAvailabilityOpen(false)}
-        onSave={(data) => {
+        onSave={(data, disabled) => {
           setAvailabilityData(data);
-          // TODO: Save to database
+          setDisabledDays(disabled);
         }}
         initialData={availabilityData}
+        initialDisabledDays={disabledDays}
       />
     </PageWrapper>
   );
