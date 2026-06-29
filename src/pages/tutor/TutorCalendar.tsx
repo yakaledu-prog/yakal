@@ -19,7 +19,7 @@ const mockSessions = [
 ];
 export function TutorCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('month');
+  const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('day');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
 
@@ -143,24 +143,6 @@ export function TutorCalendar() {
   const renderMonthView = () => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    const getAvailableModesOnDay = (dayIndex: number): number[] => {
-      if (!availabilityData) return [];
-      const modes = new Set<number>();
-      availabilityData.forEach(row => {
-        if (row[dayIndex] > 0) modes.add(row[dayIndex]);
-      });
-      return Array.from(modes);
-    };
-
-    const renderModeIcon = (mode: number) => {
-      switch (mode) {
-        case 1: return <Video size={12} className="text-sky-500" />;
-        case 2: return <MapPin size={12} className="text-emerald-500" />;
-        case 3: return <Layers size={12} className="text-[#CAA25F]" />;
-        default: return null;
-      }
-    };
-
     return (
       <div className="border border-[#e9edef] dark:border-[#2a3942] rounded overflow-hidden bg-white dark:bg-[#111b21] mt-4 shadow-sm">
         <div className="grid grid-cols-7 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
@@ -185,11 +167,6 @@ export function TutorCalendar() {
                 <>
                   <div className="text-right mb-1 flex justify-between items-start">
                     <div className="flex gap-1 mt-1.5 ml-1 flex-wrap w-[40px]">
-                      {getAvailableModesOnDay(index % 7).map(mode => (
-                        <div key={mode} className="bg-white dark:bg-[#111b21] rounded shadow-sm p-0.5 border border-[#e9edef] dark:border-[#2a3942]" title={mode === 1 ? 'Online' : mode === 2 ? 'In-Person' : 'Both'}>
-                          {renderModeIcon(mode)}
-                        </div>
-                      ))}
                     </div>
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
@@ -266,6 +243,24 @@ export function TutorCalendar() {
 
   const renderDayView = () => {
     const hours = getDayHours();
+    
+    const renderModeIcon = (mode: number) => {
+      switch (mode) {
+        case 1: return <Video size={12} className="text-sky-500" />;
+        case 2: return <MapPin size={12} className="text-emerald-500" />;
+        case 3: return <Layers size={12} className="text-[#CAA25F]" />;
+        default: return null;
+      }
+    };
+
+    const getAvailabilityForHour = (hourIndex: number, dayIndex: number) => {
+      if (!availabilityData) return 0;
+      if (hourIndex < 9 || hourIndex > 20) return 0; // We only support 9AM to 8PM
+      return availabilityData[hourIndex - 9][dayIndex];
+    };
+
+    const dayIndex = currentDate.getDay();
+
     return (
       <div className="border border-[#e9edef] dark:border-[#2a3942] rounded bg-white dark:bg-[#111b21] mt-4 shadow-sm overflow-hidden">
         <div className="grid grid-cols-[100px_1fr] bg-[#f8f9fa] dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942]">
@@ -278,22 +273,33 @@ export function TutorCalendar() {
           {hours.map((hour, idx) => {
             const timeStr = `${pad(hour.hour)}:00`;
             const sessions = getSessionsForDay(date).filter(s => s.startTime === timeStr);
+            const mode = getAvailabilityForHour(hour.hour, dayIndex);
+            
             return (
               <div key={idx} className="grid grid-cols-[100px_1fr] border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
                 <div className="py-4 px-3 text-[13px] text-right text-[#54656f] dark:text-[#aebac1] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
                   {hour.label}
                 </div>
-                <div className="p-2 min-h-[60px]">
-                  {sessions.map(s => (
-                    <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded-md p-3 text-[13px] hover:bg-[#1099A1]/15 transition-colors cursor-pointer w-full max-w-md">
-                      <div className="font-bold">{s.subject}</div>
-                      <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px]">
-                        <span>{formatTime(s.startTime)}</span>
-                        <span>•</span>
-                        <span>{s.tutorName}</span>
+                <div className="p-2 min-h-[60px] relative">
+                  {mode > 0 && sessions.length === 0 && (
+                    <div className="absolute inset-2 border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] rounded-md flex items-center justify-center text-[#54656f] dark:text-[#aebac1] opacity-50 pointer-events-none">
+                      <div className="flex items-center gap-2 text-[13px]">
+                        {renderModeIcon(mode)} Available to Book
                       </div>
                     </div>
-                  ))}
+                  )}
+                  <div className="relative z-10 flex flex-col gap-2">
+                    {sessions.map(s => (
+                      <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded-md p-3 text-[13px] hover:bg-[#1099A1]/15 transition-colors cursor-pointer w-full max-w-md shadow-sm">
+                        <div className="font-bold">{s.subject}</div>
+                        <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px]">
+                          <span>{formatTime(s.startTime)}</span>
+                          <span>•</span>
+                          <span>{s.tutorName}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             );

@@ -22,6 +22,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
 
   const [toolMode, setToolMode] = useState<SlotMode>(1); // default to Online paint
   const [isDragging, setIsDragging] = useState(false);
+  const [disabledDays, setDisabledDays] = useState<number[]>([]);
 
   const lastCell = useRef<{ r: number; c: number } | null>(null);
 
@@ -41,6 +42,12 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
     const hour = i + 9;
     return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
   });
+
+  const toggleDisabledDay = (dayIndex: number) => {
+    setDisabledDays(prev => 
+      prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]
+    );
+  };
 
   const handlePointerDown = (r: number, c: number, e: React.PointerEvent) => {
     // Left click only
@@ -71,6 +78,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
   };
 
   const updateCell = (r: number, c: number) => {
+    if (disabledDays.includes(c)) return;
     if (lastCell.current?.r === r && lastCell.current?.c === c) return;
 
     setTimeGrid(prev => {
@@ -86,7 +94,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
     switch (mode) {
       case 1: return 'bg-sky-100 dark:bg-sky-900/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
-      case 3: return 'bg-[#CAA25F]/10 border-[#CAA25F]/30 dark:border-[#CAA25F]/50 text-[#CAA25F] dark:text-[#CAA25F]';
+      case 3: return 'bg-amber-100 dark:bg-amber-900/40 border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400';
       default: return 'bg-neutral-50 dark:bg-[#202c33]/20 border-[#e9edef] dark:border-[#2a3942]';
     }
   };
@@ -105,7 +113,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
       onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
       <div className="bg-white dark:bg-[#111b21] rounded-2xl shadow-xl w-full max-w-5xl max-h-full flex flex-col overflow-hidden">
 
-        <div className="p-4 sm:p-6 border-b border-[#e9edef] dark:border-[#2a3942] flex justify-between items-center bg-[#f8f9fa] dark:bg-[#202c33]">
+        <div className="p-2.5 px-4 border-b border-[#e9edef] dark:border-[#2a3942] flex justify-between items-center bg-[#f8f9fa] dark:bg-[#202c33]">
           <div>
             <h2 className="text-xl font-bold text-[#111] dark:text-white">Set Availability</h2>
           </div>
@@ -114,15 +122,23 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
+        <div className="p-3 px-6 flex-1 my-auto overflow-y-auto">
           {/* Grid Container */}
           <div className="overflow-x-auto pb-4 select-none">
             <div className="min-w-[700px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden touch-none" onPointerMove={handlePointerMove}>
               {/* Header Row */}
               <div className="flex bg-[#f8f9fa] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
                 <div className="w-20 shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
-                {weekdays.map(day => (
-                  <div key={day} className="flex-1 py-3 text-center text-sm font-semibold text-[#54656f] dark:text-[#aebac1] border-r border-[#e9edef] dark:border-[#2a3942] last:border-0">
+                {weekdays.map((day, c) => (
+                  <div 
+                    key={day} 
+                    onClick={() => toggleDisabledDay(c)}
+                    className={cn(
+                      "flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-0",
+                      disabledDays.includes(c) ? "text-[#aebac1] dark:text-[#54656f] bg-[#f0f2f5] dark:bg-[#111b21]" : "text-[#54656f] dark:text-[#aebac1] hover:bg-[#e9edef]/50 dark:hover:bg-white/5"
+                    )}
+                    title={disabledDays.includes(c) ? "Click to enable this day" : "Click to mark as off-day"}
+                  >
                     {day}
                   </div>
                 ))}
@@ -135,18 +151,23 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
                     {time}
                   </div>
                   {weekdays.map((_, c) => {
-                    const mode = timeGrid[r][c];
+                    const isDisabled = disabledDays.includes(c);
+                    const mode = isDisabled ? 0 : timeGrid[r][c];
                     return (
                       <div
                         key={c}
                         data-r={r}
                         data-c={c}
-                        onPointerDown={(e) => handlePointerDown(r, c, e)}
+                        onPointerDown={(e) => {
+                          if (!isDisabled) handlePointerDown(r, c, e);
+                        }}
                         className={cn(
                           "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] last:border-0 transition-colors flex items-center justify-center border-b",
-                          isDragging ? "cursor-grabbing" : "cursor-grab",
-                          getSlotColor(mode),
-                          mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]'
+                          isDisabled ? "bg-[#f0f2f5] dark:bg-[#111b21]/50 cursor-not-allowed" : cn(
+                            isDragging ? "cursor-grabbing" : "cursor-grab",
+                            getSlotColor(mode),
+                            mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]'
+                          )
                         )}
                       >
                         {getSlotIcon(mode)}
@@ -159,36 +180,36 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData }: Ava
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 border-t border-[#e9edef] dark:border-[#2a3942] flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 bg-[#f8f9fa] dark:bg-[#202c33]">
-          
+        <div className="p-4 px-4 border-t border-[#e9edef] dark:border-[#2a3942] flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 bg-[#f8f9fa] dark:bg-[#202c33]">
+
           <div className="flex flex-col gap-2 w-full sm:w-auto">
             <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">Click and drag on the calendar to mark your available time slots.</p>
             <div className="flex flex-wrap gap-1 p-1 bg-[#e9edef]/50 dark:bg-[#111b21]/50 rounded-lg w-fit">
-            <button
-              onClick={() => setToolMode(1)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#2a3942] text-sky-600 dark:text-sky-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Video size={14} /> <span className="hidden sm:inline">Online</span>
-            </button>
-            <button
-              onClick={() => setToolMode(2)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#2a3942] text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <MapPin size={14} /> <span className="hidden sm:inline">In-Person</span>
-            </button>
-            <button
-              onClick={() => setToolMode(3)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Layers size={14} /> <span className="hidden sm:inline">Both</span>
-            </button>
-            <div className="w-px bg-[#d1d7db] dark:bg-[#2a3942] mx-1 my-1"></div>
-            <button
-              onClick={() => setToolMode(0)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#2a3942] text-neutral-600 dark:text-neutral-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
-            >
-              <Eraser size={14} /> <span className="hidden sm:inline">Eraser</span>
-            </button>
+              <button
+                onClick={() => setToolMode(1)}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#2a3942] text-sky-600 dark:text-sky-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+              >
+                <Video size={14} /> <span className="hidden sm:inline">Online</span>
+              </button>
+              <button
+                onClick={() => setToolMode(2)}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#2a3942] text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+              >
+                <MapPin size={14} /> <span className="hidden sm:inline">In-Person</span>
+              </button>
+              <button
+                onClick={() => setToolMode(3)}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+              >
+                <Layers size={14} /> <span className="hidden sm:inline">Both</span>
+              </button>
+              <div className="w-px bg-[#d1d7db] dark:bg-[#2a3942] mx-1 my-1"></div>
+              <button
+                onClick={() => setToolMode(0)}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#2a3942] text-neutral-600 dark:text-neutral-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+              >
+                <Eraser size={14} /> <span className="hidden sm:inline">Eraser</span>
+              </button>
             </div>
           </div>
 
