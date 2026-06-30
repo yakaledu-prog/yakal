@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, ChevronLeft, ChevronRight, Upload, Facebook, Twitter, Linkedin, Instagram, Mail, Youtube, MessageCircle, Link2, Check } from "lucide-react";
+import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, ChevronLeft, ChevronRight, Upload, Facebook, Twitter, Linkedin, Instagram, Mail, Youtube, MessageCircle, Link2, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,7 +57,10 @@ export function StudentCourseCatalogDetail() {
   const [expandedModules, setExpandedModules] = useState<number[]>([0]);
 
   const [availability, setAvailability] = useState<TutorAvailability | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<{ dayIndex: number, hourIndex: number, date: Date, mode: number } | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<Array<{ dayIndex: number, hourIndex: number, date: Date, mode: number }>>([]);
+  const [availabilityFilter, setAvailabilityFilter] = useState("all"); // "all", "online", "in-person"
+  const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
+  const [selectedTimezone, setSelectedTimezone] = useState("Local Time");
   const [isBooking, setIsBooking] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
@@ -99,32 +102,53 @@ export function StudentCourseCatalogDetail() {
   const weekDays = getWeekDays(currentWeekOffset);
   const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM to 8 PM
 
+  const toggleSlot = (dayIndex: number, hourIndex: number, date: Date, mode: number) => {
+    setSelectedSlots(prev => {
+      const exists = prev.some(s => s.dayIndex === dayIndex && s.hourIndex === hourIndex);
+      if (exists) return prev.filter(s => !(s.dayIndex === dayIndex && s.hourIndex === hourIndex));
+      return [...prev, { dayIndex, hourIndex, date, mode }];
+    });
+  };
+
+  const formatHour = (h: number) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:00 ${ampm}`;
+  };
+
   const handleBookSlot = async () => {
-    if (!selectedSlot || !user || !availability) {
-      toast.error("Please login and select a time slot first.");
+    if (selectedSlots.length === 0 || !user || !availability) {
+      toast.error("Please select at least one slot");
       return;
     }
-
+    
     setIsBooking(true);
-    const formattedDate = selectedSlot.date.toISOString().split('T')[0];
-    const formattedTime = `${(selectedSlot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
+    
+    try {
+      // Book all selected slots
+      await Promise.all(selectedSlots.map(slot => {
+        const formattedDate = slot.date.toISOString().split('T')[0];
+        const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
+        
+        return createSession({
+          tutor_id: course.tutor.id,
+          student_id: user.id,
+          subject: course.title,
+          date: formattedDate,
+          start_time: formattedTime,
+          duration_minutes: 60,
+          mode: slot.mode
+        });
+      }));
 
-    const res = await createSession({
-      tutor_id: availability.tutor_id,
-      student_id: user.id,
-      subject: course.title,
-      date: formattedDate,
-      start_time: formattedTime,
-      duration_minutes: 60,
-      mode: selectedSlot.mode
-    });
-
-    setIsBooking(false);
-    if (res.success) {
-      toast.success("Successfully booked session!");
+      toast.success(`Successfully booked ${selectedSlots.length} slot(s)!`);
+      setSelectedSlots([]); // Clear selection after booking
       navigate('/student/sessions');
-    } else {
-      toast.error("Failed to book session: " + res.error);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to book one or more slots. Please try again.");
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -333,7 +357,7 @@ export function StudentCourseCatalogDetail() {
                       <div className="min-w-[600px] p-4">
 
                         {/* Week Header */}
-                        <div className="flex items-center justify-between mb-6 px-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-2">
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>
                               <ChevronLeft size={16} />
@@ -345,16 +369,51 @@ export function StudentCourseCatalogDetail() {
                               {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </div>
-                          <select className="text-[13px] bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded px-3 py-1.5 outline-none font-medium">
-                            <option>Local Time</option>
-                          </select>
+                          
+                          <div className="flex flex-wrap items-center gap-3">
+                            {/* Filter */}
+                            <div className="flex bg-[#f8f9fa] dark:bg-[#111b21] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
+                              {["all", "online", "in-person"].map(f => (
+                                <button 
+                                  key={f}
+                                  onClick={() => setAvailabilityFilter(f)}
+                                  className={cn("px-3 py-1 text-[12px] font-bold rounded-md transition-colors capitalize", availabilityFilter === f ? "bg-white dark:bg-[#202c33] shadow-sm text-[#111] dark:text-white" : "text-[#54656f] hover:text-[#111] dark:hover:text-white")}
+                                >
+                                  {f}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Custom Timezone Dropdown */}
+                            <div className="relative">
+                              <button 
+                                onClick={() => setIsTimezoneOpen(!isTimezoneOpen)}
+                                className="flex items-center gap-2 text-[13px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-1.5 font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
+                              >
+                                {selectedTimezone} <ChevronDown size={14} className={cn("transition-transform", isTimezoneOpen && "rotate-180")} />
+                              </button>
+                              {isTimezoneOpen && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg overflow-hidden z-10 animate-in fade-in slide-in-from-top-2 duration-200">
+                                  {["Local Time", "US/Eastern", "Africa/Addis_Ababa", "Europe/London"].map(tz => (
+                                    <button 
+                                      key={tz}
+                                      onClick={() => { setSelectedTimezone(tz); setIsTimezoneOpen(false); }}
+                                      className="w-full text-left px-4 py-2 text-[13px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
+                                    >
+                                      {tz}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Grid */}
                         <div className="grid grid-cols-7 gap-2">
                           {weekDays.map((day, dIndex) => (
                             <div key={dIndex} className="text-center">
-                              <div className="pb-3 mb-3 border-b-2 border-pink-400">
+                              <div className="pb-3 mb-3 border-b-2 border-[#CAA25F]">
                                 <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                                 <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
                               </div>
@@ -366,21 +425,28 @@ export function StudentCourseCatalogDetail() {
                                   hours.map((hour, hIndex) => {
                                     const mode = availability.time_grid[hIndex]?.[dIndex] || 0;
                                     if (mode === 0) return null; // Only show available slots
+                                    
+                                    // Apply filter
+                                    if (availabilityFilter === "online" && mode !== 1 && mode !== 3) return null;
+                                    if (availabilityFilter === "in-person" && mode !== 2 && mode !== 3) return null;
 
-                                    const isSelected = selectedSlot?.dayIndex === dIndex && selectedSlot?.hourIndex === hIndex;
+                                    const isSelected = selectedSlots.some(s => s.dayIndex === dIndex && s.hourIndex === hIndex);
 
                                     return (
                                       <button
                                         key={hIndex}
-                                        onClick={() => setSelectedSlot({ dayIndex: dIndex, hourIndex: hIndex, date: day, mode })}
+                                        onClick={() => toggleSlot(dIndex, hIndex, day, mode)}
                                         className={cn(
-                                          "w-full py-2 text-[13px] font-bold rounded transition-all",
+                                          "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
                                           isSelected
                                             ? "bg-[#1099A1] text-white shadow-md scale-105"
                                             : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
                                         )}
                                       >
-                                        {hour.toString().padStart(2, '0')}:00
+                                        <span>{formatHour(hour)}</span>
+                                        <span className={cn("text-[9px] uppercase tracking-wider opacity-80", isSelected ? "text-white" : "text-[#54656f]")}>
+                                          {mode === 1 ? "Online" : mode === 2 ? "In-Person" : "Both"}
+                                        </span>
                                       </button>
                                     );
                                   })
@@ -417,7 +483,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Stats */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-1.5">
-                      <Star size={20} fill="currentColor" className="text-[#111] dark:text-white" />
+                      <Star size={20} fill="currentColor" className="text-yellow-500" />
                       <span className="text-[20px] font-bold text-[#111] dark:text-white">4.8</span>
                     </div>
                     <div className="text-center">
@@ -431,11 +497,11 @@ export function StudentCourseCatalogDetail() {
                   </div>
 
                   <Button
-                    onClick={activeTab !== "Availability" && !selectedSlot ? () => setActiveTab("Availability") : handleBookSlot}
+                    onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
                     disabled={isBooking}
                     className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
                   >
-                    {isBooking ? "Booking..." : (selectedSlot ? `Book for ${selectedSlot.date.toLocaleDateString()} at ${selectedSlot.hourIndex + 8}:00` : "Book this course")}
+                    {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Book ${selectedSlots.length} slot(s)` : "Book this course")}
                   </Button>
 
                   <div className="flex gap-2 mb-6">
@@ -443,7 +509,7 @@ export function StudentCourseCatalogDetail() {
                       <MessageSquare size={16} /> Message
                     </button>
                     <button onClick={() => { setIsSaved(!isSaved); toast.success(isSaved ? "Removed from list" : "Saved to your list!"); }} className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
-                      <Heart size={16} className={isSaved ? "fill-red-500 text-red-500" : ""} /> Save
+                      <Heart size={16} className={isSaved ? "fill-[#97CE9D] text-[#97CE9D]" : ""} /> Save
                     </button>
                     <button onClick={() => setIsShareOpen(true)} className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
                       <Upload size={16} /> Share
@@ -524,10 +590,10 @@ export function StudentCourseCatalogDetail() {
             </div>
             <div className="flex items-center gap-2 mt-4 p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
               <input type="text" readOnly value="https://yakal.app/course/CAT-01" className="bg-transparent flex-1 outline-none text-[13px] text-[#54656f] dark:text-[#aebac1] px-2" />
-              <Button
+              <Button 
                 className={cn(
-                  "h-8 text-[12px] text-white rounded-lg px-4 transition-all duration-300 flex items-center gap-1.5",
-                  isCopied ? "bg-green-500 hover:bg-green-600" : "bg-[#1099A1] hover:bg-[#0d848b]"
+                  "h-8 text-[12px] text-white rounded-lg px-4 transition-all duration-300 flex items-center gap-1.5 active:scale-95",
+                  isCopied ? "bg-green-500 hover:bg-green-600 scale-105" : "bg-[#1099A1] hover:bg-[#0d848b]"
                 )}
                 onClick={() => {
                   navigator.clipboard.writeText("https://yakal.app/course/CAT-01");
