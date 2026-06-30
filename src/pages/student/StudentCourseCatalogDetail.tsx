@@ -130,9 +130,6 @@ export function StudentCourseCatalogDetail() {
 
   const getModeClasses = (mode: number, isSelected: boolean) => {
     if (isSelected) {
-      if (mode === 1) return 'bg-sky-500 text-white shadow-md scale-105 border border-sky-500';
-      if (mode === 2) return 'bg-emerald-500 text-white shadow-md scale-105 border border-emerald-500';
-      if (mode === 3) return 'bg-amber-500 text-white shadow-md scale-105 border border-amber-500';
       return 'bg-[#1099A1] text-white shadow-md scale-105 border border-[#1099A1]';
     }
     
@@ -345,7 +342,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Education */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-sky-500 pb-2 inline-block">Education</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Education</span>
                     </div>
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -372,7 +369,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Achievements */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-emerald-500 pb-2 inline-block">Achievements</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Achievements</span>
                     </div>
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -390,7 +387,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Certifications */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-amber-500 pb-2 inline-block">Certifications</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
                     </div>
                     <div className="space-y-6">
                       {course.certifications.map(cert => (
@@ -445,12 +442,12 @@ export function StudentCourseCatalogDetail() {
                           
                           <div className="flex flex-wrap items-center gap-3">
                             {/* Filter */}
-                            <div className="flex bg-[#f8f9fa] dark:bg-[#111b21] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
+                            <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-full border border-[#e9edef] dark:border-[#2a3942]">
                               {["all", "online", "in-person"].map(f => (
                                 <button 
                                   key={f}
                                   onClick={() => setAvailabilityFilter(f)}
-                                  className={cn("px-3 py-1 text-[12px] font-bold rounded-md transition-colors capitalize", availabilityFilter === f ? "bg-white dark:bg-[#202c33] shadow-sm text-[#111] dark:text-white" : "text-[#54656f] hover:text-[#111] dark:hover:text-white")}
+                                  className={cn("px-4 py-1.5 text-[12px] font-bold rounded-full transition-all capitalize", availabilityFilter === f ? "bg-[#1099A1] shadow-md text-white" : "text-[#54656f] hover:text-[#111] dark:hover:text-white")}
                                 >
                                   {f}
                                 </button>
