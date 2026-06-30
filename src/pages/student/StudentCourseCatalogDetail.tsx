@@ -401,59 +401,64 @@ export function StudentCourseCatalogDetail() {
             <div className="sticky top-24 space-y-6">
 
               {/* Preply-style Booking Card */}
-              <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] overflow-hidden shadow-sm p-6">
+              <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden shadow-sm">
                 
-                {/* Stats */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-1.5">
-                    <Star size={20} fill="currentColor" className="text-[#111] dark:text-white" />
-                    <span className="text-[20px] font-bold text-[#111] dark:text-white">4.8</span>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[16px] font-bold text-[#111] dark:text-white">635</div>
-                    <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">lessons</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[20px] font-bold text-[#111] dark:text-white">{course.price}</div>
-                    <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">60-min lesson</div>
+                {/* Video Header */}
+                <div className="relative w-full aspect-video bg-[#111]">
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-80" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group cursor-pointer hover:bg-black/40 transition-colors">
+                    <PlayCircle size={48} className="text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
                   </div>
                 </div>
 
-                <Button
-                  onClick={activeTab !== "Availability" && !selectedSlot ? () => setActiveTab("Availability") : handleBookSlot}
-                  disabled={isBooking}
-                  className="w-full h-14 bg-[#ff4f79] hover:bg-[#e6456b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
-                >
-                  {isBooking ? "Booking..." : (selectedSlot ? `Book for ${selectedSlot.date.toLocaleDateString()} at ${selectedSlot.hourIndex + 8}:00` : "Select a time to Book")}
-                </Button>
-
-                <div className="space-y-3 mb-6">
-                  <Button variant="outline" className="w-full h-12 flex items-center justify-center gap-2 font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                    <MessageSquare size={18} /> Send message
-                  </Button>
-                  <Button variant="outline" className="w-full h-12 flex items-center justify-center gap-2 font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                    <Heart size={18} /> Save to my list
-                  </Button>
-                  <Button variant="outline" className="w-full h-12 flex items-center justify-center gap-2 font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                    <Share size={18} /> Share tutor
-                  </Button>
-                </div>
-
-                {/* Popularity indicator */}
-                <div className="border-t border-[#e9edef] dark:border-[#2a3942] pt-6 space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 text-[#111] dark:text-white font-bold mb-1">
-                      <Star size={16} /> Super popular
+                <div className="p-6">
+                  {/* Stats */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-1.5">
+                      <Star size={20} fill="currentColor" className="text-[#111] dark:text-white" />
+                      <span className="text-[20px] font-bold text-[#111] dark:text-white">4.8</span>
                     </div>
-                    <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
-                      {course.tutor.stats}
-                    </p>
+                    <div className="text-center">
+                      <div className="text-[16px] font-bold text-[#111] dark:text-white">635</div>
+                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">lessons</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[20px] font-bold text-[#111] dark:text-white">{course.price}</div>
+                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">60-min lesson</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                    <Clock size={16} /> {course.tutor.response_time}
+
+                  <Button
+                    onClick={activeTab !== "Availability" && !selectedSlot ? () => setActiveTab("Availability") : handleBookSlot}
+                    disabled={isBooking}
+                    className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
+                  >
+                    {isBooking ? "Booking..." : (selectedSlot ? `Book for ${selectedSlot.date.toLocaleDateString()} at ${selectedSlot.hourIndex + 8}:00` : "Book this course")}
+                  </Button>
+
+                  <div className="flex gap-2 mb-6">
+                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                      <MessageSquare size={16} /> Message
+                    </Button>
+                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                      <Heart size={16} /> Save
+                    </Button>
+                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                      <Share size={16} /> Share
+                    </Button>
+                  </div>
+
+                  {/* User info */}
+                  <div className="border-t border-[#e9edef] dark:border-[#2a3942] pt-6 flex items-start gap-4">
+                    <img src={course.tutor.avatar} alt={course.tutor.name} className="w-12 h-12 rounded-full object-cover border border-[#e9edef] dark:border-[#2a3942] shrink-0" />
+                    <div>
+                      <h4 className="text-[15px] font-bold text-[#111] dark:text-white mb-1">{course.tutor.name}</h4>
+                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-snug">
+                        {course.tutor.bio}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
               </div>
 
             </div>
