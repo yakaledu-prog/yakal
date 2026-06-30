@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { Search, Calendar, Clock, User, Video, FileText, CalendarRange } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getStudentSessions } from "@/services/sessions";
 
 interface Session {
   id: string;
@@ -15,19 +17,35 @@ interface Session {
   status: "Upcoming" | "Completed" | "Canceled";
 }
 
-const mockSessions: Session[] = [
-  { id: "S-01", subject: "AP Calculus AB", tutor: "Dr. Alex M.", date: "Oct 15, 2023", time: "4:00 PM", duration: "60 min", status: "Upcoming" },
-  { id: "S-02", subject: "AP Physics C", tutor: "Sarah Jenkins", date: "Oct 17, 2023", time: "5:30 PM", duration: "60 min", status: "Upcoming" },
-  { id: "S-03", subject: "College Essay Review", tutor: "Jane Doe", date: "Oct 10, 2023", time: "3:00 PM", duration: "45 min", status: "Completed" },
-  { id: "S-04", subject: "SAT Math Practice", tutor: "Dr. Alex M.", date: "Oct 08, 2023", time: "4:00 PM", duration: "90 min", status: "Completed" },
-  { id: "S-05", subject: "AP Calculus AB", tutor: "Dr. Alex M.", date: "Oct 01, 2023", time: "4:00 PM", duration: "60 min", status: "Canceled" },
-];
-
 export function StudentSessions() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredSessions = mockSessions.filter(s => {
+  useEffect(() => {
+    if (!user) return;
+    const fetchSessions = async () => {
+      setLoading(true);
+      const { data } = await getStudentSessions(user.id);
+      if (data) {
+        setSessions(data.map((s: any) => ({
+          id: s.id,
+          subject: s.subject,
+          tutor: s.tutor_name || 'Tutor',
+          date: s.date,
+          time: s.start_time.substring(0, 5),
+          duration: `${s.duration_minutes} min`,
+          status: "Upcoming"
+        })));
+      }
+      setLoading(false);
+    };
+    fetchSessions();
+  }, [user]);
+
+  const filteredSessions = sessions.filter(s => {
     const matchesTab = activeTab === "upcoming" ? s.status === "Upcoming" : s.status !== "Upcoming";
     const matchesSearch = s.subject.toLowerCase().includes(filterText.toLowerCase()) || s.tutor.toLowerCase().includes(filterText.toLowerCase());
     return matchesTab && matchesSearch;
@@ -81,7 +99,11 @@ export function StudentSessions() {
         </div>
 
         {/* Sessions List */}
-        {filteredSessions.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredSessions.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md">
             <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions found</h3>

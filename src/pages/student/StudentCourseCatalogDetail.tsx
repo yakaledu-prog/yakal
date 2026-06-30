@@ -155,7 +155,7 @@ export function StudentCourseCatalogDetail() {
         const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
         
         return createSession({
-          tutor_id: course.tutor.id,
+          tutor_id: availability.tutor_id,
           student_id: user.id,
           subject: course.title,
           date: formattedDate,
