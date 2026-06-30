@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
@@ -515,6 +516,16 @@ export function StudentMessages() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isDark, setIsDark] = useState(false);
+
+  const location = useLocation();
+  const draftState = location.state as { draftMessage?: string, tutorName?: string } | null;
+
+  useEffect(() => {
+    if (draftState?.draftMessage) {
+      setInputText(draftState.draftMessage);
+      // In a real app we'd find the correct conversation by tutorName or ID
+    }
+  }, [draftState]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

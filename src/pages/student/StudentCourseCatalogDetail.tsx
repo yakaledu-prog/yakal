@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, Share, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
@@ -439,16 +439,16 @@ export function StudentCourseCatalogDetail() {
                     {isBooking ? "Booking..." : (selectedSlot ? `Book for ${selectedSlot.date.toLocaleDateString()} at ${selectedSlot.hourIndex + 8}:00` : "Book this course")}
                   </Button>
 
-                  <div className="flex gap-2 mb-6">
-                    <Button variant="outline" onClick={() => navigate('/student/messages')} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                      <MessageSquare size={16} /> Message
-                    </Button>
-                    <Button variant="outline" onClick={() => { setIsSaved(!isSaved); toast.success(isSaved ? "Removed from list" : "Saved to your list!"); }} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                      <Heart size={16} className={isSaved ? "fill-red-500 text-red-500" : ""} /> Save
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsShareOpen(true)} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                      <Share size={16} /> Share
-                    </Button>
+                  <div className="flex gap-3 mb-6">
+                    <button onClick={() => navigate('/student/messages', { state: { draftMessage: `Hi ${course.tutor.name}, I'm interested in your course!`, tutorName: course.tutor.name } })} className="flex-1 h-16 flex flex-col items-center justify-center gap-1.5 text-[12px] font-bold text-white bg-[#0b141a] hover:bg-[#182329] rounded-2xl transition-colors">
+                      <MessageSquare size={18} /> Message
+                    </button>
+                    <button onClick={() => { setIsSaved(!isSaved); toast.success(isSaved ? "Removed from list" : "Saved to your list!"); }} className="flex-1 h-16 flex flex-col items-center justify-center gap-1.5 text-[12px] font-bold text-white bg-[#0b141a] hover:bg-[#182329] rounded-2xl transition-colors">
+                      <Heart size={18} className={isSaved ? "fill-red-500 text-red-500" : ""} /> Save
+                    </button>
+                    <button onClick={() => setIsShareOpen(true)} className="flex-1 h-16 flex flex-col items-center justify-center gap-1.5 text-[12px] font-bold text-white bg-[#0b141a] hover:bg-[#182329] rounded-2xl transition-colors">
+                      <Upload size={18} /> Share
+                    </button>
                   </div>
 
                   {/* User info */}
@@ -489,16 +489,22 @@ export function StudentCourseCatalogDetail() {
       {isShareOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsShareOpen(false)}>
           <div className="w-full max-w-md bg-white dark:bg-[#202c33] rounded-2xl overflow-hidden shadow-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Share this course</h3>
-              <button onClick={() => setIsShareOpen(false)} className="text-[#54656f] hover:text-[#111] dark:hover:text-white">
-                <Plus className="rotate-45" size={24} />
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-[20px] font-bold text-[#111] dark:text-white">Share this course</h3>
+              <button onClick={() => setIsShareOpen(false)} className="text-[#54656f] hover:text-[#111] dark:hover:text-white transition-colors">
+                <Plus className="rotate-45" size={28} />
               </button>
             </div>
-            <div className="flex gap-4 justify-center py-4">
-              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><Share size={20}/></Button>
-              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><MessageSquare size={20}/></Button>
-              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><FileText size={20}/></Button>
+            <div className="flex gap-4 justify-center py-4 mb-4">
+              <button className="h-14 w-14 rounded-2xl flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] hover:bg-[#e9edef] dark:hover:bg-[#0b141a] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <Upload size={22} />
+              </button>
+              <button className="h-14 w-14 rounded-2xl flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] hover:bg-[#e9edef] dark:hover:bg-[#0b141a] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <MessageSquare size={22} />
+              </button>
+              <button className="h-14 w-14 rounded-2xl flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] hover:bg-[#e9edef] dark:hover:bg-[#0b141a] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <FileText size={22} />
+              </button>
             </div>
             <div className="flex items-center gap-2 mt-4 p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
               <input type="text" readOnly value="https://yakal.app/course/CAT-01" className="bg-transparent flex-1 outline-none text-[13px] text-[#54656f] dark:text-[#aebac1] px-2" />
