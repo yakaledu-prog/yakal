@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, ChevronLeft, ChevronRight, Upload, Facebook, Twitter, Linkedin, Instagram, Mail } from "lucide-react";
+import { Star, Clock, Users, PlayCircle, Plus, Minus, FileText, CheckCircle2, MessageSquare, Heart, ChevronLeft, ChevronRight, Upload, Facebook, Twitter, Linkedin, Instagram, Mail, Youtube, MessageCircle, Link2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,10 +52,10 @@ export function StudentCourseCatalogDetail() {
   useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [activeTab, setActiveTab] = useState("Outline");
   const [expandedModules, setExpandedModules] = useState<number[]>([0]);
-  
+
   const [availability, setAvailability] = useState<TutorAvailability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{ dayIndex: number, hourIndex: number, date: Date, mode: number } | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -63,6 +63,7 @@ export function StudentCourseCatalogDetail() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const course = courseData;
 
@@ -87,7 +88,7 @@ export function StudentCourseCatalogDetail() {
     const day = d.getDay();
     const diff = d.getDate() - day; // Adjust to Sunday
     const sunday = new Date(d.setDate(diff));
-    
+
     return Array.from({ length: 7 }).map((_, i) => {
       const date = new Date(sunday);
       date.setDate(sunday.getDate() + i);
@@ -103,11 +104,11 @@ export function StudentCourseCatalogDetail() {
       toast.error("Please login and select a time slot first.");
       return;
     }
-    
+
     setIsBooking(true);
     const formattedDate = selectedSlot.date.toISOString().split('T')[0];
     const formattedTime = `${(selectedSlot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
-    
+
     const res = await createSession({
       tutor_id: availability.tutor_id,
       student_id: user.id,
@@ -132,7 +133,7 @@ export function StudentCourseCatalogDetail() {
       <div className="mx-auto w-full max-w-[1200px] p-4 md:p-8 dark:bg-[#111b21]">
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Main Content (Left) */}
           <div className="lg:col-span-2 space-y-8">
 
@@ -144,7 +145,7 @@ export function StudentCourseCatalogDetail() {
               <p className="text-[16px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
                 {course.description}
               </p>
-              
+
               <div className="flex items-center gap-4 text-[14px]">
                 <div className="flex items-center gap-1.5 text-yellow-500 font-bold">
                   <span>{course.rating}</span>
@@ -166,8 +167,8 @@ export function StudentCourseCatalogDetail() {
                   onClick={() => setActiveTab(tab)}
                   className={cn(
                     "pb-3 text-[16px] font-bold transition-all relative",
-                    activeTab === tab 
-                      ? "text-[#111] dark:text-white" 
+                    activeTab === tab
+                      ? "text-[#111] dark:text-white"
                       : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
                   )}
                 >
@@ -181,20 +182,20 @@ export function StudentCourseCatalogDetail() {
 
             {/* Tabs Content */}
             <div className="pt-4">
-              
+
               {/* OUTLINE TAB */}
               {activeTab === "Outline" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center justify-between text-[14px] text-[#54656f] dark:text-[#aebac1] mb-2">
                     <span>{course.syllabus.length} sections • {course.syllabus.reduce((acc, s) => acc + s.sessions, 0)} sessions</span>
-                    <button 
+                    <button
                       onClick={() => setExpandedModules(expandedModules.length === course.syllabus.length ? [] : course.syllabus.map((_, i) => i))}
                       className="text-[#1099A1] font-bold hover:underline"
                     >
                       {expandedModules.length === course.syllabus.length ? "Collapse all sections" : "Expand all sections"}
                     </button>
                   </div>
-                  
+
                   <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-white dark:bg-[#182329]">
                     {course.syllabus.map((module, i) => (
                       <div key={i} className="border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
@@ -218,7 +219,7 @@ export function StudentCourseCatalogDetail() {
                         {expandedModules.includes(i) && (
                           <div className="p-4 bg-white dark:bg-[#111b21]">
                             <ul className="space-y-4">
-                              {Array.from({length: module.sessions > 3 ? 3 : module.sessions}).map((_, idx) => (
+                              {Array.from({ length: module.sessions > 3 ? 3 : module.sessions }).map((_, idx) => (
                                 <li key={idx} className="flex items-start justify-between text-[14px] group cursor-pointer hover:bg-[#f8f9fa] dark:hover:bg-[#182329] p-2 rounded -mx-2">
                                   <div className="flex items-center gap-3">
                                     <Users size={16} className="text-[#54656f] dark:text-[#aebac1]" />
@@ -259,7 +260,7 @@ export function StudentCourseCatalogDetail() {
                       <span className="text-[#54656f] dark:text-[#aebac1] font-bold text-[14px]">Course Rating</span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {course.reviews_data.map(review => (
                       <div key={review.id} className="border-t border-[#e9edef] dark:border-[#2a3942] pt-6">
@@ -273,7 +274,7 @@ export function StudentCourseCatalogDetail() {
                           </div>
                         </div>
                         <div className="flex text-yellow-500 mb-3">
-                          {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                          {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
                         </div>
                         <p className="text-[14px] text-[#111] dark:text-[#e9edef] leading-relaxed">
                           {review.text}
@@ -290,7 +291,7 @@ export function StudentCourseCatalogDetail() {
               {activeTab === "Resume" && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">Resume</h2>
-                  
+
                   <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
                     <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#ff4f79] pb-2 inline-block">Certifications</span>
                   </div>
@@ -320,9 +321,7 @@ export function StudentCourseCatalogDetail() {
               {/* AVAILABILITY TAB */}
               {activeTab === "Availability" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-2">Availability</h2>
-                  <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Click on an available time slot to select it, then book your lesson on the right.</p>
-                  
+
                   {!availability ? (
                     <div className="p-12 text-center text-[#54656f] dark:text-[#aebac1] border border-dashed rounded-xl border-[#e9edef] dark:border-[#2a3942]">
                       <Clock className="mx-auto mb-4 opacity-50" size={32} />
@@ -332,7 +331,7 @@ export function StudentCourseCatalogDetail() {
                   ) : (
                     <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-x-auto bg-white dark:bg-[#182329] shadow-sm">
                       <div className="min-w-[600px] p-4">
-                        
+
                         {/* Week Header */}
                         <div className="flex items-center justify-between mb-6 px-2">
                           <div className="flex items-center gap-2">
@@ -359,7 +358,7 @@ export function StudentCourseCatalogDetail() {
                                 <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                                 <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
                               </div>
-                              
+
                               <div className="space-y-2">
                                 {availability.disabled_days?.includes(dIndex) ? (
                                   <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] py-4 bg-[#f8f9fa] dark:bg-[#111b21] rounded">Off</div>
@@ -369,15 +368,15 @@ export function StudentCourseCatalogDetail() {
                                     if (mode === 0) return null; // Only show available slots
 
                                     const isSelected = selectedSlot?.dayIndex === dIndex && selectedSlot?.hourIndex === hIndex;
-                                    
+
                                     return (
                                       <button
                                         key={hIndex}
                                         onClick={() => setSelectedSlot({ dayIndex: dIndex, hourIndex: hIndex, date: day, mode })}
                                         className={cn(
                                           "w-full py-2 text-[13px] font-bold rounded transition-all",
-                                          isSelected 
-                                            ? "bg-[#1099A1] text-white shadow-md scale-105" 
+                                          isSelected
+                                            ? "bg-[#1099A1] text-white shadow-md scale-105"
                                             : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
                                         )}
                                       >
@@ -405,7 +404,7 @@ export function StudentCourseCatalogDetail() {
 
               {/* Preply-style Booking Card */}
               <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden shadow-sm">
-                
+
                 {/* Video Header */}
                 <div className="relative w-full aspect-video bg-[#111]" onClick={() => setIsVideoOpen(true)}>
                   <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-80" />
@@ -495,9 +494,9 @@ export function StudentCourseCatalogDetail() {
                 <Plus className="rotate-45" size={28} />
               </button>
             </div>
-            
+
             {/* Scrollable Socials */}
-            <div className="flex overflow-x-auto gap-4 pb-4 mb-2 scrollbar-hide">
+            <div className="flex overflow-x-auto gap-4 pb-4 mb-2 scrollbar-hide -mx-2 px-2">
               <button className="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
                 <Facebook size={22} />
               </button>
@@ -511,12 +510,34 @@ export function StudentCourseCatalogDetail() {
                 <Instagram size={22} />
               </button>
               <button className="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <Youtube size={22} />
+              </button>
+              <button className="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <MessageCircle size={22} />
+              </button>
+              <button className="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
                 <Mail size={22} />
+              </button>
+              <button className="shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] text-[#111] dark:text-white transition-colors border border-[#e9edef] dark:border-[#2a3942]">
+                <Link2 size={22} />
               </button>
             </div>
             <div className="flex items-center gap-2 mt-4 p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
               <input type="text" readOnly value="https://yakal.app/course/CAT-01" className="bg-transparent flex-1 outline-none text-[13px] text-[#54656f] dark:text-[#aebac1] px-2" />
-              <Button className="h-8 text-[12px] bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-lg px-4" onClick={() => { toast.success("Link copied!"); setIsShareOpen(false); }}>Copy</Button>
+              <Button
+                className={cn(
+                  "h-8 text-[12px] text-white rounded-lg px-4 transition-all duration-300 flex items-center gap-1.5",
+                  isCopied ? "bg-green-500 hover:bg-green-600" : "bg-[#1099A1] hover:bg-[#0d848b]"
+                )}
+                onClick={() => {
+                  navigator.clipboard.writeText("https://yakal.app/course/CAT-01");
+                  setIsCopied(true);
+                  toast.success("Link copied!");
+                  setTimeout(() => setIsCopied(false), 2000);
+                }}
+              >
+                {isCopied ? <><Check size={14} /> Copied</> : "Copy"}
+              </Button>
             </div>
           </div>
         </div>
