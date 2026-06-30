@@ -523,8 +523,32 @@ export function StudentMessages() {
   useEffect(() => {
     if (draftState?.draftMessage) {
       setInputText(draftState.draftMessage);
-      // In a real app we'd find the correct conversation by tutorName or ID
+      if (draftState.tutorName) {
+        const existingConv = conversations.find(c => c.contact.name === draftState.tutorName);
+        if (existingConv) {
+          setActiveConvId(existingConv.id);
+        } else {
+          // Create a mock conversation for this tutor if they don't exist in mock data
+          const newConv: Conversation = {
+            id: `conv-draft-${Date.now()}`,
+            isPinned: false,
+            unreadCount: 0,
+            contact: {
+              id: `u-draft-${Date.now()}`,
+              name: draftState.tutorName,
+              role: "Tutor",
+              avatar: "https://i.pravatar.cc/96?img=11",
+              isOnline: true,
+              lastSeen: new Date(),
+            },
+            messages: []
+          };
+          setConversations(prev => [newConv, ...prev]);
+          setActiveConvId(newConv.id);
+        }
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftState]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
