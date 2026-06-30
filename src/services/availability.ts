@@ -28,6 +28,20 @@ export const getTutorAvailability = async (tutorId: string): Promise<TutorAvaila
   }
 };
 
+export const getFirstAvailableTutor = async (): Promise<TutorAvailability | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('tutor_availability')
+      .select('*')
+      .limit(1)
+      .single();
+    if (error) return null;
+    return data as TutorAvailability;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const saveTutorAvailability = async (tutorId: string, timeGrid: number[][], disabledDays: number[]) => {
   try {
     const { error } = await supabase
