@@ -29,11 +29,11 @@ const courseData = {
     stats: "72 new contacts and 4 lesson bookings in the last 48 hours"
   },
   syllabus: [
-    { title: "Module 1: Introduction to Variables", lectures: 5, time: "2h 30m" },
-    { title: "Module 2: Linear Equations", lectures: 8, time: "4h 15m" },
-    { title: "Module 3: Functions and Graphs", lectures: 12, time: "6h 45m" },
-    { title: "Module 4: Polynomials", lectures: 6, time: "3h 20m" },
-    { title: "Module 5: Final Assessment", lectures: 10, time: "8h 00m" },
+    { title: "Module 1: Introduction to Variables", sessions: 5, time: "2h 30m" },
+    { title: "Module 2: Linear Equations", sessions: 8, time: "4h 15m" },
+    { title: "Module 3: Functions and Graphs", sessions: 12, time: "6h 45m" },
+    { title: "Module 4: Polynomials", sessions: 6, time: "3h 20m" },
+    { title: "Module 5: Final Assessment", sessions: 10, time: "8h 00m" },
   ],
   reviews_data: [
     { id: 1, name: "María Alicia", date: "June 5, 2026", text: "Learning with Avery is truly amazing. You feel comfortable from day one. Every lesson feels relaxed, but also productive and engaging at the same time." },
@@ -60,6 +60,9 @@ export function StudentCourseCatalogDetail() {
   const [selectedSlot, setSelectedSlot] = useState<{ dayIndex: number, hourIndex: number, date: Date, mode: number } | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const course = courseData;
 
@@ -183,7 +186,7 @@ export function StudentCourseCatalogDetail() {
               {activeTab === "Outline" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center justify-between text-[14px] text-[#54656f] dark:text-[#aebac1] mb-2">
-                    <span>{course.syllabus.length} sections • {course.syllabus.reduce((acc, s) => acc + s.lectures, 0)} lectures</span>
+                    <span>{course.syllabus.length} sections • {course.syllabus.reduce((acc, s) => acc + s.sessions, 0)} sessions</span>
                     <button 
                       onClick={() => setExpandedModules(expandedModules.length === course.syllabus.length ? [] : course.syllabus.map((_, i) => i))}
                       className="text-[#1099A1] font-bold hover:underline"
@@ -208,18 +211,18 @@ export function StudentCourseCatalogDetail() {
                             <h3 className="text-[16px] font-bold text-[#111] dark:text-white">{module.title}</h3>
                           </div>
                           <div className="text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0">
-                            <span>{module.lectures} lectures • {module.time}</span>
+                            <span>{module.sessions} sessions • {module.time}</span>
                           </div>
                         </button>
 
                         {expandedModules.includes(i) && (
                           <div className="p-4 bg-white dark:bg-[#111b21]">
                             <ul className="space-y-4">
-                              {Array.from({length: module.lectures > 3 ? 3 : module.lectures}).map((_, idx) => (
+                              {Array.from({length: module.sessions > 3 ? 3 : module.sessions}).map((_, idx) => (
                                 <li key={idx} className="flex items-start justify-between text-[14px] group cursor-pointer hover:bg-[#f8f9fa] dark:hover:bg-[#182329] p-2 rounded -mx-2">
                                   <div className="flex items-center gap-3">
-                                    <PlayCircle size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                                    <span className="text-[#111] dark:text-white group-hover:text-[#1099A1] transition-colors">Lecture {idx + 1} Introduction</span>
+                                    <Users size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+                                    <span className="text-[#111] dark:text-white group-hover:text-[#1099A1] transition-colors">Session {idx + 1}: Introduction</span>
                                   </div>
                                   <span className="text-[#54656f] dark:text-[#aebac1]">12:4{idx}</span>
                                 </li>
@@ -404,7 +407,7 @@ export function StudentCourseCatalogDetail() {
               <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden shadow-sm">
                 
                 {/* Video Header */}
-                <div className="relative w-full aspect-video bg-[#111]">
+                <div className="relative w-full aspect-video bg-[#111]" onClick={() => setIsVideoOpen(true)}>
                   <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-80" />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 group cursor-pointer hover:bg-black/40 transition-colors">
                     <PlayCircle size={48} className="text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
@@ -437,13 +440,13 @@ export function StudentCourseCatalogDetail() {
                   </Button>
 
                   <div className="flex gap-2 mb-6">
-                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                    <Button variant="outline" onClick={() => navigate('/student/messages')} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
                       <MessageSquare size={16} /> Message
                     </Button>
-                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-                      <Heart size={16} /> Save
+                    <Button variant="outline" onClick={() => { setIsSaved(!isSaved); toast.success(isSaved ? "Removed from list" : "Saved to your list!"); }} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                      <Heart size={16} className={isSaved ? "fill-red-500 text-red-500" : ""} /> Save
                     </Button>
-                    <Button variant="outline" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
+                    <Button variant="outline" onClick={() => setIsShareOpen(true)} className="flex-1 h-12 flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#111] dark:text-white border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
                       <Share size={16} /> Share
                     </Button>
                   </div>
@@ -466,6 +469,44 @@ export function StudentCourseCatalogDetail() {
 
         </div>
       </div>
+
+      {/* Video Modal */}
+      {isVideoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-4xl bg-black rounded-2xl overflow-hidden relative shadow-2xl">
+            <button onClick={() => setIsVideoOpen(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2">
+              <Plus className="rotate-45" size={24} />
+            </button>
+            <div className="aspect-video w-full flex items-center justify-center bg-[#111]">
+              <PlayCircle size={64} className="text-white/50" />
+              <span className="text-white ml-4 text-lg">Course Introduction Video (Mock)</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {isShareOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setIsShareOpen(false)}>
+          <div className="w-full max-w-md bg-white dark:bg-[#202c33] rounded-2xl overflow-hidden shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Share this course</h3>
+              <button onClick={() => setIsShareOpen(false)} className="text-[#54656f] hover:text-[#111] dark:hover:text-white">
+                <Plus className="rotate-45" size={24} />
+              </button>
+            </div>
+            <div className="flex gap-4 justify-center py-4">
+              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><Share size={20}/></Button>
+              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><MessageSquare size={20}/></Button>
+              <Button variant="outline" className="h-12 w-12 rounded-full p-0 flex items-center justify-center"><FileText size={20}/></Button>
+            </div>
+            <div className="flex items-center gap-2 mt-4 p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
+              <input type="text" readOnly value="https://yakal.app/course/CAT-01" className="bg-transparent flex-1 outline-none text-[13px] text-[#54656f] dark:text-[#aebac1] px-2" />
+              <Button className="h-8 text-[12px] bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-lg px-4" onClick={() => { toast.success("Link copied!"); setIsShareOpen(false); }}>Copy</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }
