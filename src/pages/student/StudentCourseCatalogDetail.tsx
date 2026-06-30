@@ -110,10 +110,37 @@ export function StudentCourseCatalogDetail() {
     });
   };
 
-  const formatHour = (h: number) => {
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 || 12;
+  const tzOffsets: Record<string, number> = {
+    "Local Time": 0,
+    "US/Eastern": -7,
+    "Africa/Addis_Ababa": 0,
+    "Europe/London": -2,
+  };
+  const tzOffset = tzOffsets[selectedTimezone] || 0;
+
+  const formatHour = (h: number, offset: number) => {
+    let shiftedHour = h + offset;
+    if (shiftedHour < 0) shiftedHour += 24;
+    if (shiftedHour >= 24) shiftedHour -= 24;
+    
+    const ampm = shiftedHour >= 12 ? 'PM' : 'AM';
+    const hour12 = shiftedHour % 12 || 12;
     return `${hour12}:00 ${ampm}`;
+  };
+
+  const getModeClasses = (mode: number, isSelected: boolean) => {
+    if (isSelected) {
+      if (mode === 1) return 'bg-sky-500 text-white shadow-md scale-105 border border-sky-500';
+      if (mode === 2) return 'bg-emerald-500 text-white shadow-md scale-105 border border-emerald-500';
+      if (mode === 3) return 'bg-amber-500 text-white shadow-md scale-105 border border-amber-500';
+      return 'bg-[#1099A1] text-white shadow-md scale-105 border border-[#1099A1]';
+    }
+    
+    if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400 border';
+    if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border';
+    if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border';
+    
+    return 'border border-[#e9edef] text-[#54656f]';
   };
 
   const handleBookSlot = async () => {
@@ -287,7 +314,7 @@ export function StudentCourseCatalogDetail() {
 
                   <div className="flex overflow-x-auto gap-6 pb-4 -mx-4 px-4 scrollbar-hide">
                     {course.reviews_data.map(review => (
-                      <div key={review.id} className="min-w-[300px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 bg-white dark:bg-[#182329] shrink-0">
+                      <div key={review.id} className="w-[320px] max-w-[80vw] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 bg-white dark:bg-[#182329] shrink-0">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 rounded-full bg-[#1099A1] text-white flex items-center justify-center font-bold text-[16px]">
                             {review.name.charAt(0)}
@@ -318,7 +345,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Education */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Education</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-sky-500 pb-2 inline-block">Education</span>
                     </div>
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -345,7 +372,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Achievements */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Achievements</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-emerald-500 pb-2 inline-block">Achievements</span>
                     </div>
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -363,7 +390,7 @@ export function StudentCourseCatalogDetail() {
                   {/* Certifications */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-amber-500 pb-2 inline-block">Certifications</span>
                     </div>
                     <div className="space-y-6">
                       {course.certifications.map(cert => (
@@ -484,15 +511,11 @@ export function StudentCourseCatalogDetail() {
                                         onClick={() => toggleSlot(dIndex, hIndex, day, mode)}
                                         className={cn(
                                           "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
-                                          isSelected
-                                            ? "bg-[#1099A1] text-white shadow-md scale-105"
-                                            : mode === 1 ? "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400" 
-                                              : mode === 2 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                                : "bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400"
+                                          getModeClasses(mode, isSelected)
                                         )}
                                       >
-                                        <span>{formatHour(hour)}</span>
-                                        <span className={cn("text-[9px] uppercase tracking-wider opacity-80", isSelected ? "text-white" : "text-[#54656f]")}>
+                                        <span>{formatHour(hour, tzOffset)}</span>
+                                        <span className={cn("text-[9px] uppercase tracking-wider", isSelected ? "text-white/90" : "opacity-80")}>
                                           {mode === 1 ? "Online" : mode === 2 ? "In-Person" : "Both"}
                                         </span>
                                       </button>
