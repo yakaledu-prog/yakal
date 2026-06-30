@@ -5,6 +5,7 @@ import { AuthPage } from "../pages/shared/AuthPage";
 import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
 import { OnboardingPage } from "../pages/shared/OnboardingPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
+import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <App />, 
+    errorElement: <ErrorPage />,
   },
   {
     path: "/login",
@@ -84,6 +86,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <ProtectedRoute />,
+    errorElement: <ErrorPage />,
     children: [
       {
         path: "onboarding",

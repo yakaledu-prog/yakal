@@ -285,9 +285,9 @@ export function StudentCourseCatalogDetail() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex overflow-x-auto gap-6 pb-4 -mx-4 px-4 scrollbar-hide">
                     {course.reviews_data.map(review => (
-                      <div key={review.id} className="border-t border-[#e9edef] dark:border-[#2a3942] pt-6">
+                      <div key={review.id} className="min-w-[300px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 bg-white dark:bg-[#182329] shrink-0">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 rounded-full bg-[#1099A1] text-white flex items-center justify-center font-bold text-[16px]">
                             {review.name.charAt(0)}
@@ -313,31 +313,77 @@ export function StudentCourseCatalogDetail() {
 
               {/* RESUME TAB */}
               {activeTab === "Resume" && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">Resume</h2>
-
-                  <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
-                    <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#ff4f79] pb-2 inline-block">Certifications</span>
-                  </div>
-
-                  <div className="space-y-6 pt-4">
-                    {course.certifications.map(cert => (
-                      <div key={cert.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  
+                  {/* Education */}
+                  <div>
+                    <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Education</span>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                         <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                          {cert.year}
+                          2014 – 2018
                         </div>
                         <div className="flex-1 space-y-1">
-                          <h4 className="text-[16px] font-bold text-[#111] dark:text-white">{cert.title}</h4>
-                          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">{cert.issuer}</p>
-                          {cert.verified && (
-                            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[13px] font-bold mt-1">
-                              <CheckCircle2 size={14} />
-                              Certificate verified
-                            </div>
-                          )}
+                          <h4 className="text-[16px] font-bold text-[#111] dark:text-white">M.S. in Mathematics</h4>
+                          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Stanford University</p>
                         </div>
                       </div>
-                    ))}
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                        <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                          2010 – 2014
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <h4 className="text-[16px] font-bold text-[#111] dark:text-white">B.S. in Applied Mathematics</h4>
+                          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">University of California, Berkeley</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Achievements */}
+                  <div>
+                    <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Achievements</span>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                        <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                          2023
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <h4 className="text-[16px] font-bold text-[#111] dark:text-white">Outstanding Educator Award</h4>
+                          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">National Mathematics Society</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Certifications */}
+                  <div>
+                    <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                      <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
+                    </div>
+                    <div className="space-y-6">
+                      {course.certifications.map(cert => (
+                        <div key={cert.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
+                          <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                            {cert.year}
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <h4 className="text-[16px] font-bold text-[#111] dark:text-white">{cert.title}</h4>
+                            <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">{cert.issuer}</p>
+                            {cert.verified && (
+                              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[13px] font-bold mt-1">
+                                <CheckCircle2 size={14} />
+                                Certificate verified
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -440,7 +486,9 @@ export function StudentCourseCatalogDetail() {
                                           "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
                                           isSelected
                                             ? "bg-[#1099A1] text-white shadow-md scale-105"
-                                            : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
+                                            : mode === 1 ? "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400" 
+                                              : mode === 2 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                                : "bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400"
                                         )}
                                       >
                                         <span>{formatHour(hour)}</span>
@@ -491,8 +539,8 @@ export function StudentCourseCatalogDetail() {
                       <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">lessons</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[20px] font-bold text-[#111] dark:text-white">{course.price}</div>
-                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">60-min lesson</div>
+                      <div className="text-[20px] font-bold text-[#111] dark:text-white">${(parseFloat(course.price.replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}</div>
+                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min lesson` : '60-min lesson'}</div>
                     </div>
                   </div>
 
