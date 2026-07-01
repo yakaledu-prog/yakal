@@ -22,7 +22,6 @@ interface Session {
 
 export function TutorSessions() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -163,7 +162,7 @@ export function TutorSessions() {
                       <>
                         {session.meetingRoomId && (session.mode === 1 || session.mode === 3) && (
                           <Button
-                            onClick={() => navigate(`/tutor/meeting/${session.id}`)}
+                            onClick={() => window.open(`https://meet.jit.si/${session.meetingRoomId}`, '_blank')}
                             className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d7f86]"
                           >
                             <Video size={14} />
