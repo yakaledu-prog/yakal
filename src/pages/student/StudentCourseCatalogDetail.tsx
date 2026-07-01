@@ -149,10 +149,11 @@ export function StudentCourseCatalogDetail() {
     setIsBooking(true);
     
     try {
-      // Book all selected slots
+      // Book all selected slots — each gets a unique Jitsi meeting room
       await Promise.all(selectedSlots.map(slot => {
         const formattedDate = slot.date.toISOString().split('T')[0];
         const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
+        const meetingRoomId = `yakal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         
         return createSession({
           tutor_id: availability.tutor_id,
@@ -161,7 +162,8 @@ export function StudentCourseCatalogDetail() {
           date: formattedDate,
           start_time: formattedTime,
           duration_minutes: 60,
-          mode: slot.mode
+          mode: slot.mode,
+          meeting_room_id: meetingRoomId,
         });
       }));
 

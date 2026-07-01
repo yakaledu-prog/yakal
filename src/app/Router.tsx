@@ -24,6 +24,7 @@ import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
+import { StudentMeeting } from "../pages/student/StudentMeeting";
 
 import { TutorLayout } from "../pages/tutor/TutorLayout";
 import { TutorHome } from "../pages/tutor/TutorHome";
@@ -42,6 +43,7 @@ import { TutorNotifications } from "../pages/tutor/TutorNotifications";
 import { TutorMessages } from "../pages/tutor/TutorMessages";
 import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
+import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 function ProtectedRoute() {
@@ -123,6 +125,7 @@ const router = createBrowserRouter([
           { path: "profile", element: <TutorProfile /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "notifications", element: <TutorNotifications /> },
+          { path: "meeting/:sessionId", element: <TutorMeeting /> },
           { path: "*", element: <NotFoundPage /> },
         ]
       },
@@ -157,6 +160,7 @@ const router = createBrowserRouter([
           { path: "profile", element: <StudentProfile /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "notifications", element: <StudentNotifications /> },
+          { path: "meeting/:sessionId", element: <StudentMeeting /> },
           { path: "*", element: <NotFoundPage /> },
         ]
       }

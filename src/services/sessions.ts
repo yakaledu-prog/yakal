@@ -7,14 +7,16 @@ export interface CreateSessionParams {
   date: string; // YYYY-MM-DD
   start_time: string; // HH:mm:ss
   duration_minutes: number;
-  mode: number; // 1: Online, 2: In-Person, 3: Both (though usually booked as 1 or 2)
+  mode: number; // 1: Online, 2: In-Person, 3: Both
+  meeting_room_id: string;
+  status?: string; // 'upcoming' | 'completed' | 'canceled'
 }
 
 export const createSession = async (params: CreateSessionParams) => {
   try {
     const { data, error } = await supabase
       .from('sessions')
-      .insert([params])
+      .insert([{ ...params, status: params.status || 'upcoming' }])
       .select()
       .single();
 
@@ -27,6 +29,40 @@ export const createSession = async (params: CreateSessionParams) => {
     console.error('Failed to create session', e);
     return { success: false, error: e.message };
   }
+};
+
+export const getSessionById = async (sessionId: string) => {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .single();
+
+  if (error || !data) return null;
+
+  // Fetch both tutor and student names
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', [data.tutor_id, data.student_id]);
+
+  return {
+    ...data,
+    tutor_name: profiles?.find((p: any) => p.id === data.tutor_id)?.full_name || 'Tutor',
+    student_name: profiles?.find((p: any) => p.id === data.student_id)?.full_name || 'Student',
+  };
+};
+
+export const updateSessionStatus = async (sessionId: string, status: string) => {
+  const { error } = await supabase
+    .from('sessions')
+    .update({ status })
+    .eq('id', sessionId);
+
+  if (error) {
+    console.error('Failed to update session status', error);
+  }
+  return !error;
 };
 
 export const getStudentSessions = async (studentId: string) => {

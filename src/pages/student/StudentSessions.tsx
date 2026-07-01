@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -15,10 +16,13 @@ interface Session {
   time: string;
   duration: string;
   status: "Upcoming" | "Completed" | "Canceled";
+  meetingRoomId?: string;
+  mode?: number;
 }
 
 export function StudentSessions() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -30,15 +34,24 @@ export function StudentSessions() {
       setLoading(true);
       const { data } = await getStudentSessions(user.id);
       if (data) {
-        setSessions(data.map((s: any) => ({
-          id: s.id,
-          subject: s.subject,
-          tutor: s.tutor_name || 'Tutor',
-          date: s.date,
-          time: s.start_time.substring(0, 5),
-          duration: `${s.duration_minutes} min`,
-          status: "Upcoming"
-        })));
+        setSessions(data.map((s: any) => {
+          const dbStatus = (s.status || 'upcoming').toLowerCase();
+          let status: Session['status'] = 'Upcoming';
+          if (dbStatus === 'completed') status = 'Completed';
+          else if (dbStatus === 'canceled') status = 'Canceled';
+          
+          return {
+            id: s.id,
+            subject: s.subject,
+            tutor: s.tutor_name || 'Tutor',
+            date: s.date,
+            time: s.start_time?.substring(0, 5) || '',
+            duration: `${s.duration_minutes} min`,
+            status,
+            meetingRoomId: s.meeting_room_id,
+            mode: s.mode,
+          };
+        }));
       }
       setLoading(false);
     };
@@ -152,17 +165,18 @@ export function StudentSessions() {
                         <Button variant="outline" className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942]">
                           Reschedule
                         </Button>
-                        <Button className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2">
-                          <Video size={14} />
-                          Join Meeting
-                        </Button>
+                        {session.meetingRoomId && (session.mode === 1 || session.mode === 3) && (
+                          <Button
+                            onClick={() => navigate(`/student/meeting/${session.id}`)}
+                            className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d7f86]"
+                          >
+                            <Video size={14} />
+                            Join Meeting
+                          </Button>
+                        )}
                       </>
                     ) : session.status === "Completed" ? (
                       <>
-                        <Button variant="outline" className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
-                          <Video size={14} />
-                          Watch Recording
-                        </Button>
                         <Button variant="outline" className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
                           <FileText size={14} />
                           View Notes
