@@ -3,7 +3,7 @@ import { ZoomMtg } from '@zoom/meetingsdk';
 import { generateZoomSignature } from '@/services/zoom';
 
 // Set up the Zoom SDK resources
-ZoomMtg.setZoomJSLib('https://source.zoom.us/3.1.6/lib', '/av');
+ZoomMtg.setZoomJSLib('https://source.zoom.us/6.2.0/lib', '/av');
 ZoomMtg.preLoadWasm();
 ZoomMtg.prepareWebSDK();
 // loads language files, also passes any error messages to the ui
@@ -30,6 +30,12 @@ export function ZoomMeeting({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Show the Zoom UI when this component mounts
+    const zoomRoot = document.getElementById('zmmtg-root');
+    if (zoomRoot) {
+      zoomRoot.style.display = 'block';
+    }
+
     const initMeeting = async () => {
       try {
         // Get signature from our backend
@@ -73,6 +79,10 @@ export function ZoomMeeting({
     return () => {
       // Cleanup? Zoom doesn't provide a clean unmount,
       // it's usually best to let the leaveUrl handle navigation.
+      const zoomRoot = document.getElementById('zmmtg-root');
+      if (zoomRoot) {
+        zoomRoot.style.display = 'none';
+      }
     };
   }, [meetingNumber, password, userName, userEmail, role, leaveUrl]);
 
