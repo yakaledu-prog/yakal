@@ -9,6 +9,8 @@ export interface CreateSessionParams {
   duration_minutes: number;
   mode: number; // 1: Online, 2: In-Person, 3: Both
   meeting_room_id: string;
+  zoom_meeting_id?: string;
+  zoom_password?: string;
   status?: string; // 'upcoming' | 'completed' | 'canceled'
 }
 

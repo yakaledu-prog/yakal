@@ -7,6 +7,7 @@ import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
 import { createSession } from "@/services/sessions";
+import { createZoomMeeting } from "@/services/zoom";
 import { toast } from "react-hot-toast";
 
 // Mock data
@@ -149,11 +150,31 @@ export function StudentCourseCatalogDetail() {
     setIsBooking(true);
     
     try {
-      // Book all selected slots — each gets a unique Jitsi meeting room
-      await Promise.all(selectedSlots.map(slot => {
+      // Book all selected slots — each gets a unique Jitsi meeting room and Zoom meeting
+      await Promise.all(selectedSlots.map(async slot => {
         const formattedDate = slot.date.toISOString().split('T')[0];
         const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
         const meetingRoomId = `yakal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        
+        let zoom_meeting_id = undefined;
+        let zoom_password = undefined;
+
+        if (slot.mode === 1 || slot.mode === 3) {
+          try {
+            // For MVP, assuming UTC. In production, calculate proper UTC start_time
+            const zoomStartTime = `${formattedDate}T${formattedTime}Z`;
+            const zoomData = await createZoomMeeting(
+              `${course.title} Session`,
+              zoomStartTime,
+              60
+            );
+            zoom_meeting_id = zoomData.meetingNumber;
+            zoom_password = zoomData.password;
+          } catch (e) {
+            console.error("Zoom meeting creation failed:", e);
+            // Continuing without Zoom to allow booking to succeed as fallback
+          }
+        }
         
         return createSession({
           tutor_id: availability.tutor_id,
@@ -164,6 +185,8 @@ export function StudentCourseCatalogDetail() {
           duration_minutes: 60,
           mode: slot.mode,
           meeting_room_id: meetingRoomId,
+          zoom_meeting_id,
+          zoom_password,
         });
       }));
 

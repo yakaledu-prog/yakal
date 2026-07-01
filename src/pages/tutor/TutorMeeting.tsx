@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionById } from '@/services/sessions';
-import { JitsiMeetingRoom } from '@/components/feature/JitsiMeetingRoom';
+import { ZoomMeeting } from '@/components/feature/ZoomMeeting';
 import { Video } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 export function TutorMeeting() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -22,8 +23,6 @@ export function TutorMeeting() {
         setError('Session not found');
       } else if (data.tutor_id !== user.id) {
         setError('You are not authorized to start this session');
-      } else if (!data.meeting_room_id) {
-        setError('No meeting room associated with this session');
       } else {
         setSession(data);
       }
@@ -61,12 +60,28 @@ export function TutorMeeting() {
   }
 
   return (
-    <JitsiMeetingRoom
-      roomName={session.meeting_room_id}
-      userName={profile?.full_name || 'Tutor'}
-      userEmail={user?.email}
-      subject={session.subject}
-      onMeetingEnd={() => navigate('/tutor/sessions')}
-    />
+    <div className="flex flex-col h-screen w-full bg-white dark:bg-[#111b21]">
+      {session.zoom_meeting_id ? (
+        <ZoomMeeting
+          meetingNumber={session.zoom_meeting_id}
+          password={session.zoom_password}
+          userName={profile?.full_name || 'Tutor'}
+          userEmail={user?.email || ''}
+          role={1} // Host
+          leaveUrl={`${window.location.origin}/tutor/sessions`}
+        />
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#54656f] dark:text-[#aebac1]">
+          <Video className="h-16 w-16 mb-4 opacity-50" />
+          <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-2">No Zoom Meeting Found</h2>
+          <p className="max-w-md mx-auto mb-6">
+            This session doesn't have an active Zoom meeting associated with it. If this is an older session, it might have been created before Zoom integration.
+          </p>
+          <Button onClick={() => navigate('/tutor/sessions')} className="bg-[#1099A1] text-white hover:bg-[#0d7f86]">
+            Return to Sessions
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
