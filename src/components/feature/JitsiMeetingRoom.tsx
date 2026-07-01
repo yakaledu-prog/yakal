@@ -40,7 +40,7 @@ export function JitsiMeetingRoom({ roomName, userName, userEmail, subject, onMee
       {/* Jitsi Meeting */}
       <div className="flex-1">
         <JitsiMeeting
-          domain="meet.jit.si"
+          domain="meet.ffmuc.net"
           roomName={roomName}
           userInfo={{
             displayName: userName,
