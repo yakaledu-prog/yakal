@@ -40,8 +40,8 @@ export function JitsiMeetingRoom({ roomName, userName, userEmail, subject, onMee
       {/* Jitsi Meeting */}
       <div className="flex-1">
         <JitsiMeeting
-          domain="meet.jit.si"
-          roomName={roomName}
+          domain="8x8.vc"
+          roomName={`${import.meta.env.VITE_JAAS_APP_ID}/${roomName}`}
           userInfo={{
             displayName: userName,
             email: userEmail || '',
