@@ -3,7 +3,7 @@ import { Home, Calendar, CheckSquare, Bell, History, Library, MessagesSquareIcon
 
 export function TutorLayout() {
   const navItems = [
-    { name: "Home", href: "/student", icon: <Home size={20} /> },
+    { name: "Home", href: "/tutor", icon: <Home size={20} /> },
     { name: "Courses", href: "/tutor/courses", icon: <Library size={20} /> },
     { name: "My Learning", href: "/tutor/my-learning", icon: <CheckSquare size={20} /> },
     { name: "Calendar", href: "/tutor/calendar", icon: <Calendar size={20} /> },
@@ -12,5 +12,5 @@ export function TutorLayout() {
     { name: "Notifications", href: "/tutor/notifications", icon: <Bell size={20} /> },
   ];
 
-  return <DashboardLayout navItems={navItems} basePath="/student" />;
+  return <DashboardLayout navItems={navItems} basePath="/tutor" />;
 }
