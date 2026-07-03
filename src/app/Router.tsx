@@ -7,6 +7,7 @@ import { OnboardingPage } from "../pages/shared/OnboardingPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
+import { ProposalPage } from "../pages/shared/ProposalPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <AuthPage />,
+  },
+  {
+    path: "/proposal",
+    element: <ProposalPage />,
   },
   {
     path: "/confirm-email",
