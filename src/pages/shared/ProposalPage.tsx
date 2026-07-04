@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   CheckCircle2, Copy, FileText, Check, AlertCircle, Video, Server, Users, 
   CreditCard, LayoutDashboard, Code2, CheckSquare, Globe, Key, CalendarClock,
@@ -203,7 +203,7 @@ export function ProposalPage() {
   let estimatedMonthly = 0;
   let estimatedYearly = 0;
 
-  Object.entries(choices).forEach(([key, value]) => {
+  Object.entries(choices).forEach(([, value]) => {
     if (typeof value === "string" && OPTION_PRICES[value] !== undefined) {
       estimatedDevPrice += OPTION_PRICES[value].devCost;
       const rec = OPTION_PRICES[value].recurring;
@@ -219,7 +219,7 @@ export function ProposalPage() {
     estimatedDevPrice += (choices.gateways.length - 1) * 15;
   }
 
-  const getContractLine = (label: string, choiceKey: keyof typeof choices) => {
+  const getContractLine = (_label: string, choiceKey: keyof typeof choices) => {
     const val = choices[choiceKey] as string;
     if (!val) return `Selected: Pending Decision\n\n`;
     

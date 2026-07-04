@@ -21,20 +21,23 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ## Phase 1: Auth, Profiles & Role-Based Routing
 
-- [ ] Update `Profile` type in `AuthContext.tsx` (add: status, bio, zoom_link, subjects, hourly_rate, grade_level)
-- [ ] Add `refreshProfile()` to `AuthContext`
-- [ ] Add role selection to `AuthPage.tsx` (Student / Tutor / Parent)
-- [ ] Update `OnboardingPage.tsx`:
-  - [ ] Role-specific form fields
-  - [ ] Fix redirect to role-based dashboard (not always `/student`)
-- [ ] Create `PendingApprovalPage.tsx`
-- [ ] Add role guard in `Router.tsx`: pending tutors → `PendingApprovalPage`
-- [ ] Add admin routes in `Router.tsx` (layout + pages)
-- [ ] Add parent routes in `Router.tsx` (layout + pages)
-- [ ] Add counselor routes in `Router.tsx` (layout + pages)
+- [x] Update `Profile` type in `AuthContext.tsx` (add: email, status, bio, phone, zoom_link, subjects, hourly_rate, grade_level, rejection_reason)
+- [x] Add `refreshProfile()` to `AuthContext`
+- [x] Add role selection to `AuthPage.tsx` (Student / Tutor / Parent — already present; login now routes by role, counselor added to demo grid)
+- [x] Create `src/utils/roleRoutes.ts` — `homePathForRole` / `postAuthPath` / `requiresApproval`
+- [x] Update `OnboardingPage.tsx`:
+  - [x] Role-specific form fields (tutor: subjects/rate/zoom/bio; student: grade/subjects; parent/counselor: phone/bio)
+  - [x] Fix redirect to role-based dashboard (not always `/student`)
+  - [x] Remove "(Mock)" avatar label → initials avatar
+- [x] Create `PendingApprovalPage.tsx` (pending + rejected states, check-status, sign-out)
+- [x] Add role guard in `Router.tsx`: pending/rejected tutors & counselors → `PendingApprovalPage`
+- [x] Add `/pending-approval` route
+- [x] Add counselor placeholder route in `Router.tsx` (full portal in Phase 8)
+- [~] Admin/parent routes remain placeholders (full builds in Phase 4 / Phase 7)
+- [x] tsc --noEmit passes, `npm run build` passes
 - [ ] Test: register as student → goes to `/student`
-- [ ] Test: register as tutor → goes to pending page
-- [ ] Test: after admin approves → tutor goes to `/tutor`
+- [ ] Test: register as tutor → onboarding → pending page
+- [ ] Test: after admin approves (Phase 4) → tutor goes to `/tutor`
 
 ---
 

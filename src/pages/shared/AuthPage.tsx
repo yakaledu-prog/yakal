@@ -6,6 +6,7 @@ import { User, GraduationCap, Users } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
+import { postAuthPath } from "@/utils/roleRoutes";
 import toast from "react-hot-toast";
 
 type Mode = "login" | "signup";
@@ -13,9 +14,10 @@ type RoleType = "student" | "parent" | "tutor";
 
 const DEMO_ACCOUNTS = [
   { email: "admin@yakal.com", name: "Almaz T.", role: "Administrator", img: "https://i.pravatar.cc/150?u=admin_yakal" },
-  { email: "parent@yakal.com", name: "Tigist Worku", role: "Parent", img: "https://randomuser.me/api/portraits/women/44.jpg" },
-  { email: "student@yakal.com", name: "Amen Worku", role: "Student", img: "https://i.pravatar.cc/150?u=student_yakal" },
   { email: "tutor@yakal.com", name: "Bethlehem A.", role: "Tutor", img: "https://i.pravatar.cc/150?u=tutor_yakal" },
+  { email: "counselor@yakal.com", name: "Daniel Haile", role: "Counselor", img: "https://i.pravatar.cc/150?u=counselor_yakal" },
+  { email: "student@yakal.com", name: "Amen Worku", role: "Student", img: "https://i.pravatar.cc/150?u=student_yakal" },
+  { email: "parent@yakal.com", name: "Tigist Worku", role: "Parent", img: "https://randomuser.me/api/portraits/women/44.jpg" },
 ];
 
 export function AuthPage() {
@@ -30,20 +32,28 @@ export function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
 
+  // Fetch the just-authenticated user's profile and route by role/status/onboarding.
+  const routeByProfile = async (userId: string) => {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("role, status, is_onboarded")
+      .eq("id", userId)
+      .single();
+    navigate(postAuthPath(prof));
+  };
+
   const handleDemoLogin = async (demoEmail: string) => {
     setDemoLoading(demoEmail);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: demoEmail,
         password: "demo123",
       });
 
       if (error) throw error;
 
-      // The AuthProvider will handle the state, we just navigate
-      // Wait a tiny bit for context to update if needed, then route
       toast.success("Logged in successfully!");
-      navigate("/student"); // Ideally route based on their role
+      if (data.user) await routeByProfile(data.user.id);
     } catch (err: any) {
       toast.error(err.message || "Failed to login demo account.");
     } finally {
@@ -57,13 +67,13 @@ export function AuthPage() {
 
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate("/student");
+        if (data.user) await routeByProfile(data.user.id);
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -81,8 +91,9 @@ export function AuthPage() {
           // Email confirmation is required
           navigate(`/confirm-email?email=${encodeURIComponent(email)}`);
         } else {
+          // New account: profile trigger has run; go complete onboarding.
           toast.success("Account created successfully!");
-          navigate("/student");
+          navigate("/onboarding");
         }
       }
     } catch (err: any) {

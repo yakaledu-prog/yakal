@@ -4,11 +4,20 @@ import { supabase } from "@/lib/supabase";
 
 export interface Profile {
   id: string;
+  email: string | null;
   full_name: string;
   role: string;
-  avatar_url: string;
+  status: string;
+  avatar_url: string | null;
+  bio: string | null;
+  phone: string | null;
+  zoom_link: string | null;
+  subjects: string[] | null;
+  hourly_rate: number | null;
+  grade_level: string | null;
   theme: string;
   is_onboarded: boolean;
+  rejection_reason: string | null;
 }
 
 interface AuthContextType {
@@ -17,6 +26,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<Profile | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,6 +35,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -62,29 +73,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-        
+
       if (data && !error) {
         setProfile(data as Profile);
-        
-        // Optional: apply theme from profile if not already handled
+
+        // Apply theme from profile
         if (data.theme === 'dark') {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
         }
+        return data as Profile;
       }
+      return null;
     } catch (err) {
       console.error("Error fetching profile", err);
+      return null;
     } finally {
       setLoading(false);
     }
+  };
+
+  // Re-fetch the current user's profile (call after profile updates / approval).
+  const refreshProfile = async (): Promise<Profile | null> => {
+    const { data: { user: current } } = await supabase.auth.getUser();
+    if (!current) return null;
+    return fetchProfile(current.id);
   };
 
   const signOut = async () => {
@@ -92,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

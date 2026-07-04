@@ -4,6 +4,7 @@ import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
 import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
 import { OnboardingPage } from "../pages/shared/OnboardingPage";
+import { PendingApprovalPage } from "../pages/shared/PendingApprovalPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
@@ -46,29 +47,49 @@ import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
 
 function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
-  
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-muted/20">Loading...</div>;
   }
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // If profile is loaded but not onboarded, and we aren't already on the onboarding page, redirect to /onboarding
-  if (profile && !profile.is_onboarded && location.pathname !== '/onboarding') {
+  const path = location.pathname;
+
+  // Not onboarded yet -> force onboarding.
+  if (profile && !profile.is_onboarded && path !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If profile is onboarded, and we are trying to access /onboarding, redirect to dashboard
-  if (profile && profile.is_onboarded && location.pathname === '/onboarding') {
-    return <Navigate to={`/${profile.role || 'student'}`} replace />;
+  // Onboarded but trying to revisit onboarding -> send to their dashboard.
+  if (profile && profile.is_onboarded && path === '/onboarding') {
+    return <Navigate to={homePathForRole(profile.role)} replace />;
   }
-  
+
+  // Approval gate: onboarded tutors/counselors who are pending or rejected
+  // can only see the pending-approval screen.
+  const awaitingApproval =
+    !!profile &&
+    profile.is_onboarded &&
+    requiresApproval(profile.role) &&
+    (profile.status === 'pending' || profile.status === 'rejected');
+
+  if (awaitingApproval && path !== '/pending-approval') {
+    return <Navigate to="/pending-approval" replace />;
+  }
+
+  // Anyone not awaiting approval should not sit on the pending screen.
+  if (profile && !awaitingApproval && path === '/pending-approval') {
+    return <Navigate to={homePathForRole(profile.role)} replace />;
+  }
+
   return <Outlet />;
 }
 
@@ -100,8 +121,16 @@ const router = createBrowserRouter([
         element: <OnboardingPage />,
       },
       {
+        path: "pending-approval",
+        element: <PendingApprovalPage />,
+      },
+      {
         path: "admin/*",
         element: <div>Admin Dashboard (Placeholder)</div>,
+      },
+      {
+        path: "counselor/*",
+        element: <div>Counselor Dashboard (Placeholder)</div>,
       },
       {
         path: "tutor",
