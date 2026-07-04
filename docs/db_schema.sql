@@ -8,11 +8,23 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================
+-- SHARED: updated_at trigger function
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- ============================================================
 -- TABLE: profiles
 -- Extends auth.users. Created automatically via trigger below.
 -- ============================================================
 CREATE TABLE public.profiles (
   id             uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email          text UNIQUE,            -- Mirrored from auth.users (clients can't read auth schema)
   full_name      text NOT NULL DEFAULT '',
   role           text NOT NULL DEFAULT 'student'
                  CHECK (role IN ('student', 'tutor', 'counselor', 'parent', 'admin')),
@@ -33,22 +45,35 @@ CREATE TABLE public.profiles (
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
 
--- Auto-update updated_at
-CREATE OR REPLACE FUNCTION public.set_updated_at()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$;
-
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+-- ============================================================
+-- ROLE-CHECK HELPERS (SECURITY DEFINER)
+-- These bypass RLS so policies can check a user's role WITHOUT
+-- causing "infinite recursion detected in policy" on profiles.
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_counselor()
+RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'counselor'
+  );
+$$;
+
 -- Auto-create profile on auth.users INSERT
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public AS $$
 DECLARE
   v_role text;
   v_status text;
@@ -61,9 +86,10 @@ BEGIN
     v_status := 'active';
   END IF;
 
-  INSERT INTO public.profiles (id, full_name, role, status, avatar_url, is_onboarded)
+  INSERT INTO public.profiles (id, email, full_name, role, status, avatar_url, is_onboarded)
   VALUES (
     NEW.id,
+    NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     v_role,
     v_status,
@@ -81,22 +107,52 @@ CREATE TRIGGER on_auth_user_created
 -- RLS for profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view all active profiles"
+CREATE POLICY "Users can view all profiles"
   ON public.profiles FOR SELECT USING (true);
 
 CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
--- Admin can update any profile (for approval flow)
+-- Admin can update any profile (for approval flow) — uses SECURITY DEFINER helper
 CREATE POLICY "Admin can update any profile"
   ON public.profiles FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
-  );
+  USING (public.is_admin());
+
+
+-- ============================================================
+-- TABLE: parent_student_links
+-- Parent requests to monitor a student account.
+-- Created EARLY because several later policies reference it.
+-- ============================================================
+CREATE TABLE public.parent_student_links (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_id   uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  student_id  uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status      text NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending', 'active', 'rejected')),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (parent_id, student_id)
+);
+
+CREATE TRIGGER parent_student_links_updated_at
+  BEFORE UPDATE ON public.parent_student_links
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+ALTER TABLE public.parent_student_links ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Parents see their own link requests"
+  ON public.parent_student_links FOR SELECT USING (auth.uid() = parent_id);
+
+CREATE POLICY "Students see incoming link requests"
+  ON public.parent_student_links FOR SELECT USING (auth.uid() = student_id);
+
+CREATE POLICY "Parents can create link requests"
+  ON public.parent_student_links FOR INSERT WITH CHECK (auth.uid() = parent_id);
+
+CREATE POLICY "Students can approve/reject link requests"
+  ON public.parent_student_links FOR UPDATE USING (auth.uid() = student_id);
 
 
 -- ============================================================
@@ -128,9 +184,7 @@ CREATE POLICY "Anyone can view active courses"
 
 CREATE POLICY "Admin can manage courses"
   ON public.courses FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  );
+  USING (public.is_admin());
 
 
 -- ============================================================
@@ -200,9 +254,7 @@ CREATE POLICY "Tutors see their own sessions"
 
 CREATE POLICY "Admin sees all sessions"
   ON public.sessions FOR SELECT
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  );
+  USING (public.is_admin());
 
 CREATE POLICY "Students can book sessions"
   ON public.sessions FOR INSERT
@@ -425,46 +477,12 @@ CREATE POLICY "Users see their own notifications"
 CREATE POLICY "Users can mark their notifications read"
   ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "System/Admin can insert notifications for any user"
+-- Any authenticated user may create a notification for another user
+-- (e.g. student books -> notifies tutor; parent link -> notifies student).
+-- Admins may also create for anyone.
+CREATE POLICY "Authenticated users can insert notifications"
   ON public.notifications FOR INSERT
-  WITH CHECK (
-    auth.uid() = user_id OR
-    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  );
-
-
--- ============================================================
--- TABLE: parent_student_links
--- Parent requests to monitor a student account.
--- ============================================================
-CREATE TABLE public.parent_student_links (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_id   uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  student_id  uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  status      text NOT NULL DEFAULT 'pending'
-              CHECK (status IN ('pending', 'active', 'rejected')),
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (parent_id, student_id)
-);
-
-CREATE TRIGGER parent_student_links_updated_at
-  BEFORE UPDATE ON public.parent_student_links
-  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-ALTER TABLE public.parent_student_links ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Parents see their own link requests"
-  ON public.parent_student_links FOR SELECT USING (auth.uid() = parent_id);
-
-CREATE POLICY "Students see incoming link requests"
-  ON public.parent_student_links FOR SELECT USING (auth.uid() = student_id);
-
-CREATE POLICY "Parents can create link requests"
-  ON public.parent_student_links FOR INSERT WITH CHECK (auth.uid() = parent_id);
-
-CREATE POLICY "Students can approve/reject link requests"
-  ON public.parent_student_links FOR UPDATE USING (auth.uid() = student_id);
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 
 -- ============================================================
@@ -497,17 +515,16 @@ CREATE POLICY "Students see their own applications"
 CREATE POLICY "Students can submit applications"
   ON public.college_guide_applications FOR INSERT WITH CHECK (auth.uid() = student_id);
 
+CREATE POLICY "Students can update their own applications"
+  ON public.college_guide_applications FOR UPDATE USING (auth.uid() = student_id);
+
 CREATE POLICY "Counselors can view and update all applications"
   ON public.college_guide_applications FOR ALL
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'counselor')
-  );
+  USING (public.is_counselor());
 
 CREATE POLICY "Admin can view all applications"
   ON public.college_guide_applications FOR SELECT
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
-  );
+  USING (public.is_admin());
 
 -- Parents can view their linked student's applications
 CREATE POLICY "Parents can view linked student applications"
@@ -523,12 +540,8 @@ CREATE POLICY "Parents can view linked student applications"
 
 
 -- ============================================================
--- ENABLE REALTIME for messaging
--- (Run this in Supabase Dashboard under Database > Replication
---  OR using the SQL below — requires superuser)
+-- ENABLE REALTIME for messaging & notifications
 -- ============================================================
-
--- Enable Realtime publication for messages
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;

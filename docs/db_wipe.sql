@@ -17,9 +17,12 @@ DROP TABLE IF EXISTS public.tutor_availability CASCADE;
 DROP TABLE IF EXISTS public.courses CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- Step 2: Drop the trigger and function that auto-creates profiles
+-- Step 2: Drop triggers and functions
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.set_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
+DROP FUNCTION IF EXISTS public.is_counselor() CASCADE;
 
 -- Step 3: Delete all demo and test users from auth.users
 -- (This will also cascade-delete their auth.identities rows)

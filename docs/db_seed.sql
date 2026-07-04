@@ -29,10 +29,17 @@ BEGIN
 
   -- ── Insert auth users ──────────────────────────────────────────────────────
 
+  -- NOTE: the empty-string token columns (confirmation_token, recovery_token,
+  -- email_change*, reauthentication_token, phone_change*) MUST be '' not NULL —
+  -- GoTrue's login scanner errors on NULL strings ("converting NULL to string
+  -- is unsupported"), which surfaces as "Database error querying schema".
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password,
-    email_confirmed_at, raw_user_meta_data, created_at, updated_at,
-    confirmation_token, recovery_token, email_change_token_new, email_change
+    email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    created_at, updated_at,
+    confirmation_token, recovery_token,
+    email_change_token_new, email_change, email_change_token_current,
+    reauthentication_token, phone_change, phone_change_token
   ) VALUES
     (
       v_admin_id,
@@ -40,7 +47,8 @@ BEGIN
       'admin@yakal.com', crypt('demo123', gen_salt('bf')),
       now(),
       jsonb_build_object('full_name', 'Almaz Tadesse', 'role', 'admin'),
-      now(), now(), '', '', '', ''
+      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email')),
+      now(), now(), '', '', '', '', '', '', '', ''
     ),
     (
       v_tutor_id,
@@ -48,7 +56,8 @@ BEGIN
       'tutor@yakal.com', crypt('demo123', gen_salt('bf')),
       now(),
       jsonb_build_object('full_name', 'Bethlehem Alemu', 'role', 'tutor'),
-      now(), now(), '', '', '', ''
+      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email')),
+      now(), now(), '', '', '', '', '', '', '', ''
     ),
     (
       v_counselor_id,
@@ -56,7 +65,8 @@ BEGIN
       'counselor@yakal.com', crypt('demo123', gen_salt('bf')),
       now(),
       jsonb_build_object('full_name', 'Daniel Haile', 'role', 'counselor'),
-      now(), now(), '', '', '', ''
+      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email')),
+      now(), now(), '', '', '', '', '', '', '', ''
     ),
     (
       v_parent_id,
@@ -64,7 +74,8 @@ BEGIN
       'parent@yakal.com', crypt('demo123', gen_salt('bf')),
       now(),
       jsonb_build_object('full_name', 'Tigist Worku', 'role', 'parent'),
-      now(), now(), '', '', '', ''
+      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email')),
+      now(), now(), '', '', '', '', '', '', '', ''
     ),
     (
       v_student_id,
@@ -72,7 +83,8 @@ BEGIN
       'student@yakal.com', crypt('demo123', gen_salt('bf')),
       now(),
       jsonb_build_object('full_name', 'Amen Worku', 'role', 'student'),
-      now(), now(), '', '', '', ''
+      jsonb_build_object('provider', 'email', 'providers', jsonb_build_array('email')),
+      now(), now(), '', '', '', '', '', '', '', ''
     );
 
   -- ── Insert auth.identities so login works without email confirmation ────────
@@ -255,8 +267,8 @@ BEGIN
     (v_tutor_id, 'booking',   'New Session Booked',          'Amen Worku booked a session with you for tomorrow at 10:00 AM.', '/tutor/sessions', false),
     (v_tutor_id, 'approval',  'Account Approved',            'Congratulations! Your tutor account has been approved by the administrator.', '/tutor', true),
 
-    -- Parent notifications
-    (v_parent_id, 'system', 'Link Your Child''s Account',    'You have not linked any student accounts yet. Link your child''s account to monitor their progress.', '/parent/link-student', false);
+    -- Parent notifications (parent is already linked to Amen in the seed below)
+    (v_parent_id, 'system', 'Upcoming Session for Amen',      'Amen Worku has a session with Bethlehem Alemu tomorrow at 10:00 AM.', '/parent', false);
 
   -- ── Parent-Student Link (Pre-approved for demo) ──────────────────────────
 
