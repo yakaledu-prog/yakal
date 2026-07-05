@@ -147,8 +147,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             <div className="hidden sm:flex items-center text-sm text-muted-foreground">
               {(() => {
                 const segments = location.pathname.split('/').filter(Boolean);
+                const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(s);
                 const items = segments.map((segment, index) => ({
-                  label: segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                  label: isUuid(segment)
+                    ? 'Details'
+                    : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
                   path: '/' + segments.slice(0, index + 1).join('/')
                 }));
 

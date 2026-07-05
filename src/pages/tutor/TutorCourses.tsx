@@ -34,12 +34,8 @@ export function TutorCourses() {
   return (
     <PageWrapper>
       <div className="mx-auto w-full p-4 md:p-8 h-full dark:bg-[#111b21]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#111] dark:text-white">My Courses</h1>
-            <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] mt-1">Courses the admin has assigned to you.</p>
-          </div>
-          <div className="relative w-full sm:w-[300px]">
+        <div className="flex justify-end mb-6">
+          <div className="relative w-full sm:w-[320px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
             </div>

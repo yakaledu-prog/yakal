@@ -205,6 +205,16 @@ export async function getTutorAssignments(tutorId: string): Promise<AssignmentRo
   });
 }
 
+export async function getAssignment(id: string): Promise<AssignmentRow | null> {
+  const { data } = await supabase
+    .from("assignments")
+    .select("*, courses(title)")
+    .eq("id", id)
+    .single();
+  if (!data) return null;
+  return { ...(data as any), course_title: (data as any).courses?.title ?? null };
+}
+
 export async function createAssignment(input: {
   tutor_id: string;
   course_id: string | null;

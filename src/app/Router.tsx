@@ -35,6 +35,8 @@ import { TutorCalendar } from "../pages/tutor/TutorCalendar";
 import { TutorCourses } from "../pages/tutor/TutorCourses";
 import { TutorStudents } from "../pages/tutor/TutorStudents";
 import { TutorAssignments } from "../pages/tutor/TutorAssignments";
+import { TutorAssignmentNew } from "../pages/tutor/TutorAssignmentNew";
+import { TutorAssignmentDetail } from "../pages/tutor/TutorAssignmentDetail";
 import { TutorSessions } from "../pages/tutor/TutorSessions";
 import { TutorNotifications } from "../pages/tutor/TutorNotifications";
 import { TutorMessages } from "../pages/tutor/TutorMessages";
@@ -165,6 +167,8 @@ const router = createBrowserRouter([
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
           { path: "assignments", element: <TutorAssignments /> },
+          { path: "assignments/new", element: <TutorAssignmentNew /> },
+          { path: "assignments/:id", element: <TutorAssignmentDetail /> },
           { path: "messages", element: <TutorMessages /> },
           { path: "profile", element: <TutorProfile /> },
           { path: "settings", element: <SettingsPage /> },

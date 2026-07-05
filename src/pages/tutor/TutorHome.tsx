@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ChartCard } from "@/components/feature/ChartCard";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -164,16 +163,17 @@ export function TutorHome() {
 
 function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
   return (
-    <Card className={highlight ? "border-[#CAA25F]/50" : ""}>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div className={`p-2.5 rounded-lg ${highlight ? "bg-[#CAA25F]/15 text-[#CAA25F]" : "bg-primary/10 text-primary"}`}>
-          {icon}
+    <Card className={highlight && value > 0 ? "border-[#CAA25F]/40" : ""}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] text-muted-foreground truncate">{label}</p>
+            <p className="text-3xl font-bold mt-1 leading-none">{value}</p>
+          </div>
+          <div className={`shrink-0 p-2.5 rounded-xl ${highlight && value > 0 ? "bg-[#CAA25F]/15 text-[#CAA25F]" : "bg-primary/10 text-primary"}`}>
+            {icon}
+          </div>
         </div>
-        <div>
-          <p className="text-2xl font-bold leading-none">{value}</p>
-          <p className="text-xs text-muted-foreground mt-1">{label}</p>
-        </div>
-        {highlight && value > 0 && <Badge className="ml-auto bg-[#CAA25F] text-white border-0 text-[10px]">New</Badge>}
       </CardContent>
     </Card>
   );
