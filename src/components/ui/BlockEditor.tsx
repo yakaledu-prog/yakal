@@ -3,6 +3,7 @@ import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
+import { en } from "@blocknote/core/locales";
 import { cn } from "@/utils/cn";
 
 // Teal brand accent for BlockNote's blue defaults (selection, hover, menus).
@@ -31,14 +32,20 @@ interface BlockEditorProps {
   onChange: (html: string) => void;
   /** Fill the parent height with no border (for full-pane editors). */
   fullHeight?: boolean;
+  /** Placeholder for the first empty block. */
+  placeholder?: string;
 }
 
 /**
  * Notion-style block editor (BlockNote). Uncontrolled internally; loads the
  * initial HTML once and emits clean HTML on every change for storage/preview.
  */
-export function BlockEditor({ value, onChange, fullHeight }: BlockEditorProps) {
-  const editor = useCreateBlockNote();
+export function BlockEditor({ value, onChange, fullHeight, placeholder }: BlockEditorProps) {
+  const editor = useCreateBlockNote(
+    placeholder
+      ? { dictionary: { ...en, placeholders: { ...en.placeholders, default: placeholder } } }
+      : undefined
+  );
   const dark = useIsDark();
   const loaded = useRef(false);
 

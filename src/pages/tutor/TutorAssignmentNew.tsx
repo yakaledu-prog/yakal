@@ -99,7 +99,12 @@ export function TutorAssignmentNew() {
 
       {/* Right: full-height instructions editor (this is exactly what students see) */}
       <div className="assignment-new__editor flex-1 min-w-0 lg:h-full">
-        <BlockEditor value={description} onChange={setDescription} fullHeight />
+        <BlockEditor
+          value={description}
+          onChange={setDescription}
+          fullHeight
+          placeholder="Write the assignment instructions… (type '/' for headings, lists, and more)"
+        />
       </div>
     </div>
   );
