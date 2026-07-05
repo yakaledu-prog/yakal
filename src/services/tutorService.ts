@@ -218,37 +218,82 @@ export async function getCourseWorkspace(courseId: string, tutorId: string): Pro
 }
 
 // ── Earnings (rate is the tutor's current profile rate) ─────
+export interface EarningsActivity {
+  id: string;
+  date: string;
+  subject: string;
+  student: string;
+  amount: number;
+}
 export interface EarningsSummary {
   total: number;
   thisMonth: number;
+  lastMonth: number;
+  momChangePct: number | null; // this month vs last month
   completedCount: number;
-  avg: number;
-  months: { key: string; label: string; count: number; amount: number }[];
+  rate: number;
+  months: { key: string; label: string; shortLabel: string; count: number; amount: number }[]; // newest first
+  bySubject: { subject: string; count: number; amount: number }[];
+  activity: EarningsActivity[]; // newest first
 }
 
-/** Earnings = completed sessions × current rate, grouped by month (newest first). */
+/** Earnings = completed sessions × current rate, with month/subject/activity views. */
 export function computeEarnings(sessions: SessionRow[], rate: number): EarningsSummary {
-  const completed = sessions.filter((s) => s.status === "completed");
+  const completed = sessions
+    .filter((s) => s.status === "completed")
+    .sort((a, b) => (b.date + b.start_time).localeCompare(a.date + a.start_time));
+
   const byMonth = new Map<string, number>();
+  const bySubjectMap = new Map<string, number>();
   for (const s of completed) {
-    const key = s.date.slice(0, 7); // YYYY-MM
-    byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+    const mk = s.date.slice(0, 7);
+    byMonth.set(mk, (byMonth.get(mk) ?? 0) + 1);
+    bySubjectMap.set(s.subject, (bySubjectMap.get(s.subject) ?? 0) + 1);
   }
+
   const months = [...byMonth.entries()]
     .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([key, count]) => ({
-      key,
-      label: new Date(key + "-01T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-      count,
-      amount: count * rate,
-    }));
-  const thisKey = new Date().toISOString().slice(0, 7);
+    .map(([key, count]) => {
+      const d = new Date(key + "-01T00:00:00");
+      return {
+        key,
+        label: d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+        shortLabel: d.toLocaleDateString(undefined, { month: "short" }),
+        count,
+        amount: count * rate,
+      };
+    });
+
+  const bySubject = [...bySubjectMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([subject, count]) => ({ subject, count, amount: count * rate }));
+
+  const now = new Date();
+  const thisKey = now.toISOString().slice(0, 7);
+  const lastD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastKey = lastD.toISOString().slice(0, 7);
+  const thisMonth = (byMonth.get(thisKey) ?? 0) * rate;
+  const lastMonth = (byMonth.get(lastKey) ?? 0) * rate;
+  const momChangePct = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : null;
+
+  const activity: EarningsActivity[] = completed.map((s) => ({
+    id: s.id,
+    date: s.date,
+    subject: s.subject,
+    student: s.student_name || "Student",
+    amount: rate,
+  }));
+
   return {
     total: completed.length * rate,
-    thisMonth: (byMonth.get(thisKey) ?? 0) * rate,
+    thisMonth,
+    lastMonth,
+    momChangePct,
     completedCount: completed.length,
-    avg: rate,
+    rate,
     months,
+    bySubject,
+    activity,
   };
 }
 
