@@ -5,7 +5,7 @@ import {
   Clock, XCircle, LogOut, Lock, Home, Users, CalendarDays,
   MessagesSquare, ClipboardList, FileText, Loader2,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import logoImg from "@/assets/images/logo.webp";
 import { dicebearUrl } from "@/utils/avatar";
 

@@ -1,4 +1,3 @@
-import { Toaster } from "react-hot-toast";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
 import Subjects from "@/sections/Subjects";
@@ -20,23 +19,6 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
 
   return (
     <div className="bg-white flex flex-col gap-[60px] md:gap-[110px] items-center md:p-[20px] p-0 min-h-screen w-full">
-      <Toaster
-        position="bottom-center"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "#1099a1",
-            color: "#fff",
-            borderRadius: "500px",
-            padding: "14px 24px",
-            fontSize: "15px",
-            fontWeight: 500,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          },
-          iconTheme: { primary: "#fff", secondary: "#1099a1" },
-        }}
-      />
-
       <Hero onNav={scrollTo} />
       <WhyJoinUs />
       <Subjects onNavigate={onNavigate} />

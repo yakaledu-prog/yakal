@@ -7,7 +7,7 @@ import logoImg from "@/assets/images/logo.webp";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 
 type Mode = "login" | "signup";
 type RoleType = "student" | "parent" | "tutor";

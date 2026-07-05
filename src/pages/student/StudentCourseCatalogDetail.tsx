@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
 import { createSession } from "@/services/sessions";
 import { createZoomMeeting } from "@/services/zoom";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 
 // Mock data
 const courseData = {

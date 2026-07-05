@@ -13,7 +13,7 @@ import {
   extractAccentColor, DEFAULT_ACCENT, rgba, RGB,
   initialsGallery, initialsAvatarUrl,
 } from "@/utils/avatar";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
@@ -233,15 +233,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <div className="w-full max-w-[960px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid md:grid-cols-[minmax(0,380px)_1fr]">
-        {/* ── Left: brand + avatar picker (tint follows the avatar) ─── */}
-        <div className="relative overflow-hidden p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col">
-          {/* Animated tint layer — background-color transitions smoothly (a
-              gradient can't animate), so switching avatars eases rather than jumps. */}
-          <div
-            className="absolute inset-0 -z-10 transition-colors duration-700 ease-in-out"
-            style={{ backgroundColor: rgba(accent, 0.16) }}
-          />
-
+        {/* ── Left: brand + avatar picker (solid neutral panel) ─── */}
+        <div className="p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col bg-[#f7f7f7] dark:bg-[#1a2329]">
           {/* Selected avatar preview (circular) */}
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -276,7 +269,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             <button
               type="button"
               onClick={() => setSeeds(randomSeeds(12))}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
+              className="flex items-center gap-1.5 text-[12px] font-medium transition-all duration-300 ease-in-out hover:brightness-90"
+              style={{ color: rgba(accent, 1) }}
               title="Shuffle"
             >
               <Shuffle size={14} /> Shuffle
@@ -291,11 +285,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   key={s.id}
                   type="button"
                   onClick={() => setAvatarStyle(s.id)}
+                  style={active ? { borderColor: rgba(accent, 1), backgroundColor: rgba(accent, 0.1) } : undefined}
                   className={cn(
-                    "shrink-0 flex flex-col items-center gap-1 rounded-lg p-1.5 border transition-all",
-                    active
-                      ? "border-[#1099A1] bg-[#1099A1]/5"
-                      : "border-transparent hover:bg-white/40 dark:hover:bg-white/5"
+                    "shrink-0 flex flex-col items-center gap-1 rounded-lg p-1.5 border transition-all duration-300 ease-in-out",
+                    !active && "border-transparent hover:bg-black/[0.03] dark:hover:bg-white/5"
                   )}
                   title={s.label}
                 >
@@ -304,7 +297,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     alt={s.label}
                     className="w-8 h-8 rounded-md bg-white border border-[#e9edef] dark:border-[#2a3942]"
                   />
-                  <span className={cn("text-[10px]", active ? "text-[#1099A1] font-medium" : "text-[#54656f] dark:text-[#aebac1]")}>
+                  <span
+                    className={cn("text-[10px]", !active && "text-[#54656f] dark:text-[#aebac1]")}
+                    style={active ? { color: rgba(accent, 1), fontWeight: 600 } : undefined}
+                  >
                     {s.label}
                   </span>
                 </button>
@@ -342,11 +338,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
         {/* ── Right: logo + heading + form (scrolls if it overflows) ── */}
         <div className="min-w-0 md:max-h-[88vh] md:overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-8 md:min-h-full flex flex-col gap-6">
-            <img src={logoImg} alt="Yakal" className="h-9 object-contain self-start shrink-0" />
-
+          <form onSubmit={handleSubmit} className="p-8 md:min-h-full flex flex-col">
             <div className="flex-1 flex flex-col justify-center gap-5">
               <div>
+                <img src={logoImg} alt="Yakal" className="h-14 object-contain mb-3" />
                 <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
                   {heading.title}
                 </h1>
