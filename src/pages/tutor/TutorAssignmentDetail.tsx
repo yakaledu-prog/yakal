@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { ArrowLeft, ExternalLink, CalendarClock, Loader2 } from "lucide-react";
+import { ExternalLink, CalendarClock, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   getAssignment, getSubmissions, reviewSubmission, AssignmentRow, SubmissionRow,
@@ -18,7 +18,6 @@ function formatDue(d: string | null) {
 
 export function TutorAssignmentDetail() {
   const { id = "" } = useParams();
-  const navigate = useNavigate();
   const [assignment, setAssignment] = useState<AssignmentRow | null>(null);
   const [subs, setSubs] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,48 +46,44 @@ export function TutorAssignmentDetail() {
   }
 
   return (
-    <PageWrapper>
-      <div className="assignment-detail mx-auto w-full p-4 md:p-8">
-        <button onClick={() => navigate("/tutor/assignments")} className="flex items-center gap-1.5 text-[14px] text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white mb-5">
-          <ArrowLeft size={16} /> Back to assignments
-        </button>
-
-        <div className="assignment-detail__grid grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-          {/* Left: assignment detail (sticky on desktop) */}
-          <div className="assignment-detail__info bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 lg:sticky lg:top-4">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <h1 className="text-xl font-bold text-[#111] dark:text-white">{assignment.title}</h1>
-            </div>
-            {assignment.course_title && <span className="text-[12px] font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">{assignment.course_title}</span>}
-            <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#54656f] dark:text-[#aebac1] my-4">
-              <span className="flex items-center gap-1.5"><CalendarClock size={14} /> {formatDue(assignment.due_date)}</span>
-              {assignment.template_url && (
-                <a href={assignment.template_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary font-medium hover:underline">
-                  <ExternalLink size={14} /> Template
-                </a>
-              )}
-            </div>
-            {assignment.description && <RichText html={assignment.description} />}
-          </div>
-
-          {/* Right: submissions */}
-          <div className="assignment-detail__subs">
-            <h2 className="text-[16px] font-bold text-[#111] dark:text-white mb-3">
-              Submissions <span className="text-[#54656f] dark:text-[#aebac1] font-medium">({subs.length})</span>
-            </h2>
-            {subs.length === 0 ? (
-              <div className="text-center py-12 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#54656f] dark:text-[#aebac1]">
-                No submissions yet.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {subs.map((s) => <SubmissionCard key={s.id} sub={s} onReview={review} />)}
-              </div>
-            )}
-          </div>
+    <div className="assignment-detail flex flex-col lg:flex-row h-full min-h-0 overflow-y-auto lg:overflow-hidden">
+      {/* Left pane: assignment detail */}
+      <aside className="assignment-detail__info w-full lg:w-[380px] shrink-0 lg:h-full lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e9edef] dark:border-[#2a3942] p-6 md:p-8">
+        <h1 className="text-2xl font-bold text-[#111] dark:text-white mb-3">{assignment.title}</h1>
+        {assignment.course_title && (
+          <span className="inline-block text-[12px] font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full mb-4">{assignment.course_title}</span>
+        )}
+        <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#54656f] dark:text-[#aebac1] mb-5">
+          <span className="flex items-center gap-1.5"><CalendarClock size={14} /> {formatDue(assignment.due_date)}</span>
+          {assignment.template_url && (
+            <a href={assignment.template_url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary font-medium hover:underline">
+              <ExternalLink size={14} /> Template
+            </a>
+          )}
         </div>
-      </div>
-    </PageWrapper>
+        {assignment.description
+          ? <RichText html={assignment.description} />
+          : <p className="text-[14px] text-muted-foreground italic">No instructions provided.</p>}
+      </aside>
+
+      {/* Right pane: submissions */}
+      <section className="assignment-detail__subs flex-1 min-w-0 lg:h-full lg:overflow-y-auto bg-muted/20 dark:bg-[#111b21]">
+        <div className="sticky top-0 z-10 bg-muted/20 dark:bg-[#111b21] backdrop-blur px-6 md:px-8 py-4 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <h2 className="text-[16px] font-bold text-[#111] dark:text-white">
+            Submissions <span className="text-muted-foreground font-medium">({subs.length})</span>
+          </h2>
+        </div>
+        <div className="p-6 md:p-8">
+          {subs.length === 0 ? (
+            <div className="h-full flex items-center justify-center py-24 text-[14px] text-muted-foreground">No submissions yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {subs.map((s) => <SubmissionCard key={s.id} sub={s} onReview={review} />)}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
