@@ -37,6 +37,7 @@ CREATE TABLE public.profiles (
   zoom_link      text,                   -- Tutors set their personal Zoom/Meet URL here
   subjects       text[],                 -- e.g. ARRAY['Mathematics', 'Physics']
   hourly_rate    numeric(10,2),          -- Tutor's rate per session
+  rate_currency  text NOT NULL DEFAULT 'ETB' CHECK (rate_currency IN ('ETB', 'USD')),
   grade_level    text,                   -- Student: e.g. 'Grade 10', 'University Year 1'
   theme          text NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark')),
   is_onboarded   boolean NOT NULL DEFAULT false,

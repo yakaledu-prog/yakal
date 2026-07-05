@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
-import { FloatingInput, FloatingSelect, FloatingTextarea } from "@/components/ui/FloatingField";
+import { FloatingInput, FloatingTextarea } from "@/components/ui/FloatingField";
+import { SelectMenu } from "@/components/ui/SelectMenu";
+import { MoneyInput, Currency } from "@/components/ui/MoneyInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
-import { avatarGallery, dicebearUrl } from "@/utils/avatar";
+import {
+  avatarGallery, dicebearUrl, randomSeeds, AVATAR_SEEDS, AVATAR_STYLES,
+} from "@/utils/avatar";
 import toast from "react-hot-toast";
-import { Moon, Sun, Check, Upload, Plus, Loader2 } from "lucide-react";
+import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
 
@@ -20,9 +24,6 @@ const GRADE_LEVELS = [
   "Grade 9", "Grade 10", "Grade 11", "Grade 12",
   "University Year 1", "University Year 2", "University Year 3", "University Year 4",
 ];
-
-const GALLERY = avatarGallery();
-const INITIAL_GALLERY = 11;
 
 interface OnboardingPageProps {
   /** When set, renders in preview mode (no auth, nothing saved) for a given role. */
@@ -39,7 +40,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [galleryCount, setGalleryCount] = useState(INITIAL_GALLERY);
+
+  // Avatar gallery state
+  const [avatarStyle, setAvatarStyle] = useState(AVATAR_STYLES[0].id);
+  const [seeds, setSeeds] = useState<string[]>(AVATAR_SEEDS.slice(0, 12));
 
   // Common
   const [fullName, setFullName] = useState("");
@@ -50,6 +54,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   // Tutor
   const [subjects, setSubjects] = useState<string[]>([]);
   const [hourlyRate, setHourlyRate] = useState("");
+  const [currency, setCurrency] = useState<Currency>("ETB");
   const [zoomLink, setZoomLink] = useState("");
   const [bio, setBio] = useState("");
 
@@ -59,7 +64,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   useEffect(() => {
     if (isPreview) {
       setFullName("Preview User");
-      setAvatarUrl(dicebearUrl("Preview User"));
+      setAvatarUrl(dicebearUrl("Preview User", AVATAR_STYLES[0].id));
       return;
     }
     if (profile) {
@@ -69,11 +74,18 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       setAvatarUrl(profile.avatar_url || dicebearUrl(profile.full_name || profile.id));
       setSubjects(profile.subjects || []);
       setHourlyRate(profile.hourly_rate != null ? String(profile.hourly_rate) : "");
+      setCurrency((profile.rate_currency as Currency) || "ETB");
       setZoomLink(profile.zoom_link || "");
       setBio(profile.bio || "");
       setGradeLevel(profile.grade_level || "");
     }
   }, [profile, isPreview]);
+
+  // Live theme toggle — the onboarding page itself reflects the choice.
+  useEffect(() => {
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+  }, [theme]);
 
   const toggleSubject = (s: string) =>
     setSubjects((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -81,14 +93,15 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Please choose an image under 2 MB.");
+
+    // Preview / logged-out: just show it locally.
     if (isPreview || !user) {
-      toast.error("Log in to upload a custom photo. Using generated avatars in preview.");
+      setAvatarUrl(URL.createObjectURL(file));
+      toast("Shown locally — log in to save your photo.");
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Please choose an image under 2 MB.");
-      return;
-    }
+
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
@@ -133,11 +146,11 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
         updates.phone = phone.trim() || null;
         updates.subjects = subjects;
         updates.hourly_rate = hourlyRate ? Number(hourlyRate) : null;
+        updates.rate_currency = currency;
         updates.zoom_link = zoomLink.trim();
         updates.bio = bio.trim() || null;
       } else if (role === "student") {
         updates.grade_level = gradeLevel || null;
-        updates.subjects = subjects;
       } else if (role === "counselor") {
         updates.phone = phone.trim() || null;
         updates.bio = bio.trim() || null;
@@ -147,9 +160,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
       if (error) throw error;
-
-      if (theme === "dark") document.documentElement.classList.add("dark");
-      else document.documentElement.classList.remove("dark");
 
       const fresh = await refreshProfile();
       toast.success("Profile setup complete!");
@@ -169,41 +179,27 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     admin: { title: "Complete your profile", sub: "" },
   };
   const heading = roleHeading[role] ?? roleHeading.student;
-  const showChips = role === "tutor" || role === "student";
-  const visibleGallery = GALLERY.slice(0, galleryCount);
+  const gallery = avatarGallery(seeds, avatarStyle);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
-      {isPreview && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 bg-[#1099A1] text-white text-[12px] font-semibold px-3 py-1.5 rounded-full shadow">
-          Preview: {role} onboarding — nothing is saved
-        </div>
-      )}
-
       <div className="w-full max-w-[960px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid md:grid-cols-[minmax(0,380px)_1fr]">
-        {/* ── Left: brand + avatar picker ─────────────────────────── */}
-        <div className="bg-gradient-to-b from-[#1099A1]/8 to-transparent dark:from-[#1099A1]/12 p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col">
+        {/* ── Left: brand + avatar picker (warm #CAA25F tint) ─────── */}
+        <div className="bg-gradient-to-b from-[#CAA25F]/20 to-[#CAA25F]/5 dark:from-[#CAA25F]/15 dark:to-transparent p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col">
           <img src={logoImg} alt="Yakal" className="h-9 object-contain self-start mb-6" />
 
-          <h1 className="text-[22px] font-bold text-[#111] dark:text-white leading-tight">
-            {heading.title}
-          </h1>
-          {heading.sub && (
-            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1.5">{heading.sub}</p>
-          )}
-
           {/* Selected avatar preview */}
-          <div className="flex flex-col items-center mt-7">
+          <div className="flex flex-col items-center">
             <div className="relative">
               <img
                 src={avatarUrl}
                 alt="Selected avatar"
-                className="w-28 h-28 rounded-full object-cover ring-4 ring-[#1099A1]/25 bg-white"
+                className="w-28 h-28 rounded-2xl object-cover ring-4 ring-[#CAA25F]/25 bg-white border border-[#e9edef] dark:border-[#2a3942]"
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-[#1099A1] hover:bg-[#0d848b] text-white flex items-center justify-center shadow-md transition-colors"
+                className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full bg-[#1099A1] hover:bg-[#0d848b] text-white flex items-center justify-center shadow-md transition-colors"
                 title="Upload your own photo"
               >
                 {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
@@ -216,46 +212,87 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] capitalize">{role}</p>
           </div>
 
-          {/* Avatar gallery */}
-          <div className="mt-6">
-            <p className="text-[12px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2.5 uppercase tracking-wide">
+          {/* Style tabs */}
+          <div className="mt-6 flex items-center justify-between mb-2.5">
+            <p className="text-[12px] font-medium text-[#54656f] dark:text-[#aebac1] uppercase tracking-wide">
               Pick an avatar
             </p>
-            <div className="grid grid-cols-4 gap-2.5">
-              {visibleGallery.map(({ seed, url }) => {
-                const active = avatarUrl === url;
-                return (
-                  <button
-                    key={seed}
-                    type="button"
-                    onClick={() => setAvatarUrl(url)}
-                    className={cn(
-                      "aspect-square rounded-full overflow-hidden border-2 transition-all",
-                      active
-                        ? "border-[#1099A1] ring-2 ring-[#1099A1]/30 scale-105"
-                        : "border-transparent hover:border-[#1099A1]/40"
-                    )}
-                  >
-                    <img src={url} alt={seed} className="w-full h-full object-cover bg-white" />
-                  </button>
-                );
-              })}
-              {galleryCount < GALLERY.length && (
+            <button
+              type="button"
+              onClick={() => setSeeds(randomSeeds(12))}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
+              title="Shuffle"
+            >
+              <Shuffle size={14} /> Shuffle
+            </button>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {AVATAR_STYLES.map((s) => {
+              const active = s.id === avatarStyle;
+              return (
                 <button
+                  key={s.id}
                   type="button"
-                  onClick={() => setGalleryCount(GALLERY.length)}
-                  className="aspect-square rounded-full border-2 border-dashed border-[#1099A1]/40 text-[#1099A1] flex items-center justify-center hover:bg-[#1099A1]/5 transition-colors"
-                  title="Show more"
+                  onClick={() => setAvatarStyle(s.id)}
+                  className={cn(
+                    "shrink-0 flex flex-col items-center gap-1 rounded-lg p-1.5 border transition-all",
+                    active
+                      ? "border-[#1099A1] bg-[#1099A1]/5"
+                      : "border-transparent hover:bg-white/40 dark:hover:bg-white/5"
+                  )}
+                  title={s.label}
                 >
-                  <Plus size={18} />
+                  <img
+                    src={dicebearUrl("Yakal", s.id)}
+                    alt={s.label}
+                    className="w-8 h-8 rounded-md bg-white border border-[#e9edef] dark:border-[#2a3942]"
+                  />
+                  <span className={cn("text-[10px]", active ? "text-[#1099A1] font-medium" : "text-[#54656f] dark:text-[#aebac1]")}>
+                    {s.label}
+                  </span>
                 </button>
-              )}
-            </div>
+              );
+            })}
+          </div>
+
+          {/* Gallery grid — square, bordered */}
+          <div className="grid grid-cols-4 gap-2.5 mt-3">
+            {gallery.map(({ seed, url }) => {
+              const active = avatarUrl === url;
+              return (
+                <button
+                  key={seed}
+                  type="button"
+                  onClick={() => setAvatarUrl(url)}
+                  className={cn(
+                    "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                    active
+                      ? "border-[#1099A1] ring-2 ring-[#1099A1]/30 scale-105"
+                      : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                  )}
+                >
+                  <img src={url} alt={seed} className="w-full h-full object-cover bg-white" />
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* ── Right: form ─────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-5 md:max-h-[86vh] md:overflow-y-auto">
+        {/* ── Right: heading + form (vertically centered) ─────────── */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-8 flex flex-col md:justify-center gap-5"
+        >
+          <div>
+            <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
+              {heading.title}
+            </h1>
+            {heading.sub && (
+              <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1.5">{heading.sub}</p>
+            )}
+          </div>
+
           <FloatingInput
             label="Full name"
             required
@@ -273,24 +310,18 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
           )}
 
           {role === "student" && (
-            <FloatingSelect
+            <SelectMenu
               label="Grade level"
               value={gradeLevel}
-              onChange={(e) => setGradeLevel(e.target.value)}
-            >
-              <option value=""></option>
-              {GRADE_LEVELS.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </FloatingSelect>
+              onChange={setGradeLevel}
+              options={GRADE_LEVELS}
+            />
           )}
 
-          {showChips && (
+          {role === "tutor" && (
             <div>
-              <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">
-                {role === "tutor" ? "Subjects you teach" : "Subjects of interest"}
-              </p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Subjects you teach</p>
+              <div className="flex gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:thin]">
                 {SUBJECTS.map((s) => {
                   const active = subjects.includes(s);
                   return (
@@ -299,7 +330,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                       type="button"
                       onClick={() => toggleSubject(s)}
                       className={cn(
-                        "px-3 py-2 rounded-full text-[13px] font-medium border flex items-center gap-1.5 transition-colors",
+                        "shrink-0 px-4 py-2.5 rounded-xl text-[13px] font-medium border flex items-center gap-1.5 transition-colors",
                         active
                           ? "border-[#1099A1] bg-[#1099A1]/10 text-[#1099A1]"
                           : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
@@ -316,24 +347,20 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
           {role === "tutor" && (
             <>
-              <FloatingInput
-                label="Rate per session (ETB)"
-                type="number"
-                min="0"
+              <MoneyInput
+                label="Rate per session"
                 value={hourlyRate}
-                onChange={(e) => setHourlyRate(e.target.value)}
+                onChange={setHourlyRate}
+                currency={currency}
+                onCurrencyChange={setCurrency}
               />
-              <div>
-                <FloatingInput
-                  label="Session link (Zoom / Google Meet)"
-                  type="url"
-                  value={zoomLink}
-                  onChange={(e) => setZoomLink(e.target.value)}
-                />
-                <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1.5 px-1">
-                  Shared with students for every session you host.
-                </p>
-              </div>
+              <FloatingInput
+                label="Session link (Zoom / Google Meet)"
+                type="url"
+                value={zoomLink}
+                onChange={(e) => setZoomLink(e.target.value)}
+                hint="Shared with students for every session you host."
+              />
             </>
           )}
 

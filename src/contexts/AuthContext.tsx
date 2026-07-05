@@ -14,6 +14,7 @@ export interface Profile {
   zoom_link: string | null;
   subjects: string[] | null;
   hourly_rate: number | null;
+  rate_currency: string | null;
   grade_level: string | null;
   theme: string;
   is_onboarded: boolean;

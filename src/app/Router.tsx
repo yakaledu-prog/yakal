@@ -48,6 +48,7 @@ import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
+import { DEV_PREVIEW } from "../config/dev";
 
 function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
@@ -95,9 +96,7 @@ function ProtectedRoute() {
 
 // ── DEV-only onboarding/pending previews ─────────────────────────────────────
 // Public, no-auth routes to design/test each role's flow without logging in.
-// Set DEV_PREVIEW = false before shipping to production.
-const DEV_PREVIEW = true;
-
+// Flag lives in src/config/dev.ts (tracked in docs/PRODUCTION_UNMOCK_CHECKLIST.md).
 function OnboardingPreview() {
   const { role = "student" } = useParams();
   return <OnboardingPage previewRole={role} />;
