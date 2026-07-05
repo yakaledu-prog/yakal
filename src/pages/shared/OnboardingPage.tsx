@@ -9,11 +9,17 @@ import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
 import {
   avatarGallery, dicebearUrl, randomSeeds, AVATAR_SEEDS, AVATAR_STYLES,
+  extractAccentColor, DEFAULT_ACCENT, rgba, RGB,
 } from "@/utils/avatar";
 import toast from "react-hot-toast";
 import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
+import subjMath from "@/assets/images/subject-algebra.webp";
+import subjPhysics from "@/assets/images/subject-physics.webp";
+import subjSat from "@/assets/images/subject-sat-prep.webp";
+import subjAdvising from "@/assets/images/resource-book-session.webp";
+import subjOther from "@/assets/images/about-offer.webp";
 
 const SUBJECTS = [
   "Mathematics", "Physics", "Chemistry", "Biology",
@@ -24,6 +30,18 @@ const GRADE_LEVELS = [
   "Grade 9", "Grade 10", "Grade 11", "Grade 12",
   "University Year 1", "University Year 2", "University Year 3", "University Year 4",
 ];
+
+// Local images where we have them; stock (with local fallback) for the rest.
+const SUBJECT_IMAGES: Record<string, string> = {
+  Mathematics: subjMath,
+  Physics: subjPhysics,
+  "SAT Prep": subjSat,
+  "College Advising": subjAdvising,
+  Chemistry: "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=400&q=70",
+  Biology: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=400&q=70",
+  English: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&q=70",
+  Other: subjOther,
+};
 
 interface OnboardingPageProps {
   /** When set, renders in preview mode (no auth, nothing saved) for a given role. */
@@ -86,6 +104,17 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     if (theme === "dark") document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
   }, [theme]);
+
+  // Tint the left panel + upload icon to match the selected avatar's colours.
+  const [accent, setAccent] = useState<RGB>(DEFAULT_ACCENT);
+  useEffect(() => {
+    if (!avatarUrl) return;
+    let cancelled = false;
+    extractAccentColor(avatarUrl).then((c) => !cancelled && setAccent(c));
+    return () => {
+      cancelled = true;
+    };
+  }, [avatarUrl]);
 
   const toggleSubject = (s: string) =>
     setSubjects((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -184,22 +213,29 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <div className="w-full max-w-[960px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid md:grid-cols-[minmax(0,380px)_1fr]">
-        {/* ── Left: brand + avatar picker (warm #CAA25F tint) ─────── */}
-        <div className="bg-gradient-to-b from-[#CAA25F]/20 to-[#CAA25F]/5 dark:from-[#CAA25F]/15 dark:to-transparent p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col">
+        {/* ── Left: brand + avatar picker (tint follows the avatar) ─── */}
+        <div
+          className="p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col transition-colors duration-500"
+          style={{
+            background: `linear-gradient(to bottom, ${rgba(accent, 0.22)}, ${rgba(accent, 0.05)})`,
+          }}
+        >
           <img src={logoImg} alt="Yakal" className="h-9 object-contain self-start mb-6" />
 
-          {/* Selected avatar preview */}
+          {/* Selected avatar preview (circular) */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
                 src={avatarUrl}
                 alt="Selected avatar"
-                className="w-28 h-28 rounded-2xl object-cover ring-4 ring-[#CAA25F]/25 bg-white border border-[#e9edef] dark:border-[#2a3942]"
+                className="w-28 h-28 rounded-full object-cover bg-white transition-all duration-500"
+                style={{ boxShadow: `0 0 0 4px ${rgba(accent, 0.3)}` }}
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full bg-[#1099A1] hover:bg-[#0d848b] text-white flex items-center justify-center shadow-md transition-colors"
+                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full text-white flex items-center justify-center shadow-md transition-colors duration-500 hover:brightness-95"
+                style={{ backgroundColor: rgba(accent, 1) }}
                 title="Upload your own photo"
               >
                 {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
@@ -321,7 +357,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
           {role === "tutor" && (
             <div>
               <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Subjects you teach</p>
-              <div className="flex gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:thin]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {SUBJECTS.map((s) => {
                   const active = subjects.includes(s);
                   return (
@@ -330,14 +366,30 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                       type="button"
                       onClick={() => toggleSubject(s)}
                       className={cn(
-                        "shrink-0 px-4 py-2.5 rounded-xl text-[13px] font-medium border flex items-center gap-1.5 transition-colors",
+                        "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
                         active
-                          ? "border-[#1099A1] bg-[#1099A1]/10 text-[#1099A1]"
-                          : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
+                          ? "border-[#1099A1] ring-2 ring-[#1099A1]/30"
+                          : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
                       )}
                     >
-                      {active && <Check size={14} />}
-                      {s}
+                      <img
+                        src={SUBJECT_IMAGES[s]}
+                        alt={s}
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = subjOther;
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                      <span className="absolute bottom-2 left-2.5 right-2 text-white text-[13px] font-semibold text-left leading-tight">
+                        {s}
+                      </span>
+                      {active && (
+                        <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-[#1099A1] text-white flex items-center justify-center">
+                          <Check size={13} />
+                        </span>
+                      )}
                     </button>
                   );
                 })}
