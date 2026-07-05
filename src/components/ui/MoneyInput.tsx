@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "@/utils/cn";
 
 export type Currency = "ETB" | "USD";
@@ -11,27 +12,49 @@ interface MoneyInputProps {
   onCurrencyChange: (c: Currency) => void;
 }
 
-/** A money field with a currency prefix and an ETB/USD segmented toggle. */
+/**
+ * Money field with a currency prefix + ETB/USD toggle.
+ * Shows only the (centered) label until focused/filled — then the label floats,
+ * the currency symbol appears, and the value is editable.
+ */
 export function MoneyInput({ label, value, onChange, currency, onCurrencyChange }: MoneyInputProps) {
+  const [focused, setFocused] = useState(false);
+  const float = focused || value !== "";
+
   return (
-    <div className="relative h-14 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-transparent transition-all focus-within:border-[#1099A1] focus-within:ring-2 focus-within:ring-[#1099A1]/15">
-      {/* Floated label */}
-      <span className="pointer-events-none absolute left-11 top-2 text-[11px] font-medium text-[#1099A1]">
+    <div
+      className={cn(
+        "relative h-14 rounded-xl border bg-transparent transition-all",
+        focused ? "border-[#1099A1] ring-2 ring-[#1099A1]/15" : "border-[#e9edef] dark:border-[#2a3942]"
+      )}
+    >
+      {/* Label: centered when empty, floats up on focus/value */}
+      <span
+        className={cn(
+          "pointer-events-none absolute transition-all duration-200",
+          float
+            ? "left-11 top-2 text-[11px] font-medium text-[#1099A1]"
+            : "left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#54656f] dark:text-[#aebac1]"
+        )}
+      >
         {label}
       </span>
 
-      {/* Currency symbol prefix */}
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#54656f] dark:text-[#aebac1]">
-        {SYMBOL[currency]}
-      </span>
+      {/* Currency symbol (only once floated) */}
+      {float && (
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-[#54656f] dark:text-[#aebac1]">
+          {SYMBOL[currency]}
+        </span>
+      )}
 
       <input
         type="number"
         min="0"
         inputMode="decimal"
         value={value}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="0"
         className="w-full h-full bg-transparent pl-11 pr-28 pt-6 pb-1.5 text-[14px] text-[#111] dark:text-white focus:outline-none"
       />
 

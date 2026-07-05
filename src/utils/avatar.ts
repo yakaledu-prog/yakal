@@ -20,8 +20,8 @@ export interface AvatarStyle {
   label: string;
 }
 export const AVATAR_STYLES: AvatarStyle[] = [
-  { id: "shapes", label: "Shapes" },
   { id: "rings", label: "Rings" },
+  { id: "shapes", label: "Shapes" },
   { id: "initials", label: "Initials" },
   { id: "icons", label: "Icons" },
   { id: "bottts", label: "Bots" },
@@ -45,6 +45,25 @@ export function randomSeeds(n = 12): string[] {
   return Array.from({ length: n }, () =>
     Math.random().toString(36).slice(2, 9)
   );
+}
+
+// ── Initials avatars ─────────────────────────────────────────
+// DiceBear derives the initials from the seed's words ("John Doe" -> "JD"),
+// so the gallery keeps the SAME name and varies only the background colour.
+const INITIALS_BG = [
+  "1099a1", "caa25f", "97ce9d", "e08a3c", "d96c6c", "7d8f69",
+  "5b8a8f", "b06f9a", "c98a2b", "6a9fb0", "8a9b3c", "d98f5a",
+];
+
+export function initialsAvatarUrl(name: string, bg?: string): string {
+  const seed = (name && name.trim()) || "Yakal";
+  const q = bg ? `&backgroundColor=${bg}` : "";
+  return `${BASE}/9.x/initials/svg?seed=${encodeURIComponent(seed)}${q}`;
+}
+
+/** Same initials, different background colours. */
+export function initialsGallery(name: string): { seed: string; url: string }[] {
+  return INITIALS_BG.map((bg) => ({ seed: bg, url: initialsAvatarUrl(name, bg) }));
 }
 
 /** A deterministic default avatar for a user (used when none is chosen yet). */

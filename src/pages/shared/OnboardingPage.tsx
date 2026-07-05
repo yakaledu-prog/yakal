@@ -10,6 +10,7 @@ import { postAuthPath } from "@/utils/roleRoutes";
 import {
   avatarGallery, dicebearUrl, randomSeeds, AVATAR_SEEDS, AVATAR_STYLES,
   extractAccentColor, DEFAULT_ACCENT, rgba, RGB,
+  initialsGallery, initialsAvatarUrl,
 } from "@/utils/avatar";
 import toast from "react-hot-toast";
 import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
@@ -59,9 +60,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Avatar gallery state
-  const [avatarStyle, setAvatarStyle] = useState(AVATAR_STYLES[0].id);
+  // Avatar gallery state — default to initials of the user's name.
+  const [avatarStyle, setAvatarStyle] = useState("initials");
   const [seeds, setSeeds] = useState<string[]>(AVATAR_SEEDS.slice(0, 12));
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   // Common
   const [fullName, setFullName] = useState("");
@@ -81,15 +83,14 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
   useEffect(() => {
     if (isPreview) {
-      setFullName("Preview User");
-      setAvatarUrl(dicebearUrl("Preview User", AVATAR_STYLES[0].id));
+      setAvatarUrl(initialsAvatarUrl(""));
       return;
     }
     if (profile) {
       setFullName(profile.full_name || "");
       setTheme((profile.theme as "light" | "dark") || "light");
       setPhone(profile.phone || "");
-      setAvatarUrl(profile.avatar_url || dicebearUrl(profile.full_name || profile.id));
+      setAvatarUrl(profile.avatar_url || initialsAvatarUrl(profile.full_name || ""));
       setSubjects(profile.subjects || []);
       setHourlyRate(profile.hourly_rate != null ? String(profile.hourly_rate) : "");
       setCurrency((profile.rate_currency as Currency) || "ETB");
@@ -115,6 +116,17 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       cancelled = true;
     };
   }, [avatarUrl]);
+
+  // Keep an initials avatar in sync with the typed name (preserving its colour).
+  useEffect(() => {
+    setAvatarUrl((prev) => {
+      if (prev && prev.includes("/initials/")) {
+        const bg = prev.match(/backgroundColor=([0-9a-fA-F]+)/)?.[1];
+        return initialsAvatarUrl(fullName, bg);
+      }
+      return prev;
+    });
+  }, [fullName]);
 
   const toggleSubject = (s: string) =>
     setSubjects((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -208,7 +220,9 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     admin: { title: "Complete your profile", sub: "" },
   };
   const heading = roleHeading[role] ?? roleHeading.student;
-  const gallery = avatarGallery(seeds, avatarStyle);
+  // Initials style: same initials, different colours. Other styles: varied seeds.
+  const gallery =
+    avatarStyle === "initials" ? initialsGallery(fullName) : avatarGallery(seeds, avatarStyle);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
@@ -220,8 +234,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             background: `linear-gradient(to bottom, ${rgba(accent, 0.22)}, ${rgba(accent, 0.05)})`,
           }}
         >
-          <img src={logoImg} alt="Yakal" className="h-9 object-contain self-start mb-6" />
-
           {/* Selected avatar preview (circular) */}
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -315,26 +327,28 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
           </div>
         </div>
 
-        {/* ── Right: heading + form (vertically centered) ─────────── */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-8 flex flex-col md:justify-center gap-5"
-        >
-          <div>
-            <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
-              {heading.title}
-            </h1>
-            {heading.sub && (
-              <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1.5">{heading.sub}</p>
-            )}
-          </div>
+        {/* ── Right: logo + heading + form (scrolls if it overflows) ── */}
+        <div className="min-w-0 md:max-h-[88vh] md:overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-8 md:min-h-full flex flex-col gap-6">
+            <img src={logoImg} alt="Yakal" className="h-9 object-contain self-start shrink-0" />
 
-          <FloatingInput
-            label="Full name"
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-          />
+            <div className="flex-1 flex flex-col justify-center gap-5">
+              <div>
+                <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
+                  {heading.title}
+                </h1>
+                {heading.sub && (
+                  <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1.5">{heading.sub}</p>
+                )}
+              </div>
+
+              <FloatingInput
+                label="Full name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="capitalize"
+              />
 
           {(role === "tutor" || role === "parent" || role === "counselor") && (
             <FloatingInput
@@ -356,9 +370,23 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
           {role === "tutor" && (
             <div>
-              <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Subjects you teach</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {SUBJECTS.map((s) => {
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                  Subjects you teach
+                  {subjects.length > 0 && (
+                    <span className="text-[#1099A1] font-semibold"> · {subjects.length}</span>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAllSubjects((v) => !v)}
+                  className="text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
+                >
+                  {showAllSubjects ? "Show less" : `View all (${SUBJECTS.length})`}
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2.5">
+                {(showAllSubjects ? SUBJECTS : SUBJECTS.slice(0, 3)).map((s) => {
                   const active = subjects.includes(s);
                   return (
                     <button
@@ -454,14 +482,16 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             </p>
           )}
 
-          <Button
-            type="submit"
-            className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-1"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Continue"}
-          </Button>
-        </form>
+              <Button
+                type="submit"
+                className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-1"
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Continue"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
