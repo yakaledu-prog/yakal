@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
+import { FloatingInput } from "@/components/ui/FloatingField";
+import { SelectMenu } from "@/components/ui/SelectMenu";
+import { ClipboardPaste } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/contexts/AuthContext";
 import { createAssignment, getTutorCourses } from "@/services/tutorService";
@@ -10,7 +13,7 @@ import { stripHtml } from "@/components/ui/RichTextEditor";
 export function TutorAssignmentNew() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+  const [courses, setCourses] = useState<{ label: string; value: string }[]>([]);
   const [title, setTitle] = useState("");
   const [courseId, setCourseId] = useState("");
   const [description, setDescription] = useState("");
@@ -21,11 +24,20 @@ export function TutorAssignmentNew() {
   useEffect(() => {
     if (!user) return;
     getTutorCourses(user.id).then((c) => {
-      const list = c.map((x: any) => ({ id: x.id, title: x.title }));
+      const list = c.map((x: any) => ({ label: x.title, value: x.id }));
       setCourses(list);
-      if (list[0]) setCourseId(list[0].id);
+      if (list[0]) setCourseId(list[0].value);
     });
   }, [user]);
+
+  const pasteTemplate = async () => {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) setTemplateUrl(t.trim());
+    } catch {
+      toast.error("Couldn't read the clipboard.");
+    }
+  };
 
   const submit = async () => {
     if (!user) return;
@@ -45,27 +57,38 @@ export function TutorAssignmentNew() {
     navigate("/tutor/assignments");
   };
 
-  const field = "w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary text-[14px]";
-  const lbl = "text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]";
-
   return (
     <div className="assignment-new flex flex-col lg:flex-row h-full min-h-0 overflow-y-auto lg:overflow-hidden">
       {/* Left: configuration */}
-      <div className="assignment-new__config w-full lg:w-[360px] shrink-0 lg:h-full lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e9edef] dark:border-[#2a3942] p-6 md:p-8 flex flex-col">
+      <div className="assignment-new__config w-full lg:w-[380px] shrink-0 lg:h-full lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e9edef] dark:border-[#2a3942] p-6 md:p-8 flex flex-col">
         <div className="space-y-5 flex-1">
-          <div className="space-y-1.5"><label className={lbl}>Title *</label><input className={field} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Derivatives Practice Sheet" /></div>
+          <FloatingInput label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} />
 
-          <div className="space-y-1.5">
-            <label className={lbl}>Course</label>
-            <select className={field} value={courseId} onChange={(e) => setCourseId(e.target.value)}>
-              {courses.length === 0 && <option value="">No courses assigned</option>}
-              {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
-            {courses.length === 0 && <p className="text-[12px] text-[#CAA25F]">Without a course, students can't see this assignment.</p>}
+          {courses.length > 0 ? (
+            <SelectMenu label="Course" value={courseId} onChange={setCourseId} options={courses} />
+          ) : (
+            <p className="text-[13px] text-[#CAA25F]">No courses assigned — students won't see the assignment.</p>
+          )}
+
+          <FloatingInput label="Due date" type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+
+          <div className="relative">
+            <FloatingInput
+              label="Template link (Drive)"
+              type="url"
+              value={templateUrl}
+              onChange={(e) => setTemplateUrl(e.target.value)}
+              className="pr-11"
+            />
+            <button
+              type="button"
+              onClick={pasteTemplate}
+              title="Paste from clipboard"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-md text-[#54656f] dark:text-[#aebac1] hover:bg-[#f0f2f5] dark:hover:bg-[#182329] transition-colors"
+            >
+              <ClipboardPaste size={16} />
+            </button>
           </div>
-
-          <div className="space-y-1.5"><label className={lbl}>Due date</label><input type="datetime-local" className={field} value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Template link (Drive)</label><input className={field} value={templateUrl} onChange={(e) => setTemplateUrl(e.target.value)} placeholder="https://drive.google.com/..." /></div>
         </div>
 
         <div className="flex items-center gap-3 pt-6 mt-auto">
@@ -74,15 +97,9 @@ export function TutorAssignmentNew() {
         </div>
       </div>
 
-      {/* Right: full-height instructions editor */}
-      <div className="assignment-new__editor flex-1 min-w-0 lg:h-full flex flex-col">
-        <div className="px-6 md:px-8 py-4 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <h2 className="text-[15px] font-bold text-[#111] dark:text-white">Instructions</h2>
-          <p className="text-[12px] text-muted-foreground">Type “/” for headings, lists, and more. This is exactly what students will see.</p>
-        </div>
-        <div className="flex-1 min-h-0 px-3 md:px-5 py-2">
-          <BlockEditor value={description} onChange={setDescription} fullHeight />
-        </div>
+      {/* Right: full-height instructions editor (this is exactly what students see) */}
+      <div className="assignment-new__editor flex-1 min-w-0 lg:h-full">
+        <BlockEditor value={description} onChange={setDescription} fullHeight />
       </div>
     </div>
   );

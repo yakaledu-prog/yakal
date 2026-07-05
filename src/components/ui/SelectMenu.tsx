@@ -2,19 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 
+type Option = string | { label: string; value: string };
+
 interface SelectMenuProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: string[];
+  options: Option[];
   className?: string;
 }
+
+const norm = (o: Option) => (typeof o === "string" ? { label: o, value: o } : o);
 
 /** A custom floating-label dropdown (no native <select>), matching FloatingInput. */
 export function SelectMenu({ label, value, onChange, options, className }: SelectMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const filled = value !== "";
+  const opts = options.map(norm);
+  const selectedLabel = opts.find((o) => o.value === value)?.label ?? "";
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -36,7 +42,7 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
           filled ? "text-[#111] dark:text-white" : "text-transparent"
         )}
       >
-        {value || "placeholder"}
+        {selectedLabel || "placeholder"}
       </button>
 
       <span
@@ -60,14 +66,14 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
 
       {open && (
         <div className="absolute z-30 mt-1.5 w-full max-h-60 overflow-y-auto rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33] shadow-lg py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-          {options.map((opt) => {
-            const active = opt === value;
+          {opts.map((opt) => {
+            const active = opt.value === value;
             return (
               <button
-                key={opt}
+                key={opt.value}
                 type="button"
                 onClick={() => {
-                  onChange(opt);
+                  onChange(opt.value);
                   setOpen(false);
                 }}
                 className={cn(
@@ -77,7 +83,7 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
                     : "text-[#111] dark:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
                 )}
               >
-                {opt}
+                {opt.label}
                 {active && <Check size={16} />}
               </button>
             );

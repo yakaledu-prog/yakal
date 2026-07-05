@@ -1,6 +1,6 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { cn } from "@/utils/cn";
@@ -10,8 +10,21 @@ const brandVars = {
   "--bn-colors-selected-background": "#1099A1",
   "--bn-colors-hovered-background": "rgba(16,153,161,0.10)",
   "--bn-colors-hovered-text": "#1099A1",
-  "--bn-colors-editor-background": "transparent",
 } as React.CSSProperties;
+
+/** Track the app's dark class so the editor theme updates when it's toggled. */
+function useIsDark() {
+  const [dark, setDark] = useState(
+    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const obs = new MutationObserver(() => setDark(el.classList.contains("dark")));
+    obs.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
 
 interface BlockEditorProps {
   value: string;
@@ -26,8 +39,8 @@ interface BlockEditorProps {
  */
 export function BlockEditor({ value, onChange, fullHeight }: BlockEditorProps) {
   const editor = useCreateBlockNote();
+  const dark = useIsDark();
   const loaded = useRef(false);
-  const dark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
 
   useEffect(() => {
     if (loaded.current) return;
@@ -49,8 +62,8 @@ export function BlockEditor({ value, onChange, fullHeight }: BlockEditorProps) {
       className={cn(
         "block-editor",
         fullHeight
-          ? "h-full flex flex-col"
-          : "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+          ? "h-full flex flex-col bg-white dark:bg-[#1f2b31]"
+          : "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1f2b31] py-2 min-h-[220px] focus-within:border-primary transition-colors"
       )}
       style={brandVars}
     >
@@ -58,7 +71,7 @@ export function BlockEditor({ value, onChange, fullHeight }: BlockEditorProps) {
         editor={editor}
         onChange={emit}
         theme={dark ? "dark" : "light"}
-        className={fullHeight ? "flex-1 min-h-0 overflow-y-auto py-3" : ""}
+        className={fullHeight ? "flex-1 min-h-0 overflow-y-auto py-4" : ""}
       />
     </div>
   );
