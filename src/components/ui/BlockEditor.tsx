@@ -3,6 +3,7 @@ import "@blocknote/mantine/style.css";
 import { useEffect, useRef } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
+import { cn } from "@/utils/cn";
 
 // Teal brand accent for BlockNote's blue defaults (selection, hover, menus).
 const brandVars = {
@@ -12,11 +13,18 @@ const brandVars = {
   "--bn-colors-editor-background": "transparent",
 } as React.CSSProperties;
 
+interface BlockEditorProps {
+  value: string;
+  onChange: (html: string) => void;
+  /** Fill the parent height with no border (for full-pane editors). */
+  fullHeight?: boolean;
+}
+
 /**
  * Notion-style block editor (BlockNote). Uncontrolled internally; loads the
  * initial HTML once and emits clean HTML on every change for storage/preview.
  */
-export function BlockEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+export function BlockEditor({ value, onChange, fullHeight }: BlockEditorProps) {
   const editor = useCreateBlockNote();
   const loaded = useRef(false);
   const dark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
@@ -38,10 +46,20 @@ export function BlockEditor({ value, onChange }: { value: string; onChange: (htm
 
   return (
     <div
-      className="block-editor rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+      className={cn(
+        "block-editor",
+        fullHeight
+          ? "h-full flex flex-col"
+          : "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+      )}
       style={brandVars}
     >
-      <BlockNoteView editor={editor} onChange={emit} theme={dark ? "dark" : "light"} />
+      <BlockNoteView
+        editor={editor}
+        onChange={emit}
+        theme={dark ? "dark" : "light"}
+        className={fullHeight ? "flex-1 min-h-0 overflow-y-auto py-3" : ""}
+      />
     </div>
   );
 }

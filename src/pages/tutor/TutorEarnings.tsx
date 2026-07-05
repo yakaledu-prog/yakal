@@ -11,6 +11,20 @@ import { getTutorSessionsFull, computeEarnings, EarningsSummary } from "@/servic
 // Brand-only palette (teal + gold + supporting warm/greens, no blue/purple).
 const PALETTE = ["#1099A1", "#CAA25F", "#97CE9D", "#0d848b", "#d98f5a", "#7d8f69", "#b06f9a", "#c98a2b"];
 
+// Custom tooltip — recharts' default uses inline styles that ignore CSS vars and
+// break in dark mode; a component with our classes renders correctly in both.
+function ChartTooltip({ active, payload, label, money }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33] shadow-md px-3 py-2 text-[13px]">
+      <p className="font-semibold text-[#111] dark:text-white mb-0.5">{label}</p>
+      <p className="text-muted-foreground">
+        Earned: <span className="font-semibold text-[#111] dark:text-white">{money(Number(payload[0].value))}</span>
+      </p>
+    </div>
+  );
+}
+
 export function TutorEarnings() {
   const { user, profile } = useAuth();
   const [summary, setSummary] = useState<EarningsSummary | null>(null);
@@ -74,11 +88,7 @@ export function TutorEarnings() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.35} />
                     <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} dy={8} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
-                    <Tooltip
-                      cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
-                      contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
-                      formatter={(v: any) => [money(Number(v)), "Earned"]}
-                    />
+                    <Tooltip cursor={{ fill: "#1099A1", fillOpacity: 0.06 }} content={<ChartTooltip money={money} />} />
                     <Bar dataKey="amount" radius={[6, 6, 0, 0]} maxBarSize={44}>
                       {barData.map((m) => <Cell key={m.key} fill={m.key === thisKey ? "#CAA25F" : "#1099A1"} />)}
                     </Bar>
