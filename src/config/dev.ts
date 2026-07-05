@@ -11,7 +11,7 @@
  * screens (e.g. /preview/onboarding/tutor). MUST be false in production,
  * otherwise anyone can reach these routes without logging in.
  */
-export const DEV_PREVIEW = true;
+export const DEV_PREVIEW = false;
 
 if (DEV_PREVIEW && import.meta.env.PROD) {
   // Loud warning if a production build ships with previews enabled.
