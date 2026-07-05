@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import {
   Clock, XCircle, LogOut, Lock, Home, Users, CalendarDays,
-  MessagesSquare, ClipboardList, FileText,
+  MessagesSquare, ClipboardList, FileText, Loader2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import logoImg from "@/assets/images/logo.webp";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -34,6 +36,26 @@ export function PendingApprovalPage({
   previewStatus,
 }: PendingApprovalPageProps) {
   const { profile, signOut, refreshProfile } = useAuth();
+  const [checking, setChecking] = useState(false);
+
+  // Re-fetch the profile; the Router redirects to the dashboard if now approved,
+  // otherwise we tell the user it's still under review.
+  const handleCheckStatus = async () => {
+    if (preview) return;
+    setChecking(true);
+    try {
+      const fresh = await refreshProfile();
+      if (fresh && fresh.status === "active") {
+        toast.success("You're approved! Taking you to your dashboard…");
+      } else if (fresh && fresh.status === "rejected") {
+        toast.error("Your application was not approved.");
+      } else {
+        toast("Still under review — we'll notify you once it's approved.");
+      }
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const role = previewRole ?? profile?.role ?? "tutor";
   const status = previewStatus ?? profile?.status ?? "pending";
@@ -128,17 +150,19 @@ export function PendingApprovalPage({
                 </h1>
                 <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mb-6">
                   Thanks for registering as a {role}, {fullName}. An administrator is reviewing your
-                  account. You'll be notified once it's approved — then your dashboard unlocks.
+                  account. You'll be notified once it's approved, then your dashboard unlocks.
                 </p>
               </>
             )}
 
             {!rejected && (
               <Button
-                onClick={() => !preview && refreshProfile()}
-                className="w-full h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
+                onClick={handleCheckStatus}
+                disabled={checking}
+                className="w-full h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold flex items-center justify-center gap-2"
               >
-                Check status
+                {checking && <Loader2 size={15} className="animate-spin" />}
+                {checking ? "Checking…" : "Check status"}
               </Button>
             )}
           </div>

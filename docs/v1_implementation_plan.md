@@ -1,4 +1,4 @@
-# Yakal Version 1 — Full Implementation Plan
+# Yakal Version 1, Full Implementation Plan
 
 **Branch:** `version1`  
 **Goal:** Replace all mocks with real Supabase-backed data and flows. Deliver a production-ready platform with no mocked values, ready for user testing.
@@ -9,11 +9,11 @@
 
 The product must support five distinct roles:
 
-- **Super Admin** — Platform configuration, user approval, CMS, analytics
-- **Tutor** — Availability, sessions, assignments, earnings, Zoom link
-- **Counselor** — College Guide application reviews, notes
-- **Parent** — Linked child monitoring, payment tracking
-- **Student** — Booking, sessions, assignments, College Guide
+- **Super Admin**, Platform configuration, user approval, CMS, analytics
+- **Tutor**, Availability, sessions, assignments, earnings, Zoom link
+- **Counselor**, College Guide application reviews, notes
+- **Parent**, Linked child monitoring, payment tracking
+- **Student**, Booking, sessions, assignments, College Guide
 
 **Core constraints:**
 
@@ -30,7 +30,7 @@ The product must support five distinct roles:
 | Area | Current State | Action Required |
 |---|---|---|
 | **Auth / Profiles** | Basic email/pass, single role, no approval gate | Rebuild: add `status`, `bio`, `zoom_link`, `counselor` role |
-| **Student Home** | 100% mocked — hardcoded data | Rebuild with real Supabase queries |
+| **Student Home** | 100% mocked, hardcoded data | Rebuild with real Supabase queries |
 | **Tutor Home** | Calls `studentService` (wrong service!) | Rebuild with tutor-specific queries |
 | **Messages** | Entire page uses `mockConversations` from `chatData.ts` | Rebuild with Supabase Realtime messages table |
 | **Course Catalog** | `courseData` hardcoded object | Rebuild: `courses` table with admin CRUD |
@@ -54,12 +54,12 @@ The product must support five distinct roles:
 
 | Phase | Name | Priority |
 |---|---|---|
-| 0 | Database Wipe & Rebuild | **CRITICAL — do first** |
+| 0 | Database Wipe & Rebuild | **CRITICAL, do first** |
 | 1 | Auth, Profiles & Role-Based Routing | **CRITICAL** |
-| 2 | Tutor Portal — Full Build | HIGH |
-| 3 | Student Portal — Full Build | HIGH |
-| 4 | Admin Portal — Full Build | HIGH |
-| 5 | Messaging — Supabase Realtime | HIGH |
+| 2 | Tutor Portal, Full Build | HIGH |
+| 3 | Student Portal, Full Build | HIGH |
+| 4 | Admin Portal, Full Build | HIGH |
+| 5 | Messaging, Supabase Realtime | HIGH |
 | 6 | Notifications System | MEDIUM |
 | 7 | Parent Portal | MEDIUM |
 | 8 | Counselor Portal | MEDIUM |
@@ -67,12 +67,12 @@ The product must support five distinct roles:
 
 ---
 
-## Phase 0: Database — Wipe & Rebuild
+## Phase 0: Database, Wipe & Rebuild
 
 > **You must run these SQL files in Supabase SQL Editor in this order:**
-> 1. `docs/db_wipe.sql` — wipes everything
-> 2. `docs/db_schema.sql` — creates all tables, RLS, triggers, indexes
-> 3. `docs/db_seed.sql` — inserts 5 demo accounts with realistic linked data
+> 1. `docs/db_wipe.sql`, wipes everything
+> 2. `docs/db_schema.sql`, creates all tables, RLS, triggers, indexes
+> 3. `docs/db_seed.sql`, inserts 5 demo accounts with realistic linked data
 
 ### New Database Tables
 
@@ -118,7 +118,7 @@ The product must support five distinct roles:
   - **Tutor:** Full name, phone, subjects (multi-select), hourly rate, Zoom link
   - **Student:** Full name, grade level, subjects of interest
   - **Parent:** Full name, phone
-- Fix critical bug: always redirect to `/student` — must redirect based on `profile.role`
+- Fix critical bug: always redirect to `/student`, must redirect based on `profile.role`
 - After submit: navigate to `/${profile.role}` (admin → `/admin`, parent → `/parent`, etc.)
 
 **`src/app/Router.tsx`**
@@ -136,7 +136,7 @@ The product must support five distinct roles:
 
 ---
 
-## Phase 2: Tutor Portal — Full Build
+## Phase 2: Tutor Portal, Full Build
 
 ### Files to Modify/Replace
 
@@ -187,7 +187,7 @@ Remove routes and pages that don't apply to tutors per the scope:
 
 ---
 
-## Phase 3: Student Portal — Full Build
+## Phase 3: Student Portal, Full Build
 
 ### Files to Modify
 
@@ -237,7 +237,7 @@ Same as Tutor: remove `StudentMyLearning.tsx`, `StudentCourseDashboard.tsx`, `St
 
 ---
 
-## Phase 4: Admin Portal — Full Build
+## Phase 4: Admin Portal, Full Build
 
 **`src/pages/admin/AdminLayout.tsx`**
 Sidebar: Dashboard, Users, Tutor Approvals, Counselor Approvals, Courses, Sessions, Analytics, Settings
@@ -276,16 +276,16 @@ Sidebar: Dashboard, Users, Tutor Approvals, Counselor Approvals, Courses, Sessio
 
 ---
 
-## Phase 5: Messaging — Supabase Realtime
+## Phase 5: Messaging, Supabase Realtime
 
 > This replaces the entire `chatData.ts` mock system.
 
 **`src/services/messageService.ts`** (new)
-- `getOrCreateConversation(userId, otherUserId)` — find or create a row in `conversations`
-- `getMessages(conversationId)` — fetch all messages
-- `sendMessage(conversationId, senderId, text)` — insert into `messages`
-- `subscribeToMessages(conversationId, callback)` — Supabase Realtime channel
-- `markConversationRead(conversationId, userId)` — update `is_read = true`
+- `getOrCreateConversation(userId, otherUserId)`, find or create a row in `conversations`
+- `getMessages(conversationId)`, fetch all messages
+- `sendMessage(conversationId, senderId, text)`, insert into `messages`
+- `subscribeToMessages(conversationId, callback)`, Supabase Realtime channel
+- `markConversationRead(conversationId, userId)`, update `is_read = true`
 
 **`src/pages/student/StudentMessages.tsx`** (rebuild)
 - Remove ALL `chatData.ts` imports
@@ -315,8 +315,8 @@ export const notificationService = {
 }
 ```
 
-**`src/pages/student/StudentNotifications.tsx`** — rebuild with real service  
-**`src/pages/tutor/TutorNotifications.tsx`** — rebuild with real service
+**`src/pages/student/StudentNotifications.tsx`**, rebuild with real service  
+**`src/pages/tutor/TutorNotifications.tsx`**, rebuild with real service
 
 **Notification triggers (created in code, not DB triggers):**
 - Booking created → notify tutor
@@ -430,7 +430,7 @@ For each role, test the full user journey:
 ## Environment Variables
 
 ```env
-# Already configured — no changes needed for Phase 1-9
+# Already configured, no changes needed for Phase 1-9
 VITE_SUPABASE_URL=https://ghruwaysryzfdiagzqfz.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
@@ -449,5 +449,5 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
 - `.env` contains live production Supabase credentials. Confirm `.env` is in `.gitignore` before any branch is pushed.
 - Demo accounts are real Supabase auth users with linked realistic `profiles` rows, NOT JSON files.
-- The counselor account (`counselor@yakal.com`) does NOT need admin approval in the seed — it's pre-approved for demo purposes.
-- All "session Zoom links" come from `profiles.zoom_link` of the tutor — there is no SDK integration.
+- The counselor account (`counselor@yakal.com`) does NOT need admin approval in the seed, it's pre-approved for demo purposes.
+- All "session Zoom links" come from `profiles.zoom_link` of the tutor, there is no SDK integration.

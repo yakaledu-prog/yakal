@@ -7,6 +7,7 @@ import { MoneyInput, Currency } from "@/components/ui/MoneyInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
+import { fireConfetti } from "@/utils/confetti";
 import {
   avatarGallery, dicebearUrl, randomSeeds, AVATAR_SEEDS, AVATAR_STYLES,
   extractAccentColor, DEFAULT_ACCENT, rgba, RGB,
@@ -60,7 +61,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Avatar gallery state — default to initials of the user's name.
+  // Avatar gallery state, default to initials of the user's name.
   const [avatarStyle, setAvatarStyle] = useState("initials");
   const [seeds, setSeeds] = useState<string[]>(AVATAR_SEEDS.slice(0, 12));
   const [showAllSubjects, setShowAllSubjects] = useState(false);
@@ -100,7 +101,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     }
   }, [profile, isPreview]);
 
-  // Live theme toggle — the onboarding page itself reflects the choice.
+  // Live theme toggle, the onboarding page itself reflects the choice.
   useEffect(() => {
     if (theme === "dark") document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
@@ -139,7 +140,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     // Preview / logged-out: just show it locally.
     if (isPreview || !user) {
       setAvatarUrl(URL.createObjectURL(file));
-      toast("Shown locally — log in to save your photo.");
+      toast("Shown locally, log in to save your photo.");
       return;
     }
 
@@ -170,7 +171,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     }
 
     if (isPreview) {
-      toast.success("Looks good! (Preview mode — nothing was saved.)");
+      fireConfetti();
+      toast.success("Looks good! (Preview mode, nothing was saved.)");
       return;
     }
     if (!user) return;
@@ -203,8 +205,12 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       if (error) throw error;
 
       const fresh = await refreshProfile();
+      const dest = postAuthPath(fresh ?? { role, status: profile?.status ?? "active", is_onboarded: true });
+      // Celebrate, then transition. The canvas lives on <body>, so it keeps
+      // playing across the route change and cleans itself up.
+      fireConfetti();
       toast.success("Profile setup complete!");
-      navigate(postAuthPath(fresh ?? { role, status: profile?.status ?? "active", is_onboarded: true }));
+      setTimeout(() => navigate(dest), 450);
     } catch (err: any) {
       toast.error(err.message || "Failed to save profile");
     } finally {
@@ -228,25 +234,27 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <div className="w-full max-w-[960px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid md:grid-cols-[minmax(0,380px)_1fr]">
         {/* ── Left: brand + avatar picker (tint follows the avatar) ─── */}
-        <div
-          className="p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col transition-colors duration-500"
-          style={{
-            background: `linear-gradient(to bottom, ${rgba(accent, 0.22)}, ${rgba(accent, 0.05)})`,
-          }}
-        >
+        <div className="relative overflow-hidden p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col">
+          {/* Animated tint layer — background-color transitions smoothly (a
+              gradient can't animate), so switching avatars eases rather than jumps. */}
+          <div
+            className="absolute inset-0 -z-10 transition-colors duration-700 ease-in-out"
+            style={{ backgroundColor: rgba(accent, 0.16) }}
+          />
+
           {/* Selected avatar preview (circular) */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
                 src={avatarUrl}
                 alt="Selected avatar"
-                className="w-28 h-28 rounded-full object-cover bg-white transition-all duration-500"
+                className="w-28 h-28 rounded-full object-cover bg-white transition-all duration-700 ease-in-out"
                 style={{ boxShadow: `0 0 0 4px ${rgba(accent, 0.3)}` }}
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full text-white flex items-center justify-center shadow-md transition-colors duration-500 hover:brightness-95"
+                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full text-white flex items-center justify-center shadow-md transition-colors duration-700 ease-in-out hover:brightness-95"
                 style={{ backgroundColor: rgba(accent, 1) }}
                 title="Upload your own photo"
               >
@@ -254,7 +262,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
             </div>
-            <p className="text-[14px] font-semibold text-[#111] dark:text-white mt-3 truncate max-w-full">
+            <p className="text-[14px] font-semibold text-[#111] dark:text-white mt-3 truncate max-w-full capitalize">
               {fullName || "Your name"}
             </p>
             <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] capitalize">{role}</p>
@@ -304,7 +312,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             })}
           </div>
 
-          {/* Gallery grid — square, bordered */}
+          {/* Gallery grid, square, bordered */}
           <div className="grid grid-cols-4 gap-2.5 mt-3">
             {gallery.map(({ seed, url }) => {
               const active = avatarUrl === url;
@@ -313,10 +321,15 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   key={seed}
                   type="button"
                   onClick={() => setAvatarUrl(url)}
-                  className={cn(
-                    "aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                  style={
                     active
-                      ? "border-[#1099A1] ring-2 ring-[#1099A1]/30 scale-105"
+                      ? { borderColor: rgba(accent, 1), boxShadow: `0 0 0 2px ${rgba(accent, 0.35)}` }
+                      : undefined
+                  }
+                  className={cn(
+                    "aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ease-in-out",
+                    active
+                      ? "scale-105"
                       : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
                   )}
                 >
@@ -350,137 +363,137 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 className="capitalize"
               />
 
-          {(role === "tutor" || role === "parent" || role === "counselor") && (
-            <FloatingInput
-              label="Phone number"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          )}
+              {(role === "tutor" || role === "parent" || role === "counselor") && (
+                <FloatingInput
+                  label="Phone number"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              )}
 
-          {role === "student" && (
-            <SelectMenu
-              label="Grade level"
-              value={gradeLevel}
-              onChange={setGradeLevel}
-              options={GRADE_LEVELS}
-            />
-          )}
+              {role === "student" && (
+                <SelectMenu
+                  label="Grade level"
+                  value={gradeLevel}
+                  onChange={setGradeLevel}
+                  options={GRADE_LEVELS}
+                />
+              )}
 
-          {role === "tutor" && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[13px] font-medium text-[#111] dark:text-white">
-                  Subjects you teach
-                  {subjects.length > 0 && (
-                    <span className="text-[#1099A1] font-semibold"> · {subjects.length}</span>
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowAllSubjects((v) => !v)}
-                  className="text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
-                >
-                  {showAllSubjects ? "Show less" : `View all (${SUBJECTS.length})`}
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-2.5">
-                {(showAllSubjects ? SUBJECTS : SUBJECTS.slice(0, 3)).map((s) => {
-                  const active = subjects.includes(s);
-                  return (
+              {role === "tutor" && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                      Subjects you teach
+                      {subjects.length > 0 && (
+                        <span className="text-[#1099A1] font-semibold"> · {subjects.length}</span>
+                      )}
+                    </p>
                     <button
-                      key={s}
                       type="button"
-                      onClick={() => toggleSubject(s)}
+                      onClick={() => setShowAllSubjects((v) => !v)}
+                      className="text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
+                    >
+                      {showAllSubjects ? "Show less" : `View all (${SUBJECTS.length})`}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {(showAllSubjects ? SUBJECTS : SUBJECTS.slice(0, 3)).map((s) => {
+                      const active = subjects.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => toggleSubject(s)}
+                          className={cn(
+                            "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
+                            active
+                              ? "border-[#1099A1] ring-2 ring-[#1099A1]/30"
+                              : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                          )}
+                        >
+                          <img
+                            src={SUBJECT_IMAGES[s]}
+                            alt={s}
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = subjOther;
+                            }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                          <span className="absolute bottom-2 left-2.5 right-2 text-white text-[13px] font-semibold text-left leading-tight">
+                            {s}
+                          </span>
+                          {active && (
+                            <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-[#1099A1] text-white flex items-center justify-center">
+                              <Check size={13} />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {role === "tutor" && (
+                <>
+                  <MoneyInput
+                    label="Rate per session"
+                    value={hourlyRate}
+                    onChange={setHourlyRate}
+                    currency={currency}
+                    onCurrencyChange={setCurrency}
+                  />
+                  <FloatingInput
+                    label="Session link (Zoom / Google Meet)"
+                    type="url"
+                    value={zoomLink}
+                    onChange={(e) => setZoomLink(e.target.value)}
+                    hint="Shared with students for every session you host."
+                  />
+                </>
+              )}
+
+              {(role === "tutor" || role === "counselor") && (
+                <FloatingTextarea
+                  label="Short bio"
+                  rows={3}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                />
+              )}
+
+              {/* Theme */}
+              <div>
+                <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Preferred theme</p>
+                <div className="flex gap-3">
+                  {(["light", "dark"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTheme(t)}
                       className={cn(
-                        "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
-                        active
-                          ? "border-[#1099A1] ring-2 ring-[#1099A1]/30"
-                          : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                        "flex-1 py-3 border rounded-xl flex items-center justify-center gap-2 transition-colors",
+                        theme === t
+                          ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
+                          : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
                       )}
                     >
-                      <img
-                        src={SUBJECT_IMAGES[s]}
-                        alt={s}
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = subjOther;
-                        }}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                      <span className="absolute bottom-2 left-2.5 right-2 text-white text-[13px] font-semibold text-left leading-tight">
-                        {s}
-                      </span>
-                      {active && (
-                        <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-[#1099A1] text-white flex items-center justify-center">
-                          <Check size={13} />
-                        </span>
-                      )}
+                      {t === "light" ? <Sun size={18} /> : <Moon size={18} />}
+                      <span className="text-[14px] font-medium capitalize">{t}</span>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
 
-          {role === "tutor" && (
-            <>
-              <MoneyInput
-                label="Rate per session"
-                value={hourlyRate}
-                onChange={setHourlyRate}
-                currency={currency}
-                onCurrencyChange={setCurrency}
-              />
-              <FloatingInput
-                label="Session link (Zoom / Google Meet)"
-                type="url"
-                value={zoomLink}
-                onChange={(e) => setZoomLink(e.target.value)}
-                hint="Shared with students for every session you host."
-              />
-            </>
-          )}
-
-          {(role === "tutor" || role === "counselor") && (
-            <FloatingTextarea
-              label="Short bio"
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-            />
-          )}
-
-          {/* Theme */}
-          <div>
-            <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Preferred theme</p>
-            <div className="flex gap-3">
-              {(["light", "dark"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTheme(t)}
-                  className={cn(
-                    "flex-1 py-3 border rounded-xl flex items-center justify-center gap-2 transition-colors",
-                    theme === t
-                      ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
-                      : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
-                  )}
-                >
-                  {t === "light" ? <Sun size={18} /> : <Moon size={18} />}
-                  <span className="text-[14px] font-medium capitalize">{t}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {(role === "tutor" || role === "counselor") && (
-            <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
-              Your account will be reviewed by an administrator before activation.
-            </p>
-          )}
+              {(role === "tutor" || role === "counselor") && (
+                <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                  Your account will be reviewed by an administrator before activation.
+                </p>
+              )}
 
               <Button
                 type="submit"

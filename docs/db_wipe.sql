@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — DATABASE WIPE SCRIPT
+-- YAKAL, DATABASE WIPE SCRIPT
 -- Run this FIRST in Supabase SQL Editor.
 -- WARNING: This deletes ALL data and ALL tables permanently.
 -- ============================================================

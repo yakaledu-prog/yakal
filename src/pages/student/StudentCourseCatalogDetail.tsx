@@ -123,7 +123,7 @@ export function StudentCourseCatalogDetail() {
     let shiftedHour = h + offset;
     if (shiftedHour < 0) shiftedHour += 24;
     if (shiftedHour >= 24) shiftedHour -= 24;
-    
+
     const ampm = shiftedHour >= 12 ? 'PM' : 'AM';
     const hour12 = shiftedHour % 12 || 12;
     return `${hour12}:00 ${ampm}`;
@@ -133,11 +133,11 @@ export function StudentCourseCatalogDetail() {
     if (isSelected) {
       return 'bg-[#1099A1] text-white shadow-md scale-105 border border-[#1099A1]';
     }
-    
+
     if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400 border';
     if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border';
     if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border';
-    
+
     return 'border border-[#e9edef] text-[#54656f]';
   };
 
@@ -146,16 +146,16 @@ export function StudentCourseCatalogDetail() {
       toast.error("Please select at least one slot");
       return;
     }
-    
+
     setIsBooking(true);
-    
+
     try {
-      // Book all selected slots — each gets a unique Jitsi meeting room and Zoom meeting
+      // Book all selected slots, each gets a unique Jitsi meeting room and Zoom meeting
       await Promise.all(selectedSlots.map(async slot => {
         const formattedDate = slot.date.toISOString().split('T')[0];
         const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
         const meetingRoomId = `yakal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        
+
         let zoom_meeting_id = undefined;
         let zoom_password = undefined;
 
@@ -175,7 +175,7 @@ export function StudentCourseCatalogDetail() {
             // Continuing without Zoom to allow booking to succeed as fallback
           }
         }
-        
+
         return createSession({
           tutor_id: availability.tutor_id,
           student_id: user.id,
@@ -363,7 +363,7 @@ export function StudentCourseCatalogDetail() {
               {/* RESUME TAB */}
               {activeTab === "Resume" && (
                 <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  
+
                   {/* Education */}
                   <div>
                     <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
@@ -464,12 +464,12 @@ export function StudentCourseCatalogDetail() {
                               {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </div>
-                          
+
                           <div className="flex flex-wrap items-center gap-3">
                             {/* Filter */}
                             <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-full border border-[#e9edef] dark:border-[#2a3942]">
                               {["all", "online", "in-person"].map(f => (
-                                <button 
+                                <button
                                   key={f}
                                   onClick={() => setAvailabilityFilter(f)}
                                   className={cn("px-4 py-1.5 text-[12px] font-bold rounded-full transition-all capitalize", availabilityFilter === f ? "bg-[#1099A1] shadow-md text-white" : "text-[#54656f] hover:text-[#111] dark:hover:text-white")}
@@ -481,7 +481,7 @@ export function StudentCourseCatalogDetail() {
 
                             {/* Custom Timezone Dropdown */}
                             <div className="relative">
-                              <button 
+                              <button
                                 onClick={() => setIsTimezoneOpen(!isTimezoneOpen)}
                                 className="flex items-center gap-2 text-[13px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-1.5 font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
                               >
@@ -490,7 +490,7 @@ export function StudentCourseCatalogDetail() {
                               {isTimezoneOpen && (
                                 <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg overflow-hidden z-10 animate-in fade-in slide-in-from-top-2 duration-200">
                                   {["Local Time", "US/Eastern", "Africa/Addis_Ababa", "Europe/London"].map(tz => (
-                                    <button 
+                                    <button
                                       key={tz}
                                       onClick={() => { setSelectedTimezone(tz); setIsTimezoneOpen(false); }}
                                       className="w-full text-left px-4 py-2 text-[13px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
@@ -520,7 +520,7 @@ export function StudentCourseCatalogDetail() {
                                   hours.map((hour, hIndex) => {
                                     const mode = availability.time_grid[hIndex]?.[dIndex] || 0;
                                     if (mode === 0) return null; // Only show available slots
-                                    
+
                                     // Apply filter
                                     if (availabilityFilter === "online" && mode !== 1 && mode !== 3) return null;
                                     if (availabilityFilter === "in-person" && mode !== 2 && mode !== 3) return null;
@@ -683,7 +683,7 @@ export function StudentCourseCatalogDetail() {
             </div>
             <div className="flex items-center gap-2 mt-4 p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
               <input type="text" readOnly value="https://yakal.app/course/CAT-01" className="bg-transparent flex-1 outline-none text-[13px] text-[#54656f] dark:text-[#aebac1] px-2" />
-              <Button 
+              <Button
                 className={cn(
                   "h-8 text-[12px] text-white rounded-lg px-4 transition-all duration-300 flex items-center gap-1.5 active:scale-95",
                   isCopied ? "bg-green-500 hover:bg-green-600 scale-105" : "bg-[#1099A1] hover:bg-[#0d848b]"

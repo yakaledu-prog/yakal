@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 
 const GAP = 16; // px gap between slides
-const DURATION = 500; // ms — keep in sync with the transition below
+const DURATION = 500; // ms, keep in sync with the transition below
 
 type CarouselProps = {
   slides: ReactNode[];
@@ -32,7 +32,7 @@ export default function Carousel({
   function startTimer() {
     stopTimer();
     timerRef.current = setInterval(() => {
-      // Only advance while the carousel is actually visible — prevents the
+      // Only advance while the carousel is actually visible, prevents the
       // index from running away while the tab is hidden or it's off-screen.
       if (onScreen.current && !document.hidden) { setAnimate(true); setIndex((i) => i + 1); }
     }, intervalMs);

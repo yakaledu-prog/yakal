@@ -1,8 +1,9 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Mail, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { postAuthPath } from "@/utils/roleRoutes";
 import toast from "react-hot-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 
 export function EmailConfirmationPage() {
@@ -10,6 +11,21 @@ export function EmailConfirmationPage() {
   const email = searchParams.get("email");
   const navigate = useNavigate();
   const [resending, setResending] = useState(false);
+
+  // If the user confirms their email (here or in another tab of this browser),
+  // a session appears — move them straight on to onboarding/their dashboard.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
+      if (!session?.user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("role, status, is_onboarded")
+        .eq("id", session.user.id)
+        .single();
+      navigate(postAuthPath(prof));
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleResend = async () => {
     if (!email) return;
@@ -54,23 +70,23 @@ export function EmailConfirmationPage() {
           </div>
 
           <h1 className="text-[26px] font-bold text-[#111] dark:text-white mb-4">
-            Email Confirmation
+            Check your inbox
           </h1>
-          
+
           <p className="text-[15px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-10 max-w-[400px]">
-            We have sent email to <a href={`mailto:${email}`} className="text-[#1099A1] font-medium hover:underline">{email || "your email address"}</a> to confirm the validity of your email address. After receiving the email follow the link provided to complete your registration.
+            We've sent a confirmation link to <a href={`mailto:${email}`} className="text-[#1099A1] font-medium hover:underline">{email || "your email address"}</a>. Click the link in that email to verify your address and finish setting up your account.
           </p>
 
           <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-6" />
 
           <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">
-            If you not got any mail{" "}
-            <button 
+            Didn't get the email?{" "}
+            <button
               onClick={handleResend}
               disabled={resending || !email}
               className="text-[#1099A1] font-semibold hover:underline disabled:opacity-50"
             >
-              {resending ? "Resending..." : "Resend confirmation mail"}
+              {resending ? "Sending..." : "Resend it"}
             </button>
           </p>
 

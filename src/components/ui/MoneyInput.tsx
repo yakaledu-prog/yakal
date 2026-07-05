@@ -14,7 +14,7 @@ interface MoneyInputProps {
 
 /**
  * Money field with a currency prefix + ETB/USD toggle.
- * Shows only the (centered) label until focused/filled — then the label floats,
+ * Shows only the (centered) label until focused/filled, then the label floats,
  * the currency symbol appears, and the value is editable.
  */
 export function MoneyInput({ label, value, onChange, currency, onCurrencyChange }: MoneyInputProps) {

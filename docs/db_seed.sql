@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — DEMO DATA SEED SCRIPT (Version 1)
+-- YAKAL, DEMO DATA SEED SCRIPT (Version 1)
 -- Run AFTER db_schema.sql.
 --
 -- Creates 5 demo accounts. All passwords: demo123
@@ -30,7 +30,7 @@ BEGIN
   -- ── Insert auth users ──────────────────────────────────────────────────────
 
   -- NOTE: the empty-string token columns (confirmation_token, recovery_token,
-  -- email_change*, reauthentication_token, phone_change*) MUST be '' not NULL —
+  -- email_change*, reauthentication_token, phone_change*) MUST be '' not NULL,
   -- GoTrue's login scanner errors on NULL strings ("converting NULL to string
   -- is unsupported"), which surfaces as "Database error querying schema".
   INSERT INTO auth.users (
@@ -180,7 +180,7 @@ BEGIN
   INSERT INTO public.courses (id, title, subject, description, tutor_id, thumbnail_url, is_active, created_by)
   VALUES (
     v_course_id,
-    'Advanced Mathematics — University Entrance Prep',
+    'Advanced Mathematics, University Entrance Prep',
     'Mathematics',
     'A comprehensive course covering Calculus, Algebra, Trigonometry, and Statistics tailored for Ethiopian University Entrance Examination preparation. Sessions are conducted via Google Meet.',
     v_tutor_id,
@@ -252,7 +252,7 @@ BEGIN
     (v_conv_id, v_student_id, 'I will! I have already started reading it. Should I bring my notes?',        true,  now() - INTERVAL '4 hours'),
     (v_conv_id, v_tutor_id,   'Yes, definitely. Also try the practice problems at the end of the chapter.', true,  now() - INTERVAL '3 hours'),
     (v_conv_id, v_student_id, 'I am a bit stuck on problem 7. Can we go over it in the session?',           true,  now() - INTERVAL '2 hours'),
-    (v_conv_id, v_tutor_id,   'Of course! That is actually a great question — it involves the chain rule. See you tomorrow at 10AM.', false, now() - INTERVAL '1 hour');
+    (v_conv_id, v_tutor_id,   'Of course! That is actually a great question, it involves the chain rule. See you tomorrow at 10AM.', false, now() - INTERVAL '1 hour');
 
   -- ── Demo Notifications ────────────────────────────────────────────────────
 
@@ -281,7 +281,7 @@ BEGIN
   VALUES (
     v_student_id,
     v_counselor_id,
-    'Computer Science — Addis Ababa University',
+    'Computer Science, Addis Ababa University',
     'I have been passionate about mathematics and technology since childhood. I believe AAU''s Computer Science program will provide me the foundation to contribute to Ethiopia''s growing tech sector.',
     '[{"name": "Grade 12 Transcript", "drive_url": "https://drive.google.com/file/d/demo-transcript"}, {"name": "Personal ID", "drive_url": "https://drive.google.com/file/d/demo-id"}]'::jsonb,
     'in_review',

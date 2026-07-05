@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — MIGRATION: add email to profiles
+-- YAKAL, MIGRATION: add email to profiles
 -- Run ONCE in Supabase SQL Editor (safe to run on the seeded DB).
 --
 -- Rationale: clients cannot read auth.users, but the app must look

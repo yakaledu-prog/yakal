@@ -1,4 +1,4 @@
-# Yakal V1 — Master Checklist
+# Yakal V1, Master Checklist
 
 Track implementation progress. Mark items as you complete them.
 
@@ -23,8 +23,8 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 - [x] Update `Profile` type in `AuthContext.tsx` (add: email, status, bio, phone, zoom_link, subjects, hourly_rate, grade_level, rejection_reason)
 - [x] Add `refreshProfile()` to `AuthContext`
-- [x] Add role selection to `AuthPage.tsx` (Student / Tutor / Parent — already present; login now routes by role, counselor added to demo grid)
-- [x] Create `src/utils/roleRoutes.ts` — `homePathForRole` / `postAuthPath` / `requiresApproval`
+- [x] Add role selection to `AuthPage.tsx` (Student / Tutor / Parent, already present; login now routes by role, counselor added to demo grid)
+- [x] Create `src/utils/roleRoutes.ts`, `homePathForRole` / `postAuthPath` / `requiresApproval`
 - [x] Update `OnboardingPage.tsx`:
   - [x] Role-specific form fields (tutor: subjects/rate/zoom/bio; student: grade/subjects; parent/counselor: phone/bio)
   - [x] Fix redirect to role-based dashboard (not always `/student`)
@@ -43,16 +43,16 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ## Phase 2: Tutor Portal
 
-- [ ] `TutorHome.tsx` — replace `studentService` mock with real Supabase
+- [ ] `TutorHome.tsx`, replace `studentService` mock with real Supabase
   - [ ] Today's sessions (real)
   - [ ] Session count chart (real, computed from sessions table)
   - [ ] Welcome banner uses `profile.full_name`
-- [ ] `TutorProfile.tsx` — real profile update (bio, subjects, zoom_link, hourly_rate)
-- [ ] `TutorCalendar.tsx` — real sessions from DB
-- [ ] `TutorSessions.tsx` — real sessions + mark complete + session notes
-- [ ] `TutorCourses.tsx` — courses from DB where `tutor_id = me`
-- [ ] Create `TutorStudents.tsx` — list my students
-- [ ] Create `TutorAssignments.tsx` — create/view/review assignments
+- [ ] `TutorProfile.tsx`, real profile update (bio, subjects, zoom_link, hourly_rate)
+- [ ] `TutorCalendar.tsx`, real sessions from DB
+- [ ] `TutorSessions.tsx`, real sessions + mark complete + session notes
+- [ ] `TutorCourses.tsx`, courses from DB where `tutor_id = me`
+- [ ] Create `TutorStudents.tsx`, list my students
+- [ ] Create `TutorAssignments.tsx`, create/view/review assignments
 - [ ] Remove pages: `TutorMyLearning`, `TutorCourseDashboard`, `TutorCourseOverview`, `TutorCourseSessions`, `TutorCourseResources`, `TutorCourseTasks`
 - [ ] Update `Router.tsx` to reflect new tutor pages
 - [ ] Test: tutor marks a session as complete
@@ -62,22 +62,22 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ## Phase 3: Student Portal
 
-- [ ] `StudentHome.tsx` — all real data
+- [ ] `StudentHome.tsx`, all real data
   - [ ] Next session (real query)
   - [ ] Homework due (real query)
   - [ ] Study hours chart (computed from sessions)
   - [ ] Welcome banner uses real name
-- [ ] `StudentCourses.tsx` — browse real courses from DB
+- [ ] `StudentCourses.tsx`, browse real courses from DB
 - [ ] `StudentCourseCatalogDetail.tsx`
   - [ ] Fetch course by ID from DB
   - [ ] Tutor availability linked to actual course tutor
   - [ ] Booking creates a `sessions` row (NOT Zoom SDK)
   - [ ] Zoom link = tutor's `profiles.zoom_link`
-- [ ] `StudentSessions.tsx` — real sessions, "Join Session" opens `zoom_link`
-- [ ] `StudentCalendar.tsx` — real sessions on calendar
-- [ ] `StudentProfile.tsx` — real profile update
-- [ ] `StudentNotifications.tsx` — real notifications
-- [ ] Create `StudentAssignments.tsx` — view + submit via Drive link
+- [ ] `StudentSessions.tsx`, real sessions, "Join Session" opens `zoom_link`
+- [ ] `StudentCalendar.tsx`, real sessions on calendar
+- [ ] `StudentProfile.tsx`, real profile update
+- [ ] `StudentNotifications.tsx`, real notifications
+- [ ] Create `StudentAssignments.tsx`, view + submit via Drive link
 - [ ] Create `StudentCollegeGuide.tsx` (optional, if confirmed in scope)
 - [ ] Remove pages: `StudentMyLearning`, `StudentCourseDashboard`, etc.
 - [ ] Test: student books a session → appears in sessions list + calendar
@@ -104,7 +104,7 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ---
 
-## Phase 5: Messaging — Supabase Realtime
+## Phase 5: Messaging, Supabase Realtime
 
 - [ ] Create `src/services/messageService.ts`
   - [ ] `getOrCreateConversation()`
@@ -145,9 +145,9 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 ## Phase 7: Parent Portal
 
 - [ ] Create `ParentLayout.tsx` with sidebar
-- [ ] Create `ParentHome.tsx` — linked children list
-- [ ] Create `ParentLinkStudent.tsx` — request link by student email
-- [ ] Create `ParentStudentView.tsx` — read-only student dashboard
+- [ ] Create `ParentHome.tsx`, linked children list
+- [ ] Create `ParentLinkStudent.tsx`, request link by student email
+- [ ] Create `ParentStudentView.tsx`, read-only student dashboard
 - [ ] Add parent routes to `Router.tsx`
 - [ ] Test: parent requests link → student sees notification → approves
 - [ ] Test: parent views linked student's sessions and assignments
@@ -157,9 +157,9 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 ## Phase 8: Counselor Portal
 
 - [ ] Create `CounselorLayout.tsx` with sidebar
-- [ ] Create `CounselorHome.tsx` — application stats
-- [ ] Create `CounselorApplications.tsx` — list with status filter
-- [ ] Create `CounselorApplicationDetail.tsx` — notes, status update, message
+- [ ] Create `CounselorHome.tsx`, application stats
+- [ ] Create `CounselorApplications.tsx`, list with status filter
+- [ ] Create `CounselorApplicationDetail.tsx`, notes, status update, message
 - [ ] Create `CounselorProfile.tsx`
 - [ ] Add counselor routes to `Router.tsx`
 - [ ] Test: counselor updates application status → student notified
@@ -174,8 +174,8 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 - [ ] Delete `src/services/studentService.ts`
 - [ ] Delete `src/services/zoom.ts`
 - [ ] Remove unused npm packages: `@zoom/meetingsdk`, `@jitsi/react-sdk`, `react-audio-visualize`, `wavesurfer.js`, `emoji-picker-react`
-- [ ] Run `npm run build` — must succeed with 0 errors
-- [ ] Run `tsc --noEmit` — must succeed with 0 type errors
+- [ ] Run `npm run build`, must succeed with 0 errors
+- [ ] Run `tsc --noEmit`, must succeed with 0 type errors
 - [ ] Full manual test of all 5 user journeys (see test protocol in `v1_implementation_plan.md`)
 - [ ] Confirm `.env` is in `.gitignore` before final commit
 - [ ] Final commit: `"feat: Yakal V1 complete - all portals live, no mocks"`
@@ -212,4 +212,4 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ---
 
-*Last Updated: Phase 0 — Branch `version1` created*
+*Last Updated: Phase 0, Branch `version1` created*

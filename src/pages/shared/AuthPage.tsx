@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { User, GraduationCap, Users } from "lucide-react";
+import { User, GraduationCap, Users, Info } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
@@ -31,6 +31,7 @@ export function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Fetch the just-authenticated user's profile and route by role/status/onboarding.
   const routeByProfile = async (userId: string) => {
@@ -92,8 +93,9 @@ export function AuthPage() {
         // Detect that and tell the user to log in instead of silently sending them
         // to the confirm-email screen.
         if (data?.user && (data.user.identities?.length ?? 0) === 0) {
-          toast.error("This email is already registered. Please log in instead.");
           setMode("login");
+          setPassword("");
+          setNotice("You already have an account with this email. Please log in below.");
           return;
         }
 
@@ -125,7 +127,7 @@ export function AuthPage() {
         {/* Toggle */}
         <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-xl mb-6">
           <button
-            onClick={() => setMode("login")}
+            onClick={() => { setMode("login"); setNotice(null); }}
             className={cn(
               "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
               mode === "login"
@@ -136,7 +138,7 @@ export function AuthPage() {
             Log in
           </button>
           <button
-            onClick={() => setMode("signup")}
+            onClick={() => { setMode("signup"); setNotice(null); }}
             className={cn(
               "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
               mode === "signup"
@@ -147,6 +149,13 @@ export function AuthPage() {
             Sign up
           </button>
         </div>
+
+        {notice && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 px-3.5 py-3 text-[13px] text-[#8a6d34] dark:text-[#e0c48a]">
+            <Info size={16} className="mt-0.5 shrink-0" />
+            <span>{notice}</span>
+          </div>
+        )}
 
         <form onSubmit={handleAuth} className="space-y-4">
 

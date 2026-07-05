@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — MIGRATION: add rate_currency to profiles
+-- YAKAL, MIGRATION: add rate_currency to profiles
 -- Run ONCE in Supabase SQL Editor (safe on the seeded DB).
 -- Lets tutors express their session rate in ETB or USD.
 -- ============================================================

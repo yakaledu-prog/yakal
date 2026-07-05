@@ -1,6 +1,6 @@
 # Yakal
 
-Marketing site for Yakal — personalized tutoring for students who want to excel
+Marketing site for Yakal, personalized tutoring for students who want to excel
 in Math, Science, and SAT prep.
 
 Built with React, TypeScript, Vite, and Tailwind CSS.

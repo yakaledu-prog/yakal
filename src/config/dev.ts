@@ -8,7 +8,7 @@
 
 /**
  * Exposes public, no-auth preview routes for designing onboarding / pending
- * screens (e.g. /preview/onboarding/tutor). MUST be false in production —
+ * screens (e.g. /preview/onboarding/tutor). MUST be false in production,
  * otherwise anyone can reach these routes without logging in.
  */
 export const DEV_PREVIEW = true;

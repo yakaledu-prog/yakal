@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — Delete a test user (for re-testing signup / onboarding)
+-- YAKAL, Delete a test user (for re-testing signup / onboarding)
 -- ============================================================
 -- Deleting from auth.users cascades to public.profiles (FK ON DELETE
 -- CASCADE) and to auth.identities, so the email becomes free to reuse.

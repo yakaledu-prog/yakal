@@ -1,6 +1,6 @@
 -- ============================================================
--- YAKAL — Storage bucket for profile photo uploads
--- Run ONCE in Supabase SQL Editor (optional — only needed if you
+-- YAKAL, Storage bucket for profile photo uploads
+-- Run ONCE in Supabase SQL Editor (optional, only needed if you
 -- want users to upload their own photos. DiceBear avatars work
 -- without this.)
 -- ============================================================

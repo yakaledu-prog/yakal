@@ -303,7 +303,7 @@ export const mockConversations: Conversation[] = [
         id: "msg-2",
         conversationId: "conv-5",
         senderId: "current-user",
-        text: "Awesome, thanks Liam! Quick question — do you think we should focus more on linked lists or trees for the final?",
+        text: "Awesome, thanks Liam! Quick question, do you think we should focus more on linked lists or trees for the final?",
         timestamp: new Date("2024-11-15T10:30:00"),
         status: "read",
         isRead: true,

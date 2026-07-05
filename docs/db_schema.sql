@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — FULL DATABASE SCHEMA (Version 1)
+-- YAKAL, FULL DATABASE SCHEMA (Version 1)
 -- Run AFTER db_wipe.sql.
 -- Run BEFORE db_seed.sql.
 -- ============================================================
@@ -115,7 +115,7 @@ CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
--- Admin can update any profile (for approval flow) — uses SECURITY DEFINER helper
+-- Admin can update any profile (for approval flow), uses SECURITY DEFINER helper
 CREATE POLICY "Admin can update any profile"
   ON public.profiles FOR UPDATE
   USING (public.is_admin());
