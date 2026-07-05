@@ -87,6 +87,16 @@ export function AuthPage() {
         });
         if (error) throw error;
 
+        // Supabase returns an obfuscated user with an EMPTY identities array when
+        // the email is already registered (to avoid leaking account existence).
+        // Detect that and tell the user to log in instead of silently sending them
+        // to the confirm-email screen.
+        if (data?.user && (data.user.identities?.length ?? 0) === 0) {
+          toast.error("This email is already registered. Please log in instead.");
+          setMode("login");
+          return;
+        }
+
         if (data?.session === null) {
           // Email confirmation is required
           navigate(`/confirm-email?email=${encodeURIComponent(email)}`);

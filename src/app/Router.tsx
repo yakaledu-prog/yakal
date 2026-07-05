@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
@@ -93,10 +93,39 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
+// ── DEV-only onboarding/pending previews ─────────────────────────────────────
+// Public, no-auth routes to design/test each role's flow without logging in.
+// Set DEV_PREVIEW = false before shipping to production.
+const DEV_PREVIEW = true;
+
+function OnboardingPreview() {
+  const { role = "student" } = useParams();
+  return <OnboardingPage previewRole={role} />;
+}
+
+function PendingPreview() {
+  const { role = "tutor", status = "pending" } = useParams();
+  return (
+    <PendingApprovalPage
+      preview
+      previewRole={role}
+      previewStatus={status === "rejected" ? "rejected" : "pending"}
+    />
+  );
+}
+
+const previewRoutes = DEV_PREVIEW
+  ? [
+      { path: "/preview/onboarding/:role", element: <OnboardingPreview /> },
+      { path: "/preview/pending/:role/:status?", element: <PendingPreview /> },
+    ]
+  : [];
+
 const router = createBrowserRouter([
+  ...previewRoutes,
   {
     path: "/",
-    element: <App />, 
+    element: <App />,
     errorElement: <ErrorPage />,
   },
   {
