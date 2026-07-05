@@ -24,11 +24,28 @@ export interface TutorStats {
   pendingReviews: number;
 }
 
+export interface WeekDayItem {
+  id: string;
+  time: string;     // HH:mm
+  subject: string;
+  student: string;
+  status: string;
+}
+export interface WeekDay {
+  label: string;   // Mon, Tue, ...
+  date: string;    // YYYY-MM-DD
+  dayNum: number;  // 1..31
+  count: number;
+  isToday: boolean;
+  items: WeekDayItem[];
+}
+
 export interface TutorDashboard {
   today: SessionRow[];
   next: SessionRow | null;
+  upcomingList: SessionRow[];
   stats: TutorStats;
-  weekly: { name: string; sessions: number }[];
+  weekly: WeekDay[];
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -80,20 +97,35 @@ export async function getTutorDashboard(tutorId: string): Promise<TutorDashboard
     .eq("status", "submitted");
 
   // Sessions per day for the last 7 days (oldest -> today).
-  const weekly: { name: string; sessions: number }[] = [];
+  const weekly: WeekDay[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0, 10);
+    const dayItems = sessions
+      .filter((s) => s.date === key)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      .map((s) => ({
+        id: s.id,
+        time: (s.start_time || "").slice(0, 5),
+        subject: s.subject,
+        student: s.student_name || "Student",
+        status: s.status,
+      }));
     weekly.push({
-      name: WEEKDAYS[d.getDay()],
-      sessions: sessions.filter((s) => s.date === key).length,
+      label: WEEKDAYS[d.getDay()],
+      date: key,
+      dayNum: d.getDate(),
+      count: dayItems.length,
+      isToday: key === todayStr,
+      items: dayItems,
     });
   }
 
   return {
     today,
     next,
+    upcomingList: upcomingSorted,
     stats: { activeStudents, upcoming, completed, pendingReviews: pendingReviews ?? 0 },
     weekly,
   };
@@ -146,6 +178,78 @@ export async function getTutorCourses(tutorId: string) {
     .eq("tutor_id", tutorId)
     .order("created_at", { ascending: false });
   return data ?? [];
+}
+
+export interface CourseWorkspace {
+  course: any | null;
+  sessions: SessionRow[];
+  students: TutorStudent[];
+  assignments: AssignmentRow[];
+}
+
+/** Everything for one course's tabbed detail view. */
+export async function getCourseWorkspace(courseId: string, tutorId: string): Promise<CourseWorkspace> {
+  const [{ data: course }, allSessions, allAssignments] = await Promise.all([
+    supabase.from("courses").select("*").eq("id", courseId).single(),
+    getTutorSessionsFull(tutorId),
+    getTutorAssignments(tutorId),
+  ]);
+
+  const sessions = allSessions.filter((s) => s.course_id === courseId);
+  const assignments = allAssignments.filter((a) => a.course_id === courseId);
+
+  const ids = [...new Set(sessions.map((s) => s.student_id))];
+  const students: TutorStudent[] = ids.map((id) => {
+    const mine = sessions.filter((s) => s.student_id === id);
+    const dates = mine.map((s) => s.date).sort();
+    return {
+      id,
+      full_name: mine[0]?.student_name || "Student",
+      avatar_url: mine[0]?.student_avatar ?? null,
+      email: null,
+      sessionCount: mine.length,
+      completedCount: mine.filter((s) => s.status === "completed").length,
+      lastDate: dates[dates.length - 1] ?? null,
+      subjects: [...new Set(mine.map((s) => s.subject))],
+    };
+  });
+
+  return { course: course ?? null, sessions, students, assignments };
+}
+
+// ── Earnings (rate is the tutor's current profile rate) ─────
+export interface EarningsSummary {
+  total: number;
+  thisMonth: number;
+  completedCount: number;
+  avg: number;
+  months: { key: string; label: string; count: number; amount: number }[];
+}
+
+/** Earnings = completed sessions × current rate, grouped by month (newest first). */
+export function computeEarnings(sessions: SessionRow[], rate: number): EarningsSummary {
+  const completed = sessions.filter((s) => s.status === "completed");
+  const byMonth = new Map<string, number>();
+  for (const s of completed) {
+    const key = s.date.slice(0, 7); // YYYY-MM
+    byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+  }
+  const months = [...byMonth.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, count]) => ({
+      key,
+      label: new Date(key + "-01T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+      count,
+      amount: count * rate,
+    }));
+  const thisKey = new Date().toISOString().slice(0, 7);
+  return {
+    total: completed.length * rate,
+    thisMonth: (byMonth.get(thisKey) ?? 0) * rate,
+    completedCount: completed.length,
+    avg: rate,
+    months,
+  };
 }
 
 // ── Sessions: tutor actions ─────────────────────────────────

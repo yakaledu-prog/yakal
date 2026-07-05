@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ChartCard } from "@/components/feature/ChartCard";
+import { WeekStrip } from "@/components/feature/WeekStrip";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, Users, ClipboardCheck, CalendarDays, ChevronRight } from "lucide-react";
+import { Video, Clock, Users, ClipboardCheck, CalendarDays, Wallet, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorDashboard, TutorDashboard, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
@@ -58,7 +59,10 @@ export function TutorHome() {
     );
   }
 
-  const { today, next, stats, weekly } = data;
+  const { today, next, upcomingList, stats, weekly } = data;
+  const rate = profile?.hourly_rate ?? 0;
+  const currency = profile?.rate_currency || "ETB";
+  const earnings = stats.completed * rate;
 
   return (
     <PageWrapper>
@@ -83,65 +87,61 @@ export function TutorHome() {
         </div>
 
         {/* Stat row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="stat-row grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           <StatCard icon={<Users size={18} />} label="Active Students" value={stats.activeStudents} />
           <StatCard icon={<CalendarDays size={18} />} label="Upcoming" value={stats.upcoming} />
           <StatCard icon={<Clock size={18} />} label="Completed" value={stats.completed} />
           <StatCard icon={<ClipboardCheck size={18} />} label="To Review" value={stats.pendingReviews} highlight={stats.pendingReviews > 0} />
+          <button onClick={() => navigate("/tutor/earnings")} className="text-left">
+            <StatCard icon={<Wallet size={18} />} label="Earnings" value={`${earnings.toLocaleString()} ${currency}`} />
+          </button>
+        </div>
+
+        {/* Compact next-session bar */}
+        <div className="next-session flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border-l-4 border-l-primary border bg-card dark:bg-[#182329] shadow-sm p-4">
+          <div className="next-session__meta flex items-center gap-3 flex-1 min-w-0">
+            {next && <img src={next.student_avatar || dicebearUrl(next.student_name || "S")} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />}
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-primary uppercase tracking-wide">Next Session</p>
+              {next ? (
+                <>
+                  <p className="font-bold text-[15px] truncate">{next.subject} <span className="font-normal text-muted-foreground">· {next.student_name}</span></p>
+                  <p className="text-[13px] text-muted-foreground flex items-center gap-1.5"><Clock size={13} /> {formatDay(next.date)}, {formatTime(next.start_time)} · {next.duration_minutes} min</p>
+                </>
+              ) : (
+                <p className="text-[14px] text-muted-foreground">No upcoming sessions.</p>
+              )}
+            </div>
+          </div>
+          {next && (
+            <Button className="next-session__join gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white shrink-0" onClick={() => join(next)}>
+              <Video size={18} /> Join Meeting
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {/* Next session */}
-            <Card className="border-l-4 border-l-primary shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Video className="text-primary" size={20} /> Next Session
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {next ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{next.subject}</h3>
-                      <p className="text-muted-foreground flex items-center gap-2 text-sm mb-2">
-                        <Clock size={15} /> {formatDay(next.date)}, {formatTime(next.start_time)} · {next.duration_minutes} min
-                      </p>
-                      <div className="flex items-center gap-2 text-sm">
-                        <img src={next.student_avatar || dicebearUrl(next.student_name || "S")} alt="" className="h-6 w-6 rounded-full object-cover" />
-                        <span className="font-medium">{next.student_name}</span>
-                      </div>
-                    </div>
-                    <Button className="gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white shrink-0" onClick={() => join(next)}>
-                      <Video size={18} /> Join Meeting
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground py-4">No upcoming sessions.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <ChartCard title="Sessions this week" data={weekly} dataKey="sessions" xAxisKey="name" />
+          <div className="lg:col-span-2">
+            <WeekStrip days={weekly} />
           </div>
 
-          {/* Today's schedule */}
-          <Card>
+          {/* Upcoming sessions */}
+          <Card className="upcoming-sessions">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <CalendarDays className="text-primary" size={20} /> Today's Schedule
+                <CalendarDays className="text-primary" size={20} /> Upcoming Sessions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {today.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">Nothing scheduled today.</p>
+              {upcomingList.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">No upcoming sessions.</p>
               ) : (
-                today.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between gap-3 py-2 border-b last:border-0">
+                upcomingList.slice(0, 6).map((s) => (
+                  <div key={s.id} className="upcoming-item flex items-center justify-between gap-3 py-2 border-b last:border-0">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{s.subject}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Clock size={12} /> {formatTime(s.start_time)} · {s.student_name}
+                        <Clock size={12} /> {formatDay(s.date)}, {formatTime(s.start_time)} · {s.student_name}
                       </p>
                     </div>
                     <Button size="sm" className="h-8 gap-1.5 bg-[#1099A1] hover:bg-[#0d848b] text-white shrink-0" onClick={() => join(s)}>
@@ -150,8 +150,8 @@ export function TutorHome() {
                   </div>
                 ))
               )}
-              <Button variant="secondary" className="w-full mt-1 text-xs border-none bg-muted/50" onClick={() => navigate("/tutor/calendar")}>
-                Open Calendar
+              <Button variant="secondary" className="w-full mt-1 text-xs border-none bg-muted/50" onClick={() => navigate("/tutor/sessions")}>
+                View all sessions
               </Button>
             </CardContent>
           </Card>
@@ -161,20 +161,22 @@ export function TutorHome() {
   );
 }
 
-function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
+function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number | string; highlight?: boolean }) {
+  const alert = highlight && Number(value) > 0;
   return (
-    <Card className={highlight && value > 0 ? "border-[#CAA25F]/40" : ""}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[13px] text-muted-foreground truncate">{label}</p>
-            <p className="text-3xl font-bold mt-1 leading-none">{value}</p>
-          </div>
-          <div className={`shrink-0 p-2.5 rounded-xl ${highlight && value > 0 ? "bg-[#CAA25F]/15 text-[#CAA25F]" : "bg-primary/10 text-primary"}`}>
-            {icon}
-          </div>
+    <div className={cn(
+      "stat-card rounded-xl border bg-card dark:bg-[#182329] shadow-sm p-5 h-full",
+      alert ? "border-[#CAA25F]/40" : "border-border"
+    )}>
+      <div className="stat-card__row flex items-start justify-between gap-3">
+        <div className="stat-card__text min-w-0">
+          <p className="stat-card__label text-[13px] text-muted-foreground truncate">{label}</p>
+          <p className="stat-card__value text-2xl font-bold mt-1.5 leading-none truncate">{value}</p>
         </div>
-      </CardContent>
-    </Card>
+        <div className={cn("stat-card__icon shrink-0 p-2.5 rounded-xl", alert ? "bg-[#CAA25F]/15 text-[#CAA25F]" : "bg-primary/10 text-primary")}>
+          {icon}
+        </div>
+      </div>
+    </div>
   );
 }

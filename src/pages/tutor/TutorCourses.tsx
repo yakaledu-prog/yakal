@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Search, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +16,7 @@ interface Course {
 
 export function TutorCourses() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -60,7 +62,7 @@ export function TutorCourses() {
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((course) => (
-              <div key={course.id} className="group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all flex flex-col">
+              <div key={course.id} onClick={() => navigate(`/tutor/courses/${course.id}`)} className="course-card group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg hover:border-primary/40 transition-all flex flex-col cursor-pointer">
                 <div className="relative w-full aspect-video overflow-hidden bg-[#f0f2f5] dark:bg-[#182329]">
                   {course.thumbnail_url ? (
                     <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

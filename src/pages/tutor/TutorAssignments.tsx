@@ -37,20 +37,26 @@ export function TutorAssignments() {
   return (
     <PageWrapper>
       <div className="mx-auto w-full p-4 md:p-8 h-full dark:bg-[#111b21]">
-        <div className="flex justify-end mb-6">
-          <Button onClick={() => navigate("/tutor/assignments/new")} className="gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white">
-            <Plus size={18} /> New Assignment
-          </Button>
-        </div>
+        {/* Create card */}
+        <button
+          onClick={() => navigate("/tutor/assignments/new")}
+          className="new-assignment-card w-full mb-4 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182329] p-5 text-left hover:border-primary/50 hover:bg-primary/[0.02] transition-colors group"
+        >
+          <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+            <Plus size={22} />
+          </div>
+          <div>
+            <p className="font-semibold text-[15px] text-[#111] dark:text-white">New Assignment</p>
+            <p className="text-[13px] text-muted-foreground">Post work for your students and review submissions.</p>
+          </div>
+        </button>
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
         ) : assignments.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl">
-            <ClipboardList size={48} className="mx-auto text-[#aebac1] mb-4" />
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No assignments yet</h3>
-            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mb-4">Create your first assignment for your students.</p>
-            <Button onClick={() => navigate("/tutor/assignments/new")} className="gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white"><Plus size={16} /> New Assignment</Button>
+          <div className="text-center py-14 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl">
+            <ClipboardList size={44} className="mx-auto text-[#aebac1] mb-3" />
+            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No assignments yet — create one above.</p>
           </div>
         ) : (
           <div className="space-y-4">
