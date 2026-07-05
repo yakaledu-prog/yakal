@@ -4,40 +4,45 @@ import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
 import { getTutorAvailability, saveTutorAvailability } from "@/services/availability";
+import { getTutorSessionsFull } from "@/services/tutorService";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 
-// --- Mock Data ---
-const today = new Date();
-const currentMonth = today.getMonth();
-const currentYear = today.getFullYear();
 const pad = (n: number) => n.toString().padStart(2, '0');
-const dateStr = (d: number) => `${currentYear}-${pad(currentMonth + 1)}-${pad(d)}`;
 
-const mockSessions = [
-  { id: "1", subject: "AP Calculus AB", date: dateStr(15), startTime: "16:00", duration: 60, tutorName: "Dr. Alex", status: "Upcoming" },
-  { id: "2", subject: "Physics Lab Review", date: dateStr(17), startTime: "17:30", duration: 60, tutorName: "Dr. Alex", status: "Upcoming" },
-  { id: "3", subject: "College Essay Draft", date: dateStr(20), startTime: "15:00", duration: 60, tutorName: "Jane Doe", status: "Upcoming" },
-];
+interface CalSession {
+  id: string; subject: string; date: string; startTime: string; duration: number; tutorName: string; status: string;
+}
+
 export function TutorCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('week');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
   const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
   const [disabledDays, setDisabledDays] = useState<number[]>([]);
+  const [sessions, setSessions] = useState<CalSession[]>([]);
 
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user) return;
-    const fetchAvail = async () => {
-      const data = await getTutorAvailability(user.id);
+    getTutorAvailability(user.id).then((data) => {
       if (data) {
         setAvailabilityData(data.time_grid);
         setDisabledDays(data.disabled_days);
       }
-    };
-    fetchAvail();
+    });
+    getTutorSessionsFull(user.id).then((rows) =>
+      setSessions(rows.map((s) => ({
+        id: s.id,
+        subject: s.subject,
+        date: s.date,
+        startTime: (s.start_time || "").slice(0, 5),
+        duration: s.duration_minutes,
+        tutorName: s.student_name || "Student",
+        status: s.status,
+      })))
+    );
   }, [user]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -102,7 +107,7 @@ export function TutorCalendar() {
   const getSessionsForDay = (d: number | null, checkMonth = month, checkYear = year) => {
     if (!d) return [];
     const targetDateStr = `${checkYear}-${pad(checkMonth + 1)}-${pad(d)}`;
-    return mockSessions.filter(s => s.date === targetDateStr);
+    return sessions.filter(s => s.date === targetDateStr);
   };
 
   const isToday = (d: number | null, checkMonth = month, checkYear = year) => {

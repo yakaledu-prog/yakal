@@ -43,20 +43,21 @@ Legend: `[ ]` = Not Started | `[/]` = In Progress | `[x]` = Done
 
 ## Phase 2: Tutor Portal
 
-- [ ] `TutorHome.tsx`, replace `studentService` mock with real Supabase
-  - [ ] Today's sessions (real)
-  - [ ] Session count chart (real, computed from sessions table)
-  - [ ] Welcome banner uses `profile.full_name`
-- [ ] `TutorProfile.tsx`, real profile update (bio, subjects, zoom_link, hourly_rate)
-- [ ] `TutorCalendar.tsx`, real sessions from DB
-- [ ] `TutorSessions.tsx`, real sessions + mark complete + session notes
-- [ ] `TutorCourses.tsx`, courses from DB where `tutor_id = me`
-- [ ] Create `TutorStudents.tsx`, list my students
-- [ ] Create `TutorAssignments.tsx`, create/view/review assignments
-- [ ] Remove pages: `TutorMyLearning`, `TutorCourseDashboard`, `TutorCourseOverview`, `TutorCourseSessions`, `TutorCourseResources`, `TutorCourseTasks`
-- [ ] Update `Router.tsx` to reflect new tutor pages
-- [ ] Test: tutor marks a session as complete
-- [ ] Test: tutor creates an assignment
+- [x] Create `src/services/tutorService.ts` (dashboard, students, courses, assignments, submissions, session actions)
+- [x] `TutorHome.tsx`, replace `studentService` mock with real Supabase
+  - [x] Today's sessions (real) + stat row (students/upcoming/completed/to-review)
+  - [x] Session count chart (real, computed from sessions table)
+  - [x] Welcome banner uses `profile.full_name`
+- [x] `TutorProfile.tsx`, real profile update (bio, subjects, zoom_link, hourly_rate + currency) + avatar upload; real stats + recent sessions
+- [x] `TutorCalendar.tsx`, real sessions from DB (availability editor already real)
+- [x] `TutorSessions.tsx`, real sessions + join link + mark complete + session notes
+- [x] `TutorCourses.tsx`, courses from DB where `tutor_id = me` (read-only)
+- [x] Create `TutorStudents.tsx`, list my students
+- [x] Create `TutorAssignments.tsx`, create/view/review assignments + submissions
+- [x] Remove pages: `TutorMyLearning`, `TutorCourseDashboard/Overview/Sessions/Resources/Tasks`, `TutorCourseCatalogDetail`, `TutorResources`, `TutorMeeting`
+- [x] Update `TutorLayout.tsx` nav + `Router.tsx` tutor routes
+- [x] tsc + build pass
+- [ ] Manual test: tutor marks a session complete / creates an assignment / edits profile (needs seeded DB)
 
 ---
 
