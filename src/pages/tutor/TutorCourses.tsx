@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
-  BookOpen, Users, CalendarDays, ClipboardList, Clock, Loader2, CalendarClock, Search,
+  BookOpen, Users, CalendarDays, ClipboardList, Clock, Loader2, CalendarClock, Search, User, Calendar,
 } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorCourses, getCourseWorkspace, CourseWorkspace } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
+import { StudentCard } from "@/components/feature/StudentCard";
 import { stripHtml } from "@/components/ui/RichTextEditor";
-import { dicebearUrl } from "@/utils/avatar";
 
 type Tab = "overview" | "students" | "sessions" | "assignments";
 interface CourseLite { id: string; title: string; subject: string; thumbnail_url: string | null }
@@ -177,50 +178,50 @@ function CourseDetail({ ws, tab, setTab, navigate }: { ws: CourseWorkspace; tab:
       )}
 
       {tab === "students" && (
-        <div className="course-panel grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="course-panel grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {students.length === 0 ? <EmptyMsg text="No students enrolled via sessions yet." /> :
-            students.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 rounded-xl border bg-card dark:bg-[#182329] p-4">
-                <img src={s.avatar_url || dicebearUrl(s.full_name)} alt="" className="w-11 h-11 rounded-full object-cover" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-[14px] truncate">{s.full_name}</p>
-                  <p className="text-[12px] text-muted-foreground">{s.sessionCount} sessions · last {fmtDate(s.lastDate)}</p>
-                </div>
-              </div>
-            ))}
+            students.map((s) => <StudentCard key={s.id} student={s} onMessage={(id) => navigate(`/tutor/messages?to=${id}`)} />)}
         </div>
       )}
 
       {tab === "sessions" && (
-        <div className="course-panel space-y-3">
+        <div className="course-panel space-y-4">
           {sessions.length === 0 ? <EmptyMsg text="No sessions for this course yet." /> :
             sessions.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-xl border bg-card dark:bg-[#182329] p-4">
-                <div>
-                  <p className="font-semibold text-[14px]">{s.student_name}</p>
-                  <p className="text-[12px] text-muted-foreground flex items-center gap-1.5"><Clock size={12} /> {fmtDate(s.date)} · {fmtTime(s.start_time)}</p>
+              <div key={s.id} className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <h2 className="text-[16px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
+                  <Badge variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
+                    className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
                 </div>
-                <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize",
-                  s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                  s.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>
-                  {s.status}
-                </span>
+                <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                  <span className="flex items-center gap-1.5"><User size={14} /><span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span></span>
+                  <span className="flex items-center gap-1.5"><Calendar size={14} />{fmtDate(s.date)}</span>
+                  <span className="flex items-center gap-1.5"><Clock size={14} />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
+                </div>
               </div>
             ))}
         </div>
       )}
 
       {tab === "assignments" && (
-        <div className="course-panel space-y-3">
+        <div className="course-panel space-y-4">
           {assignments.length === 0 ? <EmptyMsg text="No assignments for this course yet." /> :
-            assignments.map((a) => (
-              <button key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`)}
-                className="w-full text-left rounded-xl border bg-card dark:bg-[#182329] p-4 hover:border-primary/40 transition-colors">
-                <p className="font-semibold text-[14px]">{a.title}</p>
-                {a.description && <p className="text-[12px] text-muted-foreground line-clamp-1 mt-0.5">{stripHtml(a.description)}</p>}
-                <p className="text-[12px] text-muted-foreground mt-1.5 flex items-center gap-1.5"><CalendarClock size={12} /> {a.submissionCount} submitted</p>
-              </button>
-            ))}
+            assignments.map((a) => {
+              const pending = (a.submissionCount ?? 0) - (a.reviewedCount ?? 0);
+              return (
+                <button key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`)}
+                  className="w-full text-left bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-5 shadow-sm hover:border-primary/40 transition-colors">
+                  <h3 className="text-[17px] font-bold text-[#111] dark:text-white mb-1.5">{a.title}</h3>
+                  {a.description && <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] line-clamp-2 mb-2">{stripHtml(a.description)}</p>}
+                  <div className="flex items-center gap-4 text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                    <span className="flex items-center gap-1.5"><CalendarClock size={13} /> {a.due_date ? new Date(a.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No due date"}</span>
+                    <span>{a.submissionCount} submitted</span>
+                    {pending > 0 && <span className="text-[#CAA25F] font-semibold">{pending} to review</span>}
+                  </div>
+                </button>
+              );
+            })}
         </div>
       )}
     </>
