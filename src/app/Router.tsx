@@ -37,7 +37,6 @@ import { TutorStudents } from "../pages/tutor/TutorStudents";
 import { TutorAssignments } from "../pages/tutor/TutorAssignments";
 import { TutorAssignmentNew } from "../pages/tutor/TutorAssignmentNew";
 import { TutorAssignmentDetail } from "../pages/tutor/TutorAssignmentDetail";
-import { TutorCourseDetail } from "../pages/tutor/TutorCourseDetail";
 import { TutorEarnings } from "../pages/tutor/TutorEarnings";
 import { TutorSessions } from "../pages/tutor/TutorSessions";
 import { TutorNotifications } from "../pages/tutor/TutorNotifications";
@@ -47,6 +46,7 @@ import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
 import { DEV_PREVIEW } from "../config/dev";
+import { BreadcrumbProvider } from "../contexts/BreadcrumbContext";
 
 function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
@@ -168,7 +168,7 @@ const router = createBrowserRouter([
           { path: "session/:id", element: <TutorSessionDetail /> },
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
-          { path: "courses/:id", element: <TutorCourseDetail /> },
+          { path: "courses/:id", element: <TutorCourses /> },
           { path: "earnings", element: <TutorEarnings /> },
           { path: "assignments", element: <TutorAssignments /> },
           { path: "assignments/new", element: <TutorAssignmentNew /> },
@@ -234,7 +234,9 @@ export function AppRouter() {
         pauseOnHover
         theme="colored"
       />
-      <RouterProvider router={router} />
+      <BreadcrumbProvider>
+        <RouterProvider router={router} />
+      </BreadcrumbProvider>
     </AuthProvider>
   );
 }

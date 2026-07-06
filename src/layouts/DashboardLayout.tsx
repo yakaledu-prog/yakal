@@ -12,6 +12,7 @@ import {
   FlameIcon
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
 import logoImg from "@/assets/images/logo.webp";
 
 interface NavItem {
@@ -30,6 +31,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const { profile, user } = useAuth();
+  const bcLabels = useBreadcrumbLabels();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -149,7 +151,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 const segments = location.pathname.split('/').filter(Boolean);
                 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(s);
                 const items = segments.map((segment, index) => ({
-                  label: isUuid(segment)
+                  label: bcLabels[segment]
+                    ? bcLabels[segment]
+                    : isUuid(segment)
                     ? 'Details'
                     : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
                   path: '/' + segments.slice(0, index + 1).join('/')

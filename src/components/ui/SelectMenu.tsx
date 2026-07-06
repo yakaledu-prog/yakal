@@ -36,13 +36,13 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "w-full h-14 rounded-xl border bg-transparent px-4 pt-6 pb-1.5 text-left text-[14px] transition-all",
+          "w-full h-14 rounded-xl border bg-transparent pl-4 pr-10 pt-6 pb-1.5 text-left text-[14px] transition-all",
           "focus:outline-none focus:ring-2 focus:ring-[#1099A1]/15",
           open ? "border-[#1099A1] ring-2 ring-[#1099A1]/15" : "border-[#e9edef] dark:border-[#2a3942]",
           filled ? "text-[#111] dark:text-white" : "text-transparent"
         )}
       >
-        {selectedLabel || "placeholder"}
+        <span className="block truncate">{selectedLabel || "placeholder"}</span>
       </button>
 
       <span
