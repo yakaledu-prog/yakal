@@ -17,6 +17,7 @@ export interface Profile {
   rate_currency: string | null;
   grade_level: string | null;
   theme: string;
+  accepting_students: boolean | null;
   is_onboarded: boolean;
   rejection_reason: string | null;
 }

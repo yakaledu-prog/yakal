@@ -40,6 +40,7 @@ CREATE TABLE public.profiles (
   rate_currency  text NOT NULL DEFAULT 'ETB' CHECK (rate_currency IN ('ETB', 'USD')),
   grade_level    text,                   -- Student: e.g. 'Grade 10', 'University Year 1'
   theme          text NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark')),
+  accepting_students boolean NOT NULL DEFAULT true,  -- Tutor: discoverable/bookable by new students
   is_onboarded   boolean NOT NULL DEFAULT false,
   rejection_reason text,                 -- If admin rejects a tutor/counselor application
   created_at     timestamptz NOT NULL DEFAULT now(),

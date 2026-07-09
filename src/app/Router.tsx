@@ -164,6 +164,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <TutorHome /> },
           { path: "students", element: <TutorStudents /> },
+          { path: "students/:id", element: <TutorStudents /> },
           { path: "sessions", element: <TutorSessions /> },
           { path: "session/:id", element: <TutorSessionDetail /> },
           { path: "calendar", element: <TutorCalendar /> },

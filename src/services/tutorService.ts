@@ -170,6 +170,45 @@ export async function getTutorStudents(tutorId: string): Promise<TutorStudent[]>
   });
 }
 
+export interface StudentDetail {
+  profile: {
+    id: string; full_name: string; avatar_url: string | null; email: string | null;
+    grade_level: string | null; subjects: string[] | null;
+  } | null;
+  sessions: SessionRow[];
+  submissions: {
+    id: string; assignment_id: string; assignment_title: string; status: string;
+    drive_url: string | null; submitted_at: string; reviewed_at: string | null;
+  }[];
+}
+
+/** Full detail for one student, scoped to this tutor (sessions + submissions). */
+export async function getStudentDetail(tutorId: string, studentId: string): Promise<StudentDetail> {
+  const [profRes, allSessions, subsRes] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, avatar_url, email, grade_level, subjects").eq("id", studentId).single(),
+    getTutorSessionsFull(tutorId),
+    supabase
+      .from("submissions")
+      .select("id, assignment_id, status, drive_url, submitted_at, reviewed_at, assignments!inner(title, tutor_id)")
+      .eq("student_id", studentId)
+      .eq("assignments.tutor_id", tutorId)
+      .order("submitted_at", { ascending: false }),
+  ]);
+
+  const sessions = allSessions.filter((s) => s.student_id === studentId);
+  const submissions = (subsRes.data ?? []).map((s: any) => ({
+    id: s.id,
+    assignment_id: s.assignment_id,
+    assignment_title: s.assignments?.title ?? "Assignment",
+    status: s.status,
+    drive_url: s.drive_url,
+    submitted_at: s.submitted_at,
+    reviewed_at: s.reviewed_at,
+  }));
+
+  return { profile: (profRes.data as any) ?? null, sessions, submissions };
+}
+
 /** Courses assigned to this tutor. */
 export async function getTutorCourses(tutorId: string) {
   const { data } = await supabase
