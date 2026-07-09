@@ -13,7 +13,7 @@ export function EmailConfirmationPage() {
   const [resending, setResending] = useState(false);
 
   // If the user confirms their email (here or in another tab of this browser),
-  // a session appears — move them straight on to onboarding/their dashboard.
+  // a session appears, move them straight on to onboarding/their dashboard.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
       if (!session?.user) return;
@@ -47,9 +47,9 @@ export function EmailConfirmationPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
       <Card className="w-full max-w-[500px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-2xl relative overflow-hidden">
-        
+
         {/* Close Button */}
-        <button 
+        <button
           onClick={() => navigate("/login")}
           className="absolute right-4 top-4 text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white transition-colors p-1"
         >
@@ -57,7 +57,7 @@ export function EmailConfirmationPage() {
         </button>
 
         <div className="p-10 flex flex-col items-center text-center">
-          
+
           {/* Icon Illustration */}
           <div className="relative mb-8 mt-2">
             <div className="w-24 h-24 bg-[#1099A1]/10 rounded-full flex items-center justify-center">

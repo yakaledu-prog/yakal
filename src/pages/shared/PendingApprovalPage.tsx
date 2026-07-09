@@ -50,7 +50,7 @@ export function PendingApprovalPage({
       } else if (fresh && fresh.status === "rejected") {
         toast.error("Your application was not approved.");
       } else {
-        toast("Still under review — we'll notify you once it's approved.");
+        toast("Still under review, we'll notify you once it's approved.");
       }
     } finally {
       setChecking(false);

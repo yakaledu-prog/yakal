@@ -1,5 +1,5 @@
 // Tiny dependency-free confetti burst. Appends a fixed, click-through canvas to
-// <body>, animates particles, then removes itself — so it survives a route change.
+// <body>, animates particles, then removes itself, so it survives a route change.
 
 const COLORS = ["#1099A1", "#CAA25F", "#97CE9D", "#e08a3c", "#d96c6c", "#0d848b"];
 

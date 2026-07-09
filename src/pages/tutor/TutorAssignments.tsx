@@ -56,7 +56,7 @@ export function TutorAssignments() {
         ) : assignments.length === 0 ? (
           <div className="text-center py-14 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl">
             <ClipboardList size={44} className="mx-auto text-[#aebac1] mb-3" />
-            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No assignments yet — create one above.</p>
+            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No assignments yet, create one above.</p>
           </div>
         ) : (
           <div className="space-y-4">

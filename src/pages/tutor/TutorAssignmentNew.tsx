@@ -67,7 +67,7 @@ export function TutorAssignmentNew() {
           {courses.length > 0 ? (
             <SelectMenu label="Course" value={courseId} onChange={setCourseId} options={courses} />
           ) : (
-            <p className="text-[13px] text-[#CAA25F]">No courses assigned — students won't see the assignment.</p>
+            <p className="text-[13px] text-[#CAA25F]">No courses assigned, students won't see the assignment.</p>
           )}
 
           <FloatingInput label="Due date" type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />

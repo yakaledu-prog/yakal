@@ -11,7 +11,7 @@ import { getTutorSessionsFull, computeEarnings, EarningsSummary } from "@/servic
 // Brand-only palette (teal + gold + supporting warm/greens, no blue/purple).
 const PALETTE = ["#1099A1", "#CAA25F", "#97CE9D", "#0d848b", "#d98f5a", "#7d8f69", "#b06f9a", "#c98a2b"];
 
-// Custom tooltip — recharts' default uses inline styles that ignore CSS vars and
+// Custom tooltip, recharts' default uses inline styles that ignore CSS vars and
 // break in dark mode; a component with our classes renders correctly in both.
 function ChartTooltip({ active, payload, label, money }: any) {
   if (!active || !payload?.length) return null;
