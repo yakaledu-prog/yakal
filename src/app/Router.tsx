@@ -118,9 +118,9 @@ function PendingPreview() {
 
 const previewRoutes = DEV_PREVIEW
   ? [
-      { path: "/preview/onboarding/:role", element: <OnboardingPreview /> },
-      { path: "/preview/pending/:role/:status?", element: <PendingPreview /> },
-    ]
+    { path: "/preview/onboarding/:role", element: <OnboardingPreview /> },
+    { path: "/preview/pending/:role/:status?", element: <PendingPreview /> },
+  ]
   : [];
 
 const router = createBrowserRouter([
@@ -203,8 +203,8 @@ const router = createBrowserRouter([
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
           { path: "my-learning", element: <StudentMyLearning /> },
-          { 
-            path: "my-learning/:courseId", 
+          {
+            path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,
             children: [
               { index: true, element: <Navigate to="overview" replace /> },
@@ -238,13 +238,14 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return (
     <AuthProvider>
-      <Toaster 
-        position="top-center" 
-        richColors 
+      <Toaster
+        position="top-center"
+        richColors
         toastOptions={{
           classNames: {
-            success: '!bg-[#1099A1] !border-[#1099A1] !text-white',
-            warning: '!bg-[#CAA25F] !border-[#CAA25F] !text-white',
+            success: '!bg-[#1099A1aa] !border-none !text-white',
+            warning: '!bg-[#CAA25F] !border-none !text-white',
+            error: '!bg-[#ef4444] !border-none !text-white'
           }
         }}
       />
