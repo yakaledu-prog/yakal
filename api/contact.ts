@@ -1,17 +1,17 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize services (keys are loaded via dotenv in local-api.ts)
-const resend = new Resend(process.env.RESEND_API_KEY);
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export default async function handler(req: any, res: any) {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Initialize services (keys are loaded via dotenv in local-api.ts)
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   try {
     const { firstName, lastName, email, phone, subject, message } = req.body;
