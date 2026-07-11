@@ -238,7 +238,16 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return (
     <AuthProvider>
-      <Toaster position="top-center" richColors />
+      <Toaster 
+        position="top-center" 
+        richColors 
+        toastOptions={{
+          classNames: {
+            success: '!bg-[#1099A1] !border-[#1099A1] !text-white',
+            warning: '!bg-[#CAA25F] !border-[#CAA25F] !text-white',
+          }
+        }}
+      />
       <BreadcrumbProvider>
         <RouterProvider router={router} />
       </BreadcrumbProvider>

@@ -35,7 +35,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
     <footer id="footer" className="bg-black text-white rounded-[20px] md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-[40px] mb-[48px] md:mb-[80px]">
         <div className="col-span-2 md:col-span-1">
-          <div className="w-[110px] h-[40px] md:w-[120px] md:h-[47px]">
+          <div className="h-[40px] md:w-[120px] md:h-[47px]">
             <img alt="Yakal" className="w-full h-full object-cover" src={logo} />
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
             <strong className="text-white">Phone:</strong> +1 (123) 456-7890
           </p>
           <p className="text-[rgba(255,255,255,0.75)] text-[13px] wrap-anywhere md:text-[16px] leading-[24px] md:leading-[28px]">
-            <strong className="text-white">Email:</strong> contact@yamaleducation.com
+            <strong className="text-white">Email:</strong> <a href="mailto:binyam2537@gmail.com" className="text-primary" target="_blank">contact@yamal.com</a>
           </p>
         </div>
 
