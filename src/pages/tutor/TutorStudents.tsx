@@ -5,7 +5,7 @@ import {
   Search, Users, Loader2, MessageSquare, Mail, GraduationCap, Calendar, Clock,
   CheckCircle2, ClipboardList, ExternalLink, User,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import {

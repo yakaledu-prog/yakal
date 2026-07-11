@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Mail, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 

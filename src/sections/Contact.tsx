@@ -1,5 +1,5 @@
 import { MapPin, Mail, Phone } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import Reveal from "@/components/Reveal";
 import imgTeam1 from "@/assets/images/team-eyasu.webp";
 import imgTeam2 from "@/assets/images/team-daniel.webp";

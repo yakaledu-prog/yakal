@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { FloatingInput } from "@/components/ui/FloatingField";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import { ClipboardPaste } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { createAssignment, getTutorCourses } from "@/services/tutorService";
 import { BlockEditor } from "@/components/ui/BlockEditor";

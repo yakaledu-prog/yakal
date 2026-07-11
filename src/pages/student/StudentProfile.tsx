@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { Edit2, Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun, Bell, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 export function StudentProfile() {

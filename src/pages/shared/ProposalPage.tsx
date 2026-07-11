@@ -6,7 +6,7 @@ import {
   Repeat
 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const SECTIONS = [
   { id: "overview", title: "Project Overview", icon: <FileText size={18} /> },

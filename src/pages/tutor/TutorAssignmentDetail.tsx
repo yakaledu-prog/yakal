@@ -4,7 +4,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { ExternalLink, CalendarClock, Loader2 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   getAssignment, getSubmissions, reviewSubmission, AssignmentRow, SubmissionRow,
 } from "@/services/tutorService";

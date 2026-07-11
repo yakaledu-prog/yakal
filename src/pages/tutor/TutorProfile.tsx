@@ -7,7 +7,7 @@ import {
   Edit2, Mail, Phone, Link2, Calendar, CheckCircle, Users, LogOut,
   Camera, Moon, Sun, X, Loader2, Check,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, SessionRow } from "@/services/tutorService";
 import { MoneyInput, Currency } from "@/components/ui/MoneyInput";

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { Search, Calendar, Clock, User, Video, FileText, CalendarRange, CheckCircle2, X } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getTutorSessionsFull, completeSession, saveSessionNotes, SessionRow,

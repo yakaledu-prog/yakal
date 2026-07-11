@@ -8,7 +8,7 @@ import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 type Mode = "login" | "signup";
 type RoleType = "student" | "parent" | "tutor";

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { Plus, ClipboardList, FileText, ExternalLink, Trash2, CalendarClock } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorAssignments, deleteAssignment, AssignmentRow } from "@/services/tutorService";
 import { stripHtml } from "@/components/ui/RichTextEditor";

@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "sonner";
+
 import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
 import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
@@ -238,14 +238,7 @@ const router = createBrowserRouter([
 export function AppRouter() {
   return (
     <AuthProvider>
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
+      <Toaster position="top-center" richColors />
       <BreadcrumbProvider>
         <RouterProvider router={router} />
       </BreadcrumbProvider>

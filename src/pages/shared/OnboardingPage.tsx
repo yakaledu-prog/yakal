@@ -13,7 +13,7 @@ import {
   extractAccentColor, DEFAULT_ACCENT, rgba, RGB,
   initialsGallery, initialsAvatarUrl,
 } from "@/utils/avatar";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
