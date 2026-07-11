@@ -1,5 +1,5 @@
 import Navbar from "@/components/Navbar";
-import imgHeader1 from "@/assets/images/hero-overlay.webp";
+import imgHeader1 from "@/assets/images/landing-page/hero-cover.jpg";
 
 export default function Hero({ onNav }: { onNav: (id: string) => void }) {
   return (
