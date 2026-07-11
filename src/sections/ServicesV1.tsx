@@ -87,16 +87,13 @@ export default function ServicesV1() {
               <div className="relative z-10 p-[32px] md:p-[56px] grid grid-cols-1 md:grid-cols-12 gap-[40px] md:gap-[56px]">
                 {/* Left: main content */}
                 <div className="md:col-span-7">
-                  {/* Tag */}
-                  <span
-                    className="inline-block text-[12px] font-bold uppercase tracking-[2px] px-3 py-1 rounded-full mb-5"
-                    style={{
-                      color: svc.accent,
-                      backgroundColor: `${svc.accent}18`,
-                    }}
+                  {/* Tag — plain text label, no pill */}
+                  <p
+                    className="text-[13px] font-bold uppercase tracking-[2px] mb-5"
+                    style={{ color: svc.accent }}
                   >
                     {svc.tag}
-                  </span>
+                  </p>
 
                   <h3 className="text-[28px] md:text-[40px] font-semibold leading-[36px] md:leading-[52px] mb-5">
                     {svc.headline}
@@ -111,19 +108,16 @@ export default function ServicesV1() {
                       <p className="text-[12px] font-bold text-[#888] uppercase tracking-[2px] mb-3">
                         Ways to learn
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-col gap-2">
                         {svc.ways.map((w) => (
-                          <span
+                          <div
                             key={w}
-                            className="text-[14px] px-4 py-1.5 rounded-full border font-medium transition-colors duration-200"
-                            style={{
-                              borderColor: `${svc.accent}40`,
-                              color: svc.accent,
-                              backgroundColor: `${svc.accent}08`,
-                            }}
+                            className="flex items-center gap-2.5 text-[15px]"
+                            style={{ color: svc.accent }}
                           >
-                            {w}
-                          </span>
+                            <span className="w-3 h-px inline-block shrink-0" style={{ backgroundColor: svc.accent }} />
+                            <span className="text-[#444] font-medium">{w}</span>
+                          </div>
                         ))}
                       </div>
                     </div>

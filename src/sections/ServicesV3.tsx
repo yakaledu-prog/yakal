@@ -4,19 +4,17 @@ import { cn } from "@/utils/cn";
 
 // ── Design 3: Bento/tab-switcher style — inspired by Apple, Notion, Raycast
 // Light off-white background, two large clickable service cards that expand
-// in an accordion/tab manner to show details. Premium, spacious, animated.
+// via a tab switcher. No pill badges, no program numbers.
 
 const services = [
   {
     id: "tutoring",
-    number: "01",
     tag: "Tutoring & Enrichment",
     headline: "K-12 academics,\ntest prep & STEM",
     description:
       "One-on-one sessions plus small-group classes, summer camps, STEM bootcamps and Math Labs at our Silver Spring location — in math, sciences, ELA and SAT/ACT prep, online or in person.",
     color: "#1099A1",
     bgGrad: "from-[#f0fafa] to-white",
-    dotColor: "#97CE9D",
     ways: [
       { icon: "◎", label: "1-on-1 tutoring" },
       { icon: "⊞", label: "Group sessions" },
@@ -34,14 +32,12 @@ const services = [
   },
   {
     id: "college",
-    number: "02",
-    tag: "College Admissions",
+    tag: "College Admissions Consulting",
     headline: "Essentials · Premier\n· Elite",
     description:
       "Essays, balanced school lists, deadlines, and financial-aid timelines — guided one-on-one from sophomore year all the way to Decision Day.",
     color: "#CAA25F",
     bgGrad: "from-[#fdf8ef] to-white",
-    dotColor: "#CAA25F",
     ways: [],
     roles: [
       { letter: "C", label: "Counselors", sub: "guide essays & applications", bg: "#CAA25F" },
@@ -55,7 +51,6 @@ const services = [
 
 export default function ServicesV3() {
   const [active, setActive] = useState<string>("tutoring");
-
   const activeSvc = services.find((s) => s.id === active)!;
 
   return (
@@ -76,25 +71,20 @@ export default function ServicesV3() {
         </h2>
       </Reveal>
 
-      {/* Tab selector */}
-      <div className="flex gap-3 mb-[32px] justify-center">
+      {/* Tab selector — plain text tabs, no pill styling */}
+      <div className="flex gap-8 mb-[40px] justify-center border-b border-[#e8e8e8]">
         {services.map((svc) => (
           <button
             key={svc.id}
             onClick={() => setActive(svc.id)}
             className={cn(
-              "px-6 py-3 rounded-full text-[15px] font-semibold border transition-all duration-300",
+              "pb-3 text-[15px] font-semibold transition-all duration-200 border-b-2 -mb-px",
               active === svc.id
-                ? "text-white border-transparent shadow-lg scale-[1.03]"
-                : "bg-white border-[#e8e8e8] text-[#555] hover:border-[#ccc]"
+                ? "border-current"
+                : "border-transparent text-[#aaa] hover:text-[#555]"
             )}
-            style={
-              active === svc.id
-                ? { backgroundColor: svc.color }
-                : {}
-            }
+            style={active === svc.id ? { color: svc.color } : {}}
           >
-            <span className="font-mono text-[12px] opacity-60 mr-2">{svc.number}</span>
             {svc.tag}
           </button>
         ))}
@@ -112,12 +102,6 @@ export default function ServicesV3() {
             {/* Left pane */}
             <div className="p-[40px] md:p-[64px] flex flex-col justify-between min-h-[460px]">
               <div>
-                <span
-                  className="text-[11px] font-bold uppercase tracking-[2px] mb-6 block"
-                  style={{ color: activeSvc.color }}
-                >
-                  Program {activeSvc.number}
-                </span>
                 <h3 className="text-[30px] md:text-[44px] font-semibold leading-[38px] md:leading-[56px] mb-6 whitespace-pre-line">
                   {activeSvc.headline}
                 </h3>
@@ -204,7 +188,7 @@ export default function ServicesV3() {
         </div>
       </Reveal>
 
-      {/* Service switcher dots */}
+      {/* Dot switcher */}
       <div className="flex justify-center gap-2 mt-8">
         {services.map((svc) => (
           <button

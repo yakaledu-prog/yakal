@@ -21,14 +21,6 @@ import BlogPage from "@/pages/BlogPage";
 import { blogs } from "@/data/blogs";
 import type { Page } from "@/types";
 
-function VariantBadge() {
-  return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-[#1099A1] text-white text-[13px] font-bold px-4 py-2 rounded-full shadow-lg select-none pointer-events-none">
-      <span className="opacity-70">Services design</span>
-      <span className="bg-white/20 rounded-full px-2 py-0.5">v1</span>
-    </div>
-  );
-}
 
 export default function LandingV1() {
   const [page, setPage] = useState<Page>({ type: "home" });
@@ -63,7 +55,6 @@ export default function LandingV1() {
 
   return (
     <div className="bg-white flex flex-col gap-[60px] md:gap-[110px] items-center md:p-[20px] p-0 min-h-screen w-full">
-      <VariantBadge />
       <Hero onNav={scrollTo} />
       <WhyJoinUs />
       <ServicesV1 />
