@@ -1,15 +1,7 @@
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import imgAboutBanner1 from "@/assets/images/landing-page/about-yakal.webp";
-import imgImg2_1 from "@/assets/images/landing-page/what-we-offer.webp";
 
-const offerings = [
-  { title: "Subject-Specific Tutoring:", desc: "Focused support in Algebra, Geometry, Physics, pre-calculus, calculus, and other STEM subjects." },
-  { title: "Test Preparation:", desc: "Expert guidance for SAT, ACT, AP Exams, and other standardized tests." },
-  { title: "Homework Assistance:", desc: "Daily or weekly help with assignments to ensure understanding and completion." },
-  { title: "Study Skills Coaching:", desc: "Time management, note-taking strategies, and organizational skills." },
-  { title: "College Prep Support:", desc: "Guidance with college applications, personal statement writing, and scholarship essays." },
-];
 
 const steps = [
   { num: "1", title: "Choose a format", desc: "Choose and decide a virtual and in-person session." },
@@ -45,41 +37,10 @@ export default function About() {
         </div>
       </div>
 
-      {/* 2. What We Offer (Card Grid Layout) */}
-      <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
-        <Reveal className="text-center mb-[48px] md:mb-[72px]">
-          <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
-            Our Expertise
-          </p>
-          <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px] text-[#111]">
-            Comprehensive services designed to help students succeed
-          </h2>
-        </Reveal>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
-          {/* Featured Image Card */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-1 lg:row-span-2 rounded-[16px] overflow-hidden shadow-sm border border-[#eaeaea]">
-            <img src={imgImg2_1} alt="What We Offer" className="w-full h-full object-cover min-h-[300px]" />
-          </div>
-          
-          {/* Offering Cards */}
-          {offerings.map((item, idx) => (
-            <Reveal 
-              key={idx} 
-              delay={idx * 100} 
-              className={`bg-white p-[32px] rounded-[16px] shadow-sm border border-[#eaeaea] flex flex-col justify-center ${idx === 4 ? 'lg:col-span-3' : ''}`}
-            >
-              <CheckCircle size={28} strokeWidth={1.5} className="text-[#1099A1] mb-[20px]" />
-              <h3 className="text-[20px] font-semibold text-[#111] mb-[12px]">{item.title}</h3>
-              <p className="text-[#555] leading-[26px]">{item.desc}</p>
-            </Reveal>
-          ))}
-        </div>
-      </div>
 
       {/* 3. How to Get Connected (Clean Steps) */}
       <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
-        <div className="bg-white text-[#111] border border-[#eaeaea] shadow-sm rounded-[24px] p-[40px] md:p-[80px]">
+        <div className="bg-[#FAFAFA] text-[#111] rounded-[24px] p-[40px] md:p-[80px]">
           <Reveal className="text-center mb-[60px]">
             <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px]">
               How to get connected
