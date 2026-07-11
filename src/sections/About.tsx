@@ -19,67 +19,92 @@ const steps = [
 
 export default function About() {
   return (
-    <div id="about" className="w-full max-w-[1440px] flex flex-col gap-[60px] md:gap-[120px] items-center px-[24px] md:px-0">
-      <div className="flex flex-col gap-[40px] md:gap-[40px] items-center">
-        <Reveal className="flex flex-col md:flex-col items-start md:items-start justify-between w-full max-w-[1254px] gap-[24px] px-[24px] md:px-0">
-          <h2 className="text-[44px] md:text-[76px] font-medium leading-[52px] md:leading-[86px] text-center md:text-left mx-auto md:mx-0">About Yakal</h2>
-          <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-center md:text-left">
-            Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
-          </p>
-        </Reveal>
-        <Reveal from="none" className="w-full h-[240px] md:h-[728px] rounded-[20px] md:rounded-[30px] overflow-hidden">
-          <img src={imgAboutBanner1} alt="About Yakal" className="w-full h-full object-cover" />
-        </Reveal>
-      </div>
+    <div id="about" className="w-full flex flex-col gap-[80px] md:gap-[160px] py-[60px] md:py-[100px] items-center bg-[#fafafa]">
+      
 
-      {/* What We Offer */}
-      <div className="bg-[#f4f4f4] rounded-[20px] md:rounded-[30px] px-[24px] md:px-[73px] py-[48px] md:py-[100px]">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-[40px]">
-          <div className="w-full md:w-[594px] h-[280px] md:h-[594px] rounded-[20px] md:rounded-[30px] overflow-hidden  hidden md:inline-block">
-            <img src={imgImg2_1} alt="What We Offer" className="w-full h-full object-cover" />
-          </div>
-          <div className="md:max-w-[560px]">
-            <h3 className="text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px] mb-[12px] md:mb-[16px]">What We Offer</h3>
-            <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[24px] md:mb-[30px]">
-              Comprehensive services designed to help students succeed
+      {/* 1. About Yakal (Side-by-side layout) */}
+      <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
+        <div className="flex flex-col md:flex-row gap-[40px] md:gap-[80px] items-center">
+          <Reveal className="w-full md:w-1/2 flex flex-col items-start text-left">
+            <h2 className="text-[36px] md:text-[64px] font-semibold leading-[44px] md:leading-[74px] mb-[24px] text-[#111]">
+              Empowering students to excel academically.
+            </h2>
+            <p className="text-[#555] text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] mb-[32px]">
+              Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
             </p>
-            <div className="space-y-[12px]">
-              {offerings.map((item, idx) => (
-                <div key={idx} className="flex gap-[12px]">
-                  <div className="mt-[5px] shrink-0">
-                    <CheckCircle size={20} strokeWidth={2} className="text-[#1099a1]" />
-                  </div>
-                  <p className="text-[16px] md:text-[18px] leading-[26px] md:leading-[30px]">
-                    <span className="font-medium">{item.title}</span>
-                    <span className="text-[#4a4a4a]"> {item.desc}</span>
-                  </p>
-                </div>
-              ))}
+            <button className="px-[30px] py-[14px] bg-[#111] text-white rounded-[8px] text-[15px] font-medium hover:bg-[#333] transition-colors">
+              Learn More About Us
+            </button>
+          </Reveal>
+          
+          <Reveal className="w-full md:w-1/2" delay={200}>
+            <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-xl border border-[#eee]">
+              <img src={imgAboutBanner1} alt="About Yakal" className="w-full h-full object-cover" />
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
 
-      {/* How to Get Connected */}
-      <div className="max-w-[1290px] px-[24px] md:px-[18px] mx-auto w-full">
-        <h2 className="text-[28px] md:text-[56px] font-medium leading-[36px] md:leading-[66px] text-center mb-[48px] md:mb-[84px]">
-          How to get connected with our tutors
-        </h2>
-        <div className="flex flex-col md:flex-row gap-[32px] md:gap-[50px] justify-center items-center">
-          {steps.map((step, idx) => (
-            <Reveal key={idx} from="scale" delay={idx * 320} className="max-w-[70vw] md:max-w-[400px] text-center md:text-left">
-              <p className="text-[40px] md:text-[55px] font-medium leading-[48px] md:leading-[55px] mb-[12px] text-[#1099a1]">{step.num}</p>
-              <h3 className="text-[20px] md:text-[25px] font-medium leading-[28px] md:leading-[35px] mb-[12px]">{step.title}</h3>
-              <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[12px]">{step.desc}</p>
-              {step.hasButton && (
-                <button className="text-[#1099a1] text-[16px] md:text-[18px] uppercase hover:text-[#1099a199] transition bg-transparent border-none cursor-pointer">
-                  Book Now <ArrowRight size={16} strokeWidth={2} className="inline ml-1" />
-                </button>
-              )}
+      {/* 2. What We Offer (Card Grid Layout) */}
+      <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
+        <Reveal className="text-center mb-[48px] md:mb-[72px]">
+          <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
+            Our Expertise
+          </p>
+          <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px] text-[#111]">
+            Comprehensive services designed to help students succeed
+          </h2>
+        </Reveal>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[24px]">
+          {/* Featured Image Card */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-1 lg:row-span-2 rounded-[16px] overflow-hidden shadow-sm border border-[#eaeaea]">
+            <img src={imgImg2_1} alt="What We Offer" className="w-full h-full object-cover min-h-[300px]" />
+          </div>
+          
+          {/* Offering Cards */}
+          {offerings.map((item, idx) => (
+            <Reveal key={idx} delay={idx * 100} className="bg-white p-[32px] rounded-[16px] shadow-sm border border-[#eaeaea] flex flex-col justify-center">
+              <CheckCircle size={28} strokeWidth={1.5} className="text-[#1099A1] mb-[20px]" />
+              <h3 className="text-[20px] font-semibold text-[#111] mb-[12px]">{item.title}</h3>
+              <p className="text-[#555] leading-[26px]">{item.desc}</p>
             </Reveal>
           ))}
         </div>
       </div>
+
+      {/* 3. How to Get Connected (Clean Steps) */}
+      <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
+        <div className="bg-[#111] text-white rounded-[24px] p-[40px] md:p-[80px]">
+          <Reveal className="text-center mb-[60px]">
+            <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px]">
+              How to get connected
+            </h2>
+            <p className="text-[#aaa] mt-4 text-[18px]">Three simple steps to start your journey.</p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[60px] relative">
+            {/* Connecting line for desktop */}
+            <div className="hidden md:block absolute top-[28px] left-[15%] right-[15%] h-[1px] bg-white/20 z-0" />
+
+            {steps.map((step, idx) => (
+              <Reveal key={idx} delay={idx * 200} className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-[56px] h-[56px] rounded-full bg-[#1099A1] text-white flex items-center justify-center text-[24px] font-bold mb-[24px] shadow-lg ring-[8px] ring-[#111]">
+                  {step.num}
+                </div>
+                <h3 className="text-[22px] font-medium mb-[12px] text-white">{step.title}</h3>
+                <p className="text-white/70 leading-[26px] mb-[20px] max-w-[280px]">{step.desc}</p>
+                {step.hasButton && (
+                  <button className="flex items-center gap-2 text-[#1099A1] font-semibold hover:text-white transition-colors">
+                    Book Now <ArrowRight size={18} />
+                  </button>
+                )}
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
+      
     </div>
   );
 }
