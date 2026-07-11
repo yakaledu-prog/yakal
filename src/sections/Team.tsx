@@ -89,7 +89,7 @@ export default function Team() {
       </div>
 
       {/* Desktop: 4-column grid */}
-      <div className="hidden md:grid grid-cols-4 gap-[30px] px-[10px]">
+      <div className="hidden md:grid grid-cols-4 gap-[30px] px-[10px] items-start">
         {members.map((member, idx) => (
           <Reveal key={idx} delay={idx * 80}>
             <TeamCard member={member} />
