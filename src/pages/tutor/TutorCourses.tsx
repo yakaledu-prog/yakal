@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
-  BookOpen, Users, CalendarDays, ClipboardList, Clock, Loader2, CalendarClock, Search, User, Calendar,
+  BookOpen, Users, CalendarDays, ClipboardList, Clock, Loader2, CalendarClock, Search, Calendar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import { getTutorCourses, getCourseWorkspace, CourseWorkspace } from "@/services
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { StudentCard } from "@/components/feature/StudentCard";
 import { stripHtml } from "@/components/ui/RichTextEditor";
+import { dicebearUrl } from "@/utils/avatar";
 
 type Tab = "overview" | "students" | "sessions" | "assignments";
 interface CourseLite { id: string; title: string; subject: string; thumbnail_url: string | null }
@@ -188,16 +189,19 @@ function CourseDetail({ ws, tab, setTab, navigate }: { ws: CourseWorkspace; tab:
         <div className="course-panel space-y-4">
           {sessions.length === 0 ? <EmptyMsg text="No sessions for this course yet." /> :
             sessions.map((s) => (
-              <div key={s.id} className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <h2 className="text-[16px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
-                  <Badge variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
-                    className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
-                </div>
-                <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                  <span className="flex items-center gap-1.5"><User size={14} /><span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span></span>
-                  <span className="flex items-center gap-1.5"><Calendar size={14} />{fmtDate(s.date)}</span>
-                  <span className="flex items-center gap-1.5"><Clock size={14} />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
+              <div key={s.id} className="flex items-center gap-4 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
+                <img src={s.student_avatar || dicebearUrl(s.student_name || "S")} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <h2 className="text-[16px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
+                    <Badge variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
+                      className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                    <span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span>
+                    <span className="flex items-center gap-1.5"><Calendar size={14} />{fmtDate(s.date)}</span>
+                    <span className="flex items-center gap-1.5"><Clock size={14} />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
+                  </div>
                 </div>
               </div>
             ))}

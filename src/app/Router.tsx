@@ -10,6 +10,9 @@ import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
 import { ProposalPage } from "../pages/shared/ProposalPage";
+import LandingV1 from "../pages/LandingV1";
+import LandingV2 from "../pages/LandingV2";
+import LandingV3 from "../pages/LandingV3";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
@@ -133,6 +136,10 @@ const router = createBrowserRouter([
     path: "/proposal",
     element: <ProposalPage />,
   },
+  // ── Landing page service-section design previews ─────────────────────────
+  { path: "/landing/1", element: <LandingV1 /> },
+  { path: "/landing/2", element: <LandingV2 /> },
+  { path: "/landing/3", element: <LandingV3 /> },
   {
     path: "/confirm-email",
     element: <EmailConfirmationPage />,
