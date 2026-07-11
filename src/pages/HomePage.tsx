@@ -1,5 +1,7 @@
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
+import WhyJoinUsV2 from "@/sections/WhyJoinUsV2";
+import WhyJoinUsV3 from "@/sections/WhyJoinUsV3";
 import ServicesV5 from "@/sections/ServicesV5";
 import Subjects from "@/sections/Subjects";
 import ParentResources from "@/sections/ParentResources";
@@ -23,6 +25,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       <Hero onNav={scrollTo} />
       <About />
       <WhyJoinUs />
+      <WhyJoinUsV2 />
+      <WhyJoinUsV3 />
       <ServicesV5 />
       <Subjects onNavigate={onNavigate} />
       <ParentResources scrollTo={scrollTo} />
