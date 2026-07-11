@@ -16,7 +16,6 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
         {/* Book a Session */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-[32px] mb-[60px] md:mb-[70px]">
           <div className="w-full md:max-w-[520px] flex flex-col items-center md:items-start">
-            <p className="text-[22px] md:text-[26px] font-medium mb-[12px]">[01]</p>
             <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Book a Session</h3>
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
               Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student.
@@ -33,7 +32,6 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
         {/* Blogs */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-[32px]">
           <div className="w-full md:max-w-[520px] flex items-center md:items-start flex-col">
-            <p className="text-[22px] md:text-[26px] font-medium mb-[12px]">[02]</p>
             <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Blogs</h3>
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
               Explore our collection of articles and guides designed for parents and students. Get tips on study strategies and academic growth.

@@ -18,34 +18,74 @@ export default function Contact() {
       <div className="rounded-[20px] md:rounded-[30px] p-[24px] md:p-[56px]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[40px] md:gap-[80px]">
           {/* Form */}
-          <form className="space-y-[20px] md:space-y-[24px]" onSubmit={(e) => { e.preventDefault(); toast.success("Message sent! We'll be in touch soon."); (e.target as HTMLFormElement).reset(); }}>
+          <form className="space-y-[20px] md:space-y-[24px]" onSubmit={async (e) => { 
+            e.preventDefault(); 
+            const form = e.currentTarget as HTMLFormElement;
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+            const originalText = submitBtn.innerText;
+            
+            try {
+              submitBtn.innerText = "Sending...";
+              submitBtn.disabled = true;
+
+              // Use local API in dev, or relative path in production if deployed to Vercel
+              const apiUrl = import.meta.env.DEV ? "http://localhost:3001/api/contact" : "/api/contact";
+              
+              const res = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  firstName: formData.get("firstName"),
+                  lastName: formData.get("lastName"),
+                  email: formData.get("email"),
+                  phone: formData.get("phone"),
+                  subject: formData.get("subject"),
+                  message: formData.get("message"),
+                }),
+              });
+
+              if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to send message");
+              }
+
+              toast.success("Message sent! We'll be in touch soon."); 
+              form.reset(); 
+            } catch (err: any) {
+              toast.error(err.message || "An error occurred. Please try again.");
+            } finally {
+              submitBtn.innerText = originalText;
+              submitBtn.disabled = false;
+            }
+          }}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] md:gap-[32px]">
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">First Name*</label>
-                <input type="text" placeholder="First name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="firstName" required type="text" placeholder="First name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
               </div>
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Last Name*</label>
-                <input type="text" placeholder="Last name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="lastName" required type="text" placeholder="Last name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px] md:gap-[32px]">
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Email Address*</label>
-                <input type="email" placeholder="Email address" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="email" required type="email" placeholder="Email address" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
               </div>
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Phone</label>
-                <input type="tel" placeholder="Phone number" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="phone" type="tel" placeholder="Phone number" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
               </div>
             </div>
             <div>
               <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Subject</label>
-              <input type="text" placeholder="Write your subject" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+              <input name="subject" type="text" placeholder="Write your subject" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
             </div>
             <div>
-              <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Message</label>
-              <textarea placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition resize-none"></textarea>
+              <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Message*</label>
+              <textarea name="message" required placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition resize-none"></textarea>
             </div>
             <button type="submit" className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto block">
               Submit Now
