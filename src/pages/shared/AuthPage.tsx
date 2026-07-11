@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { User, GraduationCap, Users, Info } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
+import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
@@ -116,8 +117,27 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
-      <Card className="w-full max-w-[420px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-lg p-6">
+    <div className="min-h-screen flex font-sans bg-[#f8f9fa] dark:bg-[#111b21]">
+      
+      {/* Left side: Immersive Image (Hidden on small screens) */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <img src={imgCover} alt="Yakal Education" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+        
+        {/* Optional text overlay on the image */}
+        <div className="absolute bottom-16 left-16 right-16">
+          <h2 className="text-[42px] font-bold text-white mb-4 leading-[50px] max-w-[500px]">
+            Personalized tutoring for students who want to excel.
+          </h2>
+          <p className="text-[18px] text-white/90 max-w-[450px] leading-[28px]">
+            Expert guidance, flexible scheduling, and tailored learning plans to help you achieve your academic goals.
+          </p>
+        </div>
+      </div>
+
+      {/* Right side: Auth Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
+        <Card className="w-full max-w-[420px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl p-8">
 
         {/* Header */}
         <Link to="/" className="flex items-center gap-3 mb-6 justify-center hover:opacity-80 transition-opacity">
@@ -268,7 +288,8 @@ export function AuthPage() {
           </div>
         )}
 
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
