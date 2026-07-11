@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { User, GraduationCap, Users, Info } from "lucide-react";
+import { User, GraduationCap, Users, Info, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
@@ -26,6 +26,7 @@ export function AuthPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
 
   // Form State
   const [email, setEmail] = useState("");
@@ -261,29 +262,39 @@ export function AuthPage() {
               <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
             </div>
 
-            <p className="text-center text-[13px] text-[#54656f] dark:text-[#aebac1] mb-4">
-              try demo accounts
-            </p>
+            <button 
+              type="button"
+              onClick={() => setShowDemo(!showDemo)}
+              className="flex items-center justify-center gap-1 w-full text-center text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2 hover:text-[#111] dark:hover:text-white transition-colors"
+            >
+              Try demo accounts
+              <ChevronDown size={14} className={`transition-transform duration-300 ${showDemo ? 'rotate-180' : ''}`} />
+            </button>
 
-            <div className="grid grid-cols-2 gap-3">
-              {DEMO_ACCOUNTS.map(acc => (
-                <button
-                  key={acc.email}
-                  onClick={() => handleDemoLogin(acc.email)}
-                  disabled={!!demoLoading}
-                  className="flex items-center gap-3 p-3 bg-[#f8f9fa] dark:bg-[#111b21] rounded-xl border border-transparent hover:border-[#e9edef] dark:hover:border-[#2a3942] transition-colors text-left"
-                >
-                  <img src={acc.img} alt={acc.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold text-[#111] dark:text-white truncate">
-                      {demoLoading === acc.email ? "Loading..." : acc.name}
-                    </div>
-                    <div className="text-[11px] text-[#54656f] dark:text-[#aebac1]">
-                      {acc.role}
-                    </div>
-                  </div>
-                </button>
-              ))}
+            <div className={`grid transition-all duration-300 ease-in-out ${showDemo ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div className="overflow-hidden">
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  {DEMO_ACCOUNTS.map(acc => (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      onClick={() => handleDemoLogin(acc.email)}
+                      disabled={!!demoLoading}
+                      className="flex items-center gap-3 p-3 bg-[#f8f9fa] dark:bg-[#111b21] rounded-xl border border-transparent hover:border-[#e9edef] dark:hover:border-[#2a3942] transition-colors text-left"
+                    >
+                      <img src={acc.img} alt={acc.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-bold text-[#111] dark:text-white truncate">
+                          {demoLoading === acc.email ? "Loading..." : acc.name}
+                        </div>
+                        <div className="text-[11px] text-[#54656f] dark:text-[#aebac1]">
+                          {acc.role}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
