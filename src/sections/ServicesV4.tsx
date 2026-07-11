@@ -11,7 +11,7 @@ const services = [
     tag: "Tutoring & Enrichment",
     headline: "K-12 academics, test prep & STEM",
     description:
-      "One-on-one sessions plus small-group classes, summer camps, STEM bootcamps and Math Labs at our Silver Spring location — in math, sciences, ELA and SAT/ACT prep, online or in person.",
+      "One-on-one sessions plus small-group classes, summer camps, STEM bootcamps and Math Labs at our Silver Spring location. Subjects include math, sciences, ELA and SAT/ACT prep, available online or in person.",
     color: "#1099A1",
     bg: "#f0fafa",
     ways: [
@@ -34,7 +34,7 @@ const services = [
     tag: "College Admissions Consulting",
     headline: "Essentials · Premier · Elite",
     description:
-      "Essays, balanced school lists, deadlines, and financial-aid timelines — guided one-on-one from sophomore year all the way to Decision Day.",
+      "Essays, balanced school lists, deadlines, and financial-aid timelines. Guided one-on-one from sophomore year all the way to Decision Day.",
     color: "#CAA25F",
     bg: "#fdf8ef",
     ways: [],

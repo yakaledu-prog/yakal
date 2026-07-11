@@ -57,10 +57,7 @@ export default function LandingV2() {
     <div className="bg-white flex flex-col gap-[60px] md:gap-[110px] items-center md:p-[20px] p-0 min-h-screen w-full">
       <Hero onNav={scrollTo} />
       <WhyJoinUs />
-      {/* ServicesV2 is full-bleed dark — remove surrounding gap */}
-      <div className="w-full !mt-0">
-        <ServicesV2 />
-      </div>
+      <ServicesV2 />
       <Subjects onNavigate={navigateTo} />
       <ParentResources scrollTo={scrollTo} />
       <About />
