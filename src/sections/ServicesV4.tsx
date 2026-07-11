@@ -3,7 +3,7 @@ import { cn } from "@/utils/cn";
 
 // ── Design 4: Side-by-side variant of Design 3
 // Both service panels visible at the same time in a two-column layout.
-// Same card aesthetic as V3 — no pill badges, no program numbers.
+// Same card aesthetic as V3 - no pill badges, no program numbers.
 
 const services = [
   {
@@ -133,7 +133,7 @@ function ServiceCard({ svc, delay }: { svc: typeof services[0]; delay: number })
             </div>
           </div>
 
-          {/* CTAs — pushed to bottom */}
+          {/* CTAs - pushed to bottom */}
           <div className="flex flex-wrap gap-3 mt-auto pt-2">
             <button
               className="px-6 py-3 rounded-full text-white text-[14px] font-semibold hover:opacity-90 transition-opacity shadow-sm"

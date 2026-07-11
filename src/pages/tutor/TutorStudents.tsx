@@ -15,7 +15,7 @@ import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
 
 function fmtDate(d?: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   const s = d.length > 10 ? d : d + "T00:00:00";
   return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
@@ -222,7 +222,7 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
                   </div>
                   <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
                     s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                    s.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>{s.status}</span>
+                      s.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>{s.status}</span>
                 </div>
               ))}
             </div>
@@ -245,7 +245,7 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
                   </div>
                   <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
                     s.status === "reviewed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                    s.status === "revision_needed" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-primary/10 text-primary")}>
+                      s.status === "revision_needed" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-primary/10 text-primary")}>
                     {s.status.replace("_", " ")}
                   </span>
                 </div>

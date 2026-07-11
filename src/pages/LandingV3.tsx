@@ -1,5 +1,5 @@
 /**
- * Landing page variant 3 — Services section uses ServicesV3
+ * Landing page variant 3 - Services section uses ServicesV3
  * Design: Apple/Notion bento-style with interactive tab switcher
  * Preview: /landing/3
  */

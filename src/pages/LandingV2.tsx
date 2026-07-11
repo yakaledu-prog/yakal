@@ -1,5 +1,5 @@
 /**
- * Landing page variant 2 — Services section uses ServicesV2
+ * Landing page variant 2 - Services section uses ServicesV2
  * Design: Dark full-bleed Linear/Stripe-inspired, monospace numbers, row dividers
  * Preview: /landing/2
  */

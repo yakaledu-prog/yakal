@@ -14,6 +14,7 @@ import LandingV1 from "../pages/LandingV1";
 import LandingV2 from "../pages/LandingV2";
 import LandingV3 from "../pages/LandingV3";
 import LandingV4 from "../pages/LandingV4";
+import LandingV5 from "../pages/LandingV5";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
@@ -142,6 +143,7 @@ const router = createBrowserRouter([
   { path: "/landing/2", element: <LandingV2 /> },
   { path: "/landing/3", element: <LandingV3 /> },
   { path: "/landing/4", element: <LandingV4 /> },
+  { path: "/landing/5", element: <LandingV5 /> },
   {
     path: "/confirm-email",
     element: <EmailConfirmationPage />,

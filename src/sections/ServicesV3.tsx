@@ -2,7 +2,7 @@ import { useState } from "react";
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
 
-// ── Design 3: Bento/tab-switcher style — inspired by Apple, Notion, Raycast
+// ── Design 3: Bento/tab-switcher style - inspired by Apple, Notion, Raycast
 // Light off-white background, two large clickable service cards that expand
 // via a tab switcher. No pill badges, no program numbers.
 
@@ -71,7 +71,7 @@ export default function ServicesV3() {
         </h2>
       </Reveal>
 
-      {/* Tab selector — plain text tabs, no pill styling */}
+      {/* Tab selector - plain text tabs, no pill styling */}
       <div className="flex gap-8 mb-[40px] justify-center border-b border-[#e8e8e8]">
         {services.map((svc) => (
           <button

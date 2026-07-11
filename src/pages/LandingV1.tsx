@@ -1,5 +1,5 @@
 /**
- * Landing page variant 1 — Services section uses ServicesV1
+ * Landing page variant 1 - Services section uses ServicesV1
  * Design: Clean card layout with large number watermark, pill tags, split grid
  * Preview: /landing/1
  */

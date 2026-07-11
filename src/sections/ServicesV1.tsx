@@ -87,7 +87,7 @@ export default function ServicesV1() {
               <div className="relative z-10 p-[32px] md:p-[56px] grid grid-cols-1 md:grid-cols-12 gap-[40px] md:gap-[56px]">
                 {/* Left: main content */}
                 <div className="md:col-span-7">
-                  {/* Tag — plain text label, no pill */}
+                  {/* Tag - plain text label, no pill */}
                   <p
                     className="text-[13px] font-bold uppercase tracking-[2px] mb-5"
                     style={{ color: svc.accent }}

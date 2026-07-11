@@ -33,7 +33,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
             </div>
             <div className="week-strip__daybody flex flex-col gap-1 p-1.5 min-h-[76px]">
               {d.items.length === 0 ? (
-                <span className="m-auto text-[13px] text-muted-foreground/50">—</span>
+                <span className="m-auto text-[13px] text-muted-foreground/50">-</span>
               ) : (
                 d.items.map((it) => (
                   <div
@@ -44,8 +44,8 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
                       it.status === "completed"
                         ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
                         : it.status === "upcoming"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground line-through"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground line-through"
                     )}
                   >
                     <div className="font-semibold">{formatTime(it.time)}</div>

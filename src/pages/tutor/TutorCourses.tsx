@@ -16,7 +16,7 @@ type Tab = "overview" | "students" | "sessions" | "assignments";
 interface CourseLite { id: string; title: string; subject: string; thumbnail_url: string | null }
 
 function fmtDate(d?: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 function fmtTime(t?: string) {

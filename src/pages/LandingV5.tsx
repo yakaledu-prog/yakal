@@ -1,12 +1,12 @@
 /**
- * Landing page variant 4 - Services section uses ServicesV4
- * Design: Side-by-side version of Design 3 - both services visible at once
- * Preview: /landing/4
+ * Landing page variant 5 - Services section uses ServicesV5
+ * Design: Classic, image-heavy alternating layout. No vibe-coded UI.
+ * Preview: /landing/5
  */
 import { useState, useEffect, useRef } from "react";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
-import ServicesV4 from "@/sections/ServicesV4";
+import ServicesV5 from "@/sections/ServicesV5";
 import Subjects from "@/sections/Subjects";
 import ParentResources from "@/sections/ParentResources";
 import About from "@/sections/About";
@@ -21,7 +21,7 @@ import BlogPage from "@/pages/BlogPage";
 import { blogs } from "@/data/blogs";
 import type { Page } from "@/types";
 
-export default function LandingV4() {
+export default function LandingV5() {
   const [page, setPage] = useState<Page>({ type: "home" });
   const savedScrollY = useRef(0);
 
@@ -56,7 +56,7 @@ export default function LandingV4() {
     <div className="bg-white flex flex-col gap-[60px] md:gap-[110px] items-center md:p-[20px] p-0 min-h-screen w-full">
       <Hero onNav={scrollTo} />
       <WhyJoinUs />
-      <ServicesV4 />
+      <ServicesV5 />
       <Subjects onNavigate={navigateTo} />
       <ParentResources scrollTo={scrollTo} />
       <About />

@@ -98,7 +98,7 @@ export function TutorProfile() {
 
             {/* Details */}
             <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 shadow-sm space-y-4">
-              <DetailRow icon={<Mail size={18} />} label="Email" value={profile?.email || user?.email || "—"} />
+              <DetailRow icon={<Mail size={18} />} label="Email" value={profile?.email || user?.email || "-"} />
               <DetailRow icon={<Phone size={18} />} label="Phone" value={profile?.phone || "Not set"} />
               <DetailRow icon={<Link2 size={18} />} label="Session Link" value={profile?.zoom_link || "Not set"} truncate />
               <DetailRow
@@ -171,7 +171,7 @@ export function TutorProfile() {
                     </div>
                     <span className={cn("px-3 py-1 text-[12px] font-bold rounded-full capitalize shrink-0",
                       item.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      item.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>
+                        item.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>
                       {item.status}
                     </span>
                   </div>
