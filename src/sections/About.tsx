@@ -64,7 +64,11 @@ export default function About() {
           
           {/* Offering Cards */}
           {offerings.map((item, idx) => (
-            <Reveal key={idx} delay={idx * 100} className="bg-white p-[32px] rounded-[16px] shadow-sm border border-[#eaeaea] flex flex-col justify-center">
+            <Reveal 
+              key={idx} 
+              delay={idx * 100} 
+              className={`bg-white p-[32px] rounded-[16px] shadow-sm border border-[#eaeaea] flex flex-col justify-center ${idx === 4 ? 'lg:col-span-3' : ''}`}
+            >
               <CheckCircle size={28} strokeWidth={1.5} className="text-[#1099A1] mb-[20px]" />
               <h3 className="text-[20px] font-semibold text-[#111] mb-[12px]">{item.title}</h3>
               <p className="text-[#555] leading-[26px]">{item.desc}</p>
@@ -75,27 +79,27 @@ export default function About() {
 
       {/* 3. How to Get Connected (Clean Steps) */}
       <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
-        <div className="bg-[#111] text-white rounded-[24px] p-[40px] md:p-[80px]">
+        <div className="bg-white text-[#111] border border-[#eaeaea] shadow-sm rounded-[24px] p-[40px] md:p-[80px]">
           <Reveal className="text-center mb-[60px]">
             <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px]">
               How to get connected
             </h2>
-            <p className="text-[#aaa] mt-4 text-[18px]">Three simple steps to start your journey.</p>
+            <p className="text-[#555] mt-4 text-[18px]">Three simple steps to start your journey.</p>
           </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[60px] relative">
             {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-[28px] left-[15%] right-[15%] h-[1px] bg-white/20 z-0" />
+            <div className="hidden md:block absolute top-[28px] left-[15%] right-[15%] h-[1px] bg-[#eaeaea] z-0" />
 
             {steps.map((step, idx) => (
               <Reveal key={idx} delay={idx * 200} className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-[56px] h-[56px] rounded-full bg-[#1099A1] text-white flex items-center justify-center text-[24px] font-bold mb-[24px] shadow-lg ring-[8px] ring-[#111]">
+                <div className="w-[56px] h-[56px] rounded-full bg-[#1099A1] text-white flex items-center justify-center text-[24px] font-bold mb-[24px] shadow-sm ring-[8px] ring-white">
                   {step.num}
                 </div>
-                <h3 className="text-[22px] font-medium mb-[12px] text-white">{step.title}</h3>
-                <p className="text-white/70 leading-[26px] mb-[20px] max-w-[280px]">{step.desc}</p>
+                <h3 className="text-[22px] font-medium mb-[12px] text-[#111]">{step.title}</h3>
+                <p className="text-[#555] leading-[26px] mb-[20px] max-w-[280px]">{step.desc}</p>
                 {step.hasButton && (
-                  <button className="flex items-center gap-2 text-[#1099A1] font-semibold hover:text-white transition-colors">
+                  <button className="flex items-center gap-2 text-[#1099A1] font-semibold hover:opacity-80 transition-opacity">
                     Book Now <ArrowRight size={18} />
                   </button>
                 )}
