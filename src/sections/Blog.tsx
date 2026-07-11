@@ -57,7 +57,7 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
                 <div className="w-[5px] h-[5px] bg-[#4a4a4a] rounded-full"></div>
                 <span className="text-[#4a4a4a] text-[14px] md:text-[18px]">{blog.date}</span>
               </div>
-              <h4 className="text-[20px] md:text-[24px] font-medium leading-[28px] md:leading-[34px] mb-[8px] md:mb-[10px] px-2 truncate md:whitespace-normal md:overflow-visible md:text-clip">{blog.title}</h4>
+              <h4 className="text-[20px] md:text-[24px] font-medium leading-[28px] md:leading-[34px] mb-[8px] md:mb-[10px] px-2 truncate line-clamp-1 md:whitespace-normal">{blog.title}</h4>
               <p className="text-[#4a4a4a] text-[15px] md:text-[18px] leading-[24px] md:leading-[30px] mb-[12px] md:mb-[16px] px-2">{blog.desc}</p>
               <button
                 onClick={() => onNavigate({ type: "blog", slug: blog.slug, scrollY: window.scrollY })}
