@@ -1,10 +1,12 @@
-import { ClipboardList, CalendarCheck, TrendingUp } from "lucide-react";
 import Reveal from "@/components/Reveal";
+import imgFeature1 from "@/assets/images/landing-page/building-effective-study-habits.jpg";
+import imgFeature2 from "@/assets/images/landing-page/maximizing-online-tutoring-sessions.jpg";
+import imgFeature3 from "@/assets/images/landing-page/5-tips-to-improve-math-grades.jpg";
 
 const features = [
-  { title: "Personalized Learning Plans", description: "Each student receives a tailored study plan designed around their strengths, weaknesses, and academic goals.", icon: <ClipboardList size={28} strokeWidth={1.5} className="text-[#1099A1]" /> },
-  { title: "Flexible Scheduling", description: "We understand how busy high school life can be. Choose virtual or in-person sessions to fit your schedule without stress.", icon: <CalendarCheck size={28} strokeWidth={1.5} className="text-[#1099A1]" /> },
-  { title: "Progress Tracking", description: "Students and parents receive regular updates that show improvements, learning pace, and areas to work on making progress visible and measurable.", icon: <TrendingUp size={28} strokeWidth={1.5} className="text-[#1099A1]" /> },
+  { title: "Personalized Learning Plans", description: "Each student receives a tailored study plan designed around their strengths, weaknesses, and academic goals.", image: imgFeature1 },
+  { title: "Flexible Scheduling", description: "We understand how busy high school life can be. Choose virtual or in-person sessions to fit your schedule without stress.", image: imgFeature2 },
+  { title: "Progress Tracking", description: "Students and parents receive regular updates that show improvements, learning pace, and areas to work on making progress visible and measurable.", image: imgFeature3 },
 ];
 
 export default function WhyJoinUs() {
@@ -25,8 +27,8 @@ export default function WhyJoinUs() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[80px]">
           {features.map((feature, idx) => (
             <Reveal key={idx} delay={idx * 100} className="flex flex-col border-t border-[#eaeaea] pt-[32px]">
-              <div className="w-[48px] h-[48px] flex items-center justify-center bg-[#f0fafa] rounded-full mb-[24px]">
-                {feature.icon}
+              <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden mb-[32px] bg-[#f7f9f9]">
+                <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
               </div>
               <h3 className="text-[20px] md:text-[24px] font-semibold leading-[32px] mb-[12px] text-[#111]">
                 {feature.title}
