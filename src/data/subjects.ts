@@ -1,8 +1,9 @@
-import imgAlgebra from "@/assets/images/subject-algebra.webp";
-import imgPhysics from "@/assets/images/subject-physics.webp";
-import imgCalculus from "@/assets/images/subject-calculus.webp";
-import imgGeometry from "@/assets/images/subject-geometry.webp";
-import imgSatPrep from "@/assets/images/subject-sat-prep.webp";
+import imgMath from "@/assets/images/subject-math.png";
+import imgEla from "@/assets/images/subject-ela.png";
+import imgPhysics from "@/assets/images/subject-physics-new.png";
+import imgStandardized from "@/assets/images/subject-standardized.png";
+import imgAp from "@/assets/images/subject-ap.png";
+import imgEssays from "@/assets/images/subject-essays.png";
 
 export type SubjectDetail = { title: string; desc: string; learn?: string[] };
 
@@ -16,7 +17,7 @@ export type Subject = {
 export const subjects: Subject[] = [
   {
     name: "K-12 Math",
-    img: imgAlgebra,
+    img: imgMath,
     tagline: "Building confidence one session at a time.",
     details: [
       {
@@ -59,7 +60,7 @@ export const subjects: Subject[] = [
   },
   {
     name: "K-12 ELA",
-    img: imgGeometry, // Placeholder
+    img: imgEla,
     tagline: "Master reading and writing.",
     details: [
       {
@@ -91,7 +92,7 @@ export const subjects: Subject[] = [
   },
   {
     name: "Standardized Tests",
-    img: imgSatPrep,
+    img: imgStandardized,
     tagline: "Maximize your score with strategic preparation.",
     details: [
       {
@@ -116,7 +117,7 @@ export const subjects: Subject[] = [
   },
   {
     name: "AP Courses",
-    img: imgCalculus, // Placeholder
+    img: imgAp,
     tagline: "Deepen mastery and earn college credit.",
     details: [
       {
@@ -132,7 +133,7 @@ export const subjects: Subject[] = [
   },
   {
     name: "College Essays",
-    img: imgSatPrep, // Placeholder
+    img: imgEssays,
     tagline: "Stand out with an authentic application essay.",
     details: [
       {
