@@ -36,11 +36,9 @@ function SubjectCard({
 }
 
 export default function Subjects({ onNavigate }: { onNavigate: (page: Page) => void }) {
-  // Mobile: two swipe pages of three full-width cards each.
-  const byName = (name: string) => subjects.find((s) => s.name === name)!;
   const pages = [
-    [byName("Algebra"), byName("Geometry"), byName("SAT Prep")],
-    [byName("Calculus"), byName("Physics"), byName("Pre-Calculus")],
+    subjects.slice(0, 3),
+    subjects.slice(3, 6),
   ];
 
   return (

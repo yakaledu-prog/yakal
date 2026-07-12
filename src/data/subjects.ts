@@ -4,72 +4,146 @@ import imgCalculus from "@/assets/images/subject-calculus.webp";
 import imgGeometry from "@/assets/images/subject-geometry.webp";
 import imgSatPrep from "@/assets/images/subject-sat-prep.webp";
 
-export type Subject = { name: string; img: string };
+export type SubjectDetail = { title: string; desc: string; learn?: string[] };
 
-export type SubjectDetail = { title: string; desc: string; learn: string[] };
+export type Subject = {
+  name: string;
+  img: string;
+  tagline?: string;
+  details: SubjectDetail[];
+};
 
 export const subjects: Subject[] = [
-  { name: "Algebra", img: imgAlgebra },
-  { name: "Physics", img: imgPhysics },
-  { name: "Calculus", img: imgCalculus },
-  { name: "Pre-Calculus", img: imgCalculus },
-  { name: "Geometry", img: imgGeometry },
-  { name: "SAT Prep", img: imgSatPrep },
+  {
+    name: "K-12 Math",
+    img: imgAlgebra,
+    tagline: "Building confidence one session at a time.",
+    details: [
+      {
+        title: "Algebra",
+        desc: "Equations, functions and problem-solving — the backbone that the rest of high-school math is built on.",
+        learn: [
+          "Understanding variables, expressions, and equations",
+          "Operations with integers, fractions, and exponents",
+          "Solving linear equations and inequalities",
+        ]
+      },
+      {
+        title: "Geometry",
+        desc: "Shapes, angles, proofs and spatial reasoning, taught with plenty of visual, hands-on practice.",
+        learn: [
+          "Lines, angles, and triangles",
+          "Congruence and similarity",
+          "Area, volume, and coordinate geometry",
+        ]
+      },
+      {
+        title: "Pre-Calculus",
+        desc: "Trigonometry, sequences and advanced functions — the bridge from algebra into calculus.",
+        learn: [
+          "Functions and their graphs",
+          "Trigonometry and the unit circle",
+          "Polynomial and rational functions",
+        ]
+      },
+      {
+        title: "Calculus",
+        desc: "Limits, derivatives and integrals taught step by step, with intuition before formulas.",
+        learn: [
+          "Limits and continuity",
+          "Derivatives and differentiation rules",
+          "Integration and the fundamental theorem of calculus",
+        ]
+      }
+    ]
+  },
+  {
+    name: "K-12 ELA",
+    img: imgGeometry, // Placeholder
+    tagline: "Master reading and writing.",
+    details: [
+      {
+        title: "K-12 ELA",
+        desc: "Reading comprehension, writing, grammar and vocabulary across elementary, middle, and high school English Language Arts.",
+        learn: [
+          "Advanced reading comprehension strategies",
+          "Essay structure and academic writing",
+          "Grammar, syntax, and vocabulary expansion"
+        ]
+      }
+    ]
+  },
+  {
+    name: "Physics",
+    img: imgPhysics,
+    tagline: "Understand the laws of the universe.",
+    details: [
+      {
+        title: "Physics",
+        desc: "Mechanics, energy and electricity grounded in real-world intuition and exam technique.",
+        learn: [
+          "Newton's laws of motion and mechanics",
+          "Energy, work, and power",
+          "Waves, sound, and light",
+        ]
+      }
+    ]
+  },
+  {
+    name: "Standardized Tests",
+    img: imgSatPrep,
+    tagline: "Maximize your score with strategic preparation.",
+    details: [
+      {
+        title: "SAT Prep",
+        desc: "Targeted strategy, content review and timed practice for the digital SAT, with progress tracking.",
+        learn: [
+          "Math: algebra, advanced math, and data analysis",
+          "Evidence-based reading and writing strategies",
+          "Time management and test-taking strategies",
+        ]
+      },
+      {
+        title: "ACT Prep",
+        desc: "Section-by-section coaching and pacing strategy for the ACT, English through Science.",
+        learn: [
+          "Math and Science section strategies",
+          "English grammar and rhetoric rules",
+          "Reading comprehension pacing techniques",
+        ]
+      }
+    ]
+  },
+  {
+    name: "AP Courses",
+    img: imgCalculus, // Placeholder
+    tagline: "Deepen mastery and earn college credit.",
+    details: [
+      {
+        title: "AP Courses",
+        desc: "Exam-focused support across AP subjects to deepen mastery and earn college credit.",
+        learn: [
+          "Subject-specific deep content review",
+          "Free-response question (FRQ) strategy",
+          "Multiple-choice pacing and elimination tactics"
+        ]
+      }
+    ]
+  },
+  {
+    name: "College Essays",
+    img: imgSatPrep, // Placeholder
+    tagline: "Stand out with an authentic application essay.",
+    details: [
+      {
+        title: "College Essays",
+        desc: "One-on-one coaching to brainstorm, draft and polish authentic, standout application essays.",
+        learn: [
+          "Brainstorming unique personal narratives",
+          "Structuring the personal statement",
+          "Editing for tone, clarity, and impact"
+        ]
+      }
+    ]
+  }
 ];
-
-export const subjectDetails: Record<string, SubjectDetail> = {
-  Algebra: {
-    title: "Algebra 1 & 2",
-    desc: "Build a strong mathematical foundation with a clear, engaging introduction to algebra. This course helps students move from basic arithmetic to confident problem-solving using variables, equations, and real-world applications.",
-    learn: [
-      "Understanding variables, expressions, and equations",
-      "Operations with integers, fractions, and exponents",
-      "Solving linear equations and inequalities",
-    ],
-  },
-  Physics: {
-    title: "Physics",
-    desc: "Explore the fundamental laws governing the universe. From mechanics to electromagnetism, this course makes complex physics concepts approachable and prepares students for AP Physics and beyond.",
-    learn: [
-      "Newton's laws of motion and mechanics",
-      "Energy, work, and power",
-      "Waves, sound, and light",
-    ],
-  },
-  Calculus: {
-    title: "Calculus",
-    desc: "Master the mathematics of change. This course covers limits, derivatives, integrals, and their real-world applications, preparing students for AP Calculus AB/BC and college-level math.",
-    learn: [
-      "Limits and continuity",
-      "Derivatives and differentiation rules",
-      "Integration and the fundamental theorem of calculus",
-    ],
-  },
-  "Pre-Calculus": {
-    title: "Pre-Calculus",
-    desc: "Bridge the gap between algebra and calculus. Build fluency in functions, trigonometry, and analytic geometry to set yourself up for success in higher-level math.",
-    learn: [
-      "Functions and their graphs",
-      "Trigonometry and the unit circle",
-      "Polynomial and rational functions",
-    ],
-  },
-  Geometry: {
-    title: "Geometry",
-    desc: "Develop logical reasoning and spatial thinking. This course covers proofs, shapes, transformations, and coordinate geometry with a focus on building problem-solving skills.",
-    learn: [
-      "Lines, angles, and triangles",
-      "Congruence and similarity",
-      "Area, volume, and coordinate geometry",
-    ],
-  },
-  "SAT Prep": {
-    title: "SAT Prep",
-    desc: "Maximize your SAT score with focused, strategic preparation. Our expert tutors cover every section of the SAT with proven techniques and personalized practice plans.",
-    learn: [
-      "Math: algebra, advanced math, and data analysis",
-      "Evidence-based reading and writing strategies",
-      "Time management and test-taking strategies",
-    ],
-  },
-};
