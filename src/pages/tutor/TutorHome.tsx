@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { WeekStrip } from "@/components/feature/WeekStrip";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, Users, ClipboardCheck, CalendarDays, Wallet, ChevronRight } from "lucide-react";
+import { Video, Clock, Users, ClipboardCheck, CalendarDays, Wallet, ChevronRight, MessageSquare, Settings, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,7 +58,7 @@ export function TutorHome() {
     );
   }
 
-  const { today, next, upcomingList, stats, weekly } = data;
+  const { today, next, upcomingList, stats } = data;
   const rate = profile?.hourly_rate ?? 0;
   const currency = profile?.rate_currency || "ETB";
   const earnings = stats.completed * rate;
@@ -86,97 +85,146 @@ export function TutorHome() {
           <div className="absolute right-20 -bottom-20 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
         </div>
 
-        {/* Stat row */}
-        <div className="stat-row grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-          <StatCard icon={<Users size={18} />} label="Active Students" value={stats.activeStudents} />
-          <StatCard icon={<CalendarDays size={18} />} label="Upcoming" value={stats.upcoming} />
-          <StatCard icon={<Clock size={18} />} label="Completed" value={stats.completed} />
-          <StatCard icon={<ClipboardCheck size={18} />} label="To Review" value={stats.pendingReviews} highlight={stats.pendingReviews > 0} />
-          <button onClick={() => navigate("/tutor/earnings")} className="text-left">
-            <StatCard icon={<Wallet size={18} />} label="Earnings" value={`${earnings.toLocaleString()} ${currency}`} />
+        {/* Unified Metrics Strip */}
+        <div className="border rounded-xl bg-card dark:bg-[#182329] overflow-hidden grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border shadow-sm">
+          <MetricCell icon={<Users size={18} />} label="Active Students" value={stats.activeStudents} />
+          <MetricCell icon={<CalendarDays size={18} />} label="Upcoming" value={stats.upcoming} />
+          <MetricCell icon={<Clock size={18} />} label="Completed" value={stats.completed} />
+          <MetricCell icon={<ClipboardCheck size={18} />} label="To Review" value={stats.pendingReviews} highlight={stats.pendingReviews > 0} />
+          <button onClick={() => navigate("/tutor/earnings")} className="text-left block h-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary">
+            <MetricCell icon={<Wallet size={18} />} label="Earnings" value={`${earnings.toLocaleString()} ${currency}`} />
           </button>
         </div>
 
-        {/* Compact next-session bar */}
-        <div className="next-session flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border-l-4 border-l-primary border bg-card dark:bg-[#182329] shadow-sm p-4">
-          <div className="next-session__meta flex items-center gap-3 flex-1 min-w-0">
-            {next && <img src={next.student_avatar || dicebearUrl(next.student_name || "S")} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />}
-            <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-primary uppercase tracking-wide">Next Session</p>
-              {next ? (
-                <>
-                  <p className="font-bold text-[15px] truncate">{next.subject} <span className="font-normal text-muted-foreground">· {next.student_name}</span></p>
-                  <p className="text-[13px] text-muted-foreground flex items-center gap-1.5"><Clock size={13} /> {formatDay(next.date)}, {formatTime(next.start_time)} · {next.duration_minutes} min</p>
-                </>
-              ) : (
-                <p className="text-[14px] text-muted-foreground">No upcoming sessions.</p>
-              )}
-            </div>
-          </div>
-          {next && (
-            <Button className="next-session__join gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white shrink-0" onClick={() => join(next)}>
-              <Video size={18} /> Join Meeting
-            </Button>
-          )}
-        </div>
-
+        {/* 2-Column Bento Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <WeekStrip days={weekly} />
+          
+          {/* Left Column: Quick Actions & Activity */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <ActionCard icon={<CalendarDays size={18} />} label="New Assignment" onClick={() => navigate("/tutor/assignments/new")} />
+              <ActionCard icon={<MessageSquare size={18} />} label="Message Student" onClick={() => navigate("/tutor/messages")} />
+              <ActionCard icon={<Settings size={18} />} label="Availability" onClick={() => navigate("/tutor/profile")} />
+              <ActionCard icon={<Wallet size={18} />} label="Withdraw Funds" onClick={() => navigate("/tutor/earnings")} />
+            </div>
+
+            {/* Recent Activity */}
+            <Card className="shadow-sm border bg-card dark:bg-[#182329]">
+              <CardHeader className="pb-3 border-b border-border/50">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity size={20} className="text-[#1099A1]" /> Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/50">
+                  <ActivityRow text="Bethlehem submitted Math Homework #3" time="2 hours ago" />
+                  <ActivityRow text="Eyob booked a new session for tomorrow" time="5 hours ago" />
+                  <ActivityRow text="System processed your payout of 1500 ETB" time="Yesterday" />
+                </div>
+                <div className="p-3 border-t border-border/50 bg-muted/20 text-center">
+                  <span className="text-[13px] text-muted-foreground">End of recent activity</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Upcoming sessions */}
-          <Card className="upcoming-sessions">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CalendarDays className="text-primary" size={20} /> Upcoming Sessions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {upcomingList.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No upcoming sessions.</p>
-              ) : (
-                upcomingList.slice(0, 6).map((s) => (
-                  <div key={s.id} className="upcoming-item flex items-center justify-between gap-3 py-2 border-b last:border-0">
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{s.subject}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Clock size={12} /> {formatDay(s.date)}, {formatTime(s.start_time)} · {s.student_name}
-                      </p>
+          {/* Right Column: Vertical Agenda */}
+          <div className="lg:col-span-1">
+            <Card className="shadow-sm h-full flex flex-col border bg-card dark:bg-[#182329]">
+              <CardHeader className="pb-3 border-b border-border/50">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarDays className="text-[#1099A1]" size={20} /> Today's Agenda
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col">
+                <div className="divide-y divide-border/50 flex-1">
+                  {upcomingList.length === 0 && !next ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">
+                      Your schedule is clear!
                     </div>
-                    <Button size="sm" className="h-8 gap-1.5 bg-[#1099A1] hover:bg-[#0d848b] text-white shrink-0" onClick={() => join(s)}>
-                      <Video size={13} /> Join
-                    </Button>
-                  </div>
-                ))
-              )}
-              <Button variant="secondary" className="w-full mt-1 text-xs border-none bg-muted/50" onClick={() => navigate("/tutor/sessions")}>
-                View all sessions
-              </Button>
-            </CardContent>
-          </Card>
+                  ) : (
+                    <>
+                      {/* Emphasize the NEXT session if it exists */}
+                      {next && (
+                         <div className="p-5 bg-primary/5 border-l-4 border-l-primary relative">
+                           <span className="absolute top-3 right-4 text-[10px] font-bold uppercase tracking-wider text-[#1099A1] bg-primary/10 px-2 py-0.5 rounded-full">Next Up</span>
+                           <p className="font-semibold text-[15px] pr-16">{next.subject}</p>
+                           <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 mt-1">
+                             <Clock size={13} /> {formatTime(next.start_time)} ({next.duration_minutes}m)
+                           </p>
+                           <div className="flex items-center gap-2 mt-3">
+                             <img src={next.student_avatar || dicebearUrl(next.student_name || "S")} alt="" className="w-6 h-6 rounded-full" />
+                             <span className="text-[13px]">{next.student_name}</span>
+                           </div>
+                           <Button className="w-full mt-4 gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white" size="sm" onClick={() => join(next)}>
+                             <Video size={15} /> Join Meeting
+                           </Button>
+                         </div>
+                      )}
+                      {upcomingList.slice(0, 5).map(s => (
+                        <div key={s.id} className="p-4 hover:bg-muted/20 transition-colors">
+                           <p className="font-medium text-[14px]">{s.subject}</p>
+                           <p className="text-[12px] text-muted-foreground flex items-center gap-1.5 mt-1">
+                             <CalendarDays size={12} /> {formatDay(s.date)}, {formatTime(s.start_time)}
+                           </p>
+                           <div className="flex items-center gap-2 mt-2">
+                             <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                               {s.student_name?.[0] || '?'}
+                             </div>
+                             <span className="text-[12px] text-muted-foreground">{s.student_name || 'Unknown'}</span>
+                           </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+                <Button variant="ghost" className="rounded-none border-t border-border/50 text-muted-foreground hover:text-primary w-full h-12" onClick={() => navigate("/tutor/sessions")}>
+                  View full schedule
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </PageWrapper>
   );
 }
 
-function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number | string; highlight?: boolean }) {
+function MetricCell({ icon, label, value, highlight, accent }: { icon: React.ReactNode; label: string; value: number | string; highlight?: boolean; accent?: boolean }) {
   const alert = highlight && Number(value) > 0;
   return (
-    <div className={cn(
-      "stat-card rounded-xl border bg-card dark:bg-[#182329] shadow-sm p-5 h-full",
-      alert ? "border-[#CAA25F]/40" : "border-border"
-    )}>
-      <div className="stat-card__row flex items-start justify-between gap-3">
-        <div className="stat-card__text min-w-0">
-          <p className="stat-card__label text-[13px] text-muted-foreground truncate">{label}</p>
-          <p className="stat-card__value text-2xl font-bold mt-1.5 leading-none truncate">{value}</p>
-        </div>
-        <div className={cn("stat-card__icon shrink-0 p-2.5 rounded-xl", alert ? "bg-[#CAA25F]/15 text-[#CAA25F]" : "bg-primary/10 text-primary")}>
+    <div className={cn("group flex flex-col p-5 transition-colors h-full relative", accent ? "bg-[#1099A1] hover:bg-[#0d848b]" : "hover:bg-muted/30")}>
+      {alert && <div className="absolute top-0 left-0 w-full h-[3px] bg-[#CAA25F]" />}
+      <div className={cn("flex items-center gap-2 mb-3 transition-colors", accent ? "text-white/80 group-hover:text-white" : "text-muted-foreground group-hover:text-primary")}>
+        <div className={cn(alert ? "text-[#CAA25F]" : "")}>
           {icon}
         </div>
+        <p className="text-[13px] font-medium truncate uppercase tracking-wider">{label}</p>
       </div>
+      <p className={cn("text-2xl font-bold leading-none truncate tracking-tight", accent ? "text-white" : "text-foreground")}>{value}</p>
+    </div>
+  );
+}
+
+function ActionCard({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) {
+  return (
+    <Button variant="outline" onClick={onClick} className="h-auto py-3 px-4 flex items-center justify-start gap-3 w-full bg-transparent hover:bg-muted/30 shadow-none">
+      <div className="text-muted-foreground shrink-0">{icon}</div>
+      <span className="font-medium text-[13px]">{label}</span>
+    </Button>
+  );
+}
+
+function ActivityRow({ text, time }: { text: string, time: string }) {
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+        <p className="text-[14px] text-foreground">{text}</p>
+      </div>
+      <span className="text-[12px] text-muted-foreground shrink-0">{time}</span>
     </div>
   );
 }
