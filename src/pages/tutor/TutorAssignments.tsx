@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { TipTapEditor } from "@/components/ui/TipTapEditor";
-import { Plus, BookOpen, ExternalLink, CalendarClock, School, Link2, Youtube, UploadCloud, X } from "lucide-react";
+import { Plus, BookOpen, ExternalLink, CalendarClock, School, Link2, Youtube, X } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourses, fetchCourseWork, createCourseWork } from "@/services/classroomService";

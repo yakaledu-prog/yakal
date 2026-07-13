@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, CalendarDays, Wallet, MessageSquare, Settings, Activity, MessagesSquareIcon } from "lucide-react";
+import { Video, Clock, CalendarDays, Wallet, Settings, Activity, MessagesSquareIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorDashboard, TutorDashboard, SessionRow } from "@/services/tutorService";
