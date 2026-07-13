@@ -290,27 +290,36 @@ export function computeEarnings(sessions: SessionRow[], rate: number): EarningsS
     bySubjectMap.set(s.subject, (bySubjectMap.get(s.subject) ?? 0) + 1);
   }
 
-  const months = [...byMonth.entries()]
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([key, count]) => {
-      const d = new Date(key + "-01T00:00:00");
-      return {
-        key,
-        label: d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-        shortLabel: d.toLocaleDateString(undefined, { month: "short" }),
-        count,
-        amount: count * rate,
-      };
-    });
+  const now = new Date();
+  // Generate the last 8 months in reverse chronological order (newest first)
+  const months = Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const key = `${year}-${month}`;
+    const count = byMonth.get(key) ?? 0;
+    return {
+      key,
+      label: d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+      shortLabel: d.toLocaleDateString(undefined, { month: "short" }),
+      count,
+      amount: count * rate,
+    };
+  });
 
   const bySubject = [...bySubjectMap.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([subject, count]) => ({ subject, count, amount: count * rate }));
 
-  const now = new Date();
-  const thisKey = now.toISOString().slice(0, 7);
+  const thisYear = now.getFullYear();
+  const thisMonthStr = String(now.getMonth() + 1).padStart(2, "0");
+  const thisKey = `${thisYear}-${thisMonthStr}`;
+  
   const lastD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastKey = lastD.toISOString().slice(0, 7);
+  const lastYear = lastD.getFullYear();
+  const lastMonthStr = String(lastD.getMonth() + 1).padStart(2, "0");
+  const lastKey = `${lastYear}-${lastMonthStr}`;
+  
   const thisMonth = (byMonth.get(thisKey) ?? 0) * rate;
   const lastMonth = (byMonth.get(lastKey) ?? 0) * rate;
   const momChangePct = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : null;
