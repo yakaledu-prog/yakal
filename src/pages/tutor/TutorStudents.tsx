@@ -146,7 +146,7 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
   const completed = sessions.filter((s) => s.status === "completed").length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
-  
+
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments">("overview");
 
   // Sessions per subject (with completion).
@@ -169,7 +169,7 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
       <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
-            <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-sm bg-white shrink-0" />
+            {/* <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-sm bg-white shrink-0" /> */}
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{p.full_name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
@@ -186,7 +186,7 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
               <MinimalStat label="Upcoming" value={upcoming} />
               <MinimalStat label="Submissions" value={`${reviewed}/${submissions.length}`} />
             </div>
-            
+
             <button onClick={onMessage} className="shrink-0 flex items-center gap-2 bg-black/10 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors font-medium text-[13px]">
               <MessageSquare size={16} /> Message
             </button>
@@ -301,9 +301,9 @@ function MinimalStat({ label, value }: { label: string; value: string | number }
 
 function TabButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
-    <button 
-      onClick={onClick} 
-      className={cn("pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none", 
+    <button
+      onClick={onClick}
+      className={cn("pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none",
         active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white/90 hover:border-white/30")}
     >
       {label}

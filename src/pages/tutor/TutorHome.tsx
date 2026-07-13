@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, CalendarDays, Wallet, MessageSquare, Settings, Activity } from "lucide-react";
+import { Video, Clock, CalendarDays, Wallet, MessageSquare, Settings, Activity, MessagesSquareIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorDashboard, TutorDashboard, SessionRow } from "@/services/tutorService";
@@ -72,7 +72,7 @@ export function TutorHome() {
         {/* Massive Integrated Command Banner */}
         <div className="bg-[#1099A1] text-white">
           <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
-            
+
             {/* Top row: Welcome + Quick Actions */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
@@ -87,7 +87,7 @@ export function TutorHome() {
               {/* Toolbar Quick Actions (No cards, just sleek icon buttons) */}
               <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
                 <TooltipButton icon={<CalendarDays size={18} />} label="New Assignment" onClick={() => navigate("/tutor/assignments/new")} />
-                <TooltipButton icon={<MessageSquare size={18} />} label="Messages" onClick={() => navigate("/tutor/messages")} />
+                <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/tutor/messages")} />
                 <TooltipButton icon={<Settings size={18} />} label="Availability" onClick={() => navigate("/tutor/profile")} />
                 <div className="w-px h-6 bg-white/20 mx-2" />
                 <TooltipButton icon={<Wallet size={18} />} label="Earnings" onClick={() => navigate("/tutor/earnings")} />
@@ -99,7 +99,7 @@ export function TutorHome() {
               <IntegratedStat label="Active Students" value={stats.activeStudents} />
               <IntegratedStat label="Upcoming" value={stats.upcoming} />
               <IntegratedStat label="To Review" value={stats.pendingReviews} alert={stats.pendingReviews > 0} />
-              
+
               <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => navigate("/tutor/earnings")}>
                 <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">Earnings</p>
                 <div className="flex items-end justify-between">
@@ -114,7 +114,7 @@ export function TutorHome() {
 
         {/* Content Below Banner (Borderless, Typography Driven) */}
         <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
-          
+
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
@@ -133,7 +133,7 @@ export function TutorHome() {
               <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Agenda</h2>
               <button onClick={() => navigate("/tutor/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
-            
+
             <div className="space-y-6">
               {upcomingList.length === 0 && !next ? (
                 <p className="text-muted-foreground text-[14px]">Your schedule is clear!</p>
@@ -188,8 +188,8 @@ export function TutorHome() {
 
 function TooltipButton({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) {
   return (
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       title={label}
       className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors focus:outline-none"
     >
@@ -225,12 +225,12 @@ function FeedItem({ text, time }: { text: string; time: string }) {
 function Sparkline() {
   return (
     <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
-      <path d="M2 18L12 12L22 16L32 6L42 10L58 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M58 2L42 10L32 6L22 16L12 12L2 18V24H58V2Z" fill="url(#sparkline-gradient)" opacity="0.2"/>
+      <path d="M2 18L12 12L22 16L32 6L42 10L58 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M58 2L42 10L32 6L22 16L12 12L2 18V24H58V2Z" fill="url(#sparkline-gradient)" opacity="0.2" />
       <defs>
         <linearGradient id="sparkline-gradient" x1="30" y1="2" x2="30" y2="24" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white"/>
-          <stop offset="1" stopColor="white" stopOpacity="0"/>
+          <stop stopColor="white" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
         </linearGradient>
       </defs>
     </svg>
