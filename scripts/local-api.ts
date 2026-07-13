@@ -6,7 +6,8 @@ import { config } from 'dotenv';
 import signatureHandler from '../api/zoom-signature.ts';
 import meetingsHandler from '../api/zoom-meetings.ts';
 import contactHandler from '../api/contact.ts';
-import uploadResumeHandler from '../api/upload-resume.ts'
+import uploadResumeHandler from '../api/upload-resume.ts';
+import googleTokenHandler from '../api/google-token.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,6 +30,7 @@ app.all('/api/upload-resume', createVercelHandler(uploadResumeHandler));
 app.all('/api/zoom-signature', createVercelHandler(signatureHandler));
 app.all('/api/zoom-meetings', createVercelHandler(meetingsHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
+app.all('/api/google-token', createVercelHandler(googleTokenHandler));
 
 const PORT = 3001;
 app.listen(PORT, () => {
