@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
-  Search, Users, Loader2, MessageSquare, Mail, GraduationCap, Calendar, Clock,
-  CheckCircle2, ClipboardList, ExternalLink, User,
+  Search, Users, Loader2, MessageSquare, Mail, GraduationCap, Clock,
+  ExternalLink, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -146,6 +146,8 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
   const completed = sessions.filter((s) => s.status === "completed").length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
+  
+  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments">("overview");
 
   // Sessions per subject (with completion).
   const bySubject = useMemo(() => {
@@ -163,63 +165,84 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
 
   return (
     <div className="pb-10">
-      {/* Massive Integrated Header */}
-      <div className="bg-[#1099A1] text-white p-6 md:p-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-          <div className="flex items-center gap-5 min-w-0">
-            <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover shadow-sm bg-white" />
+      {/* Massive Integrated Header with Inline Stats */}
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-sm bg-white shrink-0" />
             <div className="min-w-0">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">{p.full_name}</h1>
-              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[14px] mt-1.5">
-                {p.email && <span className="flex items-center gap-1.5 truncate"><Mail size={14} /> {p.email}</span>}
-                {p.grade_level && <span className="flex items-center gap-1.5"><GraduationCap size={14} /> {p.grade_level}</span>}
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{p.full_name}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
+                {p.email && <span className="flex items-center gap-1.5 truncate"><Mail size={13} /> {p.email}</span>}
+                {p.grade_level && <span className="flex items-center gap-1.5"><GraduationCap size={13} /> {p.grade_level}</span>}
               </div>
             </div>
           </div>
-          <button onClick={onMessage} className="shrink-0 flex items-center gap-2 bg-black/10 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors font-medium text-[14px]">
-            <MessageSquare size={16} /> Message
-          </button>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0">
+            <div className="flex items-center gap-5 xl:gap-8 overflow-x-auto w-full sm:w-auto">
+              <MinimalStat label="Sessions" value={sessions.length} />
+              <MinimalStat label="Completed" value={completed} />
+              <MinimalStat label="Upcoming" value={upcoming} />
+              <MinimalStat label="Submissions" value={`${reviewed}/${submissions.length}`} />
+            </div>
+            
+            <button onClick={onMessage} className="shrink-0 flex items-center gap-2 bg-black/10 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors font-medium text-[13px]">
+              <MessageSquare size={16} /> Message
+            </button>
+          </div>
         </div>
 
-        {/* Integrated Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 mt-6 border-t border-white/20">
-          <IntegratedStat label="Total Sessions" value={sessions.length} />
-          <IntegratedStat label="Completed" value={completed} />
-          <IntegratedStat label="Upcoming" value={upcoming} />
-          <IntegratedStat label="Submissions" value={`${reviewed}/${submissions.length}`} />
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
+          <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
+          <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto space-y-12">
-        {/* By subject */}
-        {bySubject.length > 0 && (
-          <div>
-            <h3 className="text-[18px] font-semibold text-foreground mb-4">Progress by subject</h3>
-            <div className="space-y-4">
-              {bySubject.map((s) => (
-                <div key={s.subject}>
-                  <div className="flex items-center justify-between text-[14px] mb-2">
-                    <span className="font-medium text-foreground">{s.subject}</span>
-                    <span className="text-muted-foreground">{s.done}/{s.total} completed</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
-                  </div>
+      <div className="max-w-4xl mx-auto">
+        {activeTab === "overview" && (
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* By subject */}
+            {bySubject.length > 0 ? (
+              <div>
+                <h3 className="text-[16px] font-semibold text-foreground mb-4">Progress by subject</h3>
+                <div className="space-y-4">
+                  {bySubject.map((s) => (
+                    <div key={s.subject}>
+                      <div className="flex items-center justify-between text-[13px] mb-2">
+                        <span className="font-medium text-foreground">{s.subject}</span>
+                        <span className="text-muted-foreground">{s.done}/{s.total} completed</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
+            )}
+
+            {p.subjects && p.subjects.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap pt-4 border-t border-border/50">
+                <span className="text-[13px] text-muted-foreground flex items-center gap-1.5"><User size={13} /> Interests:</span>
+                {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-medium bg-[#1099A1]/10 text-[#1099A1] px-2 py-1 rounded-full">{sub}</span>)}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-          {/* Recent sessions */}
-          <div>
+        {activeTab === "sessions" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
-              <h3 className="text-[18px] font-semibold text-foreground">Recent sessions</h3>
+              <h3 className="text-[16px] font-semibold text-foreground">Session History</h3>
             </div>
             {sessions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No sessions yet.</p> : (
               <div className="space-y-0">
-                {sessions.slice(0, 6).map((s) => (
+                {sessions.map((s) => (
                   <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
                     <div className="min-w-0">
                       <p className="font-medium text-[15px] text-foreground truncate">{s.subject}</p>
@@ -233,15 +256,16 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
               </div>
             )}
           </div>
+        )}
 
-          {/* Submissions */}
-          <div>
+        {activeTab === "assignments" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
-              <h3 className="text-[18px] font-semibold text-foreground">Assignment submissions</h3>
+              <h3 className="text-[16px] font-semibold text-foreground">Submissions</h3>
             </div>
             {submissions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No submissions yet.</p> : (
               <div className="space-y-0">
-                {submissions.slice(0, 6).map((s) => (
+                {submissions.map((s) => (
                   <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
                     <div className="min-w-0">
                       <p className="font-medium text-[15px] text-foreground truncate">{s.assignment_title}</p>
@@ -260,26 +284,29 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
               </div>
             )}
           </div>
-        </div>
-
-        {p.subjects && p.subjects.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap pt-4 border-t border-border/50">
-            <span className="text-[13px] text-muted-foreground flex items-center gap-1.5"><User size={13} /> Interests:</span>
-            {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-medium bg-[#1099A1]/10 text-[#1099A1] px-2 py-1 rounded-full">{sub}</span>)}
-          </div>
         )}
       </div>
     </div>
   );
 }
 
-function IntegratedStat({ label, value }: { label: string; value: string | number }) {
+function MinimalStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-2 mb-1">
-        <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
-      </div>
-      <p className="text-3xl font-bold">{value}</p>
+    <div className="flex flex-col text-left">
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-xl font-bold leading-none">{value}</p>
     </div>
+  );
+}
+
+function TabButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick} 
+      className={cn("pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none", 
+        active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white/90 hover:border-white/30")}
+    >
+      {label}
+    </button>
   );
 }
