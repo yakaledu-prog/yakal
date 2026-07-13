@@ -12,6 +12,8 @@
     "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1085.0",
+    "@aws-sdk/s3-request-presigner": "^3.1085.0",
     "@blocknote/core": "^0.51.4",
     "@blocknote/mantine": "^0.51.4",
     "@blocknote/react": "^0.51.4",
@@ -30,6 +32,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "emoji-picker-react": "^4.19.1",
+    "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "0.487.0",
     "react": "18.3.1",

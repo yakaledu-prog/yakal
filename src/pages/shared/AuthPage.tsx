@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { User, GraduationCap, Users, Info, ChevronDown } from "lucide-react";
+import { User, GraduationCap, Users, Info, ChevronDown, UploadCloud, FileText } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
@@ -34,6 +34,37 @@ export function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Resume State (Tutor only)
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFile = (file: File) => {
+    setResumeFile(file);
+    // Note: size validation is handled in handleAuth before submission
+  };
+
+  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
 
   // Fetch the just-authenticated user's profile and route by role/status/onboarding.
   const routeByProfile = async (userId: string) => {
@@ -78,6 +109,56 @@ export function AuthPage() {
         toast.success("Welcome back!");
         if (data.user) await routeByProfile(data.user.id);
       } else {
+        let finalResumeUrl = null;
+
+        // If Tutor, upload resume directly to Backblaze B2 via Presigned URL
+        if (selectedRole === "tutor" && resumeFile) {
+          if (resumeFile.size > 3 * 1024 * 1024) {
+            toast.error("Please provide a resume smaller than 3MB.");
+            setLoading(false);
+            return;
+          }
+
+          toast.loading("Getting secure upload link...", { id: "upload-toast" });
+          
+          // 1. Get the Presigned URL from our backend
+          const urlRes = await fetch("/api/upload-resume", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: resumeFile.name,
+              mimeType: resumeFile.type,
+            }),
+          });
+          
+          if (!urlRes.ok) {
+            toast.dismiss("upload-toast");
+            const err = await urlRes.json();
+            throw new Error(err.error || "Failed to get upload link.");
+          }
+          
+          const { uploadUrl, finalFileUrl } = await urlRes.json();
+          
+          toast.loading("Uploading resume directly to cloud...", { id: "upload-toast" });
+
+          // 2. Upload the RAW file directly to Backblaze B2 using the URL!
+          const uploadRes = await fetch(uploadUrl, {
+            method: "PUT",
+            body: resumeFile,
+            headers: {
+              "Content-Type": resumeFile.type
+            }
+          });
+
+          toast.dismiss("upload-toast");
+
+          if (!uploadRes.ok) {
+            throw new Error("Failed to upload file to cloud storage.");
+          }
+
+          finalResumeUrl = finalFileUrl;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -85,6 +166,7 @@ export function AuthPage() {
             data: {
               full_name: fullName,
               role: selectedRole,
+              ...(finalResumeUrl ? { resume_url: finalResumeUrl } : {}),
             }
           }
         });
@@ -119,12 +201,12 @@ export function AuthPage() {
 
   return (
     <div className="min-h-screen flex font-sans bg-[#f8f9fa] dark:bg-[#111b21]">
-      
+
       {/* Left side: Immersive Image (Hidden on small screens) */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img src={imgCover} alt="Yakal Education" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-        
+
         {/* Optional text overlay on the image */}
         <div className="absolute bottom-16 left-16 right-16">
           <h2 className="text-[42px] font-bold text-white mb-4 leading-[50px] max-w-[500px]">
@@ -140,164 +222,221 @@ export function AuthPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
         <Card className="w-full max-w-[420px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl p-8">
 
-        {/* Header */}
-        <Link to="/" className="flex items-center gap-3 mb-6 justify-center hover:opacity-80 transition-opacity">
-          <img src={logoImg} alt="Yakal" className="h-12 object-contain" />
-        </Link>
+          {/* Header */}
+          <Link to="/" className="flex items-center gap-3 mb-6 justify-center hover:opacity-80 transition-opacity">
+            <img src={logoImg} alt="Yakal" className="h-12 object-contain" />
+          </Link>
 
-        {/* Toggle */}
-        <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-xl mb-6">
-          <button
-            onClick={() => { setMode("login"); setNotice(null); }}
-            className={cn(
-              "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
-              mode === "login"
-                ? "bg-white dark:bg-[#202c33] text-[#111] dark:text-white shadow-sm"
-                : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-            )}
-          >
-            Log in
-          </button>
-          <button
-            onClick={() => { setMode("signup"); setNotice(null); }}
-            className={cn(
-              "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
-              mode === "signup"
-                ? "bg-white dark:bg-[#202c33] text-[#111] dark:text-white shadow-sm"
-                : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-            )}
-          >
-            Sign up
-          </button>
-        </div>
-
-        {notice && (
-          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 px-3.5 py-3 text-[13px] text-[#8a6d34] dark:text-[#e0c48a]">
-            <Info size={16} className="mt-0.5 shrink-0" />
-            <span>{notice}</span>
+          {/* Toggle */}
+          <div className="flex bg-[#f0f2f5] dark:bg-[#111b21] p-1 rounded-xl mb-6">
+            <button
+              onClick={() => { setMode("login"); setNotice(null); }}
+              className={cn(
+                "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
+                mode === "login"
+                  ? "bg-white dark:bg-[#202c33] text-[#111] dark:text-white shadow-sm"
+                  : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
+              )}
+            >
+              Log in
+            </button>
+            <button
+              onClick={() => { setMode("signup"); setNotice(null); }}
+              className={cn(
+                "flex-1 py-2 text-[14px] font-semibold rounded-lg transition-colors",
+                mode === "signup"
+                  ? "bg-white dark:bg-[#202c33] text-[#111] dark:text-white shadow-sm"
+                  : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
+              )}
+            >
+              Sign up
+            </button>
           </div>
-        )}
 
-        <form onSubmit={handleAuth} className="space-y-4">
-
-          {/* Sign Up Fields */}
-          {mode === "signup" && (
-            <>
-              {/* Role Toggle */}
-              <div className="flex gap-2 mb-4">
-                {(['student', 'parent', 'tutor'] as RoleType[]).map(role => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setSelectedRole(role)}
-                    className={cn(
-                      "flex-1 py-3 border rounded-xl flex flex-col items-center gap-1 transition-colors",
-                      selectedRole === role
-                        ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] dark:bg-[#1099A1]/10"
-                        : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
-                    )}
-                  >
-                    {role === 'student' && <User size={20} />}
-                    {role === 'parent' && <Users size={20} />}
-                    {role === 'tutor' && <GraduationCap size={20} />}
-                    <span className="text-[12px] font-medium capitalize">{role}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Full name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Your name"
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
-                />
-              </div>
-            </>
+          {notice && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 px-3.5 py-3 text-[13px] text-[#8a6d34] dark:text-[#e0c48a]">
+              <Info size={16} className="mt-0.5 shrink-0" />
+              <span>{notice}</span>
+            </div>
           )}
 
-          {/* Common Fields */}
-          <div>
-            <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Email</label>
-            <input
-              type="email"
-              required
-              placeholder="you@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
-            />
-          </div>
+          <form onSubmit={handleAuth} className="space-y-4">
 
-          <div>
-            <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Password</label>
-            <input
-              type="password"
-              required
-              placeholder={mode === 'signup' ? "Choose a password" : "••••••••"}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-2"
-            disabled={loading}
-          >
-            {loading ? "Please wait..." : (mode === "login" ? "Log in" : "Create account")}
-          </Button>
-        </form>
-
-        {/* Demo Section */}
-        {mode === "login" && (
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
-              <span className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">Or</span>
-              <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
-            </div>
-
-            <button 
-              type="button"
-              onClick={() => setShowDemo(!showDemo)}
-              className="flex items-center justify-center gap-1 w-full text-center text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2 hover:text-[#111] dark:hover:text-white transition-colors"
-            >
-              Try demo accounts
-              <ChevronDown size={14} className={`transition-transform duration-300 ${showDemo ? 'rotate-180' : ''}`} />
-            </button>
-
-            <div className={`grid transition-all duration-300 ease-in-out ${showDemo ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-              <div className="overflow-hidden">
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {DEMO_ACCOUNTS.map(acc => (
+            {/* Sign Up Fields */}
+            {mode === "signup" && (
+              <>
+                {/* Role Toggle */}
+                <div className="flex gap-2 mb-4">
+                  {(['student', 'parent', 'tutor'] as RoleType[]).map(role => (
                     <button
-                      key={acc.email}
+                      key={role}
                       type="button"
-                      onClick={() => handleDemoLogin(acc.email)}
-                      disabled={!!demoLoading}
-                      className="flex items-center gap-3 p-3 bg-[#f8f9fa] dark:bg-[#111b21] rounded-xl border border-transparent hover:border-[#e9edef] dark:hover:border-[#2a3942] transition-colors text-left"
+                      onClick={() => setSelectedRole(role)}
+                      className={cn(
+                        "flex-1 py-3 border rounded-xl flex flex-col items-center gap-1 transition-colors",
+                        selectedRole === role
+                          ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] dark:bg-[#1099A1]/10"
+                          : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
+                      )}
                     >
-                      <img src={acc.img} alt={acc.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-bold text-[#111] dark:text-white truncate">
-                          {demoLoading === acc.email ? "Loading..." : acc.name}
-                        </div>
-                        <div className="text-[11px] text-[#54656f] dark:text-[#aebac1]">
-                          {acc.role}
-                        </div>
-                      </div>
+                      {role === 'student' && <User size={20} />}
+                      {role === 'parent' && <Users size={20} />}
+                      {role === 'tutor' && <GraduationCap size={20} />}
+                      <span className="text-[12px] font-medium capitalize">{role}</span>
                     </button>
                   ))}
                 </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Full name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                  />
+                </div>
+
+                {/* Resume Upload for Tutors */}
+                {selectedRole === "tutor" && (
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Resume (PDF, DOC)</label>
+                    <div
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      onClick={() => document.getElementById('resume-upload')?.click()}
+                      className={cn(
+                        "relative w-full px-4 py-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors",
+                        isDragging ? "border-[#1099A1] bg-[#1099A1]/5" : "border-[#e9edef] dark:border-[#2a3942] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]",
+                        resumeFile && resumeFile.size > 3 * 1024 * 1024 ? "border-warning bg-warning/10" : ""
+                      )}
+                    >
+                      <input
+                        id="resume-upload"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        required={!resumeFile} // Only require if no file is selected
+                        onChange={handleResumeChange}
+                        className="hidden"
+                      />
+
+                      {!resumeFile ? (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-[#1099A1]/10 flex items-center justify-center mb-1">
+                            <UploadCloud className="text-[#1099A1]" size={20} />
+                          </div>
+                          <p className="text-[13px] font-medium text-[#111] dark:text-white text-center">Click to upload or drag and drop</p>
+                          <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">PDF, DOC up to 3MB</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center mb-1",
+                            resumeFile.size > 3 * 1024 * 1024 ? "bg-warning/20" : "bg-[#1099A1]/10"
+                          )}>
+                            <FileText className={resumeFile.size > 3 * 1024 * 1024 ? "text-warning" : "text-[#1099A1]"} size={20} />
+                          </div>
+                          <p className={cn(
+                            "text-[13px] font-medium text-center break-all px-4",
+                            resumeFile.size > 3 * 1024 * 1024 ? "text-warning" : "text-[#111] dark:text-white"
+                          )}>
+                            {resumeFile.name}
+                          </p>
+                          {resumeFile.size > 3 * 1024 * 1024 ? (
+                            <p className="text-[12px] font-bold text-warning">File is too large (max 3MB)</p>
+                          ) : (
+                            <p className="text-[12px] text-[#1099A1]">Ready to upload</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Common Fields */}
+            <div>
+              <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Email</label>
+              <input
+                type="email"
+                required
+                placeholder="you@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Password</label>
+              <input
+                type="password"
+                required
+                placeholder={mode === 'signup' ? "Choose a password" : "••••••••"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-2"
+              disabled={loading}
+            >
+              {loading ? "Please wait..." : (mode === "login" ? "Log in" : "Create account")}
+            </Button>
+          </form>
+
+          {/* Demo Section */}
+          {mode === "login" && (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
+                <span className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">Or</span>
+                <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDemo(!showDemo)}
+                className="flex items-center justify-center gap-1 w-full text-center text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2 hover:text-[#111] dark:hover:text-white transition-colors"
+              >
+                Try demo accounts
+                <ChevronDown size={14} className={`transition-transform duration-300 ${showDemo ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div className={`grid transition-all duration-300 ease-in-out ${showDemo ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                <div className="overflow-hidden">
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    {DEMO_ACCOUNTS.map(acc => (
+                      <button
+                        key={acc.email}
+                        type="button"
+                        onClick={() => handleDemoLogin(acc.email)}
+                        disabled={!!demoLoading}
+                        className="flex items-center gap-3 p-3 bg-[#f8f9fa] dark:bg-[#111b21] rounded-xl border border-transparent hover:border-[#e9edef] dark:hover:border-[#2a3942] transition-colors text-left"
+                      >
+                        <img src={acc.img} alt={acc.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-bold text-[#111] dark:text-white truncate">
+                            {demoLoading === acc.email ? "Loading..." : acc.name}
+                          </div>
+                          <div className="text-[11px] text-[#54656f] dark:text-[#aebac1]">
+                            {acc.role}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         </Card>
       </div>

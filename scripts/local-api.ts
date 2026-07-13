@@ -6,6 +6,7 @@ import { config } from 'dotenv';
 import signatureHandler from '../api/zoom-signature.ts';
 import meetingsHandler from '../api/zoom-meetings.ts';
 import contactHandler from '../api/contact.ts';
+import uploadResumeHandler from '../api/upload-resume.ts'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,7 +16,7 @@ config({ path: resolve(__dirname, '../.env') });
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // Helper to mock VercelRequest/VercelResponse
 const createVercelHandler = (handler) => async (req, res) => {
@@ -24,6 +25,7 @@ const createVercelHandler = (handler) => async (req, res) => {
   return handler(req, res);
 };
 
+app.all('/api/upload-resume', createVercelHandler(uploadResumeHandler));
 app.all('/api/zoom-signature', createVercelHandler(signatureHandler));
 app.all('/api/zoom-meetings', createVercelHandler(meetingsHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
