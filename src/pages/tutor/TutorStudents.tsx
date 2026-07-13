@@ -162,122 +162,124 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
   if (!p) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="student-header flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 min-w-0">
-          <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-16 h-16 rounded-full object-cover" />
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-[#111] dark:text-white truncate">{p.full_name}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-[13px] text-muted-foreground mt-0.5">
-              {p.email && <span className="flex items-center gap-1.5 truncate"><Mail size={13} /> {p.email}</span>}
-              {p.grade_level && <span className="flex items-center gap-1.5"><GraduationCap size={13} /> {p.grade_level}</span>}
-            </div>
-          </div>
-        </div>
-        <button onClick={onMessage} title="Message" className="shrink-0 h-10 w-10 flex items-center justify-center rounded-full text-primary hover:bg-primary/10 transition-colors">
-          <MessageSquare size={20} />
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MiniStat icon={<Calendar size={18} />} label="Total Sessions" value={sessions.length} />
-        <MiniStat icon={<CheckCircle2 size={18} />} label="Completed" value={completed} />
-        <MiniStat icon={<Clock size={18} />} label="Upcoming" value={upcoming} />
-        <MiniStat icon={<ClipboardList size={18} />} label="Submissions" value={`${reviewed}/${submissions.length}`} />
-      </div>
-
-      {/* By subject */}
-      {bySubject.length > 0 && (
-        <div className="rounded-2xl border bg-card dark:bg-[#182329] p-5">
-          <h3 className="text-[15px] font-bold mb-4">Progress by subject</h3>
-          <div className="space-y-3.5">
-            {bySubject.map((s) => (
-              <div key={s.subject}>
-                <div className="flex items-center justify-between text-[13px] mb-1.5">
-                  <span className="font-medium text-[#111] dark:text-white">{s.subject}</span>
-                  <span className="text-muted-foreground">{s.done}/{s.total} completed</span>
-                </div>
-                <div className="h-2 rounded-full bg-[#f0f2f5] dark:bg-[#111b21] overflow-hidden">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
-                </div>
+    <div className="pb-10">
+      {/* Massive Integrated Header */}
+      <div className="bg-[#1099A1] text-white p-6 md:p-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+          <div className="flex items-center gap-5 min-w-0">
+            <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover shadow-sm bg-white" />
+            <div className="min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">{p.full_name}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[14px] mt-1.5">
+                {p.email && <span className="flex items-center gap-1.5 truncate"><Mail size={14} /> {p.email}</span>}
+                {p.grade_level && <span className="flex items-center gap-1.5"><GraduationCap size={14} /> {p.grade_level}</span>}
               </div>
-            ))}
+            </div>
+          </div>
+          <button onClick={onMessage} className="shrink-0 flex items-center gap-2 bg-black/10 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors font-medium text-[14px]">
+            <MessageSquare size={16} /> Message
+          </button>
+        </div>
+
+        {/* Integrated Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 mt-6 border-t border-white/20">
+          <IntegratedStat label="Total Sessions" value={sessions.length} />
+          <IntegratedStat label="Completed" value={completed} />
+          <IntegratedStat label="Upcoming" value={upcoming} />
+          <IntegratedStat label="Submissions" value={`${reviewed}/${submissions.length}`} />
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto space-y-12">
+        {/* By subject */}
+        {bySubject.length > 0 && (
+          <div>
+            <h3 className="text-[18px] font-semibold text-foreground mb-4">Progress by subject</h3>
+            <div className="space-y-4">
+              {bySubject.map((s) => (
+                <div key={s.subject}>
+                  <div className="flex items-center justify-between text-[14px] mb-2">
+                    <span className="font-medium text-foreground">{s.subject}</span>
+                    <span className="text-muted-foreground">{s.done}/{s.total} completed</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          {/* Recent sessions */}
+          <div>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
+              <h3 className="text-[18px] font-semibold text-foreground">Recent sessions</h3>
+            </div>
+            {sessions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No sessions yet.</p> : (
+              <div className="space-y-0">
+                {sessions.slice(0, 6).map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[15px] text-foreground truncate">{s.subject}</p>
+                      <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 mt-0.5"><Clock size={13} /> {fmtDate(s.date)} · {fmtTime(s.start_time)}</p>
+                    </div>
+                    <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
+                      s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        s.status === "upcoming" ? "bg-[#1099A1]/10 text-[#1099A1]" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>{s.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Submissions */}
+          <div>
+            <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
+              <h3 className="text-[18px] font-semibold text-foreground">Assignment submissions</h3>
+            </div>
+            {submissions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No submissions yet.</p> : (
+              <div className="space-y-0">
+                {submissions.slice(0, 6).map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[15px] text-foreground truncate">{s.assignment_title}</p>
+                      <p className="text-[13px] text-muted-foreground flex items-center gap-3 mt-0.5">
+                        <span>{fmtDate(s.submitted_at)}</span>
+                        {s.drive_url && <a href={s.drive_url} target="_blank" rel="noreferrer" className="text-[#1099A1] flex items-center gap-1 hover:underline"><ExternalLink size={11} /> Open</a>}
+                      </p>
+                    </div>
+                    <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
+                      s.status === "reviewed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        s.status === "revision_needed" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-[#1099A1]/10 text-[#1099A1]")}>
+                      {s.status.replace("_", " ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent sessions */}
-        <div>
-          <h3 className="text-[15px] font-bold mb-3">Recent sessions</h3>
-          {sessions.length === 0 ? <Empty text="No sessions yet." /> : (
-            <div className="space-y-3">
-              {sessions.slice(0, 6).map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-xl border bg-card dark:bg-[#182329] p-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[14px] truncate">{s.subject}</p>
-                    <p className="text-[12px] text-muted-foreground flex items-center gap-1.5"><Clock size={12} /> {fmtDate(s.date)} · {fmtTime(s.start_time)}</p>
-                  </div>
-                  <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
-                    s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      s.status === "upcoming" ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>{s.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Submissions */}
-        <div>
-          <h3 className="text-[15px] font-bold mb-3">Assignment submissions</h3>
-          {submissions.length === 0 ? <Empty text="No submissions yet." /> : (
-            <div className="space-y-3">
-              {submissions.slice(0, 6).map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-xl border bg-card dark:bg-[#182329] p-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-[14px] truncate">{s.assignment_title}</p>
-                    <p className="text-[12px] text-muted-foreground flex items-center gap-3">
-                      <span>{fmtDate(s.submitted_at)}</span>
-                      {s.drive_url && <a href={s.drive_url} target="_blank" rel="noreferrer" className="text-primary flex items-center gap-1 hover:underline"><ExternalLink size={11} /> Open</a>}
-                    </p>
-                  </div>
-                  <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
-                    s.status === "reviewed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      s.status === "revision_needed" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-primary/10 text-primary")}>
-                    {s.status.replace("_", " ")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {p.subjects && p.subjects.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-4 border-t border-border/50">
+            <span className="text-[13px] text-muted-foreground flex items-center gap-1.5"><User size={13} /> Interests:</span>
+            {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-medium bg-[#1099A1]/10 text-[#1099A1] px-2 py-1 rounded-full">{sub}</span>)}
+          </div>
+        )}
       </div>
-
-      {p.subjects && p.subjects.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[13px] text-muted-foreground flex items-center gap-1.5"><User size={13} /> Interests:</span>
-          {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">{sub}</span>)}
-        </div>
-      )}
     </div>
   );
 }
 
-function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
+function IntegratedStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="mini-stat rounded-xl border bg-card dark:bg-[#182329] p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[12px] text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold mt-1 leading-none">{value}</p>
-        </div>
-        <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">{icon}</div>
+    <div className="flex flex-col">
+      <div className="flex items-center gap-2 mb-1">
+        <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
       </div>
+      <p className="text-3xl font-bold">{value}</p>
     </div>
   );
-}
-function Empty({ text }: { text: string }) {
-  return <div className="text-center py-10 text-[13px] text-muted-foreground rounded-xl border border-dashed border-[#e9edef] dark:border-[#2a3942]">{text}</div>;
 }
