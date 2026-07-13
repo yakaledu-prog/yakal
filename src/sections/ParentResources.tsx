@@ -20,7 +20,7 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
               Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student.
             </p>
-            <button className="border-2 border-[#1099a1] text-[#1099a1] px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase hover:bg-[#1099a1] hover:text-white transition flex items-center gap-[8px]">
+            <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="border-2 border-[#1099a1] text-[#1099a1] px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase hover:bg-[#1099a1] hover:text-white transition flex items-center gap-[8px]">
               Book a Session <ArrowRight size={18} strokeWidth={2} />
             </button>
           </div>
