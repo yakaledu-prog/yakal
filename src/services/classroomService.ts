@@ -48,3 +48,32 @@ export async function createCourseWork(accessToken: string, courseId: string, co
   if (!res.ok) throw new Error('Failed to create assignment');
   return res.json();
 }
+
+export async function fetchAssignment(accessToken: string, courseId: string, courseWorkId: string) {
+  const res = await fetch(`${CLASSROOM_BASE_URL}/courses/${courseId}/courseWork/${courseWorkId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch assignment details');
+  return res.json();
+}
+
+export async function fetchSubmissions(accessToken: string, courseId: string, courseWorkId: string) {
+  const res = await fetch(`${CLASSROOM_BASE_URL}/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch submissions');
+  return res.json();
+}
+
+export async function gradeSubmission(accessToken: string, courseId: string, courseWorkId: string, submissionId: string, draftGrade: number) {
+  const res = await fetch(`${CLASSROOM_BASE_URL}/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions/${submissionId}`, {
+    method: 'PATCH',
+    headers: { 
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ draftGrade })
+  });
+  if (!res.ok) throw new Error('Failed to grade submission');
+  return res.json();
+}

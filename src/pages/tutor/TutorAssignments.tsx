@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { Plus, BookOpen, ExternalLink, CalendarClock, School } from "lucide-react";
@@ -19,6 +20,7 @@ function formatDue(dueDate: any, dueTime: any) {
 }
 
 export function TutorAssignments() {
+  const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(localStorage.getItem('google_access_token'));
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
@@ -146,11 +148,6 @@ export function TutorAssignments() {
                 <h1 className="text-3xl font-bold tracking-tight mb-2">Assignments</h1>
                 <p className="text-white/80 text-[15px]">Powered by Google Classroom</p>
               </div>
-              {courses.length > 0 && (
-                <Button onClick={() => setShowForm(!showForm)} className="bg-white/10 hover:bg-white/20 text-white border-0">
-                  <Plus size={18} className="mr-2" /> {showForm ? "Cancel" : "New Assignment"}
-                </Button>
-              )}
             </div>
 
             {/* Course Tabs */}
@@ -189,9 +186,27 @@ export function TutorAssignments() {
             </div>
           ) : (
             <>
+              {!showForm && selectedCourse && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="w-full mb-6 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] p-5 text-left hover:border-[#1099A1]/50 hover:bg-[#1099A1]/[0.02] transition-colors group"
+                >
+                  <div className="h-11 w-11 rounded-xl bg-[#1099A1]/10 text-[#1099A1] flex items-center justify-center shrink-0 transition-colors">
+                    <Plus size={22} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[15px] text-foreground group-hover:text-[#1099A1] transition-colors">Create New Assignment</p>
+                    <p className="text-[13px] text-muted-foreground">Publish a new assignment to {selectedCourse.name} on Google Classroom.</p>
+                  </div>
+                </button>
+              )}
+
               {showForm && selectedCourse && (
                 <div className="mb-8 p-6 bg-[#f8f9fa] dark:bg-[#182329] rounded-2xl border border-transparent dark:border-border/20">
-                  <h3 className="text-[16px] font-semibold text-foreground mb-4">Create New Assignment for {selectedCourse.name}</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[16px] font-semibold text-foreground">Create New Assignment for {selectedCourse.name}</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">Cancel</Button>
+                  </div>
                   <div className="space-y-4 max-w-2xl">
                     <div>
                       <label className="block text-[13px] font-medium text-muted-foreground mb-1">Title</label>
@@ -217,7 +232,7 @@ export function TutorAssignments() {
               ) : (
                 <div className="space-y-0">
                   {assignments.map((a) => (
-                    <div key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-pointer group">
+                    <div key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`, { state: { courseId: selectedCourse?.id } })} className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-pointer group">
                       <div className="flex items-start sm:items-center gap-6 min-w-0">
                         <div className="hidden sm:flex shrink-0 w-12 h-12 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
                           <BookOpen size={20} />
