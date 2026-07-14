@@ -345,7 +345,6 @@ export function TutorCalendar() {
           <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col gap-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div className="space-y-1">
-                <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Schedule</h1>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
                 </div>
@@ -357,7 +356,7 @@ export function TutorCalendar() {
 
             {/* Controls Row inside header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex border border-white/30 rounded-none bg-white/10">
+              <div className="flex border border-white/30 rounded-none bg-black/10">
                 <button
                   className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('day')}
@@ -387,7 +386,7 @@ export function TutorCalendar() {
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-white text-[#1099A1] hover:bg-white/90 rounded-none font-bold"
+                  className="h-9 flex items-center gap-2 bg-white text-[#1099A1] hover:bg-white/90 rounded-none font-bold shadow-none"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
