@@ -386,7 +386,7 @@ export function TutorCalendar() {
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-white text-[#1099A1] hover:bg-white/90 rounded-none font-bold shadow-none"
+                  className="h-9 flex items-center gap-2 bg-white !text-[#1099A1] hover:bg-white/90 rounded-none font-bold shadow-none"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
