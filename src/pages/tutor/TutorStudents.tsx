@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
-  ExternalLink, User
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -215,89 +215,79 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
         </div>
       </div>
 
-      <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full max-w-4xl")}>
+      <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full")}>
         {activeTab === "overview" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Top Row: Next Session & Quick Stats */}
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-border/60 rounded-none p-5 flex flex-col justify-between bg-white dark:bg-[#111b21]">
-                <div>
-                  <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Next Session</h3>
-                  {upcoming > 0 ? (
-                    <div>
-                      <p className="text-[18px] font-bold text-foreground">Tomorrow, 10:00 AM</p>
-                      <p className="text-[14px] text-muted-foreground mt-1 font-medium">Mathematics • Online</p>
+              
+              {/* Pane 1: Activity Heatmap */}
+              <div className="border border-border/60 rounded-none p-6 bg-white dark:bg-[#111b21] flex flex-col">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-6">Session Activity (Last 35 Days)</h3>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="grid grid-cols-7 gap-2">
+                    {Array.from({ length: 35 }).map((_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - 34 + i);
+                      const count = sessions.filter(s => new Date(s.date).toDateString() === d.toDateString()).length;
+                      return (
+                        <div 
+                          key={i}
+                          title={`${d.toDateString()}: ${count} session(s)`}
+                          className={cn(
+                            "w-6 h-6 sm:w-8 sm:h-8 border border-black/5 dark:border-white/5",
+                            count === 0 ? "bg-muted/50" : count === 1 ? "bg-[#1099A1]/60" : "bg-[#1099A1]"
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end items-center gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <span>Less</span>
+                  <div className="w-3 h-3 bg-muted/50 border border-black/5 dark:border-white/5" />
+                  <div className="w-3 h-3 bg-[#1099A1]/60 border border-black/5 dark:border-white/5" />
+                  <div className="w-3 h-3 bg-[#1099A1] border border-black/5 dark:border-white/5" />
+                  <span>More</span>
+                </div>
+              </div>
+
+              {/* Pane 2: Performance & Details */}
+              <div className="border border-border/60 rounded-none p-6 bg-white dark:bg-[#111b21] flex flex-col">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-6">Performance Overview</h3>
+                <div className="flex-1">
+                  {bySubject.length > 0 ? (
+                    <div className="space-y-6">
+                      {bySubject.map((s) => (
+                        <div key={s.subject}>
+                          <div className="flex items-center justify-between text-[13px] mb-2">
+                            <span className="font-bold text-foreground">{s.subject}</span>
+                            <span className="text-muted-foreground font-medium">{s.done}/{s.total} completed</span>
+                          </div>
+                          <div className="h-2 bg-muted">
+                            <div className="h-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <p className="text-[14px] text-muted-foreground">No upcoming sessions scheduled.</p>
+                    <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
                   )}
                 </div>
+
                 {upcoming > 0 && (
-                  <div className="mt-6 flex gap-3">
-                    <Button className="rounded-none bg-[#1099A1] hover:bg-[#0d848b] text-white h-9 px-5 font-bold text-[13px] border-0">Join Call</Button>
-                    <Button variant="outline" className="rounded-none h-9 px-5 font-bold text-[13px] border-border/60 hover:bg-muted/10">Reschedule</Button>
-                  </div>
-                )}
-              </div>
-
-              <div className="border border-border/60 rounded-none p-5 bg-white dark:bg-[#111b21]">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Performance Overview</h3>
-                {bySubject.length > 0 ? (
-                  <div className="space-y-5">
-                    {bySubject.map((s) => (
-                      <div key={s.subject}>
-                        <div className="flex items-center justify-between text-[13px] mb-2">
-                          <span className="font-bold text-foreground">{s.subject}</span>
-                          <span className="text-muted-foreground font-medium">{s.done}/{s.total} completed</span>
-                        </div>
-                        <div className="h-1.5 bg-muted">
-                          <div className="h-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
-                        </div>
+                  <div className="mt-8 pt-6 border-t border-border/60">
+                    <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Next Session</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[16px] font-bold text-foreground">Tomorrow, 10:00 AM</p>
                       </div>
-                    ))}
+                      <Button className="rounded-none bg-[#1099A1] hover:bg-[#0d848b] text-white h-9 px-6 font-bold text-[13px] border-0 shrink-0">Join Call</Button>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
                 )}
               </div>
-            </div>
 
-            {/* Bottom Row: Recent Activity & Private Notes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="border border-border/60 rounded-none p-5 bg-white dark:bg-[#111b21]">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Recent Sessions</h3>
-                {sessions.filter(s => s.status === 'completed').length > 0 ? (
-                  <div className="space-y-0">
-                    {sessions.filter(s => s.status === 'completed').slice(0,3).map(s => (
-                       <div key={s.id} className="flex justify-between items-start border-b border-border/40 py-3 last:border-0 last:pb-0 first:pt-0">
-                         <div>
-                           <p className="text-[14px] font-bold text-foreground leading-tight">{s.subject}</p>
-                           <p className="text-[12px] text-muted-foreground mt-1 font-medium">{new Date(s.date).toLocaleDateString()} • {s.start_time}</p>
-                         </div>
-                         <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[12px] font-bold underline-offset-2 hover:underline">View Notes</Button>
-                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[14px] text-muted-foreground">No completed sessions yet.</p>
-                )}
-               </div>
-
-               <div className="border border-border/60 rounded-none p-5 flex flex-col bg-[#fdfdfd] dark:bg-[#182329]">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Private Tutor Notes</h3>
-                <textarea 
-                  className="w-full flex-1 min-h-[140px] bg-transparent border-0 resize-none outline-none text-[14px] font-medium text-foreground placeholder:text-muted-foreground leading-relaxed"
-                  placeholder="Keep your private notes about this student's progress, strengths, and areas for improvement here..."
-                />
-               </div>
             </div>
-            
-            {p.subjects && p.subjects.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap pt-2">
-                <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"><User size={14} /> Interests:</span>
-                {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-bold border border-border/60 rounded-none text-foreground px-2 py-1">{sub}</span>)}
-              </div>
-            )}
           </div>
         )}
 
