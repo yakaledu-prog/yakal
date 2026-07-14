@@ -158,18 +158,6 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
   const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || conversations[0];
 
-  // Sessions per subject (with completion).
-  const bySubject = useMemo(() => {
-    const m = new Map<string, { total: number; done: number }>();
-    for (const s of sessions) {
-      const e = m.get(s.subject) ?? { total: 0, done: 0 };
-      e.total++;
-      if (s.status === "completed") e.done++;
-      m.set(s.subject, e);
-    }
-    return [...m.entries()].map(([subject, v]) => ({ subject, ...v }));
-  }, [sessions]);
-
   if (!p) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
   return (
@@ -215,79 +203,63 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
         </div>
       </div>
 
-      <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full")}>
+      <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full flex-1")}>
         {activeTab === "overview" && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex-1 flex flex-col md:flex-row gap-8 md:gap-12 min-h-[500px]">
+            
+            {/* Left Pane: Sessions Preview */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Recent Sessions</h3>
+                <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[11px] font-bold underline-offset-2 hover:underline" onClick={() => setActiveTab('sessions')}>View All</Button>
+              </div>
               
-              {/* Pane 1: Activity Heatmap */}
-              <div className="border border-border/60 rounded-none p-6 bg-white dark:bg-[#111b21] flex flex-col">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-6">Session Activity (Last 35 Days)</h3>
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: 35 }).map((_, i) => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 34 + i);
-                      const count = sessions.filter(s => new Date(s.date).toDateString() === d.toDateString()).length;
-                      return (
-                        <div 
-                          key={i}
-                          title={`${d.toDateString()}: ${count} session(s)`}
-                          className={cn(
-                            "w-6 h-6 sm:w-8 sm:h-8 border border-black/5 dark:border-white/5",
-                            count === 0 ? "bg-muted/50" : count === 1 ? "bg-[#1099A1]/60" : "bg-[#1099A1]"
-                          )}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="mt-6 flex justify-end items-center gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  <span>Less</span>
-                  <div className="w-3 h-3 bg-muted/50 border border-black/5 dark:border-white/5" />
-                  <div className="w-3 h-3 bg-[#1099A1]/60 border border-black/5 dark:border-white/5" />
-                  <div className="w-3 h-3 bg-[#1099A1] border border-black/5 dark:border-white/5" />
-                  <span>More</span>
-                </div>
-              </div>
-
-              {/* Pane 2: Performance & Details */}
-              <div className="border border-border/60 rounded-none p-6 bg-white dark:bg-[#111b21] flex flex-col">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-6">Performance Overview</h3>
-                <div className="flex-1">
-                  {bySubject.length > 0 ? (
-                    <div className="space-y-6">
-                      {bySubject.map((s) => (
-                        <div key={s.subject}>
-                          <div className="flex items-center justify-between text-[13px] mb-2">
-                            <span className="font-bold text-foreground">{s.subject}</span>
-                            <span className="text-muted-foreground font-medium">{s.done}/{s.total} completed</span>
-                          </div>
-                          <div className="h-2 bg-muted">
-                            <div className="h-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
-                  )}
-                </div>
-
-                {upcoming > 0 && (
-                  <div className="mt-8 pt-6 border-t border-border/60">
-                    <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Next Session</h3>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <p className="text-[16px] font-bold text-foreground">Tomorrow, 10:00 AM</p>
+              {sessions.length === 0 ? <p className="text-[14px] text-muted-foreground">No sessions yet.</p> : (
+                <div className="space-y-0">
+                  {sessions.slice(0, 5).map((s) => (
+                    <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-none cursor-default">
+                      <div className="min-w-0">
+                        <p className="font-bold text-[14px] text-foreground leading-tight truncate">{s.subject}</p>
+                        <p className="text-[12px] text-muted-foreground flex items-center gap-1.5 mt-1 font-medium"><Clock size={12} /> {new Date(s.date).toLocaleDateString()} · {s.start_time}</p>
                       </div>
-                      <Button className="rounded-none bg-[#1099A1] hover:bg-[#0d848b] text-white h-9 px-6 font-bold text-[13px] border-0 shrink-0">Join Call</Button>
+                      <span className={cn("text-[10px] font-bold px-2 py-1 uppercase tracking-wider shrink-0",
+                        s.status === "completed" ? "text-green-600 dark:text-green-400" :
+                          s.status === "upcoming" ? "text-[#1099A1]" : "text-red-600 dark:text-red-400")}>{s.status}</span>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Pane: Assignments Preview */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Recent Submissions</h3>
+                <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[11px] font-bold underline-offset-2 hover:underline" onClick={() => setActiveTab('assignments')}>View All</Button>
               </div>
 
+              {submissions.length === 0 ? <p className="text-[14px] text-muted-foreground">No submissions yet.</p> : (
+                <div className="space-y-0">
+                  {submissions.slice(0, 5).map((s) => (
+                    <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-none cursor-default">
+                      <div className="min-w-0">
+                        <p className="font-bold text-[14px] text-foreground leading-tight truncate">{s.assignment_title}</p>
+                        <p className="text-[12px] text-muted-foreground flex items-center gap-3 mt-1 font-medium">
+                          <span>{new Date(s.submitted_at).toLocaleDateString()}</span>
+                          {s.drive_url && <a href={s.drive_url} target="_blank" rel="noreferrer" className="text-[#1099A1] flex items-center gap-1 hover:underline"><ExternalLink size={11} /> Open</a>}
+                        </p>
+                      </div>
+                      <span className={cn("text-[10px] font-bold px-2 py-1 uppercase tracking-wider shrink-0",
+                        s.status === "reviewed" ? "text-green-600 dark:text-green-400" :
+                          s.status === "revision_needed" ? "text-red-600 dark:text-red-400" : "text-[#1099A1]")}>
+                        {s.status.replace("_", " ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
           </div>
         )}
 
