@@ -216,13 +216,18 @@ export function TutorSessions() {
                         </div>
                         {editingNotesId === s.id ? (
                           <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
-                            <TipTapEditor value={editingNotesText} onChange={setEditingNotesText} />
-                            <div className="flex justify-end gap-2 p-3 bg-white dark:bg-[#111b21] border-t border-border/50">
-                              <Button variant="outline" size="sm" onClick={() => setEditingNotesId(null)} className="h-8 text-xs font-semibold">Cancel</Button>
-                              <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="h-8 text-xs font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
-                                {inlineSaving ? "Saving..." : "Save"}
-                              </Button>
-                            </div>
+                            <TipTapEditor 
+                              value={editingNotesText} 
+                              onChange={setEditingNotesText} 
+                              toolbarRight={
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => setEditingNotesId(null)} className="text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
+                                  <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="h-7 text-[11px] px-3 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
+                                    {inlineSaving ? "Saving..." : "Save"}
+                                  </Button>
+                                </div>
+                              }
+                            />
                           </div>
                         ) : s.notes && s.status === "completed" ? (
                           <div className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
@@ -328,7 +333,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
           <Button onClick={submit} disabled={saving} className="h-10 px-6 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold">
-            {saving ? "Saving..." : isUpcoming ? "Mark Complete" : "Save Notes"}
+            {saving && isUpcoming && <CheckCheck size={16} />} {saving ? "Saving..." : isUpcoming ? "Mark As Done" : "Save Notes"}
           </Button>
         </div>
       </div>

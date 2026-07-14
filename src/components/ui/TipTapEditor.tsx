@@ -8,9 +8,10 @@ interface TipTapEditorProps {
   value: string;
   onChange: (value: string) => void;
   onAttachClick?: () => void;
+  toolbarRight?: React.ReactNode;
 }
 
-export function TipTapEditor({ value, onChange, onAttachClick }: TipTapEditorProps) {
+export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -82,19 +83,18 @@ export function TipTapEditor({ value, onChange, onAttachClick }: TipTapEditorPro
           <RemoveFormatting size={18} />
         </button>
 
+        <div className="flex-1" />
         {onAttachClick && (
-          <>
-            <div className="flex-1" />
-            <button
-              type="button"
-              onClick={onAttachClick}
-              className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-              title="Attach Link"
-            >
-              <Paperclip size={18} />
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={onAttachClick}
+            className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+            title="Attach Link"
+          >
+            <Paperclip size={18} />
+          </button>
         )}
+        {toolbarRight}
       </div>
     </div>
   )

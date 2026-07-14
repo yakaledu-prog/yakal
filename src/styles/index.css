@@ -2,6 +2,12 @@
 @import './tailwind.css';
 @import './theme.css';
 
+@layer base {
+  button, a {
+    @apply focus:outline-none focus-visible:outline-none;
+  }
+}
+
 /* ── Shimmer button (hover only) ── */
 @keyframes shimmer {
   0% {
