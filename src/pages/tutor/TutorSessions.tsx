@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, Calendar, Clock, User, Video, FileText, CalendarRange, CheckCircle2, X, Loader2 } from "lucide-react";
+import { Search, User, Video, FileText, CalendarRange, CheckCheck, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -152,7 +152,7 @@ export function TutorSessions() {
           </div>
         </div>
 
-        <div className="p-4 md:p-8 max-w-4xl mx-auto w-full flex-1">
+        <div className="p-4 md:p-8 w-full flex-1">
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="animate-spin text-primary h-8 w-8" />
@@ -164,47 +164,58 @@ export function TutorSessions() {
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
             </div>
           ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {filteredSessions.map((s) => (
-                <div key={s.id} className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h2 className="text-[18px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
-                        <Badge
-                          variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
-                          className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider"
-                        >
+                <div key={s.id} className="space-y-6 pb-8 border-b border-border/50 last:border-0">
+                  
+                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+                    <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-3 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <CalendarRange size={15} />
+                        <span className="text-[13px] font-medium">{formatDate(s.date)} • {formatTime(s.start_time)} ({s.duration_minutes}m)</span>
+                      </div>
+                      
+                      {s.status === "upcoming" ? (
+                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-[#97CE9D] hover:opacity-80 transition-opacity">
+                          <CheckCheck size={16} /> Mark Complete
+                        </button>
+                      ) : s.status === "completed" ? (
+                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                          <FileText size={16} /> {s.notes ? "Edit Notes" : "Add Notes"}
+                        </button>
+                      ) : (
+                        <Badge variant="destructive" className="rounded-sm text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
                           {s.status}
                         </Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                        <span className="flex items-center gap-1.5"><User size={14} /><span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span></span>
-                        <span className="flex items-center gap-1.5"><Calendar size={14} />{formatDate(s.date)}</span>
-                        <span className="flex items-center gap-1.5"><Clock size={14} />{formatTime(s.start_time)} ({s.duration_minutes} min)</span>
-                      </div>
-                      {s.notes && s.status === "completed" && (
-                        <p className="mt-3 text-[13px] text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329] rounded-md p-3 line-clamp-2">{s.notes}</p>
                       )}
                     </div>
-
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                      {s.status === "upcoming" ? (
-                        <>
-                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b]">
-                            <Video size={14} /> Join
-                          </Button>
-                          <Button variant="outline" onClick={() => setNotesFor(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
-                            <CheckCircle2 size={14} /> Mark Complete
-                          </Button>
-                        </>
-                      ) : s.status === "completed" ? (
-                        <Button variant="outline" onClick={() => setNotesFor(s)} className="w-full md:w-auto h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
-                          <FileText size={14} /> {s.notes ? "Edit Notes" : "Add Notes"}
-                        </Button>
-                      ) : null}
+                    
+                    <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-1">{s.subject}</h2>
+                        <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                          <User size={14} /> <span>Student: <span className="font-medium text-foreground">{s.student_name}</span></span>
+                        </div>
+                        {s.notes && s.status === "completed" && (
+                          <p className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1">{s.notes}</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        {s.status === "upcoming" ? (
+                          <>
+                            <Button onClick={() => join(s)} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-full">
+                              <Video size={16} /> Join
+                            </Button>
+                            <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
+                              <CalendarRange size={16} /> Reschedule
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+
                 </div>
               ))}
             </div>
@@ -225,7 +236,7 @@ export function TutorSessions() {
 
 function MinimalStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex flex-col text-left">
+    <div className="flex flex-col items-center">
       <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
       <p className="text-xl font-bold leading-none">{value}</p>
     </div>
