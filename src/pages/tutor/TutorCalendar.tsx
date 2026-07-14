@@ -292,7 +292,7 @@ export function TutorCalendar() {
             const timeStr = `${pad(hour.hour)}:00`;
             const sessions = getSessionsForDay(date).filter(s => s.startTime === timeStr);
             const mode = getAvailabilityForHour(hour.hour, dayIndex);
-            
+
             return (
               <div key={idx} className="grid grid-cols-[100px_1fr] border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0">
                 <div className="py-4 px-3 text-[13px] text-right text-[#54656f] dark:border-[#2a3942] font-medium border-r border-[#e9edef] dark:border-[#2a3942]">
@@ -356,21 +356,21 @@ export function TutorCalendar() {
 
             {/* Controls Row inside header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex border border-white/30 rounded-none bg-black/10">
+              <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/10">
                 <button
-                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('day')}
                 >
                   Daily
                 </button>
                 <button
-                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('week')}
                 >
                   Weekly
                 </button>
                 <button
-                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('month')}
                 >
                   Monthly
@@ -386,7 +386,7 @@ export function TutorCalendar() {
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-white !text-[#1099A1] hover:bg-white/90 rounded-none font-bold shadow-none"
+                  className="h-9 flex items-center gap-2 bg-[#0E8991] border border-white/30 hover:bg-white/30 rounded-lg font-bold shadow-none"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
@@ -401,9 +401,9 @@ export function TutorCalendar() {
         <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
           <div className="w-full bg-white dark:bg-[#111b21]">
 
-          {calendarView === 'month' && renderMonthView()}
-          {calendarView === 'week' && renderWeekView()}
-          {calendarView === 'day' && renderDayView()}
+            {calendarView === 'month' && renderMonthView()}
+            {calendarView === 'week' && renderWeekView()}
+            {calendarView === 'day' && renderDayView()}
           </div>
         </div>
 
