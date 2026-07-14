@@ -90,12 +90,12 @@ export default function ServicesV5() {
 
                   {/* Content half */}
                   <div className="w-full md:w-1/2 flex flex-col justify-center">
-                    <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
-                      {svc.tag}
-                    </p>
                     <h3 className="text-[32px] md:text-[42px] font-semibold leading-[40px] md:leading-[52px] mb-6 text-[#111]">
                       {svc.headline}
                     </h3>
+                    <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
+                      {svc.tag}
+                    </p>
                     <p className="text-[16px] md:text-[18px] text-[#555] leading-[28px] mb-8 max-w-[500px]">
                       {svc.description}
                     </p>

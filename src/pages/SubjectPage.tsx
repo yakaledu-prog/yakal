@@ -49,10 +49,12 @@ export default function SubjectPage({
                     key={idx}
                     onClick={() => setActiveTabIndex(idx)}
                     className={cn(
-                      "px-[18px] py-[10px] text-[14px] md:text-[15px] font-semibold rounded-full transition-all border",
+                      "px-[18px] py-[10px] text-[14px] md:text-[15px] active:scale-90 font-semibold rounded-full transition-all ease-in-out duration-500 border",
                       activeTabIndex === idx
-                        ? "bg-[#111] text-white border-[#111] shadow-sm"
-                        : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-[#111] hover:text-[#111]"
+                        // ? "bg-[#111] text-white border-[#111] shadow-sm"
+                        ? "bg-[#97CE9D] text-white border-none shadow-sm"
+                        // : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-[#111] hover:text-[#111]"
+                        : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-[#97CE9D] hover:text-[#97CE9D]"
                     )}
                   >
                     {detail.title}
