@@ -342,55 +342,52 @@ export function TutorCalendar() {
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-1">
-              <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Schedule</h1>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
+          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="space-y-1">
+                <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Schedule</h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
+                </div>
+                <p className="text-white/70 text-[14px] pt-1">
+                  Manage your availability and upcoming sessions
+                </p>
               </div>
-              <p className="text-white/70 text-[14px] pt-1">
-                Manage your availability and upcoming sessions
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Calendar Content Wrapper */}
-        <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
-          <div className="w-full bg-white dark:bg-[#111b21]">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 mt-2">
-            <div className="flex border border-border/60 rounded-none bg-muted/10">
-              <button
-                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'day' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
-                onClick={() => setCalendarView('day')}
-              >
-                Daily
-              </button>
-              <button
-                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'week' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
-                onClick={() => setCalendarView('week')}
-              >
-                Weekly
-              </button>
-              <button
-                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'month' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
-                onClick={() => setCalendarView('month')}
-              >
-                Monthly
-              </button>
             </div>
 
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent"><ChevronLeft size={18} /></Button>
-              <span className="text-md text-center text-[#111] dark:text-white">{getHeaderText()}</span>
-              <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent"><ChevronRight size={18} /></Button>
-            </div>
+            {/* Controls Row inside header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
+              <div className="flex border border-white/30 rounded-none bg-white/10">
+                <button
+                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('day')}
+                >
+                  Daily
+                </button>
+                <button
+                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('week')}
+                >
+                  Weekly
+                </button>
+                <button
+                  className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('month')}
+                >
+                  Monthly
+                </button>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1 text-white">
+                <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronLeft size={18} /></Button>
+                <span className="text-md text-center font-medium min-w-[140px]">{getHeaderText()}</span>
+                <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></Button>
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-[#1099A1] hover:bg-[#0e8a91] text-white rounded-none font-bold"
+                  className="h-9 flex items-center gap-2 bg-white text-[#1099A1] hover:bg-white/90 rounded-none font-bold"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
@@ -399,6 +396,12 @@ export function TutorCalendar() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Calendar Content Wrapper */}
+        <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
+          <div className="w-full bg-white dark:bg-[#111b21]">
+
           {calendarView === 'month' && renderMonthView()}
           {calendarView === 'week' && renderWeekView()}
           {calendarView === 'day' && renderDayView()}
