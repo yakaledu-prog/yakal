@@ -329,15 +329,35 @@ export function TutorCalendar() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col w-full mx-auto">
+      <div className="flex flex-col w-full min-h-screen bg-background dark:bg-[#111b21] pb-12">
 
-        {/* Header Controls */}
-        {/* <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white dark:bg-[#111b21] p-2 pl-4 pr-2 rounded-xl shadow-sm border border-[#e9edef] dark:border-[#2a3942]">
-          
-        </div> */}
+        {/* Massive Integrated Header */}
+        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-10 relative overflow-hidden shrink-0">
+          {/* Subtle Background Texture/Graph */}
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
 
-        {/* Calendar Grid */}
-        <div className="w-full p-4 bg-white dark:bg-[#111b21]">
+          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-1">
+              <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Schedule</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
+              </div>
+              <p className="text-white/70 text-[14px] pt-1">
+                Manage your availability and upcoming sessions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar Content Wrapper */}
+        <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
+          <div className="w-full bg-white dark:bg-[#111b21]">
           <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 mt-2">
             <div className="flex border border-border/60 rounded-none bg-muted/10">
               <button
@@ -382,6 +402,7 @@ export function TutorCalendar() {
           {calendarView === 'month' && renderMonthView()}
           {calendarView === 'week' && renderWeekView()}
           {calendarView === 'day' && renderDayView()}
+          </div>
         </div>
 
       </div>
