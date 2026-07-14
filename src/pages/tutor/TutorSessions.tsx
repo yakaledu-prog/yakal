@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, User, Video, FileText, CalendarRange, CheckCheck, X, Loader2 } from "lucide-react";
+import { Search, User, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getTutorSessionsFull, completeSession, saveSessionNotes, SessionRow,
 } from "@/services/tutorService";
+import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 
 function formatTime(t?: string) {
@@ -31,6 +32,10 @@ export function TutorSessions() {
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [editingNotesText, setEditingNotesText] = useState("");
+  const [inlineSaving, setInlineSaving] = useState(false);
+
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
   const load = async () => {
@@ -46,6 +51,19 @@ export function TutorSessions() {
     const link = s.zoom_link || profile?.zoom_link;
     if (link) window.open(link, "_blank");
     else toast.error("No session link set. Add one in your profile.");
+  };
+
+  const saveInlineNotes = async (id: string) => {
+    setInlineSaving(true);
+    const ok = await saveSessionNotes(id, editingNotesText.trim());
+    setInlineSaving(false);
+    if (ok) {
+      toast.success("Notes saved.");
+      setEditingNotesId(null);
+      load();
+    } else {
+      toast.error("Something went wrong.");
+    }
   };
 
   const courses = useMemo(() => Array.from(new Set(sessions.map((s) => s.subject))), [sessions]);
@@ -84,7 +102,7 @@ export function TutorSessions() {
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
           ) : (
             <>
               <button
@@ -167,21 +185,21 @@ export function TutorSessions() {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {filteredSessions.map((s) => (
                 <div key={s.id} className="space-y-6 pb-8 border-b border-border/50 last:border-0">
-                  
-                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+
+                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-none hover:shadow-sm transition ease-in-out duration-300 flex flex-col overflow-hidden">
                     <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-3 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
                       <div className="flex items-center gap-3 text-muted-foreground">
                         <CalendarRange size={15} />
                         <span className="text-[13px] font-medium">{formatDate(s.date)} • {formatTime(s.start_time)} ({s.duration_minutes}m)</span>
                       </div>
-                      
+
                       {s.status === "upcoming" ? (
-                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-[#97CE9D] hover:opacity-80 transition-opacity">
-                          <CheckCheck size={16} /> Mark Complete
+                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-primary hover:opacity-80 transition-opacity">
+                          <CheckCheck size={16} /> Mark As Done
                         </button>
                       ) : s.status === "completed" ? (
-                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                          <FileText size={16} /> {s.notes ? "Edit Notes" : "Add Notes"}
+                        <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[13px] font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                          <SquarePenIcon size={16} /> {s.notes ? "Edit Notes" : "Add Notes"}
                         </button>
                       ) : (
                         <Badge variant="destructive" className="rounded-sm text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
@@ -189,18 +207,28 @@ export function TutorSessions() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex-1 min-w-0">
                         <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-1">{s.subject}</h2>
                         <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
                           <User size={14} /> <span>Student: <span className="font-medium text-foreground">{s.student_name}</span></span>
                         </div>
-                        {s.notes && s.status === "completed" && (
-                          <p className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1">{s.notes}</p>
-                        )}
+                        {editingNotesId === s.id ? (
+                          <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
+                            <TipTapEditor value={editingNotesText} onChange={setEditingNotesText} />
+                            <div className="flex justify-end gap-2 p-3 bg-white dark:bg-[#111b21] border-t border-border/50">
+                              <Button variant="outline" size="sm" onClick={() => setEditingNotesId(null)} className="h-8 text-xs font-semibold">Cancel</Button>
+                              <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="h-8 text-xs font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
+                                {inlineSaving ? "Saving..." : "Save"}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : s.notes && s.status === "completed" ? (
+                          <div className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
+                        ) : null}
                       </div>
-                      
+
                       <div className="flex items-center gap-3 w-full md:w-auto">
                         {s.status === "upcoming" ? (
                           <>
