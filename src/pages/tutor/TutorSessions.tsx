@@ -91,12 +91,16 @@ export function TutorSessions() {
     <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
       {/* Left pane */}
       <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
-        <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <h2 className="text-[16px] font-bold text-[#111] dark:text-white mb-3">Courses</h2>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#54656f] dark:text-[#aebac1]" />
-            <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search courses..."
-              className="w-full h-10 pl-9 pr-3 rounded-lg bg-[#f8f9fa] dark:bg-[#182329] border border-transparent focus:border-primary focus:outline-none text-[14px] text-[#111] dark:text-white" />
+        {/* Search bar */}
+        <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+            <input
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              placeholder="Search courses"
+              className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
+            />
           </div>
         </div>
 
@@ -216,13 +220,13 @@ export function TutorSessions() {
                         </div>
                         {editingNotesId === s.id ? (
                           <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
-                            <TipTapEditor 
-                              value={editingNotesText} 
-                              onChange={setEditingNotesText} 
+                            <TipTapEditor
+                              value={editingNotesText}
+                              onChange={setEditingNotesText}
                               toolbarRight={
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => setEditingNotesId(null)} className="text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
-                                  <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="h-7 text-[11px] px-3 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
+                                  <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="!h-7 text-[11px] px-3 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
                                     {inlineSaving ? "Saving..." : "Save"}
                                   </Button>
                                 </div>
@@ -332,8 +336,8 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="h-10 px-6 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold">
-            {saving && isUpcoming && <CheckCheck size={16} />} {saving ? "Saving..." : isUpcoming ? "Mark As Done" : "Save Notes"}
+          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold flex items-center gap-2">
+            {isUpcoming && <CheckCheck size={16} />} <span>{saving ? "Saving..." : isUpcoming ? "Mark As Done" : "Save Notes"}</span>
           </Button>
         </div>
       </div>

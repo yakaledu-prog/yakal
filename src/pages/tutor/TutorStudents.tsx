@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/Button";
 import { supabase } from "@/lib/supabase";
 import {
   getTutorStudents, getStudentDetail, TutorStudent, StudentDetail,
@@ -92,11 +93,15 @@ export function TutorStudents() {
           </button>
         </div>
 
-        <div className="students-list__search p-3 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#54656f] dark:text-[#aebac1]" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search students..."
-              className="w-full h-10 pl-9 pr-3 rounded-lg bg-[#f8f9fa] dark:bg-[#182329] border border-transparent focus:border-primary focus:outline-none text-[14px] text-[#111] dark:text-white" />
+        <div className="students-list__search px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search students..."
+              className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
+            />
           </div>
         </div>
 
@@ -210,35 +215,87 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
         </div>
       </div>
 
-      <div className={cn("mx-auto w-full flex flex-col", activeTab === 'messages' ? "flex-1 -mx-4 md:-mx-8 -mb-4 md:-mb-8 w-auto mt-[-32px]" : "max-w-4xl")}>
+      <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full max-w-4xl")}>
         {activeTab === "overview" && (
-          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* By subject */}
-            {bySubject.length > 0 ? (
-              <div>
-                <h3 className="text-[16px] font-semibold text-foreground mb-4">Progress by subject</h3>
-                <div className="space-y-4">
-                  {bySubject.map((s) => (
-                    <div key={s.subject}>
-                      <div className="flex items-center justify-between text-[13px] mb-2">
-                        <span className="font-medium text-foreground">{s.subject}</span>
-                        <span className="text-muted-foreground">{s.done}/{s.total} completed</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
-                      </div>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Top Row: Next Session & Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="border border-border/60 rounded-none p-5 flex flex-col justify-between bg-white dark:bg-[#111b21]">
+                <div>
+                  <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Next Session</h3>
+                  {upcoming > 0 ? (
+                    <div>
+                      <p className="text-[18px] font-bold text-foreground">Tomorrow, 10:00 AM</p>
+                      <p className="text-[14px] text-muted-foreground mt-1 font-medium">Mathematics • Online</p>
                     </div>
-                  ))}
+                  ) : (
+                    <p className="text-[14px] text-muted-foreground">No upcoming sessions scheduled.</p>
+                  )}
                 </div>
+                {upcoming > 0 && (
+                  <div className="mt-6 flex gap-3">
+                    <Button className="rounded-none bg-[#1099A1] hover:bg-[#0d848b] text-white h-9 px-5 font-bold text-[13px] border-0">Join Call</Button>
+                    <Button variant="outline" className="rounded-none h-9 px-5 font-bold text-[13px] border-border/60 hover:bg-muted/10">Reschedule</Button>
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
-            )}
 
+              <div className="border border-border/60 rounded-none p-5 bg-white dark:bg-[#111b21]">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Performance Overview</h3>
+                {bySubject.length > 0 ? (
+                  <div className="space-y-5">
+                    {bySubject.map((s) => (
+                      <div key={s.subject}>
+                        <div className="flex items-center justify-between text-[13px] mb-2">
+                          <span className="font-bold text-foreground">{s.subject}</span>
+                          <span className="text-muted-foreground font-medium">{s.done}/{s.total} completed</span>
+                        </div>
+                        <div className="h-1.5 bg-muted">
+                          <div className="h-full bg-[#1099A1]" style={{ width: `${s.total ? (s.done / s.total) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-muted-foreground">No subjects tracked yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Row: Recent Activity & Private Notes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="border border-border/60 rounded-none p-5 bg-white dark:bg-[#111b21]">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Recent Sessions</h3>
+                {sessions.filter(s => s.status === 'completed').length > 0 ? (
+                  <div className="space-y-0">
+                    {sessions.filter(s => s.status === 'completed').slice(0,3).map(s => (
+                       <div key={s.id} className="flex justify-between items-start border-b border-border/40 py-3 last:border-0 last:pb-0 first:pt-0">
+                         <div>
+                           <p className="text-[14px] font-bold text-foreground leading-tight">{s.subject}</p>
+                           <p className="text-[12px] text-muted-foreground mt-1 font-medium">{new Date(s.date).toLocaleDateString()} • {s.start_time}</p>
+                         </div>
+                         <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[12px] font-bold underline-offset-2 hover:underline">View Notes</Button>
+                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-muted-foreground">No completed sessions yet.</p>
+                )}
+               </div>
+
+               <div className="border border-border/60 rounded-none p-5 flex flex-col bg-[#fdfdfd] dark:bg-[#182329]">
+                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Private Tutor Notes</h3>
+                <textarea 
+                  className="w-full flex-1 min-h-[140px] bg-transparent border-0 resize-none outline-none text-[14px] font-medium text-foreground placeholder:text-muted-foreground leading-relaxed"
+                  placeholder="Keep your private notes about this student's progress, strengths, and areas for improvement here..."
+                />
+               </div>
+            </div>
+            
             {p.subjects && p.subjects.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap pt-4 border-t border-border/50">
-                <span className="text-[13px] text-muted-foreground flex items-center gap-1.5"><User size={13} /> Interests:</span>
-                {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-medium bg-[#1099A1]/10 text-[#1099A1] px-2 py-1 rounded-full">{sub}</span>)}
+              <div className="flex items-center gap-2 flex-wrap pt-2">
+                <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"><User size={14} /> Interests:</span>
+                {p.subjects.map((sub) => <span key={sub} className="text-[11px] font-bold border border-border/60 rounded-none text-foreground px-2 py-1">{sub}</span>)}
               </div>
             )}
           </div>
@@ -311,9 +368,9 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
 
 function MinimalStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex flex-col text-left">
-      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-xl font-bold leading-none">{value}</p>
+    <div className="flex flex-col items-center justify-center text-center">
+      <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2.5">{label}</p>
+      <p className="text-2xl font-bold leading-none">{value}</p>
     </div>
   );
 }
