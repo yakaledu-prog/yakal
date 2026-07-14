@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
-import { PageWrapper } from "@/components/ui/PageWrapper";
+import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, Calendar, Clock, User, Video, FileText, CalendarRange, CheckCircle2, X } from "lucide-react";
+import { Search, Calendar, Clock, User, Video, FileText, CalendarRange, CheckCircle2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getTutorSessionsFull, completeSession, saveSessionNotes, SessionRow,
 } from "@/services/tutorService";
+import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 
 function formatTime(t?: string) {
   if (!t) return "";
@@ -29,6 +29,9 @@ export function TutorSessions() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+
+  useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
   const load = async () => {
     if (!user) return;
@@ -45,106 +48,169 @@ export function TutorSessions() {
     else toast.error("No session link set. Add one in your profile.");
   };
 
-  const filtered = sessions.filter((s) => {
-    const isUpcoming = s.status === "upcoming";
-    const matchesTab = activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-    const q = filterText.toLowerCase();
-    const matches = s.subject.toLowerCase().includes(q) || (s.student_name || "").toLowerCase().includes(q);
-    return matchesTab && matches;
-  });
+  const courses = useMemo(() => Array.from(new Set(sessions.map((s) => s.subject))), [sessions]);
+  const filteredCourses = useMemo(
+    () => courses.filter((c) => c.toLowerCase().includes(filterText.toLowerCase())),
+    [courses, filterText]
+  );
+
+  const courseSessions = useMemo(
+    () => sessions.filter((s) => (selectedCourse ? s.subject === selectedCourse : true)),
+    [sessions, selectedCourse]
+  );
+
+  const filteredSessions = useMemo(() => {
+    return courseSessions.filter((s) => {
+      const isUpcoming = s.status === "upcoming";
+      return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
+    });
+  }, [courseSessions, activeTab]);
+
+  const completedCount = courseSessions.filter((s) => s.status === "completed").length;
+  const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
 
   return (
-    <PageWrapper>
-      <div className="w-full p-8 pb-12 h-full dark:bg-[#111b21]">
-        {/* Search */}
-        <div className="relative w-full mb-6">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+    <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
+      {/* Left pane */}
+      <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+        <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <h2 className="text-[16px] font-bold text-[#111] dark:text-white mb-3">Courses</h2>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#54656f] dark:text-[#aebac1]" />
+            <input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search courses..."
+              className="w-full h-10 pl-9 pr-3 rounded-lg bg-[#f8f9fa] dark:bg-[#182329] border border-transparent focus:border-primary focus:outline-none text-[14px] text-[#111] dark:text-white" />
           </div>
-          <input
-            type="text"
-            placeholder="Search sessions..."
-            className="pl-9 pr-3 py-2 h-10 bg-white dark:bg-[#111b21] text-[#111] dark:text-white border border-[#e9edef] dark:border-[#2a3942] rounded-md focus:outline-none focus:border-primary w-full text-[14px]"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-[#e9edef] dark:border-[#2a3942] mb-6">
-          {(["upcoming", "past"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "px-6 py-3 text-[14px] font-semibold border-b-2 transition-colors capitalize",
-                activeTab === tab
-                  ? "border-primary text-primary"
-                  : "border-transparent text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-              )}
-            >
-              {tab === "upcoming" ? "Upcoming" : "Past Sessions"}
-            </button>
-          ))}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectedCourse(null)}
+                className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
+                  selectedCourse === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
+                <div className="min-w-0">
+                  <p className={cn("text-[14px] font-semibold truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
+                  <p className="text-[12px] text-muted-foreground truncate">{sessions.length} sessions total</p>
+                </div>
+              </button>
+              {filteredCourses.map((c) => {
+                const active = c === selectedCourse;
+                const cSessions = sessions.filter(s => s.subject === c);
+                return (
+                  <button key={c} onClick={() => setSelectedCourse(c)}
+                    className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
+                      active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
+                    <div className="min-w-0">
+                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">{cSessions.length} sessions</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
+      </aside>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md">
-            <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
-            <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map((s) => (
-              <div key={s.id} className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h2 className="text-[18px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
-                      <Badge
-                        variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
-                        className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider"
-                      >
-                        {s.status}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                      <span className="flex items-center gap-1.5"><User size={14} /><span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span></span>
-                      <span className="flex items-center gap-1.5"><Calendar size={14} />{formatDate(s.date)}</span>
-                      <span className="flex items-center gap-1.5"><Clock size={14} />{formatTime(s.start_time)} ({s.duration_minutes} min)</span>
-                    </div>
-                    {s.notes && s.status === "completed" && (
-                      <p className="mt-3 text-[13px] text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329] rounded-md p-3 line-clamp-2">{s.notes}</p>
-                    )}
-                  </div>
+      {/* Right pane */}
+      <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto flex flex-col">
+        {/* Integrated Header */}
+        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
 
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                    {s.status === "upcoming" ? (
-                      <>
-                        <Button onClick={() => join(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b]">
-                          <Video size={14} /> Join
-                        </Button>
-                        <Button variant="outline" onClick={() => setNotesFor(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
-                          <CheckCircle2 size={14} /> Mark Complete
-                        </Button>
-                      </>
-                    ) : s.status === "completed" ? (
-                      <Button variant="outline" onClick={() => setNotesFor(s)} className="w-full md:w-auto h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
-                        <FileText size={14} /> {s.notes ? "Edit Notes" : "Add Notes"}
-                      </Button>
-                    ) : null}
-                  </div>
+          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
+                  <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
+              <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
+                <MinimalStat label="Total" value={courseSessions.length} />
+                <MinimalStat label="Completed" value={completedCount} />
+                <MinimalStat label="Upcoming" value={upcomingCount} />
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
+            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
+          </div>
+        </div>
+
+        <div className="p-4 md:p-8 max-w-4xl mx-auto w-full flex-1">
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-primary h-8 w-8" />
+            </div>
+          ) : filteredSessions.length === 0 ? (
+            <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
+              <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
+              <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {filteredSessions.map((s) => (
+                <div key={s.id} className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md p-5 hover:shadow-sm transition-shadow">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h2 className="text-[18px] font-bold text-[#111] dark:text-white">{s.subject}</h2>
+                        <Badge
+                          variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
+                          className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider"
+                        >
+                          {s.status}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                        <span className="flex items-center gap-1.5"><User size={14} /><span className="font-medium text-[#111] dark:text-[#e9edef]">{s.student_name}</span></span>
+                        <span className="flex items-center gap-1.5"><Calendar size={14} />{formatDate(s.date)}</span>
+                        <span className="flex items-center gap-1.5"><Clock size={14} />{formatTime(s.start_time)} ({s.duration_minutes} min)</span>
+                      </div>
+                      {s.notes && s.status === "completed" && (
+                        <p className="mt-3 text-[13px] text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329] rounded-md p-3 line-clamp-2">{s.notes}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      {s.status === "upcoming" ? (
+                        <>
+                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b]">
+                            <Video size={14} /> Join
+                          </Button>
+                          <Button variant="outline" onClick={() => setNotesFor(s)} className="flex-1 md:flex-none h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
+                            <CheckCircle2 size={14} /> Mark Complete
+                          </Button>
+                        </>
+                      ) : s.status === "completed" ? (
+                        <Button variant="outline" onClick={() => setNotesFor(s)} className="w-full md:w-auto h-9 text-[13px] font-semibold border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2">
+                          <FileText size={14} /> {s.notes ? "Edit Notes" : "Add Notes"}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {notesFor && (
         <NotesModal
@@ -153,7 +219,28 @@ export function TutorSessions() {
           onSaved={() => { setNotesFor(null); load(); }}
         />
       )}
-    </PageWrapper>
+    </div>
+  );
+}
+
+function MinimalStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex flex-col text-left">
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-xl font-bold leading-none">{value}</p>
+    </div>
+  );
+}
+
+function TabButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn("pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none",
+        active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white/90 hover:border-white/30")}
+    >
+      {label}
+    </button>
   );
 }
 
