@@ -139,10 +139,10 @@ export function TutorCalendar() {
   };
 
   const getModeClasses = (mode: number) => {
-    if (mode === 1) return 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/10 text-sky-600 dark:text-sky-400';
-    if (mode === 2) return 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400';
-    if (mode === 3) return 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400';
-    return 'border-[#e9edef] text-[#54656f]';
+    if (mode === 1) return 'border-[#1099A1]/40 bg-[#1099A1]/5 text-[#1099A1]';
+    if (mode === 2) return 'border-[#CAA25F]/40 bg-[#CAA25F]/5 text-[#CAA25F]';
+    if (mode === 3) return 'border-muted-foreground/40 bg-muted/10 text-muted-foreground';
+    return 'border-border text-muted-foreground';
   };
 
   const getHeaderText = () => {
@@ -162,7 +162,7 @@ export function TutorCalendar() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded overflow-hidden bg-white dark:bg-[#111b21] mt-4 shadow-sm">
+      <div className="border border-border/60 rounded-none overflow-hidden bg-white dark:bg-[#111b21] mt-4">
         <div className="grid grid-cols-7 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           {weekdays.map(day => (
             <div key={day} className="text-center text-[13px] font-medium text-[#111] dark:text-[#e9edef] py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
@@ -195,8 +195,8 @@ export function TutorCalendar() {
                   </div>
                   <div className="space-y-1">
                     {getSessionsForDay(day).map(session => (
-                      <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-[#1099A1]/10 dark:hover:bg-white/5 cursor-pointer">
-                        <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate">
+                      <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded-none border-l-2 border-[#1099A1] bg-[#1099A1]/5 dark:hover:bg-white/5 cursor-pointer">
+                        <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate font-semibold">
                           {formatTime(session.startTime)} {session.subject}
                         </span>
                       </div>
@@ -217,7 +217,7 @@ export function TutorCalendar() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded overflow-x-auto bg-white dark:bg-[#111b21] mt-4 shadow-sm">
+      <div className="border border-border/60 rounded-none overflow-x-auto bg-white dark:bg-[#111b21] mt-4">
         <div className="min-w-[800px]">
           <div className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
             <div className="border-r border-[#e9edef] dark:border-[#2a3942]"></div>
@@ -245,14 +245,14 @@ export function TutorCalendar() {
                   return (
                     <div key={dIndex} className={cn("h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1 flex flex-col gap-1 overflow-hidden", isDisabled && "opacity-40 grayscale bg-[#f0f2f5] dark:bg-[#111b21]/50")}>
                       {mode > 0 && sessions.length === 0 && (
-                        <div className={cn("flex-1 rounded border border-dashed flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
-                          <div className="flex items-center gap-1 text-[10px] font-semibold">
+                        <div className={cn("flex-1 rounded-none border flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
+                          <div className="flex items-center gap-1 text-[10px] font-bold">
                             {renderModeIcon(mode)} <span className="uppercase tracking-wider hidden md:inline">{getModeLabel(mode)}</span>
                           </div>
                         </div>
                       )}
                       {sessions.map(s => (
-                        <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-[#1099A1]/15 transition-colors">
+                        <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none px-2 py-1 text-[11px] font-bold truncate cursor-pointer hover:bg-[#1099A1]/10 transition-colors">
                           {formatTime(s.startTime)} {s.subject}
                         </div>
                       ))}
@@ -280,7 +280,7 @@ export function TutorCalendar() {
     const isDayDisabled = disabledDays.includes(dayIndex);
 
     return (
-      <div className={cn("border border-[#e9edef] dark:border-[#2a3942] rounded bg-white dark:bg-[#111b21] mt-4 shadow-sm overflow-hidden", isDayDisabled && "opacity-50 grayscale bg-[#f8f9fa] dark:bg-[#182329] pointer-events-none")}>
+      <div className={cn("border border-border/60 rounded-none bg-white dark:bg-[#111b21] mt-4 overflow-hidden", isDayDisabled && "opacity-50 grayscale bg-[#f8f9fa] dark:bg-[#182329] pointer-events-none")}>
         <div className="grid grid-cols-[100px_1fr] bg-[#f8f9fa] dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="p-3 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
           <div className="p-3 text-[15px] font-medium text-[#111] dark:text-white">
@@ -300,7 +300,7 @@ export function TutorCalendar() {
                 </div>
                 <div className="p-2 min-h-[60px] relative">
                   {mode > 0 && sessions.length === 0 && (
-                    <div className={cn("absolute inset-2 border border-dashed rounded-md flex items-center justify-center pointer-events-none", getModeClasses(mode))}>
+                    <div className={cn("absolute inset-2 border rounded-none flex items-center justify-center pointer-events-none", getModeClasses(mode))}>
                       <div className="flex items-center gap-2 text-[13px] font-semibold opacity-90">
                         {renderModeIcon(mode)} <span className="uppercase tracking-wider text-[11px]">{getModeLabel(mode)} Availability</span>
                       </div>
@@ -308,9 +308,9 @@ export function TutorCalendar() {
                   )}
                   <div className="relative z-10 flex flex-col gap-2">
                     {sessions.map(s => (
-                      <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded-md p-3 text-[13px] hover:bg-[#1099A1]/15 transition-colors cursor-pointer w-full max-w-md shadow-sm">
+                      <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none p-3 text-[13px] hover:bg-[#1099A1]/10 transition-colors cursor-pointer w-full max-w-md">
                         <div className="font-bold">{s.subject}</div>
-                        <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px]">
+                        <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px] font-medium">
                           <span>{formatTime(s.startTime)}</span>
                           <span>•</span>
                           <span>{s.tutorName}</span>
@@ -338,22 +338,22 @@ export function TutorCalendar() {
 
         {/* Calendar Grid */}
         <div className="w-full p-4 bg-white dark:bg-[#111b21]">
-          <div className="flex items-center justify-between border-b pb-2 mb-2">
-            <div className="flex bg-[#f0f2f5] dark:bg-[#202c33] p-0.5 rounded-lg">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 mt-2">
+            <div className="flex border border-border/60 rounded-none bg-muted/10">
               <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'day' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'day' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
                 onClick={() => setCalendarView('day')}
               >
                 Daily
               </button>
               <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'week' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'week' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
                 onClick={() => setCalendarView('week')}
               >
                 Weekly
               </button>
               <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'month' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
+                className={cn("px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-none transition-colors border-r border-border/60 last:border-r-0", calendarView === 'month' ? 'bg-[#1099A1] text-white' : 'text-muted-foreground hover:bg-muted/50')}
                 onClick={() => setCalendarView('month')}
               >
                 Monthly
@@ -370,11 +370,11 @@ export function TutorCalendar() {
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-[#1099A1] hover:bg-[#0e8a91] text-white"
+                  className="h-9 flex items-center gap-2 bg-[#1099A1] hover:bg-[#0e8a91] text-white rounded-none font-bold"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />
-                  <span className="text-[13px] font-medium hidden sm:inline">Set Availability</span>
+                  <span className="text-[13px] hidden sm:inline">Set Availability</span>
                 </Button>
               </div>
             </div>
