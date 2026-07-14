@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import {
-  Search, Users, Loader2, MessageSquare, Mail, GraduationCap, Clock,
-  ExternalLink, User,
+  Search, Users, Loader2, Mail, GraduationCap, Clock,
+  ExternalLink, User
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,8 @@ import {
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
+import { ChatPane } from "@/components/chat/ChatPane";
+import { mockConversations, type Conversation } from "@/mock/chatData";
 
 function fmtDate(d?: string | null) {
   if (!d) return "-";
@@ -133,21 +135,23 @@ export function TutorStudents() {
         ) : !detail ? (
           <div className="h-full flex justify-center items-center py-16"><Loader2 className="animate-spin text-primary" /></div>
         ) : (
-          <StudentDetailView detail={detail} onMessage={() => navigate(`/tutor/messages?to=${activeId}`)} />
+          <StudentDetailView detail={detail} />
         )}
       </section>
     </div>
   );
 }
 
-function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMessage: () => void }) {
+function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const p = detail.profile;
   const { sessions, submissions } = detail;
   const completed = sessions.filter((s) => s.status === "completed").length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
 
-  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages">("overview");
+  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
+  const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || conversations[0];
 
   // Sessions per subject (with completion).
   const bySubject = useMemo(() => {
@@ -164,12 +168,20 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
   if (!p) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
   return (
-    <div className="pb-10">
+    <div className={cn("flex flex-col h-full", activeTab !== 'messages' && "pb-10")}>
       {/* Massive Integrated Header with Inline Stats */}
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
+        {/* Subtle Background Texture/Graph */}
+        <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+          <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+          <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+          <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+          <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+          <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
-            {/* <img src={p.avatar_url || dicebearUrl(p.full_name)} alt={p.full_name} className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-sm bg-white shrink-0" /> */}
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{p.full_name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
@@ -179,29 +191,26 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0">
-            <div className="flex items-center gap-5 xl:gap-8 overflow-x-auto w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
+            <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
               <MinimalStat label="Sessions" value={sessions.length} />
               <MinimalStat label="Completed" value={completed} />
               <MinimalStat label="Upcoming" value={upcoming} />
               <MinimalStat label="Submissions" value={`${reviewed}/${submissions.length}`} />
             </div>
-
-            <button onClick={onMessage} className="shrink-0 flex items-center gap-2 bg-black/10 hover:bg-black/20 text-white px-4 py-2 rounded-lg transition-colors font-medium text-[13px]">
-              <MessageSquare size={16} /> Message
-            </button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+        <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
+          <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto">
+      <div className={cn("mx-auto w-full flex flex-col", activeTab === 'messages' ? "flex-1 -mx-4 md:-mx-8 -mb-4 md:-mb-8 w-auto mt-[-32px]" : "max-w-4xl")}>
         {activeTab === "overview" && (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* By subject */}
@@ -283,6 +292,16 @@ function StudentDetailView({ detail, onMessage }: { detail: StudentDetail; onMes
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "messages" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex-1 flex flex-col min-h-[600px] bg-white dark:bg-[#111b21]">
+            <ChatPane
+              activeConv={activeConv}
+              setConversations={setConversations}
+              showHeader={false}
+            />
           </div>
         )}
       </div>
