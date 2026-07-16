@@ -6,30 +6,25 @@ import { Plus, BookOpen, ExternalLink, CalendarClock, School } from "lucide-reac
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourses, fetchCourseWork } from "@/services/classroomService";
-
-const GoogleClassroomIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-    <path fill="#FFC107" d="M43.611,20.083H42V14c0-2.211-1.789-4-4-4H10c-2.211,0-4,1.789-4,4v6H4.389C2.422,20.083,1,21.505,1,23.472v12.139 c0,1.967,1.422,3.389,3.389,3.389H43.61c1.967,0,3.389-1.422,3.389-3.389V23.472C47,21.505,45.578,20.083,43.611,20.083z"/>
-    <path fill="#4CAF50" d="M38,10H10c-2.211,0-4,1.789-4,4v25c0,2.211,1.789,4,4,4h28c2.211,0,4-1.789,4-4V14 C42,11.789,40.211,10,38,10z"/>
-    <path fill="#FFF" d="M24,29c2.761,0,5-2.239,5-5s-2.239-5-5-5s-5,2.239-5,5S21.239,29,24,29z M24,32c-4.418,0-8,3.134-8,7h16 C32,35.134,28.418,32,24,32z M13,26c1.657,0,3-1.343,3-3s-1.343-3-3-3s-3,1.343-3-3S11.343,26,13,26z M35,26c1.657,0,3-1.343,3-3 s-1.343-3-3-3s-3,1.343-3,3S33.343,26,35,26z M10,36c0-2.761,2.239-5-5-5h1.222C15.176,31.764,14,33.256,14,35v1H9.197 C9.582,36,10,36,10,36z M34,36c0-2.761-2.239-5-5-5h-1.222c1.046,0.764,2.222,2.256,2.222,4v1h4.803C34.418,36,34,36,34,36z"/>
-  </svg>
-);
+import { GoogleClassroom } from "@/components/icons/GoogleClassroom";
 
 function formatDue(dueDate: any, dueTime: any) {
   if (!dueDate) return "No due date";
   const { year, month, day } = dueDate;
-  const d = new Date(year, month - 1, day);
-  let str = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  if (dueTime && dueTime.hours !== undefined) {
-    const min = String(dueTime.minutes || 0).padStart(2, '0');
-    str += ` at ${dueTime.hours}:${min}`;
+  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  
+  if (dueTime) {
+    const { hours = 0, minutes = 0 } = dueTime;
+    return new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`).toLocaleString(undefined, {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    });
   }
-  return str;
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export function TutorAssignments() {
   const navigate = useNavigate();
-  const [token, setToken] = useState<string | null>(localStorage.getItem('google_access_token'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -38,13 +33,13 @@ export function TutorAssignments() {
   // Authenticate with Google (Auth Code Flow for Refresh Token)
   const login = useGoogleLogin({
     flow: 'auth-code',
-    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students',
+    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/classroom.rosters.readonly',
     onSuccess: async ({ code }) => {
       try {
         setLoading(true);
         const data = await exchangeGoogleToken(code);
         setToken(data.access_token);
-        localStorage.setItem('google_access_token', data.access_token);
+        localStorage.setItem('google_classroom_token', data.access_token);
         toast.success("Successfully connected to Google Classroom");
         loadCourses(data.access_token);
       } catch (err: any) {
@@ -66,7 +61,7 @@ export function TutorAssignments() {
     } catch (err) {
       toast.error("Failed to load courses. Please reconnect.");
       setToken(null);
-      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('google_classroom_token');
     } finally {
       setLoading(false);
     }
@@ -99,17 +94,38 @@ export function TutorAssignments() {
   if (!token) {
     return (
       <PageWrapper>
-        <div className="flex-1 min-h-[calc(100vh-80px)] bg-background dark:bg-[#111b21] flex flex-col items-center justify-center p-6">
-          <div className="w-20 h-20 rounded-full bg-white dark:bg-[#182329] shadow-sm flex items-center justify-center mb-6">
-            <GoogleClassroomIcon className="w-12 h-12" />
+        <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
+          {/* Massive Integrated Header */}
+          <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
+            <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+              <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+              <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+              <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+              <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+              <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+            </svg>
+
+            <div className="max-w-[1440px] mx-auto relative z-10">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight mb-2">Assignments</h1>
+                  <p className="text-white/80 text-[15px]">Powered by Google Classroom</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Connect Google Classroom</h2>
-          <p className="text-muted-foreground text-center max-w-md mb-8">
-            Manage your assignments, grades, and student submissions directly through Google Classroom without leaving Yakal.
-          </p>
-          <Button onClick={() => login()} size="lg" className="bg-[#1099A1] hover:bg-[#0d848b] text-white">
-            Connect Classroom
-          </Button>
+
+          {/* Connect Content */}
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
+            <GoogleClassroom className="w-16 h-16 mb-6" />
+            <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Connect Google Classroom</h2>
+            <p className="text-muted-foreground text-center max-w-md mb-8">
+              Manage your assignments, grades, and student submissions directly through Google Classroom without leaving Yakal.
+            </p>
+            <Button onClick={() => login()} size="lg" className="bg-[#1099A1] hover:bg-[#0d848b] text-white">
+              Connect Classroom
+            </Button>
+          </div>
         </div>
       </PageWrapper>
     );
