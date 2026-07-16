@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { Search, User, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTutorSessionsFull, completeSession, saveSessionNotes, SessionRow,
 } from "@/services/tutorService";
@@ -25,10 +26,9 @@ function formatDate(d?: string) {
 
 export function TutorSessions() {
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
@@ -38,14 +38,11 @@ export function TutorSessions() {
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
-  const load = async () => {
-    if (!user) return;
-    setLoading(true);
-    setSessions(await getTutorSessionsFull(user.id));
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, [user]);
+  const { data: sessions = [], isLoading: loading } = useQuery({
+    queryKey: ['tutor-sessions', user?.id],
+    queryFn: () => getTutorSessionsFull(user!.id),
+    enabled: !!user?.id,
+  });
 
   const join = (s: SessionRow) => {
     const link = s.zoom_link || profile?.zoom_link;
@@ -60,7 +57,7 @@ export function TutorSessions() {
     if (ok) {
       toast.success("Notes saved.");
       setEditingNotesId(null);
-      load();
+      queryClient.invalidateQueries({ queryKey: ['tutor-sessions', user?.id] });
     } else {
       toast.error("Something went wrong.");
     }
@@ -264,7 +261,7 @@ export function TutorSessions() {
         <NotesModal
           session={notesFor}
           onClose={() => setNotesFor(null)}
-          onSaved={() => { setNotesFor(null); load(); }}
+          onSaved={() => { setNotesFor(null); queryClient.invalidateQueries({ queryKey: ['tutor-sessions', user?.id] }); }}
         />
       )}
     </div>

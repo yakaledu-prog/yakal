@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
@@ -10,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { supabase } from "@/lib/supabase";
 import {
-  getTutorStudents, getStudentDetail, TutorStudent, StudentDetail,
+  getTutorStudents, getStudentDetail, StudentDetail,
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
@@ -32,31 +33,31 @@ export function TutorStudents() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
-  const [students, setStudents] = useState<TutorStudent[]>([]);
-  const [loading, setLoading] = useState(true);
+  
   const [query, setQuery] = useState("");
-  const [detail, setDetail] = useState<StudentDetail | null>(null);
   const [accepting, setAccepting] = useState(profile?.accepting_students !== false);
-
-  const activeId = id ?? students[0]?.id;
-  useSetBreadcrumb(activeId, detail?.profile?.full_name);
 
   useEffect(() => setAccepting(profile?.accepting_students !== false), [profile?.accepting_students]);
 
-  useEffect(() => {
-    if (!user) return;
-    getTutorStudents(user.id).then((s) => { setStudents(s); setLoading(false); });
-  }, [user]);
+  const { data: students = [], isLoading: loading } = useQuery({
+    queryKey: ['tutor-students', user?.id],
+    queryFn: () => getTutorStudents(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const activeId = id ?? students[0]?.id;
+
+  const { data: detail, isLoading: detailLoading } = useQuery({
+    queryKey: ['tutor-student-detail', user?.id, activeId],
+    queryFn: () => getStudentDetail(user!.id, activeId),
+    enabled: !!user?.id && !!activeId,
+  });
+
+  useSetBreadcrumb(activeId, detail?.profile?.full_name);
 
   useEffect(() => {
     if (!id && students.length > 0) navigate(`/tutor/students/${students[0].id}`, { replace: true });
   }, [id, students, navigate]);
-
-  useEffect(() => {
-    if (!user || !activeId) return;
-    setDetail(null);
-    getStudentDetail(user.id, activeId).then(setDetail);
-  }, [user, activeId]);
 
   const toggleAccepting = async () => {
     if (!user) return;
@@ -137,8 +138,10 @@ export function TutorStudents() {
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No students yet</h3>
             <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Students appear here once they book a session with you.</p>
           </div>
-        ) : !detail ? (
+        ) : detailLoading ? (
           <div className="h-full flex justify-center items-center py-16"><Loader2 className="animate-spin text-primary" /></div>
+        ) : !detail ? (
+          <div className="p-8 text-center text-muted-foreground">Student not found.</div>
         ) : (
           <StudentDetailView detail={detail} />
         )}

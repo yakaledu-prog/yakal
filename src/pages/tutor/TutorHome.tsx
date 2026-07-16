@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Video, Clock, CalendarDays, Wallet, Settings, Activity, MessagesSquareIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTutorDashboard, TutorDashboard, SessionRow } from "@/services/tutorService";
+import { useQuery } from "@tanstack/react-query";
+import { getTutorDashboard, SessionRow } from "@/services/tutorService";
 import { format } from "date-fns";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -33,14 +33,13 @@ export function TutorHome() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  const [data, setData] = useState<TutorDashboard | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ['tutor-dashboard', profile?.id],
+    queryFn: () => getTutorDashboard(profile!.id),
+    enabled: !!profile?.id,
+  });
 
-  useEffect(() => {
-    if (!profile?.id) return;
-    getTutorDashboard(profile.id).then(setData);
-  }, [profile?.id]);
-
-  if (!data) {
+  if (isLoading || !data) {
     return (
       <PageWrapper>
         <div className="p-8 space-y-6">

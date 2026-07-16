@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import {
   BookOpen, Users, Clock, Loader2, CalendarClock, Search, Calendar,
@@ -15,8 +16,6 @@ import { ChatPane } from "@/components/chat/ChatPane";
 import { mockConversations } from "@/mock/chatData";
 
 
-interface CourseLite { id: string; title: string; subject: string; thumbnail_url: string | null }
-
 function fmtDate(d?: string | null) {
   if (!d) return "-";
   return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -31,32 +30,33 @@ export function TutorCourses() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [courses, setCourses] = useState<CourseLite[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  const [ws, setWs] = useState<CourseWorkspace | null>(null);
-
+  
   const [query, setQuery] = useState("");
 
-  const activeId = id ?? courses[0]?.id;
-  useSetBreadcrumb(activeId, ws?.course?.title);
+  const { data: rawCourses, isLoading: loadingCourses } = useQuery({
+    queryKey: ['tutor-courses', user?.id],
+    queryFn: () => getTutorCourses(user!.id),
+    enabled: !!user,
+  });
 
-  useEffect(() => {
-    if (!user) return;
-    getTutorCourses(user.id).then((c) => {
-      setCourses(c.map((x: any) => ({ id: x.id, title: x.title, subject: x.subject, thumbnail_url: x.thumbnail_url })));
-      setLoadingCourses(false);
-    });
-  }, [user]);
+  const courses = useMemo(() => {
+    if (!rawCourses) return [];
+    return rawCourses.map((x: any) => ({ id: x.id, title: x.title, subject: x.subject, thumbnail_url: x.thumbnail_url }));
+  }, [rawCourses]);
+
+  const activeId = id ?? courses[0]?.id;
+
+  const { data: ws, isLoading: loadingWs } = useQuery({
+    queryKey: ['tutor-course-workspace', activeId, user?.id],
+    queryFn: () => getCourseWorkspace(activeId, user!.id),
+    enabled: !!user && !!activeId,
+  });
+
+  useSetBreadcrumb(activeId, ws?.course?.title);
 
   useEffect(() => {
     if (!id && courses.length > 0) navigate(`/tutor/courses/${courses[0].id}`, { replace: true });
   }, [id, courses, navigate]);
-
-  useEffect(() => {
-    if (!user || !activeId) return;
-    setWs(null);
-    getCourseWorkspace(activeId, user.id).then(setWs);
-  }, [user, activeId]);
 
   const filtered = useMemo(
     () => courses.filter((c) => c.title.toLowerCase().includes(query.toLowerCase()) || c.subject.toLowerCase().includes(query.toLowerCase())),
@@ -118,9 +118,9 @@ export function TutorCourses() {
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No courses yet</h3>
             <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">The admin hasn't assigned any courses to you.</p>
           </div>
-        ) : !ws ? (
+        ) : loadingWs ? (
           <div className="h-full flex justify-center items-center py-16"><Loader2 className="animate-spin text-primary" /></div>
-        ) : !ws.course ? (
+        ) : !ws || !ws.course ? (
           <div className="p-8 text-center text-muted-foreground">Course not found.</div>
         ) : (
           <CourseDetail ws={ws} navigate={navigate} />

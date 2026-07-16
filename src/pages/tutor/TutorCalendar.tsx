@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
@@ -6,44 +6,47 @@ import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
 import { getTutorAvailability, saveTutorAvailability } from "@/services/availability";
 import { getTutorSessionsFull } from "@/services/tutorService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { cn } from "@/utils/cn";
 
 const pad = (n: number) => n.toString().padStart(2, '0');
-
-interface CalSession {
-  id: string; subject: string; date: string; startTime: string; duration: number; tutorName: string; status: string;
-}
 
 export function TutorCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('week');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
-  const [availabilityData, setAvailabilityData] = useState<number[][] | undefined>();
-  const [disabledDays, setDisabledDays] = useState<number[]>([]);
-  const [sessions, setSessions] = useState<CalSession[]>([]);
 
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!user) return;
-    getTutorAvailability(user.id).then((data) => {
-      if (data) {
-        setAvailabilityData(data.time_grid);
-        setDisabledDays(data.disabled_days);
-      }
-    });
-    getTutorSessionsFull(user.id).then((rows) =>
-      setSessions(rows.map((s) => ({
-        id: s.id,
-        subject: s.subject,
-        date: s.date,
-        startTime: (s.start_time || "").slice(0, 5),
-        duration: s.duration_minutes,
-        tutorName: s.student_name || "Student",
-        status: s.status,
-      })))
-    );
-  }, [user]);
+  const { data: availabilityInfo } = useQuery({
+    queryKey: ['tutor-availability', user?.id],
+    queryFn: () => getTutorAvailability(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const availabilityData = availabilityInfo?.time_grid;
+  const disabledDays = availabilityInfo?.disabled_days || [];
+
+  const { data: rawSessions } = useQuery({
+    queryKey: ['tutor-sessions', user?.id],
+    queryFn: () => getTutorSessionsFull(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const sessions = useMemo(() => {
+    if (!rawSessions) return [];
+    return rawSessions.map((s: any) => ({
+      id: s.id,
+      subject: s.subject,
+      date: s.date,
+      startTime: (s.start_time || "").slice(0, 5),
+      duration: s.duration_minutes,
+      tutorName: s.student_name || "Student",
+      status: s.status,
+    }));
+  }, [rawSessions]);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const month = currentDate.getMonth();
@@ -411,11 +414,10 @@ export function TutorCalendar() {
       <AvailabilityEditor
         isOpen={isAvailabilityOpen}
         onClose={() => setIsAvailabilityOpen(false)}
-        onSave={(data, disabled) => {
-          setAvailabilityData(data);
-          setDisabledDays(disabled);
+        onSave={async (data, disabled) => {
           if (user) {
-            saveTutorAvailability(user.id, data, disabled);
+            await saveTutorAvailability(user.id, data, disabled);
+            queryClient.invalidateQueries({ queryKey: ['tutor-availability', user.id] });
           }
         }}
         initialData={availabilityData}
