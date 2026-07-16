@@ -21,6 +21,15 @@ export const subjects: Subject[] = [
     tagline: "Building confidence one session at a time.",
     details: [
       {
+        title: "Elementary Math",
+        desc: "Building a strong foundation in numbers, basic operations, and early problem-solving skills through engaging, visual learning.",
+        learn: [
+          "Number sense, counting, and place value",
+          "Addition, subtraction, multiplication, and division",
+          "Fractions, decimals, and basic geometry",
+        ]
+      },
+      {
         title: "Algebra",
         desc: "Equations, functions and problem-solving — the backbone that the rest of high-school math is built on.",
         learn: [

@@ -24,7 +24,7 @@ export default function About() {
             <p className="text-[#555] text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] mb-[32px]">
               Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
             </p>
-            <button className="px-[30px] py-[14px] bg-[#111] text-white rounded-[8px] text-[15px] font-medium hover:bg-[#333] transition-colors">
+            <button className="btn-shimmer px-[30px] py-[14px] rounded-[500px] text-[15px] md:text-[16px] text-white font-medium uppercase shadow-lg hover:opacity-90 transition-opacity">
               Learn More About Us
             </button>
           </Reveal>
@@ -60,7 +60,7 @@ export default function About() {
                 <h3 className="text-[22px] font-medium mb-[12px] text-[#111]">{step.title}</h3>
                 <p className="text-[#555] leading-[26px] mb-[20px] max-w-[280px]">{step.desc}</p>
                 {step.hasButton && (
-                  <button className="flex items-center gap-2 text-[#1099A1] font-semibold hover:opacity-80 transition-opacity">
+                  <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer text-white px-[25px] py-[12px] rounded-[500px] text-[14px] md:text-[15px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[6px]">
                     Book Now <ArrowRight size={18} />
                   </button>
                 )}

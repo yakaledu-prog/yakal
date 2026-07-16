@@ -23,7 +23,7 @@ export default function Faq({ scrollTo }: { scrollTo: (id: string) => void }) {
           <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] md:mb-[48px]">
             Get answers to common queries about our tutoring services, scheduling, and learning approach.
           </p>
-          <button onClick={() => scrollTo("contact")} className="md:block hidden bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition">
+          <button onClick={() => scrollTo("contact")} className="md:block hidden btn-shimmer px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity">
             Contact us
           </button>
         </Reveal>
@@ -39,7 +39,7 @@ export default function Faq({ scrollTo }: { scrollTo: (id: string) => void }) {
             />
           ))}
         </div>
-        <button onClick={() => scrollTo("contact")} className="block md:hidden mx-auto mt-4 bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition">
+        <button onClick={() => scrollTo("contact")} className="block md:hidden mx-auto mt-4 btn-shimmer px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity">
           Contact us
         </button>
       </div>

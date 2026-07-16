@@ -136,10 +136,10 @@ export default function ServicesV5() {
 
                     {/* CTAs */}
                     <div className="flex flex-wrap gap-4">
-                      <button className="px-8 py-3.5 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-[8px] text-[15px] font-semibold transition-colors shadow-sm">
+                      <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer px-8 py-3.5 rounded-[500px] text-white text-[15px] font-semibold transition-opacity shadow-sm uppercase hover:opacity-90">
                         {svc.primaryCta}
                       </button>
-                      <button className="px-8 py-3.5 bg-white border border-[#ccc] hover:border-[#aaa] text-[#333] rounded-[8px] text-[15px] font-semibold transition-colors">
+                      <button className="px-8 py-3.5 bg-white border border-[#ccc] hover:border-[#aaa] text-[#333] rounded-[500px] text-[15px] font-semibold transition-colors uppercase">
                         {svc.secondaryCta}
                       </button>
                     </div>

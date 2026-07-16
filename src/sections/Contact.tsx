@@ -87,7 +87,7 @@ export default function Contact() {
               <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Message*</label>
               <textarea name="message" required placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition resize-none"></textarea>
             </div>
-            <button type="submit" className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto block">
+            <button type="submit" className="btn-shimmer px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity mx-auto block">
               Submit Now
             </button>
           </form>
