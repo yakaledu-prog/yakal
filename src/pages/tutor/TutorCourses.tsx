@@ -150,7 +150,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
             <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate mt-1">{course.title}</h1>
+              <h1 className="text-xl md:text-2xl tracking-tight truncate mt-1">{course.title}</h1>
             </div>
           </div>
 
@@ -174,13 +174,13 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
       </div>
 
       <div className={cn("mx-auto flex flex-col w-full", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "")}>
-        
+
         {activeTab === 'overview' && (
           <div className="animate-in fade-in flex flex-col lg:flex-row gap-12 items-start">
             {/* Left Pane: Sessions */}
             <div className="flex-1 w-full space-y-6">
               <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h3 className="text-[16px] font-bold text-foreground">Upcoming Sessions</h3>
+                <h3 className="text-[16px] font-medium text-foreground">Upcoming Sessions</h3>
                 <button className="text-[13px] text-[#1099A1] hover:underline font-medium" onClick={() => setActiveTab('sessions')}>View More</button>
               </div>
               <div className="space-y-0">
@@ -190,15 +190,15 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
                   <div key={s.id} className="flex items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
                     <div className="flex items-center gap-6 min-w-0">
                       <div className="text-center w-12 shrink-0">
-                        <p className="text-[20px] font-bold text-foreground leading-none">{fmtDate(s.date).split(" ")[1]}</p>
+                        <p className="text-[20px] font-medium text-foreground leading-none">{fmtDate(s.date).split(" ")[1]}</p>
                         <p className="text-[12px] font-medium text-muted-foreground mt-1">{fmtDate(s.date).split(" ")[0]}</p>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[15px] font-bold text-foreground truncate">{s.subject}</p>
+                        <p className="text-[15px] font-medium text-foreground truncate">{s.subject}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">{s.student_name}</p>
                       </div>
                     </div>
-                    <span className={cn("px-3 py-1 text-[12px] font-bold rounded-full capitalize shrink-0",
+                    <span className={cn("px-3 py-1 text-[12px] font-medium rounded-full capitalize shrink-0",
                       s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
                         s.status === "cancelled" || s.status === "no-show" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-[#1099A1]/10 text-[#1099A1]")}>
                       {s.status}
@@ -211,7 +211,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
             {/* Right Pane: Assignments */}
             <div className="flex-1 w-full space-y-6">
               <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h3 className="text-[16px] font-bold text-foreground">Assignments</h3>
+                <h3 className="text-[16px] font-medium text-foreground">Assignments</h3>
                 <button className="text-[13px] text-[#1099A1] hover:underline font-medium" onClick={() => setActiveTab('assignments')}>View More</button>
               </div>
               <div className="space-y-0">
@@ -226,7 +226,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
                           <BookOpen size={20} />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-[16px] text-foreground truncate group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
+                          <h3 className="font-medium text-[16px] text-foreground truncate group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
                           <div className="flex items-center gap-4 text-[13px] text-muted-foreground mt-1">
                             <span className="flex items-center gap-1.5"><CalendarClock size={14} /> Due: {a.due_date ? fmtDate(a.due_date) : "No due date"}</span>
                           </div>
@@ -235,7 +235,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
                       <div className="mt-4 sm:mt-0 flex items-center gap-3 shrink-0">
                         <div className="text-right">
                           <p className="text-[13px] font-medium text-foreground">{a.submissionCount} submissions</p>
-                          {pending > 0 && <p className="text-[11px] font-bold text-[#CAA25F] uppercase tracking-wider mt-0.5">{pending} to review</p>}
+                          {pending > 0 && <p className="text-[11px] font-medium text-[#CAA25F] uppercase tracking-wider mt-0.5">{pending} to review</p>}
                         </div>
                       </div>
                     </div>
@@ -247,15 +247,14 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         )}
 
         {activeTab === 'students' && (
-          <div className="animate-in fade-in space-y-4">
-            <h2 className="text-xl font-bold text-[#111] dark:text-white border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Enrolled Students</h2>
+          <div className="animate-in fade-in space-y-4 pt-2">
             {students.length === 0 ? <EmptyMsg text="No students enrolled yet." /> : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {students.map(st => (
                   <div key={st.id} className="flex items-center gap-3 p-4 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-none">
                     <img src={st.avatar_url || dicebearUrl(st.full_name || "S")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                     <div>
-                      <p className="text-[14px] font-bold text-foreground">{st.full_name}</p>
+                      <p className="text-[14px] font-medium text-foreground">{st.full_name}</p>
                     </div>
                   </div>
                 ))}
@@ -263,10 +262,9 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
             )}
           </div>
         )}
-        
+
         {activeTab === 'sessions' && (
-          <div className="animate-in fade-in space-y-4">
-            <h2 className="text-xl font-bold text-[#111] dark:text-white border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Upcoming Sessions</h2>
+          <div className="animate-in fade-in space-y-4 pt-2">
             {sessions.length === 0 ? <EmptyMsg text="No sessions for this course yet." /> :
               <div className="space-y-3">
                 {sessions.map((s) => (
@@ -274,12 +272,12 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
                     <img src={s.student_avatar || dicebearUrl(s.student_name || "S")} alt="" className="w-12 h-12 rounded-none object-cover shrink-0 bg-[#e9edef] dark:bg-[#2a3942]" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-[15px] font-bold text-[#111] dark:text-white">{s.subject}</h3>
+                        <h3 className="text-[15px] font-medium text-[#111] dark:text-white">{s.subject}</h3>
                         <Badge variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
-                          className="rounded-none text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
+                          className="rounded-none text-[10px] font-medium px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                        <span className="font-semibold text-[#111] dark:text-[#e9edef] flex items-center gap-1.5"><Users size={14} className="text-[#1099A1]"/> {s.student_name}</span>
+                        <span className="font-medium text-[#111] dark:text-[#e9edef] flex items-center gap-1.5"><Users size={14} className="text-[#1099A1]" /> {s.student_name}</span>
                         <span className="flex items-center gap-1.5"><Calendar size={14} className="text-[#1099A1]" />{fmtDate(s.date)}</span>
                         <span className="flex items-center gap-1.5"><Clock size={14} className="text-[#1099A1]" />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
                       </div>
@@ -290,10 +288,9 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
             }
           </div>
         )}
-        
+
         {activeTab === 'assignments' && (
-          <div className="animate-in fade-in space-y-4">
-            <h2 className="text-xl font-bold text-[#111] dark:text-white border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Assignments</h2>
+          <div className="animate-in fade-in space-y-4 pt-2">
             {assignments.length === 0 ? <EmptyMsg text="No assignments for this course yet." /> :
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {assignments.map((a) => {
@@ -301,13 +298,13 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
                   return (
                     <button key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`)}
                       className="text-left bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-none p-5 hover:border-[#1099A1] transition-colors group">
-                      <h3 className="text-[16px] font-bold text-[#111] dark:text-white mb-2 group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
+                      <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2 group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
                       {a.description && <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] line-clamp-2 mb-4">{stripHtml(a.description)}</p>}
                       <div className="flex items-center justify-between text-[12px] text-[#54656f] dark:text-[#aebac1] pt-3 border-t border-[#e9edef] dark:border-[#2a3942]">
                         <span className="flex items-center gap-1.5 font-medium"><CalendarClock size={14} className="text-[#1099A1]" /> {a.due_date ? new Date(a.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No due date"}</span>
                         <div className="flex items-center gap-3">
                           <span>{a.submissionCount} submissions</span>
-                          {pending > 0 && <span className="text-[#CAA25F] font-bold uppercase tracking-wider">{pending} to review</span>}
+                          {pending > 0 && <span className="text-[#CAA25F] font-medium uppercase tracking-wider">{pending} to review</span>}
                         </div>
                       </div>
                     </button>
@@ -319,8 +316,8 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         )}
 
         {activeTab === 'messages' && (
-          <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col rounded-t-2xl md:rounded-tl-2xl overflow-hidden shadow-sm border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
-             <CourseMessagesTab conversations={conversations} setConversations={setConversations} />
+          <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col overflow-hidden border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
+            <CourseMessagesTab conversations={conversations} setConversations={setConversations} />
           </div>
         )}
       </div>
@@ -355,12 +352,12 @@ function CourseMessagesTab({ conversations, setConversations }: { conversations:
         </div>
         <div className="flex-1 overflow-y-auto">
           {filtered.map(conv => (
-            <div 
-              key={conv.id} 
+            <div
+              key={conv.id}
               onClick={() => setActiveConvId(conv.id)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-l-2",
-                activeConvId === conv.id ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b-2",
+                activeConvId === conv.id ? "bg-primary/5 border-b-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
               )}
             >
               <img src={conv.contact.avatar || dicebearUrl(conv.contact.name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
@@ -385,12 +382,12 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={cn(
-        "pb-3 px-1 text-[13px] font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap",
+        "pb-3 px-1 text-[12.5px] font-normal uppercase tracking-wider transition-colors relative whitespace-nowrap",
         active ? "text-white" : "text-white/60 hover:text-white"
       )}
     >
       {label}
-      {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />}
+      {active && <div className="absolute bottom-0 left-0 right-0 h-0.25 bg-white rounded-t-full" />}
     </button>
   );
 }
@@ -398,8 +395,8 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
 function MinimalStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="flex flex-col items-center">
-      <p className="text-white/70 text-[11px] font-bold uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-2xl font-medium">{value}</p>
     </div>
   );
 }
