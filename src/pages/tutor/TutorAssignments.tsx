@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, BookOpen, ExternalLink, CalendarClock, School } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -25,10 +27,7 @@ function formatDue(dueDate: any, dueTime: any) {
 export function TutorAssignments() {
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
-  const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
 
   // Authenticate with Google (Auth Code Flow for Refresh Token)
   const login = useGoogleLogin({
@@ -36,60 +35,50 @@ export function TutorAssignments() {
     scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/classroom.rosters.readonly',
     onSuccess: async ({ code }) => {
       try {
-        setLoading(true);
         const data = await exchangeGoogleToken(code);
         setToken(data.access_token);
         localStorage.setItem('google_classroom_token', data.access_token);
         toast.success("Successfully connected to Google Classroom");
-        loadCourses(data.access_token);
       } catch (err: any) {
         toast.error(err.message || "Failed to connect to Google");
-        setLoading(false);
       }
     },
     onError: () => toast.error('Google login failed'),
   });
 
-  const loadCourses = async (tkn: string) => {
-    try {
-      setLoading(true);
-      const data = await fetchCourses(tkn);
-      setCourses(data.courses || []);
-      if (data.courses && data.courses.length > 0) {
-        setSelectedCourse(data.courses[0]);
+  const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ['classroom-courses', token],
+    queryFn: async () => {
+      try {
+        return await fetchCourses(token!);
+      } catch (err) {
+        toast.error("Failed to load courses. Please reconnect.");
+        setToken(null);
+        localStorage.removeItem('google_classroom_token');
+        throw err;
       }
-    } catch (err) {
-      toast.error("Failed to load courses. Please reconnect.");
-      setToken(null);
-      localStorage.removeItem('google_classroom_token');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    enabled: !!token,
+    retry: false,
+  });
 
-  const loadCourseWork = async (tkn: string, courseId: string) => {
-    try {
-      setLoading(true);
-      const data = await fetchCourseWork(tkn, courseId);
-      setAssignments(data.courseWork || []);
-    } catch (err) {
-      toast.error("Failed to load assignments.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const courses = coursesData?.courses || [];
 
   useEffect(() => {
-    if (token && courses.length === 0) {
-      loadCourses(token);
+    if (courses.length > 0 && !selectedCourse) {
+      setSelectedCourse(courses[0]);
     }
-  }, [token]);
+  }, [courses, selectedCourse]);
 
-  useEffect(() => {
-    if (token && selectedCourse) {
-      loadCourseWork(token, selectedCourse.id);
-    }
-  }, [selectedCourse, token]);
+  const { data: assignmentsData, isLoading: isLoadingCourseWork } = useQuery({
+    queryKey: ['classroom-coursework', token, selectedCourse?.id],
+    queryFn: () => fetchCourseWork(token!, selectedCourse!.id),
+    enabled: !!token && !!selectedCourse?.id,
+    retry: false,
+  });
+
+  const assignments = assignmentsData?.courseWork || [];
+  const loading = isLoadingCourses || isLoadingCourseWork;
 
   if (!token) {
     return (
@@ -155,7 +144,7 @@ export function TutorAssignments() {
 
             {/* Course Tabs */}
             <div className="flex items-center gap-6 overflow-x-auto no-scrollbar border-b border-white/20">
-              {courses.map((course) => (
+              {courses.map((course: any) => (
                 <button
                   key={course.id}
                   onClick={() => setSelectedCourse(course)}
@@ -194,12 +183,16 @@ export function TutorAssignments() {
           ) : (
             <>
               {loading ? (
-                <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+                <div className="space-y-4 py-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-[88px] w-full rounded-lg" />
+                  ))}
+                </div>
               ) : assignments.length === 0 ? (
                 <p className="text-center text-[14px] text-muted-foreground py-12">No assignments found for this class.</p>
               ) : (
                 <div className="space-y-0">
-                  {assignments.map((a) => (
+                  {assignments.map((a: any) => (
                     <div key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`, { state: { courseId: selectedCourse?.id } })} className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-pointer group">
                       <div className="flex items-start sm:items-center gap-6 min-w-0">
                         <div className="hidden sm:flex shrink-0 w-12 h-12 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
