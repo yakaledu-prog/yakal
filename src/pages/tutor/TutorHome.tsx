@@ -200,7 +200,7 @@ function TooltipButton({ icon, label, onClick }: { icon: React.ReactNode, label:
 
 function IntegratedStat({ label, value, alert }: { label: string; value: string | number; alert?: boolean }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col items-center text-center">
       <div className="flex items-center gap-2 mb-1">
         <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
         {alert && <div className="w-2 h-2 rounded-full bg-[#CAA25F]" title="Requires Attention" />}
