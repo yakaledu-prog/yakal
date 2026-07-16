@@ -356,21 +356,21 @@ export function TutorCalendar() {
 
             {/* Controls Row inside header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/10">
+              <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('day')}
                 >
                   Daily
                 </button>
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('week')}
                 >
                   Weekly
                 </button>
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('month')}
                 >
                   Monthly
