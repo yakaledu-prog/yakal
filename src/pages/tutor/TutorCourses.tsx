@@ -132,11 +132,11 @@ export function TutorCourses() {
 
 function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: string) => void }) {
   const { course, students, sessions, assignments } = ws;
-  const [activeTab, setActiveTab] = useState<"overview" | "students" | "sessions" | "assignments" | "messages">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "students">("overview");
   const [conversations, setConversations] = useState(mockConversations);
 
   return (
-    <div className={cn("flex flex-col h-full", activeTab !== 'messages' && "pb-10")}>
+    <div className={cn("flex flex-col h-full", activeTab !== 'students' && "pb-10")}>
       {/* Massive Integrated Header */}
       <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
@@ -169,11 +169,10 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
           <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} label="Students" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
-          <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
         </div>
       </div>
 
-      <div className={cn("mx-auto flex flex-col w-full", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "")}>
+      <div className={cn("mx-auto flex flex-col w-full", activeTab === 'students' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "")}>
 
         {activeTab === 'overview' && (
           <div className="animate-in fade-in flex flex-col lg:flex-row gap-12 items-start">
@@ -246,24 +245,6 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
           </div>
         )}
 
-        {activeTab === 'students' && (
-          <div className="animate-in fade-in space-y-4 pt-2">
-            {students.length === 0 ? <EmptyMsg text="No students enrolled yet." /> : (
-              <div className="space-y-0">
-                {students.map(st => (
-                  <div key={st.id} className="flex items-center gap-4 bg-transparent border-b border-[#e9edef] dark:border-[#2a3942] py-4 last:border-0 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4">
-                    <img src={st.avatar_url || dicebearUrl(st.full_name || "S")} alt="" className="w-12 h-12 rounded-none object-cover shrink-0 bg-[#e9edef] dark:bg-[#2a3942]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-medium text-[#111] dark:text-white">{st.full_name}</p>
-                      <p className="text-[13px] text-muted-foreground mt-0.5">Enrolled Student</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {activeTab === 'sessions' && (
           <div className="animate-in fade-in space-y-4 pt-2">
             {sessions.length === 0 ? <EmptyMsg text="No sessions for this course yet." /> :
@@ -316,7 +297,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
           </div>
         )}
 
-        {activeTab === 'messages' && (
+        {activeTab === 'students' && (
           <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col overflow-hidden border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
             <CourseMessagesTab conversations={conversations} setConversations={setConversations} />
           </div>
