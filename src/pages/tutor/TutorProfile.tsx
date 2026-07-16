@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import {
   Edit2, Mail, Phone, Link2, Calendar, CheckCircle, Users, LogOut,
-  Camera, Moon, Sun, X, Loader2, Check,
+  Camera, X, Loader2, Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -35,11 +35,6 @@ export function TutorProfile() {
   }, [user]);
 
   const recent = sessions.slice(0, 6);
-
-  const toggleTheme = async () => {
-    const isDark = document.documentElement.classList.toggle("dark");
-    if (user?.id) await supabase.from("profiles").update({ theme: isDark ? "dark" : "light" }).eq("id", user.id);
-  };
 
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,7 +76,7 @@ export function TutorProfile() {
               <div className="flex items-center gap-6">
                 <div className="relative group shrink-0">
                   <div className="w-24 h-24 rounded-full overflow-hidden border border-white/20">
-                    <img src={avatarSrc} alt={profile?.full_name || "Tutor"} className="w-full h-full object-cover" />
+                    <img src={avatarSrc} alt={profile?.full_name || "Tutor"} className="w-full h-full" />
                   </div>
                   <button onClick={() => fileRef.current?.click()} className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploading ? <Loader2 className="text-white animate-spin" size={22} /> : <Camera className="text-white" size={24} />}
@@ -94,9 +89,12 @@ export function TutorProfile() {
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
                 </div>
               </div>
-              <div className="shrink-0">
-                 <button onClick={() => setEditOpen(true)} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+              <div className="shrink-0 flex flex-col gap-3">
+                 <button onClick={() => setEditOpen(true)} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                    <Edit2 size={16} /> Edit Profile
+                 </button>
+                 <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                   <LogOut size={16} /> Log Out
                  </button>
               </div>
             </div>
@@ -105,15 +103,15 @@ export function TutorProfile() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-white/20 pb-6">
               <div className="flex flex-col items-start">
                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
-                 <p className="text-3xl font-bold">{new Set(sessions.map((s) => s.student_id)).size}</p>
+                 <p className="text-3xl font-bold w-full text-center">{new Set(sessions.map((s) => s.student_id)).size}</p>
               </div>
               <div className="flex flex-col items-start">
                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><CheckCircle size={14} /> Completed Sessions</p>
-                 <p className="text-3xl font-bold">{sessions.filter((s) => s.status === "completed").length}</p>
+                 <p className="text-3xl font-bold w-full text-center">{sessions.filter((s) => s.status === "completed").length}</p>
               </div>
               <div className="flex flex-col items-start">
                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
-                 <p className="text-3xl font-bold">{courseCount}</p>
+                 <p className="text-3xl font-bold w-full text-center">{courseCount}</p>
               </div>
             </div>
           </div>
@@ -135,35 +133,6 @@ export function TutorProfile() {
                   value={profile?.hourly_rate != null ? `${profile.hourly_rate} ${profile.rate_currency || "ETB"}` : "Not set"}
                 />
                 
-                <div className="flex items-start gap-4 pt-2">
-                  <div className="p-2 bg-muted/30 rounded-lg shrink-0"><Sun size={18} className="text-muted-foreground block dark:hidden" /><Moon size={18} className="text-muted-foreground hidden dark:block" /></div>
-                  <div className="flex-1">
-                    <p className="text-[12px] text-muted-foreground font-medium mb-0.5">Theme</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[14px] font-semibold text-foreground capitalize">{document.documentElement.classList.contains("dark") ? "Dark" : "Light"} Mode</p>
-                      <button onClick={toggleTheme} className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground">
-                        <Moon size={16} className="hidden dark:block" /><Sun size={16} className="block dark:hidden" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {profile?.subjects && profile.subjects.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-[12px] text-muted-foreground font-medium mb-2">Subjects</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {profile.subjects.map((s) => (
-                        <span key={s} className="text-[11px] font-medium bg-[#1099A1]/10 text-[#1099A1] px-2 py-1 rounded-full">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="pt-6">
-                  <button onClick={() => signOut()} className="flex items-center gap-2 text-[14px] text-red-500 hover:text-red-600 font-semibold transition-colors">
-                    <LogOut size={16} /> Log Out
-                  </button>
-                </div>
               </div>
             </div>
 
