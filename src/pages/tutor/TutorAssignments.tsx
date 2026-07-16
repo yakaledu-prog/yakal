@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { TipTapEditor } from "@/components/ui/TipTapEditor";
-import { Plus, BookOpen, ExternalLink, CalendarClock, School, Link2, Youtube, X } from "lucide-react";
+import { Plus, BookOpen, ExternalLink, CalendarClock, School } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleLogin } from "@react-oauth/google";
-import { exchangeGoogleToken, fetchCourses, fetchCourseWork, createCourseWork } from "@/services/classroomService";
+import { exchangeGoogleToken, fetchCourses, fetchCourseWork } from "@/services/classroomService";
 
 const GoogleClassroomIcon = ({ className }: { className?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -35,18 +34,6 @@ export function TutorAssignments() {
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newPoints, setNewPoints] = useState("");
-  const [newDueDate, setNewDueDate] = useState("");
-  const [newDueTime, setNewDueTime] = useState("");
-  const [materials, setMaterials] = useState<any[]>([]);
-
-  // Modal State for Attach Link
-  const [showAttachModal, setShowAttachModal] = useState(false);
-  const [attachUrl, setAttachUrl] = useState("");
 
   // Authenticate with Google (Auth Code Flow for Refresh Token)
   const login = useGoogleLogin({
@@ -97,85 +84,6 @@ export function TutorAssignments() {
     }
   };
 
-  const handleAttachConfirm = () => {
-    if (attachUrl.trim()) {
-      if (attachUrl.includes("youtube.com") || attachUrl.includes("youtu.be")) {
-        setMaterials([...materials, { youtubeVideo: { alternateLink: attachUrl.trim() } }]);
-      } else {
-        setMaterials([...materials, { link: { url: attachUrl.trim() } }]);
-      }
-      setAttachUrl("");
-      setShowAttachModal(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!newTitle.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    if (!token || !selectedCourse) return;
-
-    try {
-      setLoading(true);
-      
-      // Google Classroom expects plain text for description, not HTML
-      // Preserve newlines and bullets before extracting text
-      let htmlDesc = newDesc;
-      htmlDesc = htmlDesc.replace(/<\/p>/gi, '\n\n');
-      htmlDesc = htmlDesc.replace(/<br\s*\/?>/gi, '\n');
-      htmlDesc = htmlDesc.replace(/<\/li>/gi, '\n');
-      htmlDesc = htmlDesc.replace(/<li>/gi, '• ');
-      
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = htmlDesc;
-      const plainDesc = (tempDiv.textContent || tempDiv.innerText || "").trim();
-
-      const payload: any = {
-        title: newTitle,
-        description: plainDesc,
-        workType: "ASSIGNMENT",
-        state: "PUBLISHED"
-      };
-
-      if (newPoints && !isNaN(Number(newPoints))) {
-        payload.maxPoints = Number(newPoints);
-      }
-
-      if (newDueDate) {
-        const [year, month, day] = newDueDate.split("-").map(Number);
-        payload.dueDate = { year, month, day };
-
-        if (newDueTime) {
-          const [hours, minutes] = newDueTime.split(":").map(Number);
-          payload.dueTime = { hours, minutes };
-        }
-      }
-
-      if (materials.length > 0) {
-        // Safely map all attachments to standard links to prevent API validation errors
-        payload.materials = materials.map((m) => ({
-          link: { url: m.youtubeVideo?.alternateLink || m.link?.url }
-        }));
-      }
-
-      await createCourseWork(token, selectedCourse.id, payload);
-      toast.success("Assignment published to Google Classroom!");
-      setShowForm(false);
-      setNewTitle("");
-      setNewDesc("");
-      setNewPoints("");
-      setNewDueDate("");
-      setNewDueTime("");
-      setMaterials([]);
-      loadCourseWork(token, selectedCourse.id);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create assignment");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (token && courses.length === 0) {
       loadCourses(token);
@@ -211,8 +119,17 @@ export function TutorAssignments() {
     <PageWrapper>
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 md:pb-0">
-          <div className="max-w-[1440px] mx-auto">
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
+          {/* Subtle Background Texture/Graph */}
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="max-w-[1440px] mx-auto relative z-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight mb-2">Assignments</h1>
@@ -225,7 +142,7 @@ export function TutorAssignments() {
               {courses.map((course) => (
                 <button
                   key={course.id}
-                  onClick={() => { setSelectedCourse(course); setShowForm(false); }}
+                  onClick={() => setSelectedCourse(course)}
                   className={`pb-4 px-1 text-[15px] font-medium whitespace-nowrap transition-colors relative ${selectedCourse?.id === course.id ? "text-white" : "text-white/60 hover:text-white/80"
                     }`}
                 >
@@ -260,129 +177,7 @@ export function TutorAssignments() {
             </div>
           ) : (
             <>
-              {!showForm && selectedCourse && (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="w-full mb-6 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] p-5 text-left hover:border-[#1099A1]/50 hover:bg-[#1099A1]/[0.02] transition-colors group"
-                >
-                  <div className="h-11 w-11 rounded-xl bg-[#f0f1f2] group-hover:bg-[#1099A1]/10 text-[#2a3942]/70  group-hover:text-[#1099A1] flex items-center justify-center shrink-0 transition-colors">
-                    <Plus size={22} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-[15px] text-foreground group-hover:text-[#1099A1] transition-colors">Create New Assignment</p>
-                    <p className="text-[13px] text-muted-foreground">Publish a new assignment to {selectedCourse.name} on Google Classroom.</p>
-                  </div>
-                </button>
-              )}
-
-              {showForm && selectedCourse && (
-                <div className="mb-10 animate-in slide-in-from-top-4 fade-in duration-300 ease-out">
-                  <div className="bg-white dark:bg-[#182329] rounded-2xl border border-[#e0e0e0] dark:border-border/30 shadow-sm overflow-hidden flex flex-col">
-                    {/* Top Header Actions */}
-                    <div className="flex items-center justify-between p-4 px-6 border-b border-[#e0e0e0] dark:border-border/30 bg-[#f8f9fa] dark:bg-[#111b21]/50">
-                      <Button variant="ghost" onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
-                        Cancel
-                      </Button>
-                      <Button onClick={handleCreate} disabled={loading || !newTitle.trim()} className="bg-[#1099A1] hover:bg-[#0d848b] text-white">
-                        Publish Assignment
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-col xl:flex-row divide-y xl:divide-y-0 xl:divide-x divide-[#e0e0e0] dark:divide-border/30">
-                      {/* Left: Main Content Area */}
-                      <div className="flex-1 p-6 md:p-8 space-y-8">
-                        <div>
-                          <input
-                            type="text"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            className="w-full bg-transparent text-xl font-semibold text-foreground placeholder-muted-foreground focus:outline-none mb-4"
-                            placeholder="Title *"
-                          />
-                          <div className="min-h-[160px] flex flex-col border border-[#e0e0e0] dark:border-border/30 rounded-lg overflow-hidden">
-                            <TipTapEditor value={newDesc} onChange={setNewDesc} onAttachClick={() => setShowAttachModal(true)} />
-                          </div>
-                          
-                          {/* Attachments Section */}
-                          {materials.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                              {materials.map((m, i) => (
-                                <div key={i} className="flex items-center gap-3 text-[13px] text-foreground bg-[#f8f9fa] dark:bg-[#111b21] p-3 rounded-lg border border-[#e0e0e0] dark:border-border/50">
-                                  {m.youtubeVideo ? <Youtube size={16} className="text-red-500" /> : <Link2 size={16} className="text-[#1099A1]" />}
-                                  <span className="truncate flex-1 font-medium">{m.youtubeVideo?.alternateLink || m.link?.url}</span>
-                                  <button onClick={() => setMaterials(materials.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-red-500 transition-colors">×</button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right: Settings Sidebar */}
-                      <div className="w-full xl:w-[320px] shrink-0 p-6 md:p-8 space-y-6 bg-[#fcfcfc] dark:bg-transparent">
-                        <div>
-                          <label className="block text-[13px] font-semibold text-foreground mb-2">Points</label>
-                          <div className="flex items-center gap-2 bg-white dark:bg-[#111b21] border border-[#e0e0e0] dark:border-border/50 rounded-lg p-1.5 focus-within:border-[#1099A1] transition-colors">
-                            <input
-                              type="number"
-                              value={newPoints}
-                              onChange={(e) => setNewPoints(e.target.value)}
-                              className="w-full bg-transparent px-2 text-[14px] focus:outline-none"
-                            />
-                            <span className="text-[13px] text-muted-foreground pr-2 shrink-0 border-l border-[#e0e0e0] dark:border-border/30 pl-2">/ 100</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[13px] font-semibold text-foreground mb-2">Due</label>
-                          <div className="flex flex-col gap-2">
-                            <div className="relative group">
-                              <input
-                                type="date"
-                                value={newDueDate}
-                                onChange={(e) => setNewDueDate(e.target.value)}
-                                className={`w-full text-neutral-700 p-2.5 bg-white dark:bg-[#111b21] hover:bg-muted/30 rounded-lg border border-[#e0e0e0] dark:border-border/50 transition-colors text-[14px] focus:outline-none focus:border-[#1099A1] pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10 ${!newDueDate ? 'text-transparent' : 'text-foreground'}`}
-                              />
-                              {!newDueDate && (
-                                <div className="absolute group-focus-within:hidden inset-y-0 left-0 scale-90 pl-2.5 flex items-center pointer-events-none text-[14px] text-muted-foreground bg-inherit dark:bg-[#111b21]">
-                                  No due date
-                                </div>
-                              )}
-                              <CalendarClock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-0" />
-                            </div>
-
-                            {newDueDate && (
-                              <div className="relative">
-                                <input
-                                  type="time"
-                                  value={newDueTime}
-                                  onChange={(e) => setNewDueTime(e.target.value)}
-                                  className={`w-full p-2.5 bg-white dark:bg-[#111b21] hover:bg-muted/30 rounded-lg border border-[#e0e0e0] dark:border-border/50 transition-colors text-[14px] focus:outline-none focus:border-[#1099A1] pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10 ${!newDueTime ? 'text-transparent' : 'text-foreground'}`}
-                                />
-                                {!newDueTime && (
-                                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[14px] text-muted-foreground bg-white dark:bg-[#111b21]">
-                                    Time (optional)
-                                  </div>
-                                )}
-                                <CalendarClock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-0" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[13px] font-semibold text-foreground mb-2">Topic</label>
-                          <button className="flex items-center justify-between w-full p-2.5 bg-white dark:bg-[#111b21] hover:bg-muted/30 rounded-lg border border-[#e0e0e0] dark:border-border/50 transition-colors text-left text-[14px] text-foreground">
-                            <span>No topic</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {loading && !showForm ? (
+              {loading ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
               ) : assignments.length === 0 ? (
                 <p className="text-center text-[14px] text-muted-foreground py-12">No assignments found for this class.</p>
@@ -409,42 +204,30 @@ export function TutorAssignments() {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Create Assignment Link */}
+                  {selectedCourse && (
+                    <a
+                      href="https://classroom.google.com/h"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-6 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] p-5 text-left hover:border-[#1099A1]/50 hover:bg-[#1099A1]/[0.02] transition-colors group"
+                    >
+                      <div className="h-11 w-11 rounded-xl bg-[#f0f1f2] group-hover:bg-[#1099A1]/10 text-[#2a3942]/70  group-hover:text-[#1099A1] flex items-center justify-center shrink-0 transition-colors">
+                        <Plus size={22} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[15px] text-foreground group-hover:text-[#1099A1] transition-colors">Create New Assignment</p>
+                        <p className="text-[13px] text-muted-foreground">Go to Google Classroom to publish a new assignment for {selectedCourse.name}.</p>
+                      </div>
+                    </a>
+                  )}
                 </div>
               )}
             </>
           )}
         </div>
       </div>
-
-      {/* Attach Link Modal */}
-      {showAttachModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#182329] rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-4 border-b border-border/50">
-              <h3 className="font-semibold text-foreground">Attach Link</h3>
-              <button onClick={() => setShowAttachModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-3">Add a standard web link or a YouTube video URL.</p>
-              <input
-                type="url"
-                placeholder="https://..."
-                value={attachUrl}
-                onChange={(e) => setAttachUrl(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAttachConfirm(); }}
-                className="w-full p-2.5 bg-[#f8f9fa] dark:bg-[#111b21] rounded-lg border border-border/50 focus:outline-none focus:border-[#1099A1] transition-colors text-[14px]"
-                autoFocus
-              />
-            </div>
-            <div className="flex items-center justify-end gap-3 p-4 border-t border-border/50 bg-[#f8f9fa]/50 dark:bg-[#111b21]/50">
-              <Button variant="ghost" onClick={() => setShowAttachModal(false)}>Cancel</Button>
-              <Button onClick={handleAttachConfirm} disabled={!attachUrl.trim()} className="bg-[#1099A1] hover:bg-[#0d848b] text-white">Add Link</Button>
-            </div>
-          </div>
-        </div>
-      )}
     </PageWrapper>
   );
 }

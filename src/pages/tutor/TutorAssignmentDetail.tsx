@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { ExternalLink, CalendarClock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchAssignment, fetchSubmissions, gradeSubmission } from "@/services/classroomService";
+import { fetchAssignment, fetchSubmissions } from "@/services/classroomService";
 
 function formatDue(dueDate: any, dueTime: any) {
   if (!dueDate) return "No due date";
@@ -48,16 +47,7 @@ export function TutorAssignmentDetail() {
 
   useEffect(() => { load(); }, [id, courseId, token]);
 
-  const handleGrade = async (subId: string, grade: number) => {
-    if (!token || !courseId) return;
-    try {
-      await gradeSubmission(token, courseId, id, subId, grade);
-      toast.success("Grade saved to Google Classroom!");
-      load();
-    } catch (err) {
-      toast.error("Failed to save grade");
-    }
-  };
+
 
   if (!courseId || !token) {
     return <PageWrapper><div className="p-8 text-center text-muted-foreground">Missing course context or authentication. Please go back to assignments.</div></PageWrapper>;
@@ -75,8 +65,16 @@ export function TutorAssignmentDetail() {
     <PageWrapper className="!p-0">
       <div className="flex flex-col h-[calc(100vh-64px)] bg-background dark:bg-[#111b21]">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:px-8 pb-8 shrink-0">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="bg-[#1099A1] text-white p-6 md:px-8 pb-8 shrink-0 relative overflow-hidden">
+          {/* Subtle Background Texture/Graph */}
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
             <div>
               <h1 className="text-3xl font-bold tracking-tight mb-2">{assignment.title}</h1>
               <div className="flex items-center gap-4 text-white/80 text-[14px]">
@@ -119,7 +117,7 @@ export function TutorAssignmentDetail() {
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {subs.map((s) => (
-                    <SubmissionCard key={s.id} sub={s} maxPoints={assignment.maxPoints} onGrade={handleGrade} />
+                    <SubmissionCard key={s.id} sub={s} maxPoints={assignment.maxPoints} />
                   ))}
                 </div>
               )}
@@ -132,8 +130,7 @@ export function TutorAssignmentDetail() {
   );
 }
 
-function SubmissionCard({ sub, maxPoints, onGrade }: { sub: any; maxPoints?: number; onGrade: (id: string, grade: number) => void }) {
-  const [gradeInput, setGradeInput] = useState(sub.draftGrade?.toString() || "");
+function SubmissionCard({ sub, maxPoints }: { sub: any; maxPoints?: number }) {
   const isTurnedIn = sub.state === "TURNED_IN" || sub.state === "RETURNED";
   const attachments = sub.assignmentSubmission?.attachments || [];
 
@@ -157,15 +154,9 @@ function SubmissionCard({ sub, maxPoints, onGrade }: { sub: any; maxPoints?: num
         
         {maxPoints && (
           <div className="flex items-center gap-2 shrink-0">
-            <input 
-              type="number" 
-              value={gradeInput}
-              onChange={(e) => setGradeInput(e.target.value)}
-              placeholder="Grade"
-              className="w-20 h-9 bg-transparent border border-border/50 rounded-md px-2 text-[14px] focus:outline-none focus:border-[#1099A1]"
-            />
-            <span className="text-muted-foreground text-[14px]">/ {maxPoints}</span>
-            <Button onClick={() => onGrade(sub.id, Number(gradeInput))} disabled={!gradeInput} className="h-9 ml-2 bg-[#1099A1] hover:bg-[#0d848b] text-white">Save</Button>
+            <span className="text-muted-foreground text-[14px]">
+              Grade: <span className="font-semibold text-foreground">{sub.assignedGrade ?? sub.draftGrade ?? '-'}</span> / {maxPoints}
+            </span>
           </div>
         )}
       </div>
