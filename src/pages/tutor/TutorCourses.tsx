@@ -249,12 +249,13 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         {activeTab === 'students' && (
           <div className="animate-in fade-in space-y-4 pt-2">
             {students.length === 0 ? <EmptyMsg text="No students enrolled yet." /> : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-0">
                 {students.map(st => (
-                  <div key={st.id} className="flex items-center gap-3 p-4 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-none">
-                    <img src={st.avatar_url || dicebearUrl(st.full_name || "S")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-                    <div>
-                      <p className="text-[14px] font-medium text-foreground">{st.full_name}</p>
+                  <div key={st.id} className="flex items-center gap-4 bg-transparent border-b border-[#e9edef] dark:border-[#2a3942] py-4 last:border-0 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4">
+                    <img src={st.avatar_url || dicebearUrl(st.full_name || "S")} alt="" className="w-12 h-12 rounded-none object-cover shrink-0 bg-[#e9edef] dark:bg-[#2a3942]" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-medium text-[#111] dark:text-white">{st.full_name}</p>
+                      <p className="text-[13px] text-muted-foreground mt-0.5">Enrolled Student</p>
                     </div>
                   </div>
                 ))}
@@ -362,7 +363,7 @@ function CourseMessagesTab({ conversations, setConversations }: { conversations:
             >
               <img src={conv.contact.avatar || dicebearUrl(conv.contact.name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className={cn("text-[14px] font-semibold truncate", activeConvId === conv.id ? "text-primary" : "text-[#111] dark:text-white")}>{conv.contact.name}</p>
+                <p className={cn("text-[14px] truncate", activeConvId === conv.id ? "text-primary" : "text-[#111] dark:text-white")}>{conv.contact.name}</p>
                 <p className="text-[12px] text-muted-foreground truncate">{conv.messages[conv.messages.length - 1]?.text || "New conversation"}</p>
               </div>
             </div>
