@@ -208,13 +208,13 @@ export function TutorAssignments() {
                   {/* Create Assignment Link */}
                   {selectedCourse && (
                     <a
-                      href="https://classroom.google.com/h"
+                      href={selectedCourse.alternateLink || "https://classroom.google.com/h"}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-6 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] p-5 text-left hover:border-[#1099A1]/50 hover:bg-[#1099A1]/[0.02] transition-colors group"
                     >
                       <div className="h-11 w-11 rounded-xl bg-[#f0f1f2] group-hover:bg-[#1099A1]/10 text-[#2a3942]/70  group-hover:text-[#1099A1] flex items-center justify-center shrink-0 transition-colors">
-                        <Plus size={22} />
+                        <ExternalLink size={22} />
                       </div>
                       <div>
                         <p className="font-semibold text-[15px] text-foreground group-hover:text-[#1099A1] transition-colors">Create New Assignment</p>
