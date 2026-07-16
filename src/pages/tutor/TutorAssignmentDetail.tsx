@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
 import { ExternalLink, CalendarClock, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { fetchAssignment, fetchSubmissions } from "@/services/classroomService";
 
 function formatDue(dueDate: any, dueTime: any) {
@@ -22,30 +21,22 @@ export function TutorAssignmentDetail() {
   const { id = "" } = useParams();
   const location = useLocation();
   const courseId = location.state?.courseId;
-  const token = localStorage.getItem('google_access_token');
+  const token = localStorage.getItem('google_classroom_token');
 
-  const [assignment, setAssignment] = useState<any>(null);
-  const [subs, setSubs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    if (!token || !courseId) return;
-    setLoading(true);
-    try {
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['classroom-assignment', courseId, id],
+    queryFn: async () => {
       const [a, s] = await Promise.all([
-        fetchAssignment(token, courseId, id),
-        fetchSubmissions(token, courseId, id)
+        fetchAssignment(token!, courseId, id),
+        fetchSubmissions(token!, courseId, id)
       ]);
-      setAssignment(a);
-      setSubs(s.studentSubmissions || []);
-    } catch (err) {
-      toast.error("Failed to load assignment data from Google Classroom");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return { assignment: a, subs: s.studentSubmissions || [] };
+    },
+    enabled: !!token && !!courseId && !!id,
+  });
 
-  useEffect(() => { load(); }, [id, courseId, token]);
+  const assignment = data?.assignment;
+  const subs = data?.subs || [];
 
 
 
@@ -116,7 +107,7 @@ export function TutorAssignmentDetail() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {subs.map((s) => (
+                  {subs.map((s: any) => (
                     <SubmissionCard key={s.id} sub={s} maxPoints={assignment.maxPoints} />
                   ))}
                 </div>
