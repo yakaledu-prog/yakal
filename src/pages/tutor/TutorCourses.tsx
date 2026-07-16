@@ -319,10 +319,62 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         )}
 
         {activeTab === 'messages' && (
-          <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col rounded-t-2xl md:rounded-tl-2xl overflow-hidden shadow-sm border border-[#e9edef] dark:border-[#2a3942] border-b-0">
-             <ChatPane activeConv={conversations[0]} setConversations={setConversations} />
+          <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col rounded-t-2xl md:rounded-tl-2xl overflow-hidden shadow-sm border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
+             <CourseMessagesTab conversations={conversations} setConversations={setConversations} />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CourseMessagesTab({ conversations, setConversations }: { conversations: any[]; setConversations: any }) {
+  const [activeConvId, setActiveConvId] = useState<string>(conversations[0]?.id);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const activeConv = conversations.find((c) => c.id === activeConvId) || conversations[0];
+
+  const filtered = conversations.filter((c) =>
+    c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-1 overflow-hidden h-full">
+      {/* Left Pane: Conversation List */}
+      <div className="hidden md:flex w-[280px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">
+        <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-1 py-1 transition ease-in-out">
+            <Search size={16} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search students..."
+              className="bg-transparent text-[13px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
+            />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {filtered.map(conv => (
+            <div 
+              key={conv.id} 
+              onClick={() => setActiveConvId(conv.id)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-l-2",
+                activeConvId === conv.id ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+              )}
+            >
+              <img src={conv.contact.avatar || dicebearUrl(conv.contact.name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className={cn("text-[14px] font-semibold truncate", activeConvId === conv.id ? "text-primary" : "text-[#111] dark:text-white")}>{conv.contact.name}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{conv.messages[conv.messages.length - 1]?.text || "New conversation"}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Right Pane: Chat Pane */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {activeConv ? <ChatPane activeConv={activeConv} setConversations={setConversations} /> : <div className="p-10 text-center text-muted-foreground text-[14px]">Select a student to message.</div>}
       </div>
     </div>
   );
