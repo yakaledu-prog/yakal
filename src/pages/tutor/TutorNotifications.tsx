@@ -92,6 +92,15 @@ const mockNotifications: Notification[] = [
   }
 ];
 
+function MinimalStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-2xl font-medium">{value}</p>
+    </div>
+  );
+}
+
 export function TutorNotifications() {
   const [notifications, setNotifications] = useState(mockNotifications);
   const [activeTab, setActiveTab] = useState<"inbox" | "unread" | "archived">("inbox");
@@ -147,6 +156,10 @@ export function TutorNotifications() {
               <div>
                 <h1 className="text-3xl font-bold tracking-tight mb-2">Notifications</h1>
                 <p className="text-white/80 text-[15px]">Stay updated with your latest alerts</p>
+              </div>
+              <div className="flex items-center gap-8">
+                <MinimalStat label="Unread" value={notifications.filter(n => !n.read && !n.archived).length} />
+                <MinimalStat label="Total" value={notifications.filter(n => !n.archived).length} />
               </div>
             </div>
           </div>

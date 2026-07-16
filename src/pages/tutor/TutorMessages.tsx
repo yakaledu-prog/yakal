@@ -12,6 +12,16 @@ import {
 } from "@/mock/chatData";
 import { cn } from "@/utils/cn";
 import { ChatPane, avatarUrl, formatListDate } from "@/components/chat/ChatPane";
+import { PageWrapper } from "@/components/ui/PageWrapper";
+
+function MinimalStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-2xl font-medium">{value}</p>
+    </div>
+  );
+}
 
 // ─── Tutor Mock Data ─────────────────────────────────────────────────────────
 const TUTOR_COURSES: Record<string, { subject: string; level: string; sessions: number }[]> = {
@@ -297,105 +307,131 @@ export function TutorMessages() {
   );
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* ── Left Pane ────────────────────────────────────────────── */}
-      <div className={cn(
-        "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
-        showChatOnMobile ? "hidden md:flex" : "flex"
-      )}>
-        {/* Search bar */}
-        <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
-            <Search size={18} className="text-[#1099A1] shrink-0" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search or start new chat"
-              className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
-            />
+    <PageWrapper>
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
+        {/* Massive Integrated Header */}
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="max-w-[1440px] mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">Messages</h1>
+                <p className="text-white/80 text-[15px]">Stay connected with your students and parents</p>
+              </div>
+              <div className="flex items-center gap-8">
+                <MinimalStat label="Unread" value={conversations.reduce((acc, c) => acc + countUnread(c.messages), 0)} />
+                <MinimalStat label="Contacts" value={conversations.length} />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map((conv) => {
-            const last = lastMessage(conv.messages);
-            const unread = countUnread(conv.messages);
-            const isActive = conv.id === activeConvId;
-            return (
-              <div
-                key={conv.id}
-                onClick={() => openConversation(conv.id)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
-                  isActive ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
-                )}
-              >
-                <div className="relative shrink-0">
-                  <img
-                    src={avatarUrl(conv.contact.id)}
-                    alt={conv.contact.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  {conv.contact.isOnline && (
-                    <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
-                  <div className="flex items-baseline justify-between mb-0.5">
-                    <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{conv.contact.name}</span>
-                    <span className={cn("text-[12px] shrink-0 ml-1", unread > 0 ? "text-[#1099A1] font-medium" : "text-[#667781] dark:text-[#8696a0]")}>
-                      {last ? formatListDate(last.timestamp) : ""}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate flex-1">
-                      {last?.text}
-                    </p>
-                    {unread > 0 && (
-                      <span className="min-w-[20px] h-5 px-1.5 bg-[#1099A1] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none">
-                        {unread}
-                      </span>
-                    )}
-                  </div>
-                </div>
+        {/* Messaging Layout Container */}
+        <div className="flex-1 max-w-[1440px] mx-auto w-full bg-white dark:bg-[#111b21] border-x border-[#e9edef] dark:border-[#2a3942] overflow-hidden flex flex-col md:flex-row min-h-0 shadow-sm">
+          {/* ── Left Pane ────────────────────────────────────────────── */}
+          <div className={cn(
+            "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
+            showChatOnMobile ? "hidden md:flex" : "flex"
+          )}>
+            {/* Search bar */}
+            <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+              <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
+                <Search size={18} className="text-[#1099A1] shrink-0" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search or start new chat"
+                  className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
+                />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Right: Chat + Profile ─────────────────────────────────── */}
-      <div className={cn(
-        "flex-1 overflow-hidden min-w-0",
-        showChatOnMobile ? "flex" : "hidden md:flex"
-      )}>
-        {/* Chat Pane */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          {showChatOnMobile && (
-            <div className="md:hidden flex items-center p-2 bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942]">
-              <button
-                className="p-1.5 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
-                onClick={() => setShowChatOnMobile(false)}
-              >
-                <ArrowLeft size={20} />
-              </button>
             </div>
-          )}
-          
-          <ChatPane
-            activeConv={activeConv}
-            setConversations={setConversations}
-            showHeader={true}
-            onProfileClick={() => setShowProfile((v) => !v)}
-          />
-        </div>
 
-        {/* Profile Panel */}
-        {showProfile && (
-          <ContactProfilePanel conv={activeConv} onClose={() => setShowProfile(false)} />
-        )}
+            {/* Conversation List */}
+            <div className="flex-1 overflow-y-auto">
+              {filtered.map((conv) => {
+                const last = lastMessage(conv.messages);
+                const unread = countUnread(conv.messages);
+                const isActive = conv.id === activeConvId;
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => openConversation(conv.id)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
+                      isActive ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={avatarUrl(conv.contact.id)}
+                        alt={conv.contact.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      {conv.contact.isOnline && (
+                        <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
+                      <div className="flex items-baseline justify-between mb-0.5">
+                        <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{conv.contact.name}</span>
+                        <span className={cn("text-[12px] shrink-0 ml-1", unread > 0 ? "text-[#1099A1] font-medium" : "text-[#667781] dark:text-[#8696a0]")}>
+                          {last ? formatListDate(last.timestamp) : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate flex-1">
+                          {last ? last.text : "No messages yet"}
+                        </span>
+                        {unread > 0 && (
+                          <div className="ml-2 bg-[#1099A1] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shrink-0">
+                            {unread}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Chat Pane ────────────────────────────────────────────── */}
+          <div className={cn(
+            "flex-1 flex flex-col min-w-0 bg-[#efeae2] dark:bg-[#0b141a]",
+            !showChatOnMobile ? "hidden md:flex" : "flex"
+          )}>
+            {showChatOnMobile && (
+              <div className="md:hidden bg-white dark:bg-[#111b21] px-4 py-2 border-b border-[#e9edef] dark:border-[#2a3942]">
+                <button
+                  onClick={() => setShowChatOnMobile(false)}
+                  className="flex items-center gap-2 text-[#54656f] dark:text-[#aebac1]"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+              </div>
+            )}
+            
+            <ChatPane
+              activeConv={activeConv}
+              setConversations={setConversations}
+              showHeader={true}
+              onProfileClick={() => setShowProfile((v) => !v)}
+            />
+          </div>
+
+          {/* Profile Panel */}
+          {showProfile && (
+            <ContactProfilePanel conv={activeConv} onClose={() => setShowProfile(false)} />
+          )}
+        </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
