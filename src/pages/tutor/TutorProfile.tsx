@@ -75,9 +75,10 @@ export function TutorProfile() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
               <div className="flex items-center gap-6">
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border border-white/20">
-                    <img src={avatarSrc} alt={profile?.full_name || "Tutor"} className="w-full h-full" />
-                  </div>
+                  <div 
+                    className="w-24 h-24 rounded-full overflow-hidden border border-white/20 bg-cover bg-center bg-no-repeat bg-black/10"
+                    style={{ backgroundImage: `url(${avatarSrc})` }}
+                  />
                   <button onClick={() => fileRef.current?.click()} className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploading ? <Loader2 className="text-white animate-spin" size={22} /> : <Camera className="text-white" size={24} />}
                   </button>
@@ -93,7 +94,7 @@ export function TutorProfile() {
                  <button onClick={() => setEditOpen(true)} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                    <Edit2 size={16} /> Edit Profile
                  </button>
-                 <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                 <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-[#CAA25F] hover:bg-[#b59052] text-white px-4 py-2 rounded-lg font-medium transition-colors">
                    <LogOut size={16} /> Log Out
                  </button>
               </div>
@@ -101,17 +102,23 @@ export function TutorProfile() {
 
             {/* Bottom Row Stats in Header */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-white/20 pb-6">
-              <div className="flex flex-col items-start">
-                 <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
-                 <p className="text-3xl font-bold w-full text-center">{new Set(sessions.map((s) => s.student_id)).size}</p>
+              <div>
+                <div className="inline-flex flex-col items-center">
+                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
+                   <p className="text-3xl font-bold">{new Set(sessions.map((s) => s.student_id)).size}</p>
+                </div>
               </div>
-              <div className="flex flex-col items-start">
-                 <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><CheckCircle size={14} /> Completed Sessions</p>
-                 <p className="text-3xl font-bold w-full text-center">{sessions.filter((s) => s.status === "completed").length}</p>
+              <div>
+                <div className="inline-flex flex-col items-center">
+                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><CheckCircle size={14} /> Completed Sessions</p>
+                   <p className="text-3xl font-bold">{sessions.filter((s) => s.status === "completed").length}</p>
+                </div>
               </div>
-              <div className="flex flex-col items-start">
-                 <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
-                 <p className="text-3xl font-bold w-full text-center">{courseCount}</p>
+              <div>
+                <div className="inline-flex flex-col items-center">
+                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
+                   <p className="text-3xl font-bold">{courseCount}</p>
+                </div>
               </div>
             </div>
           </div>
