@@ -132,7 +132,7 @@ export function TutorCourses() {
 
 function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: string) => void }) {
   const { course, students, sessions, assignments } = ws;
-  const [activeTab, setActiveTab] = useState<"students" | "sessions" | "assignments" | "messages">("students");
+  const [activeTab, setActiveTab] = useState<"overview" | "students" | "sessions" | "assignments" | "messages">("overview");
   const [conversations, setConversations] = useState(mockConversations);
 
   return (
@@ -149,13 +149,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
 
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
-            {course.thumbnail_url ? (
-              <img src={course.thumbnail_url} alt={course.title} className="w-16 h-16 rounded-xl object-cover border-2 border-white/20 shrink-0" />
-            ) : (
-              <div className="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center border-2 border-white/20 shrink-0"><BookOpen size={24} className="text-white" /></div>
-            )}
             <div className="min-w-0">
-              <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider">{course.subject}</span>
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate mt-1">{course.title}</h1>
             </div>
           </div>
@@ -171,6 +165,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
 
         {/* Tab Navigation */}
         <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
           <TabButton active={activeTab === 'students'} onClick={() => setActiveTab('students')} label="Students" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
@@ -179,6 +174,78 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
       </div>
 
       <div className={cn("mx-auto flex flex-col w-full", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "")}>
+        
+        {activeTab === 'overview' && (
+          <div className="animate-in fade-in flex flex-col lg:flex-row gap-12 items-start">
+            {/* Left Pane: Sessions */}
+            <div className="flex-1 w-full space-y-6">
+              <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <h3 className="text-[16px] font-bold text-foreground">Upcoming Sessions</h3>
+                <button className="text-[13px] text-[#1099A1] hover:underline font-medium" onClick={() => setActiveTab('sessions')}>View More</button>
+              </div>
+              <div className="space-y-0">
+                {sessions.length === 0 ? (
+                  <p className="text-center text-[14px] text-muted-foreground py-10">No upcoming sessions.</p>
+                ) : sessions.slice(0, 5).map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
+                    <div className="flex items-center gap-6 min-w-0">
+                      <div className="text-center w-12 shrink-0">
+                        <p className="text-[20px] font-bold text-foreground leading-none">{fmtDate(s.date).split(" ")[1]}</p>
+                        <p className="text-[12px] font-medium text-muted-foreground mt-1">{fmtDate(s.date).split(" ")[0]}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-bold text-foreground truncate">{s.subject}</p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5">{s.student_name}</p>
+                      </div>
+                    </div>
+                    <span className={cn("px-3 py-1 text-[12px] font-bold rounded-full capitalize shrink-0",
+                      s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        s.status === "cancelled" || s.status === "no-show" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-[#1099A1]/10 text-[#1099A1]")}>
+                      {s.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Pane: Assignments */}
+            <div className="flex-1 w-full space-y-6">
+              <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <h3 className="text-[16px] font-bold text-foreground">Assignments</h3>
+                <button className="text-[13px] text-[#1099A1] hover:underline font-medium" onClick={() => setActiveTab('assignments')}>View More</button>
+              </div>
+              <div className="space-y-0">
+                {assignments.length === 0 ? (
+                  <p className="text-center text-[14px] text-muted-foreground py-10">No assignments for this course.</p>
+                ) : assignments.slice(0, 5).map((a) => {
+                  const pending = (a.submissionCount ?? 0) - (a.reviewedCount ?? 0);
+                  return (
+                    <div key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`)} className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-pointer group">
+                      <div className="flex items-start sm:items-center gap-6 min-w-0">
+                        <div className="hidden sm:flex shrink-0 w-12 h-12 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
+                          <BookOpen size={20} />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-[16px] text-foreground truncate group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
+                          <div className="flex items-center gap-4 text-[13px] text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1.5"><CalendarClock size={14} /> Due: {a.due_date ? fmtDate(a.due_date) : "No due date"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 sm:mt-0 flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-[13px] font-medium text-foreground">{a.submissionCount} submissions</p>
+                          {pending > 0 && <p className="text-[11px] font-bold text-[#CAA25F] uppercase tracking-wider mt-0.5">{pending} to review</p>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'students' && (
           <div className="animate-in fade-in space-y-4">
             <h2 className="text-xl font-bold text-[#111] dark:text-white border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Enrolled Students</h2>
