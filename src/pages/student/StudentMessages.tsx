@@ -597,6 +597,19 @@ export function StudentMessages() {
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
+  // Detect dark mode
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeConvId, activeConv?.messages?.length]);
+
   // If no conversations loaded yet, show loading
   if (!activeConv && conversations.length === 0) {
     return (
@@ -618,18 +631,7 @@ export function StudentMessages() {
 
   const messageGroups = groupByDay(safeConv.messages || []);
 
-  // Detect dark mode
-  useEffect(() => {
-    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConvId, safeConv?.messages?.length]);
 
   function openConversation(convId: string) {
     setActiveConvId(convId);

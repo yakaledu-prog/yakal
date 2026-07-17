@@ -7,9 +7,9 @@ export interface Conversation {
   participants: { user_id: string }[];
   otherParticipant?: {
     id: string;
-    first_name: string;
-    last_name: string;
+    full_name: string;
     role: string;
+    avatar_url?: string | null;
   };
   messages?: Message[];
   lastMessage?: Message;
@@ -28,10 +28,28 @@ export interface Message {
 
 // Fetch all conversations for a user
 export async function getConversations(userId: string): Promise<Conversation[]> {
+  console.log('📋 [getConversations] Called for userId:', userId);
+  
+  // Check Supabase session
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('📋 [getConversations] Supabase auth session:', {
+    hasSession: !!session,
+    supabaseUserId: session?.user?.id || 'NONE',
+    email: session?.user?.email || 'NONE',
+    passedUserId: userId,
+    userIdMatch: session?.user?.id === userId,
+  });
+  
+  if (!session) {
+    console.error('📋 [getConversations] ❌ NO SUPABASE SESSION! RLS will block everything.');
+  }
+  
   const { data: participants, error: pError } = await supabase
     .from('conversation_participants')
     .select('conversation_id')
     .eq('user_id', userId);
+
+  console.log('📋 [getConversations] Participants query result:', { data: participants, error: pError });
 
   if (pError) throw pError;
   if (!participants || participants.length === 0) return [];
@@ -60,11 +78,13 @@ export async function getConversations(userId: string): Promise<Conversation[]> 
       let otherParticipantInfo = null;
       if (otherParticipantId) {
         // Fetch user info from profiles
-        const { data: profileData } = await supabase
+        const { data: profileData, error: profErr } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, role')
+          .select('id, full_name, role, avatar_url')
           .eq('id', otherParticipantId)
           .single();
+        if (profErr) console.warn('📋 [getConversations] Profile fetch error:', profErr);
+        else console.log('📋 [getConversations] Other participant profile:', profileData);
         otherParticipantInfo = profileData;
       }
 
@@ -116,6 +136,13 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
 
 // Send a new message
 export async function sendMessage(conversationId: string, senderId: string, content: string, type = 'text'): Promise<Message> {
+  console.log('📨 [sendMessage] Called with:', { conversationId, senderId, content, type });
+  
+  // Check auth session
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('📨 [sendMessage] Supabase session:', session ? `YES - user=${session.user.id}, email=${session.user.email}` : 'NO SESSION (auth.uid() will be NULL!)');
+  console.log('📨 [sendMessage] Access token present:', !!session?.access_token);
+  
   const { data, error } = await supabase
     .from('messages')
     .insert([
@@ -124,13 +151,22 @@ export async function sendMessage(conversationId: string, senderId: string, cont
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('📨 [sendMessage] INSERT failed:', error);
+    throw error;
+  }
+  
+  console.log('📨 [sendMessage] Message inserted successfully:', data.id);
 
   // Update conversation updated_at
-  await supabase
+  const { error: updateErr } = await supabase
     .from('conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);
+
+  if (updateErr) {
+    console.warn('📨 [sendMessage] UPDATE conversations.updated_at failed (non-fatal):', updateErr);
+  }
 
   return data as Message;
 }
@@ -149,29 +185,52 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
 
 // Get or Create a conversation between two users
 export async function getOrCreateConversation(user1Id: string, user2Id: string): Promise<string> {
+  console.log('🔗 [getOrCreateConversation] Called with:', { user1Id, user2Id });
+  
+  // ── CRITICAL: Check Supabase auth session ──
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('🔗 [getOrCreateConversation] Supabase auth session:', {
+    hasSession: !!session,
+    userId: session?.user?.id || 'NONE',
+    email: session?.user?.email || 'NONE',
+    accessTokenPresent: !!session?.access_token,
+    tokenExpiry: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'NONE',
+  });
+
+  if (!session) {
+    console.error('🔗 [getOrCreateConversation] ❌ NO SUPABASE SESSION! auth.uid() will be NULL in RLS policies. This is why INSERT fails with 42501.');
+    console.error('🔗 [getOrCreateConversation] The user is probably authenticated via Firebase/custom auth but NOT via Supabase Auth.');
+  }
+
   // Step 1: Check if a conversation already exists between these two users.
-  // Find all conversations where user1 is a participant.
+  console.log('🔗 [getOrCreateConversation] Step 1: Checking for existing conversations...');
   const { data: u1Convs, error: u1Err } = await supabase
     .from('conversation_participants')
     .select('conversation_id')
     .eq('user_id', user1Id);
 
+  console.log('🔗 [getOrCreateConversation] User1 conversations:', { data: u1Convs, error: u1Err });
+
   if (!u1Err && u1Convs && u1Convs.length > 0) {
     const u1ConvIds = u1Convs.map(c => c.conversation_id);
-    // Check if user2 is also a participant in any of those conversations.
-    const { data: sharedConvs } = await supabase
+    console.log('🔗 [getOrCreateConversation] User1 conv IDs:', u1ConvIds);
+    
+    const { data: sharedConvs, error: sharedErr } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
       .eq('user_id', user2Id)
       .in('conversation_id', u1ConvIds);
 
+    console.log('🔗 [getOrCreateConversation] Shared conversations:', { data: sharedConvs, error: sharedErr });
+
     if (sharedConvs && sharedConvs.length > 0) {
-      // Conversation already exists, return its ID.
+      console.log('🔗 [getOrCreateConversation] ✅ Found existing conversation:', sharedConvs[0].conversation_id);
       return sharedConvs[0].conversation_id;
     }
   }
 
   // Step 2: No existing conversation found. Create a new one.
+  console.log('🔗 [getOrCreateConversation] Step 2: Creating new conversation...');
   const { data: newConv, error: cError } = await supabase
     .from('conversations')
     .insert([{}])
@@ -179,11 +238,20 @@ export async function getOrCreateConversation(user1Id: string, user2Id: string):
     .single();
 
   if (cError) {
-    console.error('Failed to create conversation:', cError);
+    console.error('🔗 [getOrCreateConversation] ❌ Failed to INSERT into conversations:', {
+      code: cError.code,
+      message: cError.message,
+      details: cError.details,
+      hint: cError.hint,
+    });
+    console.error('🔗 [getOrCreateConversation] 💡 If code=42501, it means auth.uid() IS NULL. Check if Supabase Auth session exists above.');
     throw cError;
   }
 
+  console.log('🔗 [getOrCreateConversation] ✅ Conversation created:', newConv.id);
+
   // Step 3: Add both users as participants.
+  console.log('🔗 [getOrCreateConversation] Step 3: Adding participants...');
   const { error: p1Error } = await supabase
     .from('conversation_participants')
     .insert([
@@ -192,10 +260,11 @@ export async function getOrCreateConversation(user1Id: string, user2Id: string):
     ]);
 
   if (p1Error) {
-    console.error('Failed to insert participants:', p1Error);
+    console.error('🔗 [getOrCreateConversation] ❌ Failed to INSERT participants:', p1Error);
     throw p1Error;
   }
 
+  console.log('🔗 [getOrCreateConversation] ✅ Both participants added. Conversation ready:', newConv.id);
   return newConv.id;
 }
 
@@ -224,9 +293,9 @@ export function mapDbToLocalConversations(dbConvs: Conversation[]): any[] {
     id: c.id,
     contact: {
       id: c.otherParticipant?.id || "unknown",
-      name: c.otherParticipant ? `${c.otherParticipant.first_name} ${c.otherParticipant.last_name}` : "Unknown User",
+      name: c.otherParticipant?.full_name || "Unknown User",
       role: c.otherParticipant?.role || "User",
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${c.otherParticipant?.first_name || 'U'}&backgroundColor=1099A1`,
+      avatar: c.otherParticipant?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.otherParticipant?.full_name || 'U')}&backgroundColor=1099A1`,
       isOnline: false,
       lastSeen: new Date(c.updated_at),
     },
