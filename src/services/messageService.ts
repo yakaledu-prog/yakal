@@ -149,44 +149,52 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
 
 // Get or Create a conversation between two users
 export async function getOrCreateConversation(user1Id: string, user2Id: string): Promise<string> {
-  // First, check if a conversation already exists
-  const { data: sharedConversations, error: sError } = await supabase
-    .rpc('get_shared_conversation', { u1: user1Id, u2: user2Id });
+  // Step 1: Check if a conversation already exists between these two users.
+  // Find all conversations where user1 is a participant.
+  const { data: u1Convs, error: u1Err } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', user1Id);
 
-  if (sError) {
-    // If RPC doesn't exist, we fallback to manual check
-    // Fetch all convos for user1
-    const { data: u1Convs } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user1Id);
-    if (u1Convs && u1Convs.length > 0) {
-      const u1ConvIds = u1Convs.map(c => c.conversation_id);
-      // See if user2 is in any of these
-      const { data: u2Convs } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', user2Id).in('conversation_id', u1ConvIds);
-      if (u2Convs && u2Convs.length > 0) {
-        return u2Convs[0].conversation_id;
-      }
+  if (!u1Err && u1Convs && u1Convs.length > 0) {
+    const u1ConvIds = u1Convs.map(c => c.conversation_id);
+    // Check if user2 is also a participant in any of those conversations.
+    const { data: sharedConvs } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user2Id)
+      .in('conversation_id', u1ConvIds);
+
+    if (sharedConvs && sharedConvs.length > 0) {
+      // Conversation already exists, return its ID.
+      return sharedConvs[0].conversation_id;
     }
-  } else if (sharedConversations && sharedConversations.length > 0) {
-    return sharedConversations[0].id;
   }
 
-  // Create new conversation
+  // Step 2: No existing conversation found. Create a new one.
   const { data: newConv, error: cError } = await supabase
     .from('conversations')
     .insert([{}])
     .select()
     .single();
 
-  if (cError) throw cError;
+  if (cError) {
+    console.error('Failed to create conversation:', cError);
+    throw cError;
+  }
 
-  // Insert participants
-  const { error: pError } = await supabase
+  // Step 3: Add both users as participants.
+  const { error: p1Error } = await supabase
     .from('conversation_participants')
     .insert([
       { conversation_id: newConv.id, user_id: user1Id },
       { conversation_id: newConv.id, user_id: user2Id }
     ]);
 
-  if (pError) throw pError;
+  if (p1Error) {
+    console.error('Failed to insert participants:', p1Error);
+    throw p1Error;
+  }
 
   return newConv.id;
 }

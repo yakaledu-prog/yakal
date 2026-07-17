@@ -12,7 +12,7 @@ import {
   type Message,
 } from "@/mock/chatData";
 import { useAuth } from "@/contexts/AuthContext";
-import { sendMessage as dbSendMessage } from "@/services/messageService";
+import { sendMessage as dbSendMessage, getOrCreateConversation } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
@@ -257,7 +257,7 @@ export function ChatPane({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
 
-  const messageGroups = groupByDay(activeConv.messages);
+  const messageGroups = groupByDay(activeConv.messages || []);
 
   useEffect(() => {
     return () => {
@@ -278,7 +278,7 @@ export function ChatPane({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConv.id, activeConv.messages.length]);
+  }, [activeConv.id, activeConv.messages?.length]);
 
   async function sendMessage() {
     const text = inputText.trim();
@@ -294,13 +294,17 @@ export function ChatPane({
     };
     
     setConversations((prev) =>
-      prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...c.messages, newMsg] } : c)
+      prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
     );
     setInputText("");
 
     if (activeConv.id !== "conv-ai") {
       try {
-        await dbSendMessage(activeConv.id, user.id, text, 'text');
+        let conversationId = activeConv.id;
+        if (conversationId.startsWith("conv-")) {
+          conversationId = await getOrCreateConversation(user.id, activeConv.contact.id);
+        }
+        await dbSendMessage(conversationId, user.id, text, 'text');
       } catch (err) {
         console.error("Failed to send message", err);
       }
@@ -384,7 +388,7 @@ export function ChatPane({
       attachment: { type, url, name: file.name, size: file.size }
     };
     setConversations((prev) =>
-      prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...c.messages, newMsg] } : c)
+      prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
     );
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -453,7 +457,7 @@ export function ChatPane({
           attachment: { type: 'audio', url, duration: recordingSeconds }
         };
         setConversations((prev) =>
-          prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...c.messages, newMsg] } : c)
+          prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
         );
         stopTracks();
       };
@@ -470,7 +474,7 @@ export function ChatPane({
         isRead: false,
       };
       setConversations((prev) =>
-        prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...c.messages, newMsg] } : c)
+        prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
       );
       stopTracks();
     }

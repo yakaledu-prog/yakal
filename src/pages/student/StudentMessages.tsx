@@ -595,8 +595,28 @@ export function StudentMessages() {
     };
   }, []);
 
-  const activeConv = conversations.find((c) => c.id === activeConvId)!;
-  const messageGroups = groupByDay(activeConv.messages);
+  const activeConv = conversations.find((c) => c.id === activeConvId);
+
+  // If no conversations loaded yet, show loading
+  if (!activeConv && conversations.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        <p>No conversations yet. Start a new chat!</p>
+      </div>
+    );
+  }
+
+  // Use a safe reference — fallback to first conversation
+  const safeConv = activeConv || conversations[0];
+  if (!safeConv) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        <p>Loading messages...</p>
+      </div>
+    );
+  }
+
+  const messageGroups = groupByDay(safeConv.messages || []);
 
   // Detect dark mode
   useEffect(() => {
@@ -609,7 +629,7 @@ export function StudentMessages() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConvId, activeConv?.messages.length]);
+  }, [activeConvId, safeConv?.messages?.length]);
 
   function openConversation(convId: string) {
     setActiveConvId(convId);
@@ -657,7 +677,7 @@ export function StudentMessages() {
         setTimeout(() => {
           setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
             ...c,
-            messages: [...c.messages, {
+            messages: [...(c.messages || []), {
               id: `msg-ai-${Date.now()}`,
               conversationId: activeConvId,
               senderId: "ai-assistant",
@@ -684,7 +704,7 @@ export function StudentMessages() {
 
         setConversations((prev) => prev.map((c) => c.id === activeConvId ? {
           ...c,
-          messages: [...c.messages, {
+          messages: [...(c.messages || []), {
             id: `msg-ai-${Date.now()}`,
             conversationId: activeConvId,
             senderId: "ai-assistant",
@@ -729,7 +749,7 @@ export function StudentMessages() {
       attachment: { type, url, name: file.name, size: file.size }
     };
     setConversations((prev) =>
-      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
     );
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -798,7 +818,7 @@ export function StudentMessages() {
           attachment: { type: 'audio', url, duration: recordingSeconds }
         };
         setConversations((prev) =>
-          prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+          prev.map((c) => c.id === activeConvId ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
         );
         stopTracks();
       };
@@ -815,7 +835,7 @@ export function StudentMessages() {
         isRead: false,
       };
       setConversations((prev) =>
-        prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+        prev.map((c) => c.id === activeConvId ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
       );
       stopTracks();
     }
@@ -920,15 +940,15 @@ export function StudentMessages() {
               onClick={() => setShowProfile((v) => !v)}
             >
               <div className="relative">
-                <img src={avatarUrl(activeConv.contact.id)} alt={activeConv.contact.name} className="w-10 h-10 rounded-full object-cover" />
-                {activeConv.contact.isOnline && (
+                <img src={avatarUrl(safeConv.contact.id)} alt={safeConv.contact.name} className="w-10 h-10 rounded-full object-cover" />
+                {safeConv.contact.isOnline && (
                   <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#97CE9D] border-2 border-[#f0f2f5] dark:border-[#202c33] rounded-full" />
                 )}
               </div>
               <div>
-                <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef] truncate">{activeConv.contact.name}</h2>
-                <p className={cn("text-[12px]", activeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
-                  {activeConv.contact.isOnline ? "online" : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
+                <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef] truncate">{safeConv.contact.name}</h2>
+                <p className={cn("text-[12px]", safeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
+                  {safeConv.contact.isOnline ? "online" : `last seen ${formatListDate(safeConv.contact.lastSeen)}`}
                 </p>
               </div>
             </button>
@@ -961,7 +981,7 @@ export function StudentMessages() {
                     <MessageBubble
                       key={msg.id}
                       msg={msg}
-                      contact={activeConv.contact}
+                      contact={safeConv.contact}
                       isConsecutive={isConsecutive}
                       currentUserId={user?.id}
                     />
@@ -1079,7 +1099,7 @@ export function StudentMessages() {
 
         {/* Profile Panel */}
         {showProfile && (
-          <ContactProfilePanel conv={activeConv} onClose={() => setShowProfile(false)} />
+          <ContactProfilePanel conv={safeConv} onClose={() => setShowProfile(false)} />
         )}
       </div>
     </div>
