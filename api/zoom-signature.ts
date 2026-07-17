@@ -30,8 +30,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const header = { alg: 'HS256', typ: 'JWT' };
 
   const payload = {
-    sdkKey: sdkKey,
-    appKey: sdkKey, // for legacy compatibility
+    // Zoom deprecated the sdkKey field after Meeting SDK v5; appKey is the
+    // required field and carries the same Client ID.
+    appKey: sdkKey,
     mn: meetingNumber,
     role: role, // 0 for participant, 1 for host
     iat: iat,

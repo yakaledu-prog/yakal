@@ -122,6 +122,24 @@ export async function getConversations(userId: string): Promise<Conversation[]> 
   });
 }
 
+export interface Contact {
+  id: string;
+  full_name: string;
+  role: string;
+  avatar_url: string | null;
+}
+
+// All other profiles the user can start a chat with (includes the seeded demo users).
+export async function getContacts(userId: string): Promise<Contact[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, avatar_url')
+    .neq('id', userId)
+    .order('full_name');
+  if (error) throw error;
+  return (data || []).filter((p) => p.full_name);
+}
+
 // Fetch all messages for a specific conversation
 export async function getMessages(conversationId: string): Promise<Message[]> {
   const { data, error } = await supabase

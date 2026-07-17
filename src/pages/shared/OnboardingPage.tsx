@@ -76,7 +76,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [hourlyRate, setHourlyRate] = useState("");
   const [currency, setCurrency] = useState<Currency>("ETB");
-  const [zoomLink, setZoomLink] = useState("");
   const [bio, setBio] = useState("");
 
   // Student
@@ -95,7 +94,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       setSubjects(profile.subjects || []);
       setHourlyRate(profile.hourly_rate != null ? String(profile.hourly_rate) : "");
       setCurrency((profile.rate_currency as Currency) || "ETB");
-      setZoomLink(profile.zoom_link || "");
       setBio(profile.bio || "");
       setGradeLevel(profile.grade_level || "");
     }
@@ -167,7 +165,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
     if (role === "tutor") {
       if (subjects.length === 0) return toast.error("Select at least one subject you teach.");
-      if (!zoomLink.trim()) return toast.error("Add your session link (Zoom / Google Meet).");
     }
 
     if (isPreview) {
@@ -190,7 +187,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
         updates.subjects = subjects;
         updates.hourly_rate = hourlyRate ? Number(hourlyRate) : null;
         updates.rate_currency = currency;
-        updates.zoom_link = zoomLink.trim();
         updates.bio = bio.trim() || null;
       } else if (role === "student") {
         updates.grade_level = gradeLevel || null;
@@ -434,22 +430,13 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
               )}
 
               {role === "tutor" && (
-                <>
-                  <MoneyInput
-                    label="Rate per session"
-                    value={hourlyRate}
-                    onChange={setHourlyRate}
-                    currency={currency}
-                    onCurrencyChange={setCurrency}
-                  />
-                  <FloatingInput
-                    label="Session link (Zoom / Google Meet)"
-                    type="url"
-                    value={zoomLink}
-                    onChange={(e) => setZoomLink(e.target.value)}
-                    hint="Shared with students for every session you host."
-                  />
-                </>
+                <MoneyInput
+                  label="Rate per session"
+                  value={hourlyRate}
+                  onChange={setHourlyRate}
+                  currency={currency}
+                  onCurrencyChange={setCurrency}
+                />
               )}
 
               {(role === "tutor" || role === "counselor") && (

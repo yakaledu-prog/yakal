@@ -61,6 +61,10 @@ export function TutorHome() {
   const firstName = profile?.full_name?.split(" ")[0] || "Tutor";
 
   function join(session: SessionRow) {
+    if (session.zoom_meeting_id) {
+      navigate(`/tutor/meeting/${session.id}`);
+      return;
+    }
     const link = session.zoom_link || profile?.zoom_link;
     if (link) window.open(link, "_blank");
   }

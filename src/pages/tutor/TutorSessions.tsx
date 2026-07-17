@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
@@ -26,6 +27,7 @@ function formatDate(d?: string) {
 
 export function TutorSessions() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
@@ -45,9 +47,13 @@ export function TutorSessions() {
   });
 
   const join = (s: SessionRow) => {
+    if (s.zoom_meeting_id) {
+      navigate(`/tutor/meeting/${s.id}`);
+      return;
+    }
     const link = s.zoom_link || profile?.zoom_link;
     if (link) window.open(link, "_blank");
-    else toast.error("No session link set. Add one in your profile.");
+    else toast.error("This session has no Zoom meeting or link attached.");
   };
 
   const saveInlineNotes = async (id: string) => {

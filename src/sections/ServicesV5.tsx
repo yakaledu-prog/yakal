@@ -65,31 +65,31 @@ export default function ServicesV5() {
         </Reveal>
 
         {/* Services rows */}
-        <div className="flex flex-col gap-[80px] md:gap-[140px]">
+        <div className="flex w-full gap-[8px] md:gap-[80px]">
           {services.map((svc, index) => {
             const isEven = index % 2 === 0;
 
             return (
-              <Reveal key={svc.id}>
+              <Reveal key={svc.id} className="bg-white rounded ">
+                {/* Image half */}
+                <div className="w-full md:w-[80%] py-8 mx-auto">
+                  <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-lg border border-[#eee]">
+                    <img
+                      src={svc.img}
+                      alt={svc.tag}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
                 <div
                   className={cn(
                     "flex flex-col gap-[40px] md:gap-[80px] items-center",
                     isEven ? "md:flex-row" : "md:flex-row-reverse"
                   )}
                 >
-                  {/* Image half */}
-                  <div className="w-full md:w-1/2">
-                    <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-lg border border-[#eee]">
-                      <img
-                        src={svc.img}
-                        alt={svc.tag}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
 
                   {/* Content half */}
-                  <div className="w-full md:w-1/2 flex flex-col justify-center">
+                  <div className="w-full max-w-[90%] flex flex-col justify-center">
                     <h3 className="text-[32px] md:text-[42px] font-semibold leading-[40px] md:leading-[52px] mb-6 text-[#111]">
                       {svc.headline}
                     </h3>

@@ -7,7 +7,7 @@ export interface CreateSessionParams {
   date: string; // YYYY-MM-DD
   start_time: string; // HH:mm:ss
   duration_minutes: number;
-  mode: number; // 1: Online, 2: In-Person, 3: Both
+  mode: 'online' | 'in-person' | 'both';
   meeting_room_id: string;
   zoom_meeting_id?: string;
   zoom_password?: string;

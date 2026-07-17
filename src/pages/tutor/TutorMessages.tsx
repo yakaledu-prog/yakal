@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search, Phone, Video, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff, ArrowLeft
+  BellOff, ArrowLeft, MessageSquarePlus, Loader2
 } from "lucide-react";
 import {
-  mockConversations,
   countUnread,
   lastMessage,
   type Conversation,
@@ -13,6 +12,12 @@ import {
 import { cn } from "@/utils/cn";
 import { ChatPane, avatarUrl, formatListDate } from "@/components/chat/ChatPane";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getConversations, getContacts, getOrCreateConversation,
+  subscribeToMessages, mapDbToLocalConversations, type Contact,
+} from "@/services/messageService";
 
 function MinimalStat({ label, value }: { label: string; value: number | string }) {
   return (
@@ -280,13 +285,46 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function TutorMessages() {
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const [activeConvId, setActiveConvId] = useState<string>(conversations[0].id);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: dbConversations, isLoading } = useQuery({
+    queryKey: ['conversations', user?.id],
+    queryFn: () => getConversations(user!.id),
+    enabled: !!user,
+  });
+
+  // Every other profile in the app (the seeded demo users) is a potential chat.
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts', user?.id],
+    queryFn: () => getContacts(user!.id),
+    enabled: !!user,
+  });
+
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
+  const [startingChatId, setStartingChatId] = useState<string | null>(null);
 
-  const activeConv = conversations.find((c) => c.id === activeConvId)!;
+  useEffect(() => {
+    if (dbConversations) {
+      setConversations(mapDbToLocalConversations(dbConversations));
+      if (!activeConvId && dbConversations.length > 0) setActiveConvId(dbConversations[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbConversations]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToMessages(() => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+    });
+    return () => unsubscribe();
+  }, [user, queryClient]);
+
+  const activeConv = conversations.find((c) => c.id === activeConvId);
 
   function openConversation(convId: string) {
     setActiveConvId(convId);
@@ -302,8 +340,29 @@ export function TutorMessages() {
     );
   }
 
+  async function startChat(contact: Contact) {
+    if (!user || startingChatId) return;
+    setStartingChatId(contact.id);
+    try {
+      const convId = await getOrCreateConversation(user.id, contact.id);
+      await queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+      setActiveConvId(convId);
+      setShowChatOnMobile(true);
+    } catch (err) {
+      console.error("Failed to start conversation", err);
+    } finally {
+      setStartingChatId(null);
+    }
+  }
+
   const filtered = conversations.filter((c) =>
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Demo users you haven't chatted with yet, honoring the search box.
+  const existingContactIds = new Set(conversations.map((c) => c.contact.id));
+  const newContacts = contacts.filter(
+    (p) => !existingContactIds.has(p.id) && p.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -355,6 +414,11 @@ export function TutorMessages() {
 
             {/* Conversation List */}
             <div className="flex-1 overflow-y-auto">
+              {isLoading && (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+                </div>
+              )}
               {filtered.map((conv) => {
                 const last = lastMessage(conv.messages);
                 const unread = countUnread(conv.messages);
@@ -370,7 +434,7 @@ export function TutorMessages() {
                   >
                     <div className="relative shrink-0">
                       <img
-                        src={avatarUrl(conv.contact.id)}
+                        src={conv.contact.avatar || avatarUrl(conv.contact.id)}
                         alt={conv.contact.name}
                         className="w-12 h-12 rounded-full object-cover"
                       />
@@ -399,6 +463,33 @@ export function TutorMessages() {
                   </div>
                 );
               })}
+
+              {/* Users without a conversation yet, listed like any other chat */}
+              {newContacts.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => startChat(p)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+                    startingChatId !== null && "pointer-events-none opacity-60"
+                  )}
+                >
+                  <div className="relative shrink-0">
+                    <img
+                      src={p.avatar_url || avatarUrl(p.id)}
+                      alt={p.full_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
+                    <div className="flex items-baseline justify-between mb-0.5">
+                      <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{p.full_name}</span>
+                      {startingChatId === p.id && <Loader2 className="animate-spin text-[#1099A1] shrink-0 ml-1" size={14} />}
+                    </div>
+                    <span className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate capitalize">{p.role}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -418,16 +509,26 @@ export function TutorMessages() {
               </div>
             )}
             
-            <ChatPane
-              activeConv={activeConv}
-              setConversations={setConversations}
-              showHeader={true}
-              onProfileClick={() => setShowProfile((v) => !v)}
-            />
+            {activeConv ? (
+              <ChatPane
+                activeConv={activeConv}
+                setConversations={setConversations}
+                showHeader={true}
+                onProfileClick={() => setShowProfile((v) => !v)}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">
+                <MessageSquarePlus size={40} className="text-[#aebac1]" />
+                <p className="text-[15px] font-semibold text-[#111] dark:text-white">No conversation selected</p>
+                <p className="text-[13px] text-[#667781] dark:text-[#8696a0] max-w-xs">
+                  Pick a conversation on the left, or start a new chat with one of the users listed there.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Profile Panel */}
-          {showProfile && (
+          {showProfile && activeConv && (
             <ContactProfilePanel conv={activeConv} onClose={() => setShowProfile(false)} />
           )}
         </div>

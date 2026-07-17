@@ -77,6 +77,30 @@ export function StatusTick({ status }: { status: Message["status"] }) {
   return <CheckCheck size={12} className="text-[#34b7f1]" />;
 }
 
+// Telegram-style welcome for a chat with no history yet: a quiet animated
+// typing-bubble figure and a short prompt, on the chat's patterned background.
+export function EmptyChatWelcome({ name }: { name: string }) {
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4 bg-white/85 dark:bg-[#182229]/85 backdrop-blur rounded-2xl px-8 py-7 max-w-xs text-center select-none">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+          <rect x="8" y="14" width="54" height="36" rx="12" className="fill-[#1099A1]/10 stroke-[#1099A1]" strokeWidth="2" />
+          <circle cx="25" cy="32" r="3" className="fill-[#1099A1] animate-pulse" />
+          <circle cx="35" cy="32" r="3" className="fill-[#1099A1] animate-pulse [animation-delay:300ms]" />
+          <circle cx="45" cy="32" r="3" className="fill-[#1099A1] animate-pulse [animation-delay:600ms]" />
+          <rect x="40" y="54" width="40" height="26" rx="10" className="fill-transparent stroke-[#8696a0]" strokeWidth="2" strokeDasharray="4 4" />
+        </svg>
+        <div>
+          <p className="text-[15px] font-semibold text-[#111] dark:text-white">No messages here yet</p>
+          <p className="text-[13px] text-[#667781] dark:text-[#8696a0] mt-1">
+            Send a message to start the conversation with {name}.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function UnreadBadge({ count }: { count: number }) {
   if (!count) return null;
   return (
@@ -529,6 +553,7 @@ export function ChatPane({
           backgroundImage: isDark ? dotPatternDark : dotPatternLight,
         }}
       >
+        {messageGroups.length === 0 && <EmptyChatWelcome name={activeConv.contact.name} />}
         {messageGroups.map((group) => (
           <div key={group.label} className="space-y-3">
             <div className="flex justify-center my-4">

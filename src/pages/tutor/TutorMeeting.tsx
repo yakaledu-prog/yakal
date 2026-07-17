@@ -6,7 +6,7 @@ import { ZoomMeeting } from '@/components/feature/ZoomMeeting';
 import { Video } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export function StudentMeeting() {
+export function TutorMeeting() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -24,8 +24,8 @@ export function StudentMeeting() {
       const data = await getSessionById(sessionId);
       if (!data) {
         setError('Session not found');
-      } else if (data.student_id !== user.id) {
-        setError('You are not authorized to join this session');
+      } else if (data.tutor_id !== user.id) {
+        setError('You are not authorized to host this session');
       } else {
         setSession(data);
       }
@@ -52,7 +52,7 @@ export function StudentMeeting() {
           <Video size={48} className="text-[#aebac1]" />
           <h2 className="text-[20px] font-bold text-white">{error}</h2>
           <button
-            onClick={() => navigate('/student/sessions')}
+            onClick={() => navigate('/tutor/sessions')}
             className="px-6 py-2 bg-[#1099A1] text-white rounded-lg font-semibold text-[14px] hover:opacity-90 transition-opacity"
           >
             Back to Sessions
@@ -68,19 +68,19 @@ export function StudentMeeting() {
         <ZoomMeeting
           meetingNumber={session.zoom_meeting_id}
           password={session.zoom_password}
-          userName={profile?.full_name || 'Student'}
+          userName={profile?.full_name || 'Tutor'}
           userEmail={user?.email || ''}
-          role={0}
-          leaveUrl={`${window.location.origin}/student/sessions`}
+          role={1}
+          leaveUrl={`${window.location.origin}/tutor/sessions`}
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#54656f] dark:text-[#aebac1]">
           <Video className="h-16 w-16 mb-4 opacity-50" />
           <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-2">No Zoom Meeting Found</h2>
           <p className="max-w-md mx-auto mb-6">
-            This session doesn't have an active Zoom meeting associated with it. If this is an older session, it might have been created before Zoom integration.
+            This session doesn't have a Zoom meeting associated with it. It may have been created before Zoom integration.
           </p>
-          <Button onClick={() => navigate('/student/sessions')} className="bg-[#1099A1] text-white hover:bg-[#0d7f86]">
+          <Button onClick={() => navigate('/tutor/sessions')} className="bg-[#1099A1] text-white hover:bg-[#0d7f86]">
             Return to Sessions
           </Button>
         </div>

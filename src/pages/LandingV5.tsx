@@ -6,7 +6,6 @@
 import { useState, useEffect, useRef } from "react";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
-import ServicesV5 from "@/sections/ServicesV5";
 import Subjects from "@/sections/Subjects";
 import ParentResources from "@/sections/ParentResources";
 import About from "@/sections/About";
@@ -20,6 +19,7 @@ import SubjectPage from "@/pages/SubjectPage";
 import BlogPage from "@/pages/BlogPage";
 import { blogs } from "@/data/blogs";
 import type { Page } from "@/types";
+import ServicesV2 from "@/sections/ServicesV2";
 
 export default function LandingV5() {
   const [page, setPage] = useState<Page>({ type: "home" });
@@ -56,7 +56,7 @@ export default function LandingV5() {
     <div className="bg-white flex flex-col gap-[60px] md:gap-[110px] items-center md:p-[20px] p-0 min-h-screen w-full">
       <Hero onNav={scrollTo} />
       <WhyJoinUs />
-      <ServicesV5 />
+      <ServicesV2 />
       <Subjects onNavigate={navigateTo} />
       <ParentResources scrollTo={scrollTo} />
       <About />

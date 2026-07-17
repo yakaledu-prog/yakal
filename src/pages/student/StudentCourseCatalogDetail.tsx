@@ -150,8 +150,8 @@ export function StudentCourseCatalogDetail() {
     setIsBooking(true);
 
     try {
-      // Book all selected slots, each gets a unique Jitsi meeting room and Zoom meeting
-      await Promise.all(selectedSlots.map(async slot => {
+      // Book all selected slots, each gets a unique meeting room and Zoom meeting
+      const results = await Promise.all(selectedSlots.map(async slot => {
         const formattedDate = slot.date.toISOString().split('T')[0];
         const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
         const meetingRoomId = `yakal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -183,19 +183,24 @@ export function StudentCourseCatalogDetail() {
           date: formattedDate,
           start_time: formattedTime,
           duration_minutes: 60,
-          mode: slot.mode,
+          mode: slot.mode === 2 ? 'in-person' : slot.mode === 3 ? 'both' : 'online',
           meeting_room_id: meetingRoomId,
           zoom_meeting_id,
           zoom_password,
         });
       }));
 
+      const failed = results.filter(r => !r.success);
+      if (failed.length > 0) {
+        throw new Error(failed[0].error || 'Session insert failed');
+      }
+
       toast.success(`Successfully booked ${selectedSlots.length} slot(s)!`);
       setSelectedSlots([]); // Clear selection after booking
       navigate('/student/sessions');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Failed to book one or more slots. Please try again.");
+      toast.error(error?.message || "Failed to book one or more slots. Please try again.");
     } finally {
       setIsBooking(false);
     }

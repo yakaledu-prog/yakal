@@ -4,8 +4,10 @@ import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
-  BellOff, ArrowLeft, Trash2, Send, Play, Pause
+  BellOff, ArrowLeft, Trash2, Send, Play, Pause,
+  Loader2
 } from "lucide-react";
+import { EmptyChatWelcome } from "@/components/chat/ChatPane";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { LiveAudioVisualizer } from 'react-audio-visualize';
 import WaveSurfer from 'wavesurfer.js';
@@ -503,7 +505,10 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
 }
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getConversations, sendMessage as dbSendMessage, subscribeToMessages, mapDbToLocalConversations } from "@/services/messageService";
+import {
+  getConversations, sendMessage as dbSendMessage, subscribeToMessages, mapDbToLocalConversations,
+  getContacts, getOrCreateConversation, type Contact,
+} from "@/services/messageService";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -517,8 +522,31 @@ export function StudentMessages() {
     enabled: !!user,
   });
 
+  // Every other profile in the app (the seeded demo users) is a potential chat.
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts', user?.id],
+    queryFn: () => getContacts(user!.id),
+    enabled: !!user,
+  });
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string>("");
+  const [startingChatId, setStartingChatId] = useState<string | null>(null);
+
+  async function startChat(contact: Contact) {
+    if (!user || startingChatId) return;
+    setStartingChatId(contact.id);
+    try {
+      const convId = await getOrCreateConversation(user.id, contact.id);
+      await queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+      setActiveConvId(convId);
+      setShowChatOnMobile(true);
+    } catch (err) {
+      console.error("Failed to start conversation", err);
+    } finally {
+      setStartingChatId(null);
+    }
+  }
 
   useEffect(() => {
     if (dbConversations && dbConversations.length > 0) {
@@ -610,11 +638,37 @@ export function StudentMessages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConvId, activeConv?.messages?.length]);
 
-  // If no conversations loaded yet, show loading
+  // No conversations yet: list the other users like a normal chat list so one
+  // tap starts a conversation.
   if (!activeConv && conversations.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center text-muted-foreground">
-        <p>No conversations yet. Start a new chat!</p>
+      <div className="h-full flex flex-col items-center justify-center px-6 py-10 overflow-y-auto">
+        <div className="w-full max-w-sm">
+          {contacts.length === 0 && (
+            <p className="text-[13px] text-[#667781] dark:text-[#8696a0] text-center">Loading…</p>
+          )}
+          {contacts.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => startChat(p)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 cursor-pointer rounded-lg transition-colors hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+                startingChatId !== null && "pointer-events-none opacity-60"
+              )}
+            >
+              <img
+                src={p.avatar_url || avatarUrl(p.id)}
+                alt={p.full_name}
+                className="w-12 h-12 rounded-full object-cover shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{p.full_name}</p>
+                <p className="text-[13px] text-[#667781] dark:text-[#8696a0] capitalize">{p.role}</p>
+              </div>
+              {startingChatId === p.id && <Loader2 className="animate-spin text-[#1099A1] shrink-0" size={16} />}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -848,6 +902,12 @@ export function StudentMessages() {
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Demo users you haven't chatted with yet, honoring the search box.
+  const existingContactIds = new Set(conversations.map((c) => c.contact.id));
+  const newContacts = contacts.filter(
+    (p) => !existingContactIds.has(p.id) && p.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex flex-1 overflow-hidden">
 
@@ -917,6 +977,33 @@ export function StudentMessages() {
               </div>
             );
           })}
+
+          {/* Users without a conversation yet, listed like any other chat */}
+          {newContacts.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => startChat(p)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+                startingChatId !== null && "pointer-events-none opacity-60"
+              )}
+            >
+              <div className="relative shrink-0">
+                <img
+                  src={p.avatar_url || avatarUrl(p.id)}
+                  alt={p.full_name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
+                <div className="flex items-baseline justify-between mb-0.5">
+                  <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{p.full_name}</span>
+                  {startingChatId === p.id && <Loader2 className="animate-spin text-[#1099A1] shrink-0 ml-1" size={14} />}
+                </div>
+                <span className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate capitalize">{p.role}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -970,6 +1057,7 @@ export function StudentMessages() {
               backgroundImage: isDark ? dotPatternDark : dotPatternLight,
             }}
           >
+            {messageGroups.length === 0 && <EmptyChatWelcome name={safeConv.contact.name} />}
             {messageGroups.map((group) => (
               <div key={group.label} className="space-y-3">
                 <div className="flex justify-center my-4">

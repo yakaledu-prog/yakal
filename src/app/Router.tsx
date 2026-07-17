@@ -47,6 +47,7 @@ import { TutorSessions } from "../pages/tutor/TutorSessions";
 import { TutorNotifications } from "../pages/tutor/TutorNotifications";
 import { TutorMessages } from "../pages/tutor/TutorMessages";
 import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
+import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
@@ -178,6 +179,7 @@ const router = createBrowserRouter([
           { path: "students/:id", element: <TutorStudents /> },
           { path: "sessions", element: <TutorSessions /> },
           { path: "session/:id", element: <TutorSessionDetail /> },
+          { path: "meeting/:sessionId", element: <TutorMeeting /> },
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
           { path: "courses/:id", element: <TutorCourses /> },

@@ -11,6 +11,8 @@ export interface SessionRow {
   duration_minutes: number;
   mode: string;
   zoom_link: string | null;
+  zoom_meeting_id: string | null;
+  zoom_password: string | null;
   status: string;
   notes: string | null;
   student_name?: string;
