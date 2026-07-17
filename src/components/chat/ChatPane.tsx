@@ -8,10 +8,11 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { LiveAudioVisualizer } from 'react-audio-visualize';
 import WaveSurfer from 'wavesurfer.js';
 import {
-  currentUser,
   type Conversation,
   type Message,
 } from "@/mock/chatData";
+import { useAuth } from "@/contexts/AuthContext";
+import { sendMessage as dbSendMessage } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
@@ -143,8 +144,8 @@ function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
   );
 }
 
-export function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean }) {
-  const isMe = msg.senderId === currentUser.id;
+export function MessageBubble({ msg, contact, isConsecutive, currentUserId }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean; currentUserId?: string }) {
+  const isMe = msg.senderId === currentUserId;
   const isOnlyEmoji = !msg.attachment && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text || "");
 
   if (isOnlyEmoji && msg.text.trim().length > 0) {
@@ -243,6 +244,7 @@ export function ChatPane({
   showHeader?: boolean;
   onProfileClick?: () => void;
 }) {
+  const { user } = useAuth();
   const [inputText, setInputText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -280,20 +282,29 @@ export function ChatPane({
 
   async function sendMessage() {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || !user) return;
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConv.id,
-      senderId: currentUser.id,
+      senderId: user.id,
       text,
       timestamp: new Date(),
-      status: "sent",
+      status: "sending",
       isRead: false,
     };
+    
     setConversations((prev) =>
       prev.map((c) => c.id === activeConv.id ? { ...c, messages: [...c.messages, newMsg] } : c)
     );
     setInputText("");
+
+    if (activeConv.id !== "conv-ai") {
+      try {
+        await dbSendMessage(activeConv.id, user.id, text, 'text');
+      } catch (err) {
+        console.error("Failed to send message", err);
+      }
+    }
 
     if (activeConv.id === "conv-ai") {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
@@ -365,7 +376,7 @@ export function ChatPane({
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConv.id,
-      senderId: currentUser.id,
+      senderId: user?.id || "",
       text: "",
       timestamp: new Date(),
       status: "sent",
@@ -434,7 +445,7 @@ export function ChatPane({
         const newMsg: Message = {
           id: `msg-${Date.now()}`,
           conversationId: activeConv.id,
-          senderId: currentUser.id,
+          senderId: user?.id || "",
           text: "",
           timestamp: new Date(),
           status: "sent",
@@ -452,7 +463,7 @@ export function ChatPane({
       const newMsg: Message = {
         id: `msg-${Date.now()}`,
         conversationId: activeConv.id,
-        senderId: currentUser.id,
+        senderId: user?.id || "",
         text: `🎤 [Audio Message: ${Math.floor(recordingSeconds / 60)}:${recordingSeconds % 60}]`,
         timestamp: new Date(),
         status: "sent",
@@ -529,6 +540,7 @@ export function ChatPane({
                   msg={msg}
                   contact={activeConv.contact}
                   isConsecutive={isConsecutive}
+                  currentUserId={user?.id}
                 />
               );
             })}

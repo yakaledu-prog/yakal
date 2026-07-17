@@ -10,8 +10,6 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { LiveAudioVisualizer } from 'react-audio-visualize';
 import WaveSurfer from 'wavesurfer.js';
 import {
-  mockConversations,
-  currentUser,
   countUnread,
   lastMessage,
   type Conversation,
@@ -160,8 +158,8 @@ function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
-function MessageBubble({ msg, contact, isConsecutive }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean }) {
-  const isMe = msg.senderId === currentUser.id;
+function MessageBubble({ msg, contact, isConsecutive, currentUserId }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean; currentUserId?: string }) {
+  const isMe = msg.senderId === currentUserId;
   const isOnlyEmoji = !msg.attachment && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text || "");
 
   if (isOnlyEmoji && msg.text.trim().length > 0) {
@@ -504,10 +502,40 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
   );
 }
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getConversations, sendMessage as dbSendMessage, subscribeToMessages, mapDbToLocalConversations } from "@/services/messageService";
+import { useAuth } from "@/contexts/AuthContext";
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function StudentMessages() {
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const [activeConvId, setActiveConvId] = useState<string>(conversations[0].id);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: dbConversations } = useQuery({
+    queryKey: ['conversations', user?.id],
+    queryFn: () => getConversations(user!.id),
+    enabled: !!user,
+  });
+
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string>("");
+
+  useEffect(() => {
+    if (dbConversations && dbConversations.length > 0) {
+      setConversations(mapDbToLocalConversations(dbConversations));
+      if (!activeConvId) setActiveConvId(dbConversations[0].id);
+    } else if (dbConversations && dbConversations.length === 0) {
+      setConversations([]);
+    }
+  }, [dbConversations]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToMessages(() => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+    });
+    return () => unsubscribe();
+  }, [user, queryClient]);
   const [inputText, setInputText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
@@ -590,7 +618,7 @@ export function StudentMessages() {
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
-          ? { ...c, unreadCount: 0, messages: c.messages.map((m) => m.senderId !== currentUser.id ? { ...m, isRead: true } : m) }
+          ? { ...c, unreadCount: 0, messages: c.messages.map((m) => m.senderId !== user?.id ? { ...m, isRead: true } : m) }
           : c
       )
     );
@@ -598,20 +626,30 @@ export function StudentMessages() {
 
   async function sendMessage() {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || !user) return;
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConvId,
-      senderId: currentUser.id,
+      senderId: user.id,
       text,
       timestamp: new Date(),
-      status: "sent",
+      status: "sending",
       isRead: false,
     };
+    
+    // Optimistic UI update
     setConversations((prev) =>
-      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...c.messages, newMsg] } : c)
+      prev.map((c) => c.id === activeConvId ? { ...c, messages: [...(c.messages || []), newMsg] } : c)
     );
     setInputText("");
+
+    if (activeConvId !== "conv-ai") {
+      try {
+        await dbSendMessage(activeConvId, user.id, text, 'text');
+      } catch (err) {
+        console.error("Failed to send message", err);
+      }
+    }
 
     if (activeConvId === "conv-ai") {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
@@ -683,7 +721,7 @@ export function StudentMessages() {
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       conversationId: activeConvId,
-      senderId: currentUser.id,
+      senderId: user?.id || "",
       text: "",
       timestamp: new Date(),
       status: "sent",
@@ -752,7 +790,7 @@ export function StudentMessages() {
         const newMsg: Message = {
           id: `msg-${Date.now()}`,
           conversationId: activeConvId,
-          senderId: currentUser.id,
+          senderId: user?.id || "",
           text: "",
           timestamp: new Date(),
           status: "sent",
@@ -770,7 +808,7 @@ export function StudentMessages() {
       const newMsg: Message = {
         id: `msg-${Date.now()}`,
         conversationId: activeConvId,
-        senderId: currentUser.id,
+        senderId: user?.id || "",
         text: `🎤 [Audio Message: ${Math.floor(recordingSeconds / 60)}:${recordingSeconds % 60}]`,
         timestamp: new Date(),
         status: "sent",
@@ -844,7 +882,7 @@ export function StudentMessages() {
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate flex-1">
-                      {last?.senderId === currentUser.id && (
+                      {last?.senderId === (user?.id || "") && (
                         <span className="mr-0.5">
                           <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-[#1099A1]" : "text-[#667781]")} />
                         </span>
@@ -925,6 +963,7 @@ export function StudentMessages() {
                       msg={msg}
                       contact={activeConv.contact}
                       isConsecutive={isConsecutive}
+                      currentUserId={user?.id}
                     />
                   );
                 })}

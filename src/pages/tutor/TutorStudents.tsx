@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
@@ -13,10 +13,10 @@ import { supabase } from "@/lib/supabase";
 import {
   getTutorStudents, getStudentDetail, StudentDetail,
 } from "@/services/tutorService";
+import { getConversations, mapDbToLocalConversations, subscribeToMessages } from "@/services/messageService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatPane } from "@/components/chat/ChatPane";
-import { mockConversations, type Conversation } from "@/mock/chatData";
 
 function fmtDate(d?: string | null) {
   if (!d) return "-";
@@ -157,9 +157,50 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
 
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: dbConversations } = useQuery({
+    queryKey: ['conversations', user?.id],
+    queryFn: () => getConversations(user!.id),
+    enabled: !!user,
+  });
+
+  const [conversations, setConversations] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (dbConversations && dbConversations.length > 0) {
+      setConversations(mapDbToLocalConversations(dbConversations));
+    } else {
+      setConversations([]);
+    }
+  }, [dbConversations]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToMessages(() => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+    });
+    return () => unsubscribe();
+  }, [user, queryClient]);
+
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages">("overview");
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || conversations[0];
+  
+  // Find or mock an active conversation for this student
+  const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || {
+    id: `conv-${detail.profile?.id}`,
+    contact: {
+      id: detail.profile?.id || "unknown",
+      name: detail.profile?.full_name || "Unknown",
+      role: "Student",
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${detail.profile?.full_name || 'U'}&backgroundColor=1099A1`,
+      isOnline: false,
+      lastSeen: new Date(),
+    },
+    messages: [],
+    unreadCount: 0,
+    isPinned: false
+  };
 
   if (!p) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
