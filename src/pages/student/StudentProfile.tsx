@@ -3,7 +3,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Edit2, Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun, Bell, X } from "lucide-react";
+import { Edit2, Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun, Bell, X, SquarePenIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -23,13 +23,13 @@ export function StudentProfile() {
   const toggleTheme = async () => {
     const isDark = document.documentElement.classList.toggle("dark");
     const newTheme = isDark ? "dark" : "light";
-    
+
     if (user?.id) {
       const { error } = await supabase
         .from('profiles')
         .update({ theme: newTheme })
         .eq('id', user.id);
-        
+
       if (error) {
         toast.error("Failed to save theme preference");
         console.error("Theme save error:", error);
@@ -53,23 +53,21 @@ export function StudentProfile() {
 
   return (
     <PageWrapper>
-      <div className="mx-auto w-full max-w-7xl p-4 md:p-8 space-y-8">
+      <div className="flex flex-col min-h-0 bg-background overflow-y-auto">
+        {/* Teal Header */}
+        <div className="bg-[#1099A1] text-white pt-8 md:pt-12 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-
-          {/* Left Column: Profile Card */}
-          <div className="w-full lg:w-[350px] space-y-6 shrink-0">
-            {/* Main Info */}
-            <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-8 flex flex-col items-center text-center shadow-sm relative">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="absolute top-4 right-4 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors"
-              >
-                <Edit2 size={18} />
-              </button>
-
-              <div className="relative mb-4 group cursor-pointer">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-[#111b21] shadow-lg">
+          <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="relative group cursor-pointer shrink-0">
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
                     src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
                     alt={profile?.full_name || "User"}
@@ -82,47 +80,74 @@ export function StudentProfile() {
                 </label>
               </div>
 
-              <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-1">
-                {profile?.full_name || "Student"}
-              </h2>
-
-              <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[12px] font-bold px-3 py-1 rounded-full mb-6 inline-block capitalize">
-                {profile?.role || "Student"}
-              </span>
-
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex items-center justify-center w-full bg-[#1099A1] hover:bg-[#1099A1]/90 text-white font-bold h-12 rounded-xl transition-colors"
-              >
-                Edit Profile
-              </button>
+              <div className="flex flex-col min-w-0">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">
+                  {profile?.full_name || "Student"}
+                </h1>
+                {profile?.bio && <p className="text-white/80 text-[14px] mt-3 max-w-xl">{profile.bio}</p>}
+              </div>
             </div>
 
-            {/* Details List */}
-            <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-lg shrink-0">
-                  <Mail size={18} className="text-[#54656f] dark:text-[#aebac1]" />
+            <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto"
+              >
+                <SquarePenIcon size={16} /> Edit Profile
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="flex items-center justify-center gap-2 !bg-[#97CE9D]/40 border border-[#97CE9D]/40 hover:!bg-[#CAA25F]/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto"
+              >
+                <LogOut size={16} /> Log Out
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Grid inside header */}
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 mt-10">
+            {stats.map((stat, i) => (
+              <div key={i} className="p-6 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-2 text-white/80 mb-2 uppercase text-[12px] font-bold tracking-wider">
+                  {stat.icon} {stat.label}
                 </div>
-                <div>
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5">Email</p>
-                  <p className="text-[14px] font-semibold text-[#111] dark:text-white">{user?.email}</p>
+                <div className="text-3xl font-black tracking-tight">{stat.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Lower Content */}
+        <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px] flex flex-col lg:flex-row gap-10">
+
+          {/* Left Column: Contact & Details */}
+          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
+            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Contact & Details</h3>
+
+            <div className="flex flex-col gap-6">
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 mt-0.5">
+                  <Mail size={20} className="text-[#54656f] dark:text-[#aebac1]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Email</p>
+                  <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{user?.email}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-lg shrink-0">
-                  <Settings size={18} className="text-[#54656f] dark:text-[#aebac1]" />
+                <div className="shrink-0 mt-0.5">
+                  <Settings size={20} className="text-[#54656f] dark:text-[#aebac1]" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5">Theme Preference</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Theme Preference</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white capitalize">
+                    <p className="text-[14px] font-semibold text-[#111] dark:text-white capitalize truncate">
                       {document.documentElement.classList.contains('dark') ? 'Dark' : 'Light'} Mode
                     </p>
                     <button
                       onClick={toggleTheme}
-                      className="p-1.5 rounded-md hover:bg-[#e9edef] dark:hover:bg-[#111b21] transition-colors text-[#54656f] dark:text-[#aebac1]"
+                      className="p-2 rounded-lg bg-gray-100 dark:bg-[#202c33] hover:bg-gray-200 dark:hover:bg-[#2a3942] transition-colors text-[#54656f] dark:text-[#aebac1]"
                     >
                       <Moon size={16} className="hidden dark:block" />
                       <Sun size={16} className="block dark:hidden" />
@@ -132,110 +157,66 @@ export function StudentProfile() {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-[#f8f9fa] dark:bg-[#182329] rounded-lg shrink-0">
-                  <Bell size={18} className="text-[#54656f] dark:text-[#aebac1]" />
+                <div className="shrink-0 mt-0.5">
+                  <Bell size={20} className="text-[#54656f] dark:text-[#aebac1]" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5">Notifications</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Notifications</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white">
+                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
                       Marketing Alerts
                     </p>
                     <button
                       onClick={() => setNotificationsEnabled(!notificationsEnabled)}
                       className={cn(
-                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                        notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                        notificationsEnabled ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700"
                       )}
                     >
                       <span className={cn(
-                        "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
-                        notificationsEnabled ? "translate-x-4.5" : "translate-x-1"
+                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                        notificationsEnabled ? "translate-x-6" : "translate-x-1"
                       )} />
                     </button>
                   </div>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-[#e9edef] dark:border-[#2a3942]">
-                <button
-                  onClick={() => signOut()}
-                  className="flex items-center justify-center gap-3 w-full p-2 py-3 rounded-lg text-white bg-red-500 hover:bg-red-600 transition-colors font-semibold"
-                >
-                  <LogOut size={16} />
-                  <span>
-                    Log Out
-                  </span>
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Right Column: Stats & Activity */}
-          <div className="flex-1 w-full space-y-8">
+          {/* Right Column: Recent Activity */}
+          <div className="flex-1 w-full space-y-6">
+            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity</h3>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {stats.map((stat, i) => (
-                <div key={i} className={cn("border rounded-2xl p-6 shadow-sm flex flex-col", stat.cardBg)}>
-                  <div className="flex justify-between items-start mb-4">
-                    <p className="text-[14px] font-medium text-[#54656f] dark:text-[#aebac1]">{stat.label}</p>
-                    <div className={cn("p-2 rounded-lg", stat.bg, stat.color)}>
-                      {stat.icon}
-                    </div>
-                  </div>
-                  <h3 className={cn("text-[32px] font-bold mb-1", stat.color)}>{stat.value}</h3>
-                  <div className="flex items-center gap-2 mt-auto">
-                    <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329] px-2 py-1 rounded">
-                      {stat.trend}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Tabbed Area */}
-            <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm overflow-hidden">
-              <div className="flex items-center gap-8 px-8 border-b border-[#e9edef] dark:border-[#2a3942]">
-                <button className="py-4 border-b-2 border-primary text-[15px] font-bold text-primary">
-                  Recent Activity
-                </button>
-                <button className="py-4 border-b-2 border-transparent text-[15px] font-semibold text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white transition-colors">
-                  Certificates
-                </button>
-              </div>
-
-              <div className="p-2">
-                {recentActivity.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] rounded-xl transition-colors border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
-                    <div className="flex items-center gap-6">
-                      <div className="text-center w-12 shrink-0">
-                        <p className="text-[20px] font-bold text-[#111] dark:text-white leading-none">{item.date.split(' ')[1]}</p>
-                        <p className="text-[12px] font-medium text-[#54656f] dark:text-[#aebac1] mt-1">{item.date.split(' ')[0]}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-[15px] font-bold text-[#111] dark:text-white">{item.title}</p>
-                        <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] mt-0.5">{item.time}</p>
-                      </div>
+            <div className="flex flex-col">
+              <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+                {recentActivity.map((activity, i) => (
+                  <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center py-6 gap-6 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4 rounded-xl">
+                    <div className="flex flex-col items-center justify-center shrink-0 w-12 text-[#1099A1]">
+                      <span className="text-[20px] font-bold leading-none mb-0.5">{activity.date.split(" ")[1]}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{activity.date.split(" ")[0]}</span>
                     </div>
 
-                    <div className="flex items-center gap-6 text-right shrink-0">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[15px] font-bold text-[#111] dark:text-white truncate mb-1">{activity.title}</h4>
+                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">{activity.time}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0 mt-4 sm:mt-0">
                       <span className={cn(
-                        "px-3 py-1 text-[12px] font-bold rounded-full",
-                        item.status === 'Done' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-[#CAA25F22] text-[#CAA25F]"
+                        "text-[14px] font-bold",
+                        activity.status === "Done" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
                       )}>
-                        {item.status}
+                        {activity.status}
                       </span>
-                      <span className="w-20 text-[14px] font-semibold text-[#111] dark:text-white hidden sm:block">
-                        {item.type}
+                      <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] w-16 text-right">
+                        {activity.type}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -255,13 +236,13 @@ export function StudentProfile() {
             </div>
 
             <div className="p-6 space-y-6">
-              
+
               {/* Avatar Upload in Modal */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative group cursor-pointer">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                    <img 
-                      src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`} 
+                    <img
+                      src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />

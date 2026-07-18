@@ -75,7 +75,7 @@ export function TutorProfile() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
               <div className="flex items-center gap-6">
                 <div className="relative group shrink-0">
-                  <div 
+                  <div
                     className="w-24 h-24 rounded-full overflow-hidden border border-white/20 bg-cover bg-center bg-no-repeat bg-black/10"
                     style={{ backgroundImage: `url(${avatarSrc})` }}
                   />
@@ -86,38 +86,38 @@ export function TutorProfile() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight mb-2">{profile?.full_name || "Tutor"}</h1>
-                  <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span>
+                  {/* <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
                 </div>
               </div>
               <div className="shrink-0 flex flex-col gap-3">
-                 <button onClick={() => setEditOpen(true)} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                   <Edit2 size={16} /> Edit Profile
-                 </button>
-                 <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-[#CAA25F] hover:bg-[#b59052] text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                   <LogOut size={16} /> Log Out
-                 </button>
+                <button onClick={() => setEditOpen(true)} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                  <Edit2 size={16} /> Edit Profile
+                </button>
+                <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-transparent !text-[#CAA25F] px-4 py-2 rounded-lg font-medium transition-colors">
+                  <LogOut size={16} /> Log Out
+                </button>
               </div>
             </div>
 
             {/* Bottom Row Stats in Header */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 border-t border-white/20 pb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 pb-6">
               <div>
                 <div className="inline-flex flex-col items-center">
-                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
-                   <p className="text-3xl font-bold">{new Set(sessions.map((s) => s.student_id)).size}</p>
+                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
+                  <p className="text-3xl font-bold">{new Set(sessions.map((s) => s.student_id)).size}</p>
                 </div>
               </div>
               <div>
                 <div className="inline-flex flex-col items-center">
-                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><CheckCircle size={14} /> Completed Sessions</p>
-                   <p className="text-3xl font-bold">{sessions.filter((s) => s.status === "completed").length}</p>
+                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><CheckCircle size={14} /> Completed Sessions</p>
+                  <p className="text-3xl font-bold">{sessions.filter((s) => s.status === "completed").length}</p>
                 </div>
               </div>
               <div>
                 <div className="inline-flex flex-col items-center">
-                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
-                   <p className="text-3xl font-bold">{courseCount}</p>
+                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
+                  <p className="text-3xl font-bold">{courseCount}</p>
                 </div>
               </div>
             </div>
@@ -139,7 +139,7 @@ export function TutorProfile() {
                   label="Rate / session"
                   value={profile?.hourly_rate != null ? `${profile.hourly_rate} ${profile.rate_currency || "ETB"}` : "Not set"}
                 />
-                
+
               </div>
             </div>
 
@@ -161,9 +161,9 @@ export function TutorProfile() {
                         <p className="text-[13px] text-muted-foreground mt-0.5">{item.student_name}</p>
                       </div>
                     </div>
-                    <span className={cn("px-3 py-1 text-[12px] font-bold rounded-full capitalize shrink-0",
-                      item.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                        item.status === "upcoming" ? "bg-[#1099A1]/10 text-[#1099A1]" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>
+                    <span className={cn("text-[14px] font-bold capitalize shrink-0",
+                      item.status === "completed" ? "text-green-600 dark:text-green-400" :
+                        item.status === "upcoming" ? "text-[#1099A1]" : "text-red-600 dark:text-red-400")}>
                       {item.status}
                     </span>
                   </div>
@@ -182,7 +182,7 @@ export function TutorProfile() {
 function DetailRow({ icon, label, value, truncate }: { icon: React.ReactNode; label: string; value: string; truncate?: boolean }) {
   return (
     <div className="flex items-start gap-4">
-      <div className="p-2 bg-muted/30 rounded-lg shrink-0 text-muted-foreground w-9 h-9 flex items-center justify-center">{icon}</div>
+      <div className="shrink-0 text-muted-foreground mt-0.5">{icon}</div>
       <div className="min-w-0">
         <p className="text-[12px] text-muted-foreground font-medium mb-0.5">{label}</p>
         <p className={cn("text-[14px] font-semibold text-foreground", truncate && "truncate max-w-[220px]")}>{value}</p>
