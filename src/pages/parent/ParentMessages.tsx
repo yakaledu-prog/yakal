@@ -5,7 +5,8 @@ import {
   Paperclip, Smile, Mic, Check, CheckCheck, X,
   Image as ImageIcon, Link as LinkIcon, FileText, Volume2,
   BellOff, ArrowLeft, Trash2, Send, Play, Pause,
-  Loader2, MessageCircle
+  Loader2, MessageCircle,
+  MessagesSquareIcon
 } from "lucide-react";
 import { EmptyChatWelcome } from "@/components/chat/ChatPane";
 import EmojiPicker, { Theme } from "emoji-picker-react";
@@ -907,8 +908,8 @@ export function ParentMessages() {
               </>
             ) : (
               <div className="flex items-center gap-4 min-w-0">
-                <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur shadow-sm border border-white/20 shrink-0">
-                  <MessageCircle size={28} className="text-white" />
+                <div className="w-14 h-14 bg-white/0 rounded-full flex items-center justify-center backdrop-blur shadow-inner border border-white/20 shrink-0">
+                  <MessagesSquareIcon size={28} className="text-white" />
                 </div>
                 <div className="flex flex-col min-w-0">
                   <h2 className="text-xl md:text-2xl font-bold tracking-tight truncate">Messages</h2>
@@ -928,279 +929,279 @@ export function ParentMessages() {
 
       <div className="flex flex-1 overflow-hidden">
 
-      {/* ── Left Pane ────────────────────────────────────────────── */}
-      <div className={cn(
-        "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
-        showChatOnMobile ? "hidden md:flex" : "flex"
-      )}>
+        {/* ── Left Pane ────────────────────────────────────────────── */}
+        <div className={cn(
+          "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
+          showChatOnMobile ? "hidden md:flex" : "flex"
+        )}>
 
-        {/* Search bar only – tall */}
-        <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
-            <Search size={18} className="text-[#1099A1] shrink-0" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search or start new chat"
-              className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
-            />
+          {/* Search bar only – tall */}
+          <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+            <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
+              <Search size={18} className="text-[#1099A1] shrink-0" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search or start new chat"
+                className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map((conv) => {
-            const last = lastMessage(conv.messages);
-            const unread = countUnread(conv.messages);
-            const isActive = conv.id === activeConvId;
-            return (
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto">
+            {filtered.map((conv) => {
+              const last = lastMessage(conv.messages);
+              const unread = countUnread(conv.messages);
+              const isActive = conv.id === activeConvId;
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => openConversation(conv.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
+                    isActive ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
+                  )}
+                >
+                  <div className="relative shrink-0">
+                    <img
+                      src={avatarUrl(conv.contact.id)}
+                      alt={conv.contact.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    {conv.contact.isOnline && (
+                      <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
+                    <div className="flex items-baseline justify-between mb-0.5">
+                      <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{conv.contact.name}</span>
+                      <span className={cn("text-[12px] shrink-0 ml-1", unread > 0 ? "text-[#1099A1] font-medium" : "text-[#667781] dark:text-[#8696a0]")}>
+                        {last ? formatListDate(last.timestamp) : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        {last ? (
+                          <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
+                            {last.senderId === (user?.id || "") && (
+                              <span className="mr-0.5">
+                                <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-[#1099A1]" : "text-[#667781]")} />
+                              </span>
+                            )}
+                            {last.text}
+                          </p>
+                        ) : (
+                          <p className="text-[13px] text-[#1099A1] line-clamp-1 truncate font-medium">
+                            Send a message to start the conversation with {conv.contact.name}
+                          </p>
+                        )}
+                      </div>
+                      {unread > 0 && <UnreadBadge count={unread} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Users without a conversation yet, listed like any other chat */}
+            {newContacts.map((p) => (
               <div
-                key={conv.id}
-                onClick={() => openConversation(conv.id)}
+                key={p.id}
+                onClick={() => startChat(p)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors",
-                  isActive ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]"
+                  "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+                  startingChatId !== null && "pointer-events-none opacity-60"
                 )}
               >
                 <div className="relative shrink-0">
                   <img
-                    src={avatarUrl(conv.contact.id)}
-                    alt={conv.contact.name}
+                    src={p.avatar_url || avatarUrl(p.id)}
+                    alt={p.full_name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
-                  {conv.contact.isOnline && (
-                    <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
-                  )}
                 </div>
                 <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
                   <div className="flex items-baseline justify-between mb-0.5">
-                    <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{conv.contact.name}</span>
-                    <span className={cn("text-[12px] shrink-0 ml-1", unread > 0 ? "text-[#1099A1] font-medium" : "text-[#667781] dark:text-[#8696a0]")}>
-                      {last ? formatListDate(last.timestamp) : ""}
-                    </span>
+                    <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{p.full_name}</span>
+                    {startingChatId === p.id && <Loader2 className="animate-spin text-[#1099A1] shrink-0 ml-1" size={14} />}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      {last ? (
-                        <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
-                          {last.senderId === (user?.id || "") && (
-                            <span className="mr-0.5">
-                              <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-[#1099A1]" : "text-[#667781]")} />
-                            </span>
-                          )}
-                          {last.text}
-                        </p>
-                      ) : (
-                        <p className="text-[13px] text-[#1099A1] line-clamp-1 truncate font-medium">
-                          Send a message to start the conversation with {conv.contact.name}
-                        </p>
-                      )}
-                    </div>
-                    {unread > 0 && <UnreadBadge count={unread} />}
-                  </div>
+                  <span className="text-[13px] text-[#1099A1] line-clamp-1 truncate font-medium">Send a message to start the conversation with {p.full_name}</span>
                 </div>
               </div>
-            );
-          })}
-
-          {/* Users without a conversation yet, listed like any other chat */}
-          {newContacts.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => startChat(p)}
-              className={cn(
-                "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
-                startingChatId !== null && "pointer-events-none opacity-60"
-              )}
-            >
-              <div className="relative shrink-0">
-                <img
-                  src={p.avatar_url || avatarUrl(p.id)}
-                  alt={p.full_name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
-                <div className="flex items-baseline justify-between mb-0.5">
-                  <span className="text-[15px] font-medium text-[#111] dark:text-[#e9edef] truncate">{p.full_name}</span>
-                  {startingChatId === p.id && <Loader2 className="animate-spin text-[#1099A1] shrink-0 ml-1" size={14} />}
-                </div>
-                <span className="text-[13px] text-[#1099A1] line-clamp-1 truncate font-medium">Send a message to start the conversation with {p.full_name}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Right: Chat + Profile ─────────────────────────────────── */}
-      <div className={cn(
-        "flex-1 overflow-hidden min-w-0",
-        showChatOnMobile ? "flex" : "hidden md:flex"
-      )}>
-
-        {!safeConv ? (
-          <div className="flex-1 flex flex-col items-center justify-center bg-[#f0faf0] dark:bg-[#0d2528]" style={{ backgroundImage: isDark ? dotPatternDark : dotPatternLight }}>
-            <div className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur p-8 rounded-2xl shadow-sm text-center max-w-sm">
-              <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle size={32} className="text-[#1099A1]" />
-              </div>
-              <h3 className="text-xl font-bold text-[#111] dark:text-white mb-2">Your Messages</h3>
-              <p className="text-[14px] text-[#667781] dark:text-[#8696a0]">
-                Select a chat from the sidebar or search for someone to start a conversation.
-              </p>
-            </div>
+            ))}
           </div>
-        ) : (
-          <>
-            {/* Chat Pane */}
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        </div>
 
+        {/* ── Right: Chat + Profile ─────────────────────────────────── */}
+        <div className={cn(
+          "flex-1 overflow-hidden min-w-0",
+          showChatOnMobile ? "flex" : "hidden md:flex"
+        )}>
 
-
-              {/* Message History with branded pattern bg */}
-              <div
-                className="flex-1 overflow-y-auto px-[5%] py-4 space-y-3"
-                style={{
-                  backgroundColor: isDark ? CHAT_BG_DARK : CHAT_BG_LIGHT,
-                  backgroundImage: isDark ? dotPatternDark : dotPatternLight,
-                }}
-              >
-                {messageGroups.length === 0 && <EmptyChatWelcome name={safeConv.contact.name} />}
-                {messageGroups.map((group) => (
-                  <div key={group.label} className="space-y-3">
-                    <div className="flex justify-center my-4">
-                      <span className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur text-[#667781] dark:text-[#8696a0] text-[12.5px] font-medium px-3 py-1 rounded-full shadow-sm select-none">
-                        {group.label}
-                      </span>
-                    </div>
-                    {group.messages.map((msg, idx) => {
-                      const isConsecutive = idx > 0 && group.messages[idx - 1].senderId === msg.senderId;
-                      return (
-                        <MessageBubble
-                          key={msg.id}
-                          msg={msg}
-                          contact={safeConv.contact}
-                          isConsecutive={isConsecutive}
-                          currentUserId={user?.id}
-                        />
-                      );
-                    })}
-                  </div>
-                ))}
-                <div ref={bottomRef} />
+          {!safeConv ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-[#f0faf0] dark:bg-[#0d2528]" style={{ backgroundImage: isDark ? dotPatternDark : dotPatternLight }}>
+              <div className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur p-8 rounded-2xl shadow-sm text-center max-w-sm">
+                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle size={32} className="text-[#1099A1]" />
+                </div>
+                <h3 className="text-xl font-bold text-[#111] dark:text-white mb-2">Your Messages</h3>
+                <p className="text-[14px] text-[#667781] dark:text-[#8696a0]">
+                  Select a chat from the sidebar or search for someone to start a conversation.
+                </p>
               </div>
+            </div>
+          ) : (
+            <>
+              {/* Chat Pane */}
+              <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-              {/* Input Bar */}
-              <div className="relative flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
-                {showEmojiPicker && (
-                  <div className="absolute bottom-[60px] left-4 z-50 shadow-lg rounded-xl overflow-hidden">
-                    <EmojiPicker
-                      onEmojiClick={handleEmojiClick}
-                      theme={isDark ? Theme.DARK : Theme.LIGHT}
-                    />
-                  </div>
-                )}
 
-                {!isRecording ? (
-                  <>
-                    <button
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className={cn("p-2 transition-colors", showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]")}
-                    >
-                      <Smile size={24} />
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors"
-                    >
-                      <Paperclip size={24} />
-                    </button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
 
-                    <textarea
-                      value={inputText}
-                      onChange={(e) => {
-                        setInputText(e.target.value);
-                        e.target.style.height = "auto";
-                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-                      }}
-                      onKeyDown={handleKeyDown}
-                      onFocus={() => setShowEmojiPicker(false)}
-                      placeholder="Type a message"
-                      rows={1}
-                      className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
-                      style={{ height: "42px" }}
-                    />
+                {/* Message History with branded pattern bg */}
+                <div
+                  className="flex-1 overflow-y-auto px-[5%] py-4 space-y-3"
+                  style={{
+                    backgroundColor: isDark ? CHAT_BG_DARK : CHAT_BG_LIGHT,
+                    backgroundImage: isDark ? dotPatternDark : dotPatternLight,
+                  }}
+                >
+                  {messageGroups.length === 0 && <EmptyChatWelcome name={safeConv.contact.name} />}
+                  {messageGroups.map((group) => (
+                    <div key={group.label} className="space-y-3">
+                      <div className="flex justify-center my-4">
+                        <span className="bg-white/80 dark:bg-[#182229]/80 backdrop-blur text-[#667781] dark:text-[#8696a0] text-[12.5px] font-medium px-3 py-1 rounded-full shadow-sm select-none">
+                          {group.label}
+                        </span>
+                      </div>
+                      {group.messages.map((msg, idx) => {
+                        const isConsecutive = idx > 0 && group.messages[idx - 1].senderId === msg.senderId;
+                        return (
+                          <MessageBubble
+                            key={msg.id}
+                            msg={msg}
+                            contact={safeConv.contact}
+                            isConsecutive={isConsecutive}
+                            currentUserId={user?.id}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <div ref={bottomRef} />
+                </div>
 
-                    {inputText.trim() ? (
+                {/* Input Bar */}
+                <div className="relative flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33]">
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-[60px] left-4 z-50 shadow-lg rounded-xl overflow-hidden">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        theme={isDark ? Theme.DARK : Theme.LIGHT}
+                      />
+                    </div>
+                  )}
+
+                  {!isRecording ? (
+                    <>
                       <button
-                        onClick={sendMessage}
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={cn("p-2 transition-colors", showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]")}
+                      >
+                        <Smile size={24} />
+                      </button>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors"
+                      >
+                        <Paperclip size={24} />
+                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+
+                      <textarea
+                        value={inputText}
+                        onChange={(e) => {
+                          setInputText(e.target.value);
+                          e.target.style.height = "auto";
+                          e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                        }}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => setShowEmojiPicker(false)}
+                        placeholder="Type a message"
+                        rows={1}
+                        className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
+                        style={{ height: "42px" }}
+                      />
+
+                      {inputText.trim() ? (
+                        <button
+                          onClick={sendMessage}
+                          className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
+                        >
+                          <Send size={18} className="text-white -ml-0.5 mt-0.5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={startRecording}
+                          className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                        >
+                          <Mic size={20} />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center gap-3">
+                      <button
+                        onClick={cancelRecording}
+                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                      >
+                        <Trash2 size={24} />
+                      </button>
+
+                      <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                          <span className="text-[#111] dark:text-white font-medium text-[15px]">
+                            {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
+                          </span>
+                        </div>
+
+                        {mediaRecorderRef.current && (
+                          <div className="h-6 flex-1 overflow-hidden hidden sm:flex items-center">
+                            <LiveAudioVisualizer
+                              mediaRecorder={mediaRecorderRef.current}
+                              width={400}
+                              height={24}
+                              barWidth={2}
+                              gap={2}
+                              barColor="#f87171"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={sendRecording}
                         className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
                       >
                         <Send size={18} className="text-white -ml-0.5 mt-0.5" />
                       </button>
-                    ) : (
-                      <button
-                        onClick={startRecording}
-                        className="w-10 h-10 rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
-                      >
-                        <Mic size={20} />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center gap-3">
-                    <button
-                      onClick={cancelRecording}
-                      className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
-                    >
-                      <Trash2 size={24} />
-                    </button>
-
-                    <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-[#111] dark:text-white font-medium text-[15px]">
-                          {Math.floor(recordingSeconds / 60)}:{recordingSeconds % 60 < 10 ? '0' : ''}{recordingSeconds % 60}
-                        </span>
-                      </div>
-
-                      {mediaRecorderRef.current && (
-                        <div className="h-6 flex-1 overflow-hidden hidden sm:flex items-center">
-                          <LiveAudioVisualizer
-                            mediaRecorder={mediaRecorderRef.current}
-                            width={400}
-                            height={24}
-                            barWidth={2}
-                            gap={2}
-                            barColor="#f87171"
-                          />
-                        </div>
-                      )}
                     </div>
-
-                    <button
-                      onClick={sendRecording}
-                      className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
-                    >
-                      <Send size={18} className="text-white -ml-0.5 mt-0.5" />
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Profile Panel */}
-            {showProfile && (
-              <ContactProfilePanel conv={safeConv} onClose={() => setShowProfile(false)} />
-            )}
-          </>
-        )}
+              {/* Profile Panel */}
+              {showProfile && (
+                <ContactProfilePanel conv={safeConv} onClose={() => setShowProfile(false)} />
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

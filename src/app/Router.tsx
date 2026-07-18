@@ -54,6 +54,7 @@ import { ParentCourses } from "../pages/parent/ParentCourses";
 import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentProfile } from "../pages/parent/ParentProfile";
+import { ParentBilling } from "../pages/parent/ParentBilling";
 
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
@@ -209,6 +210,7 @@ const router = createBrowserRouter([
           { path: "children", element: <ParentChildren /> },
           { path: "children/:id", element: <ParentChildren /> },
           { path: "messages", element: <ParentMessages /> },
+          { path: "billing", element: <ParentBilling /> },
           { path: "profile", element: <ParentProfile /> },
           { path: "*", element: <NotFoundPage /> },
         ]
