@@ -1,27 +1,18 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ChartCard } from "@/components/feature/ChartCard";
-import { studentService } from "@/services/studentService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useOutletContext } from "react-router-dom";
+import { Video, Clock, CalendarDays, Activity, MessagesSquareIcon, Settings, X } from "lucide-react";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { studentService } from "@/services/studentService";
 import { cn } from "@/utils/cn";
-
-// Mock chart data
-const studyHoursData = [
-  { name: 'Mon', hours: 2 },
-  { name: 'Tue', hours: 1.5 },
-  { name: 'Wed', hours: 3 },
-  { name: 'Thu', hours: 2 },
-  { name: 'Fri', hours: 4 },
-  { name: 'Sat', hours: 1 },
-  { name: 'Sun', hours: 2.5 },
-];
+import { dicebearUrl } from "@/utils/avatar";
 
 export function StudentHome() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
   const [showAnnouncementDialog, setShowAnnouncementDialog] = useState(false);
@@ -34,149 +25,129 @@ export function StudentHome() {
   if (!data) {
     return (
       <PageWrapper>
-        <div className="space-y-6 p-4">
-          <Skeleton className="h-[200px] w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Skeleton className="h-[300px] col-span-2" />
-            <Skeleton className="h-[300px]" />
+        <div className="p-8 space-y-6">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
           </div>
+          <Skeleton className="h-64 w-full rounded-xl" />
         </div>
       </PageWrapper>
     );
   }
 
-  return (
-    <PageWrapper>
-      <div className="space-y-6 p-5 dark:bg-[#111b21]">
-        {/* Welcome Banner */}
-        <div className="rounded-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 flex flex-col sm:flex-row items-center justify-between shadow-sm relative overflow-hidden">
-          <div className="relative z-10 space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Welcome back, Brooklyn!</h1>
-            <p className="text-primary-foreground/80">
-              You have a calculus session coming up today. Keep up the great work on your learning streak.
-            </p>
-          </div>
-          <div className="relative z-10 mt-auto -mb-1">
-            <Button variant="secondary" size="lg" className="gap-2 dark:bg-[#111b21]">
-              Continue Learning <ChevronRight size={18} />
-            </Button>
-          </div>
-          {/* Decorative background shapes */}
-          <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute right-20 -bottom-20 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-        </div>
+  const firstName = profile?.full_name?.split(" ")[0] || "Student";
+  const { nextSession, progress } = data;
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Next Session (Priority Info) */}
-          <div className="lg:col-span-2 space-y-6 dark:bg-[#111b21]">
-            <Card className="overflow-hidden border-0 shadow-md dark:bg-[#111b21]">
-              <div className="flex flex-col sm:flex-row h-full">
-                <div className="w-full sm:w-2/5 h-48 sm:h-auto relative">
-                  <img
-                    src="/images/course_math_1782503062614.png"
-                    alt="Calculus"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                    <Badge className="bg-primary/90 text-white backdrop-blur-sm border-0">Next Up</Badge>
-                  </div>
-                </div>
-                <div className="p-6 flex flex-col justify-between flex-1 bg-card  dark:bg-[#182329]">
-                  <div>
-                    <h3 className="text-2xl font-bold mb-1">{data.nextSession.subject}</h3>
-                    <p className="text-muted-foreground flex items-center gap-2 mb-4">
-                      <Clock size={16} /> {data.nextSession.date} with {data.nextSession.tutor}
-                    </p>
-                    <p className="text-sm">
-                      Today we will cover derivatives and the chain rule. Please review Chapter 4 before joining.
-                    </p>
-                  </div>
-                  <div className="mt-6 flex gap-3">
-                    <Button className="flex-1 gap-2 bg-[#f26b4d] hover:bg-[#d8583d] text-white">
-                      <Video size={18} /> Join Meeting
-                    </Button>
-                    <Button variant="outline" className="flex-1">View Details</Button>
-                  </div>
+  return (
+    <PageWrapper className="!p-0">
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
+        {/* Massive Integrated Command Banner */}
+        <div className="bg-[#1099A1] text-white">
+          <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
+
+            {/* Top row: Welcome + Quick Actions */}
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="space-y-2">
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <p className="text-white/80 text-[15px]">
+                  {nextSession 
+                    ? `You have a ${nextSession.subject.toLowerCase()} session coming up today. Keep up the great work on your learning streak.`
+                    : "You have no sessions scheduled today. Enjoy the breather!"}
+                </p>
+              </div>
+
+              {/* Toolbar Quick Actions (No cards, just sleek icon buttons) */}
+              <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
+                <TooltipButton icon={<CalendarDays size={18} />} label="My Learning" onClick={() => navigate("/student/courses")} />
+                <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/student/messages")} />
+                <TooltipButton icon={<Settings size={18} />} label="Profile" onClick={() => navigate("/student/profile")} />
+              </div>
+            </div>
+
+            {/* Bottom row: Integrated Stats + Sparkline */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/20">
+              <IntegratedStat label="Active Courses" value="3" />
+              <IntegratedStat label="Completed Sessions" value={progress.completedSessions} />
+              <IntegratedStat label="Learning Streak" value={`${progress.currentStreak} days`} alert={false} />
+
+              <div className="flex flex-col cursor-default opacity-80">
+                <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">Overall Grade</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-3xl font-bold">{progress.overallGrade}</p>
+                  <Sparkline />
                 </div>
               </div>
-            </Card>
+            </div>
 
-            {/* Progress Chart */}
-            <ChartCard
-              title="Weekly Study Hours"
-              data={studyHoursData}
-              dataKey="hours"
-              xAxisKey="name"
-            />
-          </div>
-
-          {/* Sidebar Widgets */}
-          <div className="space-y-6">
-
-            <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Video className="text-primary" size={20} /> Next Session
-                </CardTitle>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-6 w-6"><ChevronLeft size={12} /></Button>
-                  <Button variant="outline" size="icon" className="h-6 w-6"><ChevronRight size={12} /></Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <h4 className="font-semibold text-base mb-1">Physics Lab Review</h4>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <Clock size={14} className="text-primary/70" />
-                      <span>Today, 5:30 PM</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">SJ</div>
-                      <span className="font-medium text-foreground">Sarah J.</span>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="secondary" className="w-full gap-2 mt-1 text-muted-foreground hover:text-foreground border border-border/50">
-                    View Details
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="text-primary" size={20} /> Homework Due
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">Derivatives Practice</p>
-                    <p className="text-xs text-muted-foreground">Calculus</p>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap">Tomorrow</Badge>
-                </div>
-                <div className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">Kinematics Lab Report</p>
-                    <p className="text-xs text-muted-foreground">Physics</p>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap bg-amber-500/10 text-amber-600 hover:bg-amber-500/20">Friday</Badge>
-                </div>
-                <div className="flex items-center justify-between gap-4 py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">Read Chapter 4</p>
-                    <p className="text-xs text-muted-foreground">Calculus</p>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20">Today</Badge>
-                </div>
-                <Button variant="secondary" className="w-full mt-2 text-xs text-muted-foreground hover:bg-muted-foreground/10 hover:text-foreground transition-colors border-none bg-muted/50">View All Tasks</Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
+        {/* Content Below Banner (Borderless, Typography Driven) */}
+        <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
+
+          {/* Left: Recent Activity Feed */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-[#1099A1]" /> Activity Feed</h2>
+            </div>
+            <div className="space-y-0">
+              <FeedItem text={`You submitted ${data.homeworkDue[0]?.title || 'Homework'}`} time="2 hours ago" />
+              <FeedItem text={`Dr. Alex graded your ${data.homeworkDue[1]?.title || 'Lab Report'}`} time="5 hours ago" />
+              <FeedItem text="System processed your course enrollment" time="Yesterday" />
+            </div>
+          </div>
+
+          {/* Right: Vertical Agenda */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Agenda</h2>
+              <button onClick={() => navigate("/student/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
+            </div>
+
+            <div className="space-y-6">
+              {!nextSession && data.homeworkDue.length === 0 ? (
+                <p className="text-muted-foreground text-[14px]">Your schedule is clear!</p>
+              ) : (
+                <>
+                  {nextSession && (
+                    <div className="relative pl-6 border-l-2 border-[#1099A1]">
+                      <div className="absolute w-3 h-3 bg-[#1099A1] rounded-full -left-[7px] top-1.5 shadow-[0_0_0_4px_rgba(16,153,161,0.2)]" />
+                      <span className="text-[#1099A1] text-[11px] font-bold uppercase tracking-wider block mb-1">Next Up</span>
+                      <p className="text-[16px] font-semibold text-foreground">{nextSession.subject}</p>
+                      <div className="flex items-center gap-2 mt-2 text-muted-foreground text-[13px]">
+                        <Clock size={14} /> {nextSession.date}
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-2">
+                          <img src={nextSession.image || dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" />
+                          <span className="text-[13px] font-medium text-foreground">{nextSession.tutor}</span>
+                        </div>
+                        <Button className="h-8 gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white" size="sm" onClick={() => window.open(nextSession.link, "_blank")}>
+                          <Video size={14} /> Join
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {data.homeworkDue.map((h: any) => (
+                    <div key={h.id} className="relative pl-6 border-l-2 border-border/50">
+                      <div className="absolute w-2 h-2 bg-border rounded-full -left-[5px] top-1.5" />
+                      <p className="text-[15px] font-medium text-foreground">{h.title}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-muted-foreground text-[13px]">
+                        <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {h.due}</span>
+                        <span className="text-xs text-muted-foreground">{h.subject}</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Announcements Logic */}
         {showAnnouncement && data.announcements.length > 0 && (
           <div
             className={cn(
@@ -192,7 +163,6 @@ export function StudentHome() {
               <button
                 onClick={() => setShowAnnouncementDialog(true)}
                 className="p-1 hover:bg-teal-200/50 dark:hover:bg-teal-900/50 rounded-md transition-colors shrink-0"
-                aria-label="Close announcement"
               >
                 <X size={16} />
               </button>
@@ -237,7 +207,61 @@ export function StudentHome() {
             </Card>
           </div>
         )}
+
       </div>
     </PageWrapper>
+  );
+}
+
+function TooltipButton({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors focus:outline-none"
+    >
+      {icon}
+    </button>
+  );
+}
+
+function IntegratedStat({ label, value, alert }: { label: string; value: string | number; alert?: boolean }) {
+  return (
+    <div>
+      <div className="inline-flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
+          {alert && <div className="w-2 h-2 rounded-full bg-[#CAA25F]" title="Requires Attention" />}
+        </div>
+        <p className="text-3xl font-bold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function FeedItem({ text, time }: { text: string; time: string }) {
+  return (
+    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
+      <div className="flex items-center gap-4">
+        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-[#1099A1] transition-colors" />
+        <p className="text-[14px] md:text-[15px] font-medium text-foreground">{text}</p>
+      </div>
+      <span className="text-[12px] md:text-[13px] text-muted-foreground mt-2 sm:mt-0">{time}</span>
+    </div>
+  );
+}
+
+function Sparkline() {
+  return (
+    <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
+      <path d="M2 18L12 12L22 16L32 6L42 10L58 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M58 2L42 10L32 6L22 16L12 12L2 18V24H58V2Z" fill="url(#sparkline-gradient)" opacity="0.2" />
+      <defs>
+        <linearGradient id="sparkline-gradient" x1="30" y1="2" x2="30" y2="24" gradientUnits="userSpaceOnUse">
+          <stop stopColor="white" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
   );
 }
