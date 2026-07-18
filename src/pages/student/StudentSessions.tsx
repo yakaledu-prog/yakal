@@ -207,8 +207,27 @@ export function StudentSessions() {
                         <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
                           <User size={14} /> <span>Tutor: <span className="font-medium text-foreground">{s.tutor_name}</span></span>
                         </div>
-                        {s.notes && s.status === "completed" && (
-                          <div className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
+                        {s.status !== "upcoming" && (
+                          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg bg-[#f0f2f5] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942]">
+                            <div>
+                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Session Status</p>
+                              <p className={cn("text-[13px] font-semibold", s.status === 'completed' ? 'text-[#1099A1]' : 'text-destructive')}>
+                                {s.status === 'completed' ? 'Attended' : 'Missed'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Duration</p>
+                              <p className="text-[13px] font-semibold text-foreground">{s.duration_minutes} Minutes</p>
+                            </div>
+                            <div className="col-span-2 md:col-span-4 lg:col-span-2">
+                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Tutor Feedback</p>
+                              {s.notes ? (
+                                <div className="text-[13px] text-foreground italic border-l-2 border-[#1099A1] pl-3 py-0.5 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
+                              ) : (
+                                <p className="text-[13px] text-muted-foreground italic">No feedback provided yet.</p>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
 

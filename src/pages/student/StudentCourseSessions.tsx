@@ -1,123 +1,170 @@
-import { PlayCircle, Clock, Calendar, Video } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { useState } from "react";
+import { Clock, Calendar, X, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+type Session = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  type: string;
+};
+
+const MOCK_SESSIONS: Session[] = [
+  { id: "1", title: "Understanding Variables", date: "Friday, Nov 17", time: "4:00 PM", type: "1-on-1" },
+  { id: "2", title: "Linear Equations", date: "Monday, Nov 20", time: "6:00 PM", type: "Group" },
+  { id: "3", title: "Graphing Functions", date: "Wednesday, Nov 22", time: "3:30 PM", type: "1-on-1" },
+  { id: "4", title: "Polynomials Review", date: "Friday, Dec 1", time: "5:00 PM", type: "Group" },
+];
+
 export function StudentCourseSessions() {
-  const sessions = [
-    {
-      title: "Module 1: Introduction",
-      items: [
-        { title: "Course Orientation", type: "video", duration: "45:00", completed: true, date: "Oct 10, 2023" },
-      ]
-    },
-    {
-      title: "Module 2: Core Concepts",
-      items: [
-        { title: "Understanding Variables (Recording)", type: "video", duration: "1:15:30", completed: false, active: true, date: "Oct 15, 2023" },
-        { title: "Linear Equations (Recording)", type: "video", duration: "1:20:00", completed: false, date: "Oct 20, 2023" },
-      ]
-    },
-    {
-      title: "Module 3: Advanced Topics",
-      items: [
-        { title: "Graphing Functions (Recording)", type: "video", duration: "58:45", completed: false, date: "Oct 25, 2023" },
-      ]
-    }
-  ];
+  const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
+  const [rescheduleStep, setRescheduleStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleRescheduleClick = (session: Session) => {
+    setRescheduleSession(session);
+    setRescheduleStep(1);
+    setSelectedDate("");
+    setSelectedTime("");
+    setIsSuccess(false);
+  };
+
+  const closeModal = () => {
+    setRescheduleSession(null);
+  };
+
+  const handleConfirm = () => {
+    setIsSuccess(true);
+    setTimeout(() => {
+      closeModal();
+    }, 2000);
+  };
 
   return (
-    <div className="flex flex-col md:flex-row w-full gap-4 rounded">
-
-      {/* Left/Main Content: Player */}
-      <div className="flex-1 flex flex-col h-full border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33] overflow-y-auto">
-        <div className="w-full aspect-video bg-black relative flex items-center justify-center">
-          <PlayCircle size={64} className="text-white opacity-80 cursor-pointer hover:opacity-100 transition-opacity hover:scale-110" />
-          <div className="absolute bottom-4 left-4 text-white font-semibold">Understanding Variables (Recording)</div>
-          <div className="absolute bottom-4 right-4 text-white text-[13px]">1:15:30</div>
-        </div>
-
-        <div className="p-8">
-          <h1 className="text-[24px] font-bold text-[#111] dark:text-white mb-4">Understanding Variables (Recording)</h1>
-          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] mb-8">Recorded on Oct 15, 2023</p>
-
-          <h3 className="text-[16px] font-bold text-[#111] dark:text-white mb-2">About this session</h3>
-          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
-            In this recorded live session, we went over the basics of algebraic variables and solved several examples from the textbook. Students asked great questions regarding constant coefficients.
-          </p>
-        </div>
+    <div className="w-full relative">
+      <div className="space-y-4">
+        {MOCK_SESSIONS.map((session) => (
+          <div key={session.id} className="bg-white dark:bg-[#182329] p-4 rounded-xl border border-[#e9edef] dark:border-[#2a3942] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-[16px] font-bold text-[#111] dark:text-white">{session.title}</p>
+              <div className="flex items-center gap-4 mt-2 text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                <span className="flex items-center gap-1.5"><Calendar size={15} /> {session.date}</span>
+                <span className="flex items-center gap-1.5"><Clock size={15} /> {session.time}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Button
+                className="flex-1 md:flex-none h-10 font-bold text-[14px] border-[#CAA25F] !bg-[#697780] text-white hover:bg-[#CAA25F]/10 transition-colors"
+                onClick={() => handleRescheduleClick(session)}
+              >
+                Reschedule
+              </Button>
+              <Button className="flex-1 md:flex-none h-10 font-bold text-[14px]">
+                Join Meeting
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Right Sidebar: Upcoming Sessions & Past Recordings */}
-      <div className="w-full md:w-[380px] h-full flex flex-col bg-white dark:bg-[#202c33] shrink-0">
-
-        {/* Upcoming Sessions */}
-        <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-primary/5">
-          <h2 className="text-[16px] font-bold text-[#111] dark:text-white mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-primary" /> Upcoming Sessions
-          </h2>
-          <div className="space-y-3">
-            <div className="bg-white dark:bg-[#182329] p-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
-              <p className="text-[14px] font-bold text-[#111] dark:text-white">1-on-1 Mentorship</p>
-              <div className="flex items-center gap-4 mt-2 text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="flex items-center gap-1"><Calendar size={14} /> Friday</span>
-                <span className="flex items-center gap-1"><Clock size={14} /> 4:00 PM</span>
-              </div>
-              <Button className="w-full mt-3 h-8 text-[12px] font-bold">Join Meeting</Button>
+      {/* Reschedule Modal */}
+      {rescheduleSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#202c33] rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">
+                {isSuccess ? "Rescheduled Successfully" : "Reschedule Session"}
+              </h3>
+              <button onClick={closeModal} className="p-2 -mr-2 text-[#54656f] hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors">
+                <X size={20} />
+              </button>
             </div>
-            <div className="bg-white dark:bg-[#182329] p-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
-              <p className="text-[14px] font-bold text-[#111] dark:text-white">Group Review: Module 3</p>
-              <div className="flex items-center gap-4 mt-2 text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="flex items-center gap-1"><Calendar size={14} /> Next Monday</span>
-                <span className="flex items-center gap-1"><Clock size={14} /> 6:00 PM</span>
-              </div>
+
+            {/* Modal Body */}
+            <div className="p-5">
+              {isSuccess ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle2 size={32} className="text-[#1099A1]" />
+                  </div>
+                  <p className="font-bold text-[#111] dark:text-white text-[18px] mb-2">All set!</p>
+                  <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">
+                    Your session has been moved to {selectedDate} at {selectedTime}.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] mb-1">Current Session:</p>
+                    <p className="font-semibold text-[#111] dark:text-white">{rescheduleSession.title} ({rescheduleSession.date} at {rescheduleSession.time})</p>
+                  </div>
+
+                  {rescheduleStep === 1 && (
+                    <div className="space-y-4">
+                      <p className="font-bold text-[#111] dark:text-white mb-2">Select a new date</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {["Mon, Nov 27", "Tue, Nov 28", "Wed, Nov 29", "Thu, Nov 30"].map(date => (
+                          <button
+                            key={date}
+                            onClick={() => setSelectedDate(date)}
+                            className={`p-3 rounded-xl border text-left text-[14px] transition-colors ${selectedDate === date ? 'border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] font-bold' : 'border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50 text-[#111] dark:text-white'}`}
+                          >
+                            {date}
+                          </button>
+                        ))}
+                      </div>
+                      <Button
+                        disabled={!selectedDate}
+                        onClick={() => setRescheduleStep(2)}
+                        className="w-full mt-6 h-12 text-[15px] font-bold"
+                      >
+                        Continue <ChevronRight size={18} className="ml-1" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {rescheduleStep === 2 && (
+                    <div className="space-y-4">
+                      <p className="font-bold text-[#111] dark:text-white mb-2">Select a new time</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"].map(time => (
+                          <button
+                            key={time}
+                            onClick={() => setSelectedTime(time)}
+                            className={`p-3 rounded-xl border text-center text-[14px] transition-colors ${selectedTime === time ? 'border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] font-bold' : 'border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50 text-[#111] dark:text-white'}`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 mt-6">
+                        <Button
+                          variant="outline"
+                          onClick={() => setRescheduleStep(1)}
+                          className="w-1/3 h-12 text-[15px] font-bold bg-transparent"
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          disabled={!selectedTime}
+                          onClick={handleConfirm}
+                          className="flex-1 h-12 text-[15px] font-bold"
+                        >
+                          Confirm Reschedule
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
-
-        <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33]">
-          <h2 className="text-[16px] font-bold text-[#111] dark:text-white flex items-center gap-2">
-            <Video size={18} /> Past Recordings
-          </h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {sessions.map((module, i) => (
-            <div key={i} className="border-b border-[#e9edef] dark:border-[#2a3942]">
-              <div className="p-4 bg-[#f8f9fa] dark:bg-[#182329] sticky top-0 z-10 border-b border-[#e9edef] dark:border-[#2a3942]">
-                <h3 className="text-[14px] font-bold text-[#111] dark:text-white">{module.title}</h3>
-              </div>
-              <div>
-                {module.items.map((item, j) => (
-                  <button
-                    key={j}
-                    className={cn(
-                      "w-full p-4 flex items-start gap-3 text-left hover:bg-[#f8f9fa] dark:hover:bg-[#111b21] transition-colors",
-                      item.active && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
-                    )}
-                  >
-                    <div className="pt-0.5 shrink-0">
-                      <PlayCircle size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "text-[14px] truncate",
-                        item.active ? "font-bold text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]"
-                      )}>
-                        {item.title}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{item.duration}</p>
-                        <p className="text-[11px] text-[#54656f] dark:text-[#aebac1]">{item.date}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      )}
     </div>
   );
 }

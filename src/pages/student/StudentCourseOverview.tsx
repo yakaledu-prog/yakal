@@ -44,7 +44,7 @@ export function StudentCourseOverview() {
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+    <div className="w-full items-start">
 
       {/* Left Pane: Course Content */}
       <div className="space-y-4">
@@ -131,31 +131,6 @@ export function StudentCourseOverview() {
             )
           })}
         </div>
-      </div>
-
-      {/* Right Pane: Overview Dashboard */}
-      <div className="space-y-6">
-
-        {/* Up Next Card */}
-        <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg p-6 shadow-sm">
-          <h3 className="text-[16px] font-bold text-[#111] dark:text-white mb-4">Up Next</h3>
-          <div className="bg-[#1099A111] border border-[#1099A133] rounded-lg p-4">
-            <p className="text-[14px] font-semibold text-primary mb-1">Variables Practice</p>
-            <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] mb-3">Due in 3 days</p>
-            <Button className="w-full h-8 text-[12px] font-bold bg-primary hover:bg-primary/90 text-white">Continue Learning</Button>
-          </div>
-        </div>
-
-        {/* Upcoming Sessions Card */}
-        <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg p-6 shadow-sm">
-          <h3 className="text-[16px] font-bold text-[#111] dark:text-white mb-4">Upcoming Sessions</h3>
-          <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg p-4 bg-[#f8f9fa] dark:bg-[#182329]">
-            <p className="text-[14px] font-semibold text-[#111] dark:text-white mb-1">1-on-1 Mentorship</p>
-            <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] mb-3">Scheduled for Friday, 4:00 PM</p>
-            <Button variant="outline" className="w-full h-8 text-[12px] font-bold border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33]">View Details</Button>
-          </div>
-        </div>
-
       </div>
 
     </div>

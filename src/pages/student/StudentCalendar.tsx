@@ -273,73 +273,71 @@ export function StudentCalendar() {
   };
 
   return (
-    <PageWrapper>
-      <div className="flex flex-col w-full mx-auto">
+    <PageWrapper className="!p-0">
+      <div className="flex flex-col w-full min-h-screen bg-background dark:bg-[#111b21] pb-12">
+        {/* Massive Integrated Header */}
+        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-10 relative overflow-hidden shrink-0">
+          {/* Subtle Background Texture/Graph */}
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
 
-        {/* Header Controls */}
-        {/* <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white dark:bg-[#111b21] p-2 pl-4 pr-2 rounded-xl shadow-sm border border-[#e9edef] dark:border-[#2a3942]">
-          
-        </div> */}
-
-        {/* Calendar Grid */}
-        <div className="w-full p-4 bg-white dark:bg-[#111b21]">
-          <div className="flex items-center justify-between border-b pb-2 mb-2">
-            <div className="flex bg-[#f0f2f5] dark:bg-[#202c33] p-0.5 rounded-lg">
-              <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'day' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
-                onClick={() => setCalendarView('day')}
-              >
-                Daily
-              </button>
-              <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'week' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
-                onClick={() => setCalendarView('week')}
-              >
-                Weekly
-              </button>
-              <button
-                className={cn("px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors", calendarView === 'month' ? 'bg-white dark:bg-[#111b21] text-[#111] dark:text-white shadow-sm' : 'text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white')}
-                onClick={() => setCalendarView('month')}
-              >
-                Monthly
-              </button>
+          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
+                </div>
+                <p className="text-white/70 text-[14px] pt-1">
+                  View your upcoming classes and sessions
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent"><ChevronLeft size={18} /></Button>
-              <span className="text-md text-center text-[#111] dark:text-white">{getHeaderText()}</span>
-              <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent"><ChevronRight size={18} /></Button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              {/* <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+            {/* Controls Row inside header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
+              <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
+                <button
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('day')}
+                >
+                  Daily
+                </button>
+                <button
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('week')}
+                >
+                  Weekly
+                </button>
+                <button
+                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                  onClick={() => setCalendarView('month')}
+                >
+                  Monthly
+                </button>
               </div>
-              <input
-                type="text"
-                placeholder="Search sessions..."
-                className="pl-9 pr-3 py-1.5 h-9 bg-[#f0f2f5] dark:bg-[#202c33] text-[#111] dark:text-white placeholder:text-[#54656f] dark:placeholder:text-[#aebac1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1099A1] w-full sm:w-[200px] md:w-80 text-[14px]"
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-              />
-            </div> */}
 
-              <div className="flex gap-2">
-                <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download ICS" onClick={downloadICS}>
-                  <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                  <span className="text-[13px] font-medium hidden sm:inline">Export</span>
-                </Button>
-                {/* <Button variant="outline" className="h-9 border-[#e9edef] dark:border-[#2a3942] flex items-center gap-2" title="Download CSV" onClick={downloadCSV}>
-                <Download size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                <span className="text-[13px] font-medium hidden sm:inline">CSV</span>
-              </Button> */}
+              <div className="flex items-center gap-1 text-white">
+                <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronLeft size={18} /></Button>
+                <span className="text-md text-center font-medium min-w-[140px]">{getHeaderText()}</span>
+                <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></Button>
               </div>
+
+              <div className="hidden md:block w-[100px]"></div>
             </div>
           </div>
-          {calendarView === 'month' && renderMonthView()}
-          {calendarView === 'week' && renderWeekView()}
-          {calendarView === 'day' && renderDayView()}
+        </div>
+
+        <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
+          <div className="w-full bg-white dark:bg-[#111b21]">
+            {calendarView === 'month' && renderMonthView()}
+            {calendarView === 'week' && renderWeekView()}
+            {calendarView === 'day' && renderDayView()}
+          </div>
         </div>
 
       </div>

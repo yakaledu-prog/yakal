@@ -101,64 +101,79 @@ const catalogCourses: CatalogCourse[] = [
   },
 ];
 
-export function StudentCourses() {
+export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   return (
-    <PageWrapper>
-      <div className="mx-auto w-full p-4 md:p-8 h-full dark:bg-[#111b21]">
-        
-        {/* Header Toolbar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4 bg-white dark:bg-[#111b21] p-4 rounded-xl border border-[#e9edef] dark:border-[#2a3942] shadow-sm">
-          
-          <div className="flex items-center gap-4 w-full lg:w-auto">
-            {/* View Toggles */}
-            <div className="flex bg-[#f8f9fa] dark:bg-[#182329] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942] shrink-0">
-              <button 
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "p-2 rounded-md transition-colors", 
-                  viewMode === "grid" ? "bg-white dark:bg-[#202c33] text-primary shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-                )}
-              >
-                <LayoutGrid size={18} />
-              </button>
-              <button 
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "p-2 rounded-md transition-colors", 
-                  viewMode === "list" ? "bg-white dark:bg-[#202c33] text-primary shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-                )}
-              >
-                <List size={18} />
-              </button>
-            </div>
-            
-            {/* Search */}
-            <div className="relative flex-1 lg:w-[300px]">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+    <PageWrapper className="!p-0">
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
+        {/* Massive Integrated Header */}
+        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Course Catalog</h1>
+                <p className="text-white/80 text-[15px] pt-1">
+                  Explore and enroll in new courses
+                </p>
               </div>
-              <input
-                type="text"
-                placeholder="Search courses..."
-                className="pl-9 pr-3 py-2 h-10 bg-[#f8f9fa] dark:bg-[#182329] text-[#111] dark:text-white border border-[#e9edef] dark:border-[#2a3942] rounded-lg focus:outline-none focus:border-primary w-full text-[14px]"
-              />
+            </div>
+
+            {/* Controls Row inside header */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pt-4 border-t border-white/20">
+              <div className="flex items-center gap-4 w-full lg:w-auto">
+                {/* View Toggles */}
+                <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
+                  <button 
+                    onClick={() => setViewMode("grid")}
+                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewMode("list")}
+                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
+                  >
+                    <List size={16} />
+                  </button>
+                </div>
+                
+                {/* Search */}
+                <div className="relative flex-1 lg:w-[300px]">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-white/60" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search courses..."
+                    className="pl-9 pr-3 py-2 h-9 bg-black/10 text-white placeholder:text-white/60 border border-white/20 rounded-lg focus:outline-none focus:border-white w-full text-[13px]"
+                  />
+                </div>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center gap-2 self-end lg:self-auto">
+                <span className="text-[13px] text-white/80 mr-2">Showing 1-9 of 24</span>
+                <button className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors">
+                  <ChevronLeft size={16} />
+                </button>
+                <button className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Pagination */}
-          <div className="flex items-center gap-2 self-end lg:self-auto">
-            <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] mr-2">Showing 1-9 of 24</span>
-            <button className="p-2 border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors">
-              <ChevronLeft size={18} />
-            </button>
-            <button className="p-2 border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors">
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
         </div>
+
+        <div className="max-w-[1440px] mx-auto p-4 md:p-8 w-full h-full">
 
         {/* Catalog Grid */}
         <div className={cn(
@@ -222,7 +237,7 @@ export function StudentCourses() {
             </Link>
           ))}
         </div>
-
+        </div>
       </div>
     </PageWrapper>
   );

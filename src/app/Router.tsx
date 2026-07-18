@@ -18,13 +18,11 @@ import LandingV5 from "../pages/LandingV5";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
-import { StudentMyLearning } from "../pages/student/StudentMyLearning";
 import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
 import { StudentCourseDashboard } from "../pages/student/StudentCourseDashboard";
 import { StudentCourseOverview } from "../pages/student/StudentCourseOverview";
 import { StudentCourseSessions } from "../pages/student/StudentCourseSessions";
-import { StudentCourseResources } from "../pages/student/StudentCourseResources";
-import { StudentCourses } from "../pages/student/StudentCourses";
+import { StudentCourseMessages } from "../pages/student/StudentCourseMessages";
 import { StudentCourseCatalogDetail } from "../pages/student/StudentCourseCatalogDetail";
 import { StudentSessions } from "../pages/student/StudentSessions";
 import { StudentResources } from "../pages/student/StudentResources";
@@ -49,6 +47,14 @@ import { TutorMessages } from "../pages/tutor/TutorMessages";
 import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
 import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
+
+import { ParentLayout } from "../pages/parent/ParentLayout";
+import { ParentHome } from "../pages/parent/ParentHome";
+import { ParentCourses } from "../pages/parent/ParentCourses";
+import { ParentChildren } from "../pages/parent/ParentChildren";
+import { ParentMessages } from "../pages/parent/ParentMessages";
+import { ParentProfile } from "../pages/parent/ParentProfile";
+
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
 import { DEV_PREVIEW } from "../config/dev";
@@ -195,8 +201,17 @@ const router = createBrowserRouter([
         ]
       },
       {
-        path: "parent/*",
-        element: <div>Parent Dashboard (Placeholder)</div>,
+        path: "parent",
+        element: <ParentLayout />,
+        children: [
+          { path: "", element: <ParentHome /> },
+          { path: "courses", element: <ParentCourses /> },
+          { path: "children", element: <ParentChildren /> },
+          { path: "children/:id", element: <ParentChildren /> },
+          { path: "messages", element: <ParentMessages /> },
+          { path: "profile", element: <ParentProfile /> },
+          { path: "*", element: <NotFoundPage /> },
+        ]
       },
       {
         path: "student",
@@ -204,7 +219,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "my-learning", element: <StudentMyLearning /> },
+          { path: "my-learning", element: <Navigate to="/student/my-learning/CAT-01/overview" replace /> },
           {
             path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,
@@ -213,13 +228,12 @@ const router = createBrowserRouter([
               { path: "overview", element: <StudentCourseOverview /> },
               { path: "tasks", element: <StudentCourseTasks /> },
               { path: "sessions", element: <StudentCourseSessions /> },
-              { path: "resources", element: <StudentCourseResources /> },
+              { path: "messages", element: <StudentCourseMessages /> },
             ]
           },
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "sessions", element: <StudentSessions /> },
-          { path: "courses", element: <StudentCourses /> },
           { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "resources", element: <StudentResources /> },
           { path: "profile", element: <StudentProfile /> },

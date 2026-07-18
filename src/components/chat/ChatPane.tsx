@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import {
   Search, MoreVertical, Phone, Video,
   Paperclip, Smile, Mic, Check, CheckCheck,
-  FileText, Send, Play, Pause, Trash2
+  FileText, Send, Play, Pause, Trash2, ExternalLink
 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { LiveAudioVisualizer } from 'react-audio-visualize';
@@ -262,11 +262,13 @@ export function ChatPane({
   setConversations,
   showHeader = false,
   onProfileClick,
+  onExpandChat,
 }: {
   activeConv: Conversation;
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
   showHeader?: boolean;
   onProfileClick?: () => void;
+  onExpandChat?: () => void;
 }) {
   const { user } = useAuth();
   const [inputText, setInputText] = useState("");
@@ -537,8 +539,6 @@ export function ChatPane({
             </div>
           </button>
           <div className="flex items-center gap-0.5 text-[#54656f] dark:text-[#aebac1] shrink-0">
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Video size={20} /></button>
-            <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Phone size={20} /></button>
             <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><Search size={20} /></button>
             <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"><MoreVertical size={20} /></button>
           </div>
@@ -591,6 +591,15 @@ export function ChatPane({
 
         {!isRecording ? (
           <>
+            {onExpandChat && (
+              <button
+                onClick={onExpandChat}
+                className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+                title="Expand chat"
+              >
+                <ExternalLink size={24} />
+              </button>
+            )}
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               className={cn("p-2 transition-colors", showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]")}
