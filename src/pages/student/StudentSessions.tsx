@@ -83,7 +83,43 @@ export function StudentSessions() {
   const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
+    <div className="h-full flex flex-col min-h-0 bg-background overflow-hidden">
+      {/* Integrated Header */}
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+        <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+          <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+          <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+          <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+          <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+          <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
+                <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
+            <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full xl:w-auto">
+              <MinimalStat label="Total" value={courseSessions.length} />
+              <MinimalStat label="Completed" value={completedCount} />
+              <MinimalStat label="Upcoming" value={upcomingCount} />
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+          <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
+          <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden bg-background">
       {/* Left pane */}
       <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
         {/* Search bar */}
@@ -134,47 +170,6 @@ export function StudentSessions() {
 
       {/* Right pane */}
       <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto flex flex-col">
-        {/* Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
-
-          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
-                  <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
-              <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
-                <MinimalStat label="Total" value={courseSessions.length} />
-                <MinimalStat label="Completed" value={completedCount} />
-                <MinimalStat label="Upcoming" value={upcomingCount} />
-              </div>
-              <Button
-                onClick={() => navigate("/student/courses")}
-                className="h-10 px-5 text-[14px] font-semibold bg-white text-[#1099A1] hover:bg-white/90 rounded-full shrink-0"
-              >
-                Book Session
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
-            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
-          </div>
-        </div>
-
         <div className="p-4 md:p-8 w-full flex-1">
           {loading ? (
             <div className="flex justify-center items-center py-20">
@@ -220,14 +215,14 @@ export function StudentSessions() {
                       <div className="flex items-center gap-3 w-full md:w-auto">
                         {s.status === "upcoming" ? (
                           <>
+                            <Button style={{ backgroundColor: '#697780', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
+                              <CalendarRange size={16} /> Reschedule
+                            </Button>
                             {(s.zoom_meeting_id || s.zoom_link) && (
                               <Button onClick={() => join(s)} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-full">
                                 <Video size={16} /> Join
                               </Button>
                             )}
-                            <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
-                              <CalendarRange size={16} /> Reschedule
-                            </Button>
                           </>
                         ) : s.status === "completed" && s.notes ? (
                           <Button variant="outline" className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 rounded-full border-[#e9edef] dark:border-[#2a3942]">
@@ -244,6 +239,7 @@ export function StudentSessions() {
           )}
         </div>
       </section>
+      </div>
     </div>
   );
 }
