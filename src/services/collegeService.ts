@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 // ─── Types ──────────────────────────────────────────────────
 export type AppStage = "research" | "apply" | "submitted" | "decisions" | "enrolled";
 export type SchoolTier = "dream" | "target" | "safety";
-export type SchoolStatus = "considering" | "applying" | "submitted" | "accepted" | "rejected" | "waitlisted";
+export type SchoolStatus = "considering" | "applying" | "submitted" | "accepted" | "rejected" | "denied" | "waitlisted" | "enrolled";
 export type EssayKind = "personal_statement" | "supplement";
 export type EssayStatus = "todo" | "drafting" | "in_review" | "done";
 export type RecStatus = "requested" | "received" | "submitted";

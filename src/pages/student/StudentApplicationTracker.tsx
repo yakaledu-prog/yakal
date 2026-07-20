@@ -104,21 +104,17 @@ export function StudentApplicationTracker() {
 
                       return (
                         <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                          <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730] flex items-start justify-between gap-3">
+                          <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730] flex items-start justify-between gap-3 relative">
                             <div>
-                              <h4 className="text-[16px] font-bold">{s.school_name}</h4>
-                              <p className="text-[13px] text-muted-foreground mt-0.5">{s.deadline ? `${s.deadline}` : "RD"}</p>
+                              <h3 className="font-bold text-[16px] leading-tight mb-1">{s.school_name}</h3>
+                              <p className="text-[13px] text-muted-foreground">{s.deadline ? s.deadline : "2026-01-01"}</p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-[13px] font-bold text-[#1099A1]">{doneCount}/{Math.max(reqs.length, 8)}</p>
-                            </div>
-                          </div>
-                          <div className="p-4 space-y-4">
-                            <div className="relative flex justify-center pb-2">
+                            
+                            <div className="relative hidden md:block">
                               <button
                                 onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
                                 className={cn(
-                                  "text-[12px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-sm flex items-center gap-1 transition-colors",
+                                  "text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm flex items-center gap-1 transition-colors",
                                   s.status === "accepted" ? "text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-500/10" : 
                                   s.status === "waitlisted" ? "text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10" :
                                   s.status === "denied" ? "text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-500/10" :
@@ -137,7 +133,7 @@ export function StudentApplicationTracker() {
                               {openDropdownId === s.id && (
                                 <>
                                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-36 bg-white dark:bg-[#202c33] rounded-sm shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
+                                  <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#202c33] rounded-sm shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
                                     {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
                                       <button
                                         key={status}
@@ -156,6 +152,55 @@ export function StudentApplicationTracker() {
                               )}
                             </div>
 
+                            <div className="text-right shrink-0">
+                              <p className="text-[13px] font-bold text-[#1099A1]">{doneCount}/{Math.max(reqs.length, 8)}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Mobile Dropdown (shown only on small screens) */}
+                          <div className="px-4 pt-4 pb-0 md:hidden flex justify-center">
+                              <button
+                                onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                                className={cn(
+                                  "text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm flex items-center gap-1 transition-colors w-full justify-center",
+                                  s.status === "accepted" ? "text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-500/10" : 
+                                  s.status === "waitlisted" ? "text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10" :
+                                  s.status === "denied" ? "text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-500/10" :
+                                  s.status === "enrolled" ? "text-[#1099A1] bg-[#1099A1]/10" :
+                                  "text-muted-foreground hover:bg-muted/50 border border-[#e9edef] dark:border-[#2a3942]"
+                                )}
+                              >
+                                {s.status === "accepted" ? "Accepted 🎉" : 
+                                 s.status === "waitlisted" ? "Waitlisted" :
+                                 s.status === "denied" ? "Denied" :
+                                 s.status === "enrolled" ? "Enrolled 🎓" : 
+                                 "— Decision —"}
+                                <ChevronDown size={14} className={cn("transition-transform opacity-50", openDropdownId === s.id && "rotate-180")} />
+                              </button>
+                              
+                              {openDropdownId === s.id && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 bg-white dark:bg-[#202c33] rounded-sm shadow-2xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
+                                    {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
+                                      <button
+                                        key={status}
+                                        onClick={async () => {
+                                          await updateSchool(s.id, { status: status as any });
+                                          qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+                                          setOpenDropdownId(null);
+                                        }}
+                                        className="block w-full text-center px-3 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                                      >
+                                        {status}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                          </div>
+
+                          <div className="p-4 space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                               {standardReqs.map((req, i) => {
                                 // Mock completion logic based on the user's snippet
