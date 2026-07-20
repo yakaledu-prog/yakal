@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Calendar, CheckSquare, Bell, History, Library, MessagesSquareIcon } from "lucide-react";
+import { Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, GraduationCap } from "lucide-react";
 
 export function StudentLayout() {
   const navItems = [
@@ -7,6 +7,7 @@ export function StudentLayout() {
     { name: "My Learning", href: "/student/my-learning", icon: <CheckSquare size={20} /> },
     { name: "Calendar", href: "/student/calendar", icon: <Calendar size={20} /> },
     { name: "Sessions", href: "/student/sessions", icon: <History size={20} /> },
+    { name: "College", href: "/student/college", icon: <GraduationCap size={20} /> },
     { name: "Messages", href: "/student/messages", icon: <MessagesSquareIcon size={20} /> },
     { name: "Notifications", href: "/student/notifications", icon: <Bell size={20} /> },
   ];

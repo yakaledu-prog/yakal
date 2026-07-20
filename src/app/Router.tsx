@@ -28,6 +28,7 @@ import { StudentSessions } from "../pages/student/StudentSessions";
 import { StudentResources } from "../pages/student/StudentResources";
 import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
+import { StudentCollege } from "../pages/student/StudentCollege";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
 import { StudentMeeting } from "../pages/student/StudentMeeting";
@@ -46,6 +47,13 @@ import { TutorNotifications } from "../pages/tutor/TutorNotifications";
 import { TutorMessages } from "../pages/tutor/TutorMessages";
 import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
 import { TutorMeeting } from "../pages/tutor/TutorMeeting";
+import { CounselorLayout } from "../pages/counselor/CounselorLayout";
+import { CounselorHome } from "../pages/counselor/CounselorHome";
+import { CounselorStudents } from "../pages/counselor/CounselorStudents";
+import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
+import { CounselorMessages } from "../pages/counselor/CounselorMessages";
+import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
+import { CounselorProfile } from "../pages/counselor/CounselorProfile";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
 
 import { ParentLayout } from "../pages/parent/ParentLayout";
@@ -55,6 +63,8 @@ import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
+import { ParentCollege } from "../pages/parent/ParentCollege";
+import { ParentChildChats } from "../pages/parent/ParentChildChats";
 
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
@@ -174,8 +184,18 @@ const router = createBrowserRouter([
         element: <div>Admin Dashboard (Placeholder)</div>,
       },
       {
-        path: "counselor/*",
-        element: <div>Counselor Dashboard (Placeholder)</div>,
+        path: "counselor",
+        element: <CounselorLayout />,
+        children: [
+          { path: "", element: <CounselorHome /> },
+          { path: "students", element: <CounselorStudents /> },
+          { path: "students/:id", element: <CounselorStudentDetail /> },
+          { path: "messages", element: <CounselorMessages /> },
+          { path: "notifications", element: <CounselorNotifications /> },
+          { path: "profile", element: <CounselorProfile /> },
+          { path: "settings", element: <SettingsPage /> },
+          { path: "*", element: <NotFoundPage /> },
+        ]
       },
       {
         path: "tutor",
@@ -210,6 +230,8 @@ const router = createBrowserRouter([
           { path: "children", element: <ParentChildren /> },
           { path: "children/:id", element: <ParentChildren /> },
           { path: "messages", element: <ParentMessages /> },
+          { path: "college", element: <ParentCollege /> },
+          { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },
           { path: "profile", element: <ParentProfile /> },
           { path: "*", element: <NotFoundPage /> },
@@ -235,6 +257,7 @@ const router = createBrowserRouter([
           },
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
+          { path: "college", element: <StudentCollege /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "resources", element: <StudentResources /> },

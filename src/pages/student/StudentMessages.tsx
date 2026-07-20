@@ -574,7 +574,13 @@ export function StudentMessages() {
   const [isDark, setIsDark] = useState(false);
 
   const location = useLocation();
-  const draftState = location.state as { draftMessage?: string, tutorName?: string } | null;
+  const draftState = location.state as { draftMessage?: string, tutorName?: string, openWith?: string } | null;
+
+  // Deep-link: open/create a conversation with a specific user (e.g. "Message counselor").
+  useEffect(() => {
+    if (draftState?.openWith && user) startChat({ id: draftState.openWith } as Contact);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftState?.openWith, user]);
 
   useEffect(() => {
     if (draftState?.draftMessage) {

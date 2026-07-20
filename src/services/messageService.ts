@@ -140,6 +140,89 @@ export async function getContacts(userId: string): Promise<Contact[]> {
   return (data || []).filter((p) => p.full_name);
 }
 
+// ─── Parent read-only view of a linked child's conversations ──
+export interface ParentConversationView {
+  id: string;
+  childId: string;
+  childName: string;
+  contact: { id: string; name: string; role: string; avatar: string | null };
+  messages: { id: string; content: string; sender_id: string; created_at: string; type: string }[];
+  lastAt: string;
+}
+
+export async function getLinkedStudentConversations(parentId: string): Promise<ParentConversationView[]> {
+  // 1. Active linked children
+  const { data: links } = await supabase
+    .from("parent_student_links")
+    .select("student_id")
+    .eq("parent_id", parentId)
+    .eq("status", "active");
+  const childIds = (links || []).map((l) => l.student_id);
+  if (childIds.length === 0) return [];
+
+  // 2. Conversations each child participates in
+  const { data: childParts } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, user_id")
+    .in("user_id", childIds);
+  const convIds = [...new Set((childParts || []).map((p) => p.conversation_id))];
+  if (convIds.length === 0) return [];
+
+  // 3. All participants of those conversations (to find the non-child peer)
+  const { data: allParts } = await supabase
+    .from("conversation_participants")
+    .select("conversation_id, user_id")
+    .in("conversation_id", convIds);
+
+  // 4. Profiles for children + peers
+  const peerIds = [...new Set((allParts || []).map((p) => p.user_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, role, avatar_url")
+    .in("id", peerIds);
+  const profileById = new Map((profiles || []).map((p) => [p.id, p]));
+
+  // 5. Messages of those conversations
+  const { data: msgs } = await supabase
+    .from("messages")
+    .select("id, conversation_id, content, sender_id, created_at, type")
+    .in("conversation_id", convIds)
+    .order("created_at", { ascending: true });
+  const msgsByConv = new Map<string, any[]>();
+  (msgs || []).forEach((m) => {
+    const list = msgsByConv.get(m.conversation_id) || [];
+    list.push(m);
+    msgsByConv.set(m.conversation_id, list);
+  });
+
+  const childIdSet = new Set(childIds);
+  const views: ParentConversationView[] = [];
+  for (const convId of convIds) {
+    const parts = (allParts || []).filter((p) => p.conversation_id === convId);
+    const child = parts.find((p) => childIdSet.has(p.user_id));
+    const peer = parts.find((p) => !childIdSet.has(p.user_id));
+    if (!child) continue;
+    const childProfile = profileById.get(child.user_id);
+    const peerProfile = peer ? profileById.get(peer.user_id) : null;
+    const convMsgs = msgsByConv.get(convId) || [];
+    views.push({
+      id: convId,
+      childId: child.user_id,
+      childName: childProfile?.full_name || "Your child",
+      contact: {
+        id: peerProfile?.id || "unknown",
+        name: peerProfile?.full_name || "Unknown",
+        role: peerProfile?.role || "user",
+        avatar: peerProfile?.avatar_url ?? null,
+      },
+      messages: convMsgs,
+      lastAt: convMsgs.length ? convMsgs[convMsgs.length - 1].created_at : new Date(0).toISOString(),
+    });
+  }
+
+  return views.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
+}
+
 // Fetch all messages for a specific conversation
 export async function getMessages(conversationId: string): Promise<Message[]> {
   const { data, error } = await supabase
