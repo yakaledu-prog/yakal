@@ -3,14 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
-import { Map, Loader2, Check, ExternalLink } from "lucide-react";
+import { Map, Loader2, ExternalLink, Calendar, PenTool, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 
 const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
 
-const field = "w-full bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-sm px-3 py-2 text-[14px] text-[#111] dark:text-white outline-none focus:border-[#1099A1]";
-const btnPrimary = "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-sm bg-[#1099A1] text-white text-[13px] font-semibold hover:bg-[#0d848b] transition-colors disabled:opacity-60";
+const field = "bg-white/10 border-transparent text-white placeholder-white/50 focus:border-white focus:bg-white/20 transition-all rounded-sm px-3 py-2 text-[13px] outline-none w-full";
 
 export function StudentRoadmap() {
   const { user } = useAuth();
@@ -28,7 +27,6 @@ export function StudentRoadmap() {
   const [stage, setStage] = useState<AppStage>(app?.stage || "research");
   const [major, setMajor] = useState(app?.program_interest || "");
   const [gradYear, setGradYear] = useState(app?.grad_year ? String(app.grad_year) : "");
-  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<"timeline" | "testing" | "resources">("timeline");
 
   // Sync state when data loads
@@ -40,22 +38,23 @@ export function StudentRoadmap() {
     }
   }, [app]);
 
-  const save = async () => {
-    if (!user) return;
-    setSaving(true);
-    const res = await upsertApplication(user.id, {
-      stage,
-      program_interest: major.trim() || null,
-      grad_year: gradYear ? Number(gradYear) : null,
-    });
-    setSaving(false);
-    if (!res.success) {
-      toast.error(res.error || "Something went wrong.");
-    } else {
-      toast.success("Saved.");
-      qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
-    }
-  };
+  // Debounce save when inputs change
+  useEffect(() => {
+    if (!user || isLoading) return;
+    const timeout = setTimeout(async () => {
+      const res = await upsertApplication(user.id, {
+        stage,
+        program_interest: major.trim() || null,
+        grad_year: gradYear ? Number(gradYear) : null,
+      });
+      if (!res.success) {
+        toast.error(res.error || "Failed to save profile");
+      } else {
+        qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [stage, major, gradYear, user, isLoading, qc]);
 
   if (!user) return null;
 
@@ -63,34 +62,63 @@ export function StudentRoadmap() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         {/* Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0">
-          <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2"><Map size={28} /> College Admissions</h1>
-              <p className="text-white/80 text-[15px] mt-1 mb-6">Your roadmap to college</p>
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2"><Map size={28} /> College Admissions</h1>
+                <p className="text-white/80 text-[15px] mt-1 mb-6">Your roadmap to college</p>
+              </div>
+
+              {/* Stats / Inputs in Header */}
+              <div className="flex flex-col sm:flex-row gap-3 bg-black/10 p-3 rounded-md backdrop-blur-sm self-start">
+                <div className="w-full sm:w-36">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Stage</label>
+                  <select className={field} value={stage} onChange={(e) => setStage(e.target.value as AppStage)}>
+                    {STAGES.map((s) => <option key={s} value={s} className="text-black">{s[0].toUpperCase() + s.slice(1)}</option>)}
+                  </select>
+                </div>
+                <div className="w-full sm:w-64">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Intended major</label>
+                  <input className={field} value={major} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
+                </div>
+                <div className="w-full sm:w-24">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Grad year</label>
+                  <input className={field} type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
+                </div>
+              </div>
             </div>
-          </div>
-          
-          {/* Tabs */}
-          <div className="max-w-[1100px] mx-auto flex gap-1 overflow-x-auto">
-            {[
-              { id: "timeline", label: "Timeline" },
-              { id: "testing", label: "Testing Plan" },
-              { id: "resources", label: "Resources" }
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id as any)}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap border-b-[3px] transition-colors",
-                  tab === t.id
-                    ? "border-white text-white"
-                    : "border-transparent text-white/60 hover:text-white"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
+            
+            {/* Tabs */}
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {[
+                { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
+                { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
+                { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id as any)}
+                  className={cn(
+                    "flex items-center gap-2 pb-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
+                    tab === t.id
+                      ? "border-white text-white"
+                      : "border-transparent text-white/70 hover:text-white"
+                  )}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -100,31 +128,6 @@ export function StudentRoadmap() {
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
           ) : (
             <>
-              {/* Top Inputs */}
-              <div className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] p-5">
-                <div className="grid md:grid-cols-4 gap-4 items-end">
-                  <div>
-                    <label className="text-[12px] font-bold uppercase tracking-wider text-[#667781] dark:text-[#8696a0] block mb-1.5">Stage</label>
-                    <select className={field} value={stage} onChange={(e) => setStage(e.target.value as AppStage)}>
-                      {STAGES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-[12px] font-bold uppercase tracking-wider text-[#667781] dark:text-[#8696a0] block mb-1.5">Intended major</label>
-                    <input className={field} value={major} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-bold uppercase tracking-wider text-[#667781] dark:text-[#8696a0] block mb-1.5">Graduation year</label>
-                    <div className="flex gap-2">
-                      <input className={field} type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
-                      <button className={btnPrimary} onClick={save} disabled={saving}>
-                        {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {tab === "timeline" && (
                 <div className="space-y-8">
                   {/* Milestones Grid */}
