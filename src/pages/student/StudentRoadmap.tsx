@@ -22,7 +22,7 @@ export function StudentRoadmap() {
   });
 
   const app = data?.application;
-  
+
   // Use state or derive from data
   const [stage, setStage] = useState<AppStage>(app?.stage || "research");
   const [major, setMajor] = useState(app?.program_interest || "");
@@ -62,7 +62,7 @@ export function StudentRoadmap() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         {/* Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 relative overflow-hidden shrink-0">
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -74,31 +74,44 @@ export function StudentRoadmap() {
           <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col gap-6">
             <div className="flex flex-col md:flex-row justify-between gap-6">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2"><Map size={28} /> College Admissions</h1>
+                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">College Admissions</h1>
                 <p className="text-white/80 text-[15px] mt-1 mb-6">Your roadmap to college</p>
               </div>
 
               {/* Stats / Inputs in Header */}
-              <div className="flex flex-col sm:flex-row gap-3 bg-black/10 p-3 rounded-md backdrop-blur-sm self-start">
-                <div className="w-full sm:w-36">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Stage</label>
-                  <select className={field} value={stage} onChange={(e) => setStage(e.target.value as AppStage)}>
-                    {STAGES.map((s) => <option key={s} value={s} className="text-black">{s[0].toUpperCase() + s.slice(1)}</option>)}
-                  </select>
+              <div className="flex flex-col xl:flex-row gap-5 bg-black/10 p-4 rounded-md backdrop-blur-sm self-start w-full md:w-auto">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">Stage</label>
+                  <div className="flex items-center gap-1 bg-black/20 p-1 rounded-sm overflow-x-auto">
+                    {STAGES.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStage(s)}
+                        className={cn(
+                          "px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors rounded-sm whitespace-nowrap",
+                          stage === s ? "bg-white text-[#1099A1]" : "text-white/60 hover:text-white hover:bg-white/10"
+                        )}
+                      >
+                        {s === "research" ? "Researching" : s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="w-full sm:w-64">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Intended major</label>
-                  <input className={field} value={major} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
-                </div>
-                <div className="w-full sm:w-24">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Grad year</label>
-                  <input className={field} type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
+                <div className="flex gap-4">
+                  <div className="w-full sm:w-56">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Intended major</label>
+                    <input className={field} value={major} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
+                  </div>
+                  <div className="w-full sm:w-24">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Grad year</label>
+                    <input className={field} type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
+                  </div>
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs */}
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <div className="flex gap-4 overflow-x-auto pb-0">
               {[
                 { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
                 { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
@@ -110,8 +123,8 @@ export function StudentRoadmap() {
                   className={cn(
                     "flex items-center gap-2 pb-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
                     tab === t.id
-                      ? "border-white text-white"
-                      : "border-transparent text-white/70 hover:text-white"
+                      ? "border-white text-white !hover:border-primary"
+                      : "border-transparent text-white/70 hover:text-white !hover:border-primary"
                   )}
                 >
                   {t.icon}
@@ -123,7 +136,7 @@ export function StudentRoadmap() {
         </div>
 
         <div className="max-w-[1100px] mx-auto p-6 md:p-10 space-y-8">
-          
+
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
           ) : (
@@ -148,13 +161,12 @@ export function StudentRoadmap() {
 
                   {/* Grade-by-grade Timeline */}
                   <div>
-                    <h2 className="text-xl font-bold mb-4">Grade-by-grade timeline</h2>
                     <div className="border border-[#e9edef] dark:border-[#2a3942]">
                       {/* Grade 11 Section */}
                       <div className="p-5 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730]">
                         <h3 className="text-lg font-bold">Grade 11 <span className="font-normal text-muted-foreground">· The pivotal testing & list-building year</span></h3>
                       </div>
-                      
+
                       <div className="p-5 space-y-6">
                         <div className="flex flex-col md:flex-row gap-4">
                           <div className="md:w-32 shrink-0">
@@ -209,7 +221,7 @@ export function StudentRoadmap() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <hr className="border-[#e9edef] dark:border-[#2a3942]" />
 
                         <div className="flex flex-col md:flex-row gap-4">
@@ -274,9 +286,32 @@ export function StudentRoadmap() {
               )}
 
               {tab === "testing" && (
-                <div>
-                  <h2 className="text-xl font-bold mb-4">SAT & ACT testing plan</h2>
-                  <div className="border border-[#e9edef] dark:border-[#2a3942] divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+                <div className="space-y-8">
+                  {/* Typical Test Months */}
+                  <div className="space-y-4 border border-[#e9edef] dark:border-[#2a3942] p-5 bg-white dark:bg-[#182229]">
+                    <h3 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Typical Test Months</h3>
+                    
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="w-12 text-center bg-[#e6f4f1] text-[#1099A1] text-[13px] font-bold px-2 py-1.5 rounded-full">SAT</span>
+                        {["Aug", "Oct", "Nov", "Dec", "Mar", "May", "Jun"].map(m => (
+                          <span key={m} className="bg-muted text-[13px] font-medium px-4 py-1.5 rounded-full">{m}</span>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="w-12 text-center bg-[#fce8ed] text-[#d6336c] text-[13px] font-bold px-2 py-1.5 rounded-full">ACT</span>
+                        {["Sep", "Oct", "Dec", "Feb", "Apr", "Jun", "Jul"].map(m => (
+                          <span key={m} className="bg-muted text-[13px] font-medium px-4 py-1.5 rounded-full">{m}</span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <p className="text-[13px] text-muted-foreground pt-1">
+                      The SAT is now digital (College Board's Bluebook app). Always confirm exact dates on the official sites.
+                    </p>
+                  </div>
+
+                  <div className="border border-[#e9edef] dark:border-[#2a3942] divide-y divide-[#e9edef] dark:divide-[#2a3942] bg-white dark:bg-[#182229]">
                     <div className="p-4 flex gap-4 items-start">
                       <div className="flex flex-col gap-1 shrink-0 mt-0.5">
                         <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">SAT</span>
@@ -312,7 +347,6 @@ export function StudentRoadmap() {
 
               {tab === "resources" && (
                 <div>
-                  <h2 className="text-xl font-bold mb-4">Key resources</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
                       { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
