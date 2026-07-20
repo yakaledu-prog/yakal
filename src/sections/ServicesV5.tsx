@@ -65,89 +65,79 @@ export default function ServicesV5() {
         </Reveal>
 
         {/* Services rows */}
-        <div className="flex w-full gap-[8px] md:gap-[80px]">
-          {services.map((svc, index) => {
-            const isEven = index % 2 === 0;
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full">
+          {services.map((svc) => (
+            <Reveal 
+              key={svc.id} 
+              className="bg-white rounded-[16px] border border-[#e5e7eb] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
+            >
+              {/* Image top */}
+              <div className="w-full relative aspect-[16/9] border-b border-[#e5e7eb]">
+                <img
+                  src={svc.img}
+                  alt={svc.tag}
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-            return (
-              <Reveal key={svc.id} className="bg-white rounded ">
-                {/* Image half */}
-                <div className="w-full md:w-[80%] py-8 mx-auto">
-                  <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-lg border border-[#eee]">
-                    <img
-                      src={svc.img}
-                      alt={svc.tag}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    "flex flex-col gap-[40px] md:gap-[80px] items-center",
-                    isEven ? "md:flex-row" : "md:flex-row-reverse"
+              {/* Content bottom */}
+              <div className="flex flex-col p-8 md:p-10 flex-1">
+                <p className="text-[13px] font-bold uppercase tracking-[2px] mb-3 text-[#1099A1]">
+                  {svc.tag}
+                </p>
+                <h3 className="text-[28px] md:text-[32px] font-semibold leading-tight mb-4 text-[#111]">
+                  {svc.headline}
+                </h3>
+                <p className="text-[16px] text-[#555] leading-[26px] mb-8">
+                  {svc.description}
+                </p>
+
+                <div className="flex flex-col gap-8 mb-10 flex-1">
+                  {/* Ways to learn */}
+                  {svc.ways.length > 0 && (
+                    <div>
+                      <p className="text-[12px] font-bold text-[#888] uppercase tracking-[1px] mb-3">
+                        Ways to learn
+                      </p>
+                      <ul className="flex flex-col gap-2">
+                        {svc.ways.map((w) => (
+                          <li key={w} className="flex items-center gap-2 text-[14px] text-[#333]">
+                            <span className="w-1.5 h-1.5 bg-[#1099A1] rounded-full shrink-0" />
+                            {w}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
-                >
 
-                  {/* Content half */}
-                  <div className="w-full max-w-[90%] flex flex-col justify-center">
-                    <h3 className="text-[32px] md:text-[42px] font-semibold leading-[40px] md:leading-[52px] mb-6 text-[#111]">
-                      {svc.headline}
-                    </h3>
-                    <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
-                      {svc.tag}
+                  {/* Who's involved */}
+                  <div>
+                    <p className="text-[12px] font-bold text-[#888] uppercase tracking-[1px] mb-3">
+                      Who's involved
                     </p>
-                    <p className="text-[16px] md:text-[18px] text-[#555] leading-[28px] mb-8 max-w-[500px]">
-                      {svc.description}
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
-                      {/* Ways to learn */}
-                      {svc.ways.length > 0 && (
-                        <div>
-                          <p className="text-[13px] font-bold text-[#888] uppercase tracking-[1px] mb-4">
-                            Ways to learn
-                          </p>
-                          <ul className="flex flex-col gap-2">
-                            {svc.ways.map((w) => (
-                              <li key={w} className="flex items-center gap-2 text-[15px] text-[#333]">
-                                <span className="w-1.5 h-1.5 bg-[#1099A1] rounded-full shrink-0" />
-                                {w}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Who's involved */}
-                      <div>
-                        <p className="text-[13px] font-bold text-[#888] uppercase tracking-[1px] mb-4">
-                          Who's involved
-                        </p>
-                        <ul className="flex flex-col gap-3">
-                          {svc.roles.map((role) => (
-                            <li key={role.label} className="text-[15px]">
-                              <span className="font-semibold text-[#111]">{role.label}:</span>{" "}
-                              <span className="text-[#555]">{role.sub}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* CTAs */}
-                    <div className="flex flex-wrap gap-4">
-                      <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer px-8 py-3.5 rounded-[500px] text-white text-[15px] font-semibold transition-opacity shadow-sm uppercase hover:opacity-90">
-                        {svc.primaryCta}
-                      </button>
-                      <button className="px-8 py-3.5 bg-white border border-[#ccc] hover:border-[#aaa] text-[#333] rounded-[500px] text-[15px] font-semibold transition-colors uppercase">
-                        {svc.secondaryCta}
-                      </button>
-                    </div>
+                    <ul className="flex flex-col gap-2">
+                      {svc.roles.map((role) => (
+                        <li key={role.label} className="text-[14px]">
+                          <span className="font-semibold text-[#111]">{role.label}:</span>{" "}
+                          <span className="text-[#555]">{role.sub}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
-              </Reveal>
-            );
-          })}
+
+                {/* CTAs */}
+                <div className="flex flex-wrap gap-3 mt-auto">
+                  <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer px-6 py-3 rounded-[500px] text-white text-[14px] font-semibold transition-opacity shadow-sm uppercase hover:opacity-90 w-full sm:w-auto">
+                    {svc.primaryCta}
+                  </button>
+                  <button className="px-6 py-3 bg-white border border-[#ccc] hover:border-[#aaa] text-[#333] rounded-[500px] text-[14px] font-semibold transition-colors uppercase w-full sm:w-auto text-center">
+                    {svc.secondaryCta}
+                  </button>
+                </div>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
