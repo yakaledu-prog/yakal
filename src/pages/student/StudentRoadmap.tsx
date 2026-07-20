@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
-import { Map, Loader2, ExternalLink, Calendar, PenTool, BookOpen } from "lucide-react";
+import { Map, Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 
@@ -28,6 +28,7 @@ export function StudentRoadmap() {
   const [major, setMajor] = useState(app?.program_interest || "");
   const [gradYear, setGradYear] = useState(app?.grad_year ? String(app.grad_year) : "");
   const [tab, setTab] = useState<"timeline" | "testing" | "resources">("timeline");
+  const [stageOpen, setStageOpen] = useState(false);
 
   // Sync state when data loads
   useEffect(() => {
@@ -82,19 +83,34 @@ export function StudentRoadmap() {
               <div className="flex flex-col xl:flex-row gap-5 bg-black/10 p-4 rounded-md backdrop-blur-sm self-start w-full md:w-auto">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">Stage</label>
-                  <div className="flex items-center gap-1 bg-black/20 p-1 rounded-sm overflow-x-auto">
-                    {STAGES.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setStage(s)}
-                        className={cn(
-                          "px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors rounded-sm whitespace-nowrap",
-                          stage === s ? "bg-white text-[#1099A1]" : "text-white/60 hover:text-white hover:bg-white/10"
-                        )}
-                      >
-                        {s === "research" ? "Researching" : s}
-                      </button>
-                    ))}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setStageOpen(!stageOpen)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider bg-black/20 hover:bg-black/30 transition-colors rounded-sm text-white min-w-[140px] justify-between border border-transparent focus:border-white/50 outline-none"
+                    >
+                      {stage === "research" ? "Researching" : stage}
+                      <ChevronDown size={14} className={cn("transition-transform", stageOpen && "rotate-180")} />
+                    </button>
+                    
+                    {stageOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setStageOpen(false)} />
+                        <div className="absolute top-full left-0 mt-1 w-full bg-white rounded-sm shadow-xl overflow-hidden z-50 text-black py-1">
+                          {STAGES.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => { setStage(s); setStageOpen(false); }}
+                              className={cn(
+                                "block w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors",
+                                stage === s ? "bg-[#1099A1]/10 text-[#1099A1]" : "hover:bg-black/5 text-gray-700"
+                              )}
+                            >
+                              {s === "research" ? "Researching" : s}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-4">

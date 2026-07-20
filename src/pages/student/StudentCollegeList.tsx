@@ -77,13 +77,20 @@ export function StudentCollegeList() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         {/* Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0">
-          <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+          <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2"><List size={28} /> College List</h1>
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">College List</h1>
               <p className="text-white/80 text-[15px] mt-1 mb-6">Research, compare & track every school</p>
             </div>
-            
+
             {/* Stats in Header Bottom Right */}
             <div className="flex gap-6 pb-6 text-[13px] font-semibold text-white/80 text-center">
               <div>
@@ -168,7 +175,7 @@ export function StudentCollegeList() {
                     {TIERS.map((t) => {
                       const tierSchools = schools.filter(s => s.tier === t);
                       if (tierSchools.length === 0) return null;
-                      
+
                       return (
                         <div key={t}>
                           <h3 className="text-[14px] font-bold uppercase tracking-wider mb-3 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
@@ -184,7 +191,7 @@ export function StudentCollegeList() {
                                       <h4 className="text-[16px] font-bold">{s.school_name}</h4>
                                       <p className="text-[13px] text-muted-foreground mt-0.5">{tierLabel[t]}</p>
                                     </div>
-                                    <select 
+                                    <select
                                       className="text-[13px] font-semibold border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#22313a] px-3 py-1.5 outline-none w-full md:w-auto"
                                       value={s.status}
                                       onChange={(e) => updateStatus(s.id, e.target.value)}
@@ -233,7 +240,7 @@ export function StudentCollegeList() {
                     <button className="text-[13px] font-bold text-[#1099A1]">+ Add</button>
                   </div>
                   <p className="text-[13px] text-muted-foreground mb-4">Your Common App personal statement, activities list and any essay reused across schools.</p>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
                       <div className="flex items-center gap-3">

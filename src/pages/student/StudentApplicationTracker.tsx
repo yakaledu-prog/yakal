@@ -29,13 +29,20 @@ export function StudentApplicationTracker() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         {/* Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0">
-          <div className="max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+          <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2"><ClipboardList size={28} /> Application Tracker</h1>
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">Application Tracker</h1>
               <p className="text-white/80 text-[15px] mt-1 mb-6">Every school, every requirement</p>
             </div>
-            
+
             {/* Stats in Header Bottom Right */}
             <div className="flex gap-6 pb-6 text-[13px] font-semibold text-white/80 text-center">
               <div>
@@ -85,14 +92,14 @@ export function StudentApplicationTracker() {
               {tab === "requirements" && (
                 <div>
                   <h2 className="text-[15px] font-bold uppercase tracking-wider mb-4 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Per-school requirements</h2>
-                  
+
                   <div className="grid md:grid-cols-2 gap-6">
                     {schools.map(s => {
                       const reqs = s.requirements || [];
                       const doneCount = reqs.filter(r => r.is_complete).length;
                       // Standard MVP requirements checklist
                       const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
-                      
+
                       return (
                         <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
                           <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730] flex items-start justify-between gap-3">
@@ -112,7 +119,7 @@ export function StudentApplicationTracker() {
                                 "— Decision —"
                               )}
                             </p>
-                            
+
                             <div className="grid grid-cols-2 gap-2">
                               {standardReqs.map((req, i) => {
                                 // Mock completion logic based on the user's snippet
@@ -147,7 +154,7 @@ export function StudentApplicationTracker() {
                 <div>
                   <h2 className="text-[15px] font-bold uppercase tracking-wider mb-2 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Academics & documents</h2>
                   <p className="text-[14px] text-muted-foreground mb-4">Test scores and transcript colleges will see</p>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button className="flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors">
                       <span className="opacity-50">📄</span> Transcript ↗
@@ -230,10 +237,10 @@ export function StudentApplicationTracker() {
                 <div>
                   <div className="flex items-center justify-between mb-2 border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
                     <h2 className="text-[15px] font-bold uppercase tracking-wider text-foreground">Recommendation letters</h2>
-                    <button className="text-[13px] font-bold text-[#1099A1] flex items-center gap-1"><Plus size={14}/> Add</button>
+                    <button className="text-[13px] font-bold text-[#1099A1] flex items-center gap-1"><Plus size={14} /> Add</button>
                   </div>
                   <p className="text-[14px] text-muted-foreground mb-4">Recommenders and where each letter lives in Google Drive</p>
-                  
+
                   <div className="border border-[#e9edef] dark:border-[#2a3942] border-dashed p-6 text-center bg-[#f8fafc] dark:bg-[#1a2730]">
                     <p className="text-[14px] text-muted-foreground mb-2">Add each teacher or counselor writing a letter, then drop the signed letter in the student’s Drive folder and paste its link.</p>
                   </div>
