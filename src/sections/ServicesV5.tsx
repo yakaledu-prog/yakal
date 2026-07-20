@@ -92,7 +92,7 @@ export default function ServicesV5() {
                   {svc.description}
                 </p>
 
-                <div className="flex flex-col gap-8 mb-10 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10 flex-1">
                   {/* Ways to learn */}
                   {svc.ways.length > 0 && (
                     <div>
