@@ -15,9 +15,10 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getConversations, getContacts, getOrCreateConversation,
+  getConversations, getContacts, getOrCreateConversation, markMessagesAsRead,
   subscribeToMessages, mapDbToLocalConversations, type Contact,
 } from "@/services/messageService";
+import { usePresence, useTypingIndicator } from "@/hooks/usePresence";
 
 function MinimalStat({ label, value }: { label: string; value: number | string }) {
   return (
@@ -308,6 +309,9 @@ export function TutorMessages() {
   const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const [startingChatId, setStartingChatId] = useState<string | null>(null);
 
+  const onlineIds = usePresence(user?.id);
+  const { typingUserIds, notifyTyping } = useTypingIndicator(activeConvId || undefined, user?.id);
+
   useEffect(() => {
     if (dbConversations) {
       setConversations(mapDbToLocalConversations(dbConversations));
@@ -324,13 +328,20 @@ export function TutorMessages() {
     return () => unsubscribe();
   }, [user, queryClient]);
 
-  const activeConv = conversations.find((c) => c.id === activeConvId);
+  // Overlay live presence onto the conversation contacts.
+  const liveConversations = conversations.map((c) => ({
+    ...c,
+    contact: { ...c.contact, isOnline: onlineIds.has(c.contact.id) },
+  }));
+  const activeConv = liveConversations.find((c) => c.id === activeConvId);
+  const activeTyping = !!activeConv && typingUserIds.has(activeConv.contact.id);
 
   function openConversation(convId: string) {
     setActiveConvId(convId);
     setShowProfile(false);
     setShowChatOnMobile(true);
-    // Mark as read
+    // Mark as read locally and persist so the sender's ticks turn double.
+    if (user) markMessagesAsRead(convId, user.id).catch(() => {});
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
@@ -355,7 +366,7 @@ export function TutorMessages() {
     }
   }
 
-  const filtered = conversations.filter((c) =>
+  const filtered = liveConversations.filter((c) =>
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -480,6 +491,9 @@ export function TutorMessages() {
                       alt={p.full_name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
+                    {onlineIds.has(p.id) && (
+                      <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0 border-b border-[#e9edef] dark:border-[#2a3942] pb-3 -mb-0">
                     <div className="flex items-baseline justify-between mb-0.5">
@@ -515,6 +529,8 @@ export function TutorMessages() {
                 setConversations={setConversations}
                 showHeader={true}
                 onProfileClick={() => setShowProfile((v) => !v)}
+                isTyping={activeTyping}
+                onTyping={notifyTyping}
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6">

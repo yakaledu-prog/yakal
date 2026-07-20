@@ -73,8 +73,7 @@ export function groupByDay(messages: Message[]): { label: string; messages: Mess
 export function StatusTick({ status }: { status: Message["status"] }) {
   if (status === "sending") return <Check size={12} className="opacity-50" />;
   if (status === "sent") return <Check size={12} />;
-  if (status === "delivered") return <CheckCheck size={12} />;
-  return <CheckCheck size={12} className="text-[#34b7f1]" />;
+  return <CheckCheck size={12} className="text-[#97CE9D]" />;
 }
 
 // Telegram-style welcome for a chat with no history yet: a quiet animated
@@ -263,12 +262,16 @@ export function ChatPane({
   showHeader = false,
   onProfileClick,
   onExpandChat,
+  isTyping = false,
+  onTyping,
 }: {
   activeConv: Conversation;
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
   showHeader?: boolean;
   onProfileClick?: () => void;
   onExpandChat?: () => void;
+  isTyping?: boolean;
+  onTyping?: () => void;
 }) {
   const { user } = useAuth();
   const [inputText, setInputText] = useState("");
@@ -331,6 +334,11 @@ export function ChatPane({
           conversationId = await getOrCreateConversation(user.id, activeConv.contact.id);
         }
         await dbSendMessage(conversationId, user.id, text, 'text');
+        setConversations((prev) =>
+          prev.map((c) => c.id === activeConv.id
+            ? { ...c, messages: (c.messages || []).map((m) => m.id === newMsg.id ? { ...m, status: "sent" as const } : m) }
+            : c)
+        );
       } catch (err) {
         console.error("Failed to send message", err);
       }
@@ -533,8 +541,8 @@ export function ChatPane({
             </div>
             <div>
               <h2 className="text-[15px] font-semibold text-[#111] dark:text-[#e9edef] truncate">{activeConv.contact.name}</h2>
-              <p className={cn("text-[12px]", activeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
-                {activeConv.contact.isOnline ? "online" : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
+              <p className={cn("text-[12px]", isTyping || activeConv.contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]")}>
+                {isTyping ? "typing…" : activeConv.contact.isOnline ? "online" : `last seen ${formatListDate(activeConv.contact.lastSeen)}`}
               </p>
             </div>
           </button>
@@ -623,6 +631,7 @@ export function ChatPane({
               value={inputText}
               onChange={(e) => {
                 setInputText(e.target.value);
+                onTyping?.();
                 e.target.style.height = "auto";
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
               }}

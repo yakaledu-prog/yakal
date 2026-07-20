@@ -323,7 +323,8 @@ export function mapDbToLocalConversations(dbConvs: Conversation[]): any[] {
       senderId: m.sender_id,
       timestamp: new Date(m.created_at),
       isRead: m.is_read,
-      status: "delivered",
+      // Single tick once stored, double (primary) tick once the recipient read it.
+      status: m.is_read ? "delivered" : "sent",
       attachment: m.type !== 'text' ? { type: m.type, url: m.content } : undefined
     })),
     unreadCount: c.unreadCount || 0,

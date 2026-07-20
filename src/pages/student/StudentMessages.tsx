@@ -86,8 +86,7 @@ function groupByDay(messages: Message[]): { label: string; messages: Message[] }
 function StatusTick({ status }: { status: Message["status"] }) {
   if (status === "sending") return <Check size={12} className="opacity-50" />;
   if (status === "sent") return <Check size={12} />;
-  if (status === "delivered") return <CheckCheck size={12} />;
-  return <CheckCheck size={12} className="text-[#34b7f1]" />;
+  return <CheckCheck size={12} className="text-[#97CE9D]" />;
 }
 
 // ─── Unread Badge ─────────────────────────────────────────────────────────────
@@ -507,8 +506,9 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getConversations, sendMessage as dbSendMessage, subscribeToMessages, mapDbToLocalConversations,
-  getContacts, getOrCreateConversation, type Contact,
+  getContacts, getOrCreateConversation, markMessagesAsRead, type Contact,
 } from "@/services/messageService";
+import { usePresence, useTypingIndicator } from "@/hooks/usePresence";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -623,7 +623,15 @@ export function StudentMessages() {
     };
   }, []);
 
-  const activeConv = conversations.find((c) => c.id === activeConvId);
+  const onlineIds = usePresence(user?.id);
+  const { typingUserIds, notifyTyping } = useTypingIndicator(activeConvId || undefined, user?.id);
+
+  // Overlay live presence onto the conversation contacts.
+  const liveConversations = conversations.map((c) => ({
+    ...c,
+    contact: { ...c.contact, isOnline: onlineIds.has(c.contact.id) },
+  }));
+  const activeConv = liveConversations.find((c) => c.id === activeConvId);
 
   // Detect dark mode
   useEffect(() => {
@@ -638,14 +646,17 @@ export function StudentMessages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConvId, activeConv?.messages?.length]);
 
-  const safeConv = activeConv || conversations[0];
+  const safeConv = activeConv || liveConversations[0];
   const messageGroups = safeConv ? groupByDay(safeConv.messages || []) : [];
+  const activeTyping = !!safeConv && typingUserIds.has(safeConv.contact.id);
 
 
   function openConversation(convId: string) {
     setActiveConvId(convId);
     setShowProfile(false);
     setShowChatOnMobile(true);
+    // Mark as read locally and persist so the sender's ticks turn double.
+    if (user) markMessagesAsRead(convId, user.id).catch(() => {});
     setConversations((prev) =>
       prev.map((c) =>
         c.id === convId
@@ -677,6 +688,11 @@ export function StudentMessages() {
     if (activeConvId !== "conv-ai") {
       try {
         await dbSendMessage(activeConvId, user.id, text, 'text');
+        setConversations((prev) =>
+          prev.map((c) => c.id === activeConvId
+            ? { ...c, messages: (c.messages || []).map((m) => m.id === newMsg.id ? { ...m, status: "sent" as const } : m) }
+            : c)
+        );
       } catch (err) {
         console.error("Failed to send message", err);
       }
@@ -853,7 +869,7 @@ export function StudentMessages() {
     setRecordingSeconds(0);
   };
 
-  const filtered = conversations.filter((c) =>
+  const filtered = liveConversations.filter((c) =>
     c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -898,7 +914,7 @@ export function StudentMessages() {
                   <div className="flex flex-col min-w-0">
                     <h2 className="text-xl md:text-2xl font-bold tracking-tight truncate">{safeConv.contact.name}</h2>
                     <p className="text-white/80 text-[14px] mt-0.5 truncate">
-                      {safeConv.contact.isOnline ? "Online now" : `Last seen ${formatListDate(safeConv.contact.lastSeen)}`}
+                      {activeTyping ? "typing…" : safeConv.contact.isOnline ? "Online now" : `Last seen ${formatListDate(safeConv.contact.lastSeen)}`}
                     </p>
                   </div>
                 </button>
@@ -983,7 +999,7 @@ export function StudentMessages() {
                         <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
                           {last.senderId === (user?.id || "") && (
                             <span className="mr-0.5">
-                              <CheckCheck size={14} className={cn("inline-block", last.status === "read" ? "text-[#1099A1]" : "text-[#667781]")} />
+                              <CheckCheck size={14} className={cn("inline-block", last.status === "delivered" ? "text-[#97CE9D]" : "text-[#667781]")} />
                             </span>
                           )}
                           {last.text}
@@ -1124,6 +1140,7 @@ export function StudentMessages() {
                       value={inputText}
                       onChange={(e) => {
                         setInputText(e.target.value);
+                        notifyTyping();
                         e.target.style.height = "auto";
                         e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                       }}
