@@ -67,8 +67,8 @@ export default function ServicesV5() {
         {/* Services rows */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full">
           {services.map((svc) => (
-            <Reveal 
-              key={svc.id} 
+            <Reveal
+              key={svc.id}
               className="bg-white rounded-[16px] border border-[#e5e7eb] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
             >
               {/* Image top */}
