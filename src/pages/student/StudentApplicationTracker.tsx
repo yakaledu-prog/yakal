@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { getCollegeProfile } from "@/services/collegeService";
-import { ClipboardList, Loader2, CheckCircle2, Circle, Plus } from "lucide-react";
+import { getCollegeProfile, updateSchool } from "@/services/collegeService";
+import { ClipboardList, Loader2, CheckCircle2, Circle, Plus, ChevronDown } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export function StudentApplicationTracker() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<"requirements" | "documents" | "checklists" | "recommendations">("requirements");
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -112,13 +114,47 @@ export function StudentApplicationTracker() {
                             </div>
                           </div>
                           <div className="p-4 space-y-4">
-                            <p className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground text-center">
-                              {s.status === "accepted" ? (
-                                <span className="text-green-600 dark:text-green-500">Accepted 🎉</span>
-                              ) : (
-                                "— Decision —"
+                            <div className="relative flex justify-center pb-2">
+                              <button
+                                onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                                className={cn(
+                                  "text-[12px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-sm flex items-center gap-1 transition-colors",
+                                  s.status === "accepted" ? "text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-500/10" : 
+                                  s.status === "waitlisted" ? "text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10" :
+                                  s.status === "denied" ? "text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-500/10" :
+                                  s.status === "enrolled" ? "text-[#1099A1] bg-[#1099A1]/10" :
+                                  "text-muted-foreground hover:bg-muted/50"
+                                )}
+                              >
+                                {s.status === "accepted" ? "Accepted 🎉" : 
+                                 s.status === "waitlisted" ? "Waitlisted" :
+                                 s.status === "denied" ? "Denied" :
+                                 s.status === "enrolled" ? "Enrolled 🎓" : 
+                                 "— Decision —"}
+                                <ChevronDown size={14} className={cn("transition-transform opacity-50", openDropdownId === s.id && "rotate-180")} />
+                              </button>
+                              
+                              {openDropdownId === s.id && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-36 bg-white dark:bg-[#202c33] rounded-sm shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
+                                    {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
+                                      <button
+                                        key={status}
+                                        onClick={async () => {
+                                          await updateSchool(s.id, { status: status as any });
+                                          qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+                                          setOpenDropdownId(null);
+                                        }}
+                                        className="block w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                                      >
+                                        {status}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
                               )}
-                            </p>
+                            </div>
 
                             <div className="grid grid-cols-2 gap-2">
                               {standardReqs.map((req, i) => {
