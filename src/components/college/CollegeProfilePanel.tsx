@@ -38,10 +38,12 @@ export function CollegeProfilePanel({
   studentId,
   readOnly = false,
   canEditNotes = false,
+  renderHeader,
 }: {
   studentId: string;
   readOnly?: boolean;
   canEditNotes?: boolean;
+  renderHeader?: (tabsNode: React.ReactNode) => React.ReactNode;
 }) {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("overview");
@@ -80,35 +82,46 @@ export function CollegeProfilePanel({
     { key: "tasks", label: "Tasks", icon: <ClipboardList size={15} />, count: data.tasks.length },
   ];
 
-  return (
-    <div>
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-[#e9edef] dark:border-[#2a3942] mb-5">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-semibold whitespace-nowrap border-b-2 transition-colors",
-              tab === t.key
-                ? "border-[#1099A1] text-[#1099A1]"
-                : "border-transparent text-[#667781] dark:text-[#8696a0] hover:text-[#111] dark:hover:text-white"
-            )}
-          >
-            {t.icon}{t.label}
-            {t.count != null && <span className="text-[11px] opacity-70">({t.count})</span>}
-          </button>
-        ))}
-      </div>
+  const tabsNode = (
+    <div className="flex gap-6 overflow-x-auto no-scrollbar">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => setTab(t.key)}
+          className={cn(
+            "flex items-center gap-1.5 px-1 py-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap border-b-[3px] transition-colors",
+            tab === t.key
+              ? "border-white text-white"
+              : "border-transparent text-white/70 hover:text-white hover:border-white/30"
+          )}
+        >
+          {t.icon}{t.label}
+          {t.count != null && <span className="text-[11px] opacity-80 font-medium">({t.count})</span>}
+        </button>
+      ))}
+    </div>
+  );
 
-      {tab === "overview" && (
-        <OverviewTab data={data} readOnly={readOnly} canEditNotes={canEditNotes} studentId={studentId} run={run} />
+  return (
+    <div className="flex-1 flex flex-col min-h-screen bg-background dark:bg-[#111b21]">
+      {renderHeader ? (
+        renderHeader(tabsNode)
+      ) : (
+        <div className="bg-[#1099A1] text-white px-6 pt-6 md:px-10 md:pt-10">
+          <div className="max-w-[1100px] mx-auto">{tabsNode}</div>
+        </div>
       )}
-      {tab === "list" && <ListTab data={data} readOnly={readOnly} studentId={studentId} run={run} />}
-      {tab === "essays" && <EssaysTab data={data} readOnly={readOnly} studentId={studentId} run={run} />}
-      {tab === "academics" && <AcademicsTab data={data} readOnly={readOnly} studentId={studentId} run={run} />}
-      {tab === "recs" && <RecsTab data={data} readOnly={readOnly} studentId={studentId} run={run} />}
-      {tab === "tasks" && <TasksTab data={data} readOnly={readOnly} studentId={studentId} run={run} />}
+      
+      <div className="w-full max-w-[1100px] mx-auto p-6 md:p-10">
+        {tab === "overview" && (
+          <OverviewTab data={data!} readOnly={readOnly} canEditNotes={canEditNotes} studentId={studentId} run={run} />
+        )}
+        {tab === "list" && <ListTab data={data!} readOnly={readOnly} studentId={studentId} run={run} />}
+        {tab === "essays" && <EssaysTab data={data!} readOnly={readOnly} studentId={studentId} run={run} />}
+        {tab === "academics" && <AcademicsTab data={data!} readOnly={readOnly} studentId={studentId} run={run} />}
+        {tab === "recs" && <RecsTab data={data!} readOnly={readOnly} studentId={studentId} run={run} />}
+        {tab === "tasks" && <TasksTab data={data!} readOnly={readOnly} studentId={studentId} run={run} />}
+      </div>
     </div>
   );
 }

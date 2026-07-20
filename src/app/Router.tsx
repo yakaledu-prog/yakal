@@ -28,7 +28,9 @@ import { StudentSessions } from "../pages/student/StudentSessions";
 import { StudentResources } from "../pages/student/StudentResources";
 import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
-import { StudentCollege } from "../pages/student/StudentCollege";
+import { StudentRoadmap } from "../pages/student/StudentRoadmap";
+import { StudentCollegeList } from "../pages/student/StudentCollegeList";
+import { StudentApplicationTracker } from "../pages/student/StudentApplicationTracker";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
 import { StudentMeeting } from "../pages/student/StudentMeeting";
@@ -257,7 +259,9 @@ const router = createBrowserRouter([
           },
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
-          { path: "college", element: <StudentCollege /> },
+          { path: "roadmap", element: <StudentRoadmap /> },
+          { path: "college-list", element: <StudentCollegeList /> },
+          { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "resources", element: <StudentResources /> },
