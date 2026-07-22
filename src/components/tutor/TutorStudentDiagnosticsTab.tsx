@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
 import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
-import { CheckCircle2, Circle, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Circle, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 
 function getAIAdvice(testId: string) {
   // Simple mocked AI advice generator based on test ID
@@ -26,20 +26,12 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
   return (
     <div className="flex flex-col border-b border-[#e9edef] dark:border-[#2a3942] last:border-0 bg-transparent py-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-[#182329]/50">
       <div className="flex items-center justify-between px-2">
-        <div className="flex flex-col flex-1 min-w-0 pr-4">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="text-[15px] font-semibold text-[#111] dark:text-white truncate">
+        <div className="flex flex-col flex-1 min-w-0 pr-4 justify-center">
+          <div className="flex items-center gap-2">
+            <h4 className="text-[14px] text-[#111] dark:text-white truncate">
               {test.title}
             </h4>
-            {isCompleted ? (
-              <CheckCircle2 size={16} className="text-[#1099A1] shrink-0" />
-            ) : (
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground bg-[#e9edef] dark:bg-[#2a3942] px-1.5 py-0.5 rounded-sm">
-                Pending
-              </span>
-            )}
           </div>
-          <p className="text-[13px] text-muted-foreground truncate">{test.description}</p>
         </div>
 
         <div className="flex items-center gap-6 shrink-0">
@@ -47,11 +39,11 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
             <div className="flex flex-col items-end w-32">
               <div className="flex justify-between w-full mb-1">
                 <span className="text-[11px] uppercase text-muted-foreground font-semibold">Score</span>
-                <span className="text-[13px] font-bold text-[#111] dark:text-white">{result.score}/{result.total}</span>
+                <span className="text-[13px] font-semibold text-[#111] dark:text-white">{result.score}/{result.total}</span>
               </div>
               <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[#1099A1] rounded-full" 
+                <div
+                  className="h-full bg-[#1099A1] rounded-full"
                   style={{ width: `${(result.score / result.total) * 100}%` }}
                 />
               </div>
@@ -63,8 +55,8 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
           )}
 
           {isCompleted && (
-            <button 
-              onClick={() => setExpanded(!expanded)} 
+            <button
+              onClick={() => setExpanded(!expanded)}
               className="text-[#1099A1] hover:bg-[#1099A1]/10 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0"
               title="Toggle AI Guide"
             >
@@ -107,31 +99,24 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col gap-8 min-h-[500px]">
-      <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden shadow-sm">
-        <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-4 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <h3 className="text-[16px] font-bold text-[#111] dark:text-white">Diagnostic Results & Guides</h3>
-          <p className="text-[13px] text-muted-foreground mt-1">Review test scores and AI-generated teaching advice to tailor your sessions.</p>
-        </div>
-        
-        <div className="p-0">
-          {categories.map(catName => {
-            const testsInCategory = diagnosticTests.filter(t => t.categoryName === catName);
-            return (
-              <div key={catName} className="border-b-4 border-[#f8f9fa] dark:border-[#182329] last:border-b-0">
-                <div className="px-5 py-2 bg-gray-50/50 dark:bg-[#182329]/50 border-b border-[#e9edef] dark:border-[#2a3942]">
-                  <h4 className="text-[12px] font-bold uppercase tracking-widest text-[#54656f] dark:text-[#aebac1]">{catName}</h4>
-                </div>
-                <div className="px-3">
-                  {testsInCategory.map(test => {
-                    const result = results.find(r => r.id === test.id);
-                    return <DiagnosticListItem key={test.id} test={test} result={result} />;
-                  })}
-                </div>
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col min-h-[500px]">
+      <div className="p-0">
+        {categories.map(catName => {
+          const testsInCategory = diagnosticTests.filter(t => t.categoryName === catName);
+          return (
+            <div key={catName} className="border-b-4 mb-8 border-[#f8f9fa] dark:border-[#182329] last:border-b-0">
+              <div className="px-5 py-2 bg-gray-50/50 dark:bg-[#182329]/50 border-b border-[#e9edef] dark:border-[#2a3942]">
+                <h4 className="text-[12px] font-bold uppercase tracking-widest text-primary dark:text-[#aebac1]">{catName}</h4>
               </div>
-            );
-          })}
-        </div>
+              <div className="px-3">
+                {testsInCategory.map(test => {
+                  const result = results.find(r => r.id === test.id);
+                  return <DiagnosticListItem key={test.id} test={test} result={result} />;
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ export function StudentDiagnosticOnboarding() {
 
   // High level wizard state
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
   // Question level state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -92,7 +93,6 @@ export function StudentDiagnosticOnboarding() {
   if (!activeTest) return null;
 
   const testsInCategory = diagnosticTests.filter(t => t.categoryName === activeTest.categoryName);
-  const indexInCategory = testsInCategory.findIndex(t => t.id === activeTest.id);
 
   const q = activeTest.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === activeTest.questions.length - 1;
@@ -137,33 +137,37 @@ export function StudentDiagnosticOnboarding() {
         <div className="max-w-3xl mx-auto h-full flex flex-col">
 
           <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm flex flex-col overflow-hidden flex-1 max-h-[600px]">
-            {/* Card Header (Embedded Breadcrumb) */}
-            <div className="bg-[#f8f9fa] dark:bg-[#182329] px-6 py-4 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
-               <div className="flex items-center gap-2 text-[14px] font-semibold text-[#54656f] dark:text-[#aebac1]">
-                 <span>{activeTest.categoryName}</span>
-                 <span className="text-[#aebac1] dark:text-[#54656f]">&rsaquo;</span>
-                 <span className="text-[#111] dark:text-white">{activeTest.title}</span>
-               </div>
-               <span className="text-[12px] font-bold text-[#1099A1] bg-[#1099A1]/10 px-2.5 py-1 rounded-md uppercase tracking-wider">
-                 Test {indexInCategory + 1} of {testsInCategory.length}
-               </span>
+            {/* Card Header (Sub-subject Tabs) */}
+            <div className="bg-[#f8f9fa] dark:bg-[#182329] px-6 pt-4 border-b-2 border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
+              <div className="flex items-center gap-6 overflow-x-auto [scrollbar-width:none]">
+                {testsInCategory.map(t => {
+                  const isActive = t.id === activeTest.id;
+                  return (
+                    <div
+                      key={t.id}
+                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors ${isActive ? 'border-[#1099A1] text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
+                    >
+                      {t.title}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            
+
             {/* Inner progress bar for questions */}
-            <div className="h-1 w-full bg-[#f0f0f0] dark:bg-[#1a2329]">
+            {/* <div className="h-0.5 w-full bg-[#f0f0f0] dark:bg-[#1a2329]">
               <div
                 className="h-full bg-[#1099A1] transition-all duration-300"
                 style={{ width: `${((currentQuestionIndex) / activeTest.questions.length) * 100}%` }}
               />
-            </div>
+            </div> */}
 
-            <div className="p-6 md:p-10 flex-1 flex flex-col overflow-y-auto">
-              <span className="text-sm font-semibold text-[#1099A1] uppercase tracking-wider mb-2">
-                Question {currentQuestionIndex + 1} of {activeTest.questions.length}
-              </span>
-              <h3 className="text-lg md:text-xl font-bold text-[#111] dark:text-white mb-8">
-                {q.text}
-              </h3>
+            <div className="p-6 py-2 md:p-10 md:py-5 flex-1 flex flex-col overflow-y-auto min-h-0">
+              <div className="flex items-start justify-between gap-4 mb-8">
+                <h3 className="text-lg md:text-xl font-bold text-[#111] dark:text-white">
+                  {q.text}
+                </h3>
+              </div>
 
               <div className="flex flex-col gap-3">
                 {q.options.map((opt, i) => {
@@ -184,41 +188,36 @@ export function StudentDiagnosticOnboarding() {
               </div>
             </div>
 
-            <div className="p-4 md:p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] flex flex-col gap-4 mt-auto">
-              <div className="flex items-center justify-end">
-                <div className="flex gap-3">
+            <div className="p-4 md:p-6 md:py-4 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] flex items-center justify-between mt-auto">
+              <span className="text-[14px] font-semibold text-primary shrink-0 mt-1">
+                Question {currentQuestionIndex + 1} / {activeTest.questions.length}
+              </span>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  disabled={currentQuestionIndex === 0}
+                  onClick={() => setCurrentQuestionIndex(i => i - 1)}
+                  className="border-[#e9edef] dark:border-[#2a3942]"
+                >
+                  Back
+                </Button>
+                {isLastQuestion ? (
                   <Button
-                    variant="outline"
-                    disabled={currentQuestionIndex === 0}
-                    onClick={() => setCurrentQuestionIndex(i => i - 1)}
-                    className="border-[#e9edef] dark:border-[#2a3942]"
+                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    disabled={answers[q.id] === undefined || submitting}
+                    onClick={submitCurrentTest}
                   >
-                    Back
+                    {submitting ? "Submitting..." : isLastTest ? "Finish Assessment" : "Submit Test"}
                   </Button>
-                  {isLastQuestion ? (
-                    <Button
-                      className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
-                      disabled={answers[q.id] === undefined || submitting}
-                      onClick={submitCurrentTest}
-                    >
-                      {submitting ? "Submitting..." : isLastTest ? "Finish Assessment" : "Submit Test"}
-                    </Button>
-                  ) : (
-                    <Button
-                      className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
-                      disabled={answers[q.id] === undefined}
-                      onClick={() => setCurrentQuestionIndex(i => i + 1)}
-                    >
-                      Next
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{activeTest.categoryName} Progress</span>
-                <div className="h-1 flex-1 bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#CAA25F] transition-all duration-300" style={{ width: `${((indexInCategory + 1) / testsInCategory.length) * 100}%` }} />
-                </div>
+                ) : (
+                  <Button
+                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    disabled={answers[q.id] === undefined}
+                    onClick={() => setCurrentQuestionIndex(i => i + 1)}
+                  >
+                    Next
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -247,7 +246,7 @@ export function StudentDiagnosticOnboarding() {
         </div>
         <Button
           variant="outline"
-          onClick={handleFinishOnboarding}
+          onClick={() => setShowSkipConfirm(true)}
           className="text-muted-foreground border-[#e9edef] dark:border-[#2a3942] hover:bg-[#e9edef] dark:hover:bg-[#2a3942] shrink-0 w-full md:w-auto font-bold"
           disabled={loading}
         >
@@ -255,6 +254,27 @@ export function StudentDiagnosticOnboarding() {
         </Button>
       </div>
 
+      {/* Skip Confirmation Dialog */}
+      {showSkipConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#202c33] max-w-md w-full rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-[#111] dark:text-white mb-2">Skip Assessment?</h3>
+              <p className="text-[#54656f] dark:text-[#aebac1] text-[15px] leading-relaxed">
+                Are you sure you want to skip the diagnostic assessment? Our tutors use these results to tailor your sessions to your exact needs. You can always take these tests later from your dashboard.
+              </p>
+            </div>
+            <div className="p-4 bg-[#f8f9fa] dark:bg-[#182329] border-t border-[#e9edef] dark:border-[#2a3942] flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowSkipConfirm(false)} className="border-[#e9edef] dark:border-[#2a3942] hover:bg-[#e9edef] dark:hover:bg-[#2a3942]">
+                Cancel
+              </Button>
+              <Button onClick={() => { setShowSkipConfirm(false); handleFinishOnboarding(); }} disabled={loading} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80">
+                {loading ? "Skipping..." : "Skip Assessment"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

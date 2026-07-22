@@ -56,7 +56,7 @@ export function StudentDiagnostics() {
 
   const [selectedCategory, setSelectedCategory] = useState<string>(categories[0] || "");
   const categoryTests = useMemo(() => diagnosticTests.filter(t => t.categoryName === selectedCategory), [selectedCategory]);
-  
+
   const [activeTabId, setActiveTabId] = useState<string>("");
 
   useEffect(() => {
@@ -69,24 +69,24 @@ export function StudentDiagnostics() {
 
   const activeTest = categoryTests.find(t => t.id === activeTabId);
   const activeTestResult = results.find(r => r.id === activeTabId);
-  
+
   useSetBreadcrumb(selectedCategory, "Diagnostics");
 
   const submitTest = async () => {
     if (!user || !activeTest) return;
-    
+
     setSubmitting(true);
     let correct = 0;
     activeTest.questions.forEach((q) => {
       if (answers[q.id] === q.correctAnswer) correct++;
     });
-    
+
     await diagnosticService.saveResult(user.id, activeTest.id, correct, activeTest.questions.length);
-    
+
     // Refresh results
     const newResults = await diagnosticService.getStudentResults(user.id);
     setResults(newResults);
-    
+
     toast.success(`You scored ${correct} out of ${activeTest.questions.length}!`);
     setCurrentQuestionIndex(0);
     setAnswers({});
@@ -122,7 +122,7 @@ export function StudentDiagnostics() {
                 const active = c === selectedCategory;
                 const cTests = diagnosticTests.filter(t => t.categoryName === c);
                 const cCompleted = cTests.filter(t => results.some(r => r.id === t.id)).length;
-                
+
                 return (
                   <button key={c} onClick={() => setSelectedCategory(c)}
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
@@ -172,15 +172,15 @@ export function StudentDiagnostics() {
 
           <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto [scrollbar-width:none]">
             {categoryTests.map((t) => (
-              <TabButton 
+              <TabButton
                 key={t.id}
-                active={activeTabId === t.id} 
+                active={activeTabId === t.id}
                 onClick={() => {
                   setActiveTabId(t.id);
                   setCurrentQuestionIndex(0);
                   setAnswers({});
-                }} 
-                label={t.title} 
+                }}
+                label={t.title}
               />
             ))}
           </div>
@@ -198,7 +198,7 @@ export function StudentDiagnostics() {
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No diagnostics available in this category.</p>
             </div>
           ) : activeTestResult ? (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-2xl">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden flex flex-col">
                 <div className="bg-[#1099A1]/5 px-6 py-8 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
                   <CheckCircle2 size={48} className="text-[#1099A1] mb-4" />
@@ -207,7 +207,7 @@ export function StudentDiagnostics() {
                 </div>
                 <div className="px-6 py-6 flex items-center justify-center">
                   <div className="bg-[#1099A1]/10 rounded-xl px-8 py-5 border border-[#1099A1]/20 flex flex-col items-center">
-                    <span className="text-sm font-semibold text-[#888] uppercase tracking-wide block mb-1">Score</span>
+                    <span className="text-sm font-semibold text-[#888] uppercase tracking-wide block mb-2">Score</span>
                     <span className="text-3xl font-bold text-[#1099A1]">
                       {activeTestResult.score} / {activeTestResult.total}
                     </span>
@@ -219,12 +219,12 @@ export function StudentDiagnostics() {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 max-w-3xl">
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden">
                 <div className="px-6 py-5 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between bg-[#f8f9fa] dark:bg-[#182329]">
-                  <div>
+                  <div className="flex items-center justify-between w-full">
                     <h3 className="text-base font-bold text-[#111] dark:text-white">{activeTest.title} Diagnostic</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">Question {currentQuestionIndex + 1} of {activeTest.questions.length}</p>
                   </div>
                 </div>
-                
+
                 <div className="p-6">
                   {(() => {
                     const q = activeTest.questions[currentQuestionIndex];
@@ -238,27 +238,26 @@ export function StudentDiagnostics() {
                             <button
                               key={i}
                               onClick={() => setAnswers({ ...answers, [q.id]: i })}
-                              className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${
-                                answers[q.id] === i 
-                                  ? 'border-[#1099A1] bg-[#1099A1]/5' 
-                                  : 'border-[#e9edef] hover:border-[#1099A1]/30 hover:bg-gray-50'
-                              }`}
+                              className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${answers[q.id] === i
+                                ? 'border-[#1099A1] bg-[#1099A1]/5'
+                                : 'border-[#e9edef] hover:border-[#1099A1]/30 hover:bg-gray-50'
+                                }`}
                             >
                               <span className="text-sm font-medium">{opt}</span>
                             </button>
                           ))}
                         </div>
-                        
+
                         <div className="flex justify-between mt-8 pt-6 border-t border-[#e9edef] dark:border-[#2a3942]">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             disabled={currentQuestionIndex === 0}
                             onClick={() => setCurrentQuestionIndex(i => i - 1)}
                           >
                             Previous
                           </Button>
                           {isLast ? (
-                            <Button 
+                            <Button
                               className="bg-[#1099A1] hover:bg-[#0d848b]"
                               disabled={answers[q.id] === undefined || submitting}
                               onClick={submitTest}
@@ -266,7 +265,7 @@ export function StudentDiagnostics() {
                               {submitting ? "Submitting..." : "Submit Test"}
                             </Button>
                           ) : (
-                            <Button 
+                            <Button
                               className="bg-[#1099A1] hover:bg-[#0d848b]"
                               disabled={answers[q.id] === undefined}
                               onClick={() => setCurrentQuestionIndex(i => i + 1)}
