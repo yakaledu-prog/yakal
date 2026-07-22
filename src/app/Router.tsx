@@ -10,6 +10,7 @@ import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
 import { ProposalPage } from "../pages/shared/ProposalPage";
+import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
 import LandingV1 from "../pages/LandingV1";
 import LandingV2 from "../pages/LandingV2";
 import LandingV3 from "../pages/LandingV3";
@@ -275,6 +276,10 @@ const router = createBrowserRouter([
         ]
       }
     ]
+  },
+  {
+    path: "/preview/split-onboarding",
+    element: <StudentDiagnosticOnboardingPreview />
   },
   {
     path: "*",

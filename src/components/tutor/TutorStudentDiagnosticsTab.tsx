@@ -1,7 +1,93 @@
 import { useEffect, useState } from "react";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
-import { diagnosticTests } from "@/data/diagnostics";
-import { CheckCircle2, Circle, Lightbulb, BrainCircuit } from "lucide-react";
+import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
+import { CheckCircle2, Circle, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+
+function getAIAdvice(testId: string) {
+  // Simple mocked AI advice generator based on test ID
+  switch (testId) {
+    case "algebra":
+      return "Strong foundation in basic math concepts but struggles with algebraic problem-solving under time pressure. Focus on breaking down multi-step word problems. Avoid rushing into formulas; build intuition for linear equations first.";
+    case "geometry":
+      return "Good spatial reasoning. Needs more practice with formal proofs and theorem applications. Try using visual aids and real-world examples for volume calculations.";
+    case "reading":
+      return "Excellent reading speed. Needs to work on inferencing and identifying the main author's intent. Practice with more diverse passages, especially historical documents.";
+    case "sat-math":
+      return "Comfortable with most topics but struggles with pacing. Introduce timed practice sessions focusing on the no-calculator section.";
+    default:
+      return "The student shows a solid grasp of core concepts but would benefit from targeted practice on more advanced application questions.";
+  }
+}
+
+function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: DiagnosticResult }) {
+  const isCompleted = !!result;
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="flex flex-col border-b border-[#e9edef] dark:border-[#2a3942] last:border-0 bg-transparent py-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-[#182329]/50">
+      <div className="flex items-center justify-between px-2">
+        <div className="flex flex-col flex-1 min-w-0 pr-4">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="text-[15px] font-semibold text-[#111] dark:text-white truncate">
+              {test.title}
+            </h4>
+            {isCompleted ? (
+              <CheckCircle2 size={16} className="text-[#1099A1] shrink-0" />
+            ) : (
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground bg-[#e9edef] dark:bg-[#2a3942] px-1.5 py-0.5 rounded-sm">
+                Pending
+              </span>
+            )}
+          </div>
+          <p className="text-[13px] text-muted-foreground truncate">{test.description}</p>
+        </div>
+
+        <div className="flex items-center gap-6 shrink-0">
+          {isCompleted ? (
+            <div className="flex flex-col items-end w-32">
+              <div className="flex justify-between w-full mb-1">
+                <span className="text-[11px] uppercase text-muted-foreground font-semibold">Score</span>
+                <span className="text-[13px] font-bold text-[#111] dark:text-white">{result.score}/{result.total}</span>
+              </div>
+              <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-[#1099A1] rounded-full" 
+                  style={{ width: `${(result.score / result.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="w-32 text-right">
+              <span className="text-[13px] text-muted-foreground italic">Not taken yet</span>
+            </div>
+          )}
+
+          {isCompleted && (
+            <button 
+              onClick={() => setExpanded(!expanded)} 
+              className="text-[#1099A1] hover:bg-[#1099A1]/10 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0"
+              title="Toggle AI Guide"
+            >
+              {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {expanded && isCompleted && (
+        <div className="mt-4 mx-2 p-4 bg-[#f8f9fa] dark:bg-[#182329] border-l-2 border-[#1099A1] rounded-r-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Lightbulb size={16} className="text-[#CAA25F]" />
+            <span className="text-[13px] font-bold text-[#111] dark:text-white uppercase tracking-wider">AI Teaching Guide</span>
+          </div>
+          <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">
+            {getAIAdvice(test.id)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string }) {
   const [results, setResults] = useState<DiagnosticResult[]>([]);
@@ -22,61 +108,30 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col gap-8 min-h-[500px]">
-      <div className="bg-[#1099A1]/5 border border-[#1099A1]/20 rounded-xl p-6">
-        <div className="flex gap-3 mb-4 items-center">
-          <BrainCircuit className="text-[#1099A1]" size={24} />
-          <h3 className="text-lg font-bold text-[#111]">AI Teaching Guide</h3>
+      <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-4 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <h3 className="text-[16px] font-bold text-[#111] dark:text-white">Diagnostic Results & Guides</h3>
+          <p className="text-[13px] text-muted-foreground mt-1">Review test scores and AI-generated teaching advice to tailor your sessions.</p>
         </div>
-        <p className="text-[#555] leading-relaxed mb-4">
-          Based on the diagnostic scores, this student shows a strong foundation in basic math concepts but struggles with algebraic problem-solving under time pressure. 
-        </p>
-        <ul className="flex flex-col gap-2">
-          <li className="flex items-start gap-2 text-sm text-[#444]">
-            <Lightbulb size={16} className="text-[#CAA25F] shrink-0 mt-0.5" />
-            <span>Focus on breaking down multi-step word problems.</span>
-          </li>
-          <li className="flex items-start gap-2 text-sm text-[#444]">
-            <Lightbulb size={16} className="text-[#CAA25F] shrink-0 mt-0.5" />
-            <span>Avoid rushing into formulas; build intuition for linear equations first.</span>
-          </li>
-        </ul>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map(catName => {
-          const testsInCategory = diagnosticTests.filter(t => t.categoryName === catName);
-          
-          return (
-            <div key={catName} className="flex flex-col gap-3">
-              <h4 className="font-semibold text-[#111] border-b pb-2">{catName}</h4>
-              {testsInCategory.map(test => {
-                const result = results.find(r => r.id === test.id);
-                const isCompleted = !!result;
-
-                return (
-                  <div key={test.id} className="bg-white border rounded-lg p-4 flex flex-col gap-2 shadow-sm">
-                    <div className="flex items-start justify-between">
-                      <span className="text-sm font-medium text-[#333]">{test.title}</span>
-                      {isCompleted ? (
-                        <CheckCircle2 size={16} className="text-[#1099A1] shrink-0" />
-                      ) : (
-                        <Circle size={16} className="text-muted-foreground/40 shrink-0" />
-                      )}
-                    </div>
-                    {isCompleted ? (
-                      <div className="mt-1">
-                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground block mb-0.5">Score</span>
-                        <span className="text-lg font-bold text-[#1099A1]">{result.score} / {result.total}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic mt-2">Not taken yet</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+        
+        <div className="p-0">
+          {categories.map(catName => {
+            const testsInCategory = diagnosticTests.filter(t => t.categoryName === catName);
+            return (
+              <div key={catName} className="border-b-4 border-[#f8f9fa] dark:border-[#182329] last:border-b-0">
+                <div className="px-5 py-2 bg-gray-50/50 dark:bg-[#182329]/50 border-b border-[#e9edef] dark:border-[#2a3942]">
+                  <h4 className="text-[12px] font-bold uppercase tracking-widest text-[#54656f] dark:text-[#aebac1]">{catName}</h4>
+                </div>
+                <div className="px-3">
+                  {testsInCategory.map(test => {
+                    const result = results.find(r => r.id === test.id);
+                    return <DiagnosticListItem key={test.id} test={test} result={result} />;
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
