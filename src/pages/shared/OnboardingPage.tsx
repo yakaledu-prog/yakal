@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { StudentDiagnosticOnboarding } from "@/pages/student/StudentDiagnosticOnboarding";
 import { Button } from "@/components/ui/Button";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/FloatingField";
 import { SelectMenu } from "@/components/ui/SelectMenu";
@@ -225,6 +226,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   // Initials style: same initials, different colours. Other styles: varied seeds.
   const gallery =
     avatarStyle === "initials" ? initialsGallery(fullName) : avatarGallery(seeds, avatarStyle);
+
+  if (role === "student") {
+    return <StudentDiagnosticOnboarding />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">

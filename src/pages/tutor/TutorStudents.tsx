@@ -17,6 +17,7 @@ import { getConversations, mapDbToLocalConversations, subscribeToMessages } from
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatPane } from "@/components/chat/ChatPane";
+import { TutorStudentDiagnosticsTab } from "@/components/tutor/TutorStudentDiagnosticsTab";
 
 function fmtDate(d?: string | null) {
   if (!d) return "-";
@@ -184,7 +185,7 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
     return () => unsubscribe();
   }, [user, queryClient]);
 
-  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "diagnostics">("overview");
   
   // Find or mock an active conversation for this student
   const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || {
@@ -241,6 +242,7 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
         {/* Tab Navigation */}
         <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
+          <TabButton active={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} label="Diagnostics" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
           <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
@@ -305,6 +307,10 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
             </div>
 
           </div>
+        )}
+
+        {activeTab === "diagnostics" && (
+          <TutorStudentDiagnosticsTab studentId={detail.profile?.id || ""} />
         )}
 
         {activeTab === "sessions" && (

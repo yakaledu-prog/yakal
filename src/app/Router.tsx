@@ -34,6 +34,7 @@ import { StudentApplicationTracker } from "../pages/student/StudentApplicationTr
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
 import { StudentMeeting } from "../pages/student/StudentMeeting";
+import { StudentDiagnostics } from "../pages/student/StudentDiagnostics";
 
 import { TutorLayout } from "../pages/tutor/TutorLayout";
 import { TutorHome } from "../pages/tutor/TutorHome";
@@ -260,6 +261,7 @@ const router = createBrowserRouter([
           { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "roadmap", element: <StudentRoadmap /> },
+          { path: "diagnostics", element: <StudentDiagnostics /> },
           { path: "college-list", element: <StudentCollegeList /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },

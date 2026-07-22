@@ -1,10 +1,28 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList } from "lucide-react";
+import { Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { diagnosticService } from "@/services/diagnosticService";
+import { diagnosticTests } from "@/data/diagnostics";
 
 export function StudentLayout() {
+  const { user } = useAuth();
+  const [completedDiagnostics, setCompletedDiagnostics] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      diagnosticService.getStudentResults(user.id).then(results => {
+        setCompletedDiagnostics(results.length);
+      });
+    }
+  }, [user]);
+
+  const incompleteDiagnostics = Math.max(0, diagnosticTests.length - completedDiagnostics);
+
   const navItems = [
     { name: "Home", href: "/student", icon: <Home size={20} /> },
     { name: "My Learning", href: "/student/my-learning", icon: <CheckSquare size={20} /> },
+    { name: "Diagnostics", href: "/student/diagnostics", icon: <Activity size={20} />, badge: incompleteDiagnostics },
     { name: "Calendar", href: "/student/calendar", icon: <Calendar size={20} /> },
     { name: "Sessions", href: "/student/sessions", icon: <History size={20} /> },
     { name: "Roadmap", href: "/student/roadmap", icon: <Map size={20} /> },

@@ -19,6 +19,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ReactNode;
+  badge?: number;
 }
 
 interface DashboardLayoutProps {
@@ -106,7 +107,16 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 title={!sidebarOpen ? item.name : undefined}
               >
                 {item.icon}
-                {sidebarOpen && <span className="font-medium text-sm">{item.name}</span>}
+                {sidebarOpen && (
+                  <>
+                    <span className="font-medium text-sm flex-1">{item.name}</span>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="bg-[#1099A1] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ml-auto">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
               </Link>
             );
           })}
