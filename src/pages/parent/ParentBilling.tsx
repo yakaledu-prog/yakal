@@ -3,6 +3,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { CreditCard, FileText, ExternalLink, Download, Plus, BarChart2, Clock, ChevronDown, ChevronUp, CheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
+import { dicebearUrl } from "@/utils/avatar";
 
 // Brand-only palette (teal + gold + supporting warm/greens).
 const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -82,8 +83,80 @@ export function ParentBilling() {
         {/* Content Below Banner */}
         <div className="max-w-[1440px] mx-auto p-6 md:p-10 flex flex-col lg:flex-row gap-12 lg:gap-16">
 
-          {/* Left Column: All Transactions */}
-          <div className="flex-1 min-w-0 space-y-8">
+          {/* Left Column: All Transactions & Services */}
+          <div className="flex-1 min-w-0 space-y-12">
+
+            {/* Manage Services */}
+            <div className="space-y-6">
+              <div className="flex items-start justify-between border-b border-border/50 pb-3">
+                <div>
+                  <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Manage Services</h3>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">Control access to Yakal services for each child</p>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <img src={dicebearUrl("Brooklyn Student")} alt="" className="w-10 h-10 rounded-full bg-muted" />
+                    <div>
+                      <h4 className="font-bold text-[15px]">Brooklyn Student</h4>
+                      <p className="text-xs text-muted-foreground">10th Grade</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[13px]">Tutoring</span>
+                        <span className="text-[11px] text-emerald-600 font-medium">Active</span>
+                      </div>
+                      <div className="w-9 h-5 bg-[#1099A1] rounded-full relative cursor-pointer">
+                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[13px]">Admissions</span>
+                        <span className="text-[11px] text-amber-600 font-medium">Unlock Requested</span>
+                      </div>
+                      <div className="w-9 h-5 bg-muted-foreground/30 rounded-full relative cursor-pointer hover:bg-muted-foreground/40 transition-colors" onClick={() => alert("Added College Admissions to your next invoice.")}>
+                        <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3 mb-5">
+                    <img src={dicebearUrl("Austin Student")} alt="" className="w-10 h-10 rounded-full bg-muted" />
+                    <div>
+                      <h4 className="font-bold text-[15px]">Austin Student</h4>
+                      <p className="text-xs text-muted-foreground">8th Grade</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[13px]">Tutoring</span>
+                        <span className="text-[11px] text-emerald-600 font-medium">Active</span>
+                      </div>
+                      <div className="w-9 h-5 bg-[#1099A1] rounded-full relative cursor-pointer">
+                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[13px]">Admissions</span>
+                        <span className="text-[11px] text-emerald-600 font-medium">Active</span>
+                      </div>
+                      <div className="w-9 h-5 bg-[#1099A1] rounded-full relative cursor-pointer">
+                        <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-start justify-between border-b border-border/50 pb-3">
               <div>
                 <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Transactions</h3>

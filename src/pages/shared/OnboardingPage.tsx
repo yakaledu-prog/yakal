@@ -15,7 +15,7 @@ import {
   initialsGallery, initialsAvatarUrl,
 } from "@/utils/avatar";
 import { toast } from "sonner";
-import { Moon, Sun, Check, Upload, Shuffle, Loader2 } from "lucide-react";
+import { Moon, Sun, Check, Upload, Shuffle, Loader2, Plus, Trash } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
 import subjMath from "@/assets/images/subject-algebra.webp";
@@ -81,6 +81,28 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
   // Student
   const [gradeLevel, setGradeLevel] = useState("");
+
+  // Parent Step 2
+  const [childrenDetails, setChildrenDetails] = useState<{ email: string; services: string[] }[]>([{ email: "", services: ["tutoring"] }]);
+
+  const handleAddChild = () => {
+    setChildrenDetails([...childrenDetails, { email: "", services: ["tutoring"] }]);
+  };
+
+  const handleRemoveChild = (index: number) => {
+    setChildrenDetails(childrenDetails.filter((_, i) => i !== index));
+  };
+
+  const toggleChildService = (index: number, service: string) => {
+    const updated = [...childrenDetails];
+    const services = updated[index].services;
+    if (services.includes(service)) {
+      updated[index].services = services.filter((s) => s !== service);
+    } else {
+      updated[index].services.push(service);
+    }
+    setChildrenDetails(updated);
+  };
 
   useEffect(() => {
     if (isPreview) {
@@ -168,6 +190,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       if (subjects.length === 0) return toast.error("Select at least one subject you teach.");
     }
 
+
+
     if (isPreview) {
       fireConfetti();
       toast.success("Looks good! (Preview mode, nothing was saved.)");
@@ -232,110 +256,112 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans">
-      <div className="w-full max-w-[960px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid md:grid-cols-[minmax(0,380px)_1fr]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21] p-4 font-sans py-10">
+      <div className={cn("w-full bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl overflow-hidden grid", role === "parent" ? "max-w-[600px] grid-cols-1" : "max-w-[960px] md:grid-cols-[minmax(0,380px)_1fr]")}>
         {/* ── Left: brand + avatar picker (solid neutral panel) ─── */}
-        <div className="p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col bg-[#f7f7f7] dark:bg-[#1a2329]">
-          {/* Selected avatar preview (circular) */}
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <img
-                src={avatarUrl}
-                alt="Selected avatar"
-                className="w-28 h-28 rounded-full object-cover bg-white transition-all duration-700 ease-in-out"
-                style={{ boxShadow: `0 0 0 4px ${rgba(accent, 0.3)}` }}
-              />
+        {role !== "parent" && (
+          <div className="p-8 border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] flex flex-col bg-[#f7f7f7] dark:bg-[#1a2329]">
+            {/* Selected avatar preview (circular) */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <img
+                  src={avatarUrl}
+                  alt="Selected avatar"
+                  className="w-28 h-28 rounded-full object-cover bg-white transition-all duration-700 ease-in-out"
+                  style={{ boxShadow: `0 0 0 4px ${rgba(accent, 0.3)}` }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full text-white flex items-center justify-center shadow-md transition-colors duration-700 ease-in-out hover:brightness-95"
+                  style={{ backgroundColor: rgba(accent, 1) }}
+                  title="Upload your own photo"
+                >
+                  {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+              </div>
+              <p className="text-[14px] font-semibold text-[#111] dark:text-white mt-3 truncate max-w-full capitalize">
+                {fullName || "Your name"}
+              </p>
+              <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] capitalize">{role}</p>
+            </div>
+
+            {/* Style tabs */}
+            <div className="mt-6 flex items-center justify-between mb-2.5">
+              <p className="text-[12px] font-medium text-[#54656f] dark:text-[#aebac1] uppercase tracking-wide">
+                Pick an avatar
+              </p>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full text-white flex items-center justify-center shadow-md transition-colors duration-700 ease-in-out hover:brightness-95"
-                style={{ backgroundColor: rgba(accent, 1) }}
-                title="Upload your own photo"
+                onClick={() => setSeeds(randomSeeds(12))}
+                className="flex items-center gap-1.5 text-[12px] font-medium transition-all duration-300 ease-in-out hover:brightness-90"
+                style={{ color: rgba(accent, 1) }}
+                title="Shuffle"
               >
-                {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                <Shuffle size={14} /> Shuffle
               </button>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
             </div>
-            <p className="text-[14px] font-semibold text-[#111] dark:text-white mt-3 truncate max-w-full capitalize">
-              {fullName || "Your name"}
-            </p>
-            <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] capitalize">{role}</p>
-          </div>
 
-          {/* Style tabs */}
-          <div className="mt-6 flex items-center justify-between mb-2.5">
-            <p className="text-[12px] font-medium text-[#54656f] dark:text-[#aebac1] uppercase tracking-wide">
-              Pick an avatar
-            </p>
-            <button
-              type="button"
-              onClick={() => setSeeds(randomSeeds(12))}
-              className="flex items-center gap-1.5 text-[12px] font-medium transition-all duration-300 ease-in-out hover:brightness-90"
-              style={{ color: rgba(accent, 1) }}
-              title="Shuffle"
-            >
-              <Shuffle size={14} /> Shuffle
-            </button>
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {AVATAR_STYLES.map((s) => {
-              const active = s.id === avatarStyle;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setAvatarStyle(s.id)}
-                  style={active ? { borderColor: rgba(accent, 1), backgroundColor: rgba(accent, 0.1) } : undefined}
-                  className={cn(
-                    "shrink-0 flex flex-col items-center gap-1 rounded-lg p-1.5 border transition-all duration-300 ease-in-out",
-                    !active && "border-transparent hover:bg-black/[0.03] dark:hover:bg-white/5"
-                  )}
-                  title={s.label}
-                >
-                  <img
-                    src={dicebearUrl("Yakal", s.id)}
-                    alt={s.label}
-                    className="w-8 h-8 rounded-md bg-white border border-[#e9edef] dark:border-[#2a3942]"
-                  />
-                  <span
-                    className={cn("text-[10px]", !active && "text-[#54656f] dark:text-[#aebac1]")}
-                    style={active ? { color: rgba(accent, 1), fontWeight: 600 } : undefined}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {AVATAR_STYLES.map((s) => {
+                const active = s.id === avatarStyle;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setAvatarStyle(s.id)}
+                    style={active ? { borderColor: rgba(accent, 1), backgroundColor: rgba(accent, 0.1) } : undefined}
+                    className={cn(
+                      "shrink-0 flex flex-col items-center gap-1 rounded-lg p-1.5 border transition-all duration-300 ease-in-out",
+                      !active && "border-transparent hover:bg-black/[0.03] dark:hover:bg-white/5"
+                    )}
+                    title={s.label}
                   >
-                    {s.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    <img
+                      src={dicebearUrl("Yakal", s.id)}
+                      alt={s.label}
+                      className="w-8 h-8 rounded-md bg-white border border-[#e9edef] dark:border-[#2a3942]"
+                    />
+                    <span
+                      className={cn("text-[10px]", !active && "text-[#54656f] dark:text-[#aebac1]")}
+                      style={active ? { color: rgba(accent, 1), fontWeight: 600 } : undefined}
+                    >
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Gallery grid, square, bordered */}
-          <div className="grid grid-cols-4 gap-2.5 mt-3">
-            {gallery.map(({ seed, url }) => {
-              const active = avatarUrl === url;
-              return (
-                <button
-                  key={seed}
-                  type="button"
-                  onClick={() => setAvatarUrl(url)}
-                  style={
-                    active
-                      ? { borderColor: rgba(accent, 1), boxShadow: `0 0 0 2px ${rgba(accent, 0.35)}` }
-                      : undefined
-                  }
-                  className={cn(
-                    "aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ease-in-out",
-                    active
-                      ? "scale-105"
-                      : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
-                  )}
-                >
-                  <img src={url} alt={seed} className="w-full h-full object-cover bg-white" />
-                </button>
-              );
-            })}
+            {/* Gallery grid, square, bordered */}
+            <div className="grid grid-cols-4 gap-2.5 mt-3">
+              {gallery.map(({ seed, url }) => {
+                const active = avatarUrl === url;
+                return (
+                  <button
+                    key={seed}
+                    type="button"
+                    onClick={() => setAvatarUrl(url)}
+                    style={
+                      active
+                        ? { borderColor: rgba(accent, 1), boxShadow: `0 0 0 2px ${rgba(accent, 0.35)}` }
+                        : undefined
+                    }
+                    className={cn(
+                      "aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ease-in-out",
+                      active
+                        ? "scale-105"
+                        : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                    )}
+                  >
+                    <img src={url} alt={seed} className="w-full h-full object-cover bg-white" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Right: logo + heading + form (scrolls if it overflows) ── */}
         <div className="min-w-0 md:max-h-[88vh] md:overflow-y-auto">
@@ -343,12 +369,12 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             <div className="flex-1 flex flex-col justify-center gap-5">
               <div>
                 <img src={logoImg} alt="Yakal" className="h-14 object-contain mb-3" />
-                <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
+                {/* <h1 className="text-[24px] font-bold text-[#111] dark:text-white leading-tight">
                   {heading.title}
-                </h1>
-                {heading.sub && (
+                </h1> */}
+                {/* {heading.sub && (
                   <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1.5">{heading.sub}</p>
-                )}
+                )} */}
               </div>
 
               <FloatingInput
@@ -453,28 +479,120 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 />
               )}
 
-              {/* Theme */}
-              <div>
-                <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Preferred theme</p>
-                <div className="flex gap-3">
-                  {(["light", "dark"] as const).map((t) => (
+              {role === "parent" && (
+                <div className="mt-4 pt-6 border-t border-[#e9edef] dark:border-[#2a3942]">
+                  <div className="mb-4">
+                    <p className="text-[#54656f] dark:text-[#aebac1] text-[14px] mt-1">
+                      Enter the emails of your children and select the services they will have access to.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-[1fr_70px_70px_32px] gap-3 px-2 text-[11px] font-semibold text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider">
+                      <div>Child's Email</div>
+                      <div className="text-center">Tutoring</div>
+                      <div className="text-center">Admissions</div>
+                      <div></div>
+                    </div>
+
+                    {/* Rows */}
+                    <div className="flex flex-col gap-1">
+                      {childrenDetails.map((child, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_70px_70px_32px] gap-3 items-center p-2 rounded-xl bg-[#f8f9fa] dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942]">
+                          <input
+                            type="email"
+                            required
+                            placeholder="student@example.com"
+                            className="w-full bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#1099A1] transition-colors text-[#111] dark:text-white"
+                            value={child.email}
+                            onChange={(e) => {
+                              const updated = [...childrenDetails];
+                              updated[idx].email = e.target.value;
+                              setChildrenDetails(updated);
+                            }}
+                          />
+
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleChildService(idx, 'tutoring')}
+                              className={cn(
+                                "w-6 h-6 rounded flex items-center justify-center border transition-all",
+                                child.services.includes('tutoring')
+                                  ? "bg-[#1099A1] border-[#1099A1] text-white shadow-sm"
+                                  : "bg-white dark:bg-[#202c33] border-[#e9edef] dark:border-[#2a3942] text-transparent hover:border-[#1099A1]/50"
+                              )}
+                            >
+                              <Check size={14} className={child.services.includes('tutoring') ? "opacity-100" : "opacity-0"} />
+                            </button>
+                          </div>
+
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleChildService(idx, 'admissions')}
+                              className={cn(
+                                "w-6 h-6 rounded flex items-center justify-center border transition-all",
+                                child.services.includes('admissions')
+                                  ? "bg-[#1099A1] border-[#1099A1] text-white shadow-sm"
+                                  : "bg-white dark:bg-[#202c33] border-[#e9edef] dark:border-[#2a3942] text-transparent hover:border-[#1099A1]/50"
+                              )}
+                            >
+                              <Check size={14} className={child.services.includes('admissions') ? "opacity-100" : "opacity-0"} />
+                            </button>
+                          </div>
+
+                          <div className="flex justify-center">
+                            {childrenDetails.length > 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveChild(idx)}
+                                className="text-[#8696a0] hover:text-red-500 transition-colors p-1"
+                              >
+                                <Trash size={16} />
+                              </button>
+                            ) : <div className="w-6" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                     <button
-                      key={t}
                       type="button"
-                      onClick={() => setTheme(t)}
-                      className={cn(
-                        "flex-1 py-3 border rounded-xl flex items-center justify-center gap-2 transition-colors",
-                        theme === t
-                          ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
-                          : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
-                      )}
+                      onClick={handleAddChild}
+                      className="flex items-center gap-2 text-[14px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors mt-2 px-2 w-fit"
                     >
-                      {t === "light" ? <Sun size={18} /> : <Moon size={18} />}
-                      <span className="text-[14px] font-medium capitalize">{t}</span>
+                      <Plus size={16} /> Add another child
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Theme */}
+              {role !== "parent" && (
+                <div>
+                  <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Preferred theme</p>
+                  <div className="flex gap-3">
+                    {(["light", "dark"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTheme(t)}
+                        className={cn(
+                          "flex-1 py-3 border rounded-xl flex items-center justify-center gap-2 transition-colors",
+                          theme === t
+                            ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
+                            : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
+                        )}
+                      >
+                        {t === "light" ? <Sun size={18} /> : <Moon size={18} />}
+                        <span className="text-[14px] font-medium capitalize">{t}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(role === "tutor" || role === "counselor") && (
                 <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
@@ -487,7 +605,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-1"
                 disabled={loading}
               >
-                {loading ? "Saving..." : "Continue"}
+                {loading ? "Saving..." : role === "parent" ? "Complete Setup" : "Continue"}
               </Button>
             </div>
           </form>

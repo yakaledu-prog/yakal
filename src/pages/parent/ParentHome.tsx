@@ -50,7 +50,7 @@ export function ParentHome() {
               <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
-                  {nextSession 
+                  {nextSession
                     ? `Your child has a ${nextSession.subject.toLowerCase()} session coming up today.`
                     : "Your children have no sessions scheduled today."}
                 </p>
@@ -118,7 +118,8 @@ export function ParentHome() {
                         <Clock size={14} /> {nextSession.date}
                       </div>
                       <div className="flex items-center gap-2 mt-4">
-                        <img src={nextSession.image || dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" />
+                        {/* <img src={nextSession.image || dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" /> */}
+                        <img src={dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" />
                         <span className="text-[13px] font-medium text-foreground">{nextSession.tutor}</span>
                       </div>
                     </div>

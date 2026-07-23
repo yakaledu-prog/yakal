@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { Search, Loader2, Users, CalendarDays, Clock } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/Button";
 
 // Mock children data
 const MOCK_CHILDREN = [
-  { id: "c1", name: "Brooklyn Student", avatar: "", grade: "10th Grade", sessions: 4 },
-  { id: "c2", name: "Austin Student", avatar: "", grade: "8th Grade", sessions: 2 }
+  { id: "c1", name: "Brooklyn Student", avatar: "", grade: "10th Grade", sessions: 4, active_services: ['tutoring'] },
+  { id: "c2", name: "Austin Student", avatar: "", grade: "8th Grade", sessions: 2, active_services: ['tutoring', 'admissions'] }
 ];
 
 export function ParentChildren() {
@@ -18,7 +18,7 @@ export function ParentChildren() {
   const [query, setQuery] = useState("");
 
   const activeId = id ?? MOCK_CHILDREN[0]?.id;
-  
+
   const filtered = useMemo(
     () => MOCK_CHILDREN.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
     [query]
@@ -29,7 +29,7 @@ export function ParentChildren() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
-        
+
         {/* Left pane */}
         <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full bg-white dark:bg-[#111b21]">
           <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
@@ -69,12 +69,12 @@ export function ParentChildren() {
         {/* Right pane */}
         <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto bg-white dark:bg-[#111b21]">
           {!activeChild ? (
-             <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
-               <Users size={48} className="text-[#aebac1] mb-4" />
-               <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No child selected</h3>
-             </div>
+            <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
+              <Users size={48} className="text-[#aebac1] mb-4" />
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No child selected</h3>
+            </div>
           ) : (
-             <ChildDetailView child={activeChild} />
+            <ChildDetailView child={activeChild} />
           )}
         </section>
       </div>
@@ -82,8 +82,13 @@ export function ParentChildren() {
   );
 }
 
+import { Lock, FileText, CheckCircle2, Circle } from "lucide-react";
+import { ParentMessages } from "./ParentMessages";
+
 function ChildDetailView({ child }: { child: any }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "applications">("overview");
+
+  const hasAdmissions = child.active_services?.includes('admissions');
 
   return (
     <div className={cn("flex flex-col h-full", activeTab !== 'messages' && "pb-10")}>
@@ -113,6 +118,7 @@ function ChildDetailView({ child }: { child: any }) {
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
+          <TabButton active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} label="Application Tracking" />
           <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
         </div>
       </div>
@@ -122,9 +128,9 @@ function ChildDetailView({ child }: { child: any }) {
           <div className="space-y-6">
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity for {child.name}</h3>
             <div className="space-y-0">
-               <FeedItem text={`${child.name} submitted Math Homework #3`} time="2 hours ago" />
-               <FeedItem text={`Dr. Alex graded ${child.name}'s Lab Report`} time="5 hours ago" />
-               <FeedItem text="System processed your course enrollment for AP Calculus" time="Yesterday" />
+              <FeedItem text={`${child.name} submitted Math Homework #3`} time="2 hours ago" />
+              <FeedItem text={`Dr. Alex graded ${child.name}'s Lab Report`} time="5 hours ago" />
+              <FeedItem text="System processed your course enrollment for AP Calculus" time="Yesterday" />
             </div>
           </div>
         )}
@@ -132,9 +138,9 @@ function ChildDetailView({ child }: { child: any }) {
           <div className="space-y-6">
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Upcoming Sessions</h3>
             <div className="space-y-0">
-               <FeedItem text="Algebra II Tutoring with Sarah J." time="Today, 4:00 PM" />
-               <FeedItem text="Physics Exam Prep with Dr. Alex" time="Tomorrow, 5:30 PM" />
-               <FeedItem text="College Essay Review" time="Oct 15, 6:00 PM" />
+              <FeedItem text="Algebra II Tutoring with Sarah J." time="Today, 4:00 PM" />
+              <FeedItem text="Physics Exam Prep with Dr. Alex" time="Tomorrow, 5:30 PM" />
+              <FeedItem text="College Essay Review" time="Oct 15, 6:00 PM" />
             </div>
           </div>
         )}
@@ -142,86 +148,61 @@ function ChildDetailView({ child }: { child: any }) {
           <div className="space-y-6">
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Assignments & Homework</h3>
             <div className="space-y-0">
-               <FeedItem text="Chapter 4 Physics Problems (Due: Tomorrow)" time="In Progress" />
-               <FeedItem text="Read 'The Great Gatsby' Chapters 1-3" time="Not Started" />
+              <FeedItem text="Chapter 4 Physics Problems (Due: Tomorrow)" time="In Progress" />
+              <FeedItem text="Read 'The Great Gatsby' Chapters 1-3" time="Not Started" />
             </div>
           </div>
         )}
-        {activeTab === 'messages' && (
-          <div className="flex-1 flex flex-row min-h-[500px] border-t border-[#e9edef] dark:border-[#2a3942] bg-[#efeae2] dark:bg-[#0b141a] relative">
-            {/* Tutor Sidebar */}
-            <div className="w-[200px] md:w-[250px] shrink-0 border-r border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] flex flex-col">
-              <div className="p-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-                <div className="flex items-center gap-2 bg-[#f0f2f5] dark:bg-[#202c33] rounded-lg px-3 py-1.5">
-                  <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
-                  <input type="text" placeholder="Search tutors..." className="bg-transparent border-none outline-none text-[14px] w-full text-[#111] dark:text-[#e9edef] placeholder:text-[#54656f] dark:placeholder:text-[#8696a0]" />
+        {activeTab === 'applications' && (
+          <div className="space-y-6">
+            {/* <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Application Progress</h3> */}
+            {!hasAdmissions ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-xl dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-muted/10 animate-in fade-in zoom-in-95">
+                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
+                  <Lock size={32} />
                 </div>
+                <h3 className="text-xl font-bold mb-2">College Admissions Locked</h3>
+                <p className="text-muted-foreground mb-6 max-w-sm">
+                  Upgrade to our College Admissions service to track {child.name}'s application progress, essays, and college list.
+                </p>
+                <Link to={'/parent/billing'} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-2.5 rounded-xl font-bold transition-all">
+                  Manage Services
+                </Link>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                <button className="w-full flex items-center gap-3 p-3 bg-[#f0f2f5] dark:bg-[#2a3942] text-left">
-                  <img src={dicebearUrl("Dr. Alex")} alt="" className="w-10 h-10 rounded-full shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">Dr. Alex</p>
-                    <p className="text-[12px] text-muted-foreground truncate">Physics</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white dark:bg-[#182329] p-6 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <FileText className="text-[#1099A1]" />
+                    <h4 className="font-bold">Stanford University</h4>
                   </div>
-                </button>
-                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#f5f6f6] dark:hover:bg-[#202c33] text-left transition-colors">
-                  <img src={dicebearUrl("Sarah J.")} alt="" className="w-10 h-10 rounded-full shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">Sarah J.</p>
-                    <p className="text-[12px] text-muted-foreground truncate">Algebra II</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col relative min-w-0">
-              {/* Subtle background pattern */}
-              <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
-
-              <header className="relative z-10 h-[60px] bg-[#f0f2f5] dark:bg-[#202c33] flex items-center justify-between px-4 border-b border-[#e9edef] dark:border-[#2a3942] shrink-0">
-                <div className="flex items-center gap-3">
-                  <img src={dicebearUrl("Dr. Alex")} alt="" className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <h2 className="font-semibold text-[#111] dark:text-[#e9edef] text-[16px]">Dr. Alex</h2>
-                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0]">Chatting with {child.name}</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> Common App Essay</div>
+                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> Transcript Request</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground"><Circle size={16} /> Supplemental Essay 1</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/5" title="Flag Conversation">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
-                  </button>
-                </div>
-              </header>
-
-              <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-4">
-                <div className="flex justify-center mb-6">
-                  <span className="bg-white dark:bg-[#182229] shadow-sm text-[#54656f] dark:text-[#8696a0] text-[12.5px] uppercase font-medium px-3 py-1 rounded-lg">
-                    Today
-                  </span>
-                </div>
-                <div className="flex justify-start">
-                  <div className="bg-white dark:bg-[#202c33] text-[#111] dark:text-[#e9edef] p-3 rounded-lg rounded-tl-none max-w-[75%] shadow-sm relative">
-                    <p className="text-[14px]">Hello {child.name}, don't forget to submit your lab report before 5 PM tomorrow.</p>
-                    <span className="text-[10px] text-[#667781] dark:text-[#8696a0] float-right mt-2 ml-4">10:00 AM</span>
+                <div className="bg-white dark:bg-[#182329] p-6 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <FileText className="text-[#1099A1]" />
+                    <h4 className="font-bold">UC Berkeley</h4>
                   </div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="bg-[#1099A1] text-white p-3 rounded-lg rounded-br-none max-w-[75%] shadow-sm relative">
-                    <p className="text-[14px]">Got it! I will upload it tonight.</p>
-                    <span className="text-[10px] text-white/80 float-right mt-2 ml-4">10:05 AM</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> PIQ 1 & 2</div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground"><Circle size={16} /> PIQ 3 & 4</div>
                   </div>
                 </div>
               </div>
-
-              <div className="relative z-10 bg-[#f0f2f5] dark:bg-[#202c33] p-3 px-4 flex items-center gap-2 border-t border-[#e9edef] dark:border-[#2a3942]">
-                <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-lg px-4 py-3 text-[#54656f] dark:text-[#8696a0] text-[13px] sm:text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-80">
-                   Parents cannot send messages directly in this view.
-                </div>
-              </div>
-            </div>
+            )}
           </div>
+        )}
+        {activeTab === 'messages' && (
+          <ParentMessages />
+          // <div className="flex-1 flex flex-col min-h-[500px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-background relative mt-6">
+          //   <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
+          //   <div className="relative z-10 flex-1 flex items-center justify-center p-6 text-center">
+          //   </div>
+          // </div>
         )}
       </div>
     </div>

@@ -63,12 +63,15 @@ import { TutorProfile } from "../pages/tutor/TutorProfile";
 import { ParentLayout } from "../pages/parent/ParentLayout";
 import { ParentHome } from "../pages/parent/ParentHome";
 import { ParentCourses } from "../pages/parent/ParentCourses";
+import { ParentCourseCatalogDetail } from "../pages/parent/ParentCourseCatalogDetail";
 import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
-import { ParentCollege } from "../pages/parent/ParentCollege";
+import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
+import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentChildChats } from "../pages/parent/ParentChildChats";
+import { ParentNotifications } from "../pages/parent/ParentNotifications";
 
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
@@ -231,13 +234,16 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <ParentHome /> },
           { path: "courses", element: <ParentCourses /> },
+          { path: "courses/:id", element: <ParentCourseCatalogDetail /> },
           { path: "children", element: <ParentChildren /> },
           { path: "children/:id", element: <ParentChildren /> },
           { path: "messages", element: <ParentMessages /> },
-          { path: "college", element: <ParentCollege /> },
+          { path: "roadmap", element: <ParentRoadmap /> },
+          { path: "college-list", element: <ParentCollegeList /> },
           { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },
           { path: "profile", element: <ParentProfile /> },
+          { path: "notifications", element: <ParentNotifications /> },
           { path: "*", element: <NotFoundPage /> },
         ]
       },

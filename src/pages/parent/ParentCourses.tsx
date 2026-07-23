@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Search, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+
+import imgMath from "@/assets/images/subject-math.png";
+import imgEla from "@/assets/images/subject-ela.png";
+import imgPhysics from "@/assets/images/subject-physics-new.png";
+import imgStandardized from "@/assets/images/subject-standardized.png";
+import imgAp from "@/assets/images/subject-ap.png";
+import imgEssays from "@/assets/images/subject-essays.png";
 
 interface CatalogCourse {
   id: string;
@@ -17,92 +26,40 @@ interface CatalogCourse {
   };
 }
 
-const catalogCourses: CatalogCourse[] = [
-  {
-    id: "CAT-01",
-    title: "Algebra Fundamentals",
-    thumbnail: "https://picsum.photos/seed/algebra/400/225",
-    price: "$49.99",
-    duration: "3 months",
-    students: 1204,
-    tutor: { name: "Abebe Kebede", avatar: "https://i.pravatar.cc/150?u=abebe" }
-  },
-  {
-    id: "CAT-02",
-    title: "Geometry Mastery",
-    thumbnail: "https://picsum.photos/seed/geometry/400/225",
-    price: "$89.00",
-    duration: "6 months",
-    students: 850,
-    tutor: { name: "Dawit Hailu", avatar: "https://i.pravatar.cc/150?u=dawit" }
-  },
-  {
-    id: "CAT-03",
-    title: "Pre-Calculus Intensive",
-    thumbnail: "https://picsum.photos/seed/precalc/400/225",
-    price: "$29.50",
-    duration: "2 months",
-    students: 3400,
-    tutor: { name: "Selamawit Tesfaye", avatar: "https://i.pravatar.cc/150?u=selamawit" }
-  },
-  {
-    id: "CAT-04",
-    title: "Calculus Deep Dive",
-    thumbnail: "https://picsum.photos/seed/calculus/400/225",
-    price: "$55.00",
-    duration: "4 months",
-    students: 5600,
-    tutor: { name: "Tewodros Assefa", avatar: "https://i.pravatar.cc/150?u=tewodros" }
-  },
-  {
-    id: "CAT-05",
-    title: "Physics Mechanics & Thermodynamics",
-    thumbnail: "https://picsum.photos/seed/physics/400/225",
-    price: "$120.00",
-    duration: "2 months",
-    students: 430,
-    tutor: { name: "Tirunesh Dibaba", avatar: "https://i.pravatar.cc/150?u=tirunesh" }
-  },
-  {
-    id: "CAT-06",
-    title: "SAT Prep Complete Guide",
-    thumbnail: "https://picsum.photos/seed/sat/400/225",
-    price: "$35.00",
-    duration: "1.5 months",
-    students: 2100,
-    tutor: { name: "Kenenisa Bekele", avatar: "https://i.pravatar.cc/150?u=kenenisa" }
-  },
-  {
-    id: "CAT-07",
-    title: "ACT Prep Intensive",
-    thumbnail: "https://picsum.photos/seed/act/400/225",
-    price: "$65.00",
-    duration: "5 months",
-    students: 760,
-    tutor: { name: "Derartu Tulu", avatar: "https://i.pravatar.cc/150?u=derartu" }
-  },
-  {
-    id: "CAT-08",
-    title: "AP Courses Mastery",
-    thumbnail: "https://picsum.photos/seed/ap/400/225",
-    price: "$40.00",
-    duration: "2 months",
-    students: 1120,
-    tutor: { name: "Aster Aweke", avatar: "https://i.pravatar.cc/150?u=aster" }
-  },
-  {
-    id: "CAT-09",
-    title: "Writing Stellar College Essays",
-    thumbnail: "https://picsum.photos/seed/college/400/225",
-    price: "$30.00",
-    duration: "1 month",
-    students: 890,
-    tutor: { name: "Mulatu Astatke", avatar: "https://i.pravatar.cc/150?u=mulatu" }
-  },
+const baseCourses = [
+  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", duration: "3 months", students: 1204 },
+  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", duration: "6 months", students: 850 },
+  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", duration: "2 months", students: 3400 },
+  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", duration: "4 months", students: 5600 },
+  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", duration: "2 months", students: 430 },
+  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", duration: "1.5 months", students: 2100 },
 ];
 
 export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  const { data: tutors = [], isLoading } = useQuery({
+    queryKey: ["tutors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .eq("role", "tutor");
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const catalogCourses: CatalogCourse[] = baseCourses.map((c, i) => {
+    const tutor = tutors.length > 0 ? tutors[i % tutors.length] : { full_name: "Loading...", avatar_url: "" };
+    return {
+      ...c,
+      tutor: {
+        name: tutor.full_name || "Unknown Tutor",
+        avatar: tutor.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutor.full_name || "T")}`
+      }
+    };
+  });
 
   return (
     <PageWrapper className="!p-0">
@@ -161,7 +118,7 @@ export function ParentCourses() {
 
               {/* Pagination */}
               <div className="flex items-center gap-2 self-end lg:self-auto">
-                <span className="text-[13px] text-white/80 mr-2">Showing 1-9 of 24</span>
+                <span className="text-[13px] text-white/80 mr-2">Showing 1-6 of 6</span>
                 <button className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors">
                   <ChevronLeft size={16} />
                 </button>
@@ -177,15 +134,19 @@ export function ParentCourses() {
 
         {/* Catalog Grid */}
         <div className={cn(
-          "grid gap-6",
-          viewMode === "grid" 
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-            : "grid-cols-1 lg:grid-cols-2"
+           "grid gap-6",
+           viewMode === "grid" 
+             ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+             : "grid-cols-1 lg:grid-cols-2"
         )}>
-          {catalogCourses.map(course => (
+          {isLoading ? (
+            <div className="col-span-full flex justify-center py-12">
+              <Loader2 className="animate-spin text-primary w-8 h-8" />
+            </div>
+          ) : catalogCourses.map(course => (
             <Link 
               key={course.id} 
-              to={`/student/courses/${course.id}`}
+              to={`/parent/courses/${course.id}`}
               className={cn(
                 "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50 flex flex-col",
                 viewMode === "list" && "sm:flex-row"

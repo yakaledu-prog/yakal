@@ -9,8 +9,11 @@ import {
   Moon,
   Sun,
   Menu,
-  FlameIcon
+  FlameIcon,
+  Lock
 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
 import logoImg from "@/assets/images/logo.webp";
@@ -20,6 +23,7 @@ interface NavItem {
   href: string;
   icon: React.ReactNode;
   badge?: number;
+  isLocked?: boolean;
 }
 
 interface DashboardLayoutProps {
@@ -30,6 +34,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [demoUnlocked, setDemoUnlocked] = useState<string[]>([]);
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
@@ -47,6 +52,49 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const lockedItem = navItems.find(item => {
+    if (demoUnlocked.includes(item.href)) return false;
+    if (item.href === basePath) return location.pathname === item.href && item.isLocked;
+    return location.pathname.startsWith(item.href) && item.isLocked;
+  });
+
+  const handleRequestAccess = async () => {
+    if (!user || !profile || !lockedItem) return;
+    
+    toast.loading("Sending request...", { id: "request-access" });
+    try {
+      const { data: linkData, error: linkError } = await supabase
+        .from("parent_student_links")
+        .select("parent_id")
+        .eq("student_id", user.id)
+        .single();
+        
+      if (linkError || !linkData?.parent_id) {
+        throw new Error("No linked parent account found.");
+      }
+
+      const { error: notifError } = await supabase.from("notifications").insert({
+        user_id: linkData.parent_id,
+        type: "system",
+        title: "Feature Unlock Request",
+        message: `${profile.full_name} has requested access to ${lockedItem.name}.`,
+        link: "/parent/children"
+      });
+
+      if (notifError) throw notifError;
+      toast.success("Request sent to your parent successfully!", { id: "request-access" });
+      
+      // DEMO: Auto-unlock after 1.5 seconds
+      setTimeout(() => {
+        toast.success(`${lockedItem.name} has been unlocked for this demo!`, { id: "demo-unlock", duration: 4000 });
+        setDemoUnlocked(prev => [...prev, lockedItem.href]);
+      }, 1500);
+      
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send request.", { id: "request-access" });
+    }
+  };
 
   return (
     <div className="flex h-screen bg-muted/20 overflow-hidden">
@@ -93,12 +141,14 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             const isActive = item.href === basePath
               ? location.pathname === item.href
               : location.pathname.startsWith(item.href);
+            const isItemLocked = item.isLocked && !demoUnlocked.includes(item.href);
             return (
               <Link
                 key={item.href}
                 to={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+                  isItemLocked && "opacity-60",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -106,15 +156,24 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 )}
                 title={!sidebarOpen ? item.name : undefined}
               >
-                {item.icon}
+                <div className="relative flex items-center justify-center">
+                  {item.icon}
+                  {isItemLocked && !sidebarOpen && (
+                    <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                      <Lock size={10} className="text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
                 {sidebarOpen && (
                   <>
                     <span className="font-medium text-sm flex-1">{item.name}</span>
-                    {item.badge !== undefined && item.badge > 0 && (
+                    {isItemLocked ? (
+                      <Lock size={14} className="text-muted-foreground ml-auto opacity-70" />
+                    ) : item.badge !== undefined && item.badge > 0 ? (
                       <span className="bg-[#1099A1] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ml-auto">
                         {item.badge}
                       </span>
-                    )}
+                    ) : null}
                   </>
                 )}
               </Link>
@@ -233,8 +292,31 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-hidden flex flex-col dark:bg-[#111b21]">
-          <Outlet context={{ sidebarOpen }} />
+        <div className="relative flex-1 overflow-hidden flex flex-col dark:bg-[#111b21]">
+          {/* Always render the Outlet so it's visible behind the overlay */}
+          <div className={cn("flex-1 overflow-hidden flex flex-col h-full", lockedItem && "pointer-events-none blur-sm opacity-50 select-none")}>
+            <Outlet context={{ sidebarOpen }} />
+          </div>
+
+          {lockedItem && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-background/20 dark:bg-background/40 backdrop-blur-[2px] animate-in fade-in duration-300">
+              <div className="max-w-md w-full bg-white dark:bg-[#202c33] p-8 rounded-2xl shadow-xl border border-[#e9edef] dark:border-[#2a3942] text-center pointer-events-auto">
+                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
+                  <Lock size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-[#111] dark:text-white mb-3">{lockedItem.name} is Locked</h2>
+                <p className="text-[#54656f] dark:text-[#aebac1] mb-8 leading-relaxed">
+                  You don't have an active subscription for this service. Ask your parent to unlock {lockedItem.name} to gain access!
+                </p>
+                <button 
+                  onClick={handleRequestAccess}
+                  className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-3 rounded-xl font-bold transition-all w-full"
+                >
+                  Request Access from Parent
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Floating Search Modal */}

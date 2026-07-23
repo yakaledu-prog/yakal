@@ -20,6 +20,7 @@ export interface Profile {
   accepting_students: boolean | null;
   is_onboarded: boolean;
   rejection_reason: string | null;
+  active_services?: string[] | null;
 }
 
 interface AuthContextType {
