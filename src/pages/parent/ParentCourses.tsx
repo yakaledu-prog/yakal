@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { supabase } from "@/lib/supabase";
-import { useQuery } from "@tanstack/react-query";
 
 import imgMath from "@/assets/images/subject-math.png";
 import imgEla from "@/assets/images/subject-ela.png";
@@ -18,48 +16,25 @@ interface CatalogCourse {
   title: string;
   thumbnail: string;
   price: string;
-  duration: string;
   students: number;
-  tutor: {
-    name: string;
-    avatar: string;
-  };
+  tutorsCount: number;
 }
 
 const baseCourses = [
-  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", duration: "3 months", students: 1204 },
-  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", duration: "6 months", students: 850 },
-  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", duration: "2 months", students: 3400 },
-  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", duration: "4 months", students: 5600 },
-  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", duration: "2 months", students: 430 },
-  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", duration: "1.5 months", students: 2100 },
+  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", students: 1204, tutorsCount: 12 },
+  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", students: 850, tutorsCount: 8 },
+  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", students: 3400, tutorsCount: 15 },
+  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", students: 5600, tutorsCount: 22 },
+  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", students: 430, tutorsCount: 5 },
+  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", students: 2100, tutorsCount: 10 },
 ];
 
 export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { data: tutors = [], isLoading } = useQuery({
-    queryKey: ["tutors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .eq("role", "tutor");
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const catalogCourses: CatalogCourse[] = baseCourses.map((c, i) => {
-    const tutor = tutors.length > 0 ? tutors[i % tutors.length] : { full_name: "Loading...", avatar_url: "" };
-    return {
-      ...c,
-      tutor: {
-        name: tutor.full_name || "Unknown Tutor",
-        avatar: tutor.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutor.full_name || "T")}`
-      }
-    };
-  });
+  const catalogCourses: CatalogCourse[] = baseCourses.map((c) => ({
+    ...c,
+  }));
 
   return (
     <PageWrapper className="!p-0">
@@ -139,11 +114,7 @@ export function ParentCourses() {
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
               : "grid-cols-1 lg:grid-cols-2"
           )}>
-            {isLoading ? (
-              <div className="col-span-full flex justify-center py-12">
-                <Loader2 className="animate-spin text-primary w-8 h-8" />
-              </div>
-            ) : catalogCourses.map(course => (
+            {catalogCourses.map(course => (
               <Link
                 key={course.id}
                 to={`/parent/courses/${course.id}`}
@@ -173,25 +144,23 @@ export function ParentCourses() {
                   </h3>
 
                   <div className="w-full flex items-center justify-between text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 mt-auto">
-                    <span><strong className="text-[#111] dark:text-[#e9edef]">{course.price}</strong></span>
+                    <span><strong className="text-[#111] dark:text-[#e9edef] text-[15px]">{course.price}</strong> / hr</span>
                     <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
-                    <span>{course.duration}</span>
-                    <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
-                    <span>{course.students} Students</span>
+                    <span>{course.students.toLocaleString()} Students</span>
                   </div>
 
                   {/* Divider */}
                   <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-4" />
 
-                  {/* Tutor */}
+                  {/* Avatar Stack & Count */}
                   <div className="flex items-center gap-3">
-                    <img
-                      src={course.tutor.avatar}
-                      alt={course.tutor.name}
-                      className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21]"
-                    />
+                    <div className="flex -space-x-3">
+                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}1`} alt="Tutor avatar" />
+                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}2`} alt="Tutor avatar" />
+                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}3`} alt="Tutor avatar" />
+                    </div>
                     <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-                      {course.tutor.name}
+                      + {course.tutorsCount - 3} available tutors
                     </span>
                   </div>
                 </div>
