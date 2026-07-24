@@ -176,7 +176,7 @@ export function ParentBilling() {
             {children.length > 0 && (
               <div className="space-y-5">
                 <div className="border-b border-border/50 pb-3">
-                  <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Manage Services</h3>
+                  <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Services</h3>
                   {/* <p className="text-[13px] text-muted-foreground mt-0.5">Choose which services each child is enrolled in</p> */}
                 </div>
                 <div className="grid md:grid-cols-1 gap-6">
