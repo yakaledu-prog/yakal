@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, updateSchool } from "@/services/collegeService";
-import { ChevronDown, Plus, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink } from "lucide-react";
+import { ChevronDown, Plus, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink, FileText, Image as ImageIcon, File, Folder, MoreVertical, FileSpreadsheet, HardDrive, RefreshCw, FolderSyncIcon, FolderSymlinkIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { useGoogleDrivePicker } from "@/hooks/useGoogleDrivePicker";
+import { useGoogleDrivePicker, GoogleDriveFolder, GoogleDriveFile } from "@/hooks/useGoogleDrivePicker";
+import { GoogleDrive } from "@/components/icons/GoogleDrive";
 
 export function StudentApplicationTracker() {
   const { user } = useAuth();
@@ -15,22 +16,48 @@ export function StudentApplicationTracker() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [localReqs, setLocalReqs] = useState<Record<string, string[]>>({});
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
-  const [attachedDocs, setAttachedDocs] = useState<{ id: string, name: string, url: string }[]>([]);
-  
-  const { openPicker, isReady, isPicking } = useGoogleDrivePicker();
 
-  const handlePickDocument = async () => {
+  // Google Drive state
+  const { pickFolder, fetchFolderFiles, isReady, isPicking, isFetching } = useGoogleDrivePicker();
+  const [connectedFolder, setConnectedFolder] = useState<GoogleDriveFolder | null>(() => {
+    const saved = localStorage.getItem('yakal_drive_folder');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [folderFiles, setFolderFiles] = useState<GoogleDriveFile[]>([]);
+  const [transcriptFileId, setTranscriptFileId] = useState<string | null>(() => {
+    return localStorage.getItem('yakal_transcript_id');
+  });
+
+  useEffect(() => {
+    if (connectedFolder) {
+      localStorage.setItem('yakal_drive_folder', JSON.stringify(connectedFolder));
+    }
+  }, [connectedFolder]);
+
+  useEffect(() => {
+    if (transcriptFileId) {
+      localStorage.setItem('yakal_transcript_id', transcriptFileId);
+    } else {
+      localStorage.removeItem('yakal_transcript_id');
+    }
+  }, [transcriptFileId]);
+
+  useEffect(() => {
+    if (connectedFolder && isReady) {
+      fetchFolderFiles(connectedFolder.id)
+        .then(files => setFolderFiles(files))
+        .catch(err => console.error("Error fetching synced files:", err));
+    }
+  }, [connectedFolder, isReady, fetchFolderFiles]);
+
+  const handleConnectFolder = async () => {
     try {
-      console.log('Initiating Google Drive Picker flow...');
-      const files = await openPicker();
-      if (files && files.length > 0) {
-        console.log('Successfully received files from Picker:', files);
-        setAttachedDocs(prev => [...prev, ...files.filter(f => !prev.find(p => p.id === f.id))]);
-      } else {
-        console.log('No files picked or picker was cancelled.');
+      const folder = await pickFolder();
+      if (folder) {
+        setConnectedFolder(folder);
       }
     } catch (err) {
-      console.error('Failed to pick document:', err);
+      console.error('Failed to pick folder:', err);
     }
   };
 
@@ -261,52 +288,158 @@ export function StudentApplicationTracker() {
               )}
 
               {tab === "documents" && (
-                <div>
-                  <h2 className="text-[15px] font-bold uppercase tracking-wider mb-2 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Academics & documents</h2>
-                  <p className="text-[14px] text-muted-foreground mb-4">Test scores and transcript colleges will see</p>
+                <div className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 h-full">
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors">
-                      <span className="opacity-50">📄</span> Transcript ↗
-                    </button>
-                    <button 
-                      onClick={handlePickDocument}
-                      disabled={!isReady || isPicking}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors",
-                        (!isReady || isPicking) && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      <span className="opacity-50">📁</span> 
-                      {isPicking ? "Opening Drive..." : !isReady ? "Loading Drive..." : "Upload from Drive"}
-                    </button>
-                    <div className="flex-1"></div>
-                    <button className="px-4 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground">Edit</button>
-                  </div>
-
-                  {/* Attached Documents List */}
-                  {attachedDocs.length > 0 && (
-                    <div className="mt-8">
-                      <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Attached Documents</h3>
-                      <div className="flex flex-col gap-2">
-                        {attachedDocs.map(doc => (
-                          <div key={doc.id} className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl">📄</span>
-                              <span className="text-[14px] font-semibold text-[#111] dark:text-white">{doc.name}</span>
-                            </div>
-                            <a 
-                              href={doc.url} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="text-[13px] font-bold text-[#1099A1] hover:underline flex items-center gap-1"
-                            >
-                              View <ExternalLink size={12} />
-                            </a>
-                          </div>
-                        ))}
+                  {!connectedFolder ? (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[350px] text-center">
+                      <div className="w-24 h-24 mb-6">
+                        <GoogleDrive className="w-full h-full" />
                       </div>
+                      <h3 className="text-[18px] font-semibold text-foreground mb-2">Connect Google Drive</h3>
+                      <p className="text-[14px] text-muted-foreground mb-6 max-w-[400px]">
+                        Sync a dedicated folder from your Google Drive. All documents inside will automatically appear here for your college applications.
+                      </p>
+                      <button
+                        onClick={handleConnectFolder}
+                        disabled={!isReady || isPicking}
+                        className={cn(
+                          "flex items-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-full text-[14px] font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5",
+                          (!isReady || isPicking) && "opacity-50 cursor-not-allowed transform-none"
+                        )}
+                      >
+                        <HardDrive size={18} />
+                        {isPicking ? "Opening..." : !isReady ? "Loading..." : "Select Folder to Sync"}
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      {/* Drive Breadcrumb & Actions Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                        <div className="flex items-center text-[18px] text-[#5f6368] dark:text-[#9aa0a6] font-medium gap-2">
+                          <a
+                            href="https://drive.google.com/drive/my-drive"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded cursor-pointer transition-colors"
+                          >
+                            My Drive
+                          </a>
+                          <span className="text-[14px]">›</span>
+                          <span className="text-primary font hover:bg-black/5 cursor-pointer hover:dark:bg-white/5 px-2 py-1 rounded">
+                            {connectedFolder.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => fetchFolderFiles(connectedFolder.id).then(setFolderFiles)}
+                            disabled={isFetching}
+                            className={cn(
+                              "flex items-center justify-center w-10 h-10 rounded-full text-[#5f6368] hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
+                              isFetching && "animate-pulse"
+                            )}
+                            title="Refresh synced folder"
+                          >
+                            <FolderSyncIcon size={16} />
+                          </button>
+                          <a
+                            href={`https://drive.google.com/drive/folders/${connectedFolder.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 border border-[#e9edef] dark:border-[#2a3942] rounded-full text-[14px] font-semibold text-[#1099A1] hover:bg-[#1099a1]/10 transition-colors"
+                          >
+                            <FolderSymlinkIcon size={16} /> Open in Drive
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Empty State vs Grid */}
+                      {isFetching && folderFiles.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                          <Loader2 className="animate-spin mb-4" size={32} />
+                          <p className="text-[14px] font-medium">Syncing folder contents...</p>
+                        </div>
+                      ) : folderFiles.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                          <div className="w-16 h-16 mb-4 opacity-20">
+                            <Folder size={64} strokeWidth={1} />
+                          </div>
+                          <p className="text-[14px] font-medium">This folder is empty</p>
+                          <p className="text-[13px] mt-1">Add files to this folder in Google Drive to see them here.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {folderFiles.map(doc => {
+                            const isTranscript = doc.id === transcriptFileId;
+                            return (
+                              <div
+                                key={doc.id}
+                                className={cn(
+                                  "group relative flex flex-col h-44 bg-[#f8f9fa] dark:bg-[#202c33] border rounded-xl overflow-hidden transition-colors",
+                                  isTranscript
+                                    ? "border-[#1099A1] ring-1 ring-[#1099A1]"
+                                    : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                                )}
+                              >
+                                {isTranscript && (
+                                  <div className="absolute top-2 left-2 z-10 bg-[#1099A1] text-white p-1 rounded-md shadow-sm" title="Official Transcript">
+                                    <Check size={12} strokeWidth={3} />
+                                  </div>
+                                )}
+
+                                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="relative group/menu">
+                                    <button className="p-1 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-sm text-[#5f6368] hover:text-foreground">
+                                      <MoreVertical size={16} />
+                                    </button>
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
+                                      <button
+                                        onClick={() => setTranscriptFileId(isTranscript ? null : doc.id)}
+                                        className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2"
+                                      >
+                                        <CheckCircle2 size={14} className={isTranscript ? "text-[#1099A1]" : "text-transparent"} />
+                                        {isTranscript ? "Unmark Transcript" : "Mark as Transcript"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <a
+                                  href={doc.webViewLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex-1 flex items-center justify-center bg-white dark:bg-[#182229] group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors cursor-pointer"
+                                >
+                                  {doc.iconLink ? (
+                                    <img src={doc.iconLink.replace('16', '64')} alt="icon" className="w-12 h-12 opacity-90 group-hover:scale-110 transition-transform" />
+                                  ) : (
+                                    <div className="text-muted-foreground group-hover:scale-110 transition-transform">
+                                      {doc.mimeType?.includes('pdf') ? <FileText size={48} className="text-red-500" strokeWidth={1} /> :
+                                        doc.mimeType?.includes('spreadsheet') ? <FileSpreadsheet size={48} className="text-green-600" strokeWidth={1} /> :
+                                          doc.mimeType?.includes('document') ? <FileText size={48} className="text-blue-600" strokeWidth={1} /> :
+                                            doc.mimeType?.includes('image') ? <ImageIcon size={48} className="text-purple-500" strokeWidth={1} /> :
+                                              <File size={48} strokeWidth={1} />}
+                                    </div>
+                                  )}
+                                </a>
+                                <div className="h-12 border-t border-[#e9edef] dark:border-[#2a3942] px-3 flex items-center bg-[#f8f9fa] dark:bg-[#202c33]">
+                                  <div className="flex items-center gap-2 w-full">
+                                    {doc.iconLink ? (
+                                      <img src={doc.iconLink} alt="" className="w-4 h-4 flex-shrink-0" />
+                                    ) : (
+                                      <File size={14} className="text-muted-foreground flex-shrink-0" />
+                                    )}
+                                    <span className="text-[12px] font-semibold text-[#3c4043] dark:text-[#e8eaed] truncate" title={doc.name}>
+                                      {doc.name}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
