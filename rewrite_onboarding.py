@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import re
+
+content = """import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { StudentDiagnosticOnboarding } from "@/pages/student/StudentDiagnosticOnboarding";
 import { Button } from "@/components/ui/Button";
@@ -587,3 +589,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     </div>
   );
 }
+"""
+
+with open('src/pages/shared/OnboardingPage.tsx', 'w') as f:
+    f.write(content)

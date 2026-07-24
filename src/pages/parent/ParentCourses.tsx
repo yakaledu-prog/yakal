@@ -89,20 +89,20 @@ export function ParentCourses() {
               <div className="flex items-center gap-4 w-full lg:w-auto">
                 {/* View Toggles */}
                 <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
-                  <button 
+                  <button
                     onClick={() => setViewMode("grid")}
                     className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
                   >
                     <LayoutGrid size={16} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setViewMode("list")}
                     className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
                   >
                     <List size={16} />
                   </button>
                 </div>
-                
+
                 {/* Search */}
                 <div className="relative flex-1 lg:w-[300px]">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -132,72 +132,72 @@ export function ParentCourses() {
 
         <div className="max-w-[1440px] mx-auto p-4 md:p-8 w-full h-full">
 
-        {/* Catalog Grid */}
-        <div className={cn(
-           "grid gap-6",
-           viewMode === "grid" 
-             ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-             : "grid-cols-1 lg:grid-cols-2"
-        )}>
-          {isLoading ? (
-            <div className="col-span-full flex justify-center py-12">
-              <Loader2 className="animate-spin text-primary w-8 h-8" />
-            </div>
-          ) : catalogCourses.map(course => (
-            <Link 
-              key={course.id} 
-              to={`/parent/courses/${course.id}`}
-              className={cn(
-                "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50 flex flex-col",
-                viewMode === "list" && "sm:flex-row"
-              )}
-            >
-              {/* Thumbnail */}
-              <div className={cn(
-                "relative overflow-hidden",
-                viewMode === "list" ? "sm:w-[240px] shrink-0" : "w-full aspect-video"
-              )}>
-                <img 
-                  src={course.thumbnail} 
-                  alt={course.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Catalog Grid */}
+          <div className={cn(
+            "grid gap-6",
+            viewMode === "grid"
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
+              : "grid-cols-1 lg:grid-cols-2"
+          )}>
+            {isLoading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <Loader2 className="animate-spin text-primary w-8 h-8" />
               </div>
-
-              {/* Content */}
-              <div className="p-5 flex flex-col flex-1">
-                <h3 className="text-[16px] font-bold text-[#111] dark:text-white leading-tight mb-4 group-hover:text-primary transition-colors line-clamp-2">
-                  {course.title}
-                </h3>
-                
-                <div className="flex items-center gap-4 text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 mt-auto">
-                  <span><strong className="text-[#111] dark:text-[#e9edef]">{course.price}</strong></span>
-                  <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
-                  <span>Time: {course.duration}</span>
-                  <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
-                  <span>{course.students} Std.</span>
-                </div>
-
-                {/* Divider */}
-                <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-4" />
-
-                {/* Tutor */}
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={course.tutor.avatar} 
-                    alt={course.tutor.name} 
-                    className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21]"
+            ) : catalogCourses.map(course => (
+              <Link
+                key={course.id}
+                to={`/parent/courses/${course.id}`}
+                className={cn(
+                  "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden ring-2 ring-transparent hover:ring-primary/50 transition-all ease-in-out duration-300 hover:border-primary/50 flex flex-col",
+                  viewMode === "list" && "sm:flex-row"
+                )}
+              >
+                {/* Thumbnail */}
+                <div className={cn(
+                  "relative overflow-hidden",
+                  viewMode === "list" ? "sm:w-[240px] shrink-0" : "w-full aspect-video"
+                )}>
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-                    {course.tutor.name}
-                  </span>
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="text-[16px] font-bold text-[#111] dark:text-white leading-tight mb-4 group-hover:text-primary transition-colors line-clamp-2">
+                    {course.title}
+                  </h3>
+
+                  <div className="w-full flex items-center justify-between text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 mt-auto">
+                    <span><strong className="text-[#111] dark:text-[#e9edef]">{course.price}</strong></span>
+                    <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
+                    <span>{course.duration}</span>
+                    <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
+                    <span>{course.students} Students</span>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-4" />
+
+                  {/* Tutor */}
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={course.tutor.avatar}
+                      alt={course.tutor.name}
+                      className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21]"
+                    />
+                    <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
+                      {course.tutor.name}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </PageWrapper>

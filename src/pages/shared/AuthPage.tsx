@@ -35,38 +35,7 @@ export function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Resume State (Tutor only)
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const processFile = (file: File) => {
-    setResumeFile(file);
-    // Note: size validation is handled in handleAuth before submission
-  };
-
-  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-  };
-
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const onDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-  };
-
-  // Fetch the just-authenticated user's profile and route by role/status/onboarding.
+  const [phone, setPhone] = useState("");  // Fetch the just-authenticated user's profile and route by role/status/onboarding.
   const routeByProfile = async (userId: string) => {
     const { data: prof } = await supabase
       .from("profiles")
@@ -109,55 +78,7 @@ export function AuthPage() {
         toast.success("Welcome back!");
         if (data.user) await routeByProfile(data.user.id);
       } else {
-        let finalResumeUrl = null;
 
-        // If Tutor, upload resume directly to Backblaze B2 via Presigned URL
-        if (selectedRole === "tutor" && resumeFile) {
-          if (resumeFile.size > 3 * 1024 * 1024) {
-            toast.error("Please provide a resume smaller than 3MB.");
-            setLoading(false);
-            return;
-          }
-
-          toast.loading("Getting secure upload link...", { id: "upload-toast" });
-          
-          // 1. Get the Presigned URL from our backend
-          const urlRes = await fetch("/api/upload-resume", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fileName: resumeFile.name,
-              mimeType: resumeFile.type,
-            }),
-          });
-          
-          if (!urlRes.ok) {
-            toast.dismiss("upload-toast");
-            const err = await urlRes.json();
-            throw new Error(err.error || "Failed to get upload link.");
-          }
-          
-          const { uploadUrl, finalFileUrl } = await urlRes.json();
-          
-          toast.loading("Uploading resume directly to cloud...", { id: "upload-toast" });
-
-          // 2. Upload the RAW file directly to Backblaze B2 using the URL!
-          const uploadRes = await fetch(uploadUrl, {
-            method: "PUT",
-            body: resumeFile,
-            headers: {
-              "Content-Type": resumeFile.type
-            }
-          });
-
-          toast.dismiss("upload-toast");
-
-          if (!uploadRes.ok) {
-            throw new Error("Failed to upload file to cloud storage.");
-          }
-
-          finalResumeUrl = finalFileUrl;
-        }
 
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -166,7 +87,7 @@ export function AuthPage() {
             data: {
               full_name: fullName,
               role: selectedRole,
-              ...(finalResumeUrl ? { resume_url: finalResumeUrl } : {}),
+              ...(phone ? { phone } : {}),
             }
           }
         });
@@ -299,60 +220,17 @@ export function AuthPage() {
                   />
                 </div>
 
-                {/* Resume Upload for Tutors */}
-                {selectedRole === "tutor" && (
+                {/* Phone Field for select roles */}
+                {(selectedRole === "parent" || selectedRole === "tutor" || selectedRole === "counselor") && (
                   <div>
-                    <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Resume (PDF, DOC)</label>
-                    <div
-                      onDragOver={onDragOver}
-                      onDragLeave={onDragLeave}
-                      onDrop={onDrop}
-                      onClick={() => document.getElementById('resume-upload')?.click()}
-                      className={cn(
-                        "relative w-full px-4 py-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors",
-                        isDragging ? "border-[#1099A1] bg-[#1099A1]/5" : "border-[#e9edef] dark:border-[#2a3942] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]",
-                        resumeFile && resumeFile.size > 3 * 1024 * 1024 ? "border-warning bg-warning/10" : ""
-                      )}
-                    >
-                      <input
-                        id="resume-upload"
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        required={!resumeFile} // Only require if no file is selected
-                        onChange={handleResumeChange}
-                        className="hidden"
-                      />
-
-                      {!resumeFile ? (
-                        <>
-                          <div className="w-10 h-10 rounded-full bg-[#1099A1]/10 flex items-center justify-center mb-1">
-                            <UploadCloud className="text-[#1099A1]" size={20} />
-                          </div>
-                          <p className="text-[13px] font-medium text-[#111] dark:text-white text-center">Click to upload or drag and drop</p>
-                          <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">PDF, DOC up to 3MB</p>
-                        </>
-                      ) : (
-                        <>
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center mb-1",
-                            resumeFile.size > 3 * 1024 * 1024 ? "bg-warning/20" : "bg-[#1099A1]/10"
-                          )}>
-                            <FileText className={resumeFile.size > 3 * 1024 * 1024 ? "text-warning" : "text-[#1099A1]"} size={20} />
-                          </div>
-                          <p className={cn(
-                            "text-[13px] font-medium text-center break-all px-4",
-                            resumeFile.size > 3 * 1024 * 1024 ? "text-warning" : "text-[#111] dark:text-white"
-                          )}>
-                            {resumeFile.name}
-                          </p>
-                          {resumeFile.size > 3 * 1024 * 1024 ? (
-                            <p className="text-[12px] font-bold text-warning">File is too large (max 3MB)</p>
-                          ) : (
-                            <p className="text-[12px] text-[#1099A1]">Ready to upload</p>
-                          )}
-                        </>
-                      )}
-                    </div>
+                    <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Phone number (Optional)</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +1 234 567 8900"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                    />
                   </div>
                 )}
               </>

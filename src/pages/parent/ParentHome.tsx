@@ -119,7 +119,7 @@ export function ParentHome() {
                       </div>
                       <div className="flex items-center gap-2 mt-4">
                         {/* <img src={nextSession.image || dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" /> */}
-                        <img src={dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" />
+                        <img src={dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full ring-2 ring-secondary" />
                         <span className="text-[13px] font-medium text-foreground">{nextSession.tutor}</span>
                       </div>
                     </div>
