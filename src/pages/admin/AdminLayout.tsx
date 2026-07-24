@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Users, Library, CreditCard, Mail } from "lucide-react";
+import { Home, Users, Library, CreditCard, Bell } from "lucide-react";
 
 export function AdminLayout() {
   // Profile is reached via the sidebar footer avatar (links to /admin/profile),
@@ -9,7 +9,7 @@ export function AdminLayout() {
     { name: "Users", href: "/admin/users", icon: <Users size={20} /> },
     { name: "Courses", href: "/admin/courses", icon: <Library size={20} /> },
     { name: "Billing", href: "/admin/billing", icon: <CreditCard size={20} /> },
-    { name: "Contact", href: "/admin/contact", icon: <Mail size={20} /> },
+    { name: "Notifications", href: "/admin/notifications", icon: <Bell size={20} /> },
   ];
 
   return <DashboardLayout navItems={navItems} basePath="/admin" />;

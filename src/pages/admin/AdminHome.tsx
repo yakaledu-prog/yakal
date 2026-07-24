@@ -8,7 +8,7 @@ import { money } from "@/services/billingService";
 import { dicebearUrl } from "@/utils/avatar";
 import {
   Loader2, Check, X, ChevronRight, Users, GraduationCap, BookOpen, Wallet,
-  Library, CreditCard, Mail, UserCheck,
+  Library, CreditCard, Bell, UserCheck,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -43,8 +43,15 @@ export function AdminHome() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Welcome banner */}
-        <div className="bg-[#1099A1] text-white">
-          <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
+        <div className="bg-[#1099A1] text-white relative overflow-hidden">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+          <div className="relative z-10 max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
@@ -60,7 +67,7 @@ export function AdminHome() {
                 <ToolbarButton icon={<Library size={18} />} label="Courses" onClick={() => navigate("/admin/courses")} />
                 <ToolbarButton icon={<CreditCard size={18} />} label="Billing" onClick={() => navigate("/admin/billing")} />
                 <div className="w-px h-6 bg-white/20 mx-2" />
-                <ToolbarButton icon={<Mail size={18} />} label="Contact" onClick={() => navigate("/admin/contact")} />
+                <ToolbarButton icon={<Bell size={18} />} label="Notifications" onClick={() => navigate("/admin/notifications")} />
               </div>
             </div>
 

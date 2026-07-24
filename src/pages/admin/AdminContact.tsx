@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getContactMessages, markContactHandled, type ContactMessage } from "@/services/adminService";
-import { Loader2, Mail, Phone, Check, Inbox } from "lucide-react";
+import { Loader2, Phone, Inbox, Clock, Archive } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 function fmtDate(d: string) {
@@ -44,7 +44,7 @@ export function AdminContact() {
           </svg>
           <div className="relative z-10 max-w-[1440px] mx-auto flex items-end justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Contact messages</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
               <p className="text-white/80 text-[15px] mt-1">Enquiries submitted through your website</p>
             </div>
             <div className="flex items-center gap-10">
@@ -92,28 +92,48 @@ export function AdminContact() {
             </div>
           </div>
 
-          {/* Reading pane */}
-          <div className="flex-1 min-w-0 hidden md:flex flex-col bg-[#f8f9fa] dark:bg-[#0b141a]">
+          {/* Reading pane (Gmail-style) */}
+          <div className="flex-1 min-w-0 hidden md:flex flex-col bg-white dark:bg-[#111b21]">
             {active ? (
-              <div className="p-8 max-w-2xl mx-auto w-full">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h2 className="text-[20px] font-bold text-[#111] dark:text-white">{active.subject || "No subject"}</h2>
-                    <p className="text-[14px] text-muted-foreground mt-0.5">{active.first_name} {active.last_name}</p>
-                  </div>
+              <>
+                {/* Action bar */}
+                <div className="flex items-center justify-end gap-1 px-6 py-2.5 border-b border-[#e9edef] dark:border-[#2a3942]">
                   {isNew(active) && (
-                    <button onClick={() => handle(active.id)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1099A1] text-white text-[13px] font-semibold hover:bg-[#0d848b] shrink-0">
-                      <Check size={15} /> Mark handled
+                    <button onClick={() => handle(active.id)} title="Mark handled"
+                      className="p-2 rounded-md text-muted-foreground hover:text-[#1099A1] hover:bg-muted transition-colors">
+                      <Archive size={18} />
                     </button>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-muted-foreground border-y border-[#e9edef] dark:border-[#2a3942] py-3 mb-5">
-                  <a href={`mailto:${active.email}`} className="flex items-center gap-1.5 hover:text-[#1099A1]"><Mail size={14} /> {active.email}</a>
-                  {active.phone && <span className="flex items-center gap-1.5"><Phone size={14} /> {active.phone}</span>}
-                  <span>{new Date(active.created_at).toLocaleString()}</span>
+
+                <div className="p-6 md:p-8 overflow-y-auto">
+                  <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">{active.subject || "No subject"}</h2>
+
+                  {/* Sender row */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#1099A1]/15 text-[#1099A1] flex items-center justify-center font-bold text-[15px] shrink-0">
+                      {(active.first_name?.[0] || "?").toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-[#111] dark:text-white leading-tight">{active.first_name} {active.last_name}</p>
+                      <a href={`mailto:${active.email}`} className="text-[12px] text-muted-foreground hover:text-[#1099A1]">{active.email}</a>
+                    </div>
+                    <div className="text-[12px] text-muted-foreground flex items-center gap-1.5 shrink-0">
+                      <Clock size={13} /> {new Date(active.created_at).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+
+                  {active.phone && (
+                    <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 mt-3 ml-[52px]">
+                      <Phone size={13} /> {active.phone}
+                    </p>
+                  )}
+
+                  <div className="border-t border-[#e9edef] dark:border-[#2a3942] my-6" />
+
+                  <p className="text-[15px] text-[#111] dark:text-[#e9edef] leading-relaxed whitespace-pre-wrap">{active.message}</p>
                 </div>
-                <p className="text-[15px] text-[#111] dark:text-[#e9edef] leading-relaxed whitespace-pre-wrap">{active.message}</p>
-              </div>
+              </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
                 <Inbox size={44} className="mb-3 opacity-50" />

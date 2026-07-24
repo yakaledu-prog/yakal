@@ -201,7 +201,7 @@ const router = createBrowserRouter([
           { path: "users", element: <AdminUsers /> },
           { path: "courses", element: <AdminCourses /> },
           { path: "billing", element: <AdminBilling /> },
-          { path: "contact", element: <AdminContact /> },
+          { path: "notifications", element: <AdminContact /> },
           { path: "profile", element: <AdminProfile /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "*", element: <NotFoundPage /> },
