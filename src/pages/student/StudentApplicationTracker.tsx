@@ -266,16 +266,16 @@ export function StudentApplicationTracker() {
                           </div>
 
                           {/* Pills */}
-                          <div className="w-full flex items-center justify-start flex-wrap gap-2.5">
+                          <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2 pb-1">
                             {standardReqs.map((req, i) => {
                               const isDone = schoolReqs.includes(req);
 
                               return isDone ? (
-                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="bg-[#1099A1] text-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity">
+                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="text-[#1099A1] border bg-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-none hover:bg-black/5 transition-colors">
                                   <Check size={14} strokeWidth={3} /> {req}
                                 </button>
                               ) : (
-                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="bg-[#f8f9fa] dark:bg-[#202c33] text-[#8696a0] border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] hover:bg-[#e9edef] dark:hover:bg-[#2a3942] transition-colors">
+                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="text-[#202c33] dark:text-[#e9edef] dark:bg-[#202c33] bg-transparent border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                                   {req}
                                 </button>
                               );

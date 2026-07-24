@@ -252,7 +252,15 @@ function ChildDetailView({ child }: { child: any }) {
                         </div>
                       </div>
 
-                      <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2">
+                      {/* Progress bar */}
+                      {/* <div className={`${mockDoneCount > 0 ? 'scale-y-100' : 'scale-y-0'} transition ease-in-out duration-300 origin-left`}>
+                        <div className={`h-2.5 w-full bg-[#f8f9fa] dark:bg-[#202c33] rounded-full overflow-hidden border border-[#e9edef] dark:border-[#2a3942]`}>
+                          <div className="h-full bg-[#1099A1] rounded-full transition-all duration-500 ease-out" style={{ width: `${(mockDoneCount / Math.max(reqs.length, 8)) * 100}%` }} />
+                        </div>
+                        <div className={`${mockDoneCount > 0 ? 'h-5' : 'h-0'}`} />
+                      </div> */}
+
+                      <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2 pb-1">
                         {standardReqs.map((req, i) => {
                           const isDone = schoolReqs.includes(req);
                           return isDone ? (
