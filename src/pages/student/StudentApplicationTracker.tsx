@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, updateSchool } from "@/services/collegeService";
-import { ClipboardList, Loader2, CheckCircle2, Circle, Plus, ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Plus, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { useGoogleDrivePicker } from "@/hooks/useGoogleDrivePicker";
 
 export function StudentApplicationTracker() {
   const { user } = useAuth();
@@ -13,6 +15,24 @@ export function StudentApplicationTracker() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [localReqs, setLocalReqs] = useState<Record<string, string[]>>({});
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
+  const [attachedDocs, setAttachedDocs] = useState<{ id: string, name: string, url: string }[]>([]);
+  
+  const { openPicker, isReady, isPicking } = useGoogleDrivePicker();
+
+  const handlePickDocument = async () => {
+    try {
+      console.log('Initiating Google Drive Picker flow...');
+      const files = await openPicker();
+      if (files && files.length > 0) {
+        console.log('Successfully received files from Picker:', files);
+        setAttachedDocs(prev => [...prev, ...files.filter(f => !prev.find(p => p.id === f.id))]);
+      } else {
+        console.log('No files picked or picker was cancelled.');
+      }
+    } catch (err) {
+      console.error('Failed to pick document:', err);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -249,12 +269,45 @@ export function StudentApplicationTracker() {
                     <button className="flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors">
                       <span className="opacity-50">📄</span> Transcript ↗
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors">
-                      <span className="opacity-50">📁</span> Drive folder ↗
+                    <button 
+                      onClick={handlePickDocument}
+                      disabled={!isReady || isPicking}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/50 text-[14px] font-semibold transition-colors",
+                        (!isReady || isPicking) && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="opacity-50">📁</span> 
+                      {isPicking ? "Opening Drive..." : !isReady ? "Loading Drive..." : "Upload from Drive"}
                     </button>
                     <div className="flex-1"></div>
                     <button className="px-4 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground">Edit</button>
                   </div>
+
+                  {/* Attached Documents List */}
+                  {attachedDocs.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Attached Documents</h3>
+                      <div className="flex flex-col gap-2">
+                        {attachedDocs.map(doc => (
+                          <div key={doc.id} className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">📄</span>
+                              <span className="text-[14px] font-semibold text-[#111] dark:text-white">{doc.name}</span>
+                            </div>
+                            <a 
+                              href={doc.url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-[13px] font-bold text-[#1099A1] hover:underline flex items-center gap-1"
+                            >
+                              View <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
