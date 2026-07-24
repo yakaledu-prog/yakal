@@ -42,6 +42,8 @@ export function AdminCourses() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         <AdminHeader
+          title="Courses"
+          subtitle="Set parent-facing prices and availability"
           stats={[
             { label: "Courses", value: courses.length },
             { label: "Active", value: active },

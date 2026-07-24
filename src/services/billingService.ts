@@ -92,6 +92,7 @@ export async function bookAndPay(input: {
   amountCents: number;
   kind?: "tutoring" | "admissions" | "registration" | "other";
   studentId?: string | null;
+  tutorId?: string | null;
 }): Promise<{ error?: string }> {
   const res = await authedPost("/api/create-invoice", input);
   if (res.error) return { error: res.error };

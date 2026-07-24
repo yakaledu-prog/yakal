@@ -43,6 +43,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
         .in('id', invoiceIds)
         .eq('status', 'open');
+
+      // Now that the parent has paid, the tutor's cut becomes a pending payout.
+      await db
+        .from('invoices')
+        .update({ payout_status: 'pending' })
+        .in('id', invoiceIds)
+        .not('tutor_id', 'is', null)
+        .eq('payout_status', 'none');
     }
 
     return res.status(200).json({ status: 'paid' });

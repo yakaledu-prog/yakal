@@ -18,15 +18,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? req.body.kind
       : 'tutoring';
     const studentId: string | null = req.body?.studentId || null;
+    const tutorId: string | null = req.body?.tutorId || null;
 
     if (!description) return res.status(400).json({ error: 'Missing description' });
     if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > 5_000_000) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
+    // The tutor's cut of this booking (Stripe Connect deferred, so we just
+    // record what is owed). Placeholder split: tutor gets 70%, platform keeps
+    // 30% as the margin. Real deployments should use the tutor's fixed rate.
+    const payoutCents = tutorId ? Math.round(amountCents * 0.7) : null;
+
     const { data, error } = await db
       .from('invoices')
-      .insert([{ parent_id: user.id, student_id: studentId, description, amount_cents: amountCents, kind, status: 'open' }])
+      .insert([{
+        parent_id: user.id,
+        student_id: studentId,
+        tutor_id: tutorId,
+        description,
+        amount_cents: amountCents,
+        payout_cents: payoutCents,
+        kind,
+        status: 'open',
+        payout_status: 'none',
+      }])
       .select('id')
       .single();
 

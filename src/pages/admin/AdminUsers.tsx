@@ -59,6 +59,8 @@ export function AdminUsers() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
         <AdminHeader
+          title="Users"
+          subtitle="Manage accounts and approve applicants"
           stats={[
             { label: role === "all" ? "All users" : role, value: counts.total },
             { label: "Active", value: counts.active },

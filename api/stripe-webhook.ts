@@ -57,6 +57,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           .in('id', invoiceIds);
         if (error) console.error('Failed to mark invoices paid:', error.message);
+
+        // The tutor's cut becomes a pending payout once paid.
+        await db
+          .from('invoices')
+          .update({ payout_status: 'pending' })
+          .in('id', invoiceIds)
+          .not('tutor_id', 'is', null)
+          .eq('payout_status', 'none');
       }
     }
     return res.status(200).json({ received: true });

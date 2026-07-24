@@ -155,7 +155,7 @@ export function ParentCourseCatalogDetail() {
       const amountCents = Math.round(unit * 100 * selectedSlots.length);
       const label = `${course.title} (${selectedSlots.length} session${selectedSlots.length > 1 ? "s" : ""})`;
 
-      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring" });
+      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring", tutorId: availability?.tutor_id ?? null });
       if (error) throw new Error(error);
       // On success the browser is redirecting to Stripe Checkout.
     } catch (error: any) {

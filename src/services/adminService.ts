@@ -46,6 +46,17 @@ export interface ContactMessage {
   created_at: string;
 }
 
+export interface TutorPayout {
+  id: string;
+  tutor_id: string;
+  tutor_name: string;
+  parent_name: string;
+  description: string;
+  payout_cents: number;
+  currency: string;
+  paid_at: string | null;
+}
+
 export interface AdminDashboard {
   usersByRole: Record<string, number>;
   totalUsers: number;
@@ -53,6 +64,7 @@ export interface AdminDashboard {
   totalSessions: number;
   revenueCents: number;
   outstandingCents: number;
+  payoutsDueCents: number;
   newMessages: number;
 }
 
@@ -63,7 +75,7 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   const [profilesRes, sessionsRes, invoicesRes, messagesRes] = await Promise.all([
     supabase.from("profiles").select("role, status"),
     supabase.from("sessions").select("id", { count: "exact", head: true }),
-    supabase.from("invoices").select("amount_cents, status"),
+    supabase.from("invoices").select("amount_cents, status, payout_cents, payout_status"),
     supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
@@ -78,6 +90,9 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   const invoices = invoicesRes.data || [];
   const revenueCents = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + i.amount_cents, 0);
   const outstandingCents = invoices.filter((i: any) => i.status === "open").reduce((s: number, i: any) => s + i.amount_cents, 0);
+  const payoutsDueCents = invoices
+    .filter((i: any) => i.payout_status === "pending")
+    .reduce((s: number, i: any) => s + (i.payout_cents || 0), 0);
 
   return {
     usersByRole,
@@ -86,8 +101,40 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
     totalSessions: sessionsRes.count || 0,
     revenueCents,
     outstandingCents,
+    payoutsDueCents,
     newMessages: messagesRes.count || 0,
   };
+}
+
+// ---- Tutor payouts (owed once a parent has paid) ----
+export async function getTutorPayouts(): Promise<TutorPayout[]> {
+  const { data: rows } = await supabase
+    .from("invoices")
+    .select("id, tutor_id, parent_id, description, payout_cents, currency, paid_at")
+    .eq("payout_status", "pending")
+    .order("paid_at", { ascending: false });
+  const list = (rows || []).filter((r: any) => r.tutor_id && r.payout_cents);
+  const ids = [...new Set([...list.map((r: any) => r.tutor_id), ...list.map((r: any) => r.parent_id)])];
+  const { data: people } = ids.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", ids)
+    : { data: [] as any[] };
+  const nameById = new Map((people || []).map((p: any) => [p.id, p.full_name]));
+  return list.map((r: any) => ({
+    id: r.id,
+    tutor_id: r.tutor_id,
+    tutor_name: nameById.get(r.tutor_id) || "Tutor",
+    parent_name: nameById.get(r.parent_id) || "Parent",
+    description: r.description,
+    payout_cents: r.payout_cents,
+    currency: r.currency || "usd",
+    paid_at: r.paid_at,
+  }));
+}
+
+export async function markPayoutPaid(id: string): Promise<Result> {
+  const { error } = await supabase.from("invoices").update({ payout_status: "paid" }).eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 // ---- Users / approvals ----
