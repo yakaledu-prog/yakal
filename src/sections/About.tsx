@@ -92,12 +92,15 @@ export default function About() {
             >
               <X size={20} />
             </button>
-            <div className="w-full h-full flex flex-col items-center justify-center text-white p-8 text-center bg-gradient-to-br from-[#1099A1] to-[#0a6c72]">
-               <h3 className="text-2xl md:text-4xl font-bold mb-4">Our Pitch Video</h3>
-               <p className="text-base md:text-lg opacity-80 max-w-lg">
-                 This is a placeholder for your upcoming advertisement or pitch video. 
-                 Once ready, we can embed the actual video player here!
-               </p>
+            <div className="w-full h-full bg-black">
+              <video 
+                className="w-full h-full object-contain" 
+                controls 
+                autoPlay 
+              >
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>

@@ -24,7 +24,7 @@ export default function WhyJoinUs() {
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[80px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[80px] text-center">
           {features.map((feature, idx) => (
             <Reveal key={idx} delay={idx * 100} className="flex flex-col border-t border-[#eaeaea] pt-[32px]">
               <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden mb-[32px] bg-[#f7f9f9]">
