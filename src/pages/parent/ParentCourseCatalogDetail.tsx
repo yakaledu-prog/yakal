@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, Send, GraduationCap, Briefcase, Languages } from "lucide-react";
+import { Star, Clock, Users, PlayCircle, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, Send, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
@@ -217,7 +217,10 @@ export function ParentCourseCatalogDetail() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
+      <div className={cn(
+        "flex-1 min-h-screen bg-background dark:bg-[#111b21]",
+        activeTab === "Messages" ? "pb-0" : "pb-12"
+      )}>
 
         {/* Dynamic Header Section */}
         {!selectedTutorId ? (
@@ -265,7 +268,7 @@ export function ParentCourseCatalogDetail() {
           </div>
         ) : (
           /* Tutor Profile Header */
-          <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+          <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 relative overflow-hidden shrink-0">
             <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
               <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
               <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -282,17 +285,13 @@ export function ParentCourseCatalogDetail() {
                 <ChevronLeft size={16} /> Back to gallery
               </button>
 
-              <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-6 items-center justify-between mb-8">
                 <div className="flex flex-col sm:flex-row gap-6 items-center">
-                  {/* <img src={selectedTutor?.avatar} alt={selectedTutor?.name} className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shadow-md ring-4 ring-white/10 bg-white" /> */}
                   <div className="space-y-3 max-w-5xl">
                     <h2 className="text-3xl md:text-[40px] font-bold text-white flex items-center gap-3 leading-tight">
                       {selectedTutor?.name}
                     </h2>
                     <div className="text-[18px] font-medium text-white/90">{selectedTutor?.headline}</div>
-                    <p className="text-[15px] text-white/80 leading-relaxed max-w-3xl">
-                      {selectedTutor?.bio}
-                    </p>
                   </div>
                 </div>
 
@@ -305,11 +304,35 @@ export function ParentCourseCatalogDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* Tabs inside Header */}
+              <div className="flex items-center gap-8 mt-4 pt-2 pb-0 border-b border-white/20">
+                {TABS.map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "pb-1 px-2 text-[16px] font-apfel transition-all ease-in-out relative",
+                      activeTab === tab
+                        ? "text-white border-b-2 border-b-white"
+                        : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    {tab}
+                    {/* {activeTab === tab && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full" />
+                    )} */}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10 mt-8">
+        <div className={cn(
+          "mx-auto w-full max-w-[1440px]",
+          !selectedTutorId ? "px-6 md:px-10 mt-8" : "mt-0"
+        )}>
           {/* Dynamic Section: Gallery OR Master-Detail */}
           {!selectedTutorId ? (
             /* GALLERY VIEW */
@@ -377,33 +400,15 @@ export function ParentCourseCatalogDetail() {
           ) : (
             /* SELECTED TUTOR VIEW */
             <div className="w-full">
-              <div className="flex flex-col xl:flex-row gap-8">
-                {/* Left side of right pane (Tabs + body) */}
-                <div className="flex-1 space-y-8">
-
-                  {/* Tabs Header */}
-                  <div className="flex items-center gap-8 border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md z-10 pt-4">
-                    {TABS.map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                          "pb-3 text-[16px] font-bold transition-all relative",
-                          activeTab === tab
-                            ? "text-[#111] dark:text-white"
-                            : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-                        )}
-                      >
-                        {tab}
-                        {activeTab === tab && (
-                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1099A1] rounded-t-full" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
+              <div className="flex flex-col xl:flex-row gap-0">
+                {/* Left side of right pane (Tabs body) */}
+                <div className="flex-1 w-full bg-white dark:bg-[#182329] min-h-[500px]">
 
                   {/* Tabs Content */}
-                  <div className="pt-4 pb-12">
+                  <div className={cn(
+                    "w-full",
+                    activeTab === "Messages" ? "p-0 h-[calc(100vh-280px)]" : "p-6 md:p-10"
+                  )}>
 
                     {/* AVAILABILITY TAB */}
                     {activeTab === "Availability" && (
@@ -526,13 +531,9 @@ export function ParentCourseCatalogDetail() {
                     {/* RESUME TAB */}
                     {activeTab === "Resume" && (
                       <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
-                        <Button variant="outline" className="absolute -top-14 right-0 gap-2 h-10 border-[#e9edef] dark:border-[#2a3942]">
-                          <Download size={16} /> Download Resume (PDF)
-                        </Button>
-
                         <div>
                           <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
+                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-flex items-center gap-2"><Award size={18} /> Certifications</span>
                           </div>
                           <div className="space-y-6">
                             {selectedTutor?.certifications.map((cert: any) => (
@@ -616,6 +617,12 @@ export function ParentCourseCatalogDetail() {
                             </div>
                           </div>
                         </div>
+
+                        <div className="pt-4 flex justify-center">
+                          <Button className="gap-2 h-12 px-8 bg-[#f0f2f5] hover:bg-[#e4e7eb] dark:bg-[#202c33] dark:hover:bg-[#2a3942] text-[#111] dark:text-white border-0 font-semibold transition-colors">
+                            <Download size={18} /> Download Resume (PDF)
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -662,12 +669,12 @@ export function ParentCourseCatalogDetail() {
 
                     {/* MESSAGES TAB */}
                     {activeTab === "Messages" && (
-                      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm h-[600px] overflow-hidden flex flex-col">
+                      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full w-full">
+                        <div className="bg-[#f8f9fa] dark:bg-[#182329] h-full overflow-hidden flex flex-col">
                           <ChatPane
                             activeConv={mockActiveConv}
                             setConversations={setMockConversations}
-                            showHeader={true}
+                            showHeader={false}
                             initialInputText={prefilledMessage}
                           />
                         </div>
@@ -676,15 +683,23 @@ export function ParentCourseCatalogDetail() {
                   </div>
                 </div>
 
-                {/* Sticky Booking Card (Right side of right pane) */}
-                <div className="w-full xl:w-[320px] shrink-0">
-                  <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden shadow-sm sticky top-24">
-                    {/* Video Header */}
-                    <div className="relative w-full aspect-video bg-[#111]" onClick={() => setIsVideoOpen(true)}>
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-80" />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group cursor-pointer hover:bg-black/40 transition-colors">
-                        <PlayCircle size={48} className="text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
-                      </div>
+                {/* Sticky Booking Card (Right Pane) */}
+                {activeTab !== "Messages" && (
+                  <div className="w-full xl:w-[400px] shrink-0 p-6 md:p-10 bg-white dark:bg-[#111b21] border-l border-[#e9edef] dark:border-[#2a3942]">
+                    <div className="sticky top-8 bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                    {/* Tutor Profile Header (in floating card) */}
+                    <div className="p-6 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
+                      <img 
+                        src={selectedTutor?.avatar} 
+                        alt={selectedTutor?.name} 
+                        className="w-24 h-24 rounded-full object-cover shadow-sm border-2 border-white dark:border-[#182329] mb-4" 
+                      />
+                      <h3 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">
+                        {selectedTutor?.name}
+                      </h3>
+                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-2">
+                        {selectedTutor?.bio}
+                      </p>
                     </div>
 
                     <div className="p-6">
@@ -733,6 +748,7 @@ export function ParentCourseCatalogDetail() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
           )}
