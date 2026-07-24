@@ -34,10 +34,16 @@ const baseCourses = [
 
 export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
   const catalogCourses: CatalogCourse[] = baseCourses.map((c) => ({
     ...c,
   }));
+
+  const totalPages = Math.ceil(catalogCourses.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const visibleCourses = catalogCourses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <PageWrapper className="!p-0">
@@ -96,11 +102,21 @@ export function ParentCourses() {
 
               {/* Pagination */}
               <div className="flex items-center gap-2 self-end lg:self-auto">
-                <span className="text-[13px] text-white/80 mr-2">Showing 1-6 of 6</span>
-                <button className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors">
+                <span className="text-[13px] text-white/80 mr-2">
+                  Showing {catalogCourses.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, catalogCourses.length)} of {catalogCourses.length}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <ChevronLeft size={16} />
                 </button>
-                <button className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors">
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="p-1.5 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -112,52 +128,57 @@ export function ParentCourses() {
 
           {/* Catalog Grid */}
           <div className={cn(
-            "grid gap-6",
+            "grid gap-4 md:gap-6",
             viewMode === "grid"
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
               : "grid-cols-1 lg:grid-cols-2"
           )}>
-            {catalogCourses.map(course => (
+            {visibleCourses.map(course => (
               <Link
                 key={course.id}
                 to={`/parent/courses/${course.id}`}
                 className={cn(
                   "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden ring-2 ring-transparent hover:ring-primary/50 transition-all ease-in-out duration-300 hover:border-primary/50 flex flex-col",
-                  viewMode === "list" && "sm:flex-row"
+                  viewMode === "list" && "sm:flex-row sm:h-[160px]"
                 )}
               >
                 {/* Thumbnail */}
                 <div className={cn(
-                  "relative overflow-hidden",
-                  viewMode === "list" ? "sm:w-[240px] shrink-0" : "w-full aspect-video"
+                  "relative overflow-hidden shrink-0",
+                  viewMode === "list" ? "w-full h-[180px] sm:h-full sm:w-[220px]" : "w-full aspect-video"
                 )}>
                   <img
                     src={course.thumbnail}
                     alt={course.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-[17px] font-bold text-[#111] dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-2">
+                <div className={cn(
+                  "flex flex-col flex-1",
+                  viewMode === "list" ? "p-4" : "p-5"
+                )}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-[16px] font-bold text-[#111] dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-2">
                       {course.title}
                     </h3>
                     <div className="text-right shrink-0 flex flex-col items-end">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-[18px] font-bold text-[#111] dark:text-white leading-none">{course.coursePrice}</span>
+                        <span className="text-[16px] font-bold text-[#111] dark:text-white leading-none">{course.coursePrice}</span>
                         <span className="text-[11px] text-[#54656f] dark:text-[#aebac1]">/course</span>
                       </div>
-                      <div className="text-[11px] text-[#54656f] dark:text-[#aebac1] mt-0.5">
+                      <div className="text-[10px] text-[#54656f] dark:text-[#aebac1] mt-0.5">
                         or from <span className="font-medium text-[#111] dark:text-white">{course.price}</span>/hr
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-[13px] text-[#54656f] dark:text-[#aebac1] mb-5 mt-auto">
+                  <div className={cn(
+                    "flex items-center gap-3 text-[12px] text-[#54656f] dark:text-[#aebac1]",
+                    viewMode === "list" ? "mb-2" : "mb-4 mt-auto"
+                  )}>
                     <span className="flex items-center gap-1">
                       <span className="text-yellow-500 flex items-center">
                         <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/></svg>
@@ -170,7 +191,10 @@ export function ParentCourses() {
                   </div>
 
                   {/* Divider */}
-                  <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-4" />
+                  <div className={cn(
+                    "w-full h-px bg-[#e9edef] dark:bg-[#2a3942]",
+                    viewMode === "list" ? "my-3 mt-auto" : "mb-4"
+                  )} />
 
                   {/* Avatar Stack & Count */}
                   <div className="flex items-center gap-3">
