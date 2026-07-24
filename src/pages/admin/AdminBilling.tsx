@@ -5,7 +5,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
 import { getAllInvoices, getTutorPayouts, markPayoutPaid } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { Loader2, CheckCircle2, Clock, Wallet, Check } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Wallet, Check, ReceiptTextIcon, ScrollTextIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -81,8 +81,8 @@ export function AdminBilling() {
 
           {/* Invoices */}
           <div>
-            <div className="border-b border-border/50 pb-3 mb-4">
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Invoices</h3>
+            <div className="border-b border-border/50 pb-3 mb-4 flex items-center gap-2">
+              <ScrollTextIcon size={18} className="text-primary" /> <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Invoices</h3>
             </div>
             {isLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
