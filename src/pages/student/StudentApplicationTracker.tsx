@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, updateSchool } from "@/services/collegeService";
-import { ClipboardList, Loader2, CheckCircle2, Circle, Plus, ChevronDown } from "lucide-react";
+import { ClipboardList, Loader2, CheckCircle2, Circle, Plus, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export function StudentApplicationTracker() {
@@ -11,6 +11,7 @@ export function StudentApplicationTracker() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<"requirements" | "documents" | "checklists" | "recommendations">("requirements");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [localReqs, setLocalReqs] = useState<Record<string, string[]>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -86,146 +87,136 @@ export function StudentApplicationTracker() {
           </div>
         </div>
 
-        <div className="max-w-[1100px] mx-auto p-6 md:p-10 space-y-10">
+        <div className="mx-auto p-6 md:p-10 md:pt-2 space-y-10">
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
           ) : (
             <>
               {tab === "requirements" && (
                 <div>
-                  <h2 className="text-[15px] font-bold uppercase tracking-wider mb-4 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">Per-school requirements</h2>
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-6 mt-4">
                     {schools.map(s => {
                       const reqs = s.requirements || [];
-                      const doneCount = reqs.filter(r => r.is_complete).length;
-                      // Standard MVP requirements checklist
                       const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
 
+                      const toggleReq = (schoolId: string, schoolName: string, req: string) => {
+                        setLocalReqs(prev => {
+                          let current = prev[schoolId];
+                          if (!current) {
+                            current = standardReqs.filter(r => {
+                              if (schoolName.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
+                              if (schoolName.includes("Maryland")) return false;
+                              if (schoolName.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
+                              return false;
+                            });
+                          }
+                          if (current.includes(req)) {
+                            return { ...prev, [schoolId]: current.filter(r => r !== req) };
+                          }
+                          return { ...prev, [schoolId]: [...current, req] };
+                        });
+                      };
+
+                      const schoolReqs = localReqs[s.id] || standardReqs.filter(r => {
+                        if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
+                        if (s.school_name.includes("Maryland")) return false;
+                        if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
+                        return false;
+                      });
+
+                      const mockDoneCount = schoolReqs.length;
+
                       return (
-                        <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                          <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730] flex items-start justify-between gap-3 relative">
-                            <div>
-                              <h3 className="font-bold text-[16px] leading-tight mb-1">{s.school_name}</h3>
-                              <p className="text-[13px] text-muted-foreground">{s.deadline ? s.deadline : "2026-01-01"}</p>
-                            </div>
-                            
-                            <div className="relative hidden md:block">
-                              <button
-                                onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
-                                className={cn(
-                                  "text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm flex items-center gap-1 transition-colors",
-                                  s.status === "accepted" ? "text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-500/10" : 
-                                  s.status === "waitlisted" ? "text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10" :
-                                  s.status === "denied" ? "text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-500/10" :
-                                  s.status === "enrolled" ? "text-[#1099A1] bg-[#1099A1]/10" :
-                                  "text-muted-foreground hover:bg-muted/50"
-                                )}
-                              >
-                                {s.status === "accepted" ? "Accepted 🎉" : 
-                                 s.status === "waitlisted" ? "Waitlisted" :
-                                 s.status === "denied" ? "Denied" :
-                                 s.status === "enrolled" ? "Enrolled 🎓" : 
-                                 "— Decision —"}
-                                <ChevronDown size={14} className={cn("transition-transform opacity-50", openDropdownId === s.id && "rotate-180")} />
-                              </button>
-                              
-                              {openDropdownId === s.id && (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                                  <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#202c33] rounded-sm shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
-                                    {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
-                                      <button
-                                        key={status}
-                                        onClick={async () => {
-                                          await updateSchool(s.id, { status: status as any });
-                                          qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
-                                          setOpenDropdownId(null);
-                                        }}
-                                        className="block w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                                      >
-                                        {status}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
+                        <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg p-6">
+                          {/* Top Row */}
+                          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <h3 className="font-bold text-[18px] text-[#111] dark:text-white leading-tight">{s.school_name}</h3>
+                              <span className="text-[14px] text-[#8696a0] font-medium">EA • {s.deadline ? s.deadline : "2026-11-01"}</span>
                             </div>
 
-                            <div className="text-right shrink-0">
-                              <p className="text-[13px] font-bold text-[#1099A1]">{doneCount}/{Math.max(reqs.length, 8)}</p>
+                            <div className="flex items-center gap-3 self-end md:self-auto">
+                              <span className="text-[14px] font-bold text-[#54656f]">{mockDoneCount}/{Math.max(reqs.length, 8)}</span>
+
+                              <div className="relative">
+                                <button
+                                  onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                                  className={cn(
+                                    "bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-full px-3 py-1.5 text-[13px] font-semibold flex items-center gap-1.5 hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942] transition-colors",
+                                    s.status === "accepted" ? "text-[#97CE9D]" :
+                                      s.status === "waitlisted" ? "text-[#CAA25F]" :
+                                        s.status === "denied" ? "text-[#697780]" :
+                                          s.status === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
+                                  )}
+                                >
+                                  {s.status === "accepted" ? "Accepted 🎉" :
+                                    s.status === "waitlisted" ? "Waitlisted" :
+                                      s.status === "denied" ? "Denied" :
+                                        s.status === "enrolled" ? "Enrolled 🎓" :
+                                          "Decision"}
+                                  <ChevronDown size={14} className={cn("transition-transform opacity-50 ml-1", openDropdownId === s.id && "rotate-180")} />
+                                </button>
+
+                                {openDropdownId === s.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                                    <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-[#202c33] rounded-[12px] shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
+                                      {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
+                                        <button
+                                          key={status}
+                                          onClick={async () => {
+                                            await updateSchool(s.id, { status: status as any });
+                                            qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className={cn(
+                                            "block w-full text-left px-4 py-2.5 text-[13px] font-bold capitalize transition-colors hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942]",
+                                            status === "accepted" ? "text-[#97CE9D]" :
+                                              status === "waitlisted" ? "text-[#CAA25F]" :
+                                                status === "denied" ? "text-[#697780]" :
+                                                  status === "enrolled" ? "text-[#1099A1]" : "text-foreground"
+                                          )}
+                                        >
+                                          {status}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Mobile Dropdown (shown only on small screens) */}
-                          <div className="px-4 pt-4 pb-0 md:hidden flex justify-center">
-                              <button
-                                onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
-                                className={cn(
-                                  "text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm flex items-center gap-1 transition-colors w-full justify-center",
-                                  s.status === "accepted" ? "text-green-600 dark:text-green-500 bg-green-50 dark:bg-green-500/10" : 
-                                  s.status === "waitlisted" ? "text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10" :
-                                  s.status === "denied" ? "text-red-600 dark:text-red-500 bg-red-50 dark:bg-red-500/10" :
-                                  s.status === "enrolled" ? "text-[#1099A1] bg-[#1099A1]/10" :
-                                  "text-muted-foreground hover:bg-muted/50 border border-[#e9edef] dark:border-[#2a3942]"
-                                )}
-                              >
-                                {s.status === "accepted" ? "Accepted 🎉" : 
-                                 s.status === "waitlisted" ? "Waitlisted" :
-                                 s.status === "denied" ? "Denied" :
-                                 s.status === "enrolled" ? "Enrolled 🎓" : 
-                                 "— Decision —"}
-                                <ChevronDown size={14} className={cn("transition-transform opacity-50", openDropdownId === s.id && "rotate-180")} />
-                              </button>
-                              
-                              {openDropdownId === s.id && (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 bg-white dark:bg-[#202c33] rounded-sm shadow-2xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
-                                    {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
-                                      <button
-                                        key={status}
-                                        onClick={async () => {
-                                          await updateSchool(s.id, { status: status as any });
-                                          qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
-                                          setOpenDropdownId(null);
-                                        }}
-                                        className="block w-full text-center px-3 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                                      >
-                                        {status}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
+
+                          {/* Progress bar */}
+
+                          <div className={`${mockDoneCount > 0 ? 'scale-y-100' : 'scale-y-0'} transition ease-in-out duration-300 origin-left`}>
+                            <div className={`h-2.5 w-full bg-[#f8f9fa] dark:bg-[#202c33] rounded-full overflow-hidden border border-[#e9edef] dark:border-[#2a3942]`}>
+                              <div className="h-full bg-[#1099A1] rounded-full transition-all duration-500 ease-out" style={{ width: `${(mockDoneCount / Math.max(reqs.length, 8)) * 100}%` }} />
+                            </div>
+                            <div className={`${mockDoneCount > 0 ? 'h-5' : 'h-0'}`} />
                           </div>
 
-                          <div className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-2">
-                              {standardReqs.map((req, i) => {
-                                // Mock completion logic based on the user's snippet
-                                let isDone = false;
-                                if (s.school_name.includes("Hopkins")) isDone = ["Application", "Essays", "Recs requested", "Transcript", "Test scores"].includes(req);
-                                if (s.school_name.includes("Michigan")) isDone = ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(req);
+                          {/* Pills */}
+                          <div className="w-full flex items-center justify-start flex-wrap gap-2.5">
+                            {standardReqs.map((req, i) => {
+                              const isDone = schoolReqs.includes(req);
 
-                                return (
-                                  <div key={i} className="flex items-center gap-2">
-                                    {isDone ? (
-                                      <CheckCircle2 size={14} className="text-[#1099A1]" />
-                                    ) : (
-                                      <Circle size={14} className="text-muted-foreground/40" />
-                                    )}
-                                    <span className={cn("text-[13px]", isDone ? "font-semibold text-foreground" : "text-muted-foreground")}>{req}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                              return isDone ? (
+                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="bg-[#1099A1] text-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity">
+                                  <Check size={14} strokeWidth={3} /> {req}
+                                </button>
+                              ) : (
+                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="bg-[#f8f9fa] dark:bg-[#202c33] text-[#8696a0] border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] hover:bg-[#e9edef] dark:hover:bg-[#2a3942] transition-colors">
+                                  {req}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       );
                     })}
                     {schools.length === 0 && (
-                      <p className="text-[14px] text-muted-foreground">Add schools in the College List to see requirements.</p>
+                      <p className="text-[14px] text-muted-foreground text-center py-10">Add schools in the College List to see requirements.</p>
                     )}
                   </div>
                 </div>
