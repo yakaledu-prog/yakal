@@ -98,7 +98,7 @@ export function StudentDiagnosticOnboarding() {
   const isLastQuestion = currentQuestionIndex === activeTest.questions.length - 1;
 
   return (
-    <div className="h-screen flex flex-col bg-[#f8f9fa] dark:bg-[#111b21] overflow-hidden font-sans">
+    <div className="h-screen flex-grow flex flex-col bg-[#f8f9fa] dark:bg-[#111b21] overflow-hidden font-sans">
 
       {/* Header with SVG Pattern */}
       <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-10 md:px-10 pb-0 relative shrink-0">
@@ -225,11 +225,11 @@ export function StudentDiagnosticOnboarding() {
       </div>
 
       {/* Bottom Status Indicator / Progress Bar */}
-      <div className="bg-white dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942] shrink-0 p-4 md:px-10 flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+      <div className="bg-white dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942] shrink-0 p-4 py-1 md:px-10 flex flex-col md:flex-row items-center justify-between gap-6 w-full">
         <div className="flex-1 w-full flex items-center gap-4">
-          <div className="text-[13px] font-bold text-[#111] dark:text-white shrink-0 whitespace-nowrap">
-            Test {currentTestIndex + 1} / {diagnosticTests.length}
-          </div>
+          {/* <div className="text-[13px] font-semibold text-[#111] dark:text-white shrink-0 whitespace-nowrap">
+            {currentTestIndex + 1} / {diagnosticTests.length}
+          </div> */}
           <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
             {diagnosticTests.map((_, i) => (
               <div

@@ -4,14 +4,13 @@ import { StudentDiagnosticOnboarding } from "@/pages/student/StudentDiagnosticOn
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/FloatingField";
-import { MoneyInput, Currency } from "@/components/ui/MoneyInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
 import { fireConfetti } from "@/utils/confetti";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
-import { Moon, Sun, Check, Loader2, Trash, FileText, FileUp, X, Camera, User } from "lucide-react";
+import { Moon, Sun, Check, Loader2, Trash, FileText, FileUp, X, Camera, ChevronDown } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
@@ -22,19 +21,17 @@ import subjAdvising from "@/assets/images/resource-book-session.webp";
 import subjOther from "@/assets/images/about-offer.webp";
 
 const SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology",
-  "English", "SAT Prep", "College Advising", "Other",
+  "K-12 Math", "K-12 ELA", "Physics", "Standardized Tests",
+  "AP Courses", "College Essays"
 ];
 
 const SUBJECT_IMAGES: Record<string, string> = {
-  Mathematics: subjMath,
+  "K-12 Math": subjMath,
+  "K-12 ELA": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&q=70",
   Physics: subjPhysics,
-  "SAT Prep": subjSat,
-  "College Advising": subjAdvising,
-  Chemistry: "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=400&q=70",
-  Biology: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=400&q=70",
-  English: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&q=70",
-  Other: subjOther,
+  "Standardized Tests": subjSat,
+  "AP Courses": subjAdvising,
+  "College Essays": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=400&q=70",
 };
 
 interface OnboardingPageProps {
@@ -54,21 +51,19 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCv, setUploadingCv] = useState(false);
-  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   const [fullName, setFullName] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("light");
   const [avatarUrl, setAvatarUrl] = useState("");
 
   const [subjects, setSubjects] = useState<string[]>([]);
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [currency, setCurrency] = useState<Currency>("ETB");
   const [bio, setBio] = useState("");
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvUrl, setCvUrl] = useState("");
 
-  const [childrenDetails, setChildrenDetails] = useState<{ email: string; services: string[] }[]>([]);
+  const [childrenDetails, setChildrenDetails] = useState<{ email: string; services: string[]; full_name?: string; avatar_url?: string }[]>([]);
   const [newChildEmail, setNewChildEmail] = useState("");
+  const [newChildServiceType, setNewChildServiceType] = useState<string>("");
 
   useEffect(() => {
     if (isPreview) {
@@ -80,16 +75,23 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       setTheme((profile.theme as "light" | "dark") || "light");
       setAvatarUrl(profile.avatar_url || dicebearUrl(profile.id || profile.full_name || "yakal", "identicon"));
       setSubjects(profile.subjects || []);
-      setHourlyRate(profile.hourly_rate != null ? String(profile.hourly_rate) : "");
-      setCurrency((profile.rate_currency as Currency) || "ETB");
       setBio(profile.bio || "");
       setCvUrl((profile as any).resume_url || "");
     }
   }, [profile, isPreview]);
 
   useEffect(() => {
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+    if (theme === "system") {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [theme]);
 
   // Make sure avatar changes when fullName changes (if it's an identicon)
@@ -104,9 +106,22 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
   const handleAddChild = () => {
     if (!newChildEmail.includes('@')) return toast.error("Please enter a valid email address");
+    if (!newChildServiceType) return toast.error("Please select a service");
     if (childrenDetails.some(c => c.email === newChildEmail)) return toast.error("Child already added");
-    setChildrenDetails([...childrenDetails, { email: newChildEmail, services: ["tutoring"] }]);
+
+    // Simulate user lookup (true if student@ or yakal is in email)
+    const exists = newChildEmail.includes('student') || newChildEmail.includes('yakal') || newChildEmail.includes('amen');
+
+    const services = newChildServiceType === "both" ? ["tutoring", "admissions"] : [newChildServiceType];
+
+    setChildrenDetails([...childrenDetails, {
+      email: newChildEmail,
+      services: services,
+      full_name: exists ? newChildEmail.split('@')[0] : undefined,
+      avatar_url: exists ? dicebearUrl(newChildEmail, "identicon") : undefined,
+    }]);
     setNewChildEmail("");
+    setNewChildServiceType("");
   };
 
   const handleRemoveChild = (index: number) => {
@@ -187,8 +202,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     }
   };
 
-  const TutorSteps = ["Profile & CV", "Subjects", "Rate & Bio"];
-  const ParentSteps = ["Profile", "Children"];
+  const TutorSteps = ["Profile", "CV / Resume", "Subjects"];
+  const ParentSteps = ["Profile", "Theme", "Children"];
   const CounselorSteps = ["Profile", "Bio"];
 
   const stepsList = role === "tutor" ? TutorSteps : role === "parent" ? ParentSteps : CounselorSteps;
@@ -198,7 +213,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     e.preventDefault();
 
     if (!isLastStep) {
-      if (role === "tutor" && step === 1 && !cvUrl && !cvFile) {
+      if (role === "tutor" && step === 2 && !cvUrl && !cvFile) {
         return toast.error("Please upload your CV before proceeding.");
       }
       setStep(step + 1);
@@ -210,8 +225,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     }
 
     if (role === "parent" && childrenDetails.length === 0) {
-       toast.error("Please add at least one child to continue.");
-       return;
+      toast.error("Please add at least one child to continue.");
+      return;
     }
 
     if (isPreview) {
@@ -228,7 +243,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
         avatar_url: avatarUrl,
         is_onboarded: true,
       };
-      
+
       // We only update fullName if it's Parent/Counselor since Tutor doesn't ask for it
       if (role !== "tutor") {
         updates.full_name = fullName.trim();
@@ -236,8 +251,6 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
       if (role === "tutor") {
         updates.subjects = subjects;
-        updates.hourly_rate = hourlyRate ? Number(hourlyRate) : null;
-        updates.rate_currency = currency;
         updates.bio = bio.trim() || null;
         updates.resume_url = cvUrl || null;
       } else if (role === "counselor") {
@@ -262,12 +275,28 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   };
 
   if (role === "student") {
-    return <StudentDiagnosticOnboarding />;
+    return <div className="min-h-screen flex font-sans bg-[#f8f9fa] dark:bg-[#111b21]">
+      <div className="hidden lg:block lg:w-[45%] relative">
+        <img src={logoImg} alt="Yakal Education" className="absolute z-50 left-5 top-5 h-15 object-cover" />
+        <img src={imgCover} alt="Yakal Education" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+        <div className="absolute bottom-16 left-16 right-16">
+          <h2 className="text-[42px] font-bold text-white mb-4 leading-[50px] max-w-[500px]">
+            Personalized tutoring for students who want to excel.
+          </h2>
+          <p className="text-[18px] text-white/90 max-w-[450px] leading-[28px]">
+            Expert guidance, flexible scheduling, and tailored learning plans to help you achieve your academic goals.
+          </p>
+        </div>
+      </div>
+      <StudentDiagnosticOnboarding />
+    </div>
+
   }
 
   return (
     <div className="min-h-screen flex font-sans bg-[#f8f9fa] dark:bg-[#111b21]">
-      
+
       {/* Left side: Immersive Image (Hidden on small screens) */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img src={imgCover} alt="Yakal Education" className="absolute inset-0 w-full h-full object-cover" />
@@ -285,7 +314,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       {/* Right side: Auth Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
         <Card className="w-full max-w-[540px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] shadow-xl p-8">
-          
+
           <div className="mb-8 text-center">
             <Link to="/" className="inline-block hover:opacity-80 transition-opacity">
               <img src={logoImg} alt="Yakal" className="h-12 object-contain mx-auto" />
@@ -293,19 +322,19 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
           </div>
 
           <form onSubmit={handleNextOrSubmit} className="flex flex-col">
-            
+
             {/* Stepper UI */}
             <div className="flex items-center justify-between mb-8 px-2">
               {stepsList.map((s, i) => (
                 <div key={s} className="flex items-center gap-2 flex-1 last:flex-none">
                   <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold z-10", 
+                    "w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold z-10",
                     step === i + 1 ? "bg-[#1099A1] text-white" : step > i + 1 ? "bg-[#1099A1] text-white" : "bg-[#e9edef] dark:bg-[#2a3942] text-[#54656f] dark:text-[#aebac1]"
                   )}>
                     {step > i + 1 ? <Check size={14} /> : i + 1}
                   </div>
                   <span className={cn(
-                    "text-[13px] font-medium hidden sm:block whitespace-nowrap", 
+                    "text-[13px] font-medium hidden sm:block whitespace-nowrap",
                     step === i + 1 ? "text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]"
                   )}>
                     {s}
@@ -316,7 +345,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
             </div>
 
             <div className="flex-1 flex flex-col justify-start gap-5">
-              
+
               {/* Profile Image Component (Reusable across steps) */}
               {(step === 1) && (
                 <div className="flex flex-col items-center mb-2">
@@ -340,35 +369,29 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     onChange={(e) => setFullName(e.target.value)}
                     className="capitalize"
                   />
-                  <div>
-                    <p className="text-[13px] font-medium text-[#111] dark:text-white mb-2">Preferred theme</p>
-                    <div className="flex gap-3">
-                      {(["light", "dark"] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setTheme(t)}
-                          className={cn(
-                            "flex-1 py-3 border rounded-xl flex items-center justify-center gap-2 transition-colors",
-                            theme === t
-                              ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
-                              : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
-                          )}
-                        >
-                          {t === "light" ? <Sun size={18} /> : <Moon size={18} />}
-                          <span className="text-[14px] font-medium capitalize">{t}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 
-              {/* Tutor Step 1: CV Upload (Already has Profile Image rendered above) */}
+              {/* Tutor Step 1: Profile (Bio) */}
               {role === "tutor" && step === 1 && (
+                <div className="flex flex-col gap-4 mt-4">
+                  <FloatingTextarea
+                    label="Short bio"
+                    rows={4}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                  />
+                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                    Your account will be reviewed by an administrator before activation.
+                  </p>
+                </div>
+              )}
+
+              {/* Tutor Step 2: CV Upload */}
+              {role === "tutor" && step === 2 && (
                 <div className="flex flex-col gap-4">
                   <div className="p-6 border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] dark:bg-[#1a2329] hover:bg-[#f1f3f5] dark:hover:bg-[#202c33] transition-colors cursor-pointer"
-                       onClick={() => cvInputRef.current?.click()}>
+                    onClick={() => cvInputRef.current?.click()}>
                     {uploadingCv ? (
                       <Loader2 size={32} className="animate-spin text-[#1099A1] mb-2" />
                     ) : (
@@ -382,7 +405,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     </p>
                     <input ref={cvInputRef} type="file" accept=".pdf,.doc,.docx,image/*" className="hidden" onChange={handleCvUpload} />
                   </div>
-                  
+
                   {cvFile && (
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg">
                       <div className="flex items-center gap-3 overflow-hidden">
@@ -399,8 +422,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
-              {/* Tutor Step 2: Subjects */}
-              {role === "tutor" && step === 2 && (
+              {/* Tutor Step 3: Subjects */}
+              {role === "tutor" && step === 3 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[13px] font-medium text-[#111] dark:text-white">
@@ -409,16 +432,9 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                         <span className="text-[#1099A1] font-semibold"> · {subjects.length}</span>
                       )}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowAllSubjects((v) => !v)}
-                      className="text-[12px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors"
-                    >
-                      {showAllSubjects ? "Show less" : `View all (${SUBJECTS.length})`}
-                    </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {(showAllSubjects ? SUBJECTS : SUBJECTS.slice(0, 3)).map((s) => {
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {SUBJECTS.map((s) => {
                       const active = subjects.includes(s);
                       return (
                         <button
@@ -457,92 +473,161 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
-              {/* Tutor Step 3: Rate & Bio */}
-              {role === "tutor" && step === 3 && (
-                <>
-                  <MoneyInput
-                    label="Rate per session"
-                    value={hourlyRate}
-                    onChange={setHourlyRate}
-                    currency={currency}
-                    onCurrencyChange={setCurrency}
-                  />
-                  <FloatingTextarea
-                    label="Short bio"
-                    rows={4}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                  />
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                    Your account will be reviewed by an administrator before activation.
-                  </p>
-                </>
+              {/* Parent Step 2: Theme Cards */}
+              {role === "parent" && step === 2 && (
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Light Theme Card */}
+                      <button
+                        type="button"
+                        onClick={() => setTheme("light")}
+                        className={cn("flex flex-col items-center gap-3 transition-all", theme === "light" ? "opacity-100" : "opacity-60 hover:opacity-100")}
+                      >
+                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#f3f4f6]", theme === "light" ? "border-[#1099A1] ring-2 ring-[#1099A1]/20 shadow-md" : "border-[#e5e7eb]")}>
+                          <div className="h-8 bg-white border-b border-[#e5e7eb] flex items-center px-3 justify-between">
+                            <div className="w-10 h-2.5 rounded-full bg-[#111]" />
+                            <div className="w-4 h-4 rounded-full bg-[#1099A1]" />
+                          </div>
+                          <div className="flex-1 bg-white p-3 flex flex-col gap-2">
+                            <div className="w-full h-8 rounded-lg border border-[#e5e7eb]" />
+                            <div className="w-full h-6 rounded-lg border border-[#e5e7eb] flex items-center justify-end px-2">
+                              <Check size={12} className="text-[#9ca3af]" />
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[14px] font-semibold text-[#111] dark:text-white">Light</span>
+                      </button>
+
+                      {/* Dark Theme Card */}
+                      <button
+                        type="button"
+                        onClick={() => setTheme("dark")}
+                        className={cn("flex flex-col items-center gap-3 transition-all", theme === "dark" ? "opacity-100" : "opacity-85 hover:opacity-100")}
+                      >
+                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#111827]", theme === "dark" ? "border-[#1099A1] ring-2 ring-[#1099A1]/20 shadow-md" : "border-[#1f2937]")}>
+                          <div className="h-8 bg-[#1f2937] border-b border-[#374151] flex items-center px-3 justify-between">
+                            <div className="w-10 h-2.5 rounded-full bg-[#d1d5db]" />
+                            <div className="w-4 h-4 rounded-full bg-[#ef4444]" />
+                          </div>
+                          <div className="flex-1 bg-[#111827] p-3 flex flex-col gap-2">
+                            <div className="w-full h-8 rounded-lg bg-[#1f2937]" />
+                            <div className="w-full h-6 rounded-lg bg-[#1f2937] flex items-center justify-end px-2">
+                              <Check size={12} className="text-[#4b5563]" />
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[14px] font-semibold text-[#111] dark:text-white">Dark</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Parent Step 2: Children (Google Drive Style) */}
-              {role === "parent" && step === 2 && (
-                <div className="flex flex-col gap-4">
+              {/* Parent Step 3: Children */}
+              {role === "parent" && step === 3 && (
+                <div className="flex flex-col gap-6">
                   <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] mb-2">
                     Enter the emails of your children and select the services they will have access to.
                   </p>
 
-                  {/* Top Input Area */}
-                  <div className="flex gap-2">
-                    <FloatingInput 
-                      label="Child's email address"
-                      value={newChildEmail}
-                      onChange={(e) => setNewChildEmail(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="button"
-                      onClick={handleAddChild}
-                      disabled={!newChildEmail.includes('@')}
-                      className="bg-[#1099A1] hover:bg-[#0d848b] text-white h-[52px] px-6 rounded-xl font-medium"
-                    >
-                      Add
-                    </Button>
+                  {/* Top Input Area (No white card) */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Embedded Input and Selector */}
+                    <div className="flex-1 flex items-center rounded-[12px] border border-[#e9edef] dark:border-[#2a3942] bg-transparent focus-within:border-[#1099A1] focus-within:ring-2 focus-within:ring-[#1099A1]/15 transition-all overflow-hidden h-14">
+                      <div className="relative flex-1 h-full">
+                        <input
+                          type="email"
+                          placeholder="Child's email address"
+                          value={newChildEmail}
+                          onChange={(e) => setNewChildEmail(e.target.value)}
+                          className="w-full h-full bg-transparent px-4 text-[14px] text-[#111] dark:text-white focus:outline-none placeholder:text-[#54656f] dark:placeholder:text-[#aebac1]"
+                        />
+                      </div>
+
+                      <div className="h-6 w-[1px] bg-[#e9edef] dark:bg-[#2a3942]" />
+
+                      <div className="relative flex items-center h-full">
+                        <select
+                          value={newChildServiceType}
+                          onChange={(e) => setNewChildServiceType(e.target.value)}
+                          className="h-full bg-transparent text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] outline-none cursor-pointer pl-4 pr-8 appearance-none"
+                        >
+                          <option value="" disabled>Select Service</option>
+                          <option value="tutoring">Tutoring Service</option>
+                          <option value="admissions">College Admission</option>
+                          <option value="both">Both Services</option>
+                        </select>
+                        <ChevronDown size={14} className="text-[#8696a0] absolute right-3 pointer-events-none" />
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={handleAddChild}
+                        disabled={!newChildEmail.includes('@') || !newChildServiceType}
+                        className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-5 rounded-[12px] font-medium m-2"
+                      >
+                        Add
+                      </Button>
+                    </div>
+
+
                   </div>
 
-                  {/* List of Added Children */}
+                  {/* List of Added Children (No white cards, simple border bottom list) */}
                   {childrenDetails.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-3 px-1">Children with access</p>
-                      <div className="flex flex-col gap-2">
-                        {childrenDetails.map((child, idx) => (
-                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#1099A1]/10 text-[#1099A1] flex items-center justify-center">
-                                <User size={16} />
-                              </div>
-                              <span className="text-[14px] font-medium text-[#111] dark:text-white truncate max-w-[150px] sm:max-w-xs">{child.email}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between sm:justify-end gap-2">
-                              {/* Service toggles */}
-                              <div className="flex bg-[#f8f9fa] dark:bg-[#111b21] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleChildService(idx, 'tutoring')}
-                                  className={cn("px-3 py-1.5 text-[12px] font-medium rounded-md transition-all", child.services.includes('tutoring') ? "bg-white dark:bg-[#202c33] text-[#1099A1] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
-                                >
-                                  Tutoring
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleChildService(idx, 'admissions')}
-                                  className={cn("px-3 py-1.5 text-[12px] font-medium rounded-md transition-all", child.services.includes('admissions') ? "bg-white dark:bg-[#202c33] text-[#1099A1] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
-                                >
-                                  Admissions
-                                </button>
+                    <div className="mt-4 border-t border-[#e9edef] dark:border-[#2a3942] pt-4">
+                      <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-2">Children with access</p>
+                      <div className="flex flex-col">
+                        {childrenDetails.map((child, idx) => {
+                          const exists = !!child.full_name;
+                          return (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
+                              <div className="flex items-center gap-3">
+                                {exists && (
+                                  <img src={child.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border border-[#e9edef] dark:border-[#2a3942]" />
+                                )}
+                                <div className="flex flex-col">
+                                  {exists ? (
+                                    <>
+                                      <span className="text-[14px] font-bold text-[#111] dark:text-white leading-tight capitalize">{child.full_name}</span>
+                                      <span className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{child.email}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-[14px] font-semibold text-[#111] dark:text-white leading-tight">{child.email}</span>
+                                  )}
+                                </div>
                               </div>
 
-                              <button type="button" onClick={() => handleRemoveChild(idx)} className="p-2 text-[#8696a0] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10" title="Remove">
-                                <Trash size={16} />
-                              </button>
+                              <div className="flex items-center justify-between sm:justify-end gap-3 mt-2 sm:mt-0">
+                                <div className="flex flex-col items-end gap-1">
+                                  <div className="flex bg-[#f8f9fa] dark:bg-[#111b21] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942] gap-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleChildService(idx, 'tutoring')}
+                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('tutoring') ? "bg-white dark:bg-[#202c33] text-[#1099A1]" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
+                                    >
+                                      Tutoring
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleChildService(idx, 'admissions')}
+                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('admissions') ? "bg-white dark:bg-[#202c33] text-[#1099A1]" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
+                                    >
+                                      Admissions
+                                    </button>
+                                  </div>
+                                </div>
+                                {/* {!exists && (
+                                  <button type="button" onClick={() => toast.success("Invite sent!")} className="text-[13px] font-bold text-[#1099A1] hover:underline ml-2">Invite</button>
+                                )} */}
+                                <button type="button" onClick={() => handleRemoveChild(idx)} className="p-2 text-[#8696a0] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 ml-1" title="Remove">
+                                  <Trash size={16} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -572,7 +657,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   Back
                 </Button>
               ) : <div />}
-              
+
               <Button
                 type="submit"
                 className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
