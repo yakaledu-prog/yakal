@@ -12,6 +12,7 @@ export function StudentApplicationTracker() {
   const [tab, setTab] = useState<"requirements" | "documents" | "checklists" | "recommendations">("requirements");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [localReqs, setLocalReqs] = useState<Record<string, string[]>>({});
+  const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -125,6 +126,7 @@ export function StudentApplicationTracker() {
                       });
 
                       const mockDoneCount = schoolReqs.length;
+                      const currentStatus = localStatus[s.id] || s.status;
 
                       return (
                         <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg p-6">
@@ -140,41 +142,57 @@ export function StudentApplicationTracker() {
 
                               <div className="relative">
                                 <button
-                                  onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setOpenDropdownId(openDropdownId === s.id ? null : s.id);
+                                  }}
                                   className={cn(
                                     "bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-full px-3 py-1.5 text-[13px] font-semibold flex items-center gap-1.5 hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942] transition-colors",
-                                    s.status === "accepted" ? "text-[#97CE9D]" :
-                                      s.status === "waitlisted" ? "text-[#CAA25F]" :
-                                        s.status === "denied" ? "text-[#697780]" :
-                                          s.status === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
+                                    currentStatus === "accepted" ? "text-[#4FA86A]" :
+                                      currentStatus === "waitlisted" ? "text-[#CAA25F]" :
+                                        currentStatus === "denied" ? "text-[#CA5F5F]" :
+                                          // currentStatus === "denied" ? "text-[#697780]" :
+                                          currentStatus === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
                                   )}
                                 >
-                                  {s.status === "accepted" ? "Accepted 🎉" :
-                                    s.status === "waitlisted" ? "Waitlisted" :
-                                      s.status === "denied" ? "Denied" :
-                                        s.status === "enrolled" ? "Enrolled 🎓" :
-                                          "Decision"}
+                                  {currentStatus === "accepted" ? "Accepted" :
+                                    currentStatus === "waitlisted" ? "Waitlisted" :
+                                      currentStatus === "denied" ? "Denied" :
+                                        currentStatus === "enrolled" ? "Enrolled" :
+                                          currentStatus === "considering" ? "Considering" :
+                                            currentStatus === "applying" ? "Applying" :
+                                              currentStatus === "submitted" ? "Submitted" :
+                                                "Status..."}
                                   <ChevronDown size={14} className={cn("transition-transform opacity-50 ml-1", openDropdownId === s.id && "rotate-180")} />
                                 </button>
 
                                 {openDropdownId === s.id && (
                                   <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                                    <div className="fixed inset-0 z-40" onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdownId(null);
+                                    }} />
                                     <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-[#202c33] rounded-[12px] shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
-                                      {["accepted", "waitlisted", "denied", "enrolled"].map((status) => (
+                                      <div className="px-4 py-2 text-[11px] font-bold text-muted-foreground/55 uppercase tracking-wider ">Set Status</div>
+                                      {["considering", "applying", "submitted", "waitlisted", "accepted", "denied", "enrolled"].map((status) => (
                                         <button
                                           key={status}
-                                          onClick={async () => {
-                                            await updateSchool(s.id, { status: status as any });
-                                            qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setLocalStatus(prev => ({ ...prev, [s.id]: status }));
                                             setOpenDropdownId(null);
+                                            try {
+                                              await updateSchool(s.id, { status: status as any });
+                                              qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+                                            } catch (err) { }
                                           }}
                                           className={cn(
                                             "block w-full text-left px-4 py-2.5 text-[13px] font-bold capitalize transition-colors hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942]",
-                                            status === "accepted" ? "text-[#97CE9D]" :
+                                            status === "accepted" ? "text-[#4FA86A]" :
                                               status === "waitlisted" ? "text-[#CAA25F]" :
-                                                status === "denied" ? "text-[#697780]" :
-                                                  status === "enrolled" ? "text-[#1099A1]" : "text-foreground"
+                                                status === "denied" ? "text-[#CA5F5F]" :
+                                                  status === "enrolled" ? "text-[#1099A1]" : "text-muted-foreground"
                                           )}
                                         >
                                           {status}
