@@ -47,7 +47,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await db.from('billing_customers').upsert({ profile_id: user.id, stripe_customer_id: customerId });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // Note: `managed_payments` (on by default on newer accounts) requires a tax
+    // code per line item. We disable it for these ad-hoc invoices. Cast to any
+    // because the field isn't in the SDK's typed params yet.
+    const params: any = {
       mode: 'payment',
       customer: customerId,
       line_items: invoices.map((inv) => ({
@@ -58,13 +61,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           product_data: { name: inv.description },
         },
       })),
+      // Save the card on the customer so we can show it later ("connected card").
+      payment_intent_data: { setup_future_usage: 'off_session' },
+      managed_payments: { enabled: false },
       metadata: {
         invoice_ids: invoices.map((i) => i.id).join(','),
         parent_id: user.id,
       },
       success_url: `${appBaseUrl()}/parent/billing?paid=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appBaseUrl()}/parent/billing?canceled=1`,
-    });
+    };
+    const session = await stripe.checkout.sessions.create(params);
 
     // Record the session id so we can reconcile if needed.
     await db

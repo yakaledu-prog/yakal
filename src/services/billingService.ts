@@ -41,7 +41,21 @@ export function summarize(invoices: Invoice[]): BillingSummary {
   };
 }
 
-async function authedPost(path: string, body: unknown): Promise<{ url?: string; error?: string }> {
+export interface SavedCard {
+  id: string;
+  brand: string;
+  last4: string;
+  exp_month: number | null;
+  exp_year: number | null;
+  isDefault: boolean;
+}
+
+export async function getPaymentMethods(): Promise<SavedCard[]> {
+  const res = await authedPost("/api/stripe-payment-methods", {});
+  return (res as any).methods || [];
+}
+
+async function authedPost(path: string, body: unknown): Promise<{ url?: string; error?: string; methods?: unknown }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return { error: "You must be signed in." };
 
@@ -80,12 +94,11 @@ export async function confirmCheckout(sessionId: string): Promise<{ status?: str
   return rest as { status?: string };
 }
 
-// Open the Stripe Customer Portal (manage cards / receipts).
-export async function openCustomerPortal(): Promise<{ error?: string }> {
+// Returns the Stripe Customer Portal URL (the caller opens it — in a new tab).
+export async function getCustomerPortalUrl(): Promise<{ url?: string; error?: string }> {
   const { url, error } = await authedPost("/api/stripe-portal", {});
   if (error) return { error };
-  if (url) window.location.assign(url);
-  return {};
+  return { url };
 }
 
 export const money = (cents: number, currency = "usd") =>

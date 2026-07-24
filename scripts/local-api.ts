@@ -12,6 +12,7 @@ import stripeCheckoutHandler from '../api/stripe-checkout.ts';
 import stripePortalHandler from '../api/stripe-portal.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
 import stripeConfirmHandler from '../api/stripe-confirm.ts';
+import stripePaymentMethodsHandler from '../api/stripe-payment-methods.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,6 +45,7 @@ app.all('/api/google-token', createVercelHandler(googleTokenHandler));
 app.all('/api/stripe-checkout', createVercelHandler(stripeCheckoutHandler));
 app.all('/api/stripe-portal', createVercelHandler(stripePortalHandler));
 app.all('/api/stripe-confirm', createVercelHandler(stripeConfirmHandler));
+app.all('/api/stripe-payment-methods', createVercelHandler(stripePaymentMethodsHandler));
 
 const PORT = 3001;
 app.listen(PORT, () => {
