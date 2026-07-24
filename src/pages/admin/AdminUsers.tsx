@@ -106,8 +106,17 @@ export function AdminUsers() {
                     <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{u.full_name}</p>
                     <p className="text-[12px] text-muted-foreground truncate">{u.email || "-"}</p>
                   </div>
-
-                  <span className="text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span>
+                  {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && (
+                    <button onClick={() => act(u, true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b]">
+                      <Check size={13} /> Approve
+                    </button>
+                  )}
+                  {(u.role === "tutor" || u.role === "counselor") && u.status === "pending" && (
+                    <button onClick={() => act(u, false)} className="mr-8 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[12px] font-semibold hover:bg-[#c0392b]/5">
+                      <X size={13} /> Reject
+                    </button>
+                  )}
+                  <span className="text-center text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span>
                   <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
                     {u.status}
                   </span>

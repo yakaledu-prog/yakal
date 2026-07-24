@@ -57,7 +57,6 @@ export function AdminBilling() {
             <div className="flex items-center gap-2 border-b border-border/50 pb-3 mb-4">
               <Wallet size={18} className="text-[#1099A1]" />
               <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Tutor payouts</h3>
-              <span className="text-[13px] text-muted-foreground">- owed after a parent pays</span>
             </div>
             {payouts.length === 0 ? (
               <p className="text-[14px] text-muted-foreground py-4">No payouts pending. All tutors are settled.</p>
