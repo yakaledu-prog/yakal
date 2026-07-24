@@ -30,7 +30,7 @@ const tierColor: Record<SchoolTier, string> = {
 };
 
 function fmtDate(d?: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -139,7 +139,7 @@ const field =
 const btnPrimary =
   "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1099A1] text-white text-[13px] font-semibold hover:bg-[#0d848b] transition-colors disabled:opacity-60";
 
-// ─── Overview ───────────────────────────────────────────────
+// --- Overview -----------------------------------------------
 function OverviewTab({ data, readOnly, canEditNotes, studentId, run }: TabProps & { canEditNotes: boolean }) {
   const app = data.application;
   const [stage, setStage] = useState<AppStage>(app?.stage || "research");
@@ -223,7 +223,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
-// ─── College List ───────────────────────────────────────────
+// --- College List -------------------------------------------
 function ListTab({ data, readOnly, studentId, run }: TabProps) {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -352,7 +352,7 @@ function SchoolRow({ school, readOnly, run }: { school: CollegeListItem; readOnl
   );
 }
 
-// ─── Essays ─────────────────────────────────────────────────
+// --- Essays -------------------------------------------------
 function EssaysTab({ data, readOnly, studentId, run }: TabProps) {
   const [title, setTitle] = useState("");
   const add = async () => {
@@ -397,7 +397,7 @@ function EssaysTab({ data, readOnly, studentId, run }: TabProps) {
   );
 }
 
-// ─── Academics ──────────────────────────────────────────────
+// --- Academics ----------------------------------------------
 function AcademicsTab({ data, readOnly, studentId, run }: TabProps) {
   const a = data.academics;
   const [gpa, setGpa] = useState(a?.gpa != null ? String(a.gpa) : "");
@@ -450,7 +450,7 @@ function AcademicsTab({ data, readOnly, studentId, run }: TabProps) {
   );
 }
 
-// ─── Recommendations ────────────────────────────────────────
+// --- Recommendations ----------------------------------------
 function RecsTab({ data, readOnly, studentId, run }: TabProps) {
   const [name, setName] = useState("");
   const [rel, setRel] = useState("");
@@ -475,7 +475,7 @@ function RecsTab({ data, readOnly, studentId, run }: TabProps) {
           <div key={r.id} className={cn(card, "p-4 flex items-center justify-between gap-3")}>
             <div className="min-w-0">
               <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{r.recommender_name}</p>
-              <p className="text-[12px] text-[#667781] dark:text-[#8696a0] truncate">{r.relationship || "—"}</p>
+              <p className="text-[12px] text-[#667781] dark:text-[#8696a0] truncate">{r.relationship || "-"}</p>
             </div>
             <select
               className="text-[12px] font-semibold rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
@@ -495,7 +495,7 @@ function RecsTab({ data, readOnly, studentId, run }: TabProps) {
   );
 }
 
-// ─── Tasks ──────────────────────────────────────────────────
+// --- Tasks --------------------------------------------------
 function TasksTab({ data, readOnly, studentId, run }: TabProps) {
   const [title, setTitle] = useState("");
   const add = async () => {

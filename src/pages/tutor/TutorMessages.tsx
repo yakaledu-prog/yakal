@@ -29,7 +29,7 @@ function MinimalStat({ label, value }: { label: string; value: number | string }
   );
 }
 
-// ─── Tutor Mock Data ─────────────────────────────────────────────────────────
+// --- Tutor Mock Data ---------------------------------------------------------
 const TUTOR_COURSES: Record<string, { subject: string; level: string; sessions: number }[]> = {
   u1: [
     { subject: "Calculus II", level: "Intermediate", sessions: 34 },
@@ -74,7 +74,7 @@ const TUTOR_AVAILABILITY: Record<string, { day: string; slots: string[] }[]> = {
   ],
 };
 
-// ─── Contact Profile Panel (Telegram-style) ───────────────────────────────────
+// --- Contact Profile Panel (Telegram-style) -----------------------------------
 function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: () => void }) {
   const isTutor = conv.contact.role === "Tutor";
   const [activeTab, setActiveTab] = useState<"media" | "links" | "files" | "courses" | "availability">("media");
@@ -94,7 +94,7 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
   const mockLinks = [
     { title: "Calc II Problem Set 4", url: "portal.yakal.edu/files/calc-ps4" },
     { title: "Physics Lab Report Template", url: "portal.yakal.edu/files/lab-template" },
-    { title: "Session Recording – Nov 14", url: "portal.yakal.edu/recordings/nov14" },
+    { title: "Session Recording - Nov 14", url: "portal.yakal.edu/recordings/nov14" },
   ];
 
   const mockFiles = [
@@ -284,7 +284,7 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// --- Main Component -----------------------------------------------------------
 export function TutorMessages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -405,7 +405,7 @@ export function TutorMessages() {
 
         {/* Messaging Layout Container */}
         <div className="flex-1 max-w-[1440px] mx-auto w-full bg-white dark:bg-[#111b21] border-x border-[#e9edef] dark:border-[#2a3942] overflow-hidden flex flex-col md:flex-row min-h-0 shadow-sm">
-          {/* ── Left Pane ────────────────────────────────────────────── */}
+          {/* -- Left Pane ---------------------------------------------- */}
           <div className={cn(
             "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
             showChatOnMobile ? "hidden md:flex" : "flex"
@@ -507,7 +507,7 @@ export function TutorMessages() {
             </div>
           </div>
 
-          {/* ── Chat Pane ────────────────────────────────────────────── */}
+          {/* -- Chat Pane ---------------------------------------------- */}
           <div className={cn(
             "flex-1 flex flex-col min-w-0 bg-[#efeae2] dark:bg-[#0b141a]",
             !showChatOnMobile ? "hidden md:flex" : "flex"

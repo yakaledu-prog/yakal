@@ -89,7 +89,7 @@ function describeJoinError(error: any, role: 0 | 1): { message: string; hint?: s
       message: 'The meeting has not been started by the host yet.',
       hint:
         role === 0
-          ? 'Ask your tutor to join first — students cannot enter before the host starts the meeting.'
+          ? 'Ask your tutor to join first - students cannot enter before the host starts the meeting.'
           : 'As the host, try again in a few seconds; the meeting may still be initializing on Zoom’s side.',
     };
   }
@@ -200,7 +200,7 @@ export function ZoomMeeting({
       try {
         window.ZoomMtg?.leaveMeeting?.({});
       } catch {
-        // Not in a meeting — nothing to leave.
+        // Not in a meeting - nothing to leave.
       }
     };
   }, [meetingNumber, password, userName, userEmail, role, leaveUrl, attempt]);
@@ -240,7 +240,7 @@ export function ZoomMeeting({
                 : `Connecting to Zoom meeting ${meetingNumber} as ${role === 1 ? 'host' : 'participant'}…`}
           </p>
           <p className="text-[12px] text-[#54656f] max-w-md">
-            Camera and microphone start off — once connected, use the buttons in the Zoom toolbar
+            Camera and microphone start off - once connected, use the buttons in the Zoom toolbar
             to turn them on (your browser will ask for permission the first time).
           </p>
         </>

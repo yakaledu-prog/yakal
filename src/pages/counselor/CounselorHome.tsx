@@ -32,9 +32,9 @@ export function CounselorHome() {
               <p className="text-white/80 text-[15px] mt-1">Guide your students through their college journey.</p>
             </div>
             <div className="grid grid-cols-3 gap-4 max-w-lg">
-              <HeaderStat icon={<Users size={18} />} label="Students" value={data?.totalStudents ?? "—"} />
-              <HeaderStat icon={<FileClock size={18} />} label="Essays in review" value={data?.essaysInReview ?? "—"} />
-              <HeaderStat icon={<CalendarDays size={18} />} label="Deadlines" value={data?.upcomingDeadlines.length ?? "—"} />
+              <HeaderStat icon={<Users size={18} />} label="Students" value={data?.totalStudents ?? "-"} />
+              <HeaderStat icon={<FileClock size={18} />} label="Essays in review" value={data?.essaysInReview ?? "-"} />
+              <HeaderStat icon={<CalendarDays size={18} />} label="Deadlines" value={data?.upcomingDeadlines.length ?? "-"} />
             </div>
           </div>
         </div>

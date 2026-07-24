@@ -1,9 +1,9 @@
 -- ============================================================
--- YAKAL — Parent read-only access to a linked child's chats
+-- YAKAL - Parent read-only access to a linked child's chats
 -- Run any time. Idempotent (drop-if-exists on our named policies).
 --
 -- Adds SELECT-only policies (OR'd with the existing participant
--- policies) so a parent can READ — never send in — the tutor and
+-- policies) so a parent can READ - never send in - the tutor and
 -- counselor conversations of their linked, active children.
 -- Column names confirmed against the live schema:
 --   conversations(id), conversation_participants(conversation_id, user_id),
@@ -36,7 +36,7 @@ CREATE POLICY conversation_participants_parent_select ON public.conversation_par
      AND psl.status = 'active'
     WHERE cp2.conversation_id = conversation_participants.conversation_id));
 
--- Messages in those conversations (read only — no parent INSERT/UPDATE policy)
+-- Messages in those conversations (read only - no parent INSERT/UPDATE policy)
 DROP POLICY IF EXISTS messages_parent_select ON public.messages;
 CREATE POLICY messages_parent_select ON public.messages FOR SELECT
   USING (EXISTS (

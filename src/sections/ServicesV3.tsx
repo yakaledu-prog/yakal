@@ -2,7 +2,7 @@ import { useState } from "react";
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
 
-// ── Design 3: Bento/tab-switcher style - inspired by Apple, Notion, Raycast
+// -- Design 3: Bento/tab-switcher style - inspired by Apple, Notion, Raycast
 // Light off-white background, two large clickable service cards that expand
 // via a tab switcher. No pill badges, no program numbers.
 

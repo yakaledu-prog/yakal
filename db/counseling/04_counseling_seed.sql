@@ -1,6 +1,6 @@
 -- ============================================================
--- YAKAL — Sample counseling / college data for the demo users
--- Run AFTER 01–03. Safe to re-run: the bulk insert is guarded so
+-- YAKAL - Sample counseling / college data for the demo users
+-- Run AFTER 01-03. Safe to re-run: the bulk insert is guarded so
 -- it only seeds once per student.
 --   Student   : Amen Worku   (student@yakal.com)
 --   Counselor : Daniel Haile (counselor@yakal.com)
@@ -19,7 +19,7 @@ BEGIN
   SELECT id INTO v_parent    FROM public.profiles WHERE email = 'parent@yakal.com';
 
   IF v_student IS NULL THEN
-    RAISE NOTICE 'Demo student not found — nothing seeded.';
+    RAISE NOTICE 'Demo student not found - nothing seeded.';
     RETURN;
   END IF;
 
@@ -62,7 +62,7 @@ BEGIN
   -- Seed the list / essays / etc only once (guard on college_list_items)
   IF NOT EXISTS (SELECT 1 FROM public.college_list_items WHERE student_id = v_student) THEN
     INSERT INTO public.college_list_items (student_id, school_name, tier, deadline, status, notes)
-    VALUES (v_student, 'Massachusetts Institute of Technology', 'dream', DATE '2026-01-01', 'applying', 'Reach — strong research fit');
+    VALUES (v_student, 'Massachusetts Institute of Technology', 'dream', DATE '2026-01-01', 'applying', 'Reach - strong research fit');
 
     INSERT INTO public.college_list_items (student_id, school_name, tier, deadline, status, notes)
     VALUES (v_student, 'Harvard University', 'dream', DATE '2026-01-01', 'considering', NULL)

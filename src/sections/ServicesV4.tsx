@@ -1,7 +1,7 @@
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
 
-// ── Design 4: Side-by-side variant of Design 3
+// -- Design 4: Side-by-side variant of Design 3
 // Both service panels visible at the same time in a two-column layout.
 // Same card aesthetic as V3 - no pill badges, no program numbers.
 

@@ -30,7 +30,7 @@ const createVercelHandler = (handler) => async (req, res) => {
   return handler(req, res);
 };
 
-// Stripe webhook needs the RAW body for signature verification — register it
+// Stripe webhook needs the RAW body for signature verification - register it
 // with express.raw BEFORE the global JSON parser.
 app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), createVercelHandler(stripeWebhookHandler));
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — Row Level Security for the counseling / college model
+-- YAKAL - Row Level Security for the counseling / college model
 -- Run AFTER 01_counseling_schema.sql. Idempotent (drop-if-exists).
 --
 -- Access model per table:
@@ -8,7 +8,7 @@
 --   Parent    : SELECT only, for rows of a linked+active child
 -- ============================================================
 
--- ── Tables keyed directly by student_id ─────────────────────
+-- -- Tables keyed directly by student_id ---------------------
 DO $$
 DECLARE
   t text;
@@ -44,7 +44,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- ── application_requirements: keyed via college_list_items ──
+-- -- application_requirements: keyed via college_list_items --
 ALTER TABLE public.application_requirements ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS application_requirements_student_all ON public.application_requirements;

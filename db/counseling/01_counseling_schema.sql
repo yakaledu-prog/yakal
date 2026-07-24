@@ -1,11 +1,11 @@
 -- ============================================================
--- YAKAL — Counseling / College Admissions schema
+-- YAKAL - Counseling / College Admissions schema
 -- Run ONCE in the Supabase SQL Editor (idempotent, safe to re-run).
 -- Adds the college-admissions data model on top of the existing
 -- (legacy) college_guide_applications record.
 -- ============================================================
 
--- ── 0. Extend the existing per-student journey record ───────
+-- -- 0. Extend the existing per-student journey record -------
 -- college_guide_applications already exists (student_id, counselor_id,
 -- program_interest, personal_statement, documents, status, counselor_notes).
 -- Add the overall application stage and graduation year.
@@ -22,7 +22,7 @@ BEGIN
   END IF;
 END $$;
 
--- ── 1. College list (schools a student is considering) ──────
+-- -- 1. College list (schools a student is considering) ------
 CREATE TABLE IF NOT EXISTS public.college_list_items (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id  uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.college_list_items (
 );
 CREATE INDEX IF NOT EXISTS college_list_items_student_idx ON public.college_list_items(student_id);
 
--- ── 2. Per-school application requirement checklist ─────────
+-- -- 2. Per-school application requirement checklist ---------
 CREATE TABLE IF NOT EXISTS public.application_requirements (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   college_list_item_id  uuid NOT NULL REFERENCES public.college_list_items(id) ON DELETE CASCADE,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.application_requirements (
 );
 CREATE INDEX IF NOT EXISTS application_requirements_item_idx ON public.application_requirements(college_list_item_id);
 
--- ── 3. Essays ───────────────────────────────────────────────
+-- -- 3. Essays -----------------------------------------------
 CREATE TABLE IF NOT EXISTS public.essays (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id           uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS public.essays (
 );
 CREATE INDEX IF NOT EXISTS essays_student_idx ON public.essays(student_id);
 
--- ── 4. Academics (one row per student) ──────────────────────
+-- -- 4. Academics (one row per student) ----------------------
 CREATE TABLE IF NOT EXISTS public.student_academics (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id   uuid NOT NULL UNIQUE REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS public.student_academics (
   updated_at   timestamptz NOT NULL DEFAULT now()
 );
 
--- ── 5. Recommendation requests ──────────────────────────────
+-- -- 5. Recommendation requests ------------------------------
 CREATE TABLE IF NOT EXISTS public.recommendations (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id        uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS public.recommendations (
 );
 CREATE INDEX IF NOT EXISTS recommendations_student_idx ON public.recommendations(student_id);
 
--- ── 6. General application tasks (not tied to a school) ─────
+-- -- 6. General application tasks (not tied to a school) -----
 CREATE TABLE IF NOT EXISTS public.application_tasks (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id  uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS public.application_tasks (
 );
 CREATE INDEX IF NOT EXISTS application_tasks_student_idx ON public.application_tasks(student_id);
 
--- ── updated_at triggers (reuse existing public.set_updated_at) ──
+-- -- updated_at triggers (reuse existing public.set_updated_at) --
 DO $$
 DECLARE
   t text;

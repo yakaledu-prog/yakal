@@ -140,7 +140,7 @@ export async function getContacts(userId: string): Promise<Contact[]> {
   return (data || []).filter((p) => p.full_name);
 }
 
-// ─── Parent read-only view of a linked child's conversations ──
+// --- Parent read-only view of a linked child's conversations --
 export interface ParentConversationView {
   id: string;
   childId: string;
@@ -288,7 +288,7 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
 export async function getOrCreateConversation(user1Id: string, user2Id: string): Promise<string> {
   console.log('🔗 [getOrCreateConversation] Called with:', { user1Id, user2Id });
   
-  // ── CRITICAL: Check Supabase auth session ──
+  // -- CRITICAL: Check Supabase auth session --
   const { data: { session } } = await supabase.auth.getSession();
   console.log('🔗 [getOrCreateConversation] Supabase auth session:', {
     hasSession: !!session,

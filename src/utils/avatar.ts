@@ -47,7 +47,7 @@ export function randomSeeds(n = 12): string[] {
   );
 }
 
-// ── Initials avatars ─────────────────────────────────────────
+// -- Initials avatars -----------------------------------------
 // DiceBear derives the initials from the seed's words ("John Doe" -> "JD"),
 // so the gallery keeps the SAME name and varies only the background colour.
 const INITIALS_BG = [

@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-// ─── Types ──────────────────────────────────────────────────
+// --- Types --------------------------------------------------
 export type AppStage = "research" | "apply" | "submitted" | "decisions" | "enrolled";
 export type SchoolTier = "dream" | "target" | "safety";
 export type SchoolStatus = "considering" | "applying" | "submitted" | "accepted" | "rejected" | "denied" | "waitlisted" | "enrolled";
@@ -107,7 +107,7 @@ async function write<T>(promise: any): Promise<Result<T>> {
   return { success: true, data: data as T };
 }
 
-// ─── Top-level application record ───────────────────────────
+// --- Top-level application record ---------------------------
 export async function getApplication(studentId: string): Promise<CollegeApplication | null> {
   const { data } = await supabase
     .from("college_guide_applications")
@@ -132,7 +132,7 @@ export async function upsertApplication(
   );
 }
 
-// ─── Aggregate load for a student's whole college profile ──
+// --- Aggregate load for a student's whole college profile --
 export async function getCollegeProfile(studentId: string): Promise<CollegeProfile> {
   const [application, schoolsRes, essaysRes, academicsRes, recsRes, tasksRes] = await Promise.all([
     getApplication(studentId),
@@ -169,7 +169,7 @@ export async function getCollegeProfile(studentId: string): Promise<CollegeProfi
   };
 }
 
-// ─── College list items ─────────────────────────────────────
+// --- College list items -------------------------------------
 export const addSchool = (studentId: string, patch: Partial<CollegeListItem>) =>
   write<CollegeListItem>(
     supabase.from("college_list_items").insert([{ student_id: studentId, ...patch }]).select().single()
@@ -181,7 +181,7 @@ export const updateSchool = (id: string, patch: Partial<CollegeListItem>) =>
 export const deleteSchool = (id: string) =>
   write(supabase.from("college_list_items").delete().eq("id", id));
 
-// ─── Requirements ───────────────────────────────────────────
+// --- Requirements -------------------------------------------
 export const addRequirement = (itemId: string, label: string, dueDate?: string | null) =>
   write<ApplicationRequirement>(
     supabase.from("application_requirements").insert([{ college_list_item_id: itemId, label, due_date: dueDate ?? null }]).select().single()
@@ -193,7 +193,7 @@ export const toggleRequirement = (id: string, isComplete: boolean) =>
 export const deleteRequirement = (id: string) =>
   write(supabase.from("application_requirements").delete().eq("id", id));
 
-// ─── Essays ─────────────────────────────────────────────────
+// --- Essays -------------------------------------------------
 export const addEssay = (studentId: string, patch: Partial<Essay>) =>
   write<Essay>(supabase.from("essays").insert([{ student_id: studentId, ...patch }]).select().single());
 
@@ -203,7 +203,7 @@ export const updateEssay = (id: string, patch: Partial<Essay>) =>
 export const deleteEssay = (id: string) =>
   write(supabase.from("essays").delete().eq("id", id));
 
-// ─── Academics ──────────────────────────────────────────────
+// --- Academics ----------------------------------------------
 export async function upsertAcademics(
   studentId: string,
   patch: Partial<StudentAcademics>
@@ -219,7 +219,7 @@ export async function upsertAcademics(
   return write(supabase.from("student_academics").insert([{ student_id: studentId, ...patch }]).select().single());
 }
 
-// ─── Recommendations ────────────────────────────────────────
+// --- Recommendations ----------------------------------------
 export const addRecommendation = (studentId: string, patch: Partial<Recommendation>) =>
   write<Recommendation>(
     supabase.from("recommendations").insert([{ student_id: studentId, ...patch }]).select().single()
@@ -231,7 +231,7 @@ export const updateRecommendation = (id: string, patch: Partial<Recommendation>)
 export const deleteRecommendation = (id: string) =>
   write(supabase.from("recommendations").delete().eq("id", id));
 
-// ─── Tasks ──────────────────────────────────────────────────
+// --- Tasks --------------------------------------------------
 export const addTask = (studentId: string, patch: Partial<ApplicationTask>) =>
   write<ApplicationTask>(
     supabase.from("application_tasks").insert([{ student_id: studentId, ...patch }]).select().single()

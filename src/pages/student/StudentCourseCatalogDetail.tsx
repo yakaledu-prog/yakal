@@ -377,7 +377,7 @@ export function StudentCourseCatalogDetail() {
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                         <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                          2014 – 2018
+                          2014 - 2018
                         </div>
                         <div className="flex-1 space-y-1">
                           <h4 className="text-[16px] font-bold text-[#111] dark:text-white">M.S. in Mathematics</h4>
@@ -386,7 +386,7 @@ export function StudentCourseCatalogDetail() {
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                         <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                          2010 – 2014
+                          2010 - 2014
                         </div>
                         <div className="flex-1 space-y-1">
                           <h4 className="text-[16px] font-bold text-[#111] dark:text-white">B.S. in Applied Mathematics</h4>
@@ -466,7 +466,7 @@ export function StudentCourseCatalogDetail() {
                               <ChevronRight size={16} />
                             </Button>
                             <span className="text-[14px] font-bold text-[#111] dark:text-white ml-2">
-                              {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </div>
 

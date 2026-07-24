@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { sendMessage as dbSendMessage, getOrCreateConversation } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 
-// ─── Brand Colors ─────────────────────────────────────────────────────────────
+// --- Brand Colors -------------------------------------------------------------
 const CHAT_BG_LIGHT = "#f0faf0";
 const CHAT_BG_DARK = "#0d2528";
 const dotPatternLight = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%2397CE9D' opacity='0.35'/%3E%3C/svg%3E")`;

@@ -25,7 +25,7 @@ const btnPrimary = "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-sm bg-[
 const MOCK_STATS: Record<string, any> = {
   "Johns Hopkins University": { gpa: "3.9 GPA / 1530 SAT", price: "$60,480", essays: 1 },
   "University of Maryland, College Park": { gpa: "4.3 W GPA / 1400 SAT", price: "$11,505", essays: 3 },
-  "University of Michigan": { gpa: "—", price: "$70,000", essays: 3 },
+  "University of Michigan": { gpa: "-", price: "$70,000", essays: 3 },
   "Towson University": { gpa: "3.5 GPA / 1150 SAT", price: "$10,078", essays: 0 },
 };
 
@@ -183,7 +183,7 @@ export function StudentCollegeList() {
                           </h3>
                           <div className="space-y-4">
                             {tierSchools.map(s => {
-                              const mock = MOCK_STATS[s.school_name] || { gpa: "—", price: "—", essays: 0 };
+                              const mock = MOCK_STATS[s.school_name] || { gpa: "-", price: "-", essays: 0 };
                               return (
                                 <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
                                   <div className="p-4 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730] flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -270,11 +270,11 @@ export function StudentCollegeList() {
                   </div>
                   <div className="space-y-3">
                     {[
-                      { title: "Dream, Target & Safety — how to choose", source: "CollegeVine · the college list decoded" },
+                      { title: "Dream, Target & Safety - how to choose", source: "CollegeVine · the college list decoded" },
                       { title: "Picking your reach & realistic schools", source: "CollegeXpress" },
                       { title: "Dream / Match / Safety framework", source: "Princeton Review" },
-                      { title: "Supplemental essay prompt guides", source: "CollegeEssayAdvisors — per-school prompts & tips" },
-                      { title: "Scholarship search — BigFuture", source: "College Board · pay for college" },
+                      { title: "Supplemental essay prompt guides", source: "CollegeEssayAdvisors - per-school prompts & tips" },
+                      { title: "Scholarship search - BigFuture", source: "College Board · pay for college" },
                       { title: "Free scholarship searches", source: "college-scholarships.com" },
                     ].map((r, i) => (
                       <a key={i} href="#" className="group flex justify-between items-center p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] hover:bg-muted/30">

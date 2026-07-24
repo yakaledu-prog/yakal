@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const invoiceIds: string[] = Array.isArray(req.body?.invoiceIds) ? req.body.invoiceIds : [];
     if (invoiceIds.length === 0) return res.status(400).json({ error: 'No invoices selected' });
 
-    // Load the invoices — scoped to THIS parent and still open (server-derived, not client-trusted).
+    // Load the invoices - scoped to THIS parent and still open (server-derived, not client-trusted).
     const { data: invoices, error: invErr } = await db
       .from('invoices')
       .select('id, description, amount_cents, currency, status, parent_id')

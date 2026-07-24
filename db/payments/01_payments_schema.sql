@@ -1,10 +1,10 @@
 -- ============================================================
--- YAKAL — Payments / Billing schema (Stripe)
+-- YAKAL - Payments / Billing schema (Stripe)
 -- Run ONCE in the Supabase SQL Editor. Idempotent, safe to re-run.
 -- Choose "Run and enable RLS" when prompted; policies come in 02.
 -- ============================================================
 
--- ── Maps a parent (profile) to their Stripe Customer ────────
+-- -- Maps a parent (profile) to their Stripe Customer --------
 CREATE TABLE IF NOT EXISTS public.billing_customers (
   profile_id         uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
   stripe_customer_id text NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.billing_customers (
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
 
--- ── Invoices the parent owes / has paid ─────────────────────
+-- -- Invoices the parent owes / has paid ---------------------
 CREATE TABLE IF NOT EXISTS public.invoices (
   id                          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id                   uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -34,13 +34,13 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 CREATE INDEX IF NOT EXISTS invoices_parent_idx ON public.invoices(parent_id);
 CREATE INDEX IF NOT EXISTS invoices_status_idx ON public.invoices(status);
 
--- ── Parent-facing course price (the margin) ─────────────────
+-- -- Parent-facing course price (the margin) -----------------
 -- Separate from profiles.hourly_rate (what the tutor is paid).
 -- Tutors must never see this column.
 ALTER TABLE public.courses
   ADD COLUMN IF NOT EXISTS price_cents integer;
 
--- ── updated_at triggers (reuse existing public.set_updated_at) ──
+-- -- updated_at triggers (reuse existing public.set_updated_at) --
 DO $$
 DECLARE
   t text;

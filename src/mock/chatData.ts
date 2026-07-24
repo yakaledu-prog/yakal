@@ -1,7 +1,7 @@
-// ─── Message Status ─────────────────────────────────────────────────────────
+// --- Message Status ---------------------------------------------------------
 export type MessageStatus = "sending" | "sent" | "delivered" | "read";
 
-// ─── Single Message ──────────────────────────────────────────────────────────
+// --- Single Message ----------------------------------------------------------
 export type Attachment = {
   type: "image" | "video" | "audio" | "file";
   url: string;
@@ -21,7 +21,7 @@ export type Message = {
   attachment?: Attachment;
 };
 
-// ─── Contact ─────────────────────────────────────────────────────────────────
+// --- Contact -----------------------------------------------------------------
 export type Contact = {
   id: string;
   name: string;
@@ -31,7 +31,7 @@ export type Contact = {
   lastSeen: Date;
 };
 
-// ─── Conversation ─────────────────────────────────────────────────────────────
+// --- Conversation -------------------------------------------------------------
 export type Conversation = {
   id: string;
   contact: Contact;
@@ -40,14 +40,14 @@ export type Conversation = {
   isPinned: boolean;
 };
 
-// ─── Current User ─────────────────────────────────────────────────────────────
+// --- Current User -------------------------------------------------------------
 export const currentUser = {
   id: "current-user",
   name: "Brooklyn",
   avatar: "https://i.pravatar.cc/96?img=5",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 export function countUnread(messages: Message[]): number {
   return messages.filter((m) => m.senderId !== currentUser.id && !m.isRead).length;
 }
@@ -56,7 +56,7 @@ export function lastMessage(messages: Message[]): Message | undefined {
   return messages[messages.length - 1];
 }
 
-// ─── Mock Conversations (tutoring context) ────────────────────────────────────
+// --- Mock Conversations (tutoring context) ------------------------------------
 export const mockConversations: Conversation[] = [
   {
     id: "conv-ai",

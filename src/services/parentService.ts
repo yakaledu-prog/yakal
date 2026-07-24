@@ -25,7 +25,7 @@ export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]
   return (profiles as LinkedChild[]) || [];
 }
 
-// ─── Per-child service enrollment (Tutoring / Admissions) ───
+// --- Per-child service enrollment (Tutoring / Admissions) ---
 export type ServiceName = "tutoring" | "admissions";
 
 export interface ChildService {

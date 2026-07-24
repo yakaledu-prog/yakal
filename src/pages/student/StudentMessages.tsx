@@ -19,10 +19,10 @@ import {
 } from "@/mock/chatData";
 import { cn } from "@/utils/cn";
 
-// ─── Brand Colors ─────────────────────────────────────────────────────────────
+// --- Brand Colors -------------------------------------------------------------
 // Primary: #1099A1 | Mint: #97CE9D | Gold: #CAA25F
 
-// ─── Chat Background Pattern (brand-colored dot grid) ─────────────────────────
+// --- Chat Background Pattern (brand-colored dot grid) -------------------------
 const CHAT_BG_LIGHT = "#f0faf0"; // very light mint
 const CHAT_BG_DARK = "#0d2528";  // very dark teal
 
@@ -30,8 +30,8 @@ const CHAT_BG_DARK = "#0d2528";  // very dark teal
 const dotPatternLight = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%2397CE9D' opacity='0.35'/%3E%3C/svg%3E")`;
 const dotPatternDark = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='1.4' fill='%231099A1' opacity='0.25'/%3E%3C/svg%3E")`;
 
-// ─── Reliable avatar helper ────────────────────────────────────────────────────
-// pravatar.cc is extremely reliable – we map contact id → img index
+// --- Reliable avatar helper ----------------------------------------------------
+// pravatar.cc is extremely reliable - we map contact id → img index
 const AVATAR_MAP: Record<string, string> = {
   "u1": "https://i.pravatar.cc/96?img=11",
   "u2": "https://i.pravatar.cc/96?img=16",
@@ -46,7 +46,7 @@ function avatarUrl(id: string): string {
   return AVATAR_MAP[id] ?? `https://i.pravatar.cc/96?u=${id}`;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
 }
@@ -82,14 +82,14 @@ function groupByDay(messages: Message[]): { label: string; messages: Message[] }
   return groups;
 }
 
-// ─── Status Tick ──────────────────────────────────────────────────────────────
+// --- Status Tick --------------------------------------------------------------
 function StatusTick({ status }: { status: Message["status"] }) {
   if (status === "sending") return <Check size={12} className="opacity-50" />;
   if (status === "sent") return <Check size={12} />;
   return <CheckCheck size={12} className="text-[#97CE9D]" />;
 }
 
-// ─── Unread Badge ─────────────────────────────────────────────────────────────
+// --- Unread Badge -------------------------------------------------------------
 function UnreadBadge({ count }: { count: number }) {
   if (!count) return null;
   return (
@@ -99,7 +99,7 @@ function UnreadBadge({ count }: { count: number }) {
   );
 }
 
-// ─── Audio Player Component ───────────────────────────────────────────────────
+// --- Audio Player Component ---------------------------------------------------
 function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const waveSurferRef = useRef<WaveSurfer | null>(null);
@@ -158,7 +158,7 @@ function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
   );
 }
 
-// ─── Message Bubble ───────────────────────────────────────────────────────────
+// --- Message Bubble -----------------------------------------------------------
 function MessageBubble({ msg, contact, isConsecutive, currentUserId }: { msg: Message; contact?: Conversation["contact"]; isConsecutive?: boolean; currentUserId?: string }) {
   const isMe = msg.senderId === currentUserId;
   const isOnlyEmoji = !msg.attachment && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text || "");
@@ -248,7 +248,7 @@ function MessageBubble({ msg, contact, isConsecutive, currentUserId }: { msg: Me
   );
 }
 
-// ─── Tutor Mock Data ─────────────────────────────────────────────────────────
+// --- Tutor Mock Data ---------------------------------------------------------
 const TUTOR_COURSES: Record<string, { subject: string; level: string; sessions: number }[]> = {
   u1: [
     { subject: "Calculus II", level: "Intermediate", sessions: 34 },
@@ -293,7 +293,7 @@ const TUTOR_AVAILABILITY: Record<string, { day: string; slots: string[] }[]> = {
   ],
 };
 
-// ─── Contact Profile Panel (Telegram-style) ───────────────────────────────────
+// --- Contact Profile Panel (Telegram-style) -----------------------------------
 function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: () => void }) {
   const isTutor = conv.contact.role === "Tutor";
   const [activeTab, setActiveTab] = useState<"media" | "links" | "files" | "courses" | "availability">("media");
@@ -313,7 +313,7 @@ function ContactProfilePanel({ conv, onClose }: { conv: Conversation; onClose: (
   const mockLinks = [
     { title: "Calc II Problem Set 4", url: "portal.yakal.edu/files/calc-ps4" },
     { title: "Physics Lab Report Template", url: "portal.yakal.edu/files/lab-template" },
-    { title: "Session Recording – Nov 14", url: "portal.yakal.edu/recordings/nov14" },
+    { title: "Session Recording - Nov 14", url: "portal.yakal.edu/recordings/nov14" },
   ];
 
   const mockFiles = [
@@ -511,7 +511,7 @@ import {
 import { usePresence, useTypingIndicator } from "@/hooks/usePresence";
 import { useAuth } from "@/contexts/AuthContext";
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// --- Main Component -----------------------------------------------------------
 export function StudentMessages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -887,7 +887,7 @@ export function StudentMessages() {
 
   return (
     <div className="h-full flex flex-col min-h-0 bg-white dark:bg-[#111b21]">
-      {/* ── Top Header (Teal) ─────────────────────────────────── */}
+      {/* -- Top Header (Teal) ----------------------------------- */}
       <div className="bg-[#1099A1] text-white pt-6 px-6 pb-6 relative overflow-hidden shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
           <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -948,13 +948,13 @@ export function StudentMessages() {
 
       <div className="flex flex-1 overflow-hidden">
 
-      {/* ── Left Pane ────────────────────────────────────────────── */}
+      {/* -- Left Pane ---------------------------------------------- */}
       <div className={cn(
         "w-full md:w-[340px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]",
         showChatOnMobile ? "hidden md:flex" : "flex"
       )}>
 
-        {/* Search bar only – tall */}
+        {/* Search bar only - tall */}
         <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
           <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2 transition-colors">
             <Search size={18} className="text-[#1099A1] shrink-0" />
@@ -1052,7 +1052,7 @@ export function StudentMessages() {
         </div>
       </div>
 
-      {/* ── Right: Chat + Profile ─────────────────────────────────── */}
+      {/* -- Right: Chat + Profile ----------------------------------- */}
       <div className={cn(
         "flex-1 overflow-hidden min-w-0",
         showChatOnMobile ? "flex" : "hidden md:flex"

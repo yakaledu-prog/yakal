@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — Per-child service enrollment (Tutoring / Admissions)
+-- YAKAL - Per-child service enrollment (Tutoring / Admissions)
 -- Run any time (idempotent). Powers the parent "Manage Services"
 -- selector: assign different services to different children.
 -- (Display/preference now; not wired to charges this phase.)

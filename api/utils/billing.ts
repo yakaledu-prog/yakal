@@ -12,7 +12,7 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-// Service-role client — bypasses RLS. Server-only; never expose the key.
+// Service-role client - bypasses RLS. Server-only; never expose the key.
 export function getServiceClient(): SupabaseClient {
   const url = process.env.VITE_SUPABASE_URL || '';
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';

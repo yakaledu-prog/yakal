@@ -191,7 +191,7 @@ export function StudentRoadmap() {
                           <div className="flex-1 space-y-4">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">PSAT/NMSQT — October</span>
+                                <span className="font-semibold text-[15px]">PSAT/NMSQT - October</span>
                                 <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
                               </div>
                               <p className="text-[14px] text-muted-foreground">The only year it counts for National Merit. Register through your school.</p>
@@ -222,7 +222,7 @@ export function StudentRoadmap() {
                                 <span className="font-semibold text-[15px]">Start focused SAT/ACT prep</span>
                                 <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
                               </div>
-                              <p className="text-[14px] text-muted-foreground">Begin 8–12 weeks out, using official Bluebook (SAT) / ACT materials.</p>
+                              <p className="text-[14px] text-muted-foreground">Begin 8-12 weeks out, using official Bluebook (SAT) / ACT materials.</p>
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
@@ -344,7 +344,7 @@ export function StudentRoadmap() {
                       </div>
                       <div>
                         <p className="font-semibold text-[14px]">First SAT / ACT · Spring of junior year</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">March–June. Pick SAT or ACT from a diagnostic, then prep 8–12 weeks.</p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5">March-June. Pick SAT or ACT from a diagnostic, then prep 8-12 weeks.</p>
                       </div>
                     </div>
                     <div className="p-4 flex gap-4 items-start">
@@ -354,7 +354,7 @@ export function StudentRoadmap() {
                       </div>
                       <div>
                         <p className="font-semibold text-[14px]">Retake · Fall of senior year</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">August–October — before Early deadlines (by December for Regular Decision).</p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5">August-October - before Early deadlines (by December for Regular Decision).</p>
                       </div>
                     </div>
                   </div>
@@ -366,7 +366,7 @@ export function StudentRoadmap() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
                       { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
-                      { title: "FAFSA — Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
+                      { title: "FAFSA - Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
                       { title: "CSS Profile", desc: "Institutional aid at many private colleges", url: "#" },
                       { title: "BigFuture (College Board)", desc: "College search, planning & scholarships", url: "#" },
                       { title: "Digital SAT & Bluebook", desc: "Register and practice for the digital SAT", url: "#" },

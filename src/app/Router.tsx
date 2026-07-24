@@ -122,7 +122,7 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
-// ── DEV-only onboarding/pending previews ─────────────────────────────────────
+// -- DEV-only onboarding/pending previews -------------------------------------
 // Public, no-auth routes to design/test each role's flow without logging in.
 // Flag lives in src/config/dev.ts (tracked in docs/PRODUCTION_UNMOCK_CHECKLIST.md).
 function OnboardingPreview() {
@@ -163,7 +163,7 @@ const router = createBrowserRouter([
     path: "/proposal",
     element: <ProposalPage />,
   },
-  // ── Landing page service-section design previews ─────────────────────────
+  // -- Landing page service-section design previews -------------------------
   { path: "/landing/1", element: <LandingV1 /> },
   { path: "/landing/2", element: <LandingV2 /> },
   { path: "/landing/3", element: <LandingV3 /> },

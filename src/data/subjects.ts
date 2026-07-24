@@ -31,7 +31,7 @@ export const subjects: Subject[] = [
       },
       {
         title: "Algebra",
-        desc: "Equations, functions and problem-solving — the backbone that the rest of high-school math is built on.",
+        desc: "Equations, functions and problem-solving - the backbone that the rest of high-school math is built on.",
         learn: [
           "Understanding variables, expressions, and equations",
           "Operations with integers, fractions, and exponents",
@@ -49,7 +49,7 @@ export const subjects: Subject[] = [
       },
       {
         title: "Pre-Calculus",
-        desc: "Trigonometry, sequences and advanced functions — the bridge from algebra into calculus.",
+        desc: "Trigonometry, sequences and advanced functions - the bridge from algebra into calculus.",
         learn: [
           "Functions and their graphs",
           "Trigonometry and the unit circle",

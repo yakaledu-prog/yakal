@@ -1,5 +1,5 @@
 -- ============================================================
--- YAKAL — RLS for payments / billing
+-- YAKAL - RLS for payments / billing
 -- Run AFTER 01_payments_schema.sql. Idempotent (drop-if-exists).
 --
 -- Invoices & customer records are written server-side only

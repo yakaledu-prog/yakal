@@ -83,7 +83,7 @@ export function ParentChildChats() {
                 <ParentTranscript convo={active} />
 
                 <div className="px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942] text-center text-[12px] text-[#667781] dark:text-[#8696a0] flex items-center justify-center gap-1.5">
-                  <Eye size={13} /> Read-only — parents can view but not send messages
+                  <Eye size={13} /> Read-only - parents can view but not send messages
                 </div>
               </>
             ) : (

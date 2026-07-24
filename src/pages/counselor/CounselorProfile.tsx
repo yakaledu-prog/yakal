@@ -27,8 +27,8 @@ export function CounselorProfile() {
             </div>
           )}
           <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-            <Row icon={<Mail size={18} />} label="Email" value={profile?.email || "—"} />
-            <Row icon={<Phone size={18} />} label="Phone" value={profile?.phone || "—"} />
+            <Row icon={<Mail size={18} />} label="Email" value={profile?.email || "-"} />
+            <Row icon={<Phone size={18} />} label="Phone" value={profile?.phone || "-"} />
           </div>
           <button onClick={() => signOut()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[14px] font-semibold hover:bg-[#c0392b]/5 transition-colors">
             <LogOut size={16} /> Sign out

@@ -258,7 +258,7 @@ export async function getCourseWorkspace(courseId: string, tutorId: string): Pro
   return { course: course ?? null, sessions, students, assignments };
 }
 
-// ── Earnings (rate is the tutor's current profile rate) ─────
+// -- Earnings (rate is the tutor's current profile rate) -----
 export interface EarningsActivity {
   id: string;
   date: string;
@@ -347,7 +347,7 @@ export function computeEarnings(sessions: SessionRow[], rate: number): EarningsS
   };
 }
 
-// ── Sessions: tutor actions ─────────────────────────────────
+// -- Sessions: tutor actions ---------------------------------
 export async function completeSession(id: string, notes?: string) {
   const patch: Record<string, unknown> = { status: "completed" };
   if (notes !== undefined) patch.notes = notes;
@@ -365,7 +365,7 @@ export async function cancelSession(id: string) {
   return !error;
 }
 
-// ── Assignments & submissions ───────────────────────────────
+// -- Assignments & submissions -------------------------------
 export interface AssignmentRow {
   id: string;
   tutor_id: string;

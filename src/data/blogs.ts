@@ -25,7 +25,7 @@ export const blogs: Blog[] = [
     desc: "Learn simple daily habits that can significantly boost your child's math performance.",
     content: [
       { heading: null, body: "Many students struggle with math not because they lack ability, but because they lack a consistent strategy. By building simple, manageable habits, any student can make noticeable improvements in understanding, confidence, and grades." },
-      { heading: "1. Practice in Small Daily Sessions", body: "Short, consistent practice is far more effective than occasional long study sessions. 10–20 minutes per day is enough. Build a routine after school or dinner. Mix mental math, problem sets, and revision.\n\nExample: Have your child solve three warm-up problems each morning to build confidence." },
+      { heading: "1. Practice in Small Daily Sessions", body: "Short, consistent practice is far more effective than occasional long study sessions. 10-20 minutes per day is enough. Build a routine after school or dinner. Mix mental math, problem sets, and revision.\n\nExample: Have your child solve three warm-up problems each morning to build confidence." },
       { heading: "2. Strengthen Understanding of Fundamentals", body: "Most math difficulties come from weak foundations in basic concepts. Focus on fractions and decimals, basic operations, and word-problem interpretation. When the basics are strong, advanced topics feel much easier." },
       { heading: "3. Encourage “Thinking Aloud”", body: "Students learn better when they explain their reasoning. Ask them to walk through their steps, identify gaps in logic together, and build problem-solving confidence. This habit also improves performance on exams where showing work earns partial credit." },
       { heading: "4. Use Real-Life Math Scenarios", body: "Make math practical and interesting. Examples: calculating grocery totals, comparing discounts while shopping, measuring ingredients while cooking. Real-world practice helps students understand why math matters." },
@@ -41,7 +41,7 @@ export const blogs: Blog[] = [
     desc: "Step-by-step strategies to help students manage stress and improve scores on SATs.",
     content: [
       { heading: null, body: "Standardized tests like the SAT and ACT can feel overwhelming, but with the right approach, students can walk in confident and perform at their best." },
-      { heading: "1. Start Early", body: "Give yourself at least 3–6 months of preparation time. This allows for thorough content review, multiple practice tests, and time to address weak areas without cramming." },
+      { heading: "1. Start Early", body: "Give yourself at least 3-6 months of preparation time. This allows for thorough content review, multiple practice tests, and time to address weak areas without cramming." },
       { heading: "2. Take Full Practice Tests", body: "Simulate real test conditions - timed, uninterrupted, using official materials. Review every wrong answer in detail to understand the mistake, not just the correct answer." },
       { heading: "3. Focus on Weak Areas", body: "After each practice test, categorize your errors by topic. Spend the majority of your study time on the categories with the most mistakes." },
       { heading: "4. Learn Test Strategy", body: "Beyond content knowledge, understand how the test works. Learn to eliminate answer choices, manage your time per question, and identify trap answers." },

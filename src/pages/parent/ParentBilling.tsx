@@ -76,7 +76,7 @@ export function ParentBilling() {
       const sessionId = searchParams.get("session_id");
       (async () => {
         if (sessionId) await confirmCheckout(sessionId);
-        toast.success("Payment received — thank you!");
+        toast.success("Payment received - thank you!");
         qc.invalidateQueries({ queryKey: ["invoices", user?.id] });
         qc.invalidateQueries({ queryKey: ["payment-methods", user?.id] });
       })();
@@ -84,7 +84,7 @@ export function ParentBilling() {
       searchParams.delete("session_id");
       setSearchParams(searchParams, { replace: true });
     } else if (searchParams.get("canceled") === "1") {
-      toast("Checkout canceled — no charge was made.");
+      toast("Checkout canceled - no charge was made.");
       searchParams.delete("canceled");
       setSearchParams(searchParams, { replace: true });
     }
@@ -157,7 +157,7 @@ export function ParentBilling() {
                 disabled={busy !== null}
                 className="h-11 px-6 font-bold !bg-white !text-[#1099A1] hover:!bg-white/90 rounded-full text-[14px] self-start md:self-auto shadow-sm"
               >
-                {busy === "all" ? <Loader2 size={16} className="animate-spin" /> : `Pay all — ${money(summary.balanceDueCents)}`}
+                {busy === "all" ? <Loader2 size={16} className="animate-spin" /> : `Pay all - ${money(summary.balanceDueCents)}`}
               </Button>
             )}
           </div>
@@ -249,7 +249,7 @@ export function ParentBilling() {
                 )}
               </Button>
               <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <Lock size={12} /> Secured by Stripe — opens in a new tab.
+                <Lock size={12} /> Secured by Stripe - opens in a new tab.
               </p>
             </div>
 
