@@ -1,6 +1,7 @@
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 
 export function CancellationPolicyPageV2() {
   return (
@@ -8,10 +9,10 @@ export function CancellationPolicyPageV2() {
       <div className="flex flex-col md:flex-row min-h-screen bg-background dark:bg-[#111b21]">
         
         {/* Left Sidepane */}
-        <div className="w-full md:w-[40%] lg:w-[35%] bg-[#1099A1] text-white relative overflow-hidden flex flex-col p-8 md:p-12 lg:p-16 shrink-0 md:h-screen md:sticky top-0">
-          <svg className="absolute right-0 bottom-0 h-full w-[150%] text-white/5 pointer-events-none origin-bottom-right transform translate-x-1/4 translate-y-1/4" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-          </svg>
+        <div className="w-full md:w-[40%] lg:w-[35%] bg-[#1099A1] text-white relative flex flex-col p-8 md:p-12 lg:p-16 shrink-0 md:h-screen md:sticky top-0">
+          <img src={imgCover} alt="Background" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-[#1099A1]/80 mix-blend-multiply" />
+          
           <div className="relative z-10 h-full flex flex-col justify-center">
             <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-10 text-[14px] font-medium transition-colors">
               <ArrowLeft size={16} /> Back to home
