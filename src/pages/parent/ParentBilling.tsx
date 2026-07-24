@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from "recharts";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { CreditCard, ExternalLink, Clock, CheckCircle2, Loader2, Lock, BarChart2 } from "lucide-react";
+import { CreditCard, ExternalLink, Clock, CheckCircle2, Loader2, BarChart2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
@@ -24,13 +24,19 @@ function fmtDate(d?: string | null) {
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+const SERVICE_LABEL: Record<string, string> = {
+  tutoring: "Tutoring",
+  admissions: "College Admissions",
+  registration: "Registration",
+  other: "Other",
+};
 const CATEGORY_COLORS: Record<string, string> = {
   Tutoring: "#1099A1",
-  Admissions: "#CAA25F",
+  "College Admissions": "#CAA25F",
   Registration: "#97CE9D",
   Other: "#8696a0",
 };
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const serviceLabel = (kind: string) => SERVICE_LABEL[kind] || "Other";
 
 export function ParentBilling() {
   const { user } = useAuth();
@@ -66,7 +72,7 @@ export function ParentBilling() {
 
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
-    invoices.forEach((i) => map.set(cap(i.kind), (map.get(cap(i.kind)) || 0) + i.amount_cents));
+    invoices.forEach((i) => map.set(serviceLabel(i.kind), (map.get(serviceLabel(i.kind)) || 0) + i.amount_cents));
     return Array.from(map, ([kind, cents]) => ({ kind, amount: cents / 100 }));
   }, [invoices]);
 
@@ -171,9 +177,9 @@ export function ParentBilling() {
               <div className="space-y-5">
                 <div className="border-b border-border/50 pb-3">
                   <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Manage Services</h3>
-                  <p className="text-[13px] text-muted-foreground mt-0.5">Choose which services each child is enrolled in</p>
+                  {/* <p className="text-[13px] text-muted-foreground mt-0.5">Choose which services each child is enrolled in</p> */}
                 </div>
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-1 gap-6">
                   {children.map((c) => (
                     <div key={c.id} className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-5">
                       <div className="flex items-center gap-3 mb-5">
@@ -197,7 +203,7 @@ export function ParentBilling() {
             <div>
               <div className="border-b border-border/50 pb-3 mb-2">
                 <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Transactions</h3>
-                <p className="text-[13px] text-muted-foreground mt-0.5">Invoices and payment history</p>
+                {/* <p className="text-[13px] text-muted-foreground mt-0.5">Invoices and payment history</p> */}
               </div>
               {isLoading ? (
                 <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
@@ -243,21 +249,21 @@ export function ParentBilling() {
               )}
 
               <Button onClick={portal} disabled={busy !== null} variant="outline"
-                className="w-full flex items-center justify-center gap-2 h-11 text-[14px] font-semibold">
+                className="w-full border border-primary text-primary flex items-center justify-center gap-2 text-[14px] font-semibold">
                 {busy === "portal" ? <Loader2 size={16} className="animate-spin" /> : (
                   <>{cards.length ? "Manage payment methods" : "Add payment method"} <ExternalLink size={14} /></>
                 )}
               </Button>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              {/* <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                 <Lock size={12} /> Secured by Stripe - opens in a new tab.
-              </p>
+              </p> */}
             </div>
 
             {/* Spending by category */}
             {byCategory.length > 0 && (
               <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[14px] font-semibold text-[#111] dark:text-white">Spending by category</h3>
+                  <h3 className="text-[14px] font-semibold text-[#111] dark:text-white">Spending by service</h3>
                   <BarChart2 size={16} className="text-muted-foreground" />
                 </div>
                 <div className="h-[150px] w-full">

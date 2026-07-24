@@ -34,15 +34,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? (customer.invoice_settings?.default_payment_method as string | null)
         : null;
 
-    const methods = list.data.map((pm) => ({
-      id: pm.id,
-      brand: pm.card?.brand ?? 'card',
-      last4: pm.card?.last4 ?? '••••',
-      exp_month: pm.card?.exp_month ?? null,
-      exp_year: pm.card?.exp_year ?? null,
-      isDefault: pm.id === defaultPm,
-    }));
+    // Checkout creates a fresh PaymentMethod on every payment, so the same
+    // physical card shows up multiple times. Collapse by card fingerprint
+    // (identical for the same card) and keep the default if present.
+    const byFingerprint = new Map<string, any>();
+    for (const pm of list.data) {
+      const key = pm.card?.fingerprint || pm.id;
+      const isDefault = pm.id === defaultPm;
+      const existing = byFingerprint.get(key);
+      if (!existing || isDefault) {
+        byFingerprint.set(key, {
+          id: pm.id,
+          brand: pm.card?.brand ?? 'card',
+          last4: pm.card?.last4 ?? '****',
+          exp_month: pm.card?.exp_month ?? null,
+          exp_year: pm.card?.exp_year ?? null,
+          isDefault,
+        });
+      }
+    }
 
+    const methods = Array.from(byFingerprint.values());
     // If Stripe hasn't flagged a default, treat the first as default.
     if (methods.length > 0 && !methods.some((m) => m.isDefault)) methods[0].isDefault = true;
 

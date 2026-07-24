@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
-import { createSession } from "@/services/sessions";
-import { createZoomMeeting } from "@/services/zoom";
+import { bookAndPay } from "@/services/billingService";
 import { toast } from "sonner";
 
 // Mock data
@@ -142,7 +141,7 @@ export function ParentCourseCatalogDetail() {
   };
 
   const handleBookSlot = async () => {
-    if (selectedSlots.length === 0 || !user || !availability) {
+    if (selectedSlots.length === 0 || !user) {
       toast.error("Please select at least one slot");
       return;
     }
@@ -150,58 +149,18 @@ export function ParentCourseCatalogDetail() {
     setIsBooking(true);
 
     try {
-      // Book all selected slots, each gets a unique meeting room and Zoom meeting
-      const results = await Promise.all(selectedSlots.map(async slot => {
-        const formattedDate = slot.date.toISOString().split('T')[0];
-        const formattedTime = `${(slot.hourIndex + 8).toString().padStart(2, '0')}:00:00`;
-        const meetingRoomId = `yakal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Booking creates a payable invoice and sends the parent straight to
+      // Stripe Checkout. The session is scheduled after payment (via billing).
+      const unit = parseFloat(course.price.replace(/[^0-9.]/g, "")) || 0;
+      const amountCents = Math.round(unit * 100 * selectedSlots.length);
+      const label = `${course.title} (${selectedSlots.length} session${selectedSlots.length > 1 ? "s" : ""})`;
 
-        let zoom_meeting_id = undefined;
-        let zoom_password = undefined;
-
-        if (slot.mode === 1 || slot.mode === 3) {
-          try {
-            // For MVP, assuming UTC. In production, calculate proper UTC start_time
-            const zoomStartTime = `${formattedDate}T${formattedTime}Z`;
-            const zoomData = await createZoomMeeting(
-              `${course.title} Session`,
-              zoomStartTime,
-              60
-            );
-            zoom_meeting_id = zoomData.meetingNumber;
-            zoom_password = zoomData.password;
-          } catch (e) {
-            console.error("Zoom meeting creation failed:", e);
-            // Continuing without Zoom to allow booking to succeed as fallback
-          }
-        }
-
-        return createSession({
-          tutor_id: availability.tutor_id,
-          student_id: user.id,
-          subject: course.title,
-          date: formattedDate,
-          start_time: formattedTime,
-          duration_minutes: 60,
-          mode: slot.mode === 2 ? 'in-person' : slot.mode === 3 ? 'both' : 'online',
-          meeting_room_id: meetingRoomId,
-          zoom_meeting_id,
-          zoom_password,
-        });
-      }));
-
-      const failed = results.filter(r => !r.success);
-      if (failed.length > 0) {
-        throw new Error(failed[0].error || 'Session insert failed');
-      }
-
-      toast.success(`Successfully booked ${selectedSlots.length} slot(s)!`);
-      setSelectedSlots([]); // Clear selection after booking
-      navigate('/student/sessions');
+      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring" });
+      if (error) throw new Error(error);
+      // On success the browser is redirecting to Stripe Checkout.
     } catch (error: any) {
       console.error(error);
-      toast.error(error?.message || "Failed to book one or more slots. Please try again.");
-    } finally {
+      toast.error(error?.message || "Could not start payment. Please try again.");
       setIsBooking(false);
     }
   };

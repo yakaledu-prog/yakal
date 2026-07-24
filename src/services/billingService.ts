@@ -86,6 +86,20 @@ export async function startCheckout(invoiceIds: string[]): Promise<{ error?: str
   return {};
 }
 
+// Create an invoice (e.g. from a course booking) and go straight to Checkout.
+export async function bookAndPay(input: {
+  description: string;
+  amountCents: number;
+  kind?: "tutoring" | "admissions" | "registration" | "other";
+  studentId?: string | null;
+}): Promise<{ error?: string }> {
+  const res = await authedPost("/api/create-invoice", input);
+  if (res.error) return { error: res.error };
+  const invoiceId = (res as any).invoiceId as string | undefined;
+  if (!invoiceId) return { error: "Could not create the invoice." };
+  return startCheckout([invoiceId]);
+}
+
 // Confirm a returned Checkout Session (marks invoices paid without needing the
 // webhook - used on the success redirect so local testing works out of the box).
 export async function confirmCheckout(sessionId: string): Promise<{ status?: string; error?: string }> {
