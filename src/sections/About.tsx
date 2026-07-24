@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, X } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import imgAboutBanner1 from "@/assets/images/landing-page/about-yakal.webp";
 
@@ -10,6 +11,8 @@ const steps = [
 ];
 
 export default function About() {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
   return (
     <div id="about" className="w-full flex flex-col gap-[40px] md:gap-[60px] pt-[60px] md:pt-[100px] pb-[20px] md:pb-[40px] items-center bg-[#fafafa]">
       
@@ -24,7 +27,10 @@ export default function About() {
             <p className="text-[#555] text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] mb-[32px]">
               Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
             </p>
-            <button className="btn-shimmer px-[30px] py-[14px] rounded-[500px] text-[15px] md:text-[16px] text-white font-medium uppercase shadow-lg hover:opacity-90 transition-opacity">
+            <button 
+              onClick={() => setIsVideoOpen(true)}
+              className="btn-shimmer px-[30px] py-[14px] rounded-[500px] text-[15px] md:text-[16px] text-white font-medium uppercase shadow-lg hover:opacity-90 transition-opacity"
+            >
               Learn More About Us
             </button>
           </Reveal>
@@ -69,7 +75,34 @@ export default function About() {
           </div>
         </div>
       </div>
-      
+
+      {/* Video Modal Placeholder */}
+      {isVideoOpen && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" 
+          onClick={() => setIsVideoOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-[900px] aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" 
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setIsVideoOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <div className="w-full h-full flex flex-col items-center justify-center text-white p-8 text-center bg-gradient-to-br from-[#1099A1] to-[#0a6c72]">
+               <h3 className="text-2xl md:text-4xl font-bold mb-4">Our Pitch Video</h3>
+               <p className="text-base md:text-lg opacity-80 max-w-lg">
+                 This is a placeholder for your upcoming advertisement or pitch video. 
+                 Once ready, we can embed the actual video player here!
+               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
