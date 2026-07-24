@@ -84,6 +84,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
           <a href="#terms" className="hover:text-white">Terms & Conditions</a>
           <a href="#privacy" className="hover:text-white">Privacy Policy</a>
           <a href="#cookies" className="hover:text-white">Cookie Preferences</a>
+          <a href="/cancellation-policy" className="hover:text-white">Cancellation Policy</a>
         </div>
         <div className="flex gap-[10px] md:gap-[12px]">
           {socials.map(({ href, icon }) => (
