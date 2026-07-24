@@ -189,6 +189,112 @@ export function useGoogleDrivePicker() {
     [API_KEY, CLIENT_ID, isReady]
   );
 
+  const pickFileFromFolder = useCallback(
+    (folderId: string) => {
+      return new Promise<GoogleDriveFile | null>(async (resolve, reject) => {
+        if (!isReady) {
+          reject(new Error('Google Drive API not ready yet'));
+          return;
+        }
+
+        console.log('[Google Drive] User requested to pick a file from folder.');
+        setIsPicking(true);
+
+        try {
+          const accessToken = await getAccessToken(true);
+          
+          const view = new window.google.picker.DocsView(window.google.picker.ViewId.DOCS);
+          view.setParent(folderId); // Restrict to the synced folder
+
+          const picker = new window.google.picker.PickerBuilder()
+            .enableFeature(window.google.picker.Feature.NAV_HIDDEN)
+            .setDeveloperKey(API_KEY)
+            .setAppId(CLIENT_ID)
+            .setOAuthToken(accessToken)
+            .addView(view)
+            .setCallback((data: any) => {
+              if (data.action === window.google.picker.Action.PICKED) {
+                const file = data.docs[0];
+                setIsPicking(false);
+                resolve({ 
+                  id: file.id, 
+                  name: file.name,
+                  mimeType: file.mimeType,
+                  url: file.url,
+                  webViewLink: file.url,
+                  iconLink: file.iconUrl
+                });
+              } else if (data.action === window.google.picker.Action.CANCEL) {
+                setIsPicking(false);
+                resolve(null);
+              }
+            })
+            .build();
+          
+          picker.setVisible(true);
+        } catch (err) {
+          console.error('[Google Drive] Error launching picker:', err);
+          setIsPicking(false);
+          reject(err);
+        }
+      });
+    },
+    [API_KEY, CLIENT_ID, isReady]
+  );
+
+  const uploadFileToFolder = useCallback(
+    (folderId: string) => {
+      return new Promise<GoogleDriveFile | null>(async (resolve, reject) => {
+        if (!isReady) {
+          reject(new Error('Google Drive API not ready yet'));
+          return;
+        }
+
+        console.log('[Google Drive] User requested to upload a file to folder.');
+        setIsPicking(true);
+
+        try {
+          const accessToken = await getAccessToken(true);
+          
+          const view = new window.google.picker.DocsUploadView();
+          view.setParent(folderId);
+
+          const picker = new window.google.picker.PickerBuilder()
+            .enableFeature(window.google.picker.Feature.NAV_HIDDEN)
+            .setDeveloperKey(API_KEY)
+            .setAppId(CLIENT_ID)
+            .setOAuthToken(accessToken)
+            .addView(view)
+            .setCallback((data: any) => {
+              if (data.action === window.google.picker.Action.PICKED) {
+                const file = data.docs[0];
+                setIsPicking(false);
+                resolve({ 
+                  id: file.id, 
+                  name: file.name,
+                  mimeType: file.mimeType,
+                  url: file.url,
+                  webViewLink: file.url,
+                  iconLink: file.iconUrl
+                });
+              } else if (data.action === window.google.picker.Action.CANCEL) {
+                setIsPicking(false);
+                resolve(null);
+              }
+            })
+            .build();
+          
+          picker.setVisible(true);
+        } catch (err) {
+          console.error('[Google Drive] Error launching upload picker:', err);
+          setIsPicking(false);
+          reject(err);
+        }
+      });
+    },
+    [API_KEY, CLIENT_ID, isReady]
+  );
+
   const fetchFolderFiles = useCallback(
     async (folderId: string): Promise<GoogleDriveFile[]> => {
       if (!isReady) throw new Error('Google Drive API not ready');
@@ -220,5 +326,5 @@ export function useGoogleDrivePicker() {
     [isReady]
   );
 
-  return { isReady, isPicking, isFetching, error, pickFolder, fetchFolderFiles };
+  return { isReady, isPicking, isFetching, error, pickFolder, pickFileFromFolder, uploadFileToFolder, fetchFolderFiles };
 }

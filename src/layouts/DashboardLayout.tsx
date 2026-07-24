@@ -61,7 +61,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
   const handleRequestAccess = async () => {
     if (!user || !profile || !lockedItem) return;
-    
+
     toast.loading("Sending request...", { id: "request-access" });
     try {
       const { data: linkData, error: linkError } = await supabase
@@ -69,7 +69,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         .select("parent_id")
         .eq("student_id", user.id)
         .single();
-        
+
       if (linkError || !linkData?.parent_id) {
         throw new Error("No linked parent account found.");
       }
@@ -84,13 +84,13 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       if (notifError) throw notifError;
       toast.success("Request sent to your parent successfully!", { id: "request-access" });
-      
+
       // DEMO: Auto-unlock after 1.5 seconds
       setTimeout(() => {
         toast.success(`${lockedItem.name} has been unlocked for this demo!`, { id: "demo-unlock", duration: 4000 });
         setDemoUnlocked(prev => [...prev, lockedItem.href]);
-      }, 1500);
-      
+      }, 500);
+
     } catch (err: any) {
       toast.error(err.message || "Failed to send request.", { id: "request-access" });
     }
@@ -223,8 +223,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                   label: bcLabels[segment]
                     ? bcLabels[segment]
                     : isUuid(segment)
-                    ? 'Details'
-                    : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                      ? 'Details'
+                      : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
                   path: '/' + segments.slice(0, index + 1).join('/')
                 }));
 
@@ -308,7 +308,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 <p className="text-[#54656f] dark:text-[#aebac1] mb-8 leading-relaxed">
                   You don't have an active subscription for this service. Ask your parent to unlock {lockedItem.name} to gain access!
                 </p>
-                <button 
+                <button
                   onClick={handleRequestAccess}
                   className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-3 rounded-xl font-bold transition-all w-full"
                 >
