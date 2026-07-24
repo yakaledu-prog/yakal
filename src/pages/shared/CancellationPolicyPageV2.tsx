@@ -6,21 +6,26 @@ import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 export function CancellationPolicyPageV2() {
   return (
     <PageWrapper className="!p-0">
-      <div className="flex flex-col md:flex-row min-h-screen bg-background dark:bg-[#111b21]">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background dark:bg-[#111b21]">
         
         {/* Left Sidepane */}
-        <div className="w-full md:w-[40%] lg:w-[35%] bg-[#1099A1] text-white relative flex flex-col p-8 md:p-12 lg:p-16 shrink-0 md:h-screen md:sticky top-0">
+        <div className="w-full md:w-[40%] lg:w-[35%] bg-black text-white relative flex flex-col p-8 md:p-12 lg:p-16 shrink-0 h-auto md:h-full">
           <img src={imgCover} alt="Background" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-[#1099A1]/80 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
           
-          <div className="relative z-10 h-full flex flex-col justify-center">
-            <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-10 text-[14px] font-medium transition-colors">
-              <ArrowLeft size={16} /> Back to home
-            </Link>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.1]">Cancellation<br/>Policy</h1>
-            <p className="text-white/80 text-[16px] md:text-[18px]">
-              Effective Date: July 2026
-            </p>
+          <div className="relative z-10 h-full flex flex-col">
+            <div className="mb-auto">
+              <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white text-[14px] font-medium transition-colors">
+                <ArrowLeft size={16} /> Back to home
+              </Link>
+            </div>
+            
+            <div className="mt-12 md:mt-0">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.1]">Cancellation<br/>Policy</h1>
+              <p className="text-white/80 text-[16px] md:text-[18px]">
+                Effective Date: July 2026
+              </p>
+            </div>
           </div>
         </div>
 
