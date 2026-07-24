@@ -17,7 +17,9 @@ import LandingV3 from "../pages/LandingV3";
 import LandingV4 from "../pages/LandingV4";
 import LandingV5 from "../pages/LandingV5";
 import { CancellationPolicyPage } from "../pages/shared/CancellationPolicyPage";
-import { CancellationPolicyPageV2 } from "../pages/shared/CancellationPolicyPageV2";
+import { TermsConditionsPage } from "../pages/shared/TermsConditionsPage";
+import { PrivacyPolicyPage } from "../pages/shared/PrivacyPolicyPage";
+import { CookiePreferencesPage } from "../pages/shared/CookiePreferencesPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
@@ -177,8 +179,16 @@ const router = createBrowserRouter([
     element: <CancellationPolicyPage />,
   },
   {
-    path: "/cancellation-policy-v2",
-    element: <CancellationPolicyPageV2 />,
+    path: "/terms",
+    element: <TermsConditionsPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/cookies",
+    element: <CookiePreferencesPage />,
   },
   // -- Landing page service-section design previews -------------------------
   { path: "/landing/1", element: <LandingV1 /> },

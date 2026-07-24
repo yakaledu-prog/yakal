@@ -1,29 +1,37 @@
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 
 export function CancellationPolicyPage() {
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-24">
-        {/* Header */}
-        <div className="bg-[#1099A1] text-white pt-10 px-6 md:px-10 relative overflow-hidden pb-12">
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-          </svg>
-          <div className="relative z-10 max-w-[800px] mx-auto pt-8">
-            <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 text-[14px] font-medium transition-colors">
-              <ArrowLeft size={16} /> Back to home
-            </Link>
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Cancellation Policy</h1>
-            <p className="text-white/80 text-[16px] md:text-[18px]">
-              Effective Date: July 2026
-            </p>
+      <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background dark:bg-[#111b21]">
+        
+        {/* Left Sidepane */}
+        <div className="w-full md:w-[40%] lg:w-[35%] bg-black text-white relative flex flex-col p-8 md:p-12 lg:p-16 shrink-0 h-auto md:h-full">
+          <img src={imgCover} alt="Background" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
+          
+          <div className="relative z-10 h-full flex flex-col">
+            <div className="mb-auto">
+              <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white text-[14px] font-medium transition-colors">
+                <ArrowLeft size={16} /> Back to home
+              </Link>
+            </div>
+            
+            <div className="mt-12 md:mt-0">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.1]">Cancellation<br/>Policy</h1>
+              <p className="text-white/80 text-[16px] md:text-[18px]">
+                Effective Date: July 2026
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-[800px] mx-auto p-6 md:p-10 -mt-6">
-          <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-8 md:p-12 shadow-sm prose prose-sm md:prose-base dark:prose-invert max-w-none text-[#111] dark:text-[#d1d5db]">
+        {/* Right Side Content */}
+        <div className="flex-1 w-full p-6 md:p-12 lg:p-16 md:overflow-y-auto">
+          <div className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl text-[#111] dark:text-[#d1d5db]">
             
             <h3 className="text-xl font-bold text-[#1099A1] mb-2 mt-0">1. General Policy</h3>
             <p className="mb-8">
@@ -70,6 +78,7 @@ export function CancellationPolicyPage() {
             </p>
           </div>
         </div>
+        
       </div>
     </PageWrapper>
   );

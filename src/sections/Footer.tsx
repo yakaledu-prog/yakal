@@ -81,9 +81,9 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
 
       <div className="border-b-2 border-[rgba(255,255,255,0.1)] pb-[24px] md:pb-[32px] flex flex-col md:flex-row justify-between items-center gap-[16px]">
         <div className="flex flex-wrap items-center justify-center gap-[24px] md:gap-[32px] text-[rgba(255,255,255,0.75)] text-[13px] md:text-[16px]">
-          <a href="#terms" className="hover:text-white">Terms & Conditions</a>
-          <a href="#privacy" className="hover:text-white">Privacy Policy</a>
-          <a href="#cookies" className="hover:text-white">Cookie Preferences</a>
+          <a href="/terms" className="hover:text-white">Terms & Conditions</a>
+          <a href="/privacy" className="hover:text-white">Privacy Policy</a>
+          <a href="/cookies" className="hover:text-white">Cookie Preferences</a>
           <a href="/cancellation-policy" className="hover:text-white">Cancellation Policy</a>
         </div>
         <div className="flex gap-[10px] md:gap-[12px]">
