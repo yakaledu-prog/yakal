@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCollegeProfile, updateSchool } from "@/services/collegeService";
-import { ChevronDown, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink, FileText, File, Folder, MoreVertical, HardDrive, FolderSyncIcon, FolderSymlinkIcon, LayoutGrid, List as ListIcon, UploadCloud, Share2, Plus } from "lucide-react";
+import { ChevronDown, Plus, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink, FileText, Image as ImageIcon, File, Folder, MoreVertical, FileSpreadsheet, HardDrive, RefreshCw, FolderSyncIcon, FolderSymlinkIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { useGoogleDrivePicker, GoogleDriveFolder, GoogleDriveFile } from "@/hooks/useGoogleDrivePicker";
@@ -18,17 +18,14 @@ export function StudentApplicationTracker() {
   const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
 
   // Google Drive state
-  const { pickFolder, pickFileFromFolder, uploadFileToFolder, fetchFolderFiles, isReady, isPicking, isFetching } = useGoogleDrivePicker();
+  const { pickFolder, fetchFolderFiles, isReady, isPicking, isFetching } = useGoogleDrivePicker();
   const [connectedFolder, setConnectedFolder] = useState<GoogleDriveFolder | null>(() => {
     const saved = localStorage.getItem('yakal_drive_folder');
     return saved ? JSON.parse(saved) : null;
   });
   const [folderFiles, setFolderFiles] = useState<GoogleDriveFile[]>([]);
-
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [templateMappings, setTemplateMappings] = useState<Record<string, GoogleDriveFile & { shared?: boolean }>>(() => {
-    const saved = localStorage.getItem('yakal_template_mappings');
-    return saved ? JSON.parse(saved) : {};
+  const [transcriptFileId, setTranscriptFileId] = useState<string | null>(() => {
+    return localStorage.getItem('yakal_transcript_id');
   });
 
   useEffect(() => {
@@ -38,8 +35,12 @@ export function StudentApplicationTracker() {
   }, [connectedFolder]);
 
   useEffect(() => {
-    localStorage.setItem('yakal_template_mappings', JSON.stringify(templateMappings));
-  }, [templateMappings]);
+    if (transcriptFileId) {
+      localStorage.setItem('yakal_transcript_id', transcriptFileId);
+    } else {
+      localStorage.removeItem('yakal_transcript_id');
+    }
+  }, [transcriptFileId]);
 
   useEffect(() => {
     if (connectedFolder && isReady) {
@@ -146,30 +147,34 @@ export function StudentApplicationTracker() {
                       const reqs = s.requirements || [];
                       const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
 
+                      let defaultReqs: string[] = [];
+                      if (s.notes && s.notes.startsWith("[")) {
+                        try { defaultReqs = JSON.parse(s.notes); } catch (e) {}
+                      } else {
+                        defaultReqs = standardReqs.filter(r => {
+                          if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
+                          if (s.school_name.includes("Maryland")) return false;
+                          if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
+                          return false;
+                        });
+                      }
+
+                      const schoolReqs = localReqs[s.id] || defaultReqs;
+
                       const toggleReq = (schoolId: string, schoolName: string, req: string) => {
                         setLocalReqs(prev => {
-                          let current = prev[schoolId];
-                          if (!current) {
-                            current = standardReqs.filter(r => {
-                              if (schoolName.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
-                              if (schoolName.includes("Maryland")) return false;
-                              if (schoolName.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
-                              return false;
-                            });
-                          }
+                          const current = prev[schoolId] || defaultReqs;
+                          let next;
                           if (current.includes(req)) {
-                            return { ...prev, [schoolId]: current.filter(r => r !== req) };
+                            next = current.filter(r => r !== req);
+                          } else {
+                            next = [...current, req];
                           }
-                          return { ...prev, [schoolId]: [...current, req] };
+                          // Fire and forget update to persist to DB
+                          updateSchool(schoolId, { notes: JSON.stringify(next) }).catch(console.error);
+                          return { ...prev, [schoolId]: next };
                         });
                       };
-
-                      const schoolReqs = localReqs[s.id] || standardReqs.filter(r => {
-                        if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
-                        if (s.school_name.includes("Maryland")) return false;
-                        if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
-                        return false;
-                      });
 
                       const mockDoneCount = schoolReqs.length;
                       const currentStatus = localStatus[s.id] || s.status;
@@ -287,7 +292,7 @@ export function StudentApplicationTracker() {
               )}
 
               {tab === "documents" && (
-                <div className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 h-full min-h-[400px]">
+                <div className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 h-full">
 
                   {!connectedFolder ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[350px] text-center">
@@ -319,12 +324,12 @@ export function StudentApplicationTracker() {
                             href="https://drive.google.com/drive/my-drive"
                             target="_blank"
                             rel="noreferrer"
-                            className="hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-1.5"
+                            className="hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded cursor-pointer transition-colors"
                           >
-                            <HardDrive size={18} /> My Drive
+                            My Drive
                           </a>
                           <span className="text-[14px]">›</span>
-                          <span className="text-primary font-bold hover:bg-black/5 cursor-pointer hover:dark:bg-white/5 px-2 py-1 rounded">
+                          <span className="text-primary font hover:bg-black/5 cursor-pointer hover:dark:bg-white/5 px-2 py-1 rounded">
                             {connectedFolder.name}
                           </span>
                         </div>
@@ -352,160 +357,91 @@ export function StudentApplicationTracker() {
                         </div>
                       </div>
 
-                      {/* Document Templates Section */}
-                      <div className="grid md:grid-cols-2 gap-4 mb-10">
-                        {[
-                          { id: 'transcript', name: 'Official Transcript', expectedType: 'file' },
-                          { id: 'essay', name: 'Personal Essay / Statement', expectedType: 'file' },
-                          { id: 'recommendations', name: 'Letters of Recommendation', expectedType: 'folder' },
-                          { id: 'portfolio', name: 'Extracurricular Portfolio', expectedType: 'folder' }
-                        ].map(t => {
-                          const file = templateMappings[t.id];
-                          return (
-                            <div key={t.id} className={cn("border rounded-xl p-4 transition-colors", file ? "border-[#1099A1] bg-[#1099A1]/5" : "border-[#e9edef] dark:border-[#2a3942] border-dashed")}>
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  {file ? <CheckCircle2 size={18} className="text-[#1099A1]" /> : <Circle size={18} className="text-muted-foreground opacity-50" />}
-                                  <h4 className="font-semibold text-[15px]">{t.name}</h4>
-                                </div>
-                                {file && (
-                                  <div className="relative group/menu">
-                                    <button className="p-1 text-muted-foreground hover:text-foreground rounded">
-                                      <MoreVertical size={16} />
-                                    </button>
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
-                                      <a href={file.webViewLink} target="_blank" rel="noreferrer" className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2">
-                                        <ExternalLink size={14} /> Open in Drive
-                                      </a>
-                                      <button
-                                        onClick={() => setTemplateMappings(prev => ({ ...prev, [t.id]: { ...file, shared: !file.shared } }))}
-                                        className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2"
-                                      >
-                                        <Share2 size={14} className={file.shared ? "text-[#1099A1]" : ""} /> {file.shared ? "Revoke Access" : "Share with Counselor"}
-                                      </button>
-                                      <button
-                                        onClick={() => setTemplateMappings(prev => { const n = { ...prev }; delete n[t.id]; return n; })}
-                                        className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2 text-red-500"
-                                      >
-                                        Unassign File
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {file ? (
-                                <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#182229] rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
-                                  {file.iconLink ? <img src={file.iconLink} alt="" className="w-6 h-6" /> : <FileText size={24} className="text-muted-foreground" />}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-medium truncate text-foreground">{file.name}</p>
-                                    {file.shared && <p className="text-[11px] text-[#1099A1] font-medium mt-0.5">Shared with counselor</p>}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={async () => {
-                                      try { const f = await pickFileFromFolder(connectedFolder.id); if (f) setTemplateMappings(prev => ({ ...prev, [t.id]: f })); }
-                                      catch (err) { console.error(err); }
-                                    }}
-                                    disabled={!isReady || isPicking}
-                                    className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-[#f8f9fa] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[13px] font-medium hover:bg-black/5 transition-colors disabled:opacity-50"
-                                  >
-                                    <Folder size={14} /> Select from Folder
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      try { const f = await uploadFileToFolder(connectedFolder.id); if (f) setTemplateMappings(prev => ({ ...prev, [t.id]: f })); }
-                                      catch (err) { console.error(err); }
-                                    }}
-                                    disabled={!isReady || isPicking}
-                                    className="flex justify-center items-center gap-2 px-3 py-2 bg-[#f8f9fa] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[13px] font-medium hover:bg-black/5 transition-colors disabled:opacity-50"
-                                    title="Upload new file to synced folder"
-                                  >
-                                    <UploadCloud size={14} /> Upload
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Other Synced Files Section */}
-                      <div className="flex items-center justify-between mb-4 border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
-                        {/* <h3 className="text-[16px] font-bold text-foreground">Other Synced Files</h3> */}
-                        <div className="flex items-center bg-[#f8f9fa] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-md overflow-hidden">
-                          <button onClick={() => setViewMode('grid')} className={cn("p-1.5 transition-colors", viewMode === 'grid' ? "bg-[#e9edef] dark:bg-[#2a3942] text-foreground" : "text-muted-foreground hover:bg-black/5")}>
-                            <LayoutGrid size={16} />
-                          </button>
-                          <button onClick={() => setViewMode('list')} className={cn("p-1.5 transition-colors", viewMode === 'list' ? "bg-[#e9edef] dark:bg-[#2a3942] text-foreground" : "text-muted-foreground hover:bg-black/5")}>
-                            <ListIcon size={16} />
-                          </button>
-                        </div>
-                      </div>
-
+                      {/* Empty State vs Grid */}
                       {isFetching && folderFiles.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                          <Loader2 className="animate-spin mb-4" size={24} />
-                          <p className="text-[13px] font-medium">Syncing...</p>
+                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                          <Loader2 className="animate-spin mb-4" size={32} />
+                          <p className="text-[14px] font-medium">Syncing folder contents...</p>
                         </div>
                       ) : folderFiles.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                          <p className="text-[13px] font-medium">This folder is empty</p>
+                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                          <div className="w-16 h-16 mb-4 opacity-20">
+                            <Folder size={64} strokeWidth={1} />
+                          </div>
+                          <p className="text-[14px] font-medium">This folder is empty</p>
+                          <p className="text-[13px] mt-1">Add files to this folder in Google Drive to see them here.</p>
                         </div>
                       ) : (
-                        viewMode === 'grid' ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {folderFiles.map(doc => {
-                              const isMapped = Object.values(templateMappings).some(m => m.id === doc.id);
-                              return (
-                                <a
-                                  key={doc.id}
-                                  href={doc.webViewLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={cn("group flex flex-col h-40 bg-[#f8f9fa] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden hover:border-[#1099A1] transition-colors cursor-pointer", isMapped && "opacity-60")}
-                                >
-                                  <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#182229] group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors">
-                                    {doc.iconLink ? (
-                                      <img src={doc.iconLink.replace('16', '64')} alt="icon" className="w-12 h-12 opacity-90 group-hover:scale-110 transition-transform" />
-                                    ) : (
-                                      <div className="text-muted-foreground group-hover:scale-110 transition-transform">
-                                        <File size={48} strokeWidth={1} />
-                                      </div>
-                                    )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                          {folderFiles.map(doc => {
+                            const isTranscript = doc.id === transcriptFileId;
+                            return (
+                              <div
+                                key={doc.id}
+                                className={cn(
+                                  "group relative flex flex-col h-44 bg-[#f8f9fa] dark:bg-[#202c33] border rounded-xl overflow-hidden transition-colors",
+                                  isTranscript
+                                    ? "border-[#1099A1] ring-1 ring-[#1099A1]"
+                                    : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                                )}
+                              >
+                                {isTranscript && (
+                                  <div className="absolute top-2 left-2 z-10 bg-[#1099A1] text-white p-1 rounded-md shadow-sm" title="Official Transcript">
+                                    <Check size={12} strokeWidth={3} />
                                   </div>
-                                  <div className="h-10 border-t border-[#e9edef] dark:border-[#2a3942] px-3 flex items-center bg-[#f8f9fa] dark:bg-[#202c33]">
-                                    <div className="flex items-center gap-2 w-full">
-                                      {doc.iconLink ? <img src={doc.iconLink} alt="" className="w-4 h-4 flex-shrink-0" /> : <File size={14} className="text-muted-foreground flex-shrink-0" />}
-                                      <span className="text-[12px] font-semibold text-[#3c4043] dark:text-[#e8eaed] truncate" title={doc.name}>{doc.name}</span>
+                                )}
+
+                                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="relative group/menu">
+                                    <button className="p-1 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-sm text-[#5f6368] hover:text-foreground">
+                                      <MoreVertical size={16} />
+                                    </button>
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
+                                      <button
+                                        onClick={() => setTranscriptFileId(isTranscript ? null : doc.id)}
+                                        className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2"
+                                      >
+                                        <CheckCircle2 size={14} className={isTranscript ? "text-[#1099A1]" : "text-transparent"} />
+                                        {isTranscript ? "Unmark Transcript" : "Mark as Transcript"}
+                                      </button>
                                     </div>
                                   </div>
-                                </a>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
-                            {folderFiles.map(doc => {
-                              const isMapped = Object.values(templateMappings).some(m => m.id === doc.id);
-                              return (
+                                </div>
+
                                 <a
-                                  key={doc.id}
                                   href={doc.webViewLink}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className={cn("flex items-center gap-3 p-3 bg-white dark:bg-[#182229] hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] border-b border-[#e9edef] dark:border-[#2a3942] last:border-b-0 transition-colors", isMapped && "opacity-60")}
+                                  className="flex-1 flex items-center justify-center bg-white dark:bg-[#182229] group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors cursor-pointer"
                                 >
-                                  {doc.iconLink ? <img src={doc.iconLink} alt="" className="w-5 h-5 flex-shrink-0" /> : <File size={16} className="text-muted-foreground flex-shrink-0" />}
-                                  <span className="text-[13px] font-medium text-foreground flex-1 truncate">{doc.name}</span>
-                                  {isMapped && <span className="text-[11px] font-bold text-[#1099A1] px-2 py-0.5 bg-[#1099A1]/10 rounded-full">Assigned</span>}
-                                  <ExternalLink size={14} className="text-muted-foreground opacity-50" />
+                                  {doc.iconLink ? (
+                                    <img src={doc.iconLink.replace('16', '64')} alt="icon" className="w-12 h-12 opacity-90 group-hover:scale-110 transition-transform" />
+                                  ) : (
+                                    <div className="text-muted-foreground group-hover:scale-110 transition-transform">
+                                      {doc.mimeType?.includes('pdf') ? <FileText size={48} className="text-red-500" strokeWidth={1} /> :
+                                        doc.mimeType?.includes('spreadsheet') ? <FileSpreadsheet size={48} className="text-green-600" strokeWidth={1} /> :
+                                          doc.mimeType?.includes('document') ? <FileText size={48} className="text-blue-600" strokeWidth={1} /> :
+                                            doc.mimeType?.includes('image') ? <ImageIcon size={48} className="text-purple-500" strokeWidth={1} /> :
+                                              <File size={48} strokeWidth={1} />}
+                                    </div>
+                                  )}
                                 </a>
-                              );
-                            })}
-                          </div>
-                        )
+                                <div className="h-12 border-t border-[#e9edef] dark:border-[#2a3942] px-3 flex items-center bg-[#f8f9fa] dark:bg-[#202c33]">
+                                  <div className="flex items-center gap-2 w-full">
+                                    {doc.iconLink ? (
+                                      <img src={doc.iconLink} alt="" className="w-4 h-4 flex-shrink-0" />
+                                    ) : (
+                                      <File size={14} className="text-muted-foreground flex-shrink-0" />
+                                    )}
+                                    <span className="text-[12px] font-semibold text-[#3c4043] dark:text-[#e8eaed] truncate" title={doc.name}>
+                                      {doc.name}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </>
                   )}

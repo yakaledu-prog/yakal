@@ -1,30 +1,44 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { Search, Loader2, Users, CalendarDays, Clock } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
 import { Button } from "@/components/ui/Button";
+import { useQuery } from "@tanstack/react-query";
+import { getCollegeProfile } from "@/services/collegeService";
+import { supabase } from "@/lib/supabase";
 
-// Mock children data
-const MOCK_CHILDREN = [
+// Mock children data (we'll hydrate the actual ID for Amen Worku dynamically)
+const INITIAL_MOCK_CHILDREN = [
   { id: "c1", name: "Brooklyn Student", avatar: "", grade: "10th Grade", sessions: 4, active_services: ['tutoring'] },
-  { id: "c2", name: "Austin Student", avatar: "", grade: "8th Grade", sessions: 2, active_services: ['tutoring', 'admissions'] }
+  { id: "usr_student_123", name: "Amen Worku", avatar: "", grade: "12th Grade", sessions: 2, active_services: ['tutoring', 'admissions'] }
 ];
 
 export function ParentChildren() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [childrenData, setChildrenData] = useState(INITIAL_MOCK_CHILDREN);
 
-  const activeId = id ?? MOCK_CHILDREN[0]?.id;
+  useEffect(() => {
+    supabase.from('profiles').select('id').eq('email', 'student@yakal.com').maybeSingle().then(({ data }: { data: any }) => {
+      if (data?.id) {
+        setChildrenData(prev => prev.map(c =>
+          c.name === "Amen Worku" ? { ...c, id: data.id } : c
+        ));
+      }
+    });
+  }, []);
+
+  const activeId = id ?? childrenData[1]?.id ?? childrenData[0]?.id;
 
   const filtered = useMemo(
-    () => MOCK_CHILDREN.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
-    [query]
+    () => childrenData.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
+    [query, childrenData]
   );
 
-  const activeChild = MOCK_CHILDREN.find(c => c.id === activeId);
+  const activeChild = childrenData.find(c => c.id === activeId);
 
   return (
     <PageWrapper className="!p-0">
@@ -82,13 +96,22 @@ export function ParentChildren() {
   );
 }
 
-import { Lock, FileText, CheckCircle2, Circle } from "lucide-react";
+import { Lock, FileText, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
 
 function ChildDetailView({ child }: { child: any }) {
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "applications">("overview");
 
   const hasAdmissions = child.active_services?.includes('admissions');
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["college-profile", child.id],
+    queryFn: () => getCollegeProfile(child.id),
+    enabled: activeTab === 'applications' && hasAdmissions
+  });
+
+  const schools = profile?.schools || [];
+  const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
 
   return (
     <div className={cn("flex flex-col h-full", activeTab !== 'messages' && "pb-10")}>
@@ -169,29 +192,85 @@ function ChildDetailView({ child }: { child: any }) {
                   Manage Services
                 </Link>
               </div>
+            ) : isLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            ) : schools.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <p className="text-[14px]">No schools added yet.</p>
+              </div>
             ) : (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-[#182329] p-6 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FileText className="text-[#1099A1]" />
-                    <h4 className="font-bold">Stanford University</h4>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> Common App Essay</div>
-                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> Transcript Request</div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground"><Circle size={16} /> Supplemental Essay 1</div>
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-[#182329] p-6 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FileText className="text-[#1099A1]" />
-                    <h4 className="font-bold">UC Berkeley</h4>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-emerald-600"><CheckCircle2 size={16} /> PIQ 1 & 2</div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground"><Circle size={16} /> PIQ 3 & 4</div>
-                  </div>
-                </div>
+              <div className="flex flex-col gap-6">
+                {schools.map((s: any) => {
+                  const reqs = s.requirements || [];
+                  let schoolReqs: string[] = [];
+                  if (s.notes && s.notes.startsWith("[")) {
+                    try { schoolReqs = JSON.parse(s.notes); } catch (e) { }
+                  } else {
+                    schoolReqs = standardReqs.filter(r => {
+                      if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
+                      if (s.school_name.includes("Maryland")) return false;
+                      if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
+                      return false;
+                    });
+                  }
+
+                  const mockDoneCount = schoolReqs.length;
+                  const currentStatus = s.status || "applying";
+
+                  return (
+                    <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <h3 className="font-bold text-[18px] text-[#111] dark:text-white leading-tight">{s.school_name}</h3>
+                          <span className="text-[14px] text-[#8696a0] font-medium">EA • {s.deadline ? s.deadline : "2026-11-01"}</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 self-end md:self-auto">
+                          <span className="text-[14px] font-bold text-[#54656f]">{mockDoneCount}/{Math.max(reqs.length, 8)}</span>
+
+                          <div className="relative">
+                            <div
+                              className={cn(
+                                "bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-full px-3 py-1.5 text-[13px] font-semibold flex items-center gap-1.5 cursor-default",
+                                currentStatus === "accepted" ? "text-[#4FA86A]" :
+                                  currentStatus === "waitlisted" ? "text-[#CAA25F]" :
+                                    currentStatus === "denied" ? "text-[#CA5F5F]" :
+                                      currentStatus === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
+                              )}
+                            >
+                              {currentStatus === "accepted" ? "Accepted" :
+                                currentStatus === "waitlisted" ? "Waitlisted" :
+                                  currentStatus === "denied" ? "Denied" :
+                                    currentStatus === "enrolled" ? "Enrolled" :
+                                      currentStatus === "considering" ? "Considering" :
+                                        currentStatus === "applying" ? "Applying" :
+                                          currentStatus === "submitted" ? "Submitted" :
+                                            "Status..."}
+                              {/* <ChevronDown size={14} className="opacity-50 ml-1" /> */}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2">
+                        {standardReqs.map((req, i) => {
+                          const isDone = schoolReqs.includes(req);
+                          return isDone ? (
+                            // <div key={i} className="bg-[#1099A1] text-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-sm cursor-default">
+                            <div key={i} className="text-[#1099A1] border bg-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-none cursor-default">
+                              <Check size={14} strokeWidth={3} /> {req}
+                            </div>
+                          ) : (
+                            // <div key={i} className="bg-[#f8f9fa] dark:bg-[#202c33] text-[#8696a0] border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] cursor-default">
+                            <div key={i} className="text-[#202c33] dark:bg-[#202c33] bg-[#8696a0]/0 border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] cursor-default">
+                              {req}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
