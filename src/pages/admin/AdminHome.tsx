@@ -2,11 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { AdminHeader } from "./AdminHeader";
+import { useAuth } from "@/contexts/AuthContext";
 import { getAdminDashboard, getPendingApprovals, approveUser, rejectUser } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { dicebearUrl } from "@/utils/avatar";
-import { Loader2, Check, X, ChevronRight, Users, GraduationCap, BookOpen, Wallet } from "lucide-react";
+import {
+  Loader2, Check, X, ChevronRight, Users, GraduationCap, BookOpen, Wallet,
+  Library, CreditCard, Mail, UserCheck,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 
 const ROLE_META: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -20,6 +23,8 @@ const ROLE_META: Record<string, { label: string; icon: React.ReactNode }> = {
 export function AdminHome() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { profile } = useAuth();
+  const firstName = profile?.full_name?.split(" ")[0] || "Admin";
 
   const { data: dash, isLoading } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getAdminDashboard });
   const { data: pending = [] } = useQuery({ queryKey: ["admin-pending"], queryFn: getPendingApprovals });
@@ -32,29 +37,58 @@ export function AdminHome() {
     qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
   }
 
+  const pendingCount = dash?.pendingApprovals ?? pending.length;
+
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        <AdminHeader
-          stats={[
-            { label: "Users", value: dash?.totalUsers ?? "-" },
-            { label: "Pending", value: dash?.pendingApprovals ?? "-" },
-            { label: "Sessions", value: dash?.totalSessions ?? "-" },
-            { label: "Revenue", value: dash ? money(dash.revenueCents) : "-" },
-            { label: "Outstanding", value: dash ? money(dash.outstandingCents) : "-" },
-          ]}
-        />
+        {/* Welcome banner */}
+        <div className="bg-[#1099A1] text-white">
+          <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="space-y-2">
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <p className="text-white/80 text-[15px]">
+                  {pendingCount > 0
+                    ? `${pendingCount} application${pendingCount > 1 ? "s" : ""} waiting for your review.`
+                    : "Everything is running smoothly. No approvals pending."}
+                </p>
+              </div>
 
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid lg:grid-cols-3 gap-6">
+              <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
+                <ToolbarButton icon={<Users size={18} />} label="Users" onClick={() => navigate("/admin/users")} />
+                <ToolbarButton icon={<Library size={18} />} label="Courses" onClick={() => navigate("/admin/courses")} />
+                <ToolbarButton icon={<CreditCard size={18} />} label="Billing" onClick={() => navigate("/admin/billing")} />
+                <div className="w-px h-6 bg-white/20 mx-2" />
+                <ToolbarButton icon={<Mail size={18} />} label="Contact" onClick={() => navigate("/admin/contact")} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6 border-t border-white/20">
+              <IntegratedStat label="Users" value={dash?.totalUsers ?? "-"} onClick={() => navigate("/admin/users")} />
+              <IntegratedStat label="Pending" value={pendingCount} alert={pendingCount > 0} />
+              <IntegratedStat label="Sessions" value={dash?.totalSessions ?? "-"} />
+              <IntegratedStat label="Revenue" value={dash ? money(dash.revenueCents) : "-"} onClick={() => navigate("/admin/billing")} />
+              <IntegratedStat label="Outstanding" value={dash ? money(dash.outstandingCents) : "-"} onClick={() => navigate("/admin/billing")} />
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
           {/* Pending approvals */}
-          <div className="lg:col-span-2">
-            <h2 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Pending approvals</h2>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+                <UserCheck size={20} className="text-[#1099A1]" /> Pending approvals
+              </h2>
+              <button onClick={() => navigate("/admin/users?role=tutor")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
+            </div>
+
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#1099A1]" /></div>
             ) : pending.length === 0 ? (
-              <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-8 text-center text-[14px] text-muted-foreground">
-                No tutors or counselors awaiting approval.
-              </div>
+              <p className="text-muted-foreground text-[14px] py-4">No tutors or counselors awaiting approval.</p>
             ) : (
               <div className="space-y-2.5">
                 {pending.map((u) => (
@@ -77,8 +111,12 @@ export function AdminHome() {
           </div>
 
           {/* Users by role */}
-          <div>
-            <h2 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Users by role</h2>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+                <Users size={20} className="text-[#1099A1]" /> Users by role
+              </h2>
+            </div>
             <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
               {Object.entries(ROLE_META).map(([role, meta]) => (
                 <button
@@ -99,5 +137,22 @@ export function AdminHome() {
         </div>
       </div>
     </PageWrapper>
+  );
+}
+
+function ToolbarButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} title={label} className="p-2 rounded-md text-white/90 hover:bg-white/15 hover:text-white transition-colors">
+      {icon}
+    </button>
+  );
+}
+
+function IntegratedStat({ label, value, alert, onClick }: { label: string; value: string | number; alert?: boolean; onClick?: () => void }) {
+  return (
+    <div className={cn("flex flex-col", onClick && "cursor-pointer hover:opacity-80 transition-opacity")} onClick={onClick}>
+      <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">{label}</p>
+      <p className={cn("text-3xl font-bold", alert && "text-[#FFE08A]")}>{value}</p>
+    </div>
   );
 }
