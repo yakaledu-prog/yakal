@@ -11,7 +11,7 @@ const steps = [
 
 export default function About() {
   return (
-    <div id="about" className="w-full flex flex-col gap-[80px] md:gap-[160px] py-[60px] md:py-[100px] items-center bg-[#fafafa]">
+    <div id="about" className="w-full flex flex-col gap-[40px] md:gap-[60px] pt-[60px] md:pt-[100px] pb-[20px] md:pb-[40px] items-center bg-[#fafafa]">
       
 
       {/* 1. About Yakal (Side-by-side layout) */}

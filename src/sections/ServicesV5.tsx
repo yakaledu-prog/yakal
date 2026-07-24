@@ -52,10 +52,10 @@ const services = [
 
 export default function ServicesV5() {
   return (
-    <section id="services" className="w-full bg-white py-[60px] md:py-[100px]">
+    <section id="services" className="w-full bg-white pt-[20px] md:pt-[40px] pb-[20px] md:pb-[40px]">
       <div className="max-w-[1440px] mx-auto px-[24px] md:px-[73px]">
         {/* Header */}
-        <Reveal className="mb-[60px] md:mb-[100px] text-center">
+        <Reveal className="mb-[40px] md:mb-[60px] text-center">
           <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
             What We Offer
           </p>
