@@ -16,17 +16,20 @@ interface CatalogCourse {
   title: string;
   thumbnail: string;
   price: string;
+  coursePrice: string;
   students: number;
   tutorsCount: number;
+  rating: number;
+  reviewers: number;
 }
 
 const baseCourses = [
-  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", students: 1204, tutorsCount: 12 },
-  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", students: 850, tutorsCount: 8 },
-  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", students: 3400, tutorsCount: 15 },
-  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", students: 5600, tutorsCount: 22 },
-  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", students: 430, tutorsCount: 5 },
-  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", students: 2100, tutorsCount: 10 },
+  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", coursePrice: "$199.96", students: 1204, tutorsCount: 12, rating: 4.8, reviewers: 320 },
+  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", coursePrice: "$249.00", students: 850, tutorsCount: 8, rating: 4.7, reviewers: 210 },
+  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", coursePrice: "$149.50", students: 3400, tutorsCount: 15, rating: 4.9, reviewers: 1024 },
+  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", coursePrice: "$199.00", students: 5600, tutorsCount: 22, rating: 4.6, reviewers: 450 },
+  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", coursePrice: "$399.00", students: 430, tutorsCount: 5, rating: 5.0, reviewers: 89 },
+  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", coursePrice: "$99.00", students: 2100, tutorsCount: 10, rating: 4.8, reviewers: 530 },
 ];
 
 export function ParentCourses() {
@@ -139,12 +142,29 @@ export function ParentCourses() {
 
                 {/* Content */}
                 <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-[16px] font-bold text-[#111] dark:text-white leading-tight mb-4 group-hover:text-primary transition-colors line-clamp-2">
-                    {course.title}
-                  </h3>
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-[17px] font-bold text-[#111] dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-2">
+                      {course.title}
+                    </h3>
+                    <div className="text-right shrink-0 flex flex-col items-end">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[18px] font-bold text-[#111] dark:text-white leading-none">{course.coursePrice}</span>
+                        <span className="text-[11px] text-[#54656f] dark:text-[#aebac1]">/course</span>
+                      </div>
+                      <div className="text-[11px] text-[#54656f] dark:text-[#aebac1] mt-0.5">
+                        or from <span className="font-medium text-[#111] dark:text-white">{course.price}</span>/hr
+                      </div>
+                    </div>
+                  </div>
 
-                  <div className="w-full flex items-center justify-between text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 mt-auto">
-                    <span><strong className="text-[#111] dark:text-[#e9edef] text-[15px]">{course.price}</strong> / hr</span>
+                  <div className="flex items-center gap-3 text-[13px] text-[#54656f] dark:text-[#aebac1] mb-5 mt-auto">
+                    <span className="flex items-center gap-1">
+                      <span className="text-yellow-500 flex items-center">
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/></svg>
+                      </span>
+                      <strong className="text-[#111] dark:text-[#e9edef] font-bold">{course.rating}</strong>
+                      <span>({course.reviewers})</span>
+                    </span>
                     <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
                     <span>{course.students.toLocaleString()} Students</span>
                   </div>
