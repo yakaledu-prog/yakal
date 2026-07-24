@@ -58,6 +58,13 @@ import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetai
 import { CounselorMessages } from "../pages/counselor/CounselorMessages";
 import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
 import { CounselorProfile } from "../pages/counselor/CounselorProfile";
+import { AdminLayout } from "../pages/admin/AdminLayout";
+import { AdminHome } from "../pages/admin/AdminHome";
+import { AdminUsers } from "../pages/admin/AdminUsers";
+import { AdminCourses } from "../pages/admin/AdminCourses";
+import { AdminBilling } from "../pages/admin/AdminBilling";
+import { AdminContact } from "../pages/admin/AdminContact";
+import { AdminProfile } from "../pages/admin/AdminProfile";
 import { TutorProfile } from "../pages/tutor/TutorProfile";
 
 import { ParentLayout } from "../pages/parent/ParentLayout";
@@ -187,8 +194,18 @@ const router = createBrowserRouter([
         element: <PendingApprovalPage />,
       },
       {
-        path: "admin/*",
-        element: <div>Admin Dashboard (Placeholder)</div>,
+        path: "admin",
+        element: <AdminLayout />,
+        children: [
+          { path: "", element: <AdminHome /> },
+          { path: "users", element: <AdminUsers /> },
+          { path: "courses", element: <AdminCourses /> },
+          { path: "billing", element: <AdminBilling /> },
+          { path: "contact", element: <AdminContact /> },
+          { path: "profile", element: <AdminProfile /> },
+          { path: "settings", element: <SettingsPage /> },
+          { path: "*", element: <NotFoundPage /> },
+        ]
       },
       {
         path: "counselor",
