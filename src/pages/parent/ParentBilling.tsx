@@ -6,7 +6,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { CreditCard, ExternalLink, Clock, CheckCircle2, Loader2, ShieldCheck, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInvoices, summarize, startCheckout, openCustomerPortal, money, type Invoice } from "@/services/billingService";
+import { getInvoices, summarize, startCheckout, confirmCheckout, openCustomerPortal, money, type Invoice } from "@/services/billingService";
 
 function fmtDate(d?: string | null) {
   if (!d) return "";
@@ -29,12 +29,18 @@ export function ParentBilling() {
   const paid = invoices.filter((i) => i.status === "paid");
   const summary = summarize(invoices);
 
-  // Handle the return from Stripe Checkout.
+  // Handle the return from Stripe Checkout. We confirm the session directly
+  // (works without the webhook); the webhook remains the production backstop.
   useEffect(() => {
     if (searchParams.get("paid") === "1") {
-      toast.success("Payment received — thank you!");
-      qc.invalidateQueries({ queryKey: ["invoices", user?.id] });
+      const sessionId = searchParams.get("session_id");
+      (async () => {
+        if (sessionId) await confirmCheckout(sessionId);
+        toast.success("Payment received — thank you!");
+        qc.invalidateQueries({ queryKey: ["invoices", user?.id] });
+      })();
       searchParams.delete("paid");
+      searchParams.delete("session_id");
       setSearchParams(searchParams, { replace: true });
     } else if (searchParams.get("canceled") === "1") {
       toast("Checkout canceled — no charge was made.");

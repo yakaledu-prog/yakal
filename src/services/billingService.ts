@@ -72,6 +72,14 @@ export async function startCheckout(invoiceIds: string[]): Promise<{ error?: str
   return {};
 }
 
+// Confirm a returned Checkout Session (marks invoices paid without needing the
+// webhook — used on the success redirect so local testing works out of the box).
+export async function confirmCheckout(sessionId: string): Promise<{ status?: string; error?: string }> {
+  const { error, ...rest } = await authedPost("/api/stripe-confirm", { sessionId });
+  if (error) return { error };
+  return rest as { status?: string };
+}
+
 // Open the Stripe Customer Portal (manage cards / receipts).
 export async function openCustomerPortal(): Promise<{ error?: string }> {
   const { url, error } = await authedPost("/api/stripe-portal", {});
