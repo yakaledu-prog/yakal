@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, Plus, CheckCircle2, MessageCircle, Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Clock, Users, PlayCircle, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, Send, GraduationCap, Briefcase, Languages } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
+import 'react-flagpack/dist/style.css';
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
 import { bookAndPay } from "@/services/billingService";
 import { toast } from "sonner";
-import { CourseOutlineBackup } from "../../untracked/CourseOutlineBackup";
-
-// Mock data
+import Flag from 'react-flagpack';
+import 'react-flagpack/dist/style.css';
 const courseData = {
   id: "CAT-01",
   title: "Algebra Fundamentals",
@@ -34,7 +34,7 @@ const MOCK_TUTORS = [
     id: "t1",
     name: "Avery M.",
     avatar: "https://i.pravatar.cc/150?u=avery",
-    country: "🇺🇸",
+    country: "US",
     headline: "Senior Mathematics Instructor with 10+ years of experience.",
     bio: "Learning with Avery is truly amazing. You feel comfortable from day one. Every lesson feels relaxed, but also productive and engaging at the same time. I specialize in helping students overcome their math anxiety.",
     price: "$49.99",
@@ -55,7 +55,7 @@ const MOCK_TUTORS = [
     id: "t2",
     name: "David K.",
     avatar: "https://i.pravatar.cc/150?u=david",
-    country: "🇬🇧",
+    country: "GB",
     headline: "Math enthusiast and patient tutor for all levels.",
     bio: "I love making math simple. I break down complex algebraic problems into easy steps.",
     price: "$35.00",
@@ -74,7 +74,7 @@ const MOCK_TUTORS = [
     id: "t3",
     name: "Sarah L.",
     avatar: "https://i.pravatar.cc/150?u=sarah",
-    country: "🇨🇦",
+    country: "CA",
     headline: "Former high school teacher with a passion for Algebra.",
     bio: "With over 15 years in the classroom, I know exactly where students get stuck and how to help them push through.",
     price: "$55.00",
@@ -91,7 +91,7 @@ const MOCK_TUTORS = [
   }
 ];
 
-const TABS = ["Availability", "Resume", "Reviews"];
+const TABS = ["Availability", "Resume", "Reviews", "Messages"];
 
 export function ParentCourseCatalogDetail() {
   useParams();
@@ -108,7 +108,8 @@ export function ParentCourseCatalogDetail() {
   const [selectedTimezone, setSelectedTimezone] = useState("Local Time");
   const [isBooking, setIsBooking] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [prefilledMessage, setPrefilledMessage] = useState("");
+  const [favoriteTutors, setFavoriteTutors] = useState<Record<string, boolean>>({});
 
   const course = courseData;
 
@@ -124,7 +125,7 @@ export function ParentCourseCatalogDetail() {
     const d = new Date();
     d.setDate(d.getDate() + (offsetWeeks * 7));
     const day = d.getDay();
-    const diff = d.getDate() - day; 
+    const diff = d.getDate() - day;
     const sunday = new Date(d.setDate(diff));
 
     return Array.from({ length: 7 }).map((_, i) => {
@@ -137,10 +138,10 @@ export function ParentCourseCatalogDetail() {
   const weekDays = getWeekDays(currentWeekOffset);
   const hours = Array.from({ length: 15 }).map((_, i) => i + 7);
 
-  const tzOffset = selectedTimezone === "Local Time" ? 0 
-    : selectedTimezone === "US/Eastern" ? -4 
-    : selectedTimezone === "Africa/Addis_Ababa" ? 3 
-    : 1;
+  const tzOffset = selectedTimezone === "Local Time" ? 0
+    : selectedTimezone === "US/Eastern" ? -4
+      : selectedTimezone === "Africa/Addis_Ababa" ? 3
+        : 1;
 
   const formatHour = (hour: number, offset: number = 0) => {
     let h = hour + offset;
@@ -161,7 +162,7 @@ export function ParentCourseCatalogDetail() {
 
   const getModeClasses = (mode: number, isSelected: boolean) => {
     if (isSelected) return "bg-[#1099A1] text-white border border-[#1099A1]";
-    if (mode === 1) return "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/40";
+    if (mode === 1) return "bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/50 hover:bg-cyan-100 dark:hover:bg-cyan-900/40";
     if (mode === 2) return "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 hover:bg-orange-100 dark:hover:bg-orange-900/40";
     if (mode === 3) return "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-900/40";
     return "";
@@ -186,7 +187,7 @@ export function ParentCourseCatalogDetail() {
       const amountCents = Math.round(unit * 100 * selectedSlots.length);
       const label = `${course.title} with ${selectedTutor?.name} (${selectedSlots.length} session${selectedSlots.length > 1 ? "s" : ""})`;
 
-      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring", tutorId: availability.tutor_id ?? "" });
+      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring", tutorId: selectedTutor?.id ?? "" });
       if (error) throw new Error(error);
     } catch (error: any) {
       console.error(error);
@@ -196,47 +197,55 @@ export function ParentCourseCatalogDetail() {
   };
 
   return (
-    <PageWrapper>
-      <div className="mx-auto w-full max-w-[1200px] p-4 md:p-8 dark:bg-[#111b21]">
+    <PageWrapper className="!p-0">
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
 
         {/* Course Overview Header */}
-        <div className="mb-10 bg-white dark:bg-[#182329] rounded-2xl p-6 md:p-8 border border-[#e9edef] dark:border-[#2a3942] shadow-sm flex flex-col md:flex-row gap-8">
-          <div className="flex-1 space-y-4">
-            <h1 className="text-[32px] md:text-[40px] font-bold text-[#111] dark:text-white leading-tight">
-              {course.title}
-            </h1>
-            <p className="text-[16px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
-              {course.description}
-            </p>
+        {!selectedTutorId && (
+          <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+            <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+              <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+              <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+              <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+              <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+              <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+            </svg>
 
-            <div className="flex items-center gap-6 text-[14px]">
-              <div className="flex items-center gap-1.5 text-yellow-500 font-bold">
-                <span>{course.rating}</span>
-                <Star size={16} fill="currentColor" />
-                <span className="text-[#111] dark:text-white font-medium underline">({course.reviews} reviews)</span>
-              </div>
-              <div className="flex items-center gap-2 text-[#54656f] dark:text-[#aebac1]">
-                <Users size={16} />
-                <span>{course.students} students enrolled</span>
-              </div>
-            </div>
-            
-            <div className="pt-4 border-t border-[#e9edef] dark:border-[#2a3942] mt-4">
-              <h3 className="font-bold text-[#111] dark:text-white mb-4">Course Outline (Backup preview)</h3>
-              <CourseOutlineBackup course={course} />
-            </div>
-          </div>
-          
-          <div className="w-full md:w-[320px] shrink-0">
-             <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm" onClick={() => setIsVideoOpen(true)}>
-                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group cursor-pointer hover:bg-black/40 transition-colors">
-                  <PlayCircle size={48} className="text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+            <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div className="space-y-4 max-w-3xl">
+                <Link to="/parent/courses" className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-2 font-medium text-[14px]">
+                  <ChevronLeft size={16} /> Back to Courses
+                </Link>
+                <h1 className="text-3xl md:text-[40px] font-bold tracking-tight leading-tight">
+                  {course.title}
+                </h1>
+                <p className="text-white/80 text-[16px] leading-relaxed max-w-2xl">
+                  {course.description}
+                </p>
+
+                <div className="flex items-center gap-6 text-[14px]">
+                  <div className="flex items-center gap-1.5 text-yellow-300 font-bold">
+                    <span>{course.rating}</span>
+                    <Star size={16} fill="currentColor" />
+                    <span className="text-white font-medium underline">({course.reviews} reviews)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/80">
+                    <Users size={16} />
+                    <span>{course.students} students enrolled</span>
+                  </div>
                 </div>
               </div>
+              
+              {/* Pricing in header */}
+              <div className="flex flex-col md:items-end shrink-0 mb-2 md:mb-0">
+                 <div className="text-[28px] font-bold">$199.96<span className="text-[16px] font-normal text-white/80">/course</span></div>
+                 <div className="text-[14px] text-white/70">Or starting at $49.99/hr with tutors</div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
+        <div className="mx-auto w-full max-w-[1440px] px-6 md:px-10 mt-8">
         {/* Dynamic Section: Gallery OR Master-Detail */}
         {!selectedTutorId ? (
           /* GALLERY VIEW */
@@ -245,20 +254,34 @@ export function ParentCourseCatalogDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {MOCK_TUTORS.map(tutor => (
                 <div key={tutor.id} className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 shadow-sm flex flex-col hover:border-[#1099A1] transition-colors cursor-pointer" onClick={() => setSelectedTutorId(tutor.id)}>
-                  <div className="flex items-start gap-4 mb-4">
-                    <img src={tutor.avatar} alt={tutor.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                    <div>
-                      <h3 className="text-lg font-bold text-[#111] dark:text-white flex items-center gap-2">
-                        {tutor.name} <span>{tutor.country}</span>
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-[14px] text-yellow-500 font-bold mb-1">
-                        <Star size={14} fill="currentColor" /> {tutor.rating} 
-                        <span className="text-[#54656f] font-normal underline ml-1">({tutor.reviews})</span>
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex items-start gap-4">
+                      <img src={tutor.avatar} alt={tutor.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                      <div>
+                        <h3 className="text-lg font-bold text-[#111] dark:text-white flex items-center gap-2 mb-1">
+                          {tutor.name}
+                          <div className="w-5 h-5 flex items-center overflow-hidden rounded-full border border-black/10">
+                            <Flag code={tutor.country} size="M" />
+                          </div>
+                        </h3>
+                        <div className="flex items-center gap-1.5 text-[14px] text-yellow-500 font-bold mb-1">
+                          <Star size={14} fill="currentColor" /> {tutor.rating}
+                          <span className="text-[#54656f] font-normal underline ml-1">({tutor.reviews})</span>
+                        </div>
+                        <p className="text-[#54656f] text-[13px]">{tutor.students} active students</p>
                       </div>
-                      <p className="text-[#54656f] text-[13px]">{tutor.students} active students</p>
                     </div>
+                    <button 
+                      className={cn("transition-colors", favoriteTutors[tutor.id] ? "text-secondary" : "text-[#aebac1] hover:text-secondary")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFavoriteTutors(prev => ({...prev, [tutor.id]: !prev[tutor.id]}));
+                      }}
+                    >
+                      <Heart size={20} className={favoriteTutors[tutor.id] ? "fill-secondary" : ""} />
+                    </button>
                   </div>
-                  
+
                   <div className="text-[14px] font-medium text-[#111] dark:text-white mb-2 line-clamp-1">
                     {tutor.headline}
                   </div>
@@ -266,303 +289,436 @@ export function ParentCourseCatalogDetail() {
                     {tutor.bio}
                   </div>
 
-                  <div className="mt-auto flex items-center justify-between pt-4 border-t border-[#e9edef] dark:border-[#2a3942]">
-                     <div className="font-bold text-[18px] text-[#111] dark:text-white">{tutor.price}<span className="text-[13px] font-normal text-[#54656f]">/hr</span></div>
-                     <Button className="bg-[#1099A1] hover:bg-[#0d848b] text-white">View Profile</Button>
+                  <div className="mt-auto flex items-center justify-end pt-4 border-t border-[#e9edef] dark:border-[#2a3942]">
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="ghost" 
+                        className="!bg-[#D9F99D] hover:!bg-secondary border-transparent !text-[#111] hover:!text-secondary-foreground gap-2 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTutorId(tutor.id);
+                          setTimeout(() => {
+                            setActiveTab("Messages");
+                            setPrefilledMessage(`Hi ${tutor.name.split(' ')[0]},\n\nI'm interested in booking a lesson for my child. Could we discuss availability?`);
+                          }, 10);
+                        }}
+                      >
+                        <MessageCircle size={16} /> Send Message
+                      </Button>
+                      <Button className="bg-[#1099A1] hover:bg-[#0d848b] text-white">View Profile</Button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          /* MASTER-DETAIL VIEW */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Sidebar: Tutor List */}
-            <div className="lg:col-span-1 border-r border-[#e9edef] dark:border-[#2a3942] pr-6">
-               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-bold text-[#111] dark:text-white">Available Tutors</h2>
-                 <button onClick={() => setSelectedTutorId(null)} className="text-[13px] text-[#1099A1] hover:underline">Back to gallery</button>
-               </div>
-               <div className="space-y-3">
-                 {MOCK_TUTORS.map(tutor => (
-                   <div 
-                     key={tutor.id} 
-                     onClick={() => setSelectedTutorId(tutor.id)}
-                     className={cn(
-                       "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border",
-                       selectedTutorId === tutor.id ? "bg-[#e2f3f4] dark:bg-[#1099A1]/10 border-[#1099A1]" : "bg-white dark:bg-[#182329] border-transparent hover:border-[#e9edef] dark:hover:border-[#2a3942]"
-                     )}
-                   >
-                     <img src={tutor.avatar} alt={tutor.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                     <div className="flex-1 overflow-hidden">
-                       <h4 className="text-[14px] font-bold text-[#111] dark:text-white truncate">{tutor.name}</h4>
-                       <div className="flex items-center gap-1 text-[12px] text-yellow-500 font-bold">
-                          <Star size={12} fill="currentColor" /> {tutor.rating} <span className="text-[#54656f] font-normal truncate">({tutor.reviews}) • {tutor.price}/hr</span>
-                       </div>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-            </div>
+          /* SELECTED TUTOR VIEW */
+          <div className="w-full">
+            <button
+              onClick={() => setSelectedTutorId(null)}
+              className="flex items-center gap-2 text-[14px] text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white font-medium mb-6 transition-colors"
+            >
+              <ChevronLeft size={16} /> Back to gallery
+            </button>
+            <div className="flex flex-col xl:flex-row gap-8">
 
-            {/* Right Pane: Selected Tutor Details */}
-            <div className="lg:col-span-2 space-y-8">
-               
-               {/* Tutor Header */}
-               <div className="flex flex-col sm:flex-row gap-6">
-                 <img src={selectedTutor?.avatar} alt={selectedTutor?.name} className="w-24 h-24 rounded-2xl object-cover shadow-sm" />
-                 <div>
-                   <h2 className="text-2xl font-bold text-[#111] dark:text-white flex items-center gap-2 mb-1">
-                     {selectedTutor?.name} <span>{selectedTutor?.country}</span>
-                   </h2>
-                   <div className="text-[16px] font-medium text-[#111] dark:text-white mb-2">{selectedTutor?.headline}</div>
-                   <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-4">
-                     {selectedTutor?.bio}
-                   </p>
-                   <div className="flex flex-wrap gap-2 mb-4">
+              {/* Left side of right pane (Tutor Header + Tabs) */}
+              <div className="flex-1 space-y-8">
+                {/* Tutor Header */}
+                <div className="flex flex-col sm:flex-row gap-6">
+                  <img src={selectedTutor?.avatar} alt={selectedTutor?.name} className="w-24 h-24 rounded-2xl object-cover shadow-sm" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-[#111] dark:text-white flex items-center gap-2 mb-1">
+                      {selectedTutor?.name}
+                      <div className="w-6 h-6 flex items-center overflow-hidden rounded-full border border-black/10 ml-1">
+                        <Flag code={selectedTutor?.country} size="M" />
+                      </div>
+                    </h2>
+                    <div className="text-[16px] font-medium text-[#111] dark:text-white mb-2">{selectedTutor?.headline}</div>
+                    <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-4">
+                      {selectedTutor?.bio}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <div className="bg-[#f0f2f5] dark:bg-[#202c33] px-3 py-1.5 rounded-lg text-[12px] font-bold flex items-center gap-1.5">
                         <Users size={14} /> {selectedTutor?.students} active students
                       </div>
-                      <div className="bg-[#f0f2f5] dark:bg-[#202c33] px-3 py-1.5 rounded-lg text-[12px] font-bold flex items-center gap-1.5">
-                        <MessageCircle size={14} /> {selectedTutor?.responseTime}
-                      </div>
-                   </div>
-                 </div>
-               </div>
-
-               {/* Tabs Header */}
-               <div className="flex items-center gap-8 border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md z-10 pt-4">
-                {TABS.map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      "pb-3 text-[16px] font-bold transition-all relative",
-                      activeTab === tab
-                        ? "text-[#111] dark:text-white"
-                        : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
-                    )}
-                  >
-                    {tab}
-                    {activeTab === tab && (
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1099A1] rounded-t-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tabs Content */}
-              <div className="pt-4 pb-12">
-                
-                {/* AVAILABILITY TAB */}
-                {activeTab === "Availability" && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex items-center justify-between">
-                       <h3 className="text-xl font-bold">Book a session with {selectedTutor?.name}</h3>
-                       <div className="text-xl font-bold text-[#1099A1]">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
                     </div>
+                  </div>
+                </div>
 
-                    {!availability ? (
-                      <div className="p-12 text-center text-[#54656f] dark:text-[#aebac1] border border-dashed rounded-xl border-[#e9edef] dark:border-[#2a3942]">
-                        <Clock className="mx-auto mb-4 opacity-50" size={32} />
-                        <p>Loading tutor availability...</p>
-                      </div>
-                    ) : (
-                      <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-x-auto bg-white dark:bg-[#182329] shadow-sm">
-                        <div className="min-w-[600px] p-4">
+                {/* Tabs Header */}
+                <div className="flex items-center gap-8 border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md z-10 pt-4">
+                  {TABS.map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={cn(
+                        "pb-3 text-[16px] font-bold transition-all relative",
+                        activeTab === tab
+                          ? "text-[#111] dark:text-white"
+                          : "text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white"
+                      )}
+                    >
+                      {tab}
+                      {activeTab === tab && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1099A1] rounded-t-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-                          {/* Week Header */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-2">
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>
-                                <ChevronLeft size={16} />
-                              </Button>
-                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
-                                <ChevronRight size={16} />
-                              </Button>
-                              <span className="text-[14px] font-bold text-[#111] dark:text-white ml-2">
-                                {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </span>
+                {/* Tabs Content */}
+                <div className="pt-4 pb-12">
+
+                  {/* AVAILABILITY TAB */}
+                  {activeTab === "Availability" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {/* <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-bold">Book a session with {selectedTutor?.name}</h3>
+                        <div className="text-xl font-bold text-[#1099A1]">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
+                      </div> */}
+
+                      {!availability ? (
+                        <div className="p-12 text-center text-[#54656f] dark:text-[#aebac1] border border-dashed rounded-xl border-[#e9edef] dark:border-[#2a3942]">
+                          <Clock className="mx-auto mb-4 opacity-50" size={32} />
+                          <p>Loading tutor availability...</p>
+                        </div>
+                      ) : (
+                        // <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-x-auto bg-white dark:bg-[#182329]">
+                        <div className="border-0 border-[#e9edef] dark:border-[#2a3942] rounded-none overflow-x-auto bg-white/0 dark:bg-[#182329]">
+                          <div className="min-w-[600px] p-4 pt-0">
+
+                            {/* Week Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-2">
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>
+                                  <ChevronLeft size={16} />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
+                                  <ChevronRight size={16} />
+                                </Button>
+                                <span className="text-[14px] font-bold text-[#111] dark:text-white ml-2">
+                                  {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3">
+                                {/* Custom Timezone Dropdown */}
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setIsTimezoneOpen(!isTimezoneOpen)}
+                                    className="flex items-center gap-2 text-[13px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-1.5 font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
+                                  >
+                                    {selectedTimezone} <ChevronDown size={14} className={cn("transition-transform", isTimezoneOpen && "rotate-180")} />
+                                  </button>
+                                  {isTimezoneOpen && (
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg overflow-hidden z-10 animate-in fade-in slide-in-from-top-2 duration-200">
+                                      {["Local Time", "US/Eastern", "Africa/Addis_Ababa", "Europe/London"].map(tz => (
+                                        <button
+                                          key={tz}
+                                          onClick={() => { setSelectedTimezone(tz); setIsTimezoneOpen(false); }}
+                                          className="w-full text-left px-4 py-2 text-[13px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
+                                        >
+                                          {tz}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
-                              {/* Custom Timezone Dropdown */}
-                              <div className="relative">
-                                <button
-                                  onClick={() => setIsTimezoneOpen(!isTimezoneOpen)}
-                                  className="flex items-center gap-2 text-[13px] bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-1.5 font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
-                                >
-                                  {selectedTimezone} <ChevronDown size={14} className={cn("transition-transform", isTimezoneOpen && "rotate-180")} />
-                                </button>
-                                {isTimezoneOpen && (
-                                  <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg overflow-hidden z-10 animate-in fade-in slide-in-from-top-2 duration-200">
-                                    {["Local Time", "US/Eastern", "Africa/Addis_Ababa", "Europe/London"].map(tz => (
-                                      <button
-                                        key={tz}
-                                        onClick={() => { setSelectedTimezone(tz); setIsTimezoneOpen(false); }}
-                                        className="w-full text-left px-4 py-2 text-[13px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
-                                      >
-                                        {tz}
-                                      </button>
-                                    ))}
+                            {/* Grid */}
+                            <div className="grid grid-cols-7 gap-2">
+                              {weekDays.map((day, dIndex) => (
+                                <div key={dIndex} className="text-center">
+                                  <div className="pb-3 mb-3 border-b-2 border-[#CAA25F]">
+                                    <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                                    <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {availability.disabled_days?.includes(dIndex) ? (
+                                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] py-4 bg-[#f8f9fa] dark:bg-[#111b21] rounded">Off</div>
+                                    ) : (
+                                      hours.map((hour, hIndex) => {
+                                        const mode = availability.time_grid[hIndex]?.[dIndex] || 0;
+                                        if (mode === 0) return null; // Only show available slots
+
+                                        const isSelected = selectedSlots.some(s => s.dayIndex === dIndex && s.hourIndex === hIndex);
+
+                                        return (
+                                          <button
+                                            key={hIndex}
+                                            onClick={() => toggleSlot(dIndex, hIndex, day, mode)}
+                                            className={cn(
+                                              "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
+                                              getModeClasses(mode, isSelected)
+                                            )}
+                                          >
+                                            <span>{formatHour(hour, tzOffset)}</span>
+                                          </button>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedSlots.length > 0 && (
+                        <div className="xl:hidden bg-white dark:bg-[#202c33] p-6 border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg sticky bottom-4 flex items-center justify-between">
+                          <div>
+                            <div className="text-lg font-bold">{selectedSlots.length} slot(s) selected</div>
+                            <div className="text-[#54656f]">Total: ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * selectedSlots.length).toFixed(2)}</div>
+                          </div>
+                          <Button
+                            onClick={handleBookSlot}
+                            disabled={isBooking}
+                            className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8 h-12 text-[16px] font-bold rounded-xl transition-all"
+                          >
+                            {isBooking ? "Booking..." : "Checkout"}
+                          </Button>
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+
+                  {/* RESUME TAB */}
+                  {activeTab === "Resume" && (
+                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
+                      <Button variant="outline" className="absolute -top-14 right-0 gap-2 h-10 border-[#e9edef] dark:border-[#2a3942]">
+                        <Download size={16} /> Download Resume (PDF)
+                      </Button>
+
+                      <div>
+                        <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                          <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
+                        </div>
+                        <div className="space-y-6">
+                          {selectedTutor?.certifications.map((cert: any) => (
+                            <div key={cert.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
+                              <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                                {cert.year}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <h4 className="text-[16px] font-bold text-[#111] dark:text-white">{cert.title}</h4>
+                                <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">{cert.issuer}</p>
+                                {cert.verified && (
+                                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[13px] font-bold mt-1">
+                                    <CheckCircle2 size={14} />
+                                    Certificate verified
                                   </div>
                                 )}
                               </div>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                          <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><GraduationCap size={18} /> Education</span>
+                        </div>
+                        <div className="space-y-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                            <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                              2016 - 2020
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <h4 className="text-[16px] font-bold text-[#111] dark:text-white">B.S. in Mathematics</h4>
+                              <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">University of California, Berkeley</p>
+                            </div>
                           </div>
-
-                          {/* Grid */}
-                          <div className="grid grid-cols-7 gap-2">
-                            {weekDays.map((day, dIndex) => (
-                              <div key={dIndex} className="text-center">
-                                <div className="pb-3 mb-3 border-b-2 border-[#CAA25F]">
-                                  <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                                  <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  {availability.disabled_days?.includes(dIndex) ? (
-                                    <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] py-4 bg-[#f8f9fa] dark:bg-[#111b21] rounded">Off</div>
-                                  ) : (
-                                    hours.map((hour, hIndex) => {
-                                      const mode = availability.time_grid[hIndex]?.[dIndex] || 0;
-                                      if (mode === 0) return null; // Only show available slots
-
-                                      const isSelected = selectedSlots.some(s => s.dayIndex === dIndex && s.hourIndex === hIndex);
-
-                                      return (
-                                        <button
-                                          key={hIndex}
-                                          onClick={() => toggleSlot(dIndex, hIndex, day, mode)}
-                                          className={cn(
-                                            "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
-                                            getModeClasses(mode, isSelected)
-                                          )}
-                                        >
-                                          <span>{formatHour(hour, tzOffset)}</span>
-                                        </button>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                            <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
+                              2020 - 2022
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <h4 className="text-[16px] font-bold text-[#111] dark:text-white">M.Ed. in Mathematics Education</h4>
+                              <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Stanford University</p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    )}
 
-                    {selectedSlots.length > 0 && (
-                      <div className="bg-white dark:bg-[#202c33] p-6 border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg sticky bottom-4 flex items-center justify-between">
-                         <div>
-                            <div className="text-lg font-bold">{selectedSlots.length} slot(s) selected</div>
-                            <div className="text-[#54656f]">Total: ${(parseFloat(selectedTutor?.price.replace('$', '')) * selectedSlots.length).toFixed(2)}</div>
-                         </div>
-                         <Button
-                          onClick={handleBookSlot}
-                          disabled={isBooking}
-                          className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8 h-12 text-[16px] font-bold rounded-xl transition-all"
-                        >
-                          {isBooking ? "Booking..." : "Checkout"}
-                        </Button>
-                      </div>
-                    )}
-
-                  </div>
-                )}
-
-                {/* RESUME TAB */}
-                {activeTab === "Resume" && (
-                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div>
-                      <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                        <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-block">Certifications</span>
-                      </div>
-                      <div className="space-y-6">
-                        {selectedTutor?.certifications.map((cert: any) => (
-                          <div key={cert.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      <div>
+                        <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                          <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><Briefcase size={18} /> Work Experience</span>
+                        </div>
+                        <div className="space-y-6">
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                             <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                              {cert.year}
+                              2022 - Present
                             </div>
-                            <div className="flex-1 space-y-1">
-                              <h4 className="text-[16px] font-bold text-[#111] dark:text-white">{cert.title}</h4>
-                              <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">{cert.issuer}</p>
-                              {cert.verified && (
-                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[13px] font-bold mt-1">
-                                  <CheckCircle2 size={14} />
-                                  Certificate verified
-                                </div>
-                              )}
+                            <div className="flex-1 space-y-2">
+                              <h4 className="text-[16px] font-bold text-[#111] dark:text-white">Senior Mathematics Instructor</h4>
+                              <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Yakal Learning</p>
+                              <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
+                                Conducted over 1,200 hours of 1-on-1 tutoring sessions, specializing in Algebra and Calculus. Developed custom learning plans for students with math anxiety, improving average test scores by 25%.
+                              </p>
                             </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
+                          <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><Languages size={18} /> Languages</span>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[#111] dark:text-white">English</span>
+                            <span className="text-[#54656f] dark:text-[#aebac1] text-[14px]">- Native</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[#111] dark:text-white">Spanish</span>
+                            <span className="text-[#54656f] dark:text-[#aebac1] text-[14px]">- Conversational</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* REVIEWS TAB */}
+                  {activeTab === "Reviews" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="text-[48px] font-bold text-[#111] dark:text-white">{selectedTutor?.rating}</div>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex text-yellow-500">
+                            <Star size={20} fill="currentColor" />
+                            <Star size={20} fill="currentColor" />
+                            <Star size={20} fill="currentColor" />
+                            <Star size={20} fill="currentColor" />
+                            <Star size={20} fill="currentColor" className="opacity-50" />
+                          </div>
+                          <span className="text-[#54656f] dark:text-[#aebac1] font-bold text-[14px]">Tutor Rating ({selectedTutor?.reviews})</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {selectedTutor?.reviews_data.map((review: any) => (
+                          <div key={review.id} className="border-b border-[#e9edef] dark:border-[#2a3942] pb-6 mb-6 last:border-0">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 rounded-full bg-[#1099A1] text-white flex items-center justify-center font-bold text-[16px]">
+                                {review.name.charAt(0)}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-[#111] dark:text-white text-[15px]">{review.name}</h4>
+                                <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{review.date}</p>
+                              </div>
+                            </div>
+                            <div className="flex text-yellow-500 mb-3">
+                              {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                            </div>
+                            <p className="text-[14px] text-[#111] dark:text-[#e9edef] leading-relaxed">
+                              {review.text}
+                            </p>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* REVIEWS TAB */}
-                {activeTab === "Reviews" && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex items-center gap-4">
-                      <div className="text-[48px] font-bold text-[#111] dark:text-white">{selectedTutor?.rating}</div>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex text-yellow-500">
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" />
-                          <Star size={20} fill="currentColor" className="opacity-50" />
+                  {/* MESSAGES TAB */}
+                  {activeTab === "Messages" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-[#e9edef] dark:border-[#2a3942]">
+                          <img src={selectedTutor?.avatar} alt={selectedTutor?.name} className="w-12 h-12 rounded-full object-cover" />
+                          <div>
+                            <h3 className="text-[16px] font-bold text-[#111] dark:text-white">Message {selectedTutor?.name}</h3>
+                            <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] flex items-center gap-1.5"><Clock size={12} /> {selectedTutor?.responseTime}</p>
+                          </div>
                         </div>
-                        <span className="text-[#54656f] dark:text-[#aebac1] font-bold text-[14px]">Tutor Rating ({selectedTutor?.reviews})</span>
+                        
+                        <div className="space-y-4">
+                          <textarea
+                            value={prefilledMessage}
+                            onChange={(e) => setPrefilledMessage(e.target.value)}
+                            placeholder="Type your message here..."
+                            className="w-full h-32 p-4 bg-[#f8f9fa] dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white resize-none focus:outline-none focus:border-[#1099A1] transition-colors"
+                          />
+                          <div className="flex justify-end">
+                            <Button className="bg-[#1099A1] hover:bg-[#0d848b] text-white gap-2 font-bold px-6 h-12 rounded-xl">
+                              <Send size={16} /> Send Message
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sticky Booking Card (Right side of right pane) */}
+              <div className="w-full xl:w-[320px] shrink-0">
+                <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden shadow-sm sticky top-24">
+                  {/* Video Header */}
+                  <div className="relative w-full aspect-video bg-[#111]" onClick={() => setIsVideoOpen(true)}>
+                    <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover opacity-80" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group cursor-pointer hover:bg-black/40 transition-colors">
+                      <PlayCircle size={48} className="text-white opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    {/* Stats */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-1.5">
+                        <Star size={20} fill="currentColor" className="text-yellow-500" />
+                        <span className="text-[20px] font-bold text-[#111] dark:text-white">{selectedTutor?.rating}</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[16px] font-bold text-[#111] dark:text-white">{selectedTutor?.students}</div>
+                        <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">students</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[20px] font-bold text-[#111] dark:text-white">
+                          ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
+                        </div>
+                        <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                          {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min lesson` : '60-min lesson'}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {selectedTutor?.reviews_data.map((review: any) => (
-                        <div key={review.id} className="border-b border-[#e9edef] dark:border-[#2a3942] pb-6 mb-6 last:border-0">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-[#1099A1] text-white flex items-center justify-center font-bold text-[16px]">
-                              {review.name.charAt(0)}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-[#111] dark:text-white text-[15px]">{review.name}</h4>
-                              <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{review.date}</p>
-                            </div>
-                          </div>
-                          <div className="flex text-yellow-500 mb-3">
-                            {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-                          </div>
-                          <p className="text-[14px] text-[#111] dark:text-[#e9edef] leading-relaxed">
-                            {review.text}
-                          </p>
-                        </div>
-                      ))}
+                    <Button
+                      onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
+                      disabled={isBooking}
+                      className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
+                    >
+                      {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
+                    </Button>
+
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => { setActiveTab("Messages"); setPrefilledMessage(`Hi ${selectedTutor?.name.split(' ')[0]},\n\nI'm interested in booking a lesson for my child. Could we discuss availability?`); }}
+                        className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors"
+                      >
+                        <MessageCircle size={16} /> Message
+                      </button>
+                      <button className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
+                        <Heart size={16} /> Save
+                      </button>
+                      <button className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
+                        <Upload size={16} /> Share
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
         )}
-
       </div>
-
-      {/* Video Modal */}
-      {isVideoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-4xl bg-black rounded-2xl overflow-hidden relative shadow-2xl">
-            <button onClick={() => setIsVideoOpen(false)} className="absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2">
-              <Plus className="rotate-45" size={24} />
-            </button>
-            <div className="aspect-video w-full flex items-center justify-center bg-[#111]">
-              <PlayCircle size={64} className="text-white/50" />
-              <span className="text-white ml-4 text-lg">Course Introduction Video (Mock)</span>
-            </div>
-          </div>
-        </div>
-      )}
-
+      </div>
     </PageWrapper>
   );
 }

@@ -15,7 +15,7 @@ export function CourseOutlineBackup({ course }: { course: any }) {
       <div className="flex items-center justify-between text-[14px] text-[#54656f] dark:text-[#aebac1] mb-2">
         <span>{course.syllabus.length} sections • {course.syllabus.reduce((acc: any, s: any) => acc + s.sessions, 0)} sessions</span>
         <button
-          onClick={() => setExpandedModules(expandedModules.length === course.syllabus.length ? [] : course.syllabus.map((_, i) => i))}
+          onClick={() => setExpandedModules(expandedModules.length === course.syllabus.length ? [] : course.syllabus.map((_: any, i: number) => i))}
           className="text-[#1099A1] font-bold hover:underline"
         >
           {expandedModules.length === course.syllabus.length ? "Collapse all sections" : "Expand all sections"}
