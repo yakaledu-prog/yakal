@@ -264,6 +264,7 @@ export function ChatPane({
   onExpandChat,
   isTyping = false,
   onTyping,
+  initialInputText = "",
 }: {
   activeConv: Conversation;
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
@@ -272,9 +273,17 @@ export function ChatPane({
   onExpandChat?: () => void;
   isTyping?: boolean;
   onTyping?: () => void;
+  initialInputText?: string;
 }) {
   const { user } = useAuth();
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputText] = useState(initialInputText);
+
+  useEffect(() => {
+    if (initialInputText) {
+      setInputText(initialInputText);
+    }
+  }, [initialInputText]);
+
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
