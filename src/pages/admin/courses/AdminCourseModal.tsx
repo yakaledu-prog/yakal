@@ -1,0 +1,412 @@
+import { useState, useEffect } from "react";
+import { AdminCourse, AdminUser } from "@/services/adminService";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import { toast } from "sonner";
+import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, Link2, DollarSign, RefreshCw, CheckCircle2 } from "lucide-react";
+import { cn } from "@/utils/cn";
+import { useGoogleLogin } from "@react-oauth/google";
+import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";
+
+interface AdminCourseModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialData?: AdminCourse | null;
+  onSubmit: (data: Partial<AdminCourse>) => Promise<void>;
+  isSubmitting?: boolean;
+  tutors: AdminUser[];
+}
+
+export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSubmitting, tutors }: AdminCourseModalProps) {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: "",
+    subject: "",
+    description: "",
+    price_cents: "",
+    tutor_payout_cents: "",
+    thumbnail_url: "",
+    google_classroom_url: "",
+    is_active: true,
+    tutor_ids: [] as string[],
+  });
+
+  const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
+  const [isFetchingClassroom, setIsFetchingClassroom] = useState(false);
+  const [classroomPreview, setClassroomPreview] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      if (initialData) {
+        setFormData({
+          title: initialData.title || "",
+          subject: initialData.subject || "",
+          description: initialData.description || "",
+          price_cents: initialData.price_cents ? (initialData.price_cents / 100).toString() : "",
+          tutor_payout_cents: initialData.tutor_payout_cents ? (initialData.tutor_payout_cents / 100).toString() : "",
+          thumbnail_url: initialData.thumbnail_url || "",
+          google_classroom_url: initialData.google_classroom_url || "",
+          is_active: initialData.is_active ?? true,
+          tutor_ids: initialData.tutor_ids || [],
+        });
+      } else {
+        setFormData({
+          title: "",
+          subject: "",
+          description: "",
+          price_cents: "",
+          tutor_payout_cents: "",
+          thumbnail_url: "",
+          google_classroom_url: "",
+          is_active: true,
+          tutor_ids: [],
+        });
+      }
+      setClassroomPreview(null);
+    }
+  }, [isOpen, initialData]);
+
+  const loginGoogle = useGoogleLogin({
+    flow: 'auth-code',
+    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/classroom.rosters.readonly',
+    onSuccess: async ({ code }) => {
+      try {
+        const data = await exchangeGoogleToken(code);
+        setClassroomToken(data.access_token);
+        localStorage.setItem('google_classroom_token', data.access_token);
+        toast.success("Connected to Google Classroom");
+        handleFetchClassroom(data.access_token);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to connect to Google");
+      }
+    },
+    onError: () => toast.error('Google login failed'),
+  });
+
+  const extractCourseId = (url: string) => {
+    try {
+      const match = url.match(/\/c\/([a-zA-Z0-9_]+)/);
+      return match ? match[1] : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleFetchClassroom = async (tokenToUse: string | null = classroomToken) => {
+    if (!formData.google_classroom_url) {
+      return toast.error("Please enter a Google Classroom URL first");
+    }
+    const courseId = extractCourseId(formData.google_classroom_url);
+    if (!courseId) {
+      return toast.error("Invalid Google Classroom URL format. Example: https://classroom.google.com/c/MzUx...");
+    }
+
+    if (!tokenToUse) {
+      loginGoogle();
+      return;
+    }
+
+    setIsFetchingClassroom(true);
+    try {
+      const res = await fetchCourseWork(tokenToUse, courseId);
+      setClassroomPreview(res.courseWork || []);
+      toast.success("Successfully fetched course details!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to fetch from Google Classroom. Try reconnecting.");
+      if (error.message?.includes('401')) {
+        setClassroomToken(null);
+        localStorage.removeItem('google_classroom_token');
+      }
+    } finally {
+      setIsFetchingClassroom(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.subject) {
+      toast.error("Title and subject are required");
+      return;
+    }
+
+    const price = parseFloat(formData.price_cents);
+    const payout = parseFloat(formData.tutor_payout_cents);
+
+    const patch: Partial<AdminCourse> = {
+      title: formData.title,
+      subject: formData.subject,
+      description: formData.description,
+      thumbnail_url: formData.thumbnail_url,
+      google_classroom_url: formData.google_classroom_url,
+      is_active: formData.is_active, // We default to true in form state
+      tutor_ids: formData.tutor_ids,
+      price_cents: Number.isFinite(price) && price >= 0 ? Math.round(price * 100) : null,
+      tutor_payout_cents: Number.isFinite(payout) && payout >= 0 ? Math.round(payout * 100) : null,
+    };
+
+    await onSubmit(patch);
+    onClose();
+  };
+
+  const toggleTutor = (tutorId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tutor_ids: prev.tutor_ids.includes(tutorId)
+        ? prev.tutor_ids.filter(id => id !== tutorId)
+        : [...prev.tutor_ids, tutorId]
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#111b21] w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between shrink-0">
+          <h2 className="text-xl font-bold text-[#111] dark:text-white">
+            {initialData ? "Edit Course" : "Create New Course"}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors">
+            <X size={20} className="text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Stepper Progress */}
+        <div className="bg-gray-50 dark:bg-[#182329] px-6 py-4 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between shrink-0">
+          {[
+            { num: 1, label: "Basic Info", icon: GraduationCap },
+            { num: 2, label: "Classroom", icon: Link2 },
+            { num: 3, label: "Tutors & Pricing", icon: DollarSign }
+          ].map((s, i) => (
+            <div key={s.num} className="flex items-center flex-1 last:flex-none">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-6 h-6 rounded-full flex items-center justify-center text-sm transition-colors",
+                  step >= s.num ? "bg-[#1099A1] text-white" : "bg-[#f1f1f1] dark:bg-[#202c33] text-muted-foreground border border-[#e9edef] dark:border-[#2a3942]"
+                )}>
+                  {s.num}
+                  {/* <s.icon size={16} /> */}
+                </div>
+                <span className={cn(
+                  "text-[13px] hidden md:block",
+                  step >= s.num ? "text-[#111] dark:text-white" : "text-muted-foreground"
+                )}>
+                  {s.label}
+                </span>
+              </div>
+              {i < 2 && <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942] mx-4" />}
+            </div>
+          ))}
+        </div>
+
+        {/* Body Content */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+
+          {step === 1 && (
+            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+              <div className="space-y-2">
+                <label className="text-[13px] font-bold text-[#111] dark:text-white">Course Thumbnail</label>
+                <ImageUpload
+                  value={formData.thumbnail_url}
+                  onChange={url => setFormData({ ...formData, thumbnail_url: url })}
+                  className="h-48 border-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-[#111] dark:text-white">Title *</label>
+                  <Input
+                    value={formData.title}
+                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g. Advanced Mathematics"
+                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-[#111] dark:text-white">Subject *</label>
+                  <Input
+                    value={formData.subject}
+                    onChange={e => setFormData({ ...formData, subject: e.target.value })}
+                    placeholder="e.g. Mathematics"
+                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[13px] font-bold text-[#111] dark:text-white">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                  placeholder="Describe the course..."
+                  className="w-full bg-gray-50 dark:bg-[#182329] border border-transparent rounded-lg p-4 text-[14px] outline-none focus:bg-white focus:border-[#1099A1] focus:ring-1 focus:ring-[#1099A1] resize-y transition-colors"
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+              <div className="space-y-3">
+                <label className="text-[13px] font-bold text-[#111] dark:text-white">Google Classroom URL</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    value={formData.google_classroom_url}
+                    onChange={e => setFormData({ ...formData, google_classroom_url: e.target.value })}
+                    placeholder="https://classroom.google.com/c/..."
+                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white flex-1"
+                  />
+                  <Button
+                    onClick={() => handleFetchClassroom()}
+                    disabled={isFetchingClassroom || !formData.google_classroom_url}
+                    className="shrink-0"
+                    variant={classroomPreview ? "outline" : "default"}
+                  >
+                    {isFetchingClassroom ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                    {classroomPreview ? "Refetch Details" : "Fetch Details"}
+                  </Button>
+                </div>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  Provide the direct link to the Google Classroom. Clicking "Fetch" will connect to Google Classroom and show a preview of assignments to ensure the link is correct.
+                </p>
+              </div>
+
+              {classroomPreview !== null && (
+                <div className="mt-6 flex-1 bg-gray-50 dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942] p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <h3 className="font-bold text-[#111] dark:text-white">Connection Successful!</h3>
+                  </div>
+                  <p className="text-[13px] text-muted-foreground mb-4">
+                    Found <strong>{classroomPreview.length}</strong> assignments in this course.
+                  </p>
+
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                    {classroomPreview.length === 0 ? (
+                      <p className="text-[13px] text-muted-foreground italic">No assignments posted yet.</p>
+                    ) : (
+                      classroomPreview.slice(0, 5).map((cw, i) => (
+                        <div key={i} className="bg-white dark:bg-[#111b21] p-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[13px]">
+                          <p className="font-semibold text-[#111] dark:text-white truncate">{cw.title}</p>
+                          {cw.description && <p className="text-muted-foreground truncate text-[12px] mt-1">{cw.description}</p>}
+                        </div>
+                      ))
+                    )}
+                    {classroomPreview.length > 5 && (
+                      <p className="text-[12px] text-muted-foreground text-center pt-2">
+                        + {classroomPreview.length - 5} more assignments
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
+                <div className="flex flex-col">
+                  <label className="text-[13px] font-bold text-[#111] dark:text-white mb-1">Add Tutors</label>
+                  <p className="text-[12px] text-muted-foreground mb-4">Select all tutors that will teach this course.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                  {tutors.map(tutor => {
+                    const isSelected = formData.tutor_ids.includes(tutor.id);
+                    return (
+                      <div
+                        key={tutor.id}
+                        onClick={() => toggleTutor(tutor.id)}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                          isSelected
+                            ? "border-[#1099A1] bg-[#1099A1]/5 dark:bg-[#1099A1]/10"
+                            : "border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] hover:border-gray-400"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                          isSelected ? "bg-[#1099A1] border-[#1099A1] text-white" : "border-gray-300 dark:border-gray-600 bg-transparent"
+                        )}>
+                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        </div>
+                        <span className="text-[14px] font-medium text-[#111] dark:text-white truncate">{tutor.full_name}</span>
+                      </div>
+                    );
+                  })}
+                  {tutors.length === 0 && (
+                    <p className="text-[13px] text-muted-foreground col-span-full">No active tutors found.</p>
+                  )}
+                </div>
+              </div>
+
+              <hr className="border-[#e9edef] dark:border-[#2a3942]" />
+
+              <div className="space-y-4">
+                <label className="text-[13px] font-bold text-[#111] dark:text-white">Pricing</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
+                      <Input
+                        value={formData.price_cents}
+                        onChange={e => setFormData({ ...formData, price_cents: e.target.value })}
+                        placeholder="0.00"
+                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium text-muted-foreground">Tutor Payout (USD)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
+                      <Input
+                        value={formData.tutor_payout_cents}
+                        onChange={e => setFormData({ ...formData, tutor_payout_cents: e.target.value })}
+                        placeholder="0.00"
+                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 border-t border-[#e9edef] dark:border-[#2a3942] flex justify-between shrink-0 bg-gray-50 dark:bg-[#182329]">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={step === 1 ? onClose : () => setStep(step - 1)}
+            className="w-[120px]"
+          >
+            {step === 1 ? "Cancel" : <><ChevronLeft className="w-4 h-4 mr-1" /> Back</>}
+          </Button>
+
+          {step < 3 ? (
+            <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px]">
+              Next <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="w-[140px]">
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {initialData ? "Save Changes" : "Create Course"}
+            </Button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -28,10 +28,14 @@ export interface AdminCourse {
   id: string;
   title: string;
   subject: string;
+  description: string | null;
   price_cents: number | null;
+  tutor_payout_cents: number | null;
+  thumbnail_url: string | null;
+  google_classroom_url: string | null;
   is_active: boolean;
-  tutor_id: string | null;
-  tutor_name: string | null;
+  tutor_ids: string[];
+  tutors?: { id: string; full_name: string }[];
 }
 
 export interface ContactMessage {
@@ -196,19 +200,36 @@ export async function getAllInvoices(): Promise<AdminInvoice[]> {
 export async function getCourses(): Promise<AdminCourse[]> {
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title, subject, price_cents, is_active, tutor_id")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_ids")
     .order("created_at", { ascending: false });
   const rows = courses || [];
-  const tutorIds = [...new Set(rows.map((r: any) => r.tutor_id).filter(Boolean))];
-  const { data: tutors } = tutorIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", tutorIds)
+  
+  // Extract all unique tutor IDs across all courses
+  const allTutorIds = [...new Set(rows.flatMap((r: any) => r.tutor_ids || []))];
+  const { data: tutors } = allTutorIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", allTutorIds)
     : { data: [] as any[] };
+    
   const nameById = new Map((tutors || []).map((t: any) => [t.id, t.full_name]));
-  return rows.map((r: any) => ({ ...r, tutor_name: r.tutor_id ? nameById.get(r.tutor_id) || null : null }));
+  
+  return rows.map((r: any) => ({
+    ...r,
+    tutor_ids: r.tutor_ids || [],
+    tutors: (r.tutor_ids || []).map((id: string) => ({
+      id,
+      full_name: nameById.get(id) || "Unknown Tutor"
+    }))
+  }));
 }
 
-export async function updateCourse(id: string, patch: { price_cents?: number | null; is_active?: boolean }): Promise<Result> {
+export async function updateCourse(id: string, patch: Partial<AdminCourse>): Promise<Result> {
   const { error } = await supabase.from("courses").update(patch).eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function createCourse(patch: Partial<AdminCourse>): Promise<Result> {
+  const { error } = await supabase.from("courses").insert(patch);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

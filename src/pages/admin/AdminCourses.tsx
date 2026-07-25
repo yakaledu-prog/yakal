@@ -3,40 +3,62 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getCourses, updateCourse, type AdminCourse } from "@/services/adminService";
+import { getCourses, updateCourse, createCourse, getUsers, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { Loader2, Check, Pencil } from "lucide-react";
+import { Loader2, Plus, Pencil, ExternalLink } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/Button";
+import { AdminCourseModal } from "./courses/AdminCourseModal";
 
 export function AdminCourses() {
   const qc = useQueryClient();
   const { data: courses = [], isLoading } = useQuery({ queryKey: ["admin-courses"], queryFn: getCourses });
-  const [editing, setEditing] = useState<string | null>(null);
-  const [priceInput, setPriceInput] = useState("");
+  const { data: tutors = [] } = useQuery({ queryKey: ["admin-users", "tutor"], queryFn: () => getUsers("tutor") });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const active = courses.filter((c) => c.is_active).length;
   const priced = courses.filter((c) => c.price_cents != null).length;
-
-  function startEdit(c: AdminCourse) {
-    setEditing(c.id);
-    setPriceInput(c.price_cents != null ? (c.price_cents / 100).toString() : "");
-  }
-
-  async function savePrice(c: AdminCourse) {
-    const dollars = parseFloat(priceInput);
-    const cents = Number.isFinite(dollars) && dollars >= 0 ? Math.round(dollars * 100) : null;
-    const res = await updateCourse(c.id, { price_cents: cents });
-    if (!res.success) return toast.error(res.error || "Could not save.");
-    toast.success("Price updated.");
-    setEditing(null);
-    qc.invalidateQueries({ queryKey: ["admin-courses"] });
-  }
 
   async function toggleActive(c: AdminCourse) {
     const res = await updateCourse(c.id, { is_active: !c.is_active });
     if (!res.success) return toast.error(res.error || "Could not update.");
     qc.invalidateQueries({ queryKey: ["admin-courses"] });
   }
+
+  const handleModalSubmit = async (patch: Partial<AdminCourse>) => {
+    setIsSubmitting(true);
+    try {
+      let res;
+      if (editingCourse) {
+        res = await updateCourse(editingCourse.id, patch);
+      } else {
+        res = await createCourse(patch);
+      }
+      
+      if (!res.success) {
+        toast.error(res.error || `Failed to ${editingCourse ? "update" : "create"} course`);
+        return;
+      }
+      toast.success(`Course ${editingCourse ? "updated" : "created"} successfully!`);
+      qc.invalidateQueries({ queryKey: ["admin-courses"] });
+      setIsModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingCourse(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (c: AdminCourse) => {
+    setEditingCourse(c);
+    setIsModalOpen(true);
+  };
 
   return (
     <PageWrapper className="!p-0">
@@ -52,10 +74,14 @@ export function AdminCourses() {
         />
 
         <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-          <p className="text-[13px] text-muted-foreground mb-5">
-            Set the parent-facing price for each course. This is independent of the tutor's pay rate - the difference
-            is the platform margin. Tutors never see this price.
-          </p>
+          <div className="flex justify-between items-center mb-5">
+            <p className="text-[13px] text-muted-foreground max-w-2xl">
+              Manage courses, their pricing, tutor assignments, and Google Classroom links.
+            </p>
+            <Button onClick={openCreateModal} className="gap-2">
+              <Plus size={16} /> Create Course
+            </Button>
+          </div>
 
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
@@ -64,51 +90,70 @@ export function AdminCourses() {
           ) : (
             <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
               {courses.map((c) => (
-                <div key={c.id} className="flex items-center gap-4 p-4">
+                <div key={c.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-[#182329] transition-colors">
+                  <div className="w-16 h-12 bg-gray-200 dark:bg-[#202c33] rounded overflow-hidden shrink-0">
+                    {c.thumbnail_url ? (
+                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">No Img</div>
+                    )}
+                  </div>
+                  
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{c.title}</p>
-                    <p className="text-[12px] text-muted-foreground truncate">
-                      {c.subject}{c.tutor_name ? ` - ${c.tutor_name}` : ""}
-                    </p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-[12px] text-muted-foreground truncate">
+                        {c.subject}{c.tutors && c.tutors.length > 0 ? ` • ${c.tutors.map(t => t.full_name).join(", ")}` : ""}
+                      </p>
+                      {c.google_classroom_url && (
+                        <a href={c.google_classroom_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#1099A1] hover:underline inline-flex items-center gap-1">
+                          <ExternalLink size={10} /> Classroom
+                        </a>
+                      )}
+                    </div>
                   </div>
 
-                  {editing === c.id ? (
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">$</span>
-                        <input
-                          autoFocus
-                          value={priceInput}
-                          onChange={(e) => setPriceInput(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && savePrice(c)}
-                          placeholder="0.00"
-                          className="pl-6 pr-2 h-9 w-28 bg-white dark:bg-[#1a2730] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[14px] outline-none focus:border-[#1099A1]"
-                        />
-                      </div>
-                      <button onClick={() => savePrice(c)} className="inline-flex items-center gap-1 px-3 h-9 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b]">
-                        <Check size={14} /> Save
-                      </button>
+                  <div className="flex flex-wrap items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Parent</p>
+                      <p className="text-[14px] font-medium text-[#111] dark:text-white">
+                        {c.price_cents != null ? money(c.price_cents) : "—"}
+                      </p>
                     </div>
-                  ) : (
-                    <button onClick={() => startEdit(c)} className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#111] dark:text-white hover:text-[#1099A1]">
-                      {c.price_cents != null ? money(c.price_cents) : <span className="text-muted-foreground">Set price</span>}
-                      <Pencil size={13} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    
+                    <div className="text-right">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Tutor</p>
+                      <p className="text-[14px] font-medium text-[#111] dark:text-white">
+                        {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "—"}
+                      </p>
+                    </div>
 
-                  <button
-                    onClick={() => toggleActive(c)}
-                    className={cn("w-9 h-5 rounded-full relative transition-colors shrink-0", c.is_active ? "bg-[#1099A1]" : "bg-muted-foreground/30")}
-                    title={c.is_active ? "Active" : "Inactive"}
-                  >
-                    <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all", c.is_active ? "right-0.5" : "left-0.5")} />
-                  </button>
+                    <button
+                      onClick={() => toggleActive(c)}
+                      className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
+                    >
+                      <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
+                    </button>
+
+                    <Button variant="ghost" onClick={() => openEditModal(c)} className="h-8 px-3 text-[13px] gap-2">
+                      <Pencil size={14} /> Edit
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+      
+      <AdminCourseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialData={editingCourse}
+        onSubmit={handleModalSubmit}
+        isSubmitting={isSubmitting}
+        tutors={tutors}
+      />
     </PageWrapper>
   );
 }
