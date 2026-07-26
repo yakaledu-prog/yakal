@@ -168,23 +168,21 @@ export function AdminPostEditor() {
 
       {/* Bottom Sticky Action Bar */}
       <div className="shrink-0 bg-white dark:bg-[#111b21] border-t border-[#e9edef] dark:border-[#2a3942] p-4 px-6 flex items-center justify-between sticky bottom-0 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none">
+
         <div className="flex items-center gap-3">
           <span className="text-[12px] text-muted-foreground hidden sm:inline-block">
             {isSaving ? "Saving..." : "All changes saved locally"}
           </span>
         </div>
-
         <div className="flex items-center gap-3">
-          {status === "draft" && (
-            <button
-              onClick={() => handleSave("draft")}
-              disabled={isSaving}
-              className="gap-1 px-4 py-2 rounded-lg text-[14px] bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center"
-            >
-              <Save size={14} strokeWidth={2} />
-              <span>Save Draft</span>
-            </button>
-          )}
+          <button
+            onClick={() => handleSave("draft")}
+            disabled={isSaving}
+            className="gap-1 px-4 py-2 rounded-lg text-[14px] bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center"
+          >
+            <Save size={14} strokeWidth={2} />
+            <span>{status === "published" ? "Save as Draft" : "Save Draft"}</span>
+          </button>
           <button
             onClick={() => handleSave("published")}
             disabled={isSaving}

@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
 import ServicesV5 from "@/sections/ServicesV5";
@@ -13,6 +15,20 @@ import Footer from "@/sections/Footer";
 import type { Page } from "@/types";
 
 export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash === '#blog' || location.state?.scrollTo === 'blog') {
+      // Small timeout to ensure DOM layout is complete before scrolling
+      setTimeout(() => {
+        const el = document.getElementById('blog');
+        if (el) {
+          el.scrollIntoView({ behavior: "auto" });
+        }
+      }, 100);
+    }
+  }, [location.hash, location.state]);
+
   function scrollTo(id: string) {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });

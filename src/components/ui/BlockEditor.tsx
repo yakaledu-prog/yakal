@@ -72,9 +72,9 @@ export function BlockEditor({ value, onChange, fullHeight, placeholder, editable
       className={cn(
         "block-editor",
         fullHeight
-          ? "h-full flex flex-col bg-white dark:bg-[#1f2b31]"
+          ? "h-full flex flex-col !bg-transparent"
           : editable
-            ? "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1f2b31] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+            ? "py-4 min-h-[220px] focus-within:border-primary transition-colors"
             : ""
       )}
       style={brandVars}

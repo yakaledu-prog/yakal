@@ -13,6 +13,7 @@ export default function App() {
   // Restore scroll position when returning home
   useEffect(() => {
     if (page.type === "home") {
+      if (window.location.hash) return; // Let HomePage handle hash scrolling
       const target = page.scrollY ?? 0;
       // small delay to let render complete
       requestAnimationFrame(() => {

@@ -30,7 +30,7 @@ export default function BlogsPage() {
 
         {/* Back Button */}
         <div className="absolute top-8 left-8">
-          <button onClick={() => navigate("/")} className="mix-blend-hard-light flex items-center gap-1 text-white/90 hover:text-white transition-colors px-4 py-2 text-[14px] font-medium">
+          <button onClick={() => navigate("/#blog")} className="mix-blend-hard-light flex items-center gap-1 text-white/90 hover:text-white transition-colors px-4 py-2 text-[14px] font-medium">
             <ArrowLeftIcon size={14} strokeWidth={2.5} />
             <span className="leading-none">Back to Home</span>
           </button>
@@ -53,7 +53,7 @@ export default function BlogsPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
 
         <div className="absolute top-4 left-4 z-10">
-          <button onClick={() => navigate("/")} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-[13px] font-medium border border-white/20">
+          <button onClick={() => navigate("/#blog")} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-[13px] font-medium border border-white/20">
             <ArrowLeft size={16} strokeWidth={2.5} />
             <span>Back</span>
           </button>

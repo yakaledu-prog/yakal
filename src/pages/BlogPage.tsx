@@ -49,7 +49,7 @@ export default function BlogPage() {
     return (
       <div className="bg-white min-h-screen w-full flex flex-col items-center justify-center">
         <p className="text-xl font-medium mb-4">Post not found</p>
-        <button onClick={() => navigate("/")} className="text-[#1099a1] hover:underline">Go Back</button>
+        <button onClick={() => navigate("/#blog")} className="text-[#1099a1] hover:underline">Go Back</button>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export default function BlogPage() {
     if (fromBlogs) {
       navigate("/posts");
     } else {
-      navigate("/");
+      navigate("/#blog");
     }
   };
 
