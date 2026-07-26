@@ -66,6 +66,8 @@ import { AdminLayout } from "../pages/admin/AdminLayout";
 import { AdminHome } from "../pages/admin/AdminHome";
 import { AdminUsers } from "../pages/admin/AdminUsers";
 import { AdminCourses } from "../pages/admin/AdminCourses";
+import { AdminPosts } from "../pages/admin/cms/AdminPosts";
+import { AdminPostEditor } from "../pages/admin/cms/AdminPostEditor";
 import { AdminBilling } from "../pages/admin/AdminBilling";
 import { AdminContact } from "../pages/admin/AdminContact";
 import { AdminProfile } from "../pages/admin/AdminProfile";
@@ -220,6 +222,9 @@ const router = createBrowserRouter([
           { path: "", element: <AdminHome /> },
           { path: "users", element: <AdminUsers /> },
           { path: "courses", element: <AdminCourses /> },
+          { path: "posts", element: <AdminPosts /> },
+          { path: "posts/new", element: <AdminPostEditor /> },
+          { path: "posts/:id/edit", element: <AdminPostEditor /> },
           { path: "billing", element: <AdminBilling /> },
           { path: "notifications", element: <AdminContact /> },
           { path: "profile", element: <AdminProfile /> },
