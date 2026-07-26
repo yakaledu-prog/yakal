@@ -4,7 +4,7 @@ import imgPrograms3 from "@/assets/images/landing-page/parent-resources.webp";
 
 export default function ParentResources({ scrollTo }: { scrollTo: (id: string) => void }) {
   return (
-    <div id="resources" className="w-full max-w-[1440px]">
+    <div id="resources" className="w-full max-w-[1140px] py-[60px]">
       <div className="max-w-[1290px] mx-auto px-[24px] md:px-[18px]">
         <div className="text-center mb-[40px] md:mb-[70px]">
           <h2 className="text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px] mb-[12px] md:mb-[16px]">Parent Resources</h2>
@@ -14,7 +14,7 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
         </div>
 
         {/* Book a Session */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-[32px] mb-[60px] md:mb-[70px]">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-[32px] mb-[70px] md:mb-[105px] text-justify">
           <div className="w-full md:max-w-[520px] flex flex-col items-center md:items-start">
             <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Book a Session</h3>
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
@@ -24,13 +24,16 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
               Book a Session <ArrowRight size={18} strokeWidth={2} />
             </button>
           </div>
-          <div className="w-full md:w-[630px] h-[280px] md:h-[530px] rounded-[20px] md:rounded-[30px] overflow-hidden flex items-center justify-center md:justify-end">
-            <img src={imgPrograms1} alt="Book a Session" className="w-full h-full object-cover" />
+          <div className="overflow-hidden flex items-center justify-center md:justify-end">
+            <img src={imgPrograms1} alt="Book a Session" className="h-[70%] rounded-xl object-cover" />
           </div>
         </div>
 
         {/* Blogs */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-[32px]">
+          <div className="overflow-hidden">
+            <img src={imgPrograms3} alt="Blogs" className="h-[70%] rounded-xl object-cover" />
+          </div>
           <div className="w-full md:max-w-[520px] flex items-center md:items-start flex-col">
             <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Blogs</h3>
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
@@ -39,9 +42,6 @@ export default function ParentResources({ scrollTo }: { scrollTo: (id: string) =
             <button onClick={() => scrollTo("blog")} className="btn-shimmer text-white px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[8px]">
               See All Blogs <ArrowRight size={18} strokeWidth={2} />
             </button>
-          </div>
-          <div className="w-full md:w-[630px] h-[280px] md:h-[530px] rounded-[20px] md:rounded-[30px] overflow-hidden">
-            <img src={imgPrograms3} alt="Blogs" className="w-full h-full object-cover" />
           </div>
         </div>
       </div>

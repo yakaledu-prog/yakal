@@ -36,6 +36,9 @@ export default function Blog() {
       {featured && (
         <div className="bg-[#f4f4f4] rounded-[20px] md:rounded-[30px] p-[24px] md:p-[56px] mb-[40px] md:mb-[70px]">
           <div className="flex flex-col md:flex-row items-center justify-between gap-[32px]">
+            <div className="hidden md:flex w-full md:w-[500px] md:h-[400px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden bg-gray-200">
+              {featured.thumbnail_url && <img src={featured.thumbnail_url} alt="Blog" className="w-full h-full object-cover" />}
+            </div>
             <div className="w-full md:max-w-[520px]">
               <div className="flex md:hidden w-full md:w-[500px] md:h-[500px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden">
                 {featured.thumbnail_url && <img src={featured.thumbnail_url} alt="Blog" className="w-full h-full object-cover" />}
@@ -56,9 +59,7 @@ export default function Blog() {
                 Read the Article
               </button>
             </div>
-            <div className="hidden md:flex w-full md:w-[500px] md:h-[500px] h-[240px] rounded-[20px] md:rounded-[30px] overflow-hidden bg-gray-200">
-              {featured.thumbnail_url && <img src={featured.thumbnail_url} alt="Blog" className="w-full h-full object-cover" />}
-            </div>
+
           </div>
         </div>
       )}

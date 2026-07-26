@@ -11,34 +11,30 @@ const features = [
 
 export default function WhyJoinUs() {
   return (
-    <div className="bg-white pt-[20px] md:pt-[40px] pb-[20px] md:pb-[40px] w-full max-w-[1440px]">
+    <div className=" bg-[#fafafa] w-full px-[24px] md:px-[73px] py-[40px] md:py-[80px]">
+      <Reveal className="mb-[40px] md:mb-[50px] text-center w-full flex flex-col gap-6 items-center justify-center">
+        <h2 className="text-[32px] md:text-[56px] font-semibold leading-[40px] md:leading-[66px] mb-[16px] text-[#111]">
+          Why students succeed with Yakal
+        </h2>
+        <p className="text-[#555] text-[18px] md:text-[20px] leading-[30px] md:leading-[34px] max-w-[700px]">
+          We combine structured guidance with flexible support to help every learner thrive. No gimmicks, just results.
+        </p>
+      </Reveal>
 
-
-      <div className="max-w-[1440px] px-[24px] md:px-[73px]">
-        <Reveal className="mb-[40px] md:mb-[50px] text-center w-full flex flex-col gap-6 items-center justify-center">
-          <h2 className="text-[32px] md:text-[56px] font-semibold leading-[40px] md:leading-[66px] mb-[16px] text-[#111]">
-            Why students succeed with Yakal
-          </h2>
-          <p className="text-[#555] text-[18px] md:text-[20px] leading-[30px] md:leading-[34px] max-w-[700px]">
-            We combine structured guidance with flexible support to help every learner thrive. No gimmicks, just results.
-          </p>
-        </Reveal>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[80px] text-center">
-          {features.map((feature, idx) => (
-            <Reveal key={idx} delay={idx * 100} className="flex flex-col border-t border-[#eaeaea] pt-[32px]">
-              <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden mb-[32px] bg-[#f7f9f9]">
-                <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
-              </div>
-              <h3 className="text-[20px] md:text-[24px] font-semibold leading-[32px] mb-[12px] text-[#111]">
-                {feature.title}
-              </h3>
-              <p className="text-[#555] text-[16px] leading-[26px]">
-                {feature.description}
-              </p>
-            </Reveal>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-[40px] md:gap-[80px] text-center">
+        {features.map((feature, idx) => (
+          <Reveal key={idx} delay={idx * 100} className="flex flex-col border-t border-[#eaeaea] pt-[32px]">
+            <div className="w-full aspect-[4/3] rounded-[16px] overflow-hidden mb-[32px] bg-[#f7f9f9]">
+              <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
+            </div>
+            <h3 className="text-[20px] md:text-[24px] font-semibold leading-[32px] mb-[12px] text-[#111]">
+              {feature.title}
+            </h3>
+            <p className="text-[#555] text-[16px] leading-[26px]">
+              {feature.description}
+            </p>
+          </Reveal>
+        ))}
       </div>
     </div>
   );

@@ -14,12 +14,11 @@ export default function About() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   return (
-    <div id="about" className="w-full flex flex-col gap-[40px] md:gap-[60px] pt-[60px] md:pt-[100px] pb-[20px] md:pb-[40px] items-center bg-[#fafafa]">
-      
+    <div id="about" className="bg-white max-w-[1440px] flex flex-col gap-[40px] md:gap-[60px] items-start pt-[60px] pb-[40px]">
 
       {/* 1. About Yakal (Side-by-side layout) */}
       <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
-        <div className="flex flex-col md:flex-row gap-[40px] md:gap-[80px] items-center">
+        <div className="flex flex-col md:flex-row gap-[40px] md:gap-[80px] items-center group">
           <Reveal className="w-full md:w-1/2 flex flex-col items-start text-left">
             <h2 className="text-[36px] md:text-[64px] font-semibold leading-[44px] md:leading-[74px] mb-[24px] text-[#111]">
               Empowering students to excel academically.
@@ -27,16 +26,16 @@ export default function About() {
             <p className="text-[#555] text-[16px] md:text-[18px] leading-[28px] md:leading-[32px] mb-[32px]">
               Yakal is an educational consultancy dedicated to helping students excel academically. We provide personalized tutoring, flexible learning options, and guidance that empowers every student to reach their full potential.
             </p>
-            <button 
+            <button
               onClick={() => setIsVideoOpen(true)}
               className="btn-shimmer px-[30px] py-[14px] rounded-[500px] text-[15px] md:text-[16px] text-white font-medium uppercase shadow-lg hover:opacity-90 transition-opacity"
             >
               Learn More About Us
             </button>
           </Reveal>
-          
+
           <Reveal className="w-full md:w-1/2" delay={200}>
-            <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-xl border border-[#eee]">
+            <div className="relative aspect-[4/3] rounded-[16px] overflow-hidden shadow-lg group-hover:shadow-xl border border-[#eee] transition ease-in-out">
               <img src={imgAboutBanner1} alt="About Yakal" className="w-full h-full object-cover" />
             </div>
           </Reveal>
@@ -46,7 +45,7 @@ export default function About() {
 
       {/* 3. How to Get Connected (Clean Steps) */}
       <div className="w-full max-w-[1440px] px-[24px] md:px-[73px]">
-        <div className="bg-[#FAFAFA] text-[#111] rounded-[24px] p-[40px] md:p-[80px]">
+        <div className="text-[#111] p-[40px] md:p-[80px] !pb-0 !md:pb-0">
           <Reveal className="text-center mb-[60px]">
             <h2 className="text-[32px] md:text-[48px] font-semibold leading-[40px] md:leading-[56px]">
               How to get connected
@@ -78,25 +77,25 @@ export default function About() {
 
       {/* Video Modal Placeholder */}
       {isVideoOpen && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" 
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           onClick={() => setIsVideoOpen(false)}
         >
-          <div 
-            className="relative w-full max-w-[900px] aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" 
+          <div
+            className="relative w-full max-w-[900px] aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <button 
+            <button
               onClick={() => setIsVideoOpen(false)}
               className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors"
             >
               <X size={20} />
             </button>
             <div className="w-full h-full bg-black">
-              <video 
-                className="w-full h-full object-contain" 
-                controls 
-                autoPlay 
+              <video
+                className="w-full h-full object-contain"
+                controls
+                autoPlay
               >
                 <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
                 Your browser does not support the video tag.

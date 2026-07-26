@@ -217,6 +217,15 @@ export async function getCourses(): Promise<AdminCourse[]> {
   return courses || [];
 }
 
+export async function getCourse(id: string): Promise<AdminCourse | null> {
+  const { data: course } = await supabase
+    .from("courses")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
+    .eq("id", id)
+    .single();
+  return course || null;
+}
+
 export async function updateCourse(id: string, patch: Partial<AdminCourse>): Promise<Result> {
   const { error } = await supabase.from("courses").update(patch).eq("id", id);
   if (error) return { success: false, error: error.message };

@@ -13,25 +13,25 @@ const contactInfo = [
 
 export default function Contact() {
   return (
-    <div id="contact" className="w-full max-w-[1290px] px-[24px] md:px-[18px]">
+    <div id="contact" className="w-full max-w-[1290px] px-[24px] md:px-[18px] pt-[80px]">
       <Reveal><h2 className="text-[40px] md:text-[76px] font-medium leading-[48px] md:leading-[86px] text-center mb-[40px] md:mb-[70px]">Contact Us</h2></Reveal>
       <div className="rounded-[20px] md:rounded-[30px] p-[24px] md:p-[56px]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-[40px] md:gap-[80px]">
           {/* Form */}
-          <form className="space-y-[20px] md:space-y-[24px]" onSubmit={async (e) => { 
-            e.preventDefault(); 
+          <form className="space-y-[20px] md:space-y-[24px]" onSubmit={async (e) => {
+            e.preventDefault();
             const form = e.currentTarget as HTMLFormElement;
             const formData = new FormData(form);
             const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
             const originalText = submitBtn.innerText;
-            
+
             try {
               submitBtn.innerText = "Sending...";
               submitBtn.disabled = true;
 
               // Use local API in dev, or relative path in production if deployed to Vercel
               const apiUrl = import.meta.env.DEV ? "http://localhost:3001/api/contact" : "/api/contact";
-              
+
               const res = await fetch(apiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -50,8 +50,8 @@ export default function Contact() {
                 throw new Error(data.error || "Failed to send message");
               }
 
-              toast.success("Message sent! We'll be in touch soon."); 
-              form.reset(); 
+              toast.success("Message sent! We'll be in touch soon.");
+              form.reset();
             } catch (err: any) {
               toast.error(err.message || "An error occurred. Please try again.");
             } finally {

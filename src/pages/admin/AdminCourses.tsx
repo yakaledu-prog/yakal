@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
 
 export function AdminCourses() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: courses = [], isLoading } = useQuery({ queryKey: ["admin-courses"], queryFn: getCourses });
 
@@ -120,7 +122,11 @@ export function AdminCourses() {
           ) : (
             <div className={cn(viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-6")}>
               {filteredCourses.map((c) => (
-                <div key={c.id} className={cn("bg-white dark:bg-[#111b21] rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-shadow hover:shadow-md", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}>
+                <div 
+                  key={c.id} 
+                  onClick={() => navigate(`/admin/courses/${c.id}`)}
+                  className={cn("bg-white dark:bg-[#111b21] cursor-pointer rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-all hover:shadow-lg hover:border-[#1099A1]/30", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}
+                >
                   {/* Thumbnail */}
                   <div className={cn("bg-gray-100 dark:bg-[#202c33] shrink-0 relative", viewMode === "grid" ? "w-full h-[220px]" : "w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto")}>
                     {c.thumbnail_url ? (
@@ -140,7 +146,10 @@ export function AdminCourses() {
                         <h3 className={cn("text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white leading-tight truncate w-full flex items-center", viewMode === "grid" ? "justify-between" : "gap-3")}>
                           <span>{c.title}</span>
                           <button
-                            onClick={() => toggleActive(c)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleActive(c);
+                            }}
                             className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
                             title={c.is_active ? "Deactivate course" : "Activate course"}
                           >
@@ -170,7 +179,13 @@ export function AdminCourses() {
                         {c.google_classroom_url && (
                           <>
                             <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
-                            <a href={c.google_classroom_url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#1099A1] hover:underline flex items-center gap-1 font-medium">
+                            <a 
+                              href={c.google_classroom_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[13px] text-[#1099A1] hover:underline flex items-center gap-1 font-medium"
+                            >
                               <ExternalLink size={13} /> Classroom
                             </a>
                           </>
@@ -204,7 +219,14 @@ export function AdminCourses() {
 
                       {/* Admin Actions */}
                       <div className="flex items-center gap-5 ml-auto">
-                        <Button variant="outline" onClick={() => openEditModal(c)} className="h-9 px-4 text-[13px] gap-2 rounded-lg font-medium border-gray-300 dark:border-gray-700">
+                        <Button 
+                          variant="outline" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(c);
+                          }} 
+                          className="h-9 px-4 text-[13px] gap-2 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50"
+                        >
                           <Pencil size={14} /> Edit
                         </Button>
                       </div>

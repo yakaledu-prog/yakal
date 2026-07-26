@@ -42,7 +42,7 @@ export default function Subjects({ onNavigate }: { onNavigate: (page: Page) => v
   ];
 
   return (
-    <div id="courses" className="w-full max-w-[1440px]">
+    <div id="courses" className="w-full max-w-[1440px] pt-[40px]">
       <div className="max-w-[1290px] mx-auto px-[24px] md:px-[18px]">
         <Reveal className="text-center mb-[40px] md:mb-[70px]">
           <h2 className="text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px] mb-[12px] md:mb-[16px]">Subjects We Offer</h2>

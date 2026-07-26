@@ -68,6 +68,7 @@ import { AdminLayout } from "../pages/admin/AdminLayout";
 import { AdminHome } from "../pages/admin/AdminHome";
 import { AdminUsers } from "../pages/admin/AdminUsers";
 import { AdminCourses } from "../pages/admin/AdminCourses";
+import { AdminCourseDetail } from "../pages/admin/AdminCourseDetail";
 import { AdminPosts } from "../pages/admin/cms/AdminPosts";
 import { AdminPostEditor } from "../pages/admin/cms/AdminPostEditor";
 import { AdminBilling } from "../pages/admin/AdminBilling";
@@ -257,6 +258,7 @@ const router = createBrowserRouter([
           { path: "", element: <AdminHome /> },
           { path: "users", element: <AdminUsers /> },
           { path: "courses", element: <AdminCourses /> },
+          { path: "courses/:id", element: <AdminCourseDetail /> },
           { path: "posts", element: <AdminPosts /> },
           { path: "posts/new", element: <AdminPostEditor /> },
           { path: "posts/:id/edit", element: <AdminPostEditor /> },
