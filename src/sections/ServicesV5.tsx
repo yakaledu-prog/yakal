@@ -1,6 +1,6 @@
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
-import { Users, BookOpen, ArrowRight } from "lucide-react";
+import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap } from "lucide-react";
 
 // Images for the services
 import tutoringImg from "@/assets/images/landing-page/building-effective-study-habits.jpg";
@@ -18,9 +18,22 @@ const services = [
     description:
       "Personalized academic support designed to build mastery, confidence, and critical thinking skills across all core subjects. Move beyond rote memorization to...",
     img: tutoringImg,
-    format: "1-on-1 & Small Group",
-    focus: "Core Subjects & STEM",
-    cta: "Explore Tutoring",
+    col1Title: "Focus",
+    col1Items: [
+      { label: "1-on-1 Tutoring" },
+      { label: "Group Sessions" },
+      { label: "STEM Bootcamps" },
+      { label: "Summer Camps" },
+      { label: "Math Labs" },
+    ],
+    col2Title: "For",
+    roles: [
+      { icon: "tutor", label: "Tutors", sub: "Lead sessions & track progress" },
+      { icon: "parent", label: "Parents", sub: "Monitor grades & communication" },
+      { icon: "student", label: "Students", sub: "Learn, practice & improve" },
+    ],
+    primaryCta: "Get Started",
+    secondaryCta: "Become a Tutor",
   },
   {
     id: "college",
@@ -29,11 +42,36 @@ const services = [
     description:
       "Essays, balanced school lists, deadlines, and financial-aid timelines. Guided one-on-one from sophomore year all the way to Decision Day.",
     img: collegeImg,
-    format: "Guided 1-on-1",
-    focus: "Applications & Essays",
-    cta: "Explore Admissions",
+    col1Title: "Plans",
+    col1Items: [
+      { label: "Essentials", sub: "Build a strong admissions foundation." },
+      { label: "Premier", sub: "More strategy, guidance, and momentum." },
+      { label: "Elite", sub: "Complete end-to-end admissions support." }
+    ],
+    col2Title: "For",
+    roles: [
+      { icon: "counselor", label: "Counselors", sub: "Guide applications & essays" },
+      { icon: "parent", label: "Parents", sub: "Track deadlines & milestones" },
+      { icon: "student", label: "Students", sub: "Build a competitive application" },
+    ],
+    primaryCta: "Get Started",
+    secondaryCta: "Join Our Team",
   },
 ];
+
+function getRoleIcon(type: string) {
+  switch (type) {
+    case "tutor":
+    case "counselor":
+      return <Users size={16} className="text-white shrink-0 mt-[2px]" />;
+    case "parent":
+      return <UserCircle2 size={16} className="text-white shrink-0 mt-[2px]" />;
+    case "student":
+      return <GraduationCap size={16} className="text-white shrink-0 mt-[2px]" />;
+    default:
+      return <Users size={16} className="text-white shrink-0 mt-[2px]" />;
+  }
+}
 
 export default function ServicesV5() {
   return (
@@ -69,47 +107,74 @@ export default function ServicesV5() {
 
               {/* Content Top */}
               <div className="relative z-10">
-                <span className="inline-block bg-[#1099A1] text-white text-[12px] font-bold uppercase tracking-[1px] px-4 py-1.5 rounded-[500px] mb-6">
+                {/* <span className="inline-block bg-[#1099A1] text-white text-[12px] font-bold uppercase tracking-[1px] px-4 py-1.5 rounded-[500px] mb-6">
                   {svc.badge}
-                </span>
+                </span> */}
                 <h3 className="text-[40px] md:text-[56px] font-semibold leading-[1.1] mb-6 text-white whitespace-pre-line">
                   {svc.headline}
                 </h3>
-                <p className="text-[16px] md:text-[18px] text-white/90 leading-[28px] max-w-[400px]">
+                <p className="text-[16px] md:text-[18px] text-white/90 leading-[28px] text-justify">
                   {svc.description}
                 </p>
               </div>
 
               {/* Content Bottom */}
               <div className="relative z-10 mt-12 md:mt-auto">
-                <div className="grid grid-cols-2 gap-6 mb-8 border-b border-white/20 pb-8">
-                  <div>
-                    <p className="text-[12px] font-bold text-white/60 uppercase tracking-[1px] mb-2">
-                      FORMAT
-                    </p>
-                    <div className="flex items-center gap-2 text-[15px] font-medium text-white">
-                      <Users size={18} className="shrink-0" />
-                      {svc.format}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8 border-b border-white/20 pb-8 flex-1">
+                  {/* Column 1 */}
+                  {svc.col1Items.length > 0 && (
+                    <div>
+                      <p className="text-[12px] font-bold text-white/60 uppercase tracking-[1px] mb-4">
+                        {svc.col1Title}
+                      </p>
+                      <ul className="flex flex-col gap-3">
+                        {svc.col1Items.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5">
+                            <CheckCircle2 size={16} className="text-white shrink-0 mt-[2px]" />
+                            <div className="flex flex-col">
+                              <span className="text-[14px] text-white/90 font-medium leading-tight mb-0.5">
+                                {item.label}
+                              </span>
+                              {item.sub && (
+                                <span className="text-[13px] text-white/70 leading-tight">
+                                  {item.sub}
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Column 2 */}
                   <div>
-                    <p className="text-[12px] font-bold text-white/60 uppercase tracking-[1px] mb-2">
-                      FOCUS
+                    <p className="text-[12px] font-bold text-white/60 uppercase tracking-[1px] mb-4">
+                      {svc.col2Title}
                     </p>
-                    <div className="flex items-center gap-2 text-[15px] font-medium text-white">
-                      <BookOpen size={18} className="shrink-0" />
-                      {svc.focus}
-                    </div>
+                    <ul className="flex flex-col gap-4">
+                      {svc.roles.map((role) => (
+                        <li key={role.label} className="flex items-start gap-2.5">
+                          {getRoleIcon(role.icon)}
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-semibold text-white leading-tight mb-0.5">{role.label}</span>
+                            <span className="text-[13px] text-white/70 leading-tight">{role.sub}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
 
-                {/* CTA */}
-                <button 
-                  onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} 
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[15px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81]"
-                >
-                  {svc.cta} <ArrowRight size={18} />
-                </button>
+                {/* CTAs */}
+                <div className="flex flex-wrap gap-3 mt-auto">
+                  <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
+                    {svc.primaryCta} <ArrowRight size={16} />
+                  </button>
+                  <button className="px-6 py-3 bg-transparent border border-white hover:bg-white/10 text-white rounded-[8px] text-[14px] font-semibold transition-colors w-full sm:w-auto text-center">
+                    {svc.secondaryCta}
+                  </button>
+                </div>
               </div>
             </Reveal>
           ))}
