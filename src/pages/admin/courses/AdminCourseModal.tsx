@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
-import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, CheckCircle2, FileText } from "lucide-react";
+import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, CheckCircle2, FileText, LucidePackagePlus, BookPlus, PackagePlusIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";
@@ -34,6 +34,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
   const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
   const [isFetchingClassroom, setIsFetchingClassroom] = useState(false);
   const [classroomPreview, setClassroomPreview] = useState<any[] | null>(null);
+  const [previewLimit, setPreviewLimit] = useState(2);
 
   useEffect(() => {
     if (isOpen) {
@@ -209,7 +210,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
 
           {step === 1 && (
-            <div className="animate-in slide-in-from-right-4 duration-300 h-full flex flex-col max-w-lg mx-auto w-full justify-center space-y-8 py-4">
+            <div className="h-full flex flex-col max-w-lg mx-auto w-full justify-center space-y-8 py-4">
               <div className="flex-1 flex flex-col space-y-3">
                 {!formData.thumbnail_url && <p className="text-sm text-center text-muted-foreground pb-2">
                   Upload a high-quality thumbnail image for your course (SVG, PNG, JPG, or GIF, max 5MB).
@@ -233,7 +234,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           )}
 
           {step === 2 && (
-            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition relative animate-in slide-in-from-right-4 overflow-hidden ease-in duration-500">
+            <div className="flex flex-col h-[calc(100%-250px)] min-h-[350px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white relative overflow-hidden">
               <TipTapEditor
                 value={formData.description}
                 onChange={html => setFormData({ ...formData, description: html })}
@@ -243,7 +244,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           )}
 
           {step === 3 && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 h-full flex flex-col transition-all ease-in duration-500">
+            <div className="space-y-6 h-full flex flex-col">
               <div className="space-y-3">
                 <label className="text-[13px] mb-1 block text-muted-foreground">Google Classroom URL</label>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -280,22 +281,22 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                     {classroomPreview.length === 0 ? (
                       <p className="text-[13px] text-muted-foreground italic">No assignments posted yet.</p>
                     ) : (
-                      classroomPreview.slice(0, 5).map((cw, i) => (
+                      classroomPreview.slice(0, previewLimit).map((cw, i) => (
                         <div key={i} className="bg-white dark:bg-[#111b21] p-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[13px]">
                           <p className="font-semibold text-[#111] dark:text-white truncate">{cw.title}</p>
                           {cw.description && <p className="text-muted-foreground truncate text-[12px] mt-1">{cw.description}</p>}
                         </div>
                       ))
                     )}
-                    {classroomPreview.length > 5 && (
-                      <p className="text-[12px] text-muted-foreground text-center pt-2">
-                        + {classroomPreview.length - 5} more assignments
-                      </p>
+                    {classroomPreview.length > previewLimit && (
+                      <div onClick={() => setPreviewLimit(classroomPreview.length)} className="cursor-pointer text-[12px] text-muted-foreground text-center pt-2">
+                        + {classroomPreview.length - previewLimit} more assignment{classroomPreview.length - previewLimit > 1 ? "s" : ""}
+                      </div>
                     )}
                   </div>
                 </div>
               )}
-              <div className="relative flex items-center mb-6 mt-8">
+              <div className="relative flex items-center mb-6 mt-4">
                 <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
                 <span className="shrink-0 px-4 text-[11px] font-normal uppercase tracking-widest text-muted-foreground/70">Pricing</span>
                 <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
@@ -351,7 +352,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             </Button>
           ) : (
             <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="w-[140px] ml-auto">
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PackagePlusIcon size={15} strokeWidth={2} className="mr-2" />}
               {initialData ? "Save Changes" : "Create Course"}
             </Button>
           )}
