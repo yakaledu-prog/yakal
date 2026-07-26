@@ -1,6 +1,6 @@
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
-import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap } from "lucide-react";
+import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap, Compass, Rocket, Crown } from "lucide-react";
 
 // Images for the services
 import tutoringImg from "@/assets/images/landing-page/building-effective-study-habits.jpg";
@@ -9,6 +9,8 @@ import collegeImg from "@/assets/images/landing-page/how-to-prepare-for-standard
 // Design 5: Image-heavy alternating layout
 // Professional, straightforward design using large photography.
 // No abstract UI, no "vibe" coding, just clear information paired with images.
+
+type ServiceItem = { label: string; sub?: string; icon?: React.ReactNode };
 
 const services = [
   {
@@ -25,7 +27,7 @@ const services = [
       { label: "STEM Bootcamps" },
       { label: "Summer Camps" },
       { label: "Math Labs" },
-    ],
+    ] as ServiceItem[],
     col2Title: "For",
     roles: [
       { icon: "tutor", label: "Tutors", sub: "Lead sessions & track progress" },
@@ -44,10 +46,10 @@ const services = [
     img: collegeImg,
     col1Title: "Plans",
     col1Items: [
-      { label: "Essentials", sub: "Build a strong admissions foundation." },
-      { label: "Premier", sub: "More strategy, guidance, and momentum." },
-      { label: "Elite", sub: "Complete end-to-end admissions support." }
-    ],
+      { label: "Essentials", sub: "Build a strong admissions foundation.", icon: <Compass size={18} className="text-white shrink-0 mt-[2px]" /> },
+      { label: "Premier", sub: "More strategy, guidance, and momentum.", icon: <Rocket size={18} className="text-white shrink-0 mt-[2px]" /> },
+      { label: "Elite", sub: "Complete end-to-end admissions support.", icon: <Crown size={18} className="text-white shrink-0 mt-[2px]" /> }
+    ] as ServiceItem[],
     col2Title: "For",
     roles: [
       { icon: "counselor", label: "Counselors", sub: "Guide applications & essays" },
@@ -129,8 +131,8 @@ export default function ServicesV5() {
                       </p>
                       <ul className="flex flex-col gap-3">
                         {svc.col1Items.map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2.5">
-                            <CheckCircle2 size={16} className="text-white shrink-0 mt-[2px]" />
+                          <li key={idx} className="flex items-start gap-3">
+                            {item.icon ? item.icon : <CheckCircle2 size={16} className="text-white shrink-0 mt-[2px]" />}
                             <div className="flex flex-col">
                               <span className="text-[14px] text-white/90 font-medium leading-tight mb-0.5">
                                 {item.label}
