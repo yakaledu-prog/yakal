@@ -45,7 +45,7 @@ export function Stepper({
             >
               <span
                 className={cn(
-                  "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold transition-colors",
+                  "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-normal transition-colors",
                   done && "bg-[#1099A1] text-white",
                   active && "bg-[#1099A1] text-white",
                   !done && !active && "bg-[#ececf0] text-[#a8adb8] dark:bg-[#243239]"
@@ -55,10 +55,10 @@ export function Stepper({
               </span>
               <span
                 className={cn(
-                  "whitespace-nowrap text-left text-[12px] font-semibold transition-colors",
+                  "whitespace-nowrap text-left text-[13px] transition-colors",
                   active
-                    ? "text-[#111] dark:text-white"
-                    : "text-[#a8adb8] dark:text-[#7f8b93]"
+                    ? "font-semibold text-[#111] dark:text-white"
+                    : "font-normal text-[#a8adb8] dark:text-[#7f8b93]"
                 )}
               >
                 {label}

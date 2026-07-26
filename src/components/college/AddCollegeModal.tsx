@@ -154,21 +154,13 @@ export function AddCollegeModal({
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
         <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942]">
           <div className="mb-4 flex items-center gap-3">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                aria-label="Back"
-                className="text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
-              >
-                <ArrowLeft size={18} />
-              </button>
-            )}
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-[16px] font-bold text-[#111] dark:text-white">
-                {name || "Add a college"}
+              {/* On the search step the college is still being chosen, so
+                  showing a previous pick here would be a lie. */}
+              <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
+                {step === 0 ? "Add a college" : name}
               </h2>
-              {picked && (
+              {step > 0 && picked && (
                 <p className="truncate text-[12px] text-[#717182]">
                   {[picked.city, picked.state].filter(Boolean).join(", ")}
                   {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
@@ -306,43 +298,59 @@ export function AddCollegeModal({
 
           {step === 1 && (
             <div className="space-y-5">
-              <div>
-                <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted, you must enrol. Pick Not decided if you are still weighing it.">Round</FieldLabel>
-                <Dropdown
-                  value={round}
-                  onChange={(v) => setRound(v as DeadlineRound | "")}
-                  options={[{ value: "" as const, label: "Not decided" }, ...ROUNDS]}
-                  buttonClassName="h-11 rounded-xl text-[14px]"
-                  ariaLabel="Application round"
-                />
+              {/* Round and deadline are one decision, so they share a row. */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted you must enrol. Pick Not decided if you are still weighing it.">
+                    Round
+                  </FieldLabel>
+                  <Dropdown
+                    value={round}
+                    onChange={(v) => setRound(v as DeadlineRound | "")}
+                    options={[{ value: "" as const, label: "Not decided" }, ...ROUNDS]}
+                    buttonClassName="h-11 rounded-xl text-[14px] font-normal"
+                    ariaLabel="Application round"
+                  />
+                </div>
+                <div>
+                  <FieldLabel hint="The date the application is due, taken from the college's own admissions page. Deadlines are in no federal dataset, so this is the one date only you can supply.">
+                    Deadline
+                  </FieldLabel>
+                  <DateField
+                    value={deadline}
+                    onChange={setDeadline}
+                    ariaLabel="Application deadline"
+                  />
+                </div>
               </div>
-              <div>
-                <FieldLabel hint="The date the application is due, from the college\u0027s own admissions page. Deadlines are in no federal dataset, so this is the one date only you can supply.">Deadline</FieldLabel>
-                <DateField
-                  value={deadline}
-                  onChange={setDeadline}
-                  ariaLabel="Application deadline"
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor="appurl" hint="The page you read the deadline on. Your counselor opens it to confirm in one click instead of hunting for it.">Admissions page</FieldLabel>
-                <input
-                  id="appurl"
-                  type="url"
-                  value={appUrl}
-                  onChange={(e) => setAppUrl(e.target.value)}
-                  placeholder="https://"
-                  className={input}
-                />
-              </div>
-              <div>
-                <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">Supplemental essays</FieldLabel>
-                <NumberStepper
-                  value={essays}
-                  onChange={setEssays}
-                  max={20}
-                  ariaLabel="Number of supplemental essays"
-                />
+              <div className="grid grid-cols-[1fr_auto] gap-3">
+                <div>
+                  <FieldLabel
+                    htmlFor="appurl"
+                    hint="The page you read the deadline on. Your counselor opens it to confirm in one click instead of hunting for it."
+                  >
+                    Admissions page
+                  </FieldLabel>
+                  <input
+                    id="appurl"
+                    type="url"
+                    value={appUrl}
+                    onChange={(e) => setAppUrl(e.target.value)}
+                    placeholder="https://"
+                    className={input}
+                  />
+                </div>
+                <div>
+                  <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
+                    Essays
+                  </FieldLabel>
+                  <NumberStepper
+                    value={essays}
+                    onChange={setEssays}
+                    max={20}
+                    ariaLabel="Number of supplemental essays"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -373,12 +381,23 @@ export function AddCollegeModal({
           )}
         </div>
 
-        <footer className="flex items-center justify-end gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
+        <footer className="flex items-center gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="inline-flex h-10 items-center gap-1 rounded-xl pr-3 text-[14px] font-medium text-[#54656f] transition-colors hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
+            >
+              <ArrowLeft size={15} />
+              Prev
+            </button>
+          )}
+          <div className="flex-1" />
           {step > 0 && step < STEPS.length - 1 && (
             <button
               type="button"
               onClick={() => setStep(step + 1)}
-              className="h-10 rounded-xl px-3 text-[13px] font-semibold text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
+              className="h-10 rounded-xl px-3 text-[14px] font-medium text-[#54656f] transition-colors hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
             >
               Skip
             </button>
@@ -412,11 +431,11 @@ export function AddCollegeModal({
 function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
     <div className="px-2 py-2.5 text-center">
-      <div className="flex items-center justify-center gap-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#a8adb8]">
+      <div className="flex items-center justify-center gap-1 text-[12px] font-normal text-[#a8adb8]">
         {k}
         {hint && <InfoHint text={hint} size={11} />}
       </div>
-      <div className="mt-0.5 text-[13px] font-semibold tabular-nums text-[#111] dark:text-white">
+      <div className="mt-0.5 text-[14px] font-normal tabular-nums text-[#111] dark:text-white">
         {v}
       </div>
     </div>

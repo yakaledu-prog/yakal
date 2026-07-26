@@ -118,8 +118,10 @@ export function FieldLabel({
     </>
   );
 
+  // Sentence case at medium weight. Uppercase + bold on every label makes a
+  // form shout, and once everything is emphasised nothing is.
   const cls = cn(
-    "mb-1.5 flex items-center text-[11px] font-semibold uppercase tracking-[0.06em] text-[#717182]",
+    "mb-1.5 flex items-center text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]",
     className
   );
 
