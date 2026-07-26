@@ -3,8 +3,9 @@ import { AdminCourse, AdminUser } from "@/services/adminService";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
-import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, Link2, DollarSign, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, Link2, DollarSign, RefreshCw, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";
@@ -125,8 +126,8 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
   };
 
   const handleSubmit = async () => {
-    if (!formData.title || !formData.subject) {
-      toast.error("Title and subject are required");
+    if (!formData.title) {
+      toast.error("Course title is required");
       return;
     }
 
@@ -135,7 +136,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
     const patch: Partial<AdminCourse> = {
       title: formData.title,
-      subject: formData.subject,
+      subject: formData.title, // Pass title as subject since it's removed from UI
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
@@ -178,8 +179,9 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
         <div className="bg-gray-50 dark:bg-[#182329] px-6 py-4 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between shrink-0">
           {[
             { num: 1, label: "Basic Info", icon: GraduationCap },
-            { num: 2, label: "Classroom", icon: Link2 },
-            { num: 3, label: "Tutors & Pricing", icon: DollarSign }
+            { num: 2, label: "Description", icon: FileText },
+            { num: 3, label: "Classroom", icon: Link2 },
+            { num: 4, label: "Tutors & Pricing", icon: DollarSign }
           ].map((s, i) => (
             <div key={s.num} className="flex items-center flex-1 last:flex-none">
               <div className="flex items-center gap-3">
@@ -191,13 +193,13 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   {/* <s.icon size={16} /> */}
                 </div>
                 <span className={cn(
-                  "text-[13px] hidden md:block",
+                  "text-[13px] hidden md:block whitespace-nowrap",
                   step >= s.num ? "text-[#111] dark:text-white" : "text-muted-foreground"
                 )}>
                   {s.label}
                 </span>
               </div>
-              {i < 2 && <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942] mx-4" />}
+              {i < 3 && <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942] mx-2 lg:mx-4" />}
             </div>
           ))}
         </div>
@@ -206,51 +208,40 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
 
           {step === 1 && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-              <div className="space-y-2">
-                <label className="text-[13px] font-bold text-[#111] dark:text-white">Course Thumbnail</label>
+            <div className="animate-in slide-in-from-right-4 duration-300 h-full flex flex-col max-w-lg mx-auto w-full justify-center space-y-8 py-4">
+              <div className="flex-1 flex flex-col space-y-3">
+                <p className="text-sm text-center text-muted-foreground pb-2">
+                  Upload a high-quality thumbnail image for your course (SVG, PNG, JPG, or GIF, max 5MB).
+                </p>
                 <ImageUpload
                   value={formData.thumbnail_url}
                   onChange={url => setFormData({ ...formData, thumbnail_url: url })}
-                  className="h-48 border-2"
+                  className="flex-1 border-2 min-h-[250px]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-[#111] dark:text-white">Title *</label>
-                  <Input
-                    value={formData.title}
-                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g. Advanced Mathematics"
-                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-[#111] dark:text-white">Subject *</label>
-                  <Input
-                    value={formData.subject}
-                    onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                    placeholder="e.g. Mathematics"
-                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[13px] font-bold text-[#111] dark:text-white">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  placeholder="Describe the course..."
-                  className="w-full bg-gray-50 dark:bg-[#182329] border border-transparent rounded-lg p-4 text-[14px] outline-none focus:bg-white focus:border-[#1099A1] focus:ring-1 focus:ring-[#1099A1] resize-y transition-colors"
+              <div className="space-y-3 mt-auto">
+                <Input
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Course Title"
+                  className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-medium py-6"
                 />
               </div>
             </div>
           )}
 
           {step === 2 && (
+            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition-colors relative animate-in slide-in-from-right-4 duration-300 overflow-hidden">
+              <TipTapEditor
+                value={formData.description}
+                onChange={html => setFormData({ ...formData, description: html })}
+                placeholder="Describe the course..."
+              />
+            </div>
+          )}
+
+          {step === 3 && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
               <div className="space-y-3">
                 <label className="text-[13px] font-bold text-[#111] dark:text-white">Google Classroom URL</label>
@@ -308,7 +299,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
               <div className="space-y-4">
                 <div className="flex flex-col">
@@ -394,7 +385,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             {step === 1 ? "Cancel" : <><ChevronLeft className="w-4 h-4 mr-1" /> Back</>}
           </Button>
 
-          {step < 3 ? (
+          {step < 4 ? (
             <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px]">
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

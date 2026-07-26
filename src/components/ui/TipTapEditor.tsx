@@ -9,15 +9,16 @@ interface TipTapEditorProps {
   onChange: (value: string) => void;
   onAttachClick?: () => void;
   toolbarRight?: React.ReactNode;
+  placeholder?: string;
 }
 
-export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight }: TipTapEditorProps) {
+export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight, placeholder }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       Placeholder.configure({
-        placeholder: 'Instructions (optional)',
+        placeholder: placeholder || 'Instructions (optional)',
         emptyEditorClass: 'is-editor-empty',
         emptyNodeClass: 'is-editor-empty',
       }),
@@ -39,12 +40,9 @@ export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight }: T
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="flex-1 bg-transparent overflow-hidden">
-        <EditorContent editor={editor} />
-      </div>
 
       {/* Toolbar at the bottom */}
-      <div className="flex items-center gap-1 p-2 px-4 border-t border-[#e0e0e0] dark:border-border/30">
+      <div className="flex items-center gap-1 p-2 px-4 border-b border-[#e0e0e0] dark:border-border/30">
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -95,6 +93,9 @@ export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight }: T
           </button>
         )}
         {toolbarRight}
+      </div>
+      <div className="flex-1 bg-transparent overflow-hidden">
+        <EditorContent editor={editor} />
       </div>
     </div>
   )
