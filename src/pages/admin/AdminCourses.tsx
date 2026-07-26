@@ -5,7 +5,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
 import { getCourses, updateCourse, createCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { Loader2, Plus, Pencil, ExternalLink, Star, Search } from "lucide-react";
+import { Loader2, Plus, Pencil, ExternalLink, Star, Search, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/Button";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
@@ -18,6 +18,7 @@ export function AdminCourses() {
   const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const filteredCourses = courses.filter((c) =>
     c.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -41,7 +42,7 @@ export function AdminCourses() {
       } else {
         res = await createCourse(patch);
       }
-      
+
       if (!res.success) {
         toast.error(res.error || `Failed to ${editingCourse ? "update" : "create"} course`);
         return;
@@ -89,9 +90,27 @@ export function AdminCourses() {
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 dark:bg-[#182329]/50 border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-[#1099A1] focus:bg-white dark:focus:bg-[#182329] transition-all placeholder:text-muted-foreground/60"
               />
             </div>
-            <Button onClick={openCreateModal} className="gap-2 shrink-0">
-              <Plus size={16} /> Create Course
-            </Button>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex bg-gray-100 dark:bg-[#182329] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white dark:bg-[#202c33] shadow-sm" : "text-muted-foreground hover:text-[#111] dark:hover:text-white")}
+                >
+                  <List size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white dark:bg-[#202c33] shadow-sm" : "text-muted-foreground hover:text-[#111] dark:hover:text-white")}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+              </div>
+
+              <Button onClick={openCreateModal} className="gap-2 shrink-0">
+                <Plus size={16} /> Create Course
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -99,37 +118,37 @@ export function AdminCourses() {
           ) : filteredCourses.length === 0 ? (
             <p className="text-center py-16 text-[14px] text-muted-foreground">No courses found matching "{searchTerm}".</p>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className={cn(viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-6")}>
               {filteredCourses.map((c) => (
-                <div key={c.id} className="bg-white dark:bg-[#111b21] rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex flex-col md:flex-row overflow-hidden w-full transition-shadow hover:shadow-md">
-                  {/* Left Side: Thumbnail (28% width on desktop) */}
-                  <div className="w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto bg-gray-100 dark:bg-[#202c33] shrink-0 relative">
+                <div key={c.id} className={cn("bg-white dark:bg-[#111b21] rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-shadow hover:shadow-md", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}>
+                  {/* Thumbnail */}
+                  <div className={cn("bg-gray-100 dark:bg-[#202c33] shrink-0 relative", viewMode === "grid" ? "w-full h-[220px]" : "w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto")}>
                     {c.thumbnail_url ? (
-                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full md:absolute inset-0 object-cover" />
+                      <img src={c.thumbnail_url} alt={c.title} className={cn("w-full h-full object-cover", viewMode === "grid" ? "" : "md:absolute inset-0")} />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                         <span className="text-sm font-medium">No Thumbnail</span>
+                        <span className="text-sm font-medium">No Thumbnail</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Right Side: Content */}
+                  {/* Content */}
                   <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
                     <div>
                       {/* Top Row: Title and Price */}
-                      <div className="flex justify-between items-start mb-2 gap-4">
-                        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white pr-4 leading-tight">
+                      <div className={cn("flex justify-between items-start gap-4 mb-2", viewMode === "grid" ? "flex-col" : "flex-row")}>
+                        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white !pr-4 leading-tight truncate w-full">
                           {c.title}
                         </h3>
-                        <div className="flex items-center gap-6 shrink-0 bg-gray-50 dark:bg-[#182329] px-4 py-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
-                          <div className="text-right">
+                        <div className="flex items-center shrink-0 bg-gray-50 dark:bg-[#182329] px-4 py-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942] w-full justify-evenly">
+                          <div className={cn(viewMode === "grid" ? "text-center" : "text-right")}>
                             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Parent</div>
                             <div className="text-[15px] font-bold text-[#111] dark:text-white">
                               {c.price_cents != null ? money(c.price_cents) : "—"}
                             </div>
                           </div>
                           <div className="w-px h-8 bg-[#e9edef] dark:bg-[#2a3942]"></div>
-                          <div className="text-right">
+                          <div className={cn(viewMode === "grid" ? "text-center" : "text-right")}>
                             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Tutor</div>
                             <div className="text-[15px] font-bold text-[#111] dark:text-white">
                               {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "—"}
@@ -138,8 +157,8 @@ export function AdminCourses() {
                         </div>
                       </div>
 
-                      {/* Mocked Rating & Students */}
-                      <div className="flex items-center gap-2.5 text-[14px] text-muted-foreground font-medium">
+                      {/* Mocked Rating & Students & Classroom */}
+                      <div className={cn("flex items-center gap-2.5 text-[14px] text-muted-foreground font-medium flex-wrap", viewMode === "grid" ? "mt-4" : "")}>
                         <div className="flex items-center gap-1 text-[#111] dark:text-white">
                           <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                           <span>4.8</span>
@@ -159,7 +178,7 @@ export function AdminCourses() {
 
                       {/* Course Description */}
                       {c.description && (
-                        <div 
+                        <div
                           className="mt-3 text-[13px] text-muted-foreground line-clamp-2 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: c.description }}
                         />
@@ -203,7 +222,7 @@ export function AdminCourses() {
           )}
         </div>
       </div>
-      
+
       <AdminCourseModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -126,8 +126,8 @@ export function AdminUsers() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
                       <span>{u.full_name}</span>
-                      {/* <span className="inline-block mx-1 font-thin text-muted">|</span> */}
-                      {/* <span className="text-primary">{u.role}</span> */}
+                      <span className="inline-block mx-1 font-thin text-muted">|</span>
+                      <span className="text-primary font-normal text-sm">{u.role}</span>
                     </p>
                     <p className="text-[12px] text-muted-foreground truncate">{u.email || "-"}</p>
                   </div>
