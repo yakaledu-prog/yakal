@@ -10,7 +10,8 @@ import {
   Sun,
   Menu,
   FlameIcon,
-  Lock
+  Lock,
+  ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +26,13 @@ interface NavItem {
   icon: React.ReactNode;
   badge?: number;
   isLocked?: boolean;
+  /** Renders this item as a collapsible group instead of a link. */
+  children?: NavItem[];
+}
+
+/** Groups are containers, so route matching only ever runs against leaves. */
+function flattenNav(items: NavItem[]): NavItem[] {
+  return items.flatMap((i) => (i.children?.length ? i.children : [i]));
 }
 
 interface DashboardLayoutProps {
@@ -55,7 +63,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const lockedItem = navItems.find(item => {
+  const lockedItem = flattenNav(navItems).find(item => {
     if (demoUnlocked.includes(item.href)) return false;
     if (item.href === basePath) return location.pathname === item.href && item.isLocked;
     return location.pathname.startsWith(item.href) && item.isLocked;
@@ -139,48 +147,27 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
-          {navItems.map((item) => {
-            const isActive = item.href === basePath
-              ? location.pathname === item.href
-              : location.pathname.startsWith(item.href);
-            const isItemLocked = item.isLocked && !demoUnlocked.includes(item.href);
-            return (
-              <Link
+          {navItems.map((item) =>
+            item.children?.length ? (
+              <NavGroup
+                key={item.name}
+                item={item}
+                sidebarOpen={sidebarOpen}
+                demoUnlocked={demoUnlocked}
+                basePath={basePath}
+                pathname={location.pathname}
+              />
+            ) : (
+              <NavLeaf
                 key={item.href}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
-                  isItemLocked && "opacity-60",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  !sidebarOpen && "justify-center px-0"
-                )}
-                title={!sidebarOpen ? item.name : undefined}
-              >
-                <div className="relative flex items-center justify-center">
-                  {item.icon}
-                  {isItemLocked && !sidebarOpen && (
-                    <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
-                      <Lock size={10} className="text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                {sidebarOpen && (
-                  <>
-                    <span className="font-medium text-sm flex-1">{item.name}</span>
-                    {isItemLocked ? (
-                      <Lock size={14} className="text-muted-foreground ml-auto opacity-70" />
-                    ) : item.badge !== undefined && item.badge > 0 ? (
-                      <span className="bg-[#1099A1] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ml-auto">
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+                item={item}
+                sidebarOpen={sidebarOpen}
+                demoUnlocked={demoUnlocked}
+                basePath={basePath}
+                pathname={location.pathname}
+              />
+            )
+          )}
         </nav>
 
         {/* Profile Card */}
@@ -346,6 +333,151 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+// -- Sidebar items ------------------------------------------------------------
+
+interface NavNodeProps {
+  item: NavItem;
+  sidebarOpen: boolean;
+  demoUnlocked: string[];
+  basePath: string;
+  pathname: string;
+  /** Nested items sit under a group header and are indented. */
+  nested?: boolean;
+}
+
+function matches(href: string, basePath: string, pathname: string) {
+  return href === basePath ? pathname === href : pathname.startsWith(href);
+}
+
+function NavLeaf({
+  item, sidebarOpen, demoUnlocked, basePath, pathname, nested = false,
+}: NavNodeProps) {
+  const isActive = matches(item.href, basePath, pathname);
+  const isLocked = item.isLocked && !demoUnlocked.includes(item.href);
+
+  return (
+    <Link
+      to={item.href}
+      title={!sidebarOpen ? item.name : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
+        isLocked && "opacity-60",
+        isActive
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+        !sidebarOpen && "justify-center px-0",
+        nested && sidebarOpen && "py-2"
+      )}
+    >
+      <div className="relative flex items-center justify-center">
+        {item.icon}
+        {isLocked && !sidebarOpen && (
+          <div className="absolute -bottom-1 -right-1 rounded-full bg-background p-0.5">
+            <Lock size={10} className="text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      {sidebarOpen && (
+        <>
+          <span className={cn("flex-1 font-medium", nested ? "text-[13px]" : "text-sm")}>
+            {item.name}
+          </span>
+          {isLocked ? (
+            <Lock size={14} className="ml-auto text-muted-foreground opacity-70" />
+          ) : item.badge !== undefined && item.badge > 0 ? (
+            <span className="ml-auto min-w-[20px] rounded-full bg-[#1099A1] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+              {item.badge}
+            </span>
+          ) : null}
+        </>
+      )}
+    </Link>
+  );
+}
+
+function NavGroup({
+  item, sidebarOpen, demoUnlocked, basePath, pathname,
+}: NavNodeProps) {
+  const children = item.children ?? [];
+  const hasActiveChild = children.some((c) => matches(c.href, basePath, pathname));
+
+  // Open when a child route is active, and stay open once opened by hand.
+  const [open, setOpen] = useState(hasActiveChild);
+  useEffect(() => {
+    if (hasActiveChild) setOpen(true);
+  }, [hasActiveChild]);
+
+  // A collapsed rail has no room for a header plus indented children, so the
+  // group flattens back into plain icons rather than hiding its contents.
+  if (!sidebarOpen) {
+    return (
+      <>
+        {children.map((c) => (
+          <NavLeaf
+            key={c.href}
+            item={c}
+            sidebarOpen={sidebarOpen}
+            demoUnlocked={demoUnlocked}
+            basePath={basePath}
+            pathname={pathname}
+          />
+        ))}
+      </>
+    );
+  }
+
+  const allLocked = children.every(
+    (c) => c.isLocked && !demoUnlocked.includes(c.href)
+  );
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
+          allLocked && "opacity-60",
+          hasActiveChild && !open
+            ? "text-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        )}
+      >
+        <div className="flex items-center justify-center">{item.icon}</div>
+        <span className="flex-1 text-left text-sm font-medium">{item.name}</span>
+        {allLocked && <Lock size={13} className="text-muted-foreground opacity-70" />}
+        <ChevronDown
+          size={15}
+          className={cn("shrink-0 transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <div className="relative ml-[22px] mt-0.5 flex flex-col gap-0.5 pl-3">
+          {/* Single rule tying the children to their header, instead of a
+              border on every row. */}
+          <span
+            aria-hidden
+            className="absolute inset-y-1 left-0 w-px bg-[#e9edef] dark:bg-[#2a3942]"
+          />
+          {children.map((c) => (
+            <NavLeaf
+              key={c.href}
+              item={c}
+              sidebarOpen={sidebarOpen}
+              demoUnlocked={demoUnlocked}
+              basePath={basePath}
+              pathname={pathname}
+              nested
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

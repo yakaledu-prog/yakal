@@ -11,6 +11,7 @@ import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
 import { ProposalPage } from "../pages/shared/ProposalPage";
 import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
+import { CollegeListPreview } from "../pages/preview/CollegeListPreview";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
 import { CancellationPolicyPage } from "../pages/shared/CancellationPolicyPage";
@@ -161,6 +162,8 @@ const previewRoutes = DEV_PREVIEW
     // The catalog is public data and reads fine with no session, so this is the
     // fastest way to iterate on the layout without seeding a demo student.
     { path: "/preview/explore", element: <StudentExploreUniversities /> },
+    { path: "/preview/college-list", element: <StudentCollegeList /> },
+    { path: "/preview/college-rows", element: <CollegeListPreview /> },
   ]
   : [];
 
