@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AdminUser, getAdminUserDetails, UserDetails } from "@/services/adminService";
-import { Button } from "@/components/ui/Button";
+import { AdminUser, getAdminUserDetails } from "@/services/adminService";
 import { X, Loader2, Calendar, FileText, Users, DollarSign, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
@@ -17,7 +16,7 @@ interface AdminUserViewModalProps {
 export function AdminUserViewModal({ isOpen, onClose, user }: AdminUserViewModalProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: details, isLoading } = useQuery({
+  const { data: details, isLoading, isError, error } = useQuery({
     queryKey: ["admin-user-details", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -26,6 +25,7 @@ export function AdminUserViewModal({ isOpen, onClose, user }: AdminUserViewModal
       return res.data;
     },
     enabled: isOpen && !!user,
+    retry: 1, // Add this so it doesn't infinite loop for a long time
   });
 
   useEffect(() => {
@@ -84,6 +84,15 @@ export function AdminUserViewModal({ isOpen, onClose, user }: AdminUserViewModal
         <div className="flex-1 flex flex-col items-center justify-center p-10">
           <Loader2 className="w-8 h-8 animate-spin text-[#1099A1]" />
           <p className="mt-4 text-[13px] text-muted-foreground">Loading user details...</p>
+        </div>
+      );
+    }
+    
+    if (isError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-10">
+          <p className="text-[14px] font-bold text-red-500">Error loading details</p>
+          <p className="mt-2 text-[13px] text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
         </div>
       );
     }

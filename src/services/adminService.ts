@@ -274,7 +274,7 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
   try {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, cv_url")
+      .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason")
       .eq("id", id)
       .single();
 
@@ -307,38 +307,38 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
       details.child_services = services || [];
     } else if (role === "tutor") {
       const [{ data: sessions }, { data: courses }, { data: invoices }] = await Promise.all([
-        supabase.from("sessions").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("tutor_id", id).order("start_time", { ascending: false }),
+        supabase.from("sessions").select("*").eq("tutor_id", id).order("start_time", { ascending: false }),
         supabase.from("courses").select("*").contains("tutor_ids", [id]),
         supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })
       ]);
       details.sessions = sessions || [];
       details.courses = courses || [];
       details.invoices = invoices || [];
-      // Extract unique students from sessions
-      const studentMap = new Map();
-      (sessions || []).forEach((s: any) => {
-        if (s.student && !studentMap.has(s.student.id)) {
-          studentMap.set(s.student.id, s.student);
-        }
-      });
-      details.students = Array.from(studentMap.values());
+      
+      const studentIds = [...new Set((sessions || []).map((s: any) => s.student_id).filter(Boolean))];
+      if (studentIds.length > 0) {
+        const { data: students } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
+        details.students = students || [];
+      } else {
+        details.students = [];
+      }
     } else if (role === "counselor") {
       const [{ data: apps }, { data: sessions }, { data: invoices }] = await Promise.all([
-        supabase.from("college_applications").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("counselor_id", id),
-        supabase.from("sessions").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("counselor_id", id).order("start_time", { ascending: false }),
+        supabase.from("college_applications").select("*").eq("counselor_id", id),
+        supabase.from("sessions").select("*").eq("counselor_id", id).order("start_time", { ascending: false }),
         supabase.from("invoices").select("*").eq("counselor_id", id).order("created_at", { ascending: false })
       ]);
       details.applications = apps || [];
       details.sessions = sessions || [];
       details.invoices = invoices || [];
-      // Extract unique students from applications
-      const studentMap = new Map();
-      (apps || []).forEach((a: any) => {
-        if (a.student && !studentMap.has(a.student.id)) {
-          studentMap.set(a.student.id, a.student);
-        }
-      });
-      details.students = Array.from(studentMap.values());
+      
+      const studentIds = [...new Set((apps || []).map((a: any) => a.student_id).filter(Boolean))];
+      if (studentIds.length > 0) {
+        const { data: students } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
+        details.students = students || [];
+      } else {
+        details.students = [];
+      }
     }
 
     return { success: true, data: details };

@@ -9,8 +9,9 @@ import { dicebearUrl } from "@/utils/avatar";
 import { Search, Loader2, Check, X, Eye, Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { AdminUserViewModal } from "./AdminUserViewModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
-const ROLES = ["all", "student", "tutor", "counselor", "parent", "admin"];
+const ROLES = ["all", "student", "tutor", "counselor", "parent"];
 
 const statusColor: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -24,6 +25,7 @@ export function AdminUsers() {
   const [q, setQ] = useState("");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const qc = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
@@ -31,9 +33,11 @@ export function AdminUsers() {
     queryFn: () => getUsers(role),
   });
 
-  const filtered = users.filter(
-    (u) => u.full_name.toLowerCase().includes(q.toLowerCase()) || (u.email || "").toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    // Hide admin role entirely
+    if (u.role === "admin") return false;
+    return u.full_name.toLowerCase().includes(q.toLowerCase()) || (u.email || "").toLowerCase().includes(q.toLowerCase());
+  });
 
   const counts = users.reduce(
     (acc, u) => {
@@ -52,12 +56,13 @@ export function AdminUsers() {
     qc.invalidateQueries({ queryKey: ["admin-users", role] });
   }
 
-  async function handleDelete(u: AdminUser) {
-    if (!confirm(`Are you sure you want to delete ${u.full_name}?`)) return;
-    const res = await deleteUser(u.id);
+  async function handleDeleteConfirm() {
+    if (!userToDelete) return;
+    const res = await deleteUser(userToDelete.id);
     if (!res.success) return toast.error(res.error || "Delete failed.");
     toast.success("User deleted.");
     qc.invalidateQueries({ queryKey: ["admin-users", role] });
+    setUserToDelete(null);
   }
 
   function handleView(u: AdminUser) {
@@ -146,7 +151,7 @@ export function AdminUsers() {
                     <button onClick={() => handleView(u)} className="p-1.5 rounded-md text-muted-foreground hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors" title="View details">
                       <Eye size={16} />
                     </button>
-                    <button onClick={() => handleDelete(u)} className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete user">
+                    <button onClick={() => setUserToDelete(u)} className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete user">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -164,6 +169,21 @@ export function AdminUsers() {
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         user={selectedUser}
+      />
+
+      <ConfirmModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete User"
+        message={
+          <>
+            Are you sure you want to delete <strong>{userToDelete?.full_name}</strong>? 
+            They will lose access to their account immediately.
+          </>
+        }
+        confirmText="Delete"
+        isDestructive={true}
       />
     </PageWrapper>
   );
