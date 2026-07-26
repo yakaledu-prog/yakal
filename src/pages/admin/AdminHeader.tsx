@@ -11,11 +11,13 @@ export function AdminHeader({
   subtitle,
   stats = [],
   children,
+  rightContent,
 }: {
   title?: string;
   subtitle?: string;
   stats?: HeaderStat[];
   children?: React.ReactNode;
+  rightContent?: React.ReactNode;
 }) {
   return (
     <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 relative overflow-hidden shrink-0">
@@ -32,7 +34,12 @@ export function AdminHeader({
           {subtitle && <p className="text-white/80 text-[14px] mt-1">{subtitle}</p>}
           {children}
         </div>
-        {stats.length > 0 && (
+        {rightContent && (
+          <div className="flex-1 flex justify-end items-end shrink-0">
+            {rightContent}
+          </div>
+        )}
+        {stats && stats.length > 0 && (
           <div className="flex flex-wrap items-end gap-x-8 gap-y-4 shrink-0">
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col">

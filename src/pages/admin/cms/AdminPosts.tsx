@@ -4,12 +4,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getPosts, deletePost, BlogPost } from "@/services/cmsService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Plus, Edit2, Trash2, Search, Loader2, MoreVertical, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Loader2, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AdminHeader } from "../AdminHeader";
 import { cn } from "@/utils/cn";
-import { useEffect, useRef } from "react";
 
 export function AdminPosts() {
   const [q, setQ] = useState("");
@@ -22,6 +21,12 @@ export function AdminPosts() {
   });
 
   const filtered = posts.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()));
+
+  const stats = [
+    { label: "Total Posts", value: posts.length },
+    { label: "Published", value: posts.filter((p) => p.status === "published").length },
+    { label: "Drafts", value: posts.filter((p) => p.status === "draft").length },
+  ];
 
   async function handleDeleteConfirm() {
     if (!postToDelete) return;
@@ -38,6 +43,7 @@ export function AdminPosts() {
         <AdminHeader
           title="Blog Posts"
           subtitle="Manage your CMS content"
+          stats={stats}
         />
 
         <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-5">
@@ -76,6 +82,7 @@ export function AdminPosts() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+
               {filtered.map((post) => (
                 <PostCard
                   key={post.id}
