@@ -10,6 +10,7 @@ import { cn } from "@/utils/cn";
 import { CatalogFilterRail } from "@/components/college/CatalogFilterRail";
 import { CollegeCard } from "@/components/college/CollegeCard";
 import { FitBar } from "@/components/college/FitBar";
+import { AddCollegeModal, AddCollegeInput } from "@/components/college/AddCollegeModal";
 import {
   CatalogFilters,
   College,
@@ -97,23 +98,22 @@ export function StudentExploreUniversities() {
 
   const visible = results.slice(0, limit);
 
-  const add = async (c: College) => {
+  // Adding opens the detail modal rather than inserting straight away. The
+  // fields we cannot look up (deadline, round, essay count) are cheapest to
+  // capture at the moment the student is already looking at the college.
+  const [pendingAdd, setPendingAdd] = useState<College | null>(null);
+
+  const submitAdd = async (input: AddCollegeInput) => {
     if (!user) return;
-    setAdding(c.unitid);
-    const fit = fitActive ? computeFit(c, student) : "target";
-    const res = await addSchoolFromCatalog(user.id, {
-      unitid: c.unitid,
-      school_name: c.name,
-      // The student's own starting guess. A counselor confirms or overrides it,
-      // which is the whole point of the review step.
-      tier: fit === "reach" ? "dream" : fit === "safety" ? "safety" : "target",
-    });
+    setAdding(input.unitid);
+    const res = await addSchoolFromCatalog(user.id, input);
     setAdding(null);
     if (!res.success) {
-      toast.error(res.error || "Could not add that school.");
+      toast.error(res.error || "Could not add that college.");
       return;
     }
-    toast.success(`${c.name} added to your list.`);
+    setPendingAdd(null);
+    toast.success(`${input.school_name} added to your list.`);
     qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
   };
 
@@ -268,7 +268,7 @@ export function StudentExploreUniversities() {
                   fit={fitActive ? computeFit(c, student) : "unknown"}
                   sat={fitActive ? student.sat : null}
                   isAdded={addedNames.has(c.name.toLowerCase()) || adding === c.unitid}
-                  onAdd={add}
+                  onAdd={setPendingAdd}
                   onOpen={() => {
                     /* Detail panel lands with the university detail page. */
                   }}
@@ -281,7 +281,7 @@ export function StudentExploreUniversities() {
               student={fitActive ? student : {}}
               fitActive={fitActive}
               addedNames={addedNames}
-              onAdd={add}
+              onAdd={setPendingAdd}
             />
           )}
 
@@ -306,6 +306,17 @@ export function StudentExploreUniversities() {
           </p>
         </div>
       </PageWrapper>
+
+      <AddCollegeModal
+        open={!!pendingAdd}
+        onClose={() => setPendingAdd(null)}
+        onSubmit={submitAdd}
+        catalog={catalog}
+        student={student}
+        alreadyAdded={addedNames}
+        saving={adding !== null}
+        preselected={pendingAdd}
+      />
     </div>
   );
 }

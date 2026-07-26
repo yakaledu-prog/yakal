@@ -31,6 +31,16 @@ export interface CollegeListItem {
   /** IPEDS unit ID, set when the school came from the catalog. Null for
    *  manually added schools (foreign universities and very small colleges). */
   unitid?: number | null;
+  deadline_round?: string | null;
+  application_url?: string | null;
+  supp_essay_count?: number | null;
+  why_school?: string | null;
+  /** Who typed the human-entered fields. */
+  entered_by?: string | null;
+  /** Counselor who confirmed them. Null means nobody has checked. */
+  verified_by?: string | null;
+  verified_at?: string | null;
+  verification_note?: string | null;
   tier: SchoolTier;
   deadline: string | null;
   status: SchoolStatus;
@@ -178,44 +188,105 @@ export const addSchool = (studentId: string, patch: Partial<CollegeListItem>) =>
     supabase.from("college_list_items").insert([{ student_id: studentId, ...patch }]).select().single()
   );
 
+export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
+
+export interface AddCollegeInput {
+  unitid: number | null;
+  school_name: string;
+  tier: SchoolTier;
+  deadline?: string | null;
+  deadline_round?: DeadlineRound | null;
+  application_url?: string | null;
+  supp_essay_count?: number | null;
+  why_school?: string | null;
+}
+
+/** Columns added by docs/db_migration_add_college_catalog.sql. */
+const MIGRATION_COLUMNS = [
+  "unitid",
+  "deadline_round",
+  "application_url",
+  "supp_essay_count",
+  "why_school",
+  "entered_by",
+];
+
 /**
- * Add a school the student picked out of the catalog.
+ * Add a college the student picked out of the catalog.
  *
- * Prefers storing `unitid`, the IPEDS identifier, so the row references the
- * catalog instead of copying a name string. That is what stops the same school
+ * Stores `unitid`, the IPEDS identifier, so the row references the catalog
+ * instead of copying a name string. That is what stops the same college
  * existing twice with two different sticker prices.
  *
- * The column is added by docs/db_migration_add_college_catalog.sql. Until that
- * migration is applied this falls back to a name-only insert, so the feature
- * works on an un-migrated database rather than failing closed.
+ * Also records `entered_by`, because these fields are typed by a student and
+ * nothing has verified them yet. A counselor sets verified_by later.
+ *
+ * If the migration has not been applied, this retries with only the original
+ * columns so the feature degrades instead of failing closed.
  */
 export async function addSchoolFromCatalog(
   studentId: string,
-  input: { unitid: number; school_name: string; tier: SchoolTier }
+  input: AddCollegeInput
 ): Promise<Result<CollegeListItem>> {
-  const { unitid, ...rest } = input;
+  const full: Record<string, unknown> = {
+    student_id: studentId,
+    school_name: input.school_name,
+    tier: input.tier,
+    deadline: input.deadline ?? null,
+    unitid: input.unitid,
+    deadline_round: input.deadline_round ?? null,
+    application_url: input.application_url ?? null,
+    supp_essay_count: input.supp_essay_count ?? null,
+    why_school: input.why_school ?? null,
+    entered_by: studentId,
+  };
 
-  const withUnitid = await write<CollegeListItem>(
-    supabase
-      .from("college_list_items")
-      .insert([{ student_id: studentId, unitid, ...rest }])
-      .select()
-      .single()
+  const attempt = await write<CollegeListItem>(
+    supabase.from("college_list_items").insert([full]).select().single()
   );
-  if (withUnitid.success) return withUnitid;
+  if (attempt.success) return attempt;
 
-  // PostgREST reports an unknown column as PGRST204 / "column ... does not exist".
-  const missingColumn = /unitid/i.test(withUnitid.error || "");
-  if (!missingColumn) return withUnitid;
+  // PostgREST names the offending column, so only fall back when the failure is
+  // actually a missing column and not, say, a permissions error.
+  const err = attempt.error || "";
+  if (!MIGRATION_COLUMNS.some((c) => err.includes(c))) return attempt;
 
+  const legacy = {
+    student_id: studentId,
+    school_name: input.school_name,
+    tier: input.tier,
+    deadline: input.deadline ?? null,
+    notes: input.why_school ?? null,
+  };
   return write<CollegeListItem>(
-    supabase
-      .from("college_list_items")
-      .insert([{ student_id: studentId, ...rest }])
-      .select()
-      .single()
+    supabase.from("college_list_items").insert([legacy]).select().single()
   );
 }
+
+/**
+ * A counselor confirms a student-entered deadline against the college's own
+ * page.
+ *
+ * Stores the counselor's id rather than a boolean. A wrong deadline is
+ * consequential, so we need to be able to answer who approved it and when.
+ */
+export const verifySchool = (
+  id: string,
+  counselorId: string,
+  note?: string | null
+) =>
+  write<CollegeListItem>(
+    supabase
+      .from("college_list_items")
+      .update({
+        verified_by: counselorId,
+        verified_at: new Date().toISOString(),
+        verification_note: note ?? null,
+      })
+      .eq("id", id)
+      .select()
+      .single()
+  );
 
 export const updateSchool = (id: string, patch: Partial<CollegeListItem>) =>
   write<CollegeListItem>(supabase.from("college_list_items").update(patch).eq("id", id).select().single());

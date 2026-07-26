@@ -173,7 +173,7 @@ export function CatalogFilterRail({
             const v = Number(e.target.value);
             set("maxNetPrice", v >= 80000 ? null : v);
           }}
-          className="mt-1.5 w-full accent-[#1099A1]"
+          className="mt-1.5 outline-none w-full accent-[#1099A1]"
         />
         <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
           Average net price after aid, not sticker price. Schools that report no
