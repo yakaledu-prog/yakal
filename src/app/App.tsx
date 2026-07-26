@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import HomePage from "@/pages/HomePage";
 import SubjectPage from "@/pages/SubjectPage";
 import BlogPage from "@/pages/BlogPage";
-import { blogs } from "@/data/blogs";
+import BlogsPage from "@/pages/BlogsPage";
 import type { Page } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
@@ -45,9 +45,12 @@ export default function App() {
     return <SubjectPage subject={{ name: page.name, img: page.img }} onBack={goHome} />;
   }
 
+  if (page.type === "blogs") {
+    return <BlogsPage onNavigate={navigateTo} onBack={goHome} />;
+  }
+
   if (page.type === "blog") {
-    const blog = blogs.find((b) => b.slug === page.slug);
-    if (blog) return <BlogPage blog={blog} onBack={goHome} />;
+    return <BlogPage id={page.id} onBack={goHome} />;
   }
 
   return <HomePage onNavigate={navigateTo} />;

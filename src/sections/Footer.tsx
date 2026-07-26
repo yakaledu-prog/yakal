@@ -7,7 +7,7 @@ const quickLinks = [
   { label: "Home", id: "home" },
   { label: "About Us", id: "about" },
   { label: "Courses", id: "courses" },
-  { label: "Blog", id: "blog" },
+  { label: "Blogs", id: "blogs" },
   { label: "Contact", id: "contact" },
 ];
 
@@ -17,8 +17,9 @@ const socials = [
   { href: "#twitter", icon: <Twitter size={15} strokeWidth={2} /> },
   { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
+import type { Page } from "@/types";
 
-export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
+export default function Footer({ scrollTo, onNavigate }: { scrollTo: (id: string) => void; onNavigate?: (page: Page) => void }) {
   const [email, setEmail] = useState("");
 
   function handleSubscribe(e: React.FormEvent) {
@@ -44,7 +45,17 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
           <h4 className="text-[16px] md:text-[20px] font-semibold mb-[16px] md:mb-[24px]">Quick Links</h4>
           <nav className="space-y-[12px] md:space-y-[16px]">
             {quickLinks.map((link) => (
-              <button key={link.id} onClick={() => scrollTo(link.id)} className="block text-[rgba(255,255,255,0.75)] hover:text-white bg-transparent border-none cursor-pointer text-[14px] md:text-[16px]">
+              <button 
+                key={link.id} 
+                onClick={() => {
+                  if (link.id === "blogs" && onNavigate) {
+                    onNavigate({ type: "blogs", scrollY: window.scrollY });
+                  } else {
+                    scrollTo(link.id);
+                  }
+                }} 
+                className="block text-[rgba(255,255,255,0.75)] hover:text-white bg-transparent border-none cursor-pointer text-[14px] md:text-[16px]"
+              >
                 {link.label}
               </button>
             ))}

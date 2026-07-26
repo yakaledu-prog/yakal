@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import type { Blog } from "@/data/blogs";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { getPost, BlogPost } from "@/services/cmsService";
 
-export default function BlogPage({ blog, onBack }: { blog: Blog; onBack: () => void }) {
+export default function BlogPage({ id, onBack }: { id: string; onBack: () => void }) {
   const [progress, setProgress] = useState(0);
+  const [blog, setBlog] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -17,6 +20,32 @@ export default function BlogPage({ blog, onBack }: { blog: Blog; onBack: () => v
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    async function loadPost() {
+      const res = await getPost(id);
+      if (res) setBlog(res);
+      setLoading(false);
+    }
+    loadPost();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen w-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#1099a1]" />
+      </div>
+    );
+  }
+
+  if (!blog) {
+    return (
+      <div className="bg-white min-h-screen w-full flex flex-col items-center justify-center">
+        <p className="text-xl font-medium mb-4">Post not found</p>
+        <button onClick={onBack} className="text-[#1099a1] hover:underline">Go Back</button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white min-h-screen w-full">
@@ -35,31 +64,19 @@ export default function BlogPage({ blog, onBack }: { blog: Blog; onBack: () => v
 
         <h1 className="text-[32px] md:text-[46px] font-medium leading-[42px] md:leading-[56px] mb-[12px]">{blog.title}</h1>
         <div className="flex items-center gap-[12px] text-[#4a4a4a] text-[14px] md:text-[16px] mb-[28px]">
-          <span>{blog.readTime}</span>
+          <span>{blog.read_time_minutes} Min Read</span>
           <span>&#8226;</span>
-          <span>{blog.date}</span>
+          <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
         </div>
 
-        <div className="w-full h-[220px] md:h-[400px] rounded-[16px] overflow-hidden mb-[36px]">
-          <img src={blog.img} alt={blog.title} className="w-full h-full object-cover" />
-        </div>
+        {blog.thumbnail_url && (
+          <div className="w-full h-[220px] md:h-[400px] rounded-[16px] overflow-hidden mb-[36px]">
+            <img src={blog.thumbnail_url} alt={blog.title} className="w-full h-full object-cover" />
+          </div>
+        )}
 
-        <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[28px] md:leading-[30px] mb-[6px]">{blog.desc}</p>
-        <p className="text-[14px] text-[#999] mb-[28px]">Introduction</p>
-
-        <div className="space-y-[28px]">
-          {blog.content.map((section, i) => (
-            <div key={i}>
-              {section.heading && (
-                <h2 className="text-[22px] md:text-[28px] font-semibold leading-[32px] md:leading-[38px] mb-[10px]">{section.heading}</h2>
-              )}
-              <div className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[28px] md:leading-[30px]">
-                {section.body.split("\n\n").map((para, j) => (
-                  <p key={j} className="mb-[10px]">{para}</p>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="prose prose-lg max-w-none prose-headings:font-semibold prose-a:text-[#1099a1]">
+          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
         </div>
       </div>
     </div>

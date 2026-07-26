@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getContactMessages, markContactHandled, type ContactMessage } from "@/services/adminService";
-import { Loader2, Phone, Inbox, Clock, Archive } from "lucide-react";
+import { Loader2, Phone, Inbox, Clock, Archive, DeleteIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 function fmtDate(d: string) {
@@ -12,6 +12,7 @@ function fmtDate(d: string) {
 }
 const isNew = (m: ContactMessage) => m.status === "new" || !m.status;
 
+// TODO: rename to unread and archived
 type Tab = "inbox" | "new" | "handled";
 
 export function AdminContact() {
@@ -96,17 +97,7 @@ export function AdminContact() {
           <div className="flex-1 min-w-0 hidden md:flex flex-col bg-white dark:bg-[#111b21]">
             {active ? (
               <>
-                {/* Action bar */}
-                <div className="flex items-center justify-end gap-1 px-6 py-2.5 border-b border-[#e9edef] dark:border-[#2a3942]">
-                  {isNew(active) && (
-                    <button onClick={() => handle(active.id)} title="Mark handled"
-                      className="p-2 rounded-md text-muted-foreground hover:text-[#1099A1] hover:bg-muted transition-colors">
-                      <Archive size={18} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="p-6 md:p-8 overflow-y-auto">
+                <div className="p-6 md:p-8 overflow-y-auto flex-grow">
                   <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">{active.subject || "No subject"}</h2>
 
                   {/* Sender row */}
@@ -118,21 +109,37 @@ export function AdminContact() {
                       <p className="text-[14px] font-bold text-[#111] dark:text-white leading-tight">{active.first_name} {active.last_name}</p>
                       <a href={`mailto:${active.email}`} className="text-[12px] text-muted-foreground hover:text-[#1099A1]">{active.email}</a>
                     </div>
-                    <div className="text-[12px] text-muted-foreground flex items-center gap-1.5 shrink-0">
-                      <Clock size={13} /> {new Date(active.created_at).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    <div className="flex flex-col items-end gap-0.5 justify-center">
+                      {active.phone && (
+                        <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+                          <Phone size={13} /> {active.phone}
+                        </p>
+                      )}
+                      <div className="text-[12px] text-muted-foreground flex items-center gap-1.5 shrink-0">
+                        <Clock size={13} /> {new Date(active.created_at).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </div>
                     </div>
                   </div>
-
-                  {active.phone && (
-                    <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 mt-3 ml-[52px]">
-                      <Phone size={13} /> {active.phone}
-                    </p>
-                  )}
 
                   <div className="border-t border-[#e9edef] dark:border-[#2a3942] my-6" />
 
                   <p className="text-[15px] text-[#111] dark:text-[#e9edef] leading-relaxed whitespace-pre-wrap">{active.message}</p>
                 </div>
+
+                {/* Action bar */}
+                {true && (
+                  <div className="flex items-center justify-end gap-1 px-6 py-2.5 border-t border-[#e9edef] dark:border-[#2a3942]">
+                    {/* {isNew(active) && ( */}
+                    <button onClick={() => handle(active.id)} title="Mark handled"
+                      className="p-2 rounded-md text-muted-foreground hover:text-[#1099A1] hover:bg-muted transition-colors">
+                      <Archive size={18} />
+                    </button>
+                    <button onClick={() => handle(active.id)} title="Mark handled"
+                      className="p-2 rounded-md text-muted-foreground hover:text-red-500/85 hover:bg-muted transition-colors">
+                      <Trash2Icon size={18} />
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
