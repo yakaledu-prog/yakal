@@ -182,16 +182,19 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             { num: 3, label: "Classroom & Pricing", icon: DollarSign }
           ].map((s, i) => (
             <div key={s.num} className="flex items-center flex-1 last:flex-none">
-              <div className="flex items-center gap-3">
+              <div
+                className="flex items-center gap-3 cursor-pointer group"
+                onClick={() => setStep(s.num)}
+              >
                 <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-sm transition-colors",
+                  "w-6 h-6 rounded-full flex items-center justify-center text-sm group-hover:opacity-80",
                   step >= s.num ? "bg-[#1099A1] text-white" : "bg-[#f1f1f1] dark:bg-[#202c33] text-muted-foreground border border-[#e9edef] dark:border-[#2a3942]"
                 )}>
                   {s.num}
                   {/* <s.icon size={16} /> */}
                 </div>
                 <span className={cn(
-                  "text-[13px] hidden md:block whitespace-nowrap",
+                  "text-[13px] hidden md:block whitespace-nowrap group-hover:text-[#111] dark:group-hover:text-white transition-colors",
                   step >= s.num ? "text-[#111] dark:text-white" : "text-muted-foreground"
                 )}>
                   {s.label}
@@ -230,7 +233,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           )}
 
           {step === 2 && (
-            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition-colors relative animate-in slide-in-from-right-4 duration-300 overflow-hidden ">
+            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition relative animate-in slide-in-from-right-4 overflow-hidden ease-in duration-500">
               <TipTapEditor
                 value={formData.description}
                 onChange={html => setFormData({ ...formData, description: html })}
@@ -240,7 +243,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           )}
 
           {step === 3 && (
-            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+            <div className="space-y-6 animate-in slide-in-from-right-4 h-full flex flex-col transition-all ease-in duration-500">
               <div className="space-y-3">
                 <label className="text-[13px] mb-1 block text-muted-foreground">Google Classroom URL</label>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -333,14 +336,14 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-[#e9edef] dark:border-[#2a3942] flex justify-between shrink-0 bg-gray-50 dark:bg-[#182329]">
-          {step > 1 && <Button
+          <Button
             type="button"
             variant="outline"
-            onClick={() => setStep(step - 1)}
+            onClick={() => step > 1 ? setStep(step - 1) : onClose()}
             className="w-[120px] !border !border-gray-300 dark:!border-gray-700 "
           >
-            <ChevronLeft className="w-4 h-4 mr-1" /> Back
-          </Button>}
+            <ChevronLeft className="w-4 h-4 mr-1" /> {step > 1 ? "Back" : "Cancel"}
+          </Button>
 
           {step < 3 ? (
             <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px] ml-auto">
