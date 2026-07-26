@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
-import ServicesV5 from "@/sections/ServicesV5";
+import Services from "@/sections/Services";
 import Subjects from "@/sections/Subjects";
 import ParentResources from "@/sections/ParentResources";
 import About from "@/sections/About";
@@ -39,7 +39,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       <Hero onNav={scrollTo} />
       <About />
       <WhyJoinUs />
-      <ServicesV5 />
+      <Services />
       <Subjects onNavigate={onNavigate} />
       <ParentResources scrollTo={scrollTo} />
       <Testimonials />

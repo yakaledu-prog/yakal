@@ -75,7 +75,7 @@ function getRoleIcon(type: string) {
   }
 }
 
-export default function ServicesV5() {
+export default function Services() {
   return (
     <section id="services" className="w-full bg-white pt-[20px] md:pt-[40px] pb-[20px] md:pb-[40px]">
       <div className="max-w-[1440px] mx-auto px-[24px] md:px-[73px]">
