@@ -32,7 +32,17 @@ export async function fetchCourseWork(accessToken: string, courseId: string) {
   const res = await fetch(`${CLASSROOM_BASE_URL}/courses/${courseId}/courseWork`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
-  if (!res.ok) throw new Error('Failed to fetch course work');
+  if (!res.ok) {
+    let errorMsg = 'Failed to fetch course work';
+    try {
+      const errorData = await res.json();
+      console.error("Google Classroom API Error:", errorData);
+      errorMsg = errorData.error?.message || JSON.stringify(errorData);
+    } catch (e) {
+      errorMsg = `${res.status} ${res.statusText}`;
+    }
+    throw new Error(`API Error: ${errorMsg}`);
+  }
   return res.json();
 }
 

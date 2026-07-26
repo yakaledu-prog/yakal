@@ -37,8 +37,6 @@ export interface AdminCourse {
   thumbnail_url: string | null;
   google_classroom_url: string | null;
   is_active: boolean;
-  tutor_ids: string[];
-  tutors?: { id: string; full_name: string }[];
 }
 
 export interface ContactMessage {
@@ -214,26 +212,9 @@ export async function getAllInvoices(): Promise<AdminInvoice[]> {
 export async function getCourses(): Promise<AdminCourse[]> {
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_ids")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
     .order("created_at", { ascending: false });
-  const rows = courses || [];
-  
-  // Extract all unique tutor IDs across all courses
-  const allTutorIds = [...new Set(rows.flatMap((r: any) => r.tutor_ids || []))];
-  const { data: tutors } = allTutorIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", allTutorIds)
-    : { data: [] as any[] };
-    
-  const nameById = new Map((tutors || []).map((t: any) => [t.id, t.full_name]));
-  
-  return rows.map((r: any) => ({
-    ...r,
-    tutor_ids: r.tutor_ids || [],
-    tutors: (r.tutor_ids || []).map((id: string) => ({
-      id,
-      full_name: nameById.get(id) || "Unknown Tutor"
-    }))
-  }));
+  return courses || [];
 }
 
 export async function updateCourse(id: string, patch: Partial<AdminCourse>): Promise<Result> {

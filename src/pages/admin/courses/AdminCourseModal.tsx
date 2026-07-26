@@ -85,7 +85,19 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
   const extractCourseId = (url: string) => {
     try {
       const match = url.match(/\/c\/([a-zA-Z0-9_]+)/);
-      return match ? match[1] : null;
+      const rawId = match ? match[1] : null;
+      if (!rawId) return null;
+
+      // Google Classroom web URLs use base64 encoding for the numeric course ID
+      try {
+        const decoded = atob(rawId);
+        if (/^\d+$/.test(decoded)) {
+          return decoded;
+        }
+      } catch (e) {
+        // Not valid base64 or not numeric, fallback to raw string
+      }
+      return rawId;
     } catch {
       return null;
     }
@@ -111,8 +123,9 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
       setClassroomPreview(res.courseWork || []);
       toast.success("Successfully fetched course details!");
     } catch (error: any) {
-      toast.error(error.message || "Failed to fetch from Google Classroom. Try reconnecting.");
-      if (error.message?.includes('401')) {
+      const msg = error.message || "";
+      toast.error(msg || "Failed to fetch from Google Classroom. Try reconnecting.");
+      if (msg.includes('401') || msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('unauthorized')) {
         setClassroomToken(null);
         localStorage.removeItem('google_classroom_token');
       }
@@ -195,13 +208,13 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           {step === 1 && (
             <div className="animate-in slide-in-from-right-4 duration-300 h-full flex flex-col max-w-lg mx-auto w-full justify-center space-y-8 py-4">
               <div className="flex-1 flex flex-col space-y-3">
-                <p className="text-sm text-center text-muted-foreground pb-2">
+                {!formData.thumbnail_url && <p className="text-sm text-center text-muted-foreground pb-2">
                   Upload a high-quality thumbnail image for your course (SVG, PNG, JPG, or GIF, max 5MB).
-                </p>
+                </p>}
                 <ImageUpload
                   value={formData.thumbnail_url}
                   onChange={url => setFormData({ ...formData, thumbnail_url: url })}
-                  className="flex-1 border-2 min-h-[250px]"
+                  className="flex-1 border-2 h-[300px] max-h-[300px]"
                 />
               </div>
 
@@ -210,14 +223,14 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   value={formData.title}
                   onChange={e => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Course Title"
-                  className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-medium py-6"
+                  className="bg-gray-50 dark:bg-[#182329] !border !border-gray-300 dark:!border-gray-700 focus:bg-white text-lg font-medium py-6"
                 />
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition-colors relative animate-in slide-in-from-right-4 duration-300 overflow-hidden">
+            <div className="flex flex-col h-[calc(100%-250px)] min-h-[400px] bg-gray-50 dark:bg-[#182329] focus-within:bg-white transition-colors relative animate-in slide-in-from-right-4 duration-300 overflow-hidden ">
               <TipTapEditor
                 value={formData.description}
                 onChange={html => setFormData({ ...formData, description: html })}
@@ -229,40 +242,38 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           {step === 3 && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 h-full flex flex-col">
               <div className="space-y-3">
-                <label className="text-[13px] font-bold text-[#111] dark:text-white">Google Classroom URL</label>
+                <label className="text-[13px] mb-1 block text-muted-foreground">Google Classroom URL</label>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Input
                     value={formData.google_classroom_url}
                     onChange={e => setFormData({ ...formData, google_classroom_url: e.target.value })}
                     placeholder="https://classroom.google.com/c/..."
-                    className="bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white flex-1"
+                    className="bg-gray-50 dark:bg-[#182329] border !border-gray-300 dark:border-gray-700 focus:bg-white flex-1"
                   />
                   <Button
                     onClick={() => handleFetchClassroom()}
                     disabled={isFetchingClassroom || !formData.google_classroom_url}
                     className="shrink-0"
-                    variant={classroomPreview ? "outline" : "default"}
+                    variant="default"
                   >
                     {isFetchingClassroom ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                     {classroomPreview ? "Refetch Details" : "Fetch Details"}
                   </Button>
                 </div>
-                <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  Provide the direct link to the Google Classroom. Clicking "Fetch" will connect to Google Classroom and show a preview of assignments to ensure the link is correct.
-                </p>
+                {!classroomPreview && (
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">
+                    Provide the direct link to the Google Classroom. Clicking <strong>fetch</strong> will connect to the class   and show available assignments.
+                  </p>
+                )}
               </div>
 
               {classroomPreview !== null && (
-                <div className="mt-6 flex-1 bg-gray-50 dark:bg-[#182329] rounded-xl border border-[#e9edef] dark:border-[#2a3942] p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <h3 className="font-bold text-[#111] dark:text-white">Connection Successful!</h3>
-                  </div>
+                <div className="">
                   <p className="text-[13px] text-muted-foreground mb-4">
                     Found <strong>{classroomPreview.length}</strong> assignments in this course.
                   </p>
 
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                  <div className="space-y-2 custom-scrollbar pr-2">
                     {classroomPreview.length === 0 ? (
                       <p className="text-[13px] text-muted-foreground italic">No assignments posted yet.</p>
                     ) : (
@@ -283,7 +294,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
               )}
               <div className="relative flex items-center mb-6 mt-8">
                 <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
-                <span className="shrink-0 px-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">Pricing</span>
+                <span className="shrink-0 px-4 text-[11px] font-normal uppercase tracking-widest text-muted-foreground/70">Pricing</span>
                 <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
               </div>
               <div className="space-y-4">
@@ -322,21 +333,21 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-[#e9edef] dark:border-[#2a3942] flex justify-between shrink-0 bg-gray-50 dark:bg-[#182329]">
-          <Button
+          {step > 1 && <Button
             type="button"
             variant="outline"
-            onClick={step === 1 ? onClose : () => setStep(step - 1)}
-            className="w-[120px]"
+            onClick={() => setStep(step - 1)}
+            className="w-[120px] !border !border-gray-300 dark:!border-gray-700 "
           >
-            {step === 1 ? "Cancel" : <><ChevronLeft className="w-4 h-4 mr-1" /> Back</>}
-          </Button>
+            <ChevronLeft className="w-4 h-4 mr-1" /> Back
+          </Button>}
 
           {step < 3 ? (
-            <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px]">
+            <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px] ml-auto">
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="w-[140px]">
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="w-[140px] ml-auto">
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
               {initialData ? "Save Changes" : "Create Course"}
             </Button>

@@ -60,7 +60,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full transition-colors backdrop-blur-sm"
+              className="p-2 bg-white/20 hover:bg-white/30 ease-in-out text-white rounded-full transition-colors"
             >
               <Upload size={20} />
             </button>
@@ -70,7 +70,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
                 e.stopPropagation();
                 onChange("");
               }}
-              className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-colors backdrop-blur-sm"
+              className="p-2 bg-red-500/50 hover:bg-red-500/70 ease-in-out text-white rounded-full transition-colors"
             >
               <X size={20} />
             </button>
