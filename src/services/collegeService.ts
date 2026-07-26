@@ -28,6 +28,9 @@ export interface CollegeListItem {
   id: string;
   student_id: string;
   school_name: string;
+  /** IPEDS unit ID, set when the school came from the catalog. Null for
+   *  manually added schools (foreign universities and very small colleges). */
+  unitid?: number | null;
   tier: SchoolTier;
   deadline: string | null;
   status: SchoolStatus;
@@ -174,6 +177,45 @@ export const addSchool = (studentId: string, patch: Partial<CollegeListItem>) =>
   write<CollegeListItem>(
     supabase.from("college_list_items").insert([{ student_id: studentId, ...patch }]).select().single()
   );
+
+/**
+ * Add a school the student picked out of the catalog.
+ *
+ * Prefers storing `unitid`, the IPEDS identifier, so the row references the
+ * catalog instead of copying a name string. That is what stops the same school
+ * existing twice with two different sticker prices.
+ *
+ * The column is added by docs/db_migration_add_college_catalog.sql. Until that
+ * migration is applied this falls back to a name-only insert, so the feature
+ * works on an un-migrated database rather than failing closed.
+ */
+export async function addSchoolFromCatalog(
+  studentId: string,
+  input: { unitid: number; school_name: string; tier: SchoolTier }
+): Promise<Result<CollegeListItem>> {
+  const { unitid, ...rest } = input;
+
+  const withUnitid = await write<CollegeListItem>(
+    supabase
+      .from("college_list_items")
+      .insert([{ student_id: studentId, unitid, ...rest }])
+      .select()
+      .single()
+  );
+  if (withUnitid.success) return withUnitid;
+
+  // PostgREST reports an unknown column as PGRST204 / "column ... does not exist".
+  const missingColumn = /unitid/i.test(withUnitid.error || "");
+  if (!missingColumn) return withUnitid;
+
+  return write<CollegeListItem>(
+    supabase
+      .from("college_list_items")
+      .insert([{ student_id: studentId, ...rest }])
+      .select()
+      .single()
+  );
+}
 
 export const updateSchool = (id: string, patch: Partial<CollegeListItem>) =>
   write<CollegeListItem>(supabase.from("college_list_items").update(patch).eq("id", id).select().single());

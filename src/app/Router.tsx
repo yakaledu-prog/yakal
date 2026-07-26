@@ -32,6 +32,7 @@ import { StudentNotifications } from "../pages/student/StudentNotifications";
 import { StudentMessages } from "../pages/student/StudentMessages";
 import { StudentRoadmap } from "../pages/student/StudentRoadmap";
 import { StudentCollegeList } from "../pages/student/StudentCollegeList";
+import { StudentExploreUniversities } from "../pages/student/StudentExploreUniversities";
 import { StudentApplicationTracker } from "../pages/student/StudentApplicationTracker";
 import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
 import { StudentProfile } from "../pages/student/StudentProfile";
@@ -157,6 +158,9 @@ const previewRoutes = DEV_PREVIEW
   ? [
     { path: "/preview/onboarding/:role", element: <OnboardingPreview /> },
     { path: "/preview/pending/:role/:status?", element: <PendingPreview /> },
+    // The catalog is public data and reads fine with no session, so this is the
+    // fastest way to iterate on the layout without seeding a demo student.
+    { path: "/preview/explore", element: <StudentExploreUniversities /> },
   ]
   : [];
 
@@ -337,6 +341,7 @@ const router = createBrowserRouter([
           { path: "messages", element: <StudentMessages /> },
           { path: "roadmap", element: <StudentRoadmap /> },
           { path: "diagnostics", element: <StudentDiagnostics /> },
+          { path: "explore", element: <StudentExploreUniversities /> },
           { path: "college-list", element: <StudentCollegeList /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
