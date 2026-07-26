@@ -9,6 +9,8 @@ export interface AdminUser {
   avatar_url: string | null;
   created_at: string;
   rejection_reason: string | null;
+  bio?: string | null;
+  cv_url?: string | null;
 }
 
 export interface AdminInvoice {
@@ -71,6 +73,17 @@ export interface AdminDashboard {
   payoutsDueCents: number;
   newMessages: number;
 }
+
+export type UserDetails = {
+  profile: AdminUser;
+  invoices?: AdminInvoice[];
+  children?: { id: string; full_name: string; avatar_url: string | null; grade_level: string | null }[];
+  sessions?: any[];
+  applications?: any[];
+  courses?: any[];
+  child_services?: any[];
+  students?: any[];
+};
 
 type Result = { success: boolean; error?: string };
 
@@ -248,4 +261,88 @@ export async function markContactHandled(id: string): Promise<Result> {
   const { error } = await supabase.from("contact_messages").update({ status: "handled" }).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+export async function deleteUser(id: string): Promise<Result> {
+  // Soft delete by setting status to 'deleted'
+  const { error } = await supabase.from("profiles").update({ status: "deleted" }).eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function getAdminUserDetails(id: string, role: string): Promise<Result & { data?: UserDetails }> {
+  try {
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, cv_url")
+      .eq("id", id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const details: UserDetails = { profile: profileData as AdminUser };
+
+    // Common query logic based on role
+    if (role === "parent") {
+      const [{ data: invoices }, { data: links }] = await Promise.all([
+        supabase.from("invoices").select("*").eq("parent_id", id).order("created_at", { ascending: false }),
+        supabase.from("parent_student_links").select("student_id").eq("parent_id", id).eq("status", "active")
+      ]);
+      details.invoices = invoices || [];
+      const studentIds = (links || []).map((l: any) => l.student_id);
+      if (studentIds.length > 0) {
+        const { data: children } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
+        details.children = children || [];
+      } else {
+        details.children = [];
+      }
+    } else if (role === "student") {
+      const [{ data: sessions }, { data: apps }, { data: services }] = await Promise.all([
+        supabase.from("sessions").select("*").eq("student_id", id).order("start_time", { ascending: false }),
+        supabase.from("college_applications").select("*").eq("student_id", id),
+        supabase.from("child_services").select("*").eq("student_id", id)
+      ]);
+      details.sessions = sessions || [];
+      details.applications = apps || [];
+      details.child_services = services || [];
+    } else if (role === "tutor") {
+      const [{ data: sessions }, { data: courses }, { data: invoices }] = await Promise.all([
+        supabase.from("sessions").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("tutor_id", id).order("start_time", { ascending: false }),
+        supabase.from("courses").select("*").contains("tutor_ids", [id]),
+        supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })
+      ]);
+      details.sessions = sessions || [];
+      details.courses = courses || [];
+      details.invoices = invoices || [];
+      // Extract unique students from sessions
+      const studentMap = new Map();
+      (sessions || []).forEach((s: any) => {
+        if (s.student && !studentMap.has(s.student.id)) {
+          studentMap.set(s.student.id, s.student);
+        }
+      });
+      details.students = Array.from(studentMap.values());
+    } else if (role === "counselor") {
+      const [{ data: apps }, { data: sessions }, { data: invoices }] = await Promise.all([
+        supabase.from("college_applications").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("counselor_id", id),
+        supabase.from("sessions").select("*, student:profiles!student_id(id, full_name, avatar_url)").eq("counselor_id", id).order("start_time", { ascending: false }),
+        supabase.from("invoices").select("*").eq("counselor_id", id).order("created_at", { ascending: false })
+      ]);
+      details.applications = apps || [];
+      details.sessions = sessions || [];
+      details.invoices = invoices || [];
+      // Extract unique students from applications
+      const studentMap = new Map();
+      (apps || []).forEach((a: any) => {
+        if (a.student && !studentMap.has(a.student.id)) {
+          studentMap.set(a.student.id, a.student);
+        }
+      });
+      details.students = Array.from(studentMap.values());
+    }
+
+    return { success: true, data: details };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }

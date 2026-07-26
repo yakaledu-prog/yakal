@@ -4,10 +4,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getUsers, approveUser, rejectUser, type AdminUser } from "@/services/adminService";
+import { getUsers, approveUser, rejectUser, deleteUser, type AdminUser } from "@/services/adminService";
 import { dicebearUrl } from "@/utils/avatar";
-import { Search, Loader2, Check, X } from "lucide-react";
+import { Search, Loader2, Check, X, Eye, Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { AdminUserViewModal } from "./AdminUserViewModal";
 
 const ROLES = ["all", "student", "tutor", "counselor", "parent", "admin"];
 
@@ -21,6 +22,8 @@ export function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get("role") || "all";
   const [q, setQ] = useState("");
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
@@ -47,6 +50,19 @@ export function AdminUsers() {
     if (!res.success) return toast.error(res.error || "Action failed.");
     toast.success(approve ? "Approved." : "Rejected.");
     qc.invalidateQueries({ queryKey: ["admin-users", role] });
+  }
+
+  async function handleDelete(u: AdminUser) {
+    if (!confirm(`Are you sure you want to delete ${u.full_name}?`)) return;
+    const res = await deleteUser(u.id);
+    if (!res.success) return toast.error(res.error || "Delete failed.");
+    toast.success("User deleted.");
+    qc.invalidateQueries({ queryKey: ["admin-users", role] });
+  }
+
+  function handleView(u: AdminUser) {
+    setSelectedUser(u);
+    setIsViewModalOpen(true);
   }
 
   function setRole(r: string) {
@@ -103,23 +119,37 @@ export function AdminUsers() {
                 <div key={u.id} className="flex items-center gap-3 p-4">
                   <img src={u.avatar_url || dicebearUrl(u.full_name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{u.full_name}</p>
+                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
+                      <span>{u.full_name}</span>
+                      {/* <span className="inline-block mx-1 font-thin text-muted">|</span> */}
+                      {/* <span className="text-primary">{u.role}</span> */}
+                    </p>
                     <p className="text-[12px] text-muted-foreground truncate">{u.email || "-"}</p>
                   </div>
                   {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && (
-                    <button onClick={() => act(u, true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b]">
+                    <button onClick={() => act(u, true)} className="inline-flex items-center gap-1 tracking-wider px-2.5 py-1.5 rounded bg-[#1099A1] text-white text-[12px] hover:bg-[#0d848b]">
                       <Check size={13} /> Approve
                     </button>
                   )}
                   {(u.role === "tutor" || u.role === "counselor") && u.status === "pending" && (
-                    <button onClick={() => act(u, false)} className="mr-8 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[12px] font-semibold hover:bg-[#c0392b]/5">
+                    <button onClick={() => act(u, false)} className="mr-4 inline-flex items-center gap-1.5 tracking-wider px-2.5 py-1.5 rounded dark:border-[#2a3942] bg-[#c0392b] text-white text-[12px] hover:bg-[#c0392b]/85">
                       <X size={13} /> Reject
                     </button>
                   )}
+
+
                   <span className="text-center text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span>
-                  <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
+                  {/* <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
                     {u.status}
-                  </span>
+                  </span> */}
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => handleView(u)} className="p-1.5 rounded-md text-muted-foreground hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors" title="View details">
+                      <Eye size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(u)} className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete user">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
               {filtered.length === 0 && (
@@ -129,6 +159,12 @@ export function AdminUsers() {
           )}
         </div>
       </div>
+
+      <AdminUserViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        user={selectedUser}
+      />
     </PageWrapper>
   );
 }
