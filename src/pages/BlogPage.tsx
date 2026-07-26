@@ -48,35 +48,77 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
   }
 
   return (
-    <div className="bg-white min-h-screen w-full">
+    <div className="min-h-screen flex font-sans bg-white">
       {/* Reading progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent">
+      <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent pointer-events-none">
         <div
           className="h-full bg-[#1099a1] transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="max-w-[900px] mx-auto px-[24px] md:px-[40px] py-[40px]">
-        <button onClick={onBack} className="flex items-center gap-[8px] text-[16px] md:text-[18px] mb-[32px] hover:opacity-70 transition bg-transparent border-none cursor-pointer">
-          <ArrowLeft size={20} strokeWidth={2} />
-          <span>Back</span>
-        </button>
 
-        <h1 className="text-[32px] md:text-[46px] font-medium leading-[42px] md:leading-[56px] mb-[12px]">{blog.title}</h1>
-        <div className="flex items-center gap-[12px] text-[#4a4a4a] text-[14px] md:text-[16px] mb-[28px]">
-          <span>{blog.read_time_minutes} Min Read</span>
-          <span>&#8226;</span>
-          <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
+      {/* Left side: Immersive Image (Hidden on small screens) */}
+      <div className="hidden lg:block lg:w-[45%] sticky top-0 h-screen overflow-hidden">
+        {blog.thumbnail_url ? (
+          <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-[#1099a1]/10" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20" />
+
+        {/* Back Button */}
+        <div className="absolute top-8 left-8">
+          <button onClick={onBack} className="flex items-center text-white hover:text-white/85 gap-2 px-4 py-2 text-[14px] font-medium">
+            <ArrowLeft size={18} strokeWidth={2.5} />
+            <span>Back to Home</span>
+          </button>
         </div>
 
-        {blog.thumbnail_url && (
-          <div className="w-full h-[220px] md:h-[400px] rounded-[16px] overflow-hidden mb-[36px]">
-            <img src={blog.thumbnail_url} alt={blog.title} className="w-full h-full object-cover" />
+        {/* Text overlay on the image */}
+        <div className="absolute bottom-16 left-10 right-10">
+          <div className="flex items-center gap-3 text-[13px] text-white/80 font-medium mb-4 uppercase tracking-wider">
+            <span>{blog.read_time_minutes} Min Read</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-white/50"></span>
+            <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
           </div>
-        )}
+          <h2 className="text-[36px] md:text-[42px] font-bold text-white leading-tight">
+            {blog.title}
+          </h2>
+        </div>
+      </div>
 
-        <div className="prose prose-lg max-w-none prose-headings:font-semibold prose-a:text-[#1099a1]">
-          <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+      {/* Mobile Header (visible only on small screens) */}
+      <div className="lg:hidden w-full relative h-[300px]">
+        {blog.thumbnail_url ? (
+          <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-[#1099a1]/10" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
+
+        <div className="absolute top-4 left-4 z-10">
+          <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-[13px] font-medium border border-white/20">
+            <ArrowLeft size={16} strokeWidth={2.5} />
+            <span>Back</span>
+          </button>
+        </div>
+
+        <div className="absolute bottom-6 left-6 right-6">
+          <div className="flex items-center gap-2 text-[12px] text-white/80 font-medium mb-2 uppercase tracking-wider">
+            <span>{blog.read_time_minutes} Min Read</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-white/50"></span>
+            <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
+          </div>
+          <h1 className="text-[28px] font-bold text-white leading-tight">{blog.title}</h1>
+        </div>
+      </div>
+
+      {/* Right side: Content */}
+      <div className="w-full lg:w-[55%] lg:h-screen lg:overflow-y-auto">
+        <div className="max-w-[800px] mx-auto px-6 py-10 lg:px-16 lg:py-16">
+          <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#111] prose-p:text-[#4a4a4a] prose-a:text-[#1099a1] prose-a:no-underline hover:prose-a:underline prose-li:text-[#4a4a4a]">
+            <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+          </div>
         </div>
       </div>
     </div>

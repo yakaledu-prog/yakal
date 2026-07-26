@@ -115,8 +115,8 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
   const excerpt = post.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
 
   return (
-    <div className="bg-white dark:bg-[#111b21] rounded-[24px] overflow-hidden group shadow-md hover:shadow-xl transition-all duration-300 relative flex flex-col h-[360px] md:h-[400px]">
-      
+    <div className={`bg-white dark:bg-[#111b21] rounded-[24px] overflow-hidden group shadow-md hover:shadow-xl transition-all duration-300 relative flex flex-col h-[360px] md:h-[400px] ${post.status == "draft" ? "border-4 border-secondary" : ""}`}>
+
       {/* Background Image */}
       {post.thumbnail_url ? (
         <img src={post.thumbnail_url} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 z-0" alt={post.title} />
@@ -133,14 +133,14 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
       <div className="absolute top-4 right-4 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-[-10px] group-hover:translate-y-0">
         <Link
           to={`/admin/posts/${post.id}/edit`}
-          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-[#1099A1] hover:scale-110 transition-all duration-200"
+          className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-[#1099A1]/50 hover:scale-110 transition-all ease-in-out duration-200"
           title="Edit Post"
         >
           <Edit2 size={16} />
         </Link>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
-          className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 hover:scale-110 transition-all duration-200"
+          className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-red-500/50 hover:scale-110 transition-all ease-in-out duration-200"
           title="Delete Post"
         >
           <Trash2 size={16} />
@@ -148,20 +148,20 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
       </div>
 
       {/* Content */}
-      <Link to={`/admin/posts/${post.id}/edit`} className="relative z-20 p-6 flex flex-col flex-1 h-full justify-end">
+      <Link to={`/admin/posts/${post.id}/edit`} className={`relative z-20 p-6 flex flex-col flex-1 h-full justify-end`}>
         <div className="flex items-center gap-2 text-[12px] text-white/80 font-medium mb-3">
           <span>{post.read_time_minutes} Min Read</span>
           <span>•</span>
           <span>{format(new Date(post.created_at), "MMM d, yyyy")}</span>
-          
+
           {post.status === "draft" && (
-            <span className="ml-auto bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
+            <span className="absolute left-4 top-4 bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
               Draft
             </span>
           )}
         </div>
 
-        <h3 className="text-[22px] md:text-[24px] font-bold text-white line-clamp-2 leading-tight mb-3 group-hover:text-[#42e8f1] transition-colors">
+        <h3 className="text-[22px] md:text-[24px] font-bold text-white line-clamp-2 leading-tight mb-3 group-hover:text-[#42e8f1] transition-colors truncate">
           {post.title}
         </h3>
 
@@ -169,7 +169,7 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
           {excerpt}
         </p>
 
-        <span className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
+        <span className="text-[13px] -mt-4 font-bold text-[#1099A1] uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
           Read more... <span className="text-[16px] leading-none group-hover:translate-x-1 transition-transform">&rarr;</span>
         </span>
       </Link>
