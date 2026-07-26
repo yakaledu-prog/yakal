@@ -29,18 +29,20 @@ function useIsDark() {
 
 interface BlockEditorProps {
   value: string;
-  onChange: (html: string) => void;
+  onChange?: (html: string) => void;
   /** Fill the parent height with no border (for full-pane editors). */
   fullHeight?: boolean;
   /** Placeholder for the first empty block. */
   placeholder?: string;
+  /** If false, the editor is read-only (preview mode). Defaults to true. */
+  editable?: boolean;
 }
 
 /**
  * Notion-style block editor (BlockNote). Uncontrolled internally; loads the
  * initial HTML once and emits clean HTML on every change for storage/preview.
  */
-export function BlockEditor({ value, onChange, fullHeight, placeholder }: BlockEditorProps) {
+export function BlockEditor({ value, onChange, fullHeight, placeholder, editable = true }: BlockEditorProps) {
   const editor = useCreateBlockNote(
     placeholder
       ? { dictionary: { ...en, placeholders: { ...en.placeholders, default: placeholder } } }
@@ -60,6 +62,7 @@ export function BlockEditor({ value, onChange, fullHeight, placeholder }: BlockE
   }, [editor, value]);
 
   const emit = async () => {
+    if (!onChange) return;
     const html = await editor.blocksToHTMLLossy(editor.document);
     onChange(html);
   };
@@ -70,13 +73,16 @@ export function BlockEditor({ value, onChange, fullHeight, placeholder }: BlockE
         "block-editor",
         fullHeight
           ? "h-full flex flex-col bg-white dark:bg-[#1f2b31]"
-          : "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1f2b31] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+          : editable
+            ? "rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1f2b31] py-2 min-h-[220px] focus-within:border-primary transition-colors"
+            : ""
       )}
       style={brandVars}
     >
       <BlockNoteView
         editor={editor}
         onChange={emit}
+        editable={editable}
         theme={dark ? "dark" : "light"}
         className={fullHeight ? "flex-1 min-h-0 overflow-y-auto py-4" : ""}
       />

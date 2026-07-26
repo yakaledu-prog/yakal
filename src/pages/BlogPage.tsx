@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { getPost, BlogPost } from "@/services/cmsService";
+import { BlockEditor } from "@/components/ui/BlockEditor";
 
 export default function BlogPage({ id, onBack }: { id: string; onBack: () => void }) {
   const [progress, setProgress] = useState(0);
@@ -116,9 +117,7 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
       {/* Right side: Content */}
       <div className="w-full lg:w-[55%] lg:h-screen lg:overflow-y-auto">
         <div className="max-w-[800px] mx-auto px-6 py-10 lg:px-16 lg:py-16">
-          <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-[#111] prose-p:text-[#4a4a4a] prose-a:text-[#1099a1] prose-a:no-underline hover:prose-a:underline prose-li:text-[#4a4a4a]">
-            <div dangerouslySetInnerHTML={{ __html: blog.content }} />
-          </div>
+          <BlockEditor value={blog.content} editable={false} />
         </div>
       </div>
     </div>
