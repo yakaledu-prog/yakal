@@ -13,11 +13,6 @@ import { ProposalPage } from "../pages/shared/ProposalPage";
 import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
-import LandingV1 from "../pages/LandingV1";
-import LandingV2 from "../pages/LandingV2";
-import LandingV3 from "../pages/LandingV3";
-import LandingV4 from "../pages/LandingV4";
-import LandingV5 from "../pages/LandingV5";
 import { CancellationPolicyPage } from "../pages/shared/CancellationPolicyPage";
 import { TermsConditionsPage } from "../pages/shared/TermsConditionsPage";
 import { PrivacyPolicyPage } from "../pages/shared/PrivacyPolicyPage";
@@ -228,12 +223,6 @@ const router = createBrowserRouter([
     path: "/cookies",
     element: <CookiePreferencesPage />,
   },
-  // -- Landing page service-section design previews -------------------------
-  { path: "/landing/1", element: <LandingV1 /> },
-  { path: "/landing/2", element: <LandingV2 /> },
-  { path: "/landing/3", element: <LandingV3 /> },
-  { path: "/landing/4", element: <LandingV4 /> },
-  { path: "/landing/5", element: <LandingV5 /> },
   {
     path: "/confirm-email",
     element: <EmailConfirmationPage />,
