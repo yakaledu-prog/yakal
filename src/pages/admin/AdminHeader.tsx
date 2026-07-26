@@ -42,7 +42,7 @@ export function AdminHeader({
         {stats && stats.length > 0 && (
           <div className="flex flex-wrap items-end gap-x-8 gap-y-4 shrink-0">
             {stats.map((s) => (
-              <div key={s.label} className="flex flex-col">
+              <div key={s.label} className="flex flex-col items-center">
                 <span className="text-2xl md:text-3xl font-bold tracking-tight leading-none">{s.value}</span>
                 <span className="text-[11px] uppercase tracking-wider text-white/70 font-medium mt-2">{s.label}</span>
               </div>

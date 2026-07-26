@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { getPost, createPost, updatePost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon } from "lucide-react";
+import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon, Repeat2Icon } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { cn } from "@/utils/cn";
 
@@ -188,9 +188,9 @@ export function AdminPostEditor() {
           <button
             onClick={() => handleSave("published")}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/85 text-white rounded-lg text-[13px] font-bold transition-colors disabled:opacity-50 shadow-sm"
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/85 text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
           >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : (status === "published" ? <Check size={16} /> : <CloudUploadIcon size={16} />)}
+            {isSaving ? <Loader2 size={16} className="animate-spin" /> : (status === "published" ? <Repeat2Icon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />)}
             {status === "published" ? "Update" : "Publish"}
           </button>
         </div>

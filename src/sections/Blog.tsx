@@ -3,9 +3,10 @@ import Reveal from "@/components/Reveal";
 import SkeletonImg from "@/components/SkeletonImg";
 import { getPosts, BlogPost } from "@/services/cmsService";
 import { format } from "date-fns";
-import type { Page } from "@/types";
+import { useNavigate } from "react-router-dom";
 
-export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void }) {
+export default function Blog() {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +50,7 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
                 {featured.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim()}
               </p>
               <button
-                onClick={() => onNavigate({ type: "blog", id: featured.id, scrollY: window.scrollY })}
+                onClick={() => navigate(`/post/${featured.id}`)}
                 className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto md:mx-0 block"
               >
                 Read the Article
@@ -80,7 +81,7 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
                 {blog.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim()}
               </p>
               <button
-                onClick={() => onNavigate({ type: "blog", id: blog.id, scrollY: window.scrollY })}
+                onClick={() => navigate(`/post/${blog.id}`)}
                 className="text-[#1099a1] text-[15px] md:text-[18px] uppercase font-medium hover:underline bg-transparent border-none cursor-pointer px-2"
               >
                 Learn More
@@ -92,7 +93,7 @@ export default function Blog({ onNavigate }: { onNavigate: (page: Page) => void 
 
       <div className="mt-[40px] md:mt-[60px] flex justify-center">
         <button
-          onClick={() => onNavigate({ type: "blogs", scrollY: window.scrollY })}
+          onClick={() => navigate("/posts")}
           className="text-[#1099a1] font-medium text-[16px] md:text-[18px] uppercase hover:underline"
         >
           View All Blogs &rarr;

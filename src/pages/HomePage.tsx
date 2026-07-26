@@ -29,9 +29,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       <Testimonials />
       <Team />
       <Faq scrollTo={scrollTo} />
-      <Blog onNavigate={onNavigate} />
+      <Blog />
       <Contact />
-      <Footer scrollTo={scrollTo} onNavigate={onNavigate} />
+      <Footer scrollTo={scrollTo} />
     </div>
   );
 }

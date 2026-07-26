@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getPost, BlogPost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 
-export default function BlogPage({ id, onBack }: { id: string; onBack: () => void }) {
+export default function BlogPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fromBlogs = location.state?.from === '/posts';
   const [progress, setProgress] = useState(0);
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +29,7 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
 
   useEffect(() => {
     async function loadPost() {
+      if (!id) return;
       const res = await getPost(id);
       if (res) setBlog(res);
       setLoading(false);
@@ -43,10 +49,18 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
     return (
       <div className="bg-white min-h-screen w-full flex flex-col items-center justify-center">
         <p className="text-xl font-medium mb-4">Post not found</p>
-        <button onClick={onBack} className="text-[#1099a1] hover:underline">Go Back</button>
+        <button onClick={() => navigate("/")} className="text-[#1099a1] hover:underline">Go Back</button>
       </div>
     );
   }
+
+  const handleBack = () => {
+    if (fromBlogs) {
+      navigate("/posts");
+    } else {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="min-h-screen flex font-sans bg-white">
@@ -69,9 +83,9 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
 
         {/* Back Button */}
         <div className="absolute top-8 left-8">
-          <button onClick={onBack} className="flex items-center text-white hover:text-white/85 gap-2 px-4 py-2 text-[14px] font-medium">
+          <button onClick={handleBack} className="flex items-center text-white hover:text-white/85 gap-2 px-4 py-2 text-[14px] font-medium">
             <ArrowLeft size={18} strokeWidth={2.5} />
-            <span>Back to Home</span>
+            <span>{fromBlogs ? "Back to Blogs" : "Back to Home"}</span>
           </button>
         </div>
 
@@ -98,9 +112,9 @@ export default function BlogPage({ id, onBack }: { id: string; onBack: () => voi
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
 
         <div className="absolute top-4 left-4 z-10">
-          <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-[13px] font-medium border border-white/20">
+          <button onClick={handleBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-[13px] font-medium border border-white/20">
             <ArrowLeft size={16} strokeWidth={2.5} />
-            <span>Back</span>
+            <span>{fromBlogs ? "Back to Blogs" : "Back to Home"}</span>
           </button>
         </div>
 

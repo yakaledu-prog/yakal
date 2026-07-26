@@ -17,10 +17,12 @@ const socials = [
   { href: "#twitter", icon: <Twitter size={15} strokeWidth={2} /> },
   { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
+import { useNavigate } from "react-router-dom";
 import type { Page } from "@/types";
 
-export default function Footer({ scrollTo, onNavigate }: { scrollTo: (id: string) => void; onNavigate?: (page: Page) => void }) {
+export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const [email, setEmail] = useState("");
+  const navigate = useNavigate();
 
   function handleSubscribe(e: React.FormEvent) {
     e.preventDefault();
@@ -48,8 +50,8 @@ export default function Footer({ scrollTo, onNavigate }: { scrollTo: (id: string
               <button 
                 key={link.id} 
                 onClick={() => {
-                  if (link.id === "blogs" && onNavigate) {
-                    onNavigate({ type: "blogs", scrollY: window.scrollY });
+                  if (link.id === "blogs") {
+                    navigate("/posts");
                   } else {
                     scrollTo(link.id);
                   }
