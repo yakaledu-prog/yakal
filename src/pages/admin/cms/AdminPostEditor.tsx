@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { getPost, createPost, updatePost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
+import { useTopbarActions } from "@/contexts/TopbarActionsContext";
 import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon, Repeat2Icon } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { cn } from "@/utils/cn";
@@ -24,6 +25,14 @@ export function AdminPostEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [showCoverUpload, setShowCoverUpload] = useState(false);
 
+  // Track changes
+  const [originalData, setOriginalData] = useState({
+    title: "",
+    content: "",
+    thumbnailUrl: "",
+    status: "draft",
+  });
+
   useEffect(() => {
     if (isNew) return;
     setIsLoading(true);
@@ -34,6 +43,12 @@ export function AdminPostEditor() {
         setThumbnailUrl(post.thumbnail_url || "");
         setStatus(post.status);
         if (post.thumbnail_url) setShowCoverUpload(true);
+        setOriginalData({
+          title: post.title,
+          content: post.content,
+          thumbnailUrl: post.thumbnail_url || "",
+          status: post.status,
+        });
       } else {
         toast.error("Post not found");
         navigate("/admin/posts");
@@ -41,6 +56,12 @@ export function AdminPostEditor() {
       setIsLoading(false);
     });
   }, [id, isNew, navigate]);
+
+  const hasChanges = isNew || 
+    title !== originalData.title || 
+    content !== originalData.content || 
+    thumbnailUrl !== originalData.thumbnailUrl || 
+    status !== originalData.status;
 
   async function handleSave(newStatus?: "draft" | "published") {
     if (!title.trim()) {
@@ -62,6 +83,7 @@ export function AdminPostEditor() {
         toast.success(saveStatus === "published" ? "Post published!" : "Draft saved.");
         navigate(`/admin/posts/${res.data}/edit`, { replace: true });
         setStatus(saveStatus);
+        setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
       } else {
         const res = await updatePost(id, {
           title,
@@ -72,6 +94,7 @@ export function AdminPostEditor() {
         if (!res.success) throw new Error(res.error);
         toast.success(saveStatus === "published" ? "Post updated & published!" : "Draft updated.");
         setStatus(saveStatus);
+        setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to save post.");
@@ -79,6 +102,39 @@ export function AdminPostEditor() {
       setIsSaving(false);
     }
   }
+
+  useTopbarActions(
+    <div className="flex items-center gap-3 mr-2">
+      {!hasChanges && !isSaving && !isNew && (
+        <span className="text-[12px] text-muted-foreground hidden sm:inline-block mr-2">
+          All changes saved locally
+        </span>
+      )}
+      {isSaving && (
+        <span className="text-[12px] text-muted-foreground hidden sm:inline-block mr-2">
+          Saving...
+        </span>
+      )}
+      {hasChanges && (
+        <button
+          onClick={() => handleSave("draft")}
+          disabled={isSaving}
+          className="gap-1 px-4 py-2 rounded-lg text-[13px] font-medium bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center shadow-sm"
+        >
+          <Save size={14} strokeWidth={2} />
+          <span>{status === "published" ? "Save as Draft" : "Save Draft"}</span>
+        </button>
+      )}
+      <button
+        onClick={() => handleSave("published")}
+        disabled={isSaving}
+        className="flex items-center gap-1.5 px-5 py-2 font-medium bg-[#1099A1] hover:bg-[#0c7f86] text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
+      >
+        {isSaving ? <Loader2 size={16} className="animate-spin" /> : (status === "published" ? <Repeat2Icon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />)}
+        {status === "published" ? "Update" : "Publish"}
+      </button>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -163,34 +219,6 @@ export function AdminPostEditor() {
               placeholder="Press '/' for commands..."
             />
           </div>
-        </div>
-      </div>
-
-      {/* Bottom Sticky Action Bar */}
-      <div className="shrink-0 bg-white dark:bg-[#111b21] border-t border-[#e9edef] dark:border-[#2a3942] p-4 px-6 flex items-center justify-between sticky bottom-0 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none">
-
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] text-muted-foreground hidden sm:inline-block">
-            {isSaving ? "Saving..." : "All changes saved locally"}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleSave("draft")}
-            disabled={isSaving}
-            className="gap-1 px-4 py-2 rounded-lg text-[14px] bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center"
-          >
-            <Save size={14} strokeWidth={2} />
-            <span>{status === "published" ? "Save as Draft" : "Save Draft"}</span>
-          </button>
-          <button
-            onClick={() => handleSave("published")}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary/85 text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
-          >
-            {isSaving ? <Loader2 size={16} className="animate-spin" /> : (status === "published" ? <Repeat2Icon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />)}
-            {status === "published" ? "Update" : "Publish"}
-          </button>
         </div>
       </div>
     </div>

@@ -92,6 +92,7 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
 import { DEV_PREVIEW } from "../config/dev";
 import { BreadcrumbProvider } from "../contexts/BreadcrumbContext";
+import { TopbarActionsProvider } from "../contexts/TopbarActionsContext";
 
 function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
@@ -360,7 +361,9 @@ export function AppRouter() {
         }}
       />
       <BreadcrumbProvider>
-        <RouterProvider router={router} />
+        <TopbarActionsProvider>
+          <RouterProvider router={router} />
+        </TopbarActionsProvider>
       </BreadcrumbProvider>
     </AuthProvider>
   );

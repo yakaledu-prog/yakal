@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
+import { useTopbarActionsContext } from "../contexts/TopbarActionsContext";
 import logoImg from "@/assets/images/logo.webp";
 
 interface NavItem {
@@ -38,6 +39,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
+  const { actions: topbarActions } = useTopbarActionsContext();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -267,27 +269,14 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Global Search Mock */}
-            {/* <div
-              className="relative hidden md:flex items-center w-80 cursor-pointer group"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              <input
-                type="text"
-                readOnly
-                placeholder="Search Yakal... (Ctrl+K)"
-                className="w-full bg-muted/50 rounded-full pl-10 pr-4 py-1.5 text-sm text-muted-foreground border border-transparent group-hover:border-primary/20 transition-all cursor-pointer focus:outline-none"
-              />
-            </div> */}
-
-            {/* <button className="flex relative text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-accent transition-colors"> */}
-            <button className="flex relative text-muted-foreground">
-              <FlameIcon className="text-[#1099A1] dark:text-[#97CE9D]" size={20} />
-              {/* <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full" /> */}
-              {/* TODO: add real streak value here */}
-              <span className="text-[#1099A1] dark:text-[#97CE9D] inline font-semibold"> &nbsp;5</span> &nbsp;days
-            </button>
+            {topbarActions ? (
+              topbarActions
+            ) : (
+              <button className="flex relative text-muted-foreground">
+                <FlameIcon className="text-[#1099A1] dark:text-[#97CE9D]" size={20} />
+                <span className="text-[#1099A1] dark:text-[#97CE9D] inline font-semibold"> &nbsp;5</span> &nbsp;days
+              </button>
+            )}
           </div>
         </header>
 
