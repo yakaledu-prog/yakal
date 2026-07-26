@@ -137,23 +137,24 @@ export function AdminCourses() {
                     <div>
                       {/* Top Row: Title and Price */}
                       <div className={cn("flex justify-between items-start gap-4 mb-2", viewMode === "grid" ? "flex-col" : "flex-row")}>
-                        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white !pr-4 leading-tight truncate w-full">
-                          {c.title}
+                        <h3 className={cn("text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white leading-tight truncate w-full flex items-center", viewMode === "grid" ? "justify-between" : "gap-3")}>
+                          <span>{c.title}</span>
+                          <button
+                            onClick={() => toggleActive(c)}
+                            className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
+                            title={c.is_active ? "Deactivate course" : "Activate course"}
+                          >
+                            <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
+                          </button>
                         </h3>
-                        <div className="flex items-center shrink-0 bg-gray-50 dark:bg-[#182329] px-4 py-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942] w-full justify-evenly">
-                          <div className={cn(viewMode === "grid" ? "text-center" : "text-right")}>
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Parent</div>
-                            <div className="text-[15px] font-bold text-[#111] dark:text-white">
-                              {c.price_cents != null ? money(c.price_cents) : "—"}
-                            </div>
+                        {/* Pricing as Text */}
+                        <div className={cn("flex", viewMode === "grid" ? "w-full flex-row items-end justify-between" : "flex-col gap-1 text-right")}>
+                          <div className="text-[18px] md:text-xl font-bold text-[#111] dark:text-white flex items-center gap-1">
+                            {c.price_cents != null ? money(c.price_cents) : "—"} <span className="text-[13px] font-normal text-muted-foreground tracking-normal">parent</span>
                           </div>
-                          <div className="w-px h-8 bg-[#e9edef] dark:bg-[#2a3942]"></div>
-                          <div className={cn(viewMode === "grid" ? "text-center" : "text-right")}>
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Tutor</div>
-                            <div className="text-[15px] font-bold text-[#111] dark:text-white">
-                              {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "—"}
-                            </div>
-                          </div>
+                          {c.tutor_payout_cents != null && <div className="text-[13px] font-medium text-[#1099A1]">
+                            {money(c.tutor_payout_cents)} <span className="text-muted-foreground">tutor</span>
+                          </div>}
                         </div>
                       </div>
 
@@ -203,13 +204,6 @@ export function AdminCourses() {
 
                       {/* Admin Actions */}
                       <div className="flex items-center gap-5 ml-auto">
-                        <button
-                          onClick={() => toggleActive(c)}
-                          className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
-                          title={c.is_active ? "Deactivate course" : "Activate course"}
-                        >
-                          <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
-                        </button>
                         <Button variant="outline" onClick={() => openEditModal(c)} className="h-9 px-4 text-[13px] gap-2 rounded-lg font-medium border-gray-300 dark:border-gray-700">
                           <Pencil size={14} /> Edit
                         </Button>
