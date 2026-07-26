@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -10,7 +10,12 @@ interface ImageUploadProps {
 
 export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [value]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,8 +60,22 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     <div className={cn("relative rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-gray-50 dark:bg-[#182329] overflow-hidden flex flex-col items-center justify-center transition-colors hover:bg-gray-100 dark:hover:bg-[#202c33]", className)}>
       {value ? (
         <>
-          <img src={value} alt="Uploaded preview" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-[#182329] z-0">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground mb-2" />
+              <span className="text-[12px] text-muted-foreground">Loading image...</span>
+            </div>
+          )}
+          <img 
+            src={value} 
+            alt="Uploaded preview" 
+            onLoad={() => setImageLoaded(true)}
+            className={cn(
+              "w-full h-full object-cover relative z-10 transition-opacity duration-300",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )} 
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}

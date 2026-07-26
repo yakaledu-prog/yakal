@@ -5,7 +5,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
 import { getCourses, updateCourse, createCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { Loader2, Plus, Pencil, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Pencil, ExternalLink, Star, Search } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { Button } from "@/components/ui/Button";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
@@ -17,6 +17,11 @@ export function AdminCourses() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCourses = courses.filter((c) =>
+    c.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const active = courses.filter((c) => c.is_active).length;
   const priced = courses.filter((c) => c.price_cents != null).length;
@@ -73,70 +78,124 @@ export function AdminCourses() {
         />
 
         <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-          <div className="flex justify-between items-center mb-5">
-            <p className="text-[13px] text-muted-foreground max-w-2xl">
-              Manage courses, their pricing, tutor assignments, and Google Classroom links.
-            </p>
-            <Button onClick={openCreateModal} className="gap-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div className="relative w-full sm:w-[480px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search courses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 dark:bg-[#182329]/50 border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-[#1099A1] focus:bg-white dark:focus:bg-[#182329] transition-all placeholder:text-muted-foreground/60"
+              />
+            </div>
+            <Button onClick={openCreateModal} className="gap-2 shrink-0">
               <Plus size={16} /> Create Course
             </Button>
           </div>
 
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-          ) : courses.length === 0 ? (
-            <p className="text-center py-16 text-[14px] text-muted-foreground">No courses yet.</p>
+          ) : filteredCourses.length === 0 ? (
+            <p className="text-center py-16 text-[14px] text-muted-foreground">No courses found matching "{searchTerm}".</p>
           ) : (
-            <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-              {courses.map((c) => (
-                <div key={c.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-[#182329] transition-colors">
-                  <div className="w-16 h-12 bg-gray-200 dark:bg-[#202c33] rounded overflow-hidden shrink-0">
+            <div className="flex flex-col gap-6">
+              {filteredCourses.map((c) => (
+                <div key={c.id} className="bg-white dark:bg-[#111b21] rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex flex-col md:flex-row overflow-hidden w-full transition-shadow hover:shadow-md">
+                  {/* Left Side: Thumbnail (28% width on desktop) */}
+                  <div className="w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto bg-gray-100 dark:bg-[#202c33] shrink-0 relative">
                     {c.thumbnail_url ? (
-                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover" />
+                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full md:absolute inset-0 object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">No Img</div>
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                         <span className="text-sm font-medium">No Thumbnail</span>
+                      </div>
                     )}
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{c.title}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <p className="text-[12px] text-muted-foreground truncate">
-                        {c.subject}{c.tutors && c.tutors.length > 0 ? ` • ${c.tutors.map(t => t.full_name).join(", ")}` : ""}
-                      </p>
-                      {c.google_classroom_url && (
-                        <a href={c.google_classroom_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#1099A1] hover:underline inline-flex items-center gap-1">
-                          <ExternalLink size={10} /> Classroom
-                        </a>
+
+                  {/* Right Side: Content */}
+                  <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
+                    <div>
+                      {/* Top Row: Title and Price */}
+                      <div className="flex justify-between items-start mb-2 gap-4">
+                        <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white pr-4 leading-tight">
+                          {c.title}
+                        </h3>
+                        <div className="flex items-center gap-6 shrink-0 bg-gray-50 dark:bg-[#182329] px-4 py-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942]">
+                          <div className="text-right">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Parent</div>
+                            <div className="text-[15px] font-bold text-[#111] dark:text-white">
+                              {c.price_cents != null ? money(c.price_cents) : "—"}
+                            </div>
+                          </div>
+                          <div className="w-px h-8 bg-[#e9edef] dark:bg-[#2a3942]"></div>
+                          <div className="text-right">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Tutor</div>
+                            <div className="text-[15px] font-bold text-[#111] dark:text-white">
+                              {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "—"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mocked Rating & Students */}
+                      <div className="flex items-center gap-2.5 text-[14px] text-muted-foreground font-medium">
+                        <div className="flex items-center gap-1 text-[#111] dark:text-white">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span>4.8</span>
+                          <span className="text-muted-foreground font-normal">(320)</span>
+                        </div>
+                        <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
+                        <span>1,204 Students</span>
+                        {c.google_classroom_url && (
+                          <>
+                            <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
+                            <a href={c.google_classroom_url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-[#1099A1] hover:underline flex items-center gap-1 font-medium">
+                              <ExternalLink size={13} /> Classroom
+                            </a>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Course Description */}
+                      {c.description && (
+                        <div 
+                          className="mt-3 text-[13px] text-muted-foreground line-clamp-2 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: c.description }}
+                        />
                       )}
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Parent</p>
-                      <p className="text-[14px] font-medium text-[#111] dark:text-white">
-                        {c.price_cents != null ? money(c.price_cents) : "—"}
-                      </p>
+                    <div className="my-4 border-t border-[#e9edef] dark:border-[#2a3942]" />
+
+                    {/* Bottom Row: Tutors and Admin Actions */}
+                    <div className="flex justify-between items-center flex-wrap gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex -space-x-2">
+                          {/* Mocking Tutor Avatars */}
+                          {[1, 2, 3].map(i => (
+                            <img key={i} src={`https://api.dicebear.com/7.x/notionists/svg?seed=tutor${i}`} alt="tutor" className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21] bg-gray-100" />
+                          ))}
+                        </div>
+                        <span className="text-[14px] text-[#1099A1] font-medium">
+                          + 9 available tutors
+                        </span>
+                      </div>
+
+                      {/* Admin Actions */}
+                      <div className="flex items-center gap-5 ml-auto">
+                        <button
+                          onClick={() => toggleActive(c)}
+                          className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
+                          title={c.is_active ? "Deactivate course" : "Activate course"}
+                        >
+                          <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
+                        </button>
+                        <Button variant="outline" onClick={() => openEditModal(c)} className="h-9 px-4 text-[13px] gap-2 rounded-lg font-medium border-gray-300 dark:border-gray-700">
+                          <Pencil size={14} /> Edit
+                        </Button>
+                      </div>
                     </div>
-                    
-                    <div className="text-right">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Tutor</p>
-                      <p className="text-[14px] font-medium text-[#111] dark:text-white">
-                        {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "—"}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => toggleActive(c)}
-                      className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
-                    >
-                      <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
-                    </button>
-
-                    <Button variant="ghost" onClick={() => openEditModal(c)} className="h-8 px-3 text-[13px] gap-2">
-                      <Pencil size={14} /> Edit
-                    </Button>
                   </div>
                 </div>
               ))}

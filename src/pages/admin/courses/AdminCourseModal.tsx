@@ -146,7 +146,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
     const patch: Partial<AdminCourse> = {
       title: formData.title,
-      subject: formData.title, // Pass title as subject since it's removed from UI
+      subject: "Mathematics", // Hardcoded to satisfy Supabase check constraint
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
@@ -213,12 +213,12 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             <div className="h-full flex flex-col max-w-lg mx-auto w-full justify-center space-y-8 py-4">
               <div className="flex-1 flex flex-col space-y-3">
                 {!formData.thumbnail_url && <p className="text-sm text-center text-muted-foreground pb-2">
-                  Upload a high-quality thumbnail image for your course (SVG, PNG, JPG, or GIF, max 5MB).
+                  Upload a high-quality thumbnail for your course (SVG, PNG, JPG, or GIF, max 5MB).
                 </p>}
                 <ImageUpload
                   value={formData.thumbnail_url}
                   onChange={url => setFormData({ ...formData, thumbnail_url: url })}
-                  className="flex-1 border-2 h-[300px] max-h-[300px]"
+                  className="w-full min-h-[300px] h-[300px] shrink-0 border-2"
                 />
               </div>
 
@@ -341,7 +341,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             type="button"
             variant="outline"
             onClick={() => step > 1 ? setStep(step - 1) : onClose()}
-            className="w-[120px] !border !border-gray-300 dark:!border-gray-700 "
+            className="w-[120px] !border !border-gray-300 dark:!border-gray-700 !bg-transparent"
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> {step > 1 ? "Back" : "Cancel"}
           </Button>
