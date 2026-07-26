@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { AdminCourse, AdminUser } from "@/services/adminService";
+import { AdminCourse } from "@/services/adminService";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
-import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, Link2, DollarSign, RefreshCw, CheckCircle2, FileText } from "lucide-react";
+import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";
@@ -16,10 +16,9 @@ interface AdminCourseModalProps {
   initialData?: AdminCourse | null;
   onSubmit: (data: Partial<AdminCourse>) => Promise<void>;
   isSubmitting?: boolean;
-  tutors: AdminUser[];
 }
 
-export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSubmitting, tutors }: AdminCourseModalProps) {
+export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSubmitting }: AdminCourseModalProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: "",
@@ -30,7 +29,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     thumbnail_url: "",
     google_classroom_url: "",
     is_active: true,
-    tutor_ids: [] as string[],
   });
 
   const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
@@ -50,7 +48,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           thumbnail_url: initialData.thumbnail_url || "",
           google_classroom_url: initialData.google_classroom_url || "",
           is_active: initialData.is_active ?? true,
-          tutor_ids: initialData.tutor_ids || [],
         });
       } else {
         setFormData({
@@ -62,7 +59,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           thumbnail_url: "",
           google_classroom_url: "",
           is_active: true,
-          tutor_ids: [],
         });
       }
       setClassroomPreview(null);
@@ -141,22 +137,12 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
       is_active: formData.is_active, // We default to true in form state
-      tutor_ids: formData.tutor_ids,
       price_cents: Number.isFinite(price) && price >= 0 ? Math.round(price * 100) : null,
       tutor_payout_cents: Number.isFinite(payout) && payout >= 0 ? Math.round(payout * 100) : null,
     };
 
     await onSubmit(patch);
     onClose();
-  };
-
-  const toggleTutor = (tutorId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tutor_ids: prev.tutor_ids.includes(tutorId)
-        ? prev.tutor_ids.filter(id => id !== tutorId)
-        : [...prev.tutor_ids, tutorId]
-    }));
   };
 
   if (!isOpen) return null;
@@ -180,8 +166,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
           {[
             { num: 1, label: "Basic Info", icon: GraduationCap },
             { num: 2, label: "Description", icon: FileText },
-            { num: 3, label: "Classroom", icon: Link2 },
-            { num: 4, label: "Tutors & Pricing", icon: DollarSign }
+            { num: 3, label: "Classroom & Pricing", icon: DollarSign }
           ].map((s, i) => (
             <div key={s.num} className="flex items-center flex-1 last:flex-none">
               <div className="flex items-center gap-3">
@@ -199,7 +184,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   {s.label}
                 </span>
               </div>
-              {i < 3 && <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942] mx-2 lg:mx-4" />}
+              {i < 2 && <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942] mx-2 lg:mx-4" />}
             </div>
           ))}
         </div>
@@ -296,51 +281,12 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-              <div className="space-y-4">
-                <div className="flex flex-col">
-                  <label className="text-[13px] font-bold text-[#111] dark:text-white mb-1">Add Tutors</label>
-                  <p className="text-[12px] text-muted-foreground mb-4">Select all tutors that will teach this course.</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
-                  {tutors.map(tutor => {
-                    const isSelected = formData.tutor_ids.includes(tutor.id);
-                    return (
-                      <div
-                        key={tutor.id}
-                        onClick={() => toggleTutor(tutor.id)}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
-                          isSelected
-                            ? "border-[#1099A1] bg-[#1099A1]/5 dark:bg-[#1099A1]/10"
-                            : "border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] hover:border-gray-400"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                          isSelected ? "bg-[#1099A1] border-[#1099A1] text-white" : "border-gray-300 dark:border-gray-600 bg-transparent"
-                        )}>
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className="text-[14px] font-medium text-[#111] dark:text-white truncate">{tutor.full_name}</span>
-                      </div>
-                    );
-                  })}
-                  {tutors.length === 0 && (
-                    <p className="text-[13px] text-muted-foreground col-span-full">No active tutors found.</p>
-                  )}
-                </div>
+              <div className="relative flex items-center mb-6 mt-8">
+                <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
+                <span className="shrink-0 px-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">Pricing</span>
+                <div className="flex-grow border-t border-[#e9edef] dark:border-[#2a3942]"></div>
               </div>
-
-              <hr className="border-[#e9edef] dark:border-[#2a3942]" />
-
               <div className="space-y-4">
-                <label className="text-[13px] font-bold text-[#111] dark:text-white">Pricing</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD)</label>
@@ -385,7 +331,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
             {step === 1 ? "Cancel" : <><ChevronLeft className="w-4 h-4 mr-1" /> Back</>}
           </Button>
 
-          {step < 4 ? (
+          {step < 3 ? (
             <Button type="button" onClick={() => setStep(step + 1)} className="w-[120px]">
               Next <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

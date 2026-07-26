@@ -143,10 +143,10 @@ export function AdminUsers() {
                   )}
 
 
-                  <span className="text-center text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span>
-                  {/* <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
+                  {/* <span className="text-center text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span> */}
+                  <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
                     {u.status}
-                  </span> */}
+                  </span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => handleView(u)} className="p-1.5 rounded-md text-muted-foreground hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors" title="View details">
                       <Eye size={16} />
@@ -178,7 +178,7 @@ export function AdminUsers() {
         title="Delete User"
         message={
           <>
-            Are you sure you want to delete <strong>{userToDelete?.full_name}</strong>? 
+            Are you sure you want to delete <strong>{userToDelete?.full_name}</strong>?
             They will lose access to their account immediately.
           </>
         }

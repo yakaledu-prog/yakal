@@ -11,6 +11,7 @@ export interface AdminUser {
   rejection_reason: string | null;
   bio?: string | null;
   cv_url?: string | null;
+  subjects?: string[] | null;
 }
 
 export interface AdminInvoice {
@@ -158,7 +159,7 @@ export async function markPayoutPaid(id: string): Promise<Result> {
 export async function getUsers(role?: string): Promise<AdminUser[]> {
   let q = supabase
     .from("profiles")
-    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason")
+    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, subjects")
     .order("created_at", { ascending: false });
   if (role && role !== "all") q = q.eq("role", role);
   const { data, error } = await q;
@@ -169,7 +170,7 @@ export async function getUsers(role?: string): Promise<AdminUser[]> {
 export async function getPendingApprovals(): Promise<AdminUser[]> {
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason")
+    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, subjects")
     .in("role", ["tutor", "counselor"])
     .eq("status", "pending")
     .order("created_at", { ascending: false });

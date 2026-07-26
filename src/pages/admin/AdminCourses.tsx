@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getCourses, updateCourse, createCourse, getUsers, type AdminCourse } from "@/services/adminService";
+import { getCourses, updateCourse, createCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { Loader2, Plus, Pencil, ExternalLink } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -13,7 +13,6 @@ import { AdminCourseModal } from "./courses/AdminCourseModal";
 export function AdminCourses() {
   const qc = useQueryClient();
   const { data: courses = [], isLoading } = useQuery({ queryKey: ["admin-courses"], queryFn: getCourses });
-  const { data: tutors = [] } = useQuery({ queryKey: ["admin-users", "tutor"], queryFn: () => getUsers("tutor") });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
@@ -152,7 +151,6 @@ export function AdminCourses() {
         initialData={editingCourse}
         onSubmit={handleModalSubmit}
         isSubmitting={isSubmitting}
-        tutors={tutors}
       />
     </PageWrapper>
   );
