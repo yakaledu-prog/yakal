@@ -12,7 +12,14 @@ import {
   EMPTY_FILTERS,
 } from "@/services/collegeCatalogService";
 import { SchoolTier } from "@/services/collegeService";
-import { VerifiedBadge } from "./VerifiedBadge";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { DateField } from "@/components/ui/DateField";
+import { NumberStepper } from "@/components/ui/NumberStepper";
+import { Segmented } from "@/components/ui/Segmented";
+import { Stepper } from "@/components/ui/Stepper";
+import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
+
+export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
 
 export interface AddCollegeInput {
   unitid: number | null;
@@ -25,21 +32,19 @@ export interface AddCollegeInput {
   why_school: string | null;
 }
 
-export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
-
-const ROUNDS: { value: DeadlineRound; label: string }[] = [
-  { value: "ed1", label: "Early Decision" },
-  { value: "ed2", label: "Early Decision II" },
-  { value: "ea", label: "Early Action" },
-  { value: "rea", label: "Restrictive Early Action" },
-  { value: "rd", label: "Regular Decision" },
-  { value: "rolling", label: "Rolling" },
+const ROUNDS = [
+  { value: "ed1" as const, label: "Early Decision" },
+  { value: "ed2" as const, label: "Early Decision II" },
+  { value: "ea" as const, label: "Early Action" },
+  { value: "rea" as const, label: "Restrictive Early Action" },
+  { value: "rd" as const, label: "Regular Decision" },
+  { value: "rolling" as const, label: "Rolling" },
 ];
 
-const TIERS: { value: SchoolTier; label: string }[] = [
-  { value: "dream", label: "Reach" },
-  { value: "target", label: "Target" },
-  { value: "safety", label: "Safety" },
+const TIERS = [
+  { value: "dream" as const, label: "Reach" },
+  { value: "target" as const, label: "Target" },
+  { value: "safety" as const, label: "Safety" },
 ];
 
 const FIT_TO_TIER: Record<Fit, SchoolTier> = {
@@ -49,10 +54,10 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-const field =
-  "w-full rounded-lg border border-[#e9edef] bg-white px-3 py-2 text-[14px] text-[#111] outline-none transition-colors focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
-const label =
-  "mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground";
+const STEPS = ["College", "Deadline", "Your take"];
+
+const input =
+  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 export function AddCollegeModal({
   open,
@@ -71,20 +76,18 @@ export function AddCollegeModal({
   student: StudentProfile;
   alreadyAdded: Set<string>;
   saving: boolean;
-  /** Skip the search step when the student already picked from a card. */
   preselected?: College | null;
 }) {
-  const [step, setStep] = useState<"search" | "details">("search");
+  const [step, setStep] = useState(0);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<College | null>(null);
-  /** Set when the student adds a college that is not in the federal catalog. */
   const [manualName, setManualName] = useState("");
 
   const [tier, setTier] = useState<SchoolTier>("target");
   const [round, setRound] = useState<DeadlineRound | "">("");
-  const [deadline, setDeadline] = useState("");
+  const [deadline, setDeadline] = useState<string | null>(null);
   const [appUrl, setAppUrl] = useState("");
-  const [essays, setEssays] = useState("");
+  const [essays, setEssays] = useState<number | null>(null);
   const [why, setWhy] = useState("");
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,66 +97,54 @@ export function AddCollegeModal({
     setQuery("");
     setManualName("");
     setRound("");
-    setDeadline("");
+    setDeadline(null);
     setAppUrl("");
-    setEssays("");
+    setEssays(null);
     setWhy("");
 
     if (preselected) {
       setPicked(preselected);
       setTier(FIT_TO_TIER[computeFit(preselected, student)]);
-      setStep("details");
+      setStep(1);
       return;
     }
 
     setPicked(null);
     setTier("target");
-    setStep("search");
+    setStep(0);
     const t = setTimeout(() => inputRef.current?.focus(), 60);
     return () => clearTimeout(t);
-    // `student` is a fresh object each render; keying on the scores avoids a
-    // reset loop that would wipe what the student is typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, preselected, student.sat, student.act]);
 
   const matches = useMemo(() => {
     if (!query.trim()) return [];
-    return filterCatalog(catalog, { ...EMPTY_FILTERS, query }, student).slice(0, 8);
+    return filterCatalog(catalog, { ...EMPTY_FILTERS, query }, student).slice(0, 7);
   }, [catalog, query, student]);
+
+  const name = picked?.name ?? manualName.trim();
 
   const choose = (c: College) => {
     setPicked(c);
     setTier(FIT_TO_TIER[computeFit(c, student)]);
-    // Everything the federal data already knows is filled for them. The only
-    // fields left blank are the ones no public source supplies.
-    setAppUrl("");
-    setStep("details");
-  };
-
-  const chooseManual = () => {
-    if (!manualName.trim()) return;
-    setPicked(null);
-    setStep("details");
+    setStep(1);
   };
 
   const submit = () => {
-    const name = picked?.name ?? manualName.trim();
     if (!name) return;
     onSubmit({
       unitid: picked?.unitid ?? null,
       school_name: name,
       tier,
-      deadline: deadline || null,
+      deadline,
       deadline_round: (round || null) as DeadlineRound | null,
       application_url: appUrl.trim() || null,
-      supp_essay_count: essays === "" ? null : Number(essays),
+      supp_essay_count: essays,
       why_school: why.trim() || null,
     });
   };
 
   if (!open) return null;
-
-  const name = picked?.name ?? manualName.trim();
 
   return (
     <div
@@ -161,89 +152,114 @@ export function AddCollegeModal({
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="flex items-center gap-3 border-b border-[#e9edef] px-5 py-4 dark:border-[#2a3942]">
-          {step === "details" && (
+        <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942]">
+          <div className="mb-4 flex items-center gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                aria-label="Back"
+                className="text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[16px] font-bold text-[#111] dark:text-white">
+                {name || "Add a college"}
+              </h2>
+              {picked && (
+                <p className="truncate text-[12px] text-[#717182]">
+                  {[picked.city, picked.state].filter(Boolean).join(", ")}
+                  {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
+                </p>
+              )}
+            </div>
             <button
               type="button"
-              onClick={() => setStep("search")}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Back to search"
+              onClick={onClose}
+              aria-label="Close"
+              className="text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
             >
-              <ArrowLeft size={18} />
+              <X size={18} />
             </button>
-          )}
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[16px] font-bold text-[#111] dark:text-white">
-              {step === "search" ? "Add a college" : name}
-            </h2>
-            <p className="truncate text-[12px] text-muted-foreground">
-              {step === "search"
-                ? "Search and we fill in what we already know"
-                : picked
-                  ? [picked.city, picked.state].filter(Boolean).join(", ")
-                  : "Not in the federal catalog"}
-            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
+          <Stepper
+            steps={STEPS}
+            current={step}
+            onStepClick={(i) => name && setStep(i)}
+          />
         </header>
 
-        {step === "search" ? (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="p-5 pb-3">
+        {/* Facts we already hold, shown as context rather than announced. */}
+        {picked && step > 0 && (
+          <div className="grid grid-cols-4 divide-x divide-[#e9edef] border-b border-[#e9edef] bg-[#fafbfc] dark:divide-[#2a3942] dark:border-[#2a3942] dark:bg-[#0f171c]">
+            <Stat
+              k="Admit"
+              v={picked.admitRate === null ? "-" : `${picked.admitRate}%`}
+              hint="Share of all applicants admitted, across the whole college. Competitive majors like nursing, CS and engineering are usually harder than this number suggests."
+            />
+            <Stat
+              k="Net price"
+              v={picked.netPrice === null ? "-" : `$${(picked.netPrice / 1000).toFixed(0)}k`}
+              hint="Average yearly cost after grants for students receiving federal aid, not the sticker price and not a quote for you. Run the college's net price calculator for your own figure."
+            />
+            <Stat
+              k="SAT"
+              v={picked.satLow ? `${picked.satLow}-${picked.satHigh}` : "-"}
+              hint="Middle 50 percent of enrolled students who submitted a score. Because many now apply test-optional, this skews higher than the typical admitted student."
+            />
+            <Stat
+              k="Grad"
+              v={picked.gradRate === null ? "-" : `${picked.gradRate}%`}
+              hint="Share of students who finish a bachelor's degree here within six years."
+            />
+          </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {step === 0 && (
+            <>
               <div className="relative">
                 <Search
                   size={16}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#717182]"
                 />
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Start typing a college name"
-                  className={cn(field, "pl-9")}
+                  placeholder="Search colleges"
+                  className={cn(input, "pl-9")}
                 />
               </div>
-            </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
               {query.trim() === "" ? (
-                <p className="py-8 text-center text-[13px] text-muted-foreground">
-                  {catalog.length.toLocaleString()} US colleges. Cost, admit rate
-                  and score ranges come filled in.
+                <p className="py-10 text-center text-[13px] text-[#a8adb8]">
+                  {catalog.length.toLocaleString()} US colleges
                 </p>
               ) : matches.length === 0 ? (
-                <div className="rounded-lg border border-[#e9edef] p-4 dark:border-[#2a3942]">
-                  <p className="text-[13px] font-semibold text-foreground">
-                    No match for "{query}"
-                  </p>
-                  <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                    Foreign universities and some very small colleges are not in
-                    the federal data. Add it by name and fill in the rest yourself.
+                <div className="mt-4">
+                  <p className="mb-2 text-[13px] text-[#717182]">
+                    Not in the federal data. Add it by name.
                   </p>
                   <input
                     value={manualName}
                     onChange={(e) => setManualName(e.target.value)}
                     placeholder="College name"
-                    className={cn(field, "mt-3")}
+                    className={input}
                   />
                   <button
                     type="button"
-                    onClick={chooseManual}
+                    onClick={() => manualName.trim() && setStep(1)}
                     disabled={!manualName.trim()}
-                    className="mt-2 w-full rounded-lg bg-[#1099A1] py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-50"
+                    className="mt-2 h-11 w-full rounded-xl bg-[#1099A1] text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
                   >
-                    Add manually
+                    Continue
                   </button>
                 </div>
               ) : (
-                <ul className="space-y-1">
+                <ul className="mt-3 space-y-0.5">
                   {matches.map((c) => {
                     const added = alreadyAdded.has(c.name.toLowerCase());
                     const img = collegeImageUrl(c.image, 120);
@@ -254,34 +270,29 @@ export function AddCollegeModal({
                           disabled={added}
                           onClick={() => choose(c)}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors",
+                            "flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors",
                             added
-                              ? "cursor-not-allowed border-transparent opacity-50"
-                              : "border-transparent hover:border-[#e9edef] hover:bg-[#f8f9fa] dark:hover:border-[#2a3942] dark:hover:bg-[#1c2a32]"
+                              ? "cursor-not-allowed opacity-40"
+                              : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
                           )}
                         >
-                          <span className="h-10 w-14 shrink-0 overflow-hidden rounded bg-[#f3f3f5] dark:bg-[#1c2a32]">
+                          <span className="h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f3f3f5] dark:bg-[#1c2a32]">
                             {img && (
-                              <img
-                                src={img}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
+                              <img src={img} alt="" className="h-full w-full object-cover" />
                             )}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[14px] font-semibold text-foreground">
+                            <span className="block truncate text-[14px] font-semibold text-[#111] dark:text-white">
                               {c.name}
                             </span>
-                            <span className="block truncate text-[12px] text-muted-foreground">
+                            <span className="block truncate text-[12px] text-[#717182]">
                               {[c.city, c.state].filter(Boolean).join(", ")}
-                              {c.control && ` - ${CONTROL_LABEL[c.control]}`}
                               {c.admitRate !== null && ` - ${c.admitRate}% admit`}
                             </span>
                           </span>
                           {added && (
-                            <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">
-                              On your list
+                            <span className="shrink-0 text-[11px] font-semibold text-[#a8adb8]">
+                              Added
                             </span>
                           )}
                         </button>
@@ -290,201 +301,124 @@ export function AddCollegeModal({
                   })}
                 </ul>
               )}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              {picked && (
-                <div className="mb-5 rounded-lg bg-[#f3f3f5] p-3 dark:bg-[#1c2a32]">
-                  <div className="mb-2 flex items-center gap-1.5">
-                    <VerifiedBadge provenance="catalog" size={13} />
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                      Already filled in for you
-                    </span>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                    <Row k="Admit rate" v={picked.admitRate === null ? "-" : `${picked.admitRate}%`} />
-                    <Row
-                      k="Net price"
-                      v={picked.netPrice === null ? "-" : `$${picked.netPrice.toLocaleString()}/yr`}
-                    />
-                    <Row
-                      k="SAT middle 50"
-                      v={picked.satLow ? `${picked.satLow} - ${picked.satHigh}` : "Not reported"}
-                    />
-                    <Row
-                      k="Graduation rate"
-                      v={picked.gradRate === null ? "-" : `${picked.gradRate}%`}
-                    />
-                  </dl>
-                </div>
-              )}
+            </>
+          )}
 
-              <div className="mb-1.5 flex items-center gap-1.5">
-                <VerifiedBadge provenance="unverified" size={13} />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                  What we cannot look up
-                </span>
+          {step === 1 && (
+            <div className="space-y-5">
+              <div>
+                <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted, you must enrol. Pick Not decided if you are still weighing it.">Round</FieldLabel>
+                <Dropdown
+                  value={round}
+                  onChange={(v) => setRound(v as DeadlineRound | "")}
+                  options={[{ value: "" as const, label: "Not decided" }, ...ROUNDS]}
+                  buttonClassName="h-11 rounded-xl text-[14px]"
+                  ariaLabel="Application round"
+                />
               </div>
-              <p className="mb-4 text-[12px] leading-snug text-muted-foreground">
-                Deadlines and essay counts are not in any federal dataset. Add what
-                you can from the college's own page. Your counselor checks it and
-                marks it verified.
-              </p>
-
-              <div className="space-y-4">
-                <div>
-                  <span className={label}>How likely is it for you?</span>
-                  <div className="flex gap-1.5">
-                    {TIERS.map((t) => (
-                      <button
-                        key={t.value}
-                        type="button"
-                        onClick={() => setTier(t.value)}
-                        className={cn(
-                          "flex-1 rounded-lg border py-2 text-[13px] font-semibold transition-colors",
-                          tier === t.value
-                            ? "border-[#1099A1] bg-[#1099A1]/10 text-[#0d757b] dark:text-[#5fc9cf]"
-                            : "border-[#e9edef] text-foreground/70 hover:border-[#cbd5d8] dark:border-[#2a3942]"
-                        )}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                  {picked && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Our suggestion based on your scores. Your counselor makes the
-                      final call.
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={label} htmlFor="round">
-                      Application round
-                    </label>
-                    <select
-                      id="round"
-                      value={round}
-                      onChange={(e) => setRound(e.target.value as DeadlineRound | "")}
-                      className={field}
-                    >
-                      <option value="">Not sure yet</option>
-                      {ROUNDS.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={label} htmlFor="deadline">
-                      Deadline
-                    </label>
-                    <input
-                      id="deadline"
-                      type="date"
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                      className={field}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={label} htmlFor="appurl">
-                    Admissions page
-                  </label>
-                  <input
-                    id="appurl"
-                    type="url"
-                    value={appUrl}
-                    onChange={(e) => setAppUrl(e.target.value)}
-                    placeholder={
-                      picked ? "Paste the deadlines page you used" : "https://"
-                    }
-                    className={field}
-                  />
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Where you found the deadline. This is what lets a counselor
-                    verify it in one click.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={label} htmlFor="essays">
-                      Supplemental essays
-                    </label>
-                    <input
-                      id="essays"
-                      type="number"
-                      min={0}
-                      max={20}
-                      value={essays}
-                      onChange={(e) => setEssays(e.target.value)}
-                      placeholder="How many?"
-                      className={field}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={label} htmlFor="why">
-                    Why this college
-                  </label>
-                  <textarea
-                    id="why"
-                    rows={3}
-                    value={why}
-                    onChange={(e) => setWhy(e.target.value)}
-                    placeholder="What draws you to it? This becomes the seed of your supplement."
-                    className={cn(field, "resize-none")}
-                  />
-                </div>
+              <div>
+                <FieldLabel hint="The date the application is due, from the college\u0027s own admissions page. Deadlines are in no federal dataset, so this is the one date only you can supply.">Deadline</FieldLabel>
+                <DateField
+                  value={deadline}
+                  onChange={setDeadline}
+                  ariaLabel="Application deadline"
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="appurl" hint="The page you read the deadline on. Your counselor opens it to confirm in one click instead of hunting for it.">Admissions page</FieldLabel>
+                <input
+                  id="appurl"
+                  type="url"
+                  value={appUrl}
+                  onChange={(e) => setAppUrl(e.target.value)}
+                  placeholder="https://"
+                  className={input}
+                />
+              </div>
+              <div>
+                <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">Supplemental essays</FieldLabel>
+                <NumberStepper
+                  value={essays}
+                  onChange={setEssays}
+                  max={20}
+                  ariaLabel="Number of supplemental essays"
+                />
               </div>
             </div>
+          )}
 
-            <footer className="flex items-center gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
-              <p className="flex-1 text-[11px] leading-snug text-muted-foreground">
-                You can leave these blank and fill them in later.
-              </p>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={saving || !name}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-60"
-              >
-                {saving ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Check size={14} />
-                )}
-                Add to my list
-              </button>
-            </footer>
-          </>
-        )}
+          {step === 2 && (
+            <div className="space-y-5">
+              <div>
+                <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
+                <Segmented
+                  value={tier}
+                  onChange={setTier}
+                  options={TIERS}
+                  ariaLabel="Reach, target or safety"
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
+                <textarea
+                  id="why"
+                  rows={5}
+                  value={why}
+                  onChange={(e) => setWhy(e.target.value)}
+                  placeholder="What draws you to it?"
+                  className={cn(input, "h-auto resize-none py-2.5 leading-relaxed")}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <footer className="flex items-center justify-end gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
+          {step > 0 && step < STEPS.length - 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(step + 1)}
+              className="h-10 rounded-xl px-3 text-[13px] font-semibold text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
+            >
+              Skip
+            </button>
+          )}
+          {step < STEPS.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step + 1)}
+              disabled={!name}
+              className="h-10 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={submit}
+              disabled={saving || !name}
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-60"
+            >
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+              Add to my list
+            </button>
+          )}
+        </footer>
       </div>
     </div>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
-    <>
-      <dt className="text-muted-foreground">{k}</dt>
-      <dd className="text-right font-semibold tabular-nums text-foreground">{v}</dd>
-    </>
+    <div className="px-2 py-2.5 text-center">
+      <div className="flex items-center justify-center gap-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#a8adb8]">
+        {k}
+        {hint && <InfoHint text={hint} size={11} />}
+      </div>
+      <div className="mt-0.5 text-[13px] font-semibold tabular-nums text-[#111] dark:text-white">
+        {v}
+      </div>
+    </div>
   );
 }

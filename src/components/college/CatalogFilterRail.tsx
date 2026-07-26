@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Slider } from "@/components/ui/Slider";
 import {
   CatalogFilters,
   Control,
@@ -163,17 +164,14 @@ export function CatalogFilterRail({
               : `$${filters.maxNetPrice.toLocaleString()}`}
           </span>
         </div>
-        <input
-          type="range"
+        <Slider
           min={5000}
           max={80000}
           step={2500}
           value={filters.maxNetPrice ?? 80000}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            set("maxNetPrice", v >= 80000 ? null : v);
-          }}
-          className="mt-1.5 outline-none w-full accent-[#1099A1]"
+          onChange={(v) => set("maxNetPrice", v >= 80000 ? null : v)}
+          ariaLabel="Maximum net price"
+          className="mt-2"
         />
         <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
           Average net price after aid, not sticker price. Schools that report no
@@ -230,17 +228,14 @@ export function CatalogFilterRail({
             {filters.maxAdmitRate === null ? "Any" : `${filters.maxAdmitRate}%`}
           </span>
         </div>
-        <input
-          type="range"
+        <Slider
           min={5}
           max={100}
           step={5}
           value={filters.maxAdmitRate ?? 100}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            set("maxAdmitRate", v >= 100 ? null : v);
-          }}
-          className="mt-1.5 w-full accent-[#1099A1]"
+          onChange={(v) => set("maxAdmitRate", v >= 100 ? null : v)}
+          ariaLabel="Maximum admit rate"
+          className="mt-2"
         />
       </Section>
 
