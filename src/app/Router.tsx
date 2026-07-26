@@ -164,8 +164,32 @@ const previewRoutes = DEV_PREVIEW
   ]
   : [];
 
+function AppRootLayout() {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+  return (
+    <>
+      <Toaster
+        position={isAdmin ? "bottom-right" : "top-center"}
+        richColors
+        toastOptions={{
+          classNames: {
+            success: '!bg-[#1099A1aa] !border-none !text-white',
+            warning: '!bg-[#CAA25F] !border-none !text-white',
+            error: '!bg-[#ef4444] !border-none !text-white'
+          }
+        }}
+      />
+      <Outlet />
+    </>
+  );
+}
+
 const router = createBrowserRouter([
-  ...previewRoutes,
+  {
+    element: <AppRootLayout />,
+    children: [
+      ...previewRoutes,
   {
     path: "/",
     element: <App />,
@@ -342,24 +366,15 @@ const router = createBrowserRouter([
   },
   {
     path: "*",
-    element: <NotFoundPage />,
+    element: <NotFoundPage />
+  }
+  ]
   }
 ]);
 
 export function AppRouter() {
   return (
     <AuthProvider>
-      <Toaster
-        position="top-center"
-        richColors
-        toastOptions={{
-          classNames: {
-            success: '!bg-[#1099A1aa] !border-none !text-white',
-            warning: '!bg-[#CAA25F] !border-none !text-white',
-            error: '!bg-[#ef4444] !border-none !text-white'
-          }
-        }}
-      />
       <BreadcrumbProvider>
         <TopbarActionsProvider>
           <RouterProvider router={router} />

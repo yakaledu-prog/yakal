@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getPost, createPost, updatePost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { useTopbarActions } from "@/contexts/TopbarActionsContext";
-import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon, Repeat2Icon } from "lucide-react";
+import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon, Repeat2Icon, CheckCheckIcon } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { cn } from "@/utils/cn";
 
@@ -14,7 +14,7 @@ export function AdminPostEditor() {
   const isNew = !id || id === "new";
   const navigate = useNavigate();
 
-  useSetBreadcrumb(id, isNew ? "New Post" : "Edit Post");
+
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -32,6 +32,9 @@ export function AdminPostEditor() {
     thumbnailUrl: "",
     status: "draft",
   });
+
+  useSetBreadcrumb(id, "HIDDEN");
+  useSetBreadcrumb("edit", isNew ? "New Post" : (originalData?.title || "Post Details"));
 
   useEffect(() => {
     if (isNew) return;
@@ -57,10 +60,10 @@ export function AdminPostEditor() {
     });
   }, [id, isNew, navigate]);
 
-  const hasChanges = isNew || 
-    title !== originalData.title || 
-    content !== originalData.content || 
-    thumbnailUrl !== originalData.thumbnailUrl || 
+  const hasChanges = isNew ||
+    title !== originalData.title ||
+    content !== originalData.content ||
+    thumbnailUrl !== originalData.thumbnailUrl ||
     status !== originalData.status;
 
   async function handleSave(newStatus?: "draft" | "published") {
@@ -103,11 +106,11 @@ export function AdminPostEditor() {
     }
   }
 
-  useTopbarActions(
+  const actions = useMemo(() => (
     <div className="flex items-center gap-3 mr-2">
       {!hasChanges && !isSaving && !isNew && (
         <span className="text-[12px] text-muted-foreground hidden sm:inline-block mr-2">
-          All changes saved locally
+          All changes saved.
         </span>
       )}
       {isSaving && (
@@ -127,14 +130,16 @@ export function AdminPostEditor() {
       )}
       <button
         onClick={() => handleSave("published")}
-        disabled={isSaving}
+        disabled={isSaving || (status === "published" && !hasChanges)}
         className="flex items-center gap-1.5 px-5 py-2 font-medium bg-[#1099A1] hover:bg-[#0c7f86] text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
       >
-        {isSaving ? <Loader2 size={16} className="animate-spin" /> : (status === "published" ? <Repeat2Icon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />)}
-        {status === "published" ? "Update" : "Publish"}
+        {status === "published" ? hasChanges ? <Repeat2Icon strokeWidth={2} size={16} /> : <CheckCheckIcon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />}
+        {status === "published" ? hasChanges ? "Update" : "Published" : "Publish"}
       </button>
     </div>
-  );
+  ), [hasChanges, isSaving, isNew, status]);
+
+  useTopbarActions(actions);
 
   if (isLoading) {
     return (

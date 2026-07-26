@@ -234,7 +234,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                   items.push({ label: 'Home', path: items[0].path });
                 }
 
-                return items.map((item, index, array) => {
+                const visibleItems = items.filter(item => item.label !== 'HIDDEN');
+
+                return visibleItems.map((item, index, array) => {
                   const isLast = index === array.length - 1;
                   return (
                     <React.Fragment key={index}>
