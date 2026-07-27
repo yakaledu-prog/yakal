@@ -191,34 +191,62 @@ async function ensureStudentFolder(
   return id;
 }
 
+/** Weakest to strongest, so an existing grant can be compared against a wanted one. */
+const ROLE_RANK: Record<string, number> = {
+  reader: 1,
+  commenter: 2,
+  writer: 3,
+  fileOrganizer: 4,
+  organizer: 5,
+  owner: 6,
+};
+
 /**
- * Idempotent share.
+ * Idempotent share that also upgrades.
  *
- * Checks first rather than always creating, because a repeated
- * permissions.create piles up duplicate entries on the file. Failures are
- * swallowed: not being able to share is a degraded experience, whereas throwing
- * would take the whole documents tab down over a cosmetic problem.
+ * Checking only whether the address is present was not enough: a student who
+ * already held reader, whether inherited from the folder or granted earlier,
+ * kept it forever and Docs offered them "Request edit access" on their own
+ * essay. Presence is not the question, sufficiency is.
+ *
+ * Returns whether the caller ended up with at least the role asked for, so a
+ * failure to share can be reported rather than disappearing into a log.
  */
 async function ensureAccess(
   ctx: Ctx,
   fileId: string,
   email: string,
   role: 'reader' | 'commenter' | 'writer'
-) {
+): Promise<boolean> {
   try {
     const existing = await ctx.drive.permissions.list({
       fileId,
       fields: 'permissions(id, emailAddress, role)',
       supportsAllDrives: true,
     });
-    const already = existing.data.permissions?.some(
+
+    const mine = existing.data.permissions?.find(
       (p) => p.emailAddress?.toLowerCase() === email.toLowerCase()
     );
-    if (already) return;
+
+    if (mine) {
+      const have = ROLE_RANK[mine.role ?? ''] ?? 0;
+      if (have >= ROLE_RANK[role]) return true;
+
+      await ctx.drive.permissions.update({
+        fileId,
+        permissionId: mine.id!,
+        requestBody: { role },
+        supportsAllDrives: true,
+      });
+      return true;
+    }
 
     await grant(ctx, fileId, email, role);
+    return true;
   } catch (err: any) {
     console.warn('[drive] could not share', fileId, 'with', email, err?.message);
+    return false;
   }
 }
 
@@ -352,10 +380,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           supportsAllDrives: true,
         });
 
-        if (studentEmail) await ensureAccess(ctx, doc.data.id!, studentEmail, 'writer');
+        const shared = studentEmail
+          ? await ensureAccess(ctx, doc.data.id!, studentEmail, 'writer')
+          : true;
         if (counselorEmail) await ensureAccess(ctx, doc.data.id!, counselorEmail, 'commenter');
 
-        return res.status(200).json({ file: doc.data });
+        // Surfaced, not swallowed: a doc the student cannot edit is worse than
+        // no doc, because it looks like it worked.
+        return res.status(200).json({
+          file: doc.data,
+          shared,
+          sharedWith: studentEmail ?? null,
+        });
       }
 
       /**
@@ -434,6 +470,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
 
         return res.status(200).json({ counts });
+      }
+
+      /**
+       * Re-apply access to everything already in a student's folder.
+       *
+       * Needed because grants made before ensureAccess could upgrade a role are
+       * stuck at whatever they were first given. Recreating the documents would
+       * lose their contents, so the permissions are repaired in place.
+       */
+      case 'repairAccess': {
+        const { studentId, studentName, studentEmail } = req.body;
+        if (!studentId || !studentEmail) {
+          return res.status(400).json({ error: 'studentId and studentEmail are required' });
+        }
+
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const targets = [folderId];
+
+        for (const sub of SUBFOLDERS) {
+          const f = await findChild(ctx, folderId, sub);
+          if (!f?.id) continue;
+          targets.push(f.id);
+          const inner = await ctx.drive.files.list({
+            q: `'${f.id}' in parents and trashed = false`,
+            fields: 'files(id)',
+            ...scope(ctx),
+          });
+          (inner.data.files ?? []).forEach((x) => x.id && targets.push(x.id));
+        }
+
+        const results = await Promise.all(
+          targets.map((id) => ensureAccess(ctx, id, studentEmail, 'writer'))
+        );
+
+        return res.status(200).json({
+          repaired: results.filter(Boolean).length,
+          total: targets.length,
+        });
       }
 
       case 'delete': {

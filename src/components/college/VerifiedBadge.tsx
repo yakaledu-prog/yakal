@@ -47,6 +47,8 @@ const CONFIG: Record<
   // states of one thing should look like a family, not three unrelated glyphs,
   // so the only thing that changes between them is what sits inside the badge.
   pending: {
+    // BadgeHelp is lucide's question-mark badge; later releases renamed it
+    // BadgeQuestionMark. Same glyph, and this version only has the old name.
     icon: BadgeHelp,
     label: "Pending review",
     // Brand gold, the same weight as any other "needs a human" state. Grey

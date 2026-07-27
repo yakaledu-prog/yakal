@@ -1,9 +1,7 @@
 import { useState } from "react";
 import {
-  CheckCircle2,
   ChevronDown,
   ExternalLink,
-  FileText,
   Loader2,
   MessageSquare,
   Plus,
@@ -13,8 +11,9 @@ import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { fileIdFromUrl } from "@/services/driveService";
-import { FieldLabel } from "@/components/ui/InfoHint";
 import { NumberStepper } from "@/components/ui/NumberStepper";
+import { EssayStatusIcon } from "./EssayStatusIcon";
+import { AddEssayModal, NewEssay } from "./AddEssayModal";
 
 const STATUS: { value: EssayStatus; label: string }[] = [
   { value: "todo", label: "Not started" },
@@ -23,8 +22,6 @@ const STATUS: { value: EssayStatus; label: string }[] = [
   { value: "done", label: "Done" },
 ];
 
-const input =
-  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 /**
  * A bare date makes the reader do the arithmetic, and they will get it wrong
@@ -42,13 +39,7 @@ function dueMeta(iso: string): { label: string; tone: "late" | "soon" | "calm" }
   return { label: `in ${days} days`, tone: "calm" };
 }
 
-export interface NewEssay {
-  title: string;
-  kind: "personal_statement" | "supplement";
-  college_list_item_id: string | null;
-  prompt: string | null;
-  word_limit: number | null;
-}
+export type { NewEssay };
 
 /**
  * Essays, grouped by what they are for.
@@ -92,10 +83,6 @@ export function EssaysPanel({
   counts?: Map<string, number>;
 }) {
   const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState("");
-  const [schoolId, setSchoolId] = useState<string>("");
-  const [prompt, setPrompt] = useState("");
-  const [limit, setLimit] = useState<number | null>(null);
 
   /** "" is the Common App bucket, otherwise a college id. */
   const [selected, setSelected] = useState<string>("all");
@@ -131,30 +118,22 @@ export function EssaysPanel({
       )
     : inScope;
 
-  const reset = () => {
-    setTitle("");
-    setSchoolId("");
-    setPrompt("");
-    setLimit(null);
-    setAdding(false);
-  };
-
-  const submit = () => {
-    if (!title.trim()) return;
-    onAdd({
-      title: title.trim(),
-      kind: schoolId ? "supplement" : "personal_statement",
-      college_list_item_id: schoolId || null,
-      prompt: prompt.trim() || null,
-      // The Common App personal statement limit is fixed at 650, so it is
-      // filled in rather than asked for.
-      word_limit: limit ?? (schoolId ? null : 650),
-    });
-    reset();
-  };
-
   return (
     <div className="space-y-4">
+      <AddEssayModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onSubmit={(e) => {
+          onAdd(e);
+          setAdding(false);
+        }}
+        schools={schools}
+        presetSchoolId={
+          selected !== "all" && selected !== "common" ? selected : null
+        }
+        saving={saving}
+      />
+
       <div className="flex items-center gap-3">
         <div className="relative w-full max-w-[280px]">
           <Search
@@ -179,7 +158,7 @@ export function EssaysPanel({
 
         <div className="flex-1" />
 
-        {!adding && (
+        {(
           <button
             type="button"
             onClick={() => setAdding(true)}
@@ -191,87 +170,7 @@ export function EssaysPanel({
         )}
       </div>
 
-      {adding && (
-        <div className="space-y-4 rounded-xl border border-[#e9edef] p-4 dark:border-[#2a3942]">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel htmlFor="essay-title">Title</FieldLabel>
-              <input
-                id="essay-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Why Hopkins? supplement"
-                className={input}
-              />
-            </div>
-            <div>
-              <FieldLabel hint="Leave as Common App if this is your main personal statement, which every college sees.">
-                For which college
-              </FieldLabel>
-              <Dropdown
-                value={schoolId}
-                onChange={setSchoolId}
-                options={[
-                  { value: "", label: "Common App (all colleges)" },
-                  ...schools.map((s) => ({ value: s.id, label: s.school_name })),
-                ]}
-                buttonClassName="h-11 rounded-xl text-[14px] font-normal"
-                ariaLabel="College this essay is for"
-              />
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel
-              htmlFor="essay-prompt"
-              hint="Paste the college's exact question. Keeping it beside the draft means you never have to go looking for what you were asked."
-            >
-              Prompt
-            </FieldLabel>
-            <textarea
-              id="essay-prompt"
-              rows={3}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Paste the question from the college's application"
-              className={cn(input, "h-auto resize-none py-2.5 leading-relaxed")}
-            />
-          </div>
-
-          <div>
-            <FieldLabel hint="Colleges enforce these. Leave blank if the prompt does not state one.">
-              Word limit
-            </FieldLabel>
-            <NumberStepper
-              value={limit}
-              onChange={setLimit}
-              max={2000}
-              placeholder={schoolId ? "-" : "650"}
-              ariaLabel="Word limit"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={reset}
-              className="h-10 rounded-xl px-3 text-[14px] font-medium text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!title.trim() || saving}
-              className="h-10 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      )}
-
-      {essays.length === 0 && schools.length === 0 && !adding ? (
+      {essays.length === 0 && schools.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#e9edef] py-12 text-center dark:border-[#2a3942]">
           <p className="text-[14px] text-[#111] dark:text-white">No essays yet</p>
           <p className="mx-auto mt-1 max-w-md text-[13px] text-[#717182]">
@@ -486,11 +385,7 @@ function EssayRow({
   return (
     <div className="relative overflow-hidden rounded-xl border border-[#e9edef] bg-white pb-1 dark:border-[#2a3942] dark:bg-[#182229]">
       <div className="flex items-start gap-3 p-3">
-        {done ? (
-          <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#1099A1]" />
-        ) : (
-          <FileText size={17} className="mt-0.5 shrink-0 text-[#717182]" />
-        )}
+        <EssayStatusIcon status={essay.status} className="mt-0.5" />
 
         {/* Only the title block toggles, so the status dropdown and the doc
             button do not have to fight the expand for the same click. */}
