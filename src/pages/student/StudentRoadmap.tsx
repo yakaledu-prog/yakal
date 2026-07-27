@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { TestingPlan } from "@/components/college/TestingPlan";
+import { RoadmapTimeline } from "@/components/college/RoadmapTimeline";
 import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
 import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -13,7 +14,7 @@ const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enro
 const field = "bg-white/10 border-transparent text-white placeholder-white/50 focus:border-white focus:bg-white/20 transition-all rounded-sm px-3 py-2 text-[13px] outline-none w-full";
 
 export function StudentRoadmap() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -176,129 +177,10 @@ export function StudentRoadmap() {
                     </div>
                   </div>
 
-                  {/* Grade-by-grade Timeline */}
-                  <div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942]">
-                      {/* Grade 11 Section */}
-                      <div className="p-5 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8fafc] dark:bg-[#1a2730]">
-                        <h3 className="text-lg font-bold">Grade 11 <span className="font-normal text-muted-foreground">· The pivotal testing & list-building year</span></h3>
-                      </div>
-
-                      <div className="p-5 space-y-6">
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <div className="md:w-32 shrink-0">
-                            <p className="font-bold text-[#667781] uppercase tracking-wide text-[13px]">Fall</p>
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">PSAT/NMSQT - October</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">The only year it counts for National Merit. Register through your school.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">Keep grades up in your hardest year</p>
-                              <p className="text-[14px] text-muted-foreground">Junior rigor + GPA carry the most weight in admissions.</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Choose SAT or ACT</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">Use your diagnostic and commit to one test to focus prep.</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <hr className="border-[#e9edef] dark:border-[#2a3942]" />
-
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <div className="md:w-32 shrink-0">
-                            <p className="font-bold text-[#667781] uppercase tracking-wide text-[13px]">Winter</p>
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Start focused SAT/ACT prep</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">Begin 8-12 weeks out, using official Bluebook (SAT) / ACT materials.</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Register for a spring test</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">SAT: March, May, June. ACT: February, April, June.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">Draft a balanced college list</p>
-                              <p className="text-[14px] text-muted-foreground">A mix of reach, match, and safety schools.</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <hr className="border-[#e9edef] dark:border-[#2a3942]" />
-
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <div className="md:w-32 shrink-0">
-                            <p className="font-bold text-[#667781] uppercase tracking-wide text-[13px]">Spring</p>
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Take the SAT and/or ACT</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">Spring of junior year is the ideal first sitting.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">AP exams in May</p>
-                              <p className="text-[14px] text-muted-foreground">Strong scores can earn college credit and show rigor.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">Ask two teachers for recommendations</p>
-                              <p className="text-[14px] text-muted-foreground">Ask in person, late spring, before summer break.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">Visit colleges over spring break</p>
-                              <p className="text-[14px] text-muted-foreground">Tours + info sessions sharpen your list.</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <hr className="border-[#e9edef] dark:border-[#2a3942]" />
-
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <div className="md:w-32 shrink-0">
-                            <p className="font-bold text-[#667781] uppercase tracking-wide text-[13px]">Summer</p>
-                            <p className="text-[12px] text-muted-foreground mt-0.5">before senior year</p>
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Write your Common App essay</span>
-                                <span className="bg-[#CAA25F] text-white text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">Now</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">Draft the personal statement before senior year begins.</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-[15px]">Retake the SAT/ACT if needed</span>
-                                <span className="bg-[#1099A1]/10 text-[#1099A1] text-[11px] px-1.5 py-0.5 font-bold uppercase rounded-sm">SAT / ACT</span>
-                              </div>
-                              <p className="text-[14px] text-muted-foreground">A summer / early-fall retake lifts your score before deadlines.</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-[15px] mb-1">Finalize your list & start supplements</p>
-                              <p className="text-[14px] text-muted-foreground">Research each school’s "why us" and essay prompts.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <RoadmapTimeline
+                    gradYear={gradYear ? Number(gradYear) : app?.grad_year}
+                    gradeLevel={profile?.grade_level}
+                  />
                 </div>
               )}
 
