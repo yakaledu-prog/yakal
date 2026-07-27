@@ -10,8 +10,8 @@ import {
 import { cn } from "@/utils/cn";
 import { Recommendation, RecStatus } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
-import { DateField } from "@/components/ui/DateField";
+import { AddRecommenderModal, NewRecommender } from "./AddRecommenderModal";
+import { InfoHint } from "@/components/ui/InfoHint";
 
 /**
  * Recommendation letters.
@@ -46,16 +46,8 @@ const STATUS_RANK: Record<RecStatus, number> = {
 /** What most colleges expect, and what the coverage line measures against. */
 const TYPICAL_TEACHERS = 2;
 
-const input =
-  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
-export interface NewRecommender {
-  recommender_name: string;
-  recommender_email: string | null;
-  relationship: string | null;
-  status: RecStatus;
-  notes: string | null;
-}
+export type { NewRecommender };
 
 export function RecommendersPanel({
   recommendations,
@@ -74,10 +66,6 @@ export function RecommendersPanel({
   saving: boolean;
 }) {
   const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [askedOn, setAskedOn] = useState<string | null>(null);
 
   const submitted = recommendations.filter((r) => r.status === "submitted").length;
   const outstanding = recommendations.length - submitted;
@@ -91,28 +79,18 @@ export function RecommendersPanel({
   const chase =
     outstanding > 0 && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 21;
 
-  const reset = () => {
-    setName("");
-    setEmail("");
-    setRole("");
-    setAskedOn(null);
-    setAdding(false);
-  };
-
-  const submit = () => {
-    if (!name.trim()) return;
-    onAdd({
-      recommender_name: name.trim(),
-      recommender_email: email.trim() || null,
-      relationship: role.trim() || null,
-      status: "requested",
-      notes: askedOn ? `Asked on ${askedOn}` : null,
-    });
-    reset();
-  };
-
   return (
     <div className="space-y-4">
+      <AddRecommenderModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onSubmit={(r) => {
+          onAdd(r);
+          setAdding(false);
+        }}
+        saving={saving}
+      />
+
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
           {recommendations.length === 0
@@ -128,7 +106,7 @@ export function RecommendersPanel({
 
         <div className="flex-1" />
 
-        {!adding && (
+        {(
           <button
             type="button"
             onClick={() => setAdding(true)}
@@ -154,79 +132,7 @@ export function RecommendersPanel({
         </div>
       )}
 
-      {adding && (
-        <div className="space-y-4 rounded-xl border border-[#e9edef] p-4 dark:border-[#2a3942]">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel htmlFor="rec-name">Name</FieldLabel>
-              <input
-                id="rec-name"
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Mr Daniel Tesfaye"
-                className={input}
-              />
-            </div>
-            <div>
-              <FieldLabel
-                htmlFor="rec-role"
-                hint="Colleges want to hear from teachers of core academic subjects you took recently, ideally in junior year."
-              >
-                Subject or role
-              </FieldLabel>
-              <input
-                id="rec-role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="AP Biology teacher"
-                className={input}
-              />
-            </div>
-            <div>
-              <FieldLabel
-                htmlFor="rec-email"
-                hint="Common App emails the invitation here, so it must be the address they actually check. A school address is usually safest."
-              >
-                Email
-              </FieldLabel>
-              <input
-                id="rec-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@school.edu"
-                className={input}
-              />
-            </div>
-            <div>
-              <FieldLabel hint="Ask in person first, ideally late in junior year. Give recommenders three to four weeks.">
-                Asked on
-              </FieldLabel>
-              <DateField value={askedOn} onChange={setAskedOn} ariaLabel="Date asked" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={reset}
-              className="h-10 rounded-xl px-3 text-[14px] font-medium text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!name.trim() || saving}
-              className="h-10 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      )}
-
-      {recommendations.length === 0 && !adding ? (
+      {recommendations.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#e9edef] py-12 text-center dark:border-[#2a3942]">
           <p className="text-[14px] text-[#111] dark:text-white">No recommenders yet</p>
           <p className="mx-auto mt-1 max-w-md text-[13px] text-[#717182]">
