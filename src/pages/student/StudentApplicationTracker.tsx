@@ -55,7 +55,7 @@ export function StudentApplicationTracker() {
   // here should degrade the matrix rather than break the page.
   const { data: docs } = useQuery({
     queryKey: ["drive-docs", user?.id],
-    queryFn: () => listDocuments(user!.id, profile?.full_name || "Student"),
+    queryFn: () => listDocuments(user!.id, profile?.full_name || "Student", user!.email),
     enabled: !!user?.id,
     retry: false,
   });
@@ -312,6 +312,7 @@ export function StudentApplicationTracker() {
                 <DocumentsPanel
                   studentId={user.id}
                   studentName={profile?.full_name || "Student"}
+                  studentEmail={user.email}
                 />
               )}
 

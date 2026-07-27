@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Readable } from 'node:stream';
 import { google } from 'googleapis';
 
 /**
@@ -156,7 +157,9 @@ async function ensureFolder(ctx: Ctx, parentId: string, name: string) {
 async function ensureStudentFolder(
   ctx: Ctx,
   studentId: string,
-  displayName: string
+  displayName: string,
+  /** Granted access to their own folder, so "Open in Drive" just works. */
+  studentEmail?: string | null
 ) {
   const root = await ensureFolder(ctx, await rootFolder(ctx), 'Students');
   const shortId = studentId.slice(0, 8);
@@ -179,7 +182,44 @@ async function ensureStudentFolder(
     id = created.data.id!;
     await Promise.all(SUBFOLDERS.map((sub) => ensureFolder(ctx, id!, sub)));
   }
+
+  // Every call, not just on creation: folders made before this existed still
+  // need granting, and a student who changes their email needs the new one.
+  // Permissions inherit downward, so one grant covers every subfolder and file.
+  if (studentEmail) await ensureAccess(ctx, id, studentEmail, 'writer');
+
   return id;
+}
+
+/**
+ * Idempotent share.
+ *
+ * Checks first rather than always creating, because a repeated
+ * permissions.create piles up duplicate entries on the file. Failures are
+ * swallowed: not being able to share is a degraded experience, whereas throwing
+ * would take the whole documents tab down over a cosmetic problem.
+ */
+async function ensureAccess(
+  ctx: Ctx,
+  fileId: string,
+  email: string,
+  role: 'reader' | 'commenter' | 'writer'
+) {
+  try {
+    const existing = await ctx.drive.permissions.list({
+      fileId,
+      fields: 'permissions(id, emailAddress, role)',
+      supportsAllDrives: true,
+    });
+    const already = existing.data.permissions?.some(
+      (p) => p.emailAddress?.toLowerCase() === email.toLowerCase()
+    );
+    if (already) return;
+
+    await grant(ctx, fileId, email, role);
+  } catch (err: any) {
+    console.warn('[drive] could not share', fileId, 'with', email, err?.message);
+  }
 }
 
 /** Give someone access by email. Used to hand a student their own folder. */
@@ -210,10 +250,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     switch (action) {
       /** List everything already stored for a student. */
       case 'list': {
-        const { studentId, studentName } = req.body;
+        const { studentId, studentName, studentEmail } = req.body;
         if (!studentId) return res.status(400).json({ error: 'studentId is required' });
 
-        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(
+          ctx, studentId, studentName || 'Student', studentEmail
+        );
 
         // Anything dropped at the top level rather than into a subfolder.
         const files = await ctx.drive.files.list({
@@ -252,12 +294,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * streaming would be a premature complication.
        */
       case 'upload': {
-        const { studentId, studentName, section, filename, mimeType, dataBase64 } = req.body;
+        const { studentId, studentName, studentEmail, section, filename, mimeType, dataBase64 } =
+          req.body;
         if (!studentId || !filename || !dataBase64) {
           return res.status(400).json({ error: 'studentId, filename and dataBase64 are required' });
         }
 
-        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(
+          ctx, studentId, studentName || 'Student', studentEmail
+        );
         const target = SUBFOLDERS.includes(section as Subfolder)
           ? await ensureFolder(ctx, folderId, section)
           : folderId;
@@ -266,7 +311,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           requestBody: { name: filename, parents: [target] },
           media: {
             mimeType: mimeType || 'application/octet-stream',
-            body: Buffer.from(dataBase64, 'base64'),
+            // googleapis pipes this into a multipart request, so it has to be a
+            // stream. Handing it a Buffer fails with "part.body.pipe is not a
+            // function", which does not obviously point at the cause.
+            body: Readable.from(Buffer.from(dataBase64, 'base64')),
           },
           fields: 'id, name, mimeType, webViewLink, modifiedTime, size',
           supportsAllDrives: true,
@@ -287,7 +335,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(400).json({ error: 'studentId and title are required' });
         }
 
-        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(
+          ctx, studentId, studentName || 'Student', studentEmail
+        );
         const essays = await ensureFolder(ctx, folderId, 'Essays');
 
         const doc = await ctx.drive.files.create({
@@ -296,8 +346,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           supportsAllDrives: true,
         });
 
-        if (studentEmail) await grant(ctx, doc.data.id!, studentEmail, 'writer');
-        if (counselorEmail) await grant(ctx, doc.data.id!, counselorEmail, 'commenter');
+        if (studentEmail) await ensureAccess(ctx, doc.data.id!, studentEmail, 'writer');
+        if (counselorEmail) await ensureAccess(ctx, doc.data.id!, counselorEmail, 'commenter');
 
         return res.status(200).json({ file: doc.data });
       }

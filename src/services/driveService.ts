@@ -54,8 +54,18 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return json as T;
 }
 
-export function listDocuments(studentId: string, studentName: string) {
-  return call<DriveListing>({ action: "list", studentId, studentName });
+/**
+ * `studentEmail` is what makes "Open in Drive" work without the student having
+ * to request access. The folder belongs to the Yakal account, so the server
+ * shares it with them on every call rather than leaving them locked out of
+ * their own documents.
+ */
+export function listDocuments(
+  studentId: string,
+  studentName: string,
+  studentEmail?: string | null
+) {
+  return call<DriveListing>({ action: "list", studentId, studentName, studentEmail });
 }
 
 function toBase64(file: File): Promise<string> {
@@ -72,7 +82,8 @@ export async function uploadDocument(
   studentId: string,
   studentName: string,
   section: DocumentSection,
-  file: File
+  file: File,
+  studentEmail?: string | null
 ) {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(
@@ -86,6 +97,7 @@ export async function uploadDocument(
     action: "upload",
     studentId,
     studentName,
+    studentEmail,
     section,
     filename: file.name,
     mimeType: file.type,

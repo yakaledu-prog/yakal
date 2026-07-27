@@ -50,22 +50,25 @@ function prettySize(bytes?: string) {
 export function DocumentsPanel({
   studentId,
   studentName,
+  studentEmail,
 }: {
   studentId: string;
   studentName: string;
+  /** Shared onto the student's folder so Open in Drive needs no access request. */
+  studentEmail?: string | null;
 }) {
   const qc = useQueryClient();
   const [uploading, setUploading] = useState<DocumentSection | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["drive-docs", studentId],
-    queryFn: () => listDocuments(studentId, studentName),
+    queryFn: () => listDocuments(studentId, studentName, studentEmail),
     retry: false,
   });
 
   const upload = useMutation({
     mutationFn: ({ section, file }: { section: DocumentSection; file: File }) =>
-      uploadDocument(studentId, studentName, section, file),
+      uploadDocument(studentId, studentName, section, file, studentEmail),
     onSuccess: (_d, v) => {
       toast.success(`${v.file.name} uploaded.`);
       qc.invalidateQueries({ queryKey: ["drive-docs", studentId] });
