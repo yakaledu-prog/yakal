@@ -13,7 +13,7 @@ const SCHOOLS: CollegeListItem[] = [
   {
     id: "s1", student_id: "u", school_name: "Johns Hopkins University", unitid: 162928,
     tier: "dream", deadline: "2026-11-01", deadline_round: "ed1", status: "applying",
-    notes: null, created_at: "", updated_at: "", supp_essay_count: 1, requirements: [],
+    notes: null, created_at: "", updated_at: "", supp_essay_count: 3, requirements: [],
   },
   {
     id: "s2", student_id: "u", school_name: "University of Maryland-College Park",
@@ -35,13 +35,18 @@ const ESSAYS: Essay[] = [
   {
     id: "e1", student_id: "u", title: "Common App personal statement",
     kind: "personal_statement", college_list_item_id: null, status: "in_review",
-    content: null, drive_url: "https://docs.google.com/document/d/x", due_date: null,
-    updated_at: "",
+    content: null, drive_url: "https://docs.google.com/document/d/x",
+    due_date: null, updated_at: "2026-07-24", word_limit: 650,
+    prompt: "Share an essay on any topic of your choice. It can be one you have already written.",
   },
   {
-    id: "e2", student_id: "u", title: 'Why Hopkins? supplement', kind: "supplement",
-    college_list_item_id: "s1", status: "drafting", content: null, drive_url: null,
-    due_date: "2026-10-15", updated_at: "",
+    id: "e2", student_id: "u", title: "Why Hopkins? supplement", kind: "supplement",
+    college_list_item_id: "s1", status: "drafting", content: null,
+    drive_url: "https://docs.google.com/document/d/y",
+    due_date: "2026-10-15", updated_at: "2026-07-20",
+    word_limit: 300,
+    prompt:
+      "How has your life experience contributed to your personal story, and how will it shape your time at Hopkins?",
   },
   {
     id: "e3", student_id: "u", title: "UMD honors essay", kind: "supplement",
@@ -104,8 +109,11 @@ export function TrackerPreview() {
           onAdd={() => {}}
           onStatusChange={() => {}}
           onCreateDoc={() => {}}
+          onAskReview={() => {}}
+          onSetSuppCount={() => {}}
           creatingDoc={null}
           saving={false}
+          counts={new Map([["x", 631], ["y", 318]])}
         />
       )}
       {tab === "recs" && (

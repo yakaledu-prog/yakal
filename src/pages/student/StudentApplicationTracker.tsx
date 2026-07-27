@@ -23,6 +23,7 @@ import {
   getCollegeProfile,
   toggleRequirement,
   updateEssay,
+  updateSchool,
   updateRecommendation,
   updateTask,
 } from "@/services/collegeService";
@@ -190,6 +191,13 @@ export function StudentApplicationTracker() {
     refresh();
   };
 
+  /** Answering "how many supplements" from the essays page itself. */
+  const setSuppCount = async (schoolId: string, count: number | null) => {
+    const res = await updateSchool(schoolId, { supp_essay_count: count });
+    if (!res.success) return toast.error(res.error || "Could not save.");
+    refresh();
+  };
+
   const addRec = async (r: NewRecommender) => {
     if (!user) return;
     setSaving(true);
@@ -339,6 +347,7 @@ export function StudentApplicationTracker() {
                   onStatusChange={setEssayStatus}
                   onCreateDoc={makeDoc}
                   onAskReview={askReview}
+                  onSetSuppCount={setSuppCount}
                   creatingDoc={creatingDoc}
                   counts={counts}
                   saving={saving}
