@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Columns3, Download, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,8 @@ import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
 import { ListBalance } from "@/components/college/ListBalance";
 import { CollegeListRow } from "@/components/college/CollegeListRow";
 import { AddCollegeModal, AddCollegeInput } from "@/components/college/AddCollegeModal";
+import { CompareDialog } from "@/components/college/CompareDialog";
+import { downloadCsv, toCsv } from "@/services/collegeExport";
 import {
   College,
   computeFit,
@@ -59,6 +61,7 @@ export function StudentCollegeList() {
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sort, setSort] = useState<SortKey>("deadline");
+  const [comparing, setComparing] = useState(false);
 
   const schools = useMemo(() => data?.schools ?? [], [data]);
   const academics = data?.academics ?? null;
@@ -208,6 +211,36 @@ export function StudentCollegeList() {
               <div className="flex-1" />
               <button
                 type="button"
+                onClick={() => setComparing(true)}
+                disabled={schools.length < 2}
+                title={
+                  schools.length < 2
+                    ? "Add a second college to compare"
+                    : undefined
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 px-3 text-[13px] font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-40"
+              >
+                <Columns3 size={15} />
+                Compare
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  downloadCsv(
+                    `yakal-college-list-${new Date().toISOString().slice(0, 10)}.csv`,
+                    toCsv(schools, matchCollege)
+                  )
+                }
+                disabled={schools.length === 0}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 px-3 text-[13px] font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-40"
+              >
+                <Download size={15} />
+                Export CSV
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setShowAdd(true)}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-4 text-[14px] font-semibold text-[#1099A1] transition-colors hover:bg-white/90"
               >
@@ -272,6 +305,13 @@ export function StudentCollegeList() {
           )}
         </div>
       </div>
+
+      <CompareDialog
+        open={comparing}
+        rows={schools.map((item) => ({ item, college: matchCollege(item) }))}
+        student={student}
+        onClose={() => setComparing(false)}
+      />
 
       <AddCollegeModal
         open={showAdd}

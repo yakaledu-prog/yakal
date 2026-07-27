@@ -111,6 +111,7 @@ export function TrackerPreview() {
           onCreateDoc={() => {}}
           onAskReview={() => {}}
           onSetSuppCount={() => {}}
+          onDelete={() => {}}
           creatingDoc={null}
           saving={false}
           counts={new Map([["x", 631], ["y", 318]])}

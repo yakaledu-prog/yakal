@@ -1,24 +1,30 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, LayoutGrid, Loader2, Rows3 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/utils/cn";
 import { RequirementsMatrix } from "@/components/college/RequirementsMatrix";
+import { RequirementsCards } from "@/components/college/RequirementsCards";
 import { EssaysPanel, NewEssay } from "@/components/college/EssaysPanel";
 import { DocumentsPanel } from "@/components/college/DocumentsPanel";
 import { RecommendersPanel, NewRecommender } from "@/components/college/RecommendersPanel";
 import {
+  CollegeListItem,
+  CollegeProfile,
   Essay,
+  SchoolStatus,
   EssayStatus,
   RecStatus,
   Recommendation,
   addEssay,
   addRecommendation,
   addRequirement,
+  deleteEssay,
   deleteRecommendation,
   getCollegeProfile,
   toggleRequirement,
@@ -50,6 +56,11 @@ export function StudentApplicationTracker() {
   const [tab, setTab] = useState<Tab>("requirements");
   const [saving, setSaving] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState<string | null>(null);
+  // Cards answer "what does this college still need", the matrix answers
+  // "which requirement is missing everywhere". Different questions, and a
+  // counselor asks the second one far more often than a student does.
+  const [reqView, setReqView] = useState<"cards" | "matrix">("cards");
+  const [pendingEssayDelete, setPendingEssayDelete] = useState<Essay | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -123,25 +134,101 @@ export function StudentApplicationTracker() {
   const refresh = () =>
     qc.invalidateQueries({ queryKey: ["college-profile", user?.id] });
 
+  const profileKey = ["college-profile", user?.id];
+
+  /**
+   * Patch the cached profile in place.
+   *
+   * Every mutation below is optimistic: a tick has to land under the cursor,
+   * not after a round trip. The server is still the authority, so a failure
+   * restores the snapshot and says so rather than leaving a lie on screen.
+   */
+  const patchProfile = (fn: (p: CollegeProfile) => CollegeProfile) => {
+    qc.setQueryData<CollegeProfile>(profileKey, (prev) => (prev ? fn(prev) : prev));
+  };
+
+  // Named as a hook because it calls useMutation: the call order has to stay
+  // stable across renders, and the linter should be able to see that.
+  const useOptimistic = <V,>(
+    apply: (vars: V, prev: CollegeProfile) => CollegeProfile,
+    run: (vars: V) => Promise<{ success: boolean; error?: string }>,
+    failure: string
+  ) =>
+    useMutation({
+      mutationFn: async (vars: V) => {
+        const res = await run(vars);
+        if (!res.success) throw new Error(res.error || failure);
+      },
+      onMutate: async (vars: V) => {
+        await qc.cancelQueries({ queryKey: profileKey });
+        const snapshot = qc.getQueryData<CollegeProfile>(profileKey);
+        patchProfile((prev) => apply(vars, prev));
+        return { snapshot };
+      },
+      onError: (err, _vars, ctx) => {
+        // Put back exactly what was there. A half-applied change is worse than
+        // no change, because the student cannot tell which half took.
+        if (ctx?.snapshot) qc.setQueryData(profileKey, ctx.snapshot);
+        toast.error(err instanceof Error ? err.message : failure);
+      },
+      onSettled: () => qc.invalidateQueries({ queryKey: profileKey }),
+    });
+
   /**
    * Writing an override rather than mutating the derived value. The derivation
    * stays intact underneath, so clearing the override later restores it.
    */
-  const toggleReq = async (
-    school: (typeof schools)[number],
-    key: ReqKey,
-    next: boolean
-  ) => {
-    const existing = school.requirements?.find((r) => r.label === OVERRIDE_LABEL[key]);
-    const res = existing
-      ? await toggleRequirement(existing.id, next)
-      : await addRequirement(school.id, OVERRIDE_LABEL[key], null).then(async (r) => {
-        if (r.success && r.data && next) await toggleRequirement(r.data.id, true);
-        return r;
-      });
-    if (!res.success) return toast.error(res.error || "Could not update.");
-    refresh();
-  };
+  const toggleReqM = useOptimistic<{
+    school: CollegeListItem;
+    key: ReqKey;
+    next: boolean;
+  }>(
+    ({ school, key, next }, prev) => ({
+      ...prev,
+      schools: prev.schools.map((s) =>
+        s.id !== school.id
+          ? s
+          : {
+              ...s,
+              requirements: (() => {
+                const label = OVERRIDE_LABEL[key];
+                const rows = s.requirements ?? [];
+                return rows.some((r) => r.label === label)
+                  ? rows.map((r) =>
+                      r.label === label ? { ...r, is_complete: next } : r
+                    )
+                  : [
+                      ...rows,
+                      {
+                        // Temporary id: the refetch in onSettled replaces it
+                        // with the real row.
+                        id: `optimistic-${school.id}-${key}`,
+                        college_list_item_id: school.id,
+                        label,
+                        is_complete: next,
+                        due_date: null,
+                      },
+                    ];
+              })(),
+            }
+      ),
+    }),
+    async ({ school, key, next }) => {
+      const existing = school.requirements?.find(
+        (r) => r.label === OVERRIDE_LABEL[key]
+      );
+      if (existing && !existing.id.startsWith("optimistic-")) {
+        return toggleRequirement(existing.id, next);
+      }
+      const created = await addRequirement(school.id, OVERRIDE_LABEL[key], null);
+      if (!created.success || !created.data) return created;
+      return next ? toggleRequirement(created.data.id, true) : created;
+    },
+    "Could not update that requirement."
+  );
+
+  const toggleReq = (school: CollegeListItem, key: ReqKey, next: boolean) =>
+    toggleReqM.mutate({ school, key, next });
 
   const addEssayRow = async (e: NewEssay) => {
     if (!user) return;
@@ -153,11 +240,17 @@ export function StudentApplicationTracker() {
     refresh();
   };
 
-  const setEssayStatus = async (id: string, status: EssayStatus) => {
-    const res = await updateEssay(id, { status });
-    if (!res.success) return toast.error(res.error || "Could not update.");
-    refresh();
-  };
+  const setEssayStatusM = useOptimistic<{ id: string; status: EssayStatus }>(
+    ({ id, status }, prev) => ({
+      ...prev,
+      essays: prev.essays.map((e) => (e.id === id ? { ...e, status } : e)),
+    }),
+    ({ id, status }) => updateEssay(id, { status }),
+    "Could not update that essay."
+  );
+
+  const setEssayStatus = (id: string, status: EssayStatus) =>
+    setEssayStatusM.mutate({ id, status });
 
   const makeDoc = async (essay: Essay) => {
     if (!user) return;
@@ -192,11 +285,48 @@ export function StudentApplicationTracker() {
   };
 
   /** Answering "how many supplements" from the essays page itself. */
+  const setDecisionM = useOptimistic<{
+    school: CollegeListItem;
+    decision: SchoolStatus | null;
+  }>(
+    ({ school, decision }, prev) => ({
+      ...prev,
+      schools: prev.schools.map((s) =>
+        s.id === school.id
+          ? {
+              ...s,
+              status:
+                decision ?? (school.deadline ? "applying" : "considering"),
+            }
+          : s
+      ),
+    }),
+    ({ school, decision }) =>
+      updateSchool(school.id, {
+        // Clearing a decision returns the college to whatever it was before an
+        // outcome existed, rather than leaving it stuck on a stale one.
+        status: decision ?? (school.deadline ? "applying" : "considering"),
+      }),
+    "Could not save that decision."
+  );
+
+  const setDecision = (school: CollegeListItem, decision: SchoolStatus | null) =>
+    setDecisionM.mutate({ school, decision });
+
   const setSuppCount = async (schoolId: string, count: number | null) => {
     const res = await updateSchool(schoolId, { supp_essay_count: count });
     if (!res.success) return toast.error(res.error || "Could not save.");
     refresh();
   };
+
+  const deleteEssayM = useOptimistic<Essay>(
+    (essay, prev) => ({
+      ...prev,
+      essays: prev.essays.filter((e) => e.id !== essay.id),
+    }),
+    (essay) => deleteEssay(essay.id),
+    "Could not delete that essay."
+  );
 
   const addRec = async (r: NewRecommender) => {
     if (!user) return;
@@ -208,11 +338,19 @@ export function StudentApplicationTracker() {
     refresh();
   };
 
-  const setRecStatus = async (id: string, status: RecStatus) => {
-    const res = await updateRecommendation(id, { status });
-    if (!res.success) return toast.error(res.error || "Could not update.");
-    refresh();
-  };
+  const setRecStatusM = useOptimistic<{ id: string; status: RecStatus }>(
+    ({ id, status }, prev) => ({
+      ...prev,
+      recommendations: prev.recommendations.map((r) =>
+        r.id === id ? { ...r, status } : r
+      ),
+    }),
+    ({ id, status }) => updateRecommendation(id, { status }),
+    "Could not update that recommender."
+  );
+
+  const setRecStatus = (id: string, status: RecStatus) =>
+    setRecStatusM.mutate({ id, status });
 
   const removeRec = async (r: Recommendation) => {
     const res = await deleteRecommendation(r.id);
@@ -336,7 +474,44 @@ export function StudentApplicationTracker() {
           ) : (
             <>
               {tab === "requirements" && (
-                <RequirementsMatrix schools={schools} ctx={ctx} onToggle={toggleReq} />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1" />
+                    <div className="flex overflow-hidden rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
+                      {([
+                        ["cards", LayoutGrid, "Card view"],
+                        ["matrix", Rows3, "Table view"],
+                      ] as const).map(([v, Icon, label]) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setReqView(v)}
+                          aria-label={label}
+                          aria-pressed={reqView === v}
+                          className={cn(
+                            "px-2 py-1.5 transition-colors",
+                            reqView === v
+                              ? "bg-[#1099A1] text-white"
+                              : "text-[#717182] hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+                          )}
+                        >
+                          <Icon size={15} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {reqView === "cards" ? (
+                    <RequirementsCards
+                      schools={schools}
+                      ctx={ctx}
+                      onToggle={toggleReq}
+                      onDecision={setDecision}
+                    />
+                  ) : (
+                    <RequirementsMatrix schools={schools} ctx={ctx} onToggle={toggleReq} />
+                  )}
+                </div>
               )}
 
               {tab === "essays" && (
@@ -348,6 +523,7 @@ export function StudentApplicationTracker() {
                   onCreateDoc={makeDoc}
                   onAskReview={askReview}
                   onSetSuppCount={setSuppCount}
+                  onDelete={setPendingEssayDelete}
                   creatingDoc={creatingDoc}
                   counts={counts}
                   saving={saving}
@@ -376,6 +552,29 @@ export function StudentApplicationTracker() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={!!pendingEssayDelete}
+        title="Delete this essay?"
+        message={
+          <>
+            <span className="font-medium text-[#111] dark:text-white">
+              {pendingEssayDelete?.title}
+            </span>{" "}
+            is removed from your list.{" "}
+            {pendingEssayDelete?.drive_url
+              ? "Its Google Doc stays in Drive, so nothing you wrote is lost."
+              : "It has no document attached."}
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deleteEssayM.isPending}
+        onConfirm={() => {
+          if (pendingEssayDelete) deleteEssayM.mutate(pendingEssayDelete);
+          setPendingEssayDelete(null);
+        }}
+        onCancel={() => setPendingEssayDelete(null)}
+      />
     </PageWrapper>
   );
 }

@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
@@ -64,6 +65,7 @@ export function EssaysPanel({
   onStatusChange,
   onCreateDoc,
   onAskReview,
+  onDelete,
   onSetSuppCount,
   creatingDoc,
   saving,
@@ -75,6 +77,7 @@ export function EssaysPanel({
   onStatusChange: (id: string, status: EssayStatus) => void;
   onCreateDoc: (essay: Essay) => void;
   onAskReview: (essay: Essay) => void;
+  onDelete: (essay: Essay) => void;
   /** Lets a student answer "how many does this college want" without leaving. */
   onSetSuppCount: (schoolId: string, count: number | null) => void;
   creatingDoc: string | null;
@@ -240,6 +243,7 @@ export function EssaysPanel({
                   onStatusChange={onStatusChange}
                   onCreateDoc={onCreateDoc}
                   onAskReview={onAskReview}
+                  onDelete={onDelete}
                   creating={creatingDoc === e.id}
                 />
               ))
@@ -347,6 +351,7 @@ function EssayRow({
   onStatusChange,
   onCreateDoc,
   onAskReview,
+  onDelete,
   creating,
 }: {
   essay: Essay;
@@ -355,6 +360,7 @@ function EssayRow({
   onStatusChange: (id: string, s: EssayStatus) => void;
   onCreateDoc: (e: Essay) => void;
   onAskReview: (e: Essay) => void;
+  onDelete: (e: Essay) => void;
   creating: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -547,6 +553,17 @@ function EssayRow({
               With your counselor. You will get a note when they have read it.
             </p>
           )}
+
+          <div className="flex justify-end border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
+            <button
+              type="button"
+              onClick={() => onDelete(essay)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10"
+            >
+              <Trash2 size={13} />
+              Delete essay
+            </button>
+          </div>
         </div>
       )}
 
