@@ -3,10 +3,10 @@ import {
   ChevronDown,
   ExternalLink,
   Loader2,
-  MessageSquare,
   Plus,
   Search,
   Trash2,
+  UserPen,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
@@ -535,26 +535,31 @@ function EssayRow({
             )}
           </div>
 
-          {/* The handoff the tiers are sold on. Pointless before a doc exists,
-              redundant once it is already with the counselor. */}
-          {essay.drive_url && essay.status !== "in_review" && (
-            <button
-              type="button"
-              onClick={() => onAskReview(essay)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#1099A1] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
-            >
-              <MessageSquare size={13} />
-              Ask for review
-            </button>
-          )}
-
           {essay.status === "in_review" && (
             <p className="text-[12px] text-[#CAA25F]">
               With your counselor. You will get a note when they have read it.
             </p>
           )}
 
-          <div className="flex justify-end border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
+          {/* Both actions on one line: they are the only two things you can do
+              from here, and stacking them made the panel taller than its
+              contents warranted. */}
+          <div className="flex items-center gap-1 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
+            {/* The handoff the tiers are sold on. Pointless before a doc
+                exists, redundant once it is already with the counselor. */}
+            {essay.drive_url && essay.status !== "in_review" && (
+              <button
+                type="button"
+                onClick={() => onAskReview(essay)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+              >
+                <UserPen size={13} />
+                Ask for review
+              </button>
+            )}
+
+            <div className="flex-1" />
+
             <button
               type="button"
               onClick={() => onDelete(essay)}

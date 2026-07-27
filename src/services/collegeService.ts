@@ -97,6 +97,15 @@ export interface Recommendation {
   relationship: string | null;
   status: RecStatus;
   notes: string | null;
+  /** Dates for each step, so "asked three weeks ago" is answerable. */
+  asked_on?: string | null;
+  invited_on?: string | null;
+  submitted_on?: string | null;
+  /** Waiving is near-universal: a letter the student can read carries less weight. */
+  ferpa_waived?: boolean | null;
+  thank_you_sent?: boolean | null;
+  /** Exception path only. US letters go straight to Common App. */
+  letter_url?: string | null;
 }
 
 export interface ApplicationTask {

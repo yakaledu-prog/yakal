@@ -122,6 +122,24 @@ export function AddCollegeModal({
     return filterCatalog(catalog, { ...EMPTY_FILTERS, query }, student).slice(0, 7);
   }, [catalog, query, student]);
 
+  /**
+   * What to show before anyone types.
+   *
+   * A count of the catalog is a fact about us, not a starting point for them.
+   * Targets lead because that is the band most lists are short of, and a couple
+   * of safeties follow, since a list with none is the failure this product
+   * exists to prevent. With no scores on file there is nothing to fit against,
+   * so it falls back to the largest colleges, which are the ones a student is
+   * most likely to recognise anyway.
+   */
+  const suggestions = useMemo(() => {
+    const pool = catalog.filter((c) => !alreadyAdded.has(c.name.toLowerCase()));
+    if (!student.sat && !student.act) return pool.slice(0, 6);
+    const byFit = (want: Fit) =>
+      pool.filter((c) => computeFit(c, student) === want);
+    return [...byFit("target").slice(0, 4), ...byFit("safety").slice(0, 2)].slice(0, 6);
+  }, [catalog, student, alreadyAdded]);
+
   const name = picked?.name ?? manualName.trim();
 
   const choose = (c: College) => {
@@ -227,9 +245,23 @@ export function AddCollegeModal({
               </div>
 
               {query.trim() === "" ? (
-                <p className="py-10 text-center text-[13px] text-[#a8adb8]">
-                  {catalog.length.toLocaleString()} US colleges
-                </p>
+                <>
+                  <p className="mb-1.5 mt-4 text-[11px] font-medium uppercase tracking-[0.06em] text-[#a8adb8]">
+                    {student.sat || student.act
+                      ? "Suggested for you"
+                      : `Popular of ${catalog.length.toLocaleString()} US colleges`}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {suggestions.map((c) => (
+                      <CollegeOption
+                        key={c.unitid}
+                        college={c}
+                        added={false}
+                        onPick={() => choose(c)}
+                      />
+                    ))}
+                  </ul>
+                </>
               ) : matches.length === 0 ? (
                 <div className="mt-4">
                   <p className="mb-2 text-[13px] text-[#717182]">
@@ -252,45 +284,14 @@ export function AddCollegeModal({
                 </div>
               ) : (
                 <ul className="mt-3 space-y-0.5">
-                  {matches.map((c) => {
-                    const added = alreadyAdded.has(c.name.toLowerCase());
-                    const img = collegeImageUrl(c.image, 120);
-                    return (
-                      <li key={c.unitid}>
-                        <button
-                          type="button"
-                          disabled={added}
-                          onClick={() => choose(c)}
-                          className={cn(
-                            "flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors",
-                            added
-                              ? "cursor-not-allowed opacity-40"
-                              : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
-                          )}
-                        >
-                          <span className="h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f3f3f5] dark:bg-[#1c2a32]">
-                            {img && (
-                              <img src={img} alt="" className="h-full w-full object-cover" />
-                            )}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[14px] font-semibold text-[#111] dark:text-white">
-                              {c.name}
-                            </span>
-                            <span className="block truncate text-[12px] text-[#717182]">
-                              {[c.city, c.state].filter(Boolean).join(", ")}
-                              {c.admitRate !== null && ` - ${c.admitRate}% admit`}
-                            </span>
-                          </span>
-                          {added && (
-                            <span className="shrink-0 text-[11px] font-semibold text-[#a8adb8]">
-                              Added
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {matches.map((c) => (
+                    <CollegeOption
+                      key={c.unitid}
+                      college={c}
+                      added={alreadyAdded.has(c.name.toLowerCase())}
+                      onPick={() => choose(c)}
+                    />
+                  ))}
                 </ul>
               )}
             </>
@@ -439,5 +440,50 @@ function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
         {v}
       </div>
     </div>
+  );
+}
+
+
+/** One searchable college, shared by the suggestions and the search results. */
+function CollegeOption({
+  college,
+  added,
+  onPick,
+}: {
+  college: College;
+  added: boolean;
+  onPick: () => void;
+}) {
+  const img = collegeImageUrl(college.image, 120);
+  return (
+    <li>
+      <button
+        type="button"
+        disabled={added}
+        onClick={onPick}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors",
+          added
+            ? "cursor-not-allowed opacity-40"
+            : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+        )}
+      >
+        <span className="h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-[#f3f3f5] dark:bg-[#1c2a32]">
+          {img && <img src={img} alt="" className="h-full w-full object-cover" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14px] font-semibold text-[#111] dark:text-white">
+            {college.name}
+          </span>
+          <span className="block truncate text-[12px] text-[#717182]">
+            {[college.city, college.state].filter(Boolean).join(", ")}
+            {college.admitRate !== null && ` - ${college.admitRate}% admit`}
+          </span>
+        </span>
+        {added && (
+          <span className="shrink-0 text-[11px] font-semibold text-[#a8adb8]">Added</span>
+        )}
+      </button>
+    </li>
   );
 }

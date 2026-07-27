@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle2, LayoutGrid, Loader2, Rows3 } from "lucide-react";
+import { CheckCircle2, LayoutGrid, Loader2, Rows3, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +61,7 @@ export function StudentApplicationTracker() {
   // counselor asks the second one far more often than a student does.
   const [reqView, setReqView] = useState<"cards" | "matrix">("cards");
   const [pendingEssayDelete, setPendingEssayDelete] = useState<Essay | null>(null);
+  const [reqQuery, setReqQuery] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -116,6 +117,11 @@ export function StudentApplicationTracker() {
     }),
     [data, essays, recommendations, hasTranscript]
   );
+
+  const visibleSchools = useMemo(() => {
+    const q = reqQuery.trim().toLowerCase();
+    return q ? schools.filter((s) => s.school_name.toLowerCase().includes(q)) : schools;
+  }, [schools, reqQuery]);
 
   const earliestDeadline = useMemo(() => {
     const dates = schools.map((s) => s.deadline).filter(Boolean).sort() as string[];
@@ -475,7 +481,26 @@ export function StudentApplicationTracker() {
             <>
               {tab === "requirements" && (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-full max-w-[280px]">
+                      <Search
+                        size={15}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a8adb8]"
+                      />
+                      <input
+                        value={reqQuery}
+                        onChange={(e) => setReqQuery(e.target.value)}
+                        placeholder="Search colleges"
+                        className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
+                      />
+                    </div>
+
+                    <p className="hidden shrink-0 text-[13px] text-[#54656f] sm:block dark:text-[#aebac1]">
+                      {reqQuery.trim()
+                        ? `${visibleSchools.length} of ${schools.length}`
+                        : `${schools.length} colleges`}
+                    </p>
+
                     <div className="flex-1" />
                     <div className="flex overflow-hidden rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
                       {([
@@ -501,15 +526,21 @@ export function StudentApplicationTracker() {
                     </div>
                   </div>
 
-                  {reqView === "cards" ? (
+                  {visibleSchools.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-[#e9edef] py-10 text-center dark:border-[#2a3942]">
+                      <p className="text-[13px] text-[#717182]">
+                        No college matches "{reqQuery.trim()}".
+                      </p>
+                    </div>
+                  ) : reqView === "cards" ? (
                     <RequirementsCards
-                      schools={schools}
+                      schools={visibleSchools}
                       ctx={ctx}
                       onToggle={toggleReq}
                       onDecision={setDecision}
                     />
                   ) : (
-                    <RequirementsMatrix schools={schools} ctx={ctx} onToggle={toggleReq} />
+                    <RequirementsMatrix schools={visibleSchools} ctx={ctx} onToggle={toggleReq} />
                   )}
                 </div>
               )}
