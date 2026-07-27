@@ -119,14 +119,28 @@ function derive(
 
     case "essays": {
       const list = essaysFor(ctx, school);
-      const expected = school.supp_essay_count ?? list.length;
-      if (expected === 0) {
+
+      // Only an explicit zero means "this college wants none". A null count is
+      // simply unknown, and rendering unknown as not-required told every
+      // student their whole list was essay-free.
+      if (school.supp_essay_count === 0) {
         return {
           ...base,
           status: "not_required",
           reason: "This college asks for no supplemental essays",
         };
       }
+
+      if (school.supp_essay_count == null && list.length === 0) {
+        return {
+          ...base,
+          status: "todo",
+          reason:
+            "We do not know how many supplements this college wants. Check its application and set the count on your list.",
+        };
+      }
+
+      const expected = school.supp_essay_count ?? list.length;
       const done = list.filter((e) => e.status === "done").length;
       if (list.length === 0) {
         return {

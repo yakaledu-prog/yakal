@@ -25,6 +25,7 @@ import {
 } from "@/services/driveService";
 import { SLOT_GROUPS, Slot } from "@/services/documentSlots";
 import { InfoHint } from "@/components/ui/InfoHint";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { VerifiedBadge } from "./VerifiedBadge";
 
 /** The icon answers "what kind of file is this", which no badge should. */
@@ -108,13 +109,32 @@ export function DocumentsPanel({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Held between asking and confirming, so the dialog knows what it is about. */
+  const [pendingDelete, setPendingDelete] = useState<DriveFile | null>(null);
+
   const remove = useMutation({
     mutationFn: (f: DriveFile) => deleteDocument(f.id),
     onSuccess: (_d, f) => {
       toast.success(`${f.name} moved to trash.`);
+
+      // Same reason as upload: a refetch walks the whole tree, so the row
+      // lingered on screen well after the toast said it was gone.
+      qc.setQueryData<DriveListing>(["drive-docs", studentId], (prev) =>
+        prev
+          ? {
+              ...prev,
+              loose: prev.loose.filter((x) => x.id !== f.id),
+              sections: prev.sections.map((sec) => ({
+                ...sec,
+                files: sec.files.filter((x) => x.id !== f.id),
+              })),
+            }
+          : prev
+      );
       qc.invalidateQueries({ queryKey: ["drive-docs", studentId] });
     },
     onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setPendingDelete(null),
   });
 
   /**
@@ -208,11 +228,30 @@ export function DocumentsPanel({
             setBusySlot(slot.id);
             upload.mutate({ slot, file });
           }}
-          onRemove={(f) => remove.mutate(f)}
+          onRemove={setPendingDelete}
           onReview={(file, verdict) => review.mutate({ file, verdict })}
           removingId={remove.isPending ? remove.variables?.id : undefined}
         />
       ))}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this file?"
+        message={
+          <>
+            <span className="font-medium text-[#111] dark:text-white">
+              {pendingDelete?.name}
+            </span>{" "}
+            moves to your Drive trash, where it stays recoverable for 30 days.
+            Your counselor will no longer see it here.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={remove.isPending}
+        onConfirm={() => pendingDelete && remove.mutate(pendingDelete)}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {unfiled.length > 0 && (
         <section>
@@ -225,7 +264,7 @@ export function DocumentsPanel({
               <FileRow
                 key={f.id}
                 file={f}
-                onRemove={() => remove.mutate(f)}
+                onRemove={() => setPendingDelete(f)}
                 removing={remove.isPending && remove.variables?.id === f.id}
               />
             ))}
@@ -463,6 +502,23 @@ function FileRow({
   const verdict: ReviewVerdict = file.appProperties?.review ?? "pending";
   const note = file.appProperties?.reviewNote;
   const Icon = fileIcon(file.mimeType);
+
+  // A row on its way out shows as a placeholder rather than sitting unchanged
+  // behind a toast that already claimed it was gone.
+  if (removing) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          !compact &&
+          "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
+        )}
+      >
+        <span className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#e9edef] dark:bg-[#2a3942]" />
+        <span className="h-3 flex-1 animate-pulse rounded bg-[#e9edef] dark:bg-[#2a3942]" />
+      </div>
+    );
+  }
 
   return (
     <div
