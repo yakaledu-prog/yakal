@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { TestingPlan } from "@/components/college/TestingPlan";
 import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
-import { Map, Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
+import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 
@@ -301,65 +302,7 @@ export function StudentRoadmap() {
                 </div>
               )}
 
-              {tab === "testing" && (
-                <div className="space-y-8">
-                  {/* Typical Test Months */}
-                  <div className="space-y-4 border border-[#e9edef] dark:border-[#2a3942] p-5 bg-white dark:bg-[#182229]">
-                    <h3 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Typical Test Months</h3>
-                    
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="w-12 text-center bg-[#e6f4f1] text-[#1099A1] text-[13px] font-bold px-2 py-1.5 rounded-full">SAT</span>
-                        {["Aug", "Oct", "Nov", "Dec", "Mar", "May", "Jun"].map(m => (
-                          <span key={m} className="bg-muted text-[13px] font-medium px-4 py-1.5 rounded-full">{m}</span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="w-12 text-center bg-[#fce8ed] text-[#d6336c] text-[13px] font-bold px-2 py-1.5 rounded-full">ACT</span>
-                        {["Sep", "Oct", "Dec", "Feb", "Apr", "Jun", "Jul"].map(m => (
-                          <span key={m} className="bg-muted text-[13px] font-medium px-4 py-1.5 rounded-full">{m}</span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <p className="text-[13px] text-muted-foreground pt-1">
-                      The SAT is now digital (College Board's Bluebook app). Always confirm exact dates on the official sites.
-                    </p>
-                  </div>
-
-                  <div className="border border-[#e9edef] dark:border-[#2a3942] divide-y divide-[#e9edef] dark:divide-[#2a3942] bg-white dark:bg-[#182229]">
-                    <div className="p-4 flex gap-4 items-start">
-                      <div className="flex flex-col gap-1 shrink-0 mt-0.5">
-                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">SAT</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[14px]">PSAT/NMSQT · October of junior year</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">National Merit qualifier. Take the PSAT 10 sophomore year for practice.</p>
-                      </div>
-                    </div>
-                    <div className="p-4 flex gap-4 items-start">
-                      <div className="flex flex-col gap-1 shrink-0 mt-0.5">
-                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm text-center">SAT</span>
-                        <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm text-center">ACT</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[14px]">First SAT / ACT · Spring of junior year</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">March-June. Pick SAT or ACT from a diagnostic, then prep 8-12 weeks.</p>
-                      </div>
-                    </div>
-                    <div className="p-4 flex gap-4 items-start">
-                      <div className="flex flex-col gap-1 shrink-0 mt-0.5">
-                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm text-center">SAT</span>
-                        <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1.5 py-0.5 rounded-sm text-center">ACT</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[14px]">Retake · Fall of senior year</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">August-October - before Early deadlines (by December for Regular Decision).</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {tab === "testing" && <TestingPlan />}
 
               {tab === "resources" && (
                 <div>
