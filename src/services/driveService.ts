@@ -31,8 +31,17 @@ export interface DriveListing {
 
 export type DocumentSection = "Transcripts" | "Essays" | "Test scores" | "Other";
 
-/** Anything above this is almost certainly not a transcript or a score report. */
-export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+/**
+ * Vercel caps a function request body at 4.5 MB, and base64 inflates a file by
+ * four thirds, so the real ceiling is about 3.3 MB before the request is
+ * rejected with a 413 that never reaches our error handling. 3 MB leaves room
+ * for the surrounding JSON.
+ *
+ * Not a real constraint for this feature: transcripts and score reports are
+ * typically well under a megabyte. Anything larger needs a direct-to-Drive
+ * upload rather than a bigger number here.
+ */
+export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
   const res = await fetch("/api/drive", {
@@ -100,8 +109,8 @@ export function deleteDocument(fileId: string) {
 }
 
 export function isConfigured(err: unknown): boolean {
-  // The endpoint reports missing configuration rather than failing silently, so
+  // The endpoint names the missing variables rather than failing silently, so
   // the UI can tell "not set up yet" apart from "something broke".
   const m = err instanceof Error ? err.message : String(err);
-  return !/GOOGLE_SERVICE_ACCOUNT_JSON|GOOGLE_SHARED_DRIVE_ID/.test(m);
+  return !/GOOGLE_OAUTH_REFRESH_TOKEN|GOOGLE_SERVICE_ACCOUNT_JSON|GOOGLE_SHARED_DRIVE_ID/.test(m);
 }

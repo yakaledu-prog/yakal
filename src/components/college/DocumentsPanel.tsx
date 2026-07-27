@@ -105,7 +105,7 @@ export function DocumentsPanel({
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-[#717182]">
               {setupNeeded
-                ? "Set GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHARED_DRIVE_ID on the server, and add the service account to the Shared Drive."
+                ? "Run node scripts/google-oauth-setup.mjs to connect the Yakal Drive account, then restart the dev server."
                 : (error as Error).message}
             </p>
           </div>

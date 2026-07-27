@@ -14,6 +14,7 @@ import stripeWebhookHandler from '../api/stripe-webhook.ts';
 import stripeConfirmHandler from '../api/stripe-confirm.ts';
 import stripePaymentMethodsHandler from '../api/stripe-payment-methods.ts';
 import createInvoiceHandler from '../api/create-invoice.ts';
+import driveHandler from '../api/drive.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,7 +37,9 @@ const createVercelHandler = (handler) => async (req, res) => {
 app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), createVercelHandler(stripeWebhookHandler));
 
 // JSON body parser for every other route.
-app.use(express.json({ limit: '5mb' }));
+// Uploads arrive base64 encoded, which inflates them by a third, so this has to
+// clear the file limit in driveService with room to spare.
+app.use(express.json({ limit: '8mb' }));
 
 app.all('/api/upload-resume', createVercelHandler(uploadResumeHandler));
 app.all('/api/zoom-signature', createVercelHandler(signatureHandler));
@@ -48,6 +51,7 @@ app.all('/api/stripe-portal', createVercelHandler(stripePortalHandler));
 app.all('/api/stripe-confirm', createVercelHandler(stripeConfirmHandler));
 app.all('/api/stripe-payment-methods', createVercelHandler(stripePaymentMethodsHandler));
 app.all('/api/create-invoice', createVercelHandler(createInvoiceHandler));
+app.all('/api/drive', createVercelHandler(driveHandler));
 
 const PORT = 3001;
 app.listen(PORT, () => {
