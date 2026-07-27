@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { Inbox, Archive, Trash2, Clock, Mail, ArrowLeftIcon } from "lucide-react";
+import { Inbox, Archive, Trash2, Clock, Mail, ArrowLeftIcon, ArchiveXIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 interface Notification {
@@ -224,24 +224,8 @@ export function StudentNotifications() {
           )}>
             {activeNotification ? (
               <>
-                {/* Reading Toolbar */}
-                <div className="h-14 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between px-4 flex-shrink-0">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="md:hidden text-[#54656f] dark:text-[#aebac1] -ml-2">
-                    <ArrowLeftIcon />
-                  </Button>
-
-                  <div className="flex items-center gap-2 ml-auto">
-                    <Button variant="ghost" size="icon" title={activeNotification.archived ? "Unarchive" : "Archive"} onClick={() => toggleArchive(activeNotification.id)} className="text-[#54656f] dark:text-[#aebac1] hover:bg-[#f0f2f5] dark:hover:bg-[#202c33]">
-                      <Archive size={18} />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteNotification(activeNotification.id)} className="text-[#54656f] dark:text-[#aebac1] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30">
-                      <Trash2 size={18} />
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Reading Content */}
-                <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                <div className="overflow-y-auto p-6 md:p-8 min-h-[calc(100%-4rem)]">
                   <h2 className="text-2xl font-bold text-[#111] dark:text-white mb-6">
                     {activeNotification.subject}
                   </h2>
@@ -264,6 +248,22 @@ export function StudentNotifications() {
 
                   <div className="text-[#333] dark:text-[#e9edef] text-[15px] leading-relaxed max-w-3xl">
                     {activeNotification.content}
+                  </div>
+                </div>
+
+                {/* Reading Toolbar */}
+                <div className="h-14 border-t border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between px-4 flex-shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="md:hidden text-[#54656f] dark:text-[#aebac1] -ml-2">
+                    <ArrowLeftIcon />
+                  </Button>
+
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Button variant="ghost" size="icon" title={activeNotification.archived ? "Unarchive" : "Archive"} onClick={() => toggleArchive(activeNotification.id)} className="text-[#54656f] dark:text-[#aebac1] hover:bg-[#f0f2f5] dark:hover:bg-[#202c33]">
+                      {activeNotification.archived ? <ArchiveXIcon size={18} /> : <Archive size={18} />}
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteNotification(activeNotification.id)} className="text-[#54656f] dark:text-[#aebac1] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30">
+                      <Trash2 size={18} />
+                    </Button>
                   </div>
                 </div>
               </>
