@@ -81,13 +81,13 @@ export function DocumentsPanel({
       qc.setQueryData<DriveListing>(["drive-docs", studentId], (prev) =>
         prev
           ? {
-              ...prev,
-              sections: prev.sections.map((sec) =>
-                sec.name === v.slot.section
-                  ? { ...sec, files: [res.file, ...sec.files] }
-                  : sec
-              ),
-            }
+            ...prev,
+            sections: prev.sections.map((sec) =>
+              sec.name === v.slot.section
+                ? { ...sec, files: [res.file, ...sec.files] }
+                : sec
+            ),
+          }
           : prev
       );
 
@@ -328,9 +328,9 @@ function SlotCard({
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
             : // A still-missing essential is tinted the whole way round. Enough
-              // to pull the eye first, not enough to read as an error: no
-              // mid-year report in September is normal, not a mistake.
-              slot.required
+            // to pull the eye first, not enough to read as an error: no
+            // mid-year report in September is normal, not a mistake.
+            slot.required
               ? "border-[#1099A1]/35 dark:border-[#1099A1]/40"
               : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
       )}
@@ -468,7 +468,7 @@ function FileRow({
     <div
       className={cn(
         !compact &&
-          "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
+        "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
       )}
     >
       <div className="flex items-center gap-2">
@@ -481,14 +481,12 @@ function FileRow({
           </div>
         </div>
 
-        <VerifiedBadge provenance={verdict} size={14} className="shrink-0" />
-
         {file.webViewLink && (
           <a
             href={file.webViewLink}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 text-[12px] font-medium text-[#1099A1] hover:underline"
+            className="shrink-0 text-[12px] font-medium text-[#1099A1] underline active:scale-95 transition ease-in-out hover:opacity-85"
           >
             Open
           </a>

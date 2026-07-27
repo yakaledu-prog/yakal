@@ -69,6 +69,13 @@ export interface Essay {
   drive_url: string | null;
   due_date: string | null;
   updated_at: string;
+  /** The college's actual question. Pasted by the student or curated per cycle. */
+  prompt?: string | null;
+  /** Colleges enforce these, so a draft is not done until it fits. */
+  word_limit?: number | null;
+  /** Feedback rounds spent. The tiers sell a fixed number of these. */
+  rounds_used?: number | null;
+  last_feedback_at?: string | null;
 }
 
 export interface StudentAcademics {

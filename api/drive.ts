@@ -397,6 +397,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ file: updated.data });
       }
 
+      /**
+       * Live word count for an essay Doc.
+       *
+       * Exported as plain text through the Drive API rather than read through
+       * the Docs API, so there is no second Google API to enable and the
+       * drive.file scope already covers it: we only ever created these files.
+       *
+       * Counted server side because a word limit is enforced by the college,
+       * and "638 of 650" is the single most useful thing to show a student
+       * mid-draft.
+       */
+      case 'wordCount': {
+        const { fileIds } = req.body;
+        if (!Array.isArray(fileIds) || fileIds.length === 0) {
+          return res.status(400).json({ error: 'fileIds must be a non-empty array' });
+        }
+
+        const counts = await Promise.all(
+          fileIds.slice(0, 25).map(async (fileId: string) => {
+            try {
+              const out = await ctx.drive.files.export(
+                { fileId, mimeType: 'text/plain' },
+                { responseType: 'text' }
+              );
+              const text = String(out.data ?? '');
+              // Collapse whitespace first: an empty Doc exports as a newline,
+              // which a naive split would count as one word.
+              const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+              return { fileId, words };
+            } catch {
+              // A file that is not a Doc, or was deleted, simply has no count.
+              return { fileId, words: null };
+            }
+          })
+        );
+
+        return res.status(200).json({ counts });
+      }
+
       case 'delete': {
         const { fileId } = req.body;
         if (!fileId) return res.status(400).json({ error: 'fileId is required' });

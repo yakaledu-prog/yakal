@@ -1,4 +1,4 @@
-import { AlertCircle, BadgeCheck, CircleDashed, Landmark } from "lucide-react";
+import { BadgeAlert, BadgeCheck, BadgeHelp, CircleDashed, Landmark } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 /**
@@ -43,16 +43,17 @@ const CONFIG: Record<
     className: "text-[#CAA25F]",
     title: "Entered by you. Your counselor has not checked it yet.",
   },
+  // Pending and needs_attention deliberately share BadgeCheck's shape. Three
+  // states of one thing should look like a family, not three unrelated glyphs,
+  // so the only thing that changes between them is what sits inside the badge.
   pending: {
-    // A dashed ring reads as "not closed yet". A clock read as scheduled, which
-    // is a different and misleading claim: nothing is waiting on a time.
-    icon: CircleDashed,
+    icon: BadgeHelp,
     label: "Pending review",
     className: "text-[#a8adb8]",
     title: "Uploaded. Your counselor has not reviewed it yet.",
   },
   needs_attention: {
-    icon: AlertCircle,
+    icon: BadgeAlert,
     label: "Needs attention",
     className: "text-[#d4183d]",
     title: "Your counselor found a problem with this file.",
