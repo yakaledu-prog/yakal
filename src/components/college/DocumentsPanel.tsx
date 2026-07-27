@@ -20,7 +20,6 @@ import {
   uploadDocument,
 } from "@/services/driveService";
 import { SLOT_GROUPS, Slot } from "@/services/documentSlots";
-import { ChevronDown } from "lucide-react";
 import { InfoHint } from "@/components/ui/InfoHint";
 import { VerifiedBadge } from "./VerifiedBadge";
 
@@ -206,12 +205,6 @@ export function DocumentsPanel({
   );
 }
 
-/**
- * Required slots are always visible. Empty optional ones fold away behind a
- * single line, because eleven cards of which eight are hypothetical reads as a
- * to-do list nobody wants to start. Optional slots that already hold a file
- * stay out, since hiding a student's own document would be worse.
- */
 function SlotGroupSection({
   title,
   slots,
@@ -233,13 +226,6 @@ function SlotGroupSection({
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
   removingId?: string;
 }) {
-  const [showOptional, setShowOptional] = useState(false);
-
-  const filesFor = (s: Slot) => bySlot.get(s.id) ?? [];
-  const always = slots.filter((s) => s.required || filesFor(s).length > 0);
-  const hidden = slots.filter((s) => !s.required && filesFor(s).length === 0);
-  const visible = showOptional ? [...always, ...hidden] : always;
-
   return (
     <section>
       <h3 className="mb-2.5 text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
@@ -248,11 +234,11 @@ function SlotGroupSection({
       {/* Two columns: slots are short and mostly empty early on, so one tall
           column would read as a longer to-do list than it really is. */}
       <div className="grid gap-3 lg:grid-cols-2">
-        {visible.map((slot) => (
+        {slots.map((slot) => (
           <SlotCard
             key={slot.id}
             slot={slot}
-            files={filesFor(slot)}
+            files={bySlot.get(slot.id) ?? []}
             busy={busySlot === slot.id}
             canReview={canReview}
             onFile={(file) => onFile(slot, file)}
@@ -262,22 +248,6 @@ function SlotGroupSection({
           />
         ))}
       </div>
-
-      {hidden.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowOptional((v) => !v)}
-          className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[#717182] transition-colors hover:text-[#1099A1]"
-        >
-          <ChevronDown
-            size={13}
-            className={cn("transition-transform", showOptional && "rotate-180")}
-          />
-          {showOptional
-            ? "Hide optional"
-            : `${hidden.length} more, only if a college asks`}
-        </button>
-      )}
     </section>
   );
 }
@@ -326,11 +296,9 @@ function SlotCard({
           ? "border-[#1099A1] bg-[#1099A1]/5"
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
-            : // A still-missing essential carries a quiet left accent. Enough to
-              // pull the eye, not enough to read as an error: not having sent a
-              // mid-year report in September is normal, not a mistake.
+            : // Empty optional slots recede so the required ones read first.
               slot.required
-              ? "border-l-2 border-l-[#1099A1] border-y-[#e9edef] border-r-[#e9edef] dark:border-y-[#2a3942] dark:border-r-[#2a3942]"
+              ? "border-[#e9edef] dark:border-[#2a3942]"
               : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
