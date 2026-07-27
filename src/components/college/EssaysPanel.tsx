@@ -15,6 +15,22 @@ const STATUS: { value: EssayStatus; label: string }[] = [
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
+/**
+ * A bare date makes the reader do the arithmetic, and they will get it wrong
+ * about a deadline, which is the one place it matters.
+ */
+function dueLabel(iso: string): string {
+  const due = new Date(iso);
+  due.setHours(23, 59, 59, 999);
+  const days = Math.ceil((due.getTime() - Date.now()) / 86_400_000);
+  const on = due.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  if (days < 0) return `${on} · ${Math.abs(days)} days overdue`;
+  if (days === 0) return `${on} · due today`;
+  if (days === 1) return `${on} · due tomorrow`;
+  return `${on} · ${days} days left`;
+}
+
 export interface NewEssay {
   title: string;
   kind: "personal_statement" | "supplement";
@@ -213,8 +229,15 @@ function Group({
                   {e.title}
                 </div>
                 <div className="truncate text-[12px] text-[#717182]">
-                  {school ? school.school_name : "Every college"}
-                  {e.due_date && ` · due ${new Date(e.due_date).toLocaleDateString()}`}
+                  {/* A supplement is college-specific by definition, so a failed
+                      lookup means its college left the list, not that it applies
+                      everywhere. Saying "every college" there is simply false. */}
+                  {school
+                    ? school.school_name
+                    : e.kind === "supplement"
+                      ? "College no longer on your list"
+                      : "Every college"}
+                  {e.due_date && ` · ${dueLabel(e.due_date)}`}
                 </div>
               </div>
 
