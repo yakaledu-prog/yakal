@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ExternalLink,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
   Loader2,
   Plus,
   Trash2,
@@ -12,6 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 import {
   DriveFile,
+  DriveListing,
   ReviewVerdict,
   deleteDocument,
   isConfigured,
@@ -22,6 +26,14 @@ import {
 import { SLOT_GROUPS, Slot } from "@/services/documentSlots";
 import { InfoHint } from "@/components/ui/InfoHint";
 import { VerifiedBadge } from "./VerifiedBadge";
+
+/** The icon answers "what kind of file is this", which no badge should. */
+function fileIcon(mimeType?: string) {
+  if (!mimeType) return FileText;
+  if (mimeType.startsWith("image/")) return FileImage;
+  if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return FileSpreadsheet;
+  return FileText;
+}
 
 function prettySize(bytes?: string) {
   if (!bytes) return null;
@@ -59,8 +71,27 @@ export function DocumentsPanel({
   const upload = useMutation({
     mutationFn: ({ slot, file }: { slot: Slot; file: File }) =>
       uploadDocument(studentId, studentName, slot.section, file, studentEmail, slot.id),
-    onSuccess: (_d, v) => {
+    onSuccess: (res, v) => {
       toast.success(`${v.file.name} uploaded.`);
+
+      // Drop the new file straight into the cache rather than refetching.
+      // A refetch walks the whole tree, roughly ten Drive calls, so the slot
+      // sat showing its empty Upload state for seconds after the toast said
+      // the file had arrived.
+      qc.setQueryData<DriveListing>(["drive-docs", studentId], (prev) =>
+        prev
+          ? {
+              ...prev,
+              sections: prev.sections.map((sec) =>
+                sec.name === v.slot.section
+                  ? { ...sec, files: [res.file, ...sec.files] }
+                  : sec
+              ),
+            }
+          : prev
+      );
+
+      // Reconcile in the background, so anything the server normalised wins.
       qc.invalidateQueries({ queryKey: ["drive-docs", studentId] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -296,9 +327,11 @@ function SlotCard({
           ? "border-[#1099A1] bg-[#1099A1]/5"
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
-            : // Empty optional slots recede so the required ones read first.
+            : // A still-missing essential is tinted the whole way round. Enough
+              // to pull the eye first, not enough to read as an error: no
+              // mid-year report in September is normal, not a mistake.
               slot.required
-              ? "border-[#e9edef] dark:border-[#2a3942]"
+              ? "border-[#1099A1]/35 dark:border-[#1099A1]/40"
               : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
@@ -357,6 +390,16 @@ function SlotCard({
           </button>
         )}
       </div>
+
+      {/* Placeholder for the row that is about to exist. Without it the card
+          sits unchanged while the file is in flight, which reads as nothing
+          having happened. */}
+      {busy && (
+        <div className="mt-2.5 flex items-center gap-2 border-t border-[#e9edef] pt-2.5 dark:border-[#2a3942]">
+          <span className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#e9edef] dark:bg-[#2a3942]" />
+          <span className="h-3 flex-1 animate-pulse rounded bg-[#e9edef] dark:bg-[#2a3942]" />
+        </div>
+      )}
 
       {filled && (
         <div className="mt-2.5 space-y-1.5 border-t border-[#e9edef] pt-2.5 dark:border-[#2a3942]">
@@ -419,6 +462,7 @@ function FileRow({
   const size = prettySize(file.size);
   const verdict: ReviewVerdict = file.appProperties?.review ?? "pending";
   const note = file.appProperties?.reviewNote;
+  const Icon = fileIcon(file.mimeType);
 
   return (
     <div
@@ -428,7 +472,7 @@ function FileRow({
       )}
     >
       <div className="flex items-center gap-2">
-        <VerifiedBadge provenance={verdict} size={14} className="shrink-0" />
+        <Icon size={16} className="shrink-0 text-[#717182]" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] text-[#111] dark:text-white">{file.name}</div>
           <div className="text-[11px] text-[#717182]">
@@ -436,6 +480,8 @@ function FileRow({
             {size && ` · ${size}`}
           </div>
         </div>
+
+        <VerifiedBadge provenance={verdict} size={14} className="shrink-0" />
 
         {file.webViewLink && (
           <a

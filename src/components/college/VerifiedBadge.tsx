@@ -1,4 +1,4 @@
-import { AlertCircle, BadgeCheck, Clock, CircleDashed, Landmark } from "lucide-react";
+import { AlertCircle, BadgeCheck, CircleDashed, Landmark } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 /**
@@ -44,7 +44,9 @@ const CONFIG: Record<
     title: "Entered by you. Your counselor has not checked it yet.",
   },
   pending: {
-    icon: Clock,
+    // A dashed ring reads as "not closed yet". A clock read as scheduled, which
+    // is a different and misleading claim: nothing is waiting on a time.
+    icon: CircleDashed,
     label: "Pending review",
     className: "text-[#a8adb8]",
     title: "Uploaded. Your counselor has not reviewed it yet.",
