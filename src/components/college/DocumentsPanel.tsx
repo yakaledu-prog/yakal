@@ -332,7 +332,7 @@ function SlotCard({
             // mid-year report in September is normal, not a mistake.
             slot.required
               ? "border-[#1099A1]/35 dark:border-[#1099A1]/40"
-              : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
+              : "border border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
       <div className="flex items-start gap-2">
