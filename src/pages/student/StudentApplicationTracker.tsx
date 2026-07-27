@@ -112,9 +112,9 @@ export function StudentApplicationTracker() {
     const res = existing
       ? await toggleRequirement(existing.id, next)
       : await addRequirement(school.id, OVERRIDE_LABEL[key], null).then(async (r) => {
-          if (r.success && r.data && next) await toggleRequirement(r.data.id, true);
-          return r;
-        });
+        if (r.success && r.data && next) await toggleRequirement(r.data.id, true);
+        return r;
+      });
     if (!res.success) return toast.error(res.error || "Could not update.");
     refresh();
   };
@@ -232,7 +232,7 @@ export function StudentApplicationTracker() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1100px] space-y-6 p-6 md:p-10">
+        <div className="mx-auto max-w-[1150px] space-y-6 p-6 md:p-10">
           {/* Tasks are cross-cutting, so they get a strip here and a home on the
               roadmap rather than a tab nobody would think to open. */}
           {openTasks.length > 0 && (

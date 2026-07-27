@@ -238,7 +238,7 @@ function SlotCard({
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
             : // Empty optional slots recede so the required ones read first.
-              slot.required
+            slot.required
               ? "border-[#e9edef] dark:border-[#2a3942]"
               : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
       )}
@@ -262,7 +262,7 @@ function SlotCard({
 
           {!filled && (
             <>
-              <p className="mt-0.5 text-[12px] leading-snug text-[#717182]">
+              <p className="mt-0.5 pr-2 text-[12px] leading-snug text-[#717182]">
                 {slot.description}
               </p>
               {slot.timing && (
@@ -345,7 +345,7 @@ function FileRow({
       className={cn(
         "flex items-center gap-2",
         !compact &&
-          "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
+        "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
       )}
     >
       <FileText size={15} className="shrink-0 text-[#717182]" />
