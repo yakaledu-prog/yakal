@@ -1,0 +1,96 @@
+/**
+ * One-time: mint a Drive refresh token for the Yakal operations account.
+ *
+ * This is the path that works without Google Workspace. You sign in once as the
+ * account that should own student documents, and the server keeps a refresh
+ * token so it can act as that account forever without anyone signing in again.
+ *
+ *   node scripts/google-oauth-setup.mjs
+ *
+ * Needs VITE_GCP_CLIENT_ID and GCP_CLIENT_SECRET in the environment or .env,
+ * and http://localhost:5599/callback registered as an authorised redirect URI
+ * on that OAuth client.
+ */
+
+import http from 'node:http';
+import { readFileSync, existsSync } from 'node:fs';
+import { google } from 'googleapis';
+
+const PORT = 5599;
+const REDIRECT = `http://localhost:${PORT}/callback`;
+
+/**
+ * drive.file, not drive.
+ *
+ * It grants access only to files this app created, which is all Yakal ever
+ * touches. It is also a non-sensitive scope, so the consent screen can be
+ * published without a Google verification review. That matters: while an app
+ * is in Testing, refresh tokens expire after seven days.
+ */
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+
+// Minimal .env reader so this runs without pulling in a dependency.
+if (existsSync('.env')) {
+  for (const line of readFileSync('.env', 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) {
+      process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  }
+}
+
+const clientId = process.env.VITE_GCP_CLIENT_ID;
+const clientSecret = process.env.GCP_CLIENT_SECRET;
+
+if (!clientId || !clientSecret) {
+  console.error('\nMissing VITE_GCP_CLIENT_ID or GCP_CLIENT_SECRET.');
+  console.error('Find them at console.cloud.google.com > APIs & Services > Credentials.\n');
+  process.exit(1);
+}
+
+const oauth = new google.auth.OAuth2(clientId, clientSecret, REDIRECT);
+
+const url = oauth.generateAuthUrl({
+  access_type: 'offline',
+  scope: SCOPES,
+  // Without this Google returns no refresh token on a repeat authorisation,
+  // which is the single most common reason this flow appears to silently fail.
+  prompt: 'consent',
+});
+
+console.log('\nOpen this URL, signed in as the account that should own the files:\n');
+console.log(url + '\n');
+
+const server = http.createServer(async (req, res) => {
+  if (!req.url?.startsWith('/callback')) return res.end();
+
+  const code = new URL(req.url, REDIRECT).searchParams.get('code');
+  if (!code) {
+    res.end('No code returned.');
+    return;
+  }
+
+  try {
+    const { tokens } = await oauth.getToken(code);
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<h2>Done. Return to your terminal.</h2>');
+
+    if (!tokens.refresh_token) {
+      console.error('\nGoogle returned no refresh token.');
+      console.error('Revoke access at myaccount.google.com/permissions and retry.\n');
+      process.exit(1);
+    }
+
+    console.log('\nSet this in Vercel and in .env:\n');
+    console.log(`GOOGLE_OAUTH_REFRESH_TOKEN=${tokens.refresh_token}\n`);
+    console.log('Then: node scripts/verify-drive.mjs\n');
+  } catch (e) {
+    console.error('\nToken exchange failed:', e.message);
+    console.error(`Check that ${REDIRECT} is an authorised redirect URI.\n`);
+  } finally {
+    server.close();
+    setTimeout(() => process.exit(0), 200);
+  }
+});
+
+server.listen(PORT, () => console.log(`Waiting for the redirect on ${REDIRECT} ...\n`));

@@ -15,6 +15,14 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { google } from 'googleapis';
 
+// Minimal .env reader so this runs without pulling in a dependency.
+if (existsSync('.env')) {
+  for (const line of readFileSync('.env', 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+}
+
 const ok = (m) => console.log(`  PASS  ${m}`);
 const bad = (m, fix) => {
   console.log(`  FAIL  ${m}`);
@@ -25,113 +33,141 @@ let failures = 0;
 
 console.log('\nYakal document storage check\n');
 
-// 1. Credentials -------------------------------------------------------------
-let creds;
-const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-if (raw) {
-  try {
-    creds = JSON.parse(raw);
-    ok('GOOGLE_SERVICE_ACCOUNT_JSON parsed');
-  } catch {
-    bad('GOOGLE_SERVICE_ACCOUNT_JSON is set but is not valid JSON',
-        'Paste the whole key file contents, including the outer braces.');
+// 1. Pick a mode ------------------------------------------------------------
+const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+const serviceKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+const driveId = process.env.GOOGLE_SHARED_DRIVE_ID || null;
+
+let auth;
+let mode;
+
+if (refreshToken) {
+  mode = 'oauth';
+  ok('GOOGLE_OAUTH_REFRESH_TOKEN is set');
+  const id = process.env.VITE_GCP_CLIENT_ID;
+  const secret = process.env.GCP_CLIENT_SECRET;
+  if (!id || !secret) {
+    bad('VITE_GCP_CLIENT_ID or GCP_CLIENT_SECRET is missing',
+        'Both are needed to exchange the refresh token.');
+  } else {
+    auth = new google.auth.OAuth2(id, secret);
+    auth.setCredentials({ refresh_token: refreshToken });
   }
-} else if (existsSync('google-credentials.json')) {
-  creds = JSON.parse(readFileSync('google-credentials.json', 'utf8'));
-  console.log('  NOTE  Using local google-credentials.json.');
-  console.log('        Vercel needs GOOGLE_SERVICE_ACCOUNT_JSON set as well.');
+  console.log(driveId
+    ? `  INFO  Shared drive ${driveId}`
+    : '  INFO  No shared drive. Files go to "Yakal Students" in My Drive.');
+} else if (serviceKeyRaw || existsSync('google-credentials.json')) {
+  mode = 'service_account';
+  let creds;
+  try {
+    creds = serviceKeyRaw
+      ? JSON.parse(serviceKeyRaw)
+      : JSON.parse(readFileSync('google-credentials.json', 'utf8'));
+    if (!serviceKeyRaw) {
+      console.log('  NOTE  Using local google-credentials.json.');
+      console.log('        Vercel needs GOOGLE_SERVICE_ACCOUNT_JSON set as well.');
+    }
+  } catch {
+    bad('Service account credentials are not valid JSON',
+        'Paste the whole key file, including the outer braces.');
+  }
+
+  if (creds) {
+    console.log(`  INFO  project ${creds.project_id}`);
+    console.log(`  INFO  service account ${creds.client_email}`);
+    if (!driveId) {
+      bad('A service account needs GOOGLE_SHARED_DRIVE_ID',
+          'Service accounts have no storage and cannot own files. Either create a '
+          + 'shared drive (needs Workspace), or use GOOGLE_OAUTH_REFRESH_TOKEN instead: '
+          + 'node scripts/google-oauth-setup.mjs');
+    }
+    auth = new google.auth.JWT({
+      email: creds.client_email,
+      key: String(creds.private_key || '').replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/drive'],
+    });
+  }
 } else {
-  bad('No service account credentials found',
-      'Set GOOGLE_SERVICE_ACCOUNT_JSON, or keep google-credentials.json locally.');
+  bad('Nothing is configured',
+      'Easiest path with no Workspace: node scripts/google-oauth-setup.mjs');
 }
 
-if (!creds) {
+if (!auth) {
   console.log(`\n${failures} problem(s).\n`);
   process.exit(1);
 }
-
-console.log(`  INFO  project ${creds.project_id}`);
-console.log(`  INFO  service account ${creds.client_email}`);
-
-// A very common paste error: real newlines in the key get flattened to \n and
-// the JWT then fails to sign with a misleading "invalid_grant".
-const key = String(creds.private_key || '');
-if (!key.includes('\n') && key.includes('\\n')) {
-  console.log('  NOTE  private_key has escaped newlines. api/drive.ts unescapes them.');
-}
-
-const driveId = process.env.GOOGLE_SHARED_DRIVE_ID;
-if (driveId) ok(`GOOGLE_SHARED_DRIVE_ID set (${driveId})`);
-else bad('GOOGLE_SHARED_DRIVE_ID is not set',
-         'Open the shared drive in Drive. The id is the last part of the URL.');
+console.log(`  INFO  mode: ${mode}`);
 
 // 2. Authenticate ------------------------------------------------------------
-const auth = new google.auth.JWT({
-  email: creds.client_email,
-  key: key.replace(/\\n/g, '\n'),
-  scopes: ['https://www.googleapis.com/auth/drive'],
-});
-
 const drive = google.drive({ version: 'v3', auth });
 
 try {
-  await auth.authorize();
+  if (mode === 'oauth') await auth.getAccessToken();
+  else await auth.authorize();
   ok('Authenticated with Google');
 } catch (e) {
   bad(`Could not authenticate: ${e.message}`,
-      'Usually the Drive API is not enabled on the project, or the key was revoked.');
+      mode === 'oauth'
+        ? 'The refresh token may be revoked or expired. If the OAuth consent screen '
+          + 'is still in Testing, tokens die after 7 days: publish it to Production.'
+        : 'Usually the Drive API is not enabled on the project, or the key was revoked.');
   console.log(`\n${failures} problem(s).\n`);
   process.exit(1);
 }
 
-// 3. What shared drives can this account actually see? -----------------------
+// 3. Shared drive membership, only relevant when one is configured -----------
 let visible = [];
-try {
-  const res = await drive.drives.list({ pageSize: 50, fields: 'drives(id,name)' });
-  visible = res.data.drives ?? [];
-  if (visible.length === 0) {
-    bad('The service account is not a member of any shared drive',
-        `Open the shared drive, Manage members, add ${creds.client_email} as Content manager.`);
-  } else {
-    ok(`Member of ${visible.length} shared drive(s)`);
-    visible.forEach((d) => console.log(`        ${d.id}  ${d.name}`));
+if (driveId) {
+  try {
+    const res = await drive.drives.list({ pageSize: 50, fields: 'drives(id,name)' });
+    visible = res.data.drives ?? [];
+    if (visible.length === 0) {
+      bad('This account is not a member of any shared drive',
+          'Open the shared drive, Manage members, add the account as Content manager.');
+    } else {
+      ok(`Member of ${visible.length} shared drive(s)`);
+      visible.forEach((d) => console.log(`        ${d.id}  ${d.name}`));
+      if (!visible.some((d) => d.id === driveId)) {
+        bad('GOOGLE_SHARED_DRIVE_ID is not one of the drives above',
+            'Check you copied the id of the shared drive itself, not a folder inside it.');
+      }
+    }
+  } catch (e) {
+    bad(`Could not list shared drives: ${e.message}`,
+        'Enable the Drive API at console.cloud.google.com/apis/library/drive.googleapis.com');
   }
-} catch (e) {
-  bad(`Could not list shared drives: ${e.message}`,
-      'Enable the Google Drive API at console.cloud.google.com/apis/library/drive.googleapis.com');
 }
 
-// 4. Can it write to the configured drive? -----------------------------------
-if (driveId) {
-  const match = visible.find((d) => d.id === driveId);
-  if (visible.length && !match) {
-    bad('GOOGLE_SHARED_DRIVE_ID is not one of the drives above',
-        'Check you copied the id of the shared drive itself, not a folder inside it.');
-  }
+// 4. Can it actually store bytes? --------------------------------------------
+// This uploads real content rather than creating a folder. Folders consume no
+// quota, so a service account with nowhere to store anything still creates them
+// happily: probing with a folder reports success and the first real upload then
+// fails. The whole point of this script is to not find that out later.
+const where = driveId ? 'the shared drive' : 'My Drive';
+try {
+  const probe = await drive.files.create({
+    requestBody: {
+      name: `yakal-write-check-${Date.now()}.txt`,
+      parents: [driveId ?? 'root'],
+    },
+    media: { mimeType: 'text/plain', body: 'yakal write check' },
+    fields: 'id',
+    supportsAllDrives: true,
+  });
+  ok(`Can upload files to ${where}`);
 
-  try {
-    const probe = await drive.files.create({
-      requestBody: {
-        name: `yakal-write-check-${Date.now()}`,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [driveId],
-      },
-      fields: 'id',
-      supportsAllDrives: true,
-    });
-    ok('Can create files in the shared drive');
-
-    await drive.files.delete({ fileId: probe.data.id, supportsAllDrives: true });
-    ok('Can delete files in the shared drive (test folder cleaned up)');
-  } catch (e) {
-    const m = e.message || '';
-    bad(`Cannot write to the shared drive: ${m}`,
-        /storageQuotaExceeded/.test(m)
-          ? 'The target is My Drive, not a shared drive. Service accounts have no storage of their own.'
-          : /notFound|404/.test(m)
-            ? 'Wrong id, or the service account is not a member of that drive.'
-            : `Give ${creds.client_email} at least Content manager on the drive.`);
-  }
+  await drive.files.delete({ fileId: probe.data.id, supportsAllDrives: true });
+  ok('Can delete files (test folder cleaned up)');
+} catch (e) {
+  const m = e.message || '';
+  bad(`Cannot write to ${where}: ${m}`,
+      /storageQuotaExceeded|do not have storage quota/i.test(m)
+        ? 'Service accounts have no storage of their own and can only own files '
+          + 'inside a shared drive. Use GOOGLE_OAUTH_REFRESH_TOKEN instead, or add '
+          + 'Workspace and a shared drive.'
+        : /notFound|404/.test(m)
+          ? 'Wrong id, or this account is not a member of that drive.'
+          : 'Grant at least Content manager on the target.');
 }
 
 console.log(

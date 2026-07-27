@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
 
 /**
- * Student documents, stored in Yakal's own Shared Drive.
+ * Student documents, stored in Drive under an account Yakal controls.
  *
  * Why server side rather than the browser Drive picker it replaces:
  *
@@ -16,13 +16,16 @@ import { google } from 'googleapis';
  *    transcript with a counselor fails unpredictably and cannot be debugged
  *    from our side.
  *
- * With a service account writing into a Shared Drive, students never
- * authenticate to Google at all, and counselor access is a property of the
- * drive rather than something a sixteen year old has to configure correctly.
+ * Either way the server holds the credential, so students never authenticate to
+ * Google at all and counselor access is something we grant rather than
+ * something a sixteen year old has to configure correctly.
  *
- * Required environment:
- *   GOOGLE_SERVICE_ACCOUNT_JSON   full service account key, as JSON
- *   GOOGLE_SHARED_DRIVE_ID        the Shared Drive the service account belongs to
+ * Environment, whichever pair you have. See getContext below.
+ *   GOOGLE_OAUTH_REFRESH_TOKEN    one Yakal operations account, works on a free
+ *                                 personal account, no Workspace required
+ *   GOOGLE_SERVICE_ACCOUNT_JSON   service account key, needs Workspace
+ *   GOOGLE_SHARED_DRIVE_ID        required with a service account, optional with
+ *                                 a refresh token
  */
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
@@ -34,53 +37,109 @@ const DOC_MIME = 'application/vnd.google-apps.document';
 const SUBFOLDERS = ['Transcripts', 'Essays', 'Test scores', 'Other'] as const;
 type Subfolder = (typeof SUBFOLDERS)[number];
 
-function driveClient() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is not set');
+type Drive = ReturnType<typeof google.drive>;
 
-  const creds = JSON.parse(raw);
-  const auth = new google.auth.JWT({
-    email: creds.client_email,
-    // Vercel env vars collapse real newlines, so restore them before signing.
-    key: String(creds.private_key).replace(/\\n/g, '\n'),
-    scopes: SCOPES,
-  });
-  return google.drive({ version: 'v3', auth });
+/**
+ * Where files live, and who owns them.
+ *
+ * Two modes, because a shared drive needs Google Workspace and there is no
+ * reason to block development on a purchase:
+ *
+ *   oauth           A refresh token for one Yakal operations account. Files are
+ *                   owned by that account and sit in its My Drive. Works on a
+ *                   free personal account.
+ *   service_account A key plus a shared drive. Service accounts have no storage
+ *                   quota and cannot own files, so the shared drive is not
+ *                   optional here: without it every write fails with
+ *                   storageQuotaExceeded.
+ *
+ * Whichever is configured wins, so moving to Workspace later is an environment
+ * change rather than a code change.
+ */
+interface Ctx {
+  drive: Drive;
+  /** Set only when a shared drive is in use. Null means ordinary My Drive. */
+  sharedDriveId: string | null;
+  mode: 'oauth' | 'service_account';
 }
 
-const SHARED_DRIVE_ID = () => {
-  const id = process.env.GOOGLE_SHARED_DRIVE_ID;
-  if (!id) throw new Error('GOOGLE_SHARED_DRIVE_ID is not set');
-  return id;
-};
+function getContext(): Ctx {
+  const sharedDriveId = process.env.GOOGLE_SHARED_DRIVE_ID || null;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  const serviceKey = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-/** Shared Drive calls all need these flags or they silently target My Drive. */
-const SHARED = {
-  supportsAllDrives: true,
-  includeItemsFromAllDrives: true,
-  driveId: undefined as string | undefined,
-};
+  if (refreshToken) {
+    const auth = new google.auth.OAuth2(
+      process.env.VITE_GCP_CLIENT_ID,
+      process.env.GCP_CLIENT_SECRET
+    );
+    auth.setCredentials({ refresh_token: refreshToken });
+    return { drive: google.drive({ version: 'v3', auth }), sharedDriveId, mode: 'oauth' };
+  }
 
-type Drive = ReturnType<typeof driveClient>;
+  if (serviceKey) {
+    if (!sharedDriveId) {
+      throw new Error(
+        'GOOGLE_SERVICE_ACCOUNT_JSON is set but GOOGLE_SHARED_DRIVE_ID is not. ' +
+          'Service accounts cannot own files, so they need a shared drive.'
+      );
+    }
+    const creds = JSON.parse(serviceKey);
+    const auth = new google.auth.JWT({
+      email: creds.client_email,
+      // Vercel env vars collapse real newlines, so restore them before signing.
+      key: String(creds.private_key).replace(/\\n/g, '\n'),
+      scopes: SCOPES,
+    });
+    return {
+      drive: google.drive({ version: 'v3', auth }),
+      sharedDriveId,
+      mode: 'service_account',
+    };
+  }
 
-async function findChild(drive: Drive, parentId: string, name: string) {
+  throw new Error(
+    'Document storage is not configured. Set GOOGLE_OAUTH_REFRESH_TOKEN, or ' +
+      'GOOGLE_SERVICE_ACCOUNT_JSON together with GOOGLE_SHARED_DRIVE_ID.'
+  );
+}
+
+/**
+ * Listing options. corpora and driveId must only be sent when a shared drive is
+ * actually in play; sending them against My Drive returns nothing at all.
+ */
+function scope(ctx: Ctx) {
+  return ctx.sharedDriveId
+    ? {
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        corpora: 'drive' as const,
+        driveId: ctx.sharedDriveId,
+      }
+    : { supportsAllDrives: true, includeItemsFromAllDrives: true };
+}
+
+/** Top of the tree: the shared drive itself, or a folder in My Drive. */
+async function rootFolder(ctx: Ctx) {
+  if (ctx.sharedDriveId) return ctx.sharedDriveId;
+  return ensureFolder(ctx, 'root', 'Yakal Students');
+}
+
+async function findChild(ctx: Ctx, parentId: string, name: string) {
   const escaped = name.replace(/'/g, "\\'");
-  const res = await drive.files.list({
+  const res = await ctx.drive.files.list({
     q: `name = '${escaped}' and '${parentId}' in parents and trashed = false`,
     fields: 'files(id, name)',
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    corpora: 'drive',
-    driveId: SHARED_DRIVE_ID(),
+    ...scope(ctx),
   });
   return res.data.files?.[0] ?? null;
 }
 
-async function ensureFolder(drive: Drive, parentId: string, name: string) {
-  const existing = await findChild(drive, parentId, name);
+async function ensureFolder(ctx: Ctx, parentId: string, name: string) {
+  const existing = await findChild(ctx, parentId, name);
   if (existing?.id) return existing.id;
 
-  const created = await drive.files.create({
+  const created = await ctx.drive.files.create({
     requestBody: { name, mimeType: FOLDER_MIME, parents: [parentId] },
     fields: 'id',
     supportsAllDrives: true,
@@ -95,44 +154,42 @@ async function ensureFolder(drive: Drive, parentId: string, name: string) {
  * do not. The display name is only there so the drive is readable by a human.
  */
 async function ensureStudentFolder(
-  drive: Drive,
+  ctx: Ctx,
   studentId: string,
   displayName: string
 ) {
-  const root = await ensureFolder(drive, SHARED_DRIVE_ID(), 'Students');
-  const folderName = `${displayName} (${studentId.slice(0, 8)})`;
+  const root = await ensureFolder(ctx, await rootFolder(ctx), 'Students');
+  const shortId = studentId.slice(0, 8);
+  const folderName = `${displayName} (${shortId})`;
 
   // Match on the id suffix so renaming a student does not orphan their folder.
-  const res = await drive.files.list({
-    q: `'${root}' in parents and mimeType = '${FOLDER_MIME}' and name contains '${studentId.slice(0, 8)}' and trashed = false`,
+  const res = await ctx.drive.files.list({
+    q: `'${root}' in parents and mimeType = '${FOLDER_MIME}' and name contains '${shortId}' and trashed = false`,
     fields: 'files(id, name)',
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    corpora: 'drive',
-    driveId: SHARED_DRIVE_ID(),
+    ...scope(ctx),
   });
 
   let id = res.data.files?.[0]?.id;
   if (!id) {
-    const created = await drive.files.create({
+    const created = await ctx.drive.files.create({
       requestBody: { name: folderName, mimeType: FOLDER_MIME, parents: [root] },
       fields: 'id',
       supportsAllDrives: true,
     });
     id = created.data.id!;
-    await Promise.all(SUBFOLDERS.map((s) => ensureFolder(drive, id!, s)));
+    await Promise.all(SUBFOLDERS.map((sub) => ensureFolder(ctx, id!, sub)));
   }
   return id;
 }
 
 /** Give someone access by email. Used to hand a student their own folder. */
 async function grant(
-  drive: Drive,
+  ctx: Ctx,
   fileId: string,
   email: string,
   role: 'reader' | 'commenter' | 'writer'
 ) {
-  await drive.permissions.create({
+  await ctx.drive.permissions.create({
     fileId,
     requestBody: { type: 'user', role, emailAddress: email },
     // The student is told about the document in the app, so skip Google's mail.
@@ -148,7 +205,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { action } = req.body ?? {};
 
   try {
-    const drive = driveClient();
+    const ctx = getContext();
 
     switch (action) {
       /** List everything already stored for a student. */
@@ -156,32 +213,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { studentId, studentName } = req.body;
         if (!studentId) return res.status(400).json({ error: 'studentId is required' });
 
-        const folderId = await ensureStudentFolder(drive, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
 
         // Anything dropped at the top level rather than into a subfolder.
-        const files = await drive.files.list({
+        const files = await ctx.drive.files.list({
           q: `'${folderId}' in parents and mimeType != '${FOLDER_MIME}' and trashed = false`,
           fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size)',
-          supportsAllDrives: true,
-          includeItemsFromAllDrives: true,
-          corpora: 'drive',
-          driveId: SHARED_DRIVE_ID(),
           orderBy: 'modifiedTime desc',
+          ...scope(ctx),
         });
 
         // Include the contents of each subfolder, so the UI can group them.
         const subs = await Promise.all(
           SUBFOLDERS.map(async (name) => {
-            const sub = await findChild(drive, folderId, name);
+            const sub = await findChild(ctx, folderId, name);
             if (!sub?.id) return { name, files: [] };
-            const inner = await drive.files.list({
+            const inner = await ctx.drive.files.list({
               q: `'${sub.id}' in parents and trashed = false`,
               fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size)',
-              supportsAllDrives: true,
-              includeItemsFromAllDrives: true,
-              corpora: 'drive',
-              driveId: SHARED_DRIVE_ID(),
               orderBy: 'modifiedTime desc',
+              ...scope(ctx),
             });
             return { name, files: inner.data.files ?? [] };
           })
@@ -206,12 +257,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(400).json({ error: 'studentId, filename and dataBase64 are required' });
         }
 
-        const folderId = await ensureStudentFolder(drive, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
         const target = SUBFOLDERS.includes(section as Subfolder)
-          ? await ensureFolder(drive, folderId, section)
+          ? await ensureFolder(ctx, folderId, section)
           : folderId;
 
-        const created = await drive.files.create({
+        const created = await ctx.drive.files.create({
           requestBody: { name: filename, parents: [target] },
           media: {
             mimeType: mimeType || 'application/octet-stream',
@@ -236,17 +287,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(400).json({ error: 'studentId and title are required' });
         }
 
-        const folderId = await ensureStudentFolder(drive, studentId, studentName || 'Student');
-        const essays = await ensureFolder(drive, folderId, 'Essays');
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const essays = await ensureFolder(ctx, folderId, 'Essays');
 
-        const doc = await drive.files.create({
+        const doc = await ctx.drive.files.create({
           requestBody: { name: title, mimeType: DOC_MIME, parents: [essays] },
           fields: 'id, name, webViewLink',
           supportsAllDrives: true,
         });
 
-        if (studentEmail) await grant(drive, doc.data.id!, studentEmail, 'writer');
-        if (counselorEmail) await grant(drive, doc.data.id!, counselorEmail, 'commenter');
+        if (studentEmail) await grant(ctx, doc.data.id!, studentEmail, 'writer');
+        if (counselorEmail) await grant(ctx, doc.data.id!, counselorEmail, 'commenter');
 
         return res.status(200).json({ file: doc.data });
       }
@@ -256,7 +307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!fileId) return res.status(400).json({ error: 'fileId is required' });
         // Trash rather than destroy: a student deleting their only transcript
         // by accident should be recoverable.
-        await drive.files.update({
+        await ctx.drive.files.update({
           fileId,
           requestBody: { trashed: true },
           supportsAllDrives: true,
