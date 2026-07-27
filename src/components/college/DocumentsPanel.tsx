@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ExternalLink,
-  FileText,
   Loader2,
   Plus,
   Trash2,
@@ -13,12 +12,15 @@ import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 import {
   DriveFile,
+  ReviewVerdict,
   deleteDocument,
   isConfigured,
   listDocuments,
+  reviewDocument,
   uploadDocument,
 } from "@/services/driveService";
 import { SLOT_GROUPS, Slot } from "@/services/documentSlots";
+import { ChevronDown } from "lucide-react";
 import { InfoHint } from "@/components/ui/InfoHint";
 import { VerifiedBadge } from "./VerifiedBadge";
 
@@ -35,11 +37,16 @@ export function DocumentsPanel({
   studentId,
   studentName,
   studentEmail,
+  canReview = false,
+  reviewerId,
 }: {
   studentId: string;
   studentName: string;
   /** Shared onto the student's folder so Open in Drive needs no access request. */
   studentEmail?: string | null;
+  /** Counselors get the verdict controls. Students only see the outcome. */
+  canReview?: boolean;
+  reviewerId?: string | null;
 }) {
   const qc = useQueryClient();
   const [busySlot, setBusySlot] = useState<string | null>(null);
@@ -59,6 +66,16 @@ export function DocumentsPanel({
     },
     onError: (e: Error) => toast.error(e.message),
     onSettled: () => setBusySlot(null),
+  });
+
+  const review = useMutation({
+    mutationFn: ({ file, verdict, note }: { file: DriveFile; verdict: ReviewVerdict; note?: string }) =>
+      reviewDocument({ fileId: file.id, verdict, reviewerId, note }),
+    onSuccess: () => {
+      toast.success("Review saved.");
+      qc.invalidateQueries({ queryKey: ["drive-docs", studentId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const remove = useMutation({
@@ -150,29 +167,21 @@ export function DocumentsPanel({
       </div>
 
       {SLOT_GROUPS.map((group) => (
-        <section key={group.key}>
-          <h3 className="mb-2.5 text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-            {group.title}
-          </h3>
-          {/* Two columns: slots are short and mostly empty early on, so one tall
-              column would read as a longer to-do list than it really is. */}
-          <div className="grid gap-3 lg:grid-cols-2">
-            {group.slots.map((slot) => (
-              <SlotCard
-                key={slot.id}
-                slot={slot}
-                files={bySlot.get(slot.id) ?? []}
-                busy={busySlot === slot.id}
-                onFile={(file) => {
-                  setBusySlot(slot.id);
-                  upload.mutate({ slot, file });
-                }}
-                onRemove={(f) => remove.mutate(f)}
-                removingId={remove.isPending ? remove.variables?.id : undefined}
-              />
-            ))}
-          </div>
-        </section>
+        <SlotGroupSection
+          key={group.key}
+          title={group.title}
+          slots={group.slots}
+          bySlot={bySlot}
+          busySlot={busySlot}
+          canReview={canReview}
+          onFile={(slot, file) => {
+            setBusySlot(slot.id);
+            upload.mutate({ slot, file });
+          }}
+          onRemove={(f) => remove.mutate(f)}
+          onReview={(file, verdict) => review.mutate({ file, verdict })}
+          removingId={remove.isPending ? remove.variables?.id : undefined}
+        />
       ))}
 
       {unfiled.length > 0 && (
@@ -197,19 +206,99 @@ export function DocumentsPanel({
   );
 }
 
+/**
+ * Required slots are always visible. Empty optional ones fold away behind a
+ * single line, because eleven cards of which eight are hypothetical reads as a
+ * to-do list nobody wants to start. Optional slots that already hold a file
+ * stay out, since hiding a student's own document would be worse.
+ */
+function SlotGroupSection({
+  title,
+  slots,
+  bySlot,
+  busySlot,
+  canReview,
+  onFile,
+  onRemove,
+  onReview,
+  removingId,
+}: {
+  title: string;
+  slots: Slot[];
+  bySlot: Map<string, DriveFile[]>;
+  busySlot: string | null;
+  canReview: boolean;
+  onFile: (slot: Slot, file: File) => void;
+  onRemove: (f: DriveFile) => void;
+  onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
+  removingId?: string;
+}) {
+  const [showOptional, setShowOptional] = useState(false);
+
+  const filesFor = (s: Slot) => bySlot.get(s.id) ?? [];
+  const always = slots.filter((s) => s.required || filesFor(s).length > 0);
+  const hidden = slots.filter((s) => !s.required && filesFor(s).length === 0);
+  const visible = showOptional ? [...always, ...hidden] : always;
+
+  return (
+    <section>
+      <h3 className="mb-2.5 text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
+        {title}
+      </h3>
+      {/* Two columns: slots are short and mostly empty early on, so one tall
+          column would read as a longer to-do list than it really is. */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {visible.map((slot) => (
+          <SlotCard
+            key={slot.id}
+            slot={slot}
+            files={filesFor(slot)}
+            busy={busySlot === slot.id}
+            canReview={canReview}
+            onFile={(file) => onFile(slot, file)}
+            onRemove={onRemove}
+            onReview={onReview}
+            removingId={removingId}
+          />
+        ))}
+      </div>
+
+      {hidden.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowOptional((v) => !v)}
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[#717182] transition-colors hover:text-[#1099A1]"
+        >
+          <ChevronDown
+            size={13}
+            className={cn("transition-transform", showOptional && "rotate-180")}
+          />
+          {showOptional
+            ? "Hide optional"
+            : `${hidden.length} more, only if a college asks`}
+        </button>
+      )}
+    </section>
+  );
+}
+
 function SlotCard({
   slot,
   files,
   busy,
+  canReview,
   onFile,
   onRemove,
+  onReview,
   removingId,
 }: {
   slot: Slot;
   files: DriveFile[];
   busy: boolean;
+  canReview: boolean;
   onFile: (f: File) => void;
   onRemove: (f: DriveFile) => void;
+  onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
   removingId?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -237,9 +326,11 @@ function SlotCard({
           ? "border-[#1099A1] bg-[#1099A1]/5"
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
-            : // Empty optional slots recede so the required ones read first.
-            slot.required
-              ? "border-[#e9edef] dark:border-[#2a3942]"
+            : // A still-missing essential carries a quiet left accent. Enough to
+              // pull the eye, not enough to read as an error: not having sent a
+              // mid-year report in September is normal, not a mistake.
+              slot.required
+              ? "border-l-2 border-l-[#1099A1] border-y-[#e9edef] border-r-[#e9edef] dark:border-y-[#2a3942] dark:border-r-[#2a3942]"
               : "border-dashed border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
@@ -254,7 +345,7 @@ function SlotCard({
             >
               {slot.label}
             </span>
-            {filled && <VerifiedBadge provenance="unverified" size={12} />}
+            {filled && <VerifiedBadge provenance={slotState(files)} size={13} />}
             {!slot.required && !filled && (
               <span className="shrink-0 text-[11px] text-[#a8adb8]">optional</span>
             )}
@@ -306,6 +397,8 @@ function SlotCard({
               key={f.id}
               file={f}
               compact
+              canReview={canReview}
+              onReview={onReview}
               onRemove={() => onRemove(f)}
               removing={removingId === f.id}
             />
@@ -328,53 +421,102 @@ function SlotCard({
   );
 }
 
+/**
+ * A slot is only as good as its worst file: one rejected transcript among three
+ * uploads still needs attention, and a single unreviewed file means the slot is
+ * not signed off.
+ */
+function slotState(files: DriveFile[]): ReviewVerdict {
+  const states = files.map((f) => f.appProperties?.review ?? "pending");
+  if (states.includes("needs_attention")) return "needs_attention";
+  if (states.every((s) => s === "verified")) return "verified";
+  return "pending";
+}
+
 function FileRow({
   file,
   onRemove,
   removing,
   compact = false,
+  canReview = false,
+  onReview,
 }: {
   file: DriveFile;
   onRemove: () => void;
   removing: boolean;
   compact?: boolean;
+  canReview?: boolean;
+  onReview?: (f: DriveFile, verdict: ReviewVerdict) => void;
 }) {
   const size = prettySize(file.size);
+  const verdict: ReviewVerdict = file.appProperties?.review ?? "pending";
+  const note = file.appProperties?.reviewNote;
+
   return (
     <div
       className={cn(
-        "flex items-center gap-2",
         !compact &&
-        "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
+          "rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
       )}
     >
-      <FileText size={15} className="shrink-0 text-[#717182]" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] text-[#111] dark:text-white">{file.name}</div>
-        <div className="text-[11px] text-[#717182]">
-          {file.modifiedTime && new Date(file.modifiedTime).toLocaleDateString()}
-          {size && ` · ${size}`}
+      <div className="flex items-center gap-2">
+        <VerifiedBadge provenance={verdict} size={14} className="shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] text-[#111] dark:text-white">{file.name}</div>
+          <div className="text-[11px] text-[#717182]">
+            {file.modifiedTime && new Date(file.modifiedTime).toLocaleDateString()}
+            {size && ` · ${size}`}
+          </div>
         </div>
-      </div>
-      {file.webViewLink && (
-        <a
-          href={file.webViewLink}
-          target="_blank"
-          rel="noreferrer"
-          className="shrink-0 text-[12px] font-medium text-[#1099A1] hover:underline"
+
+        {file.webViewLink && (
+          <a
+            href={file.webViewLink}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-[12px] font-medium text-[#1099A1] hover:underline"
+          >
+            Open
+          </a>
+        )}
+
+        {canReview && onReview && (
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onReview(file, "verified")}
+              disabled={verdict === "verified"}
+              className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-40"
+            >
+              Verify
+            </button>
+            <button
+              type="button"
+              onClick={() => onReview(file, "needs_attention")}
+              disabled={verdict === "needs_attention"}
+              className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10 disabled:opacity-40"
+            >
+              Flag
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={removing}
+          aria-label={`Remove ${file.name}`}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#d4183d] disabled:opacity-40 dark:hover:bg-[#1c2a32]"
         >
-          Open
-        </a>
+          {removing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />}
+        </button>
+      </div>
+
+      {/* The reason a file was flagged is the only part a student can act on,
+          so it sits with the file rather than in a tooltip. */}
+      {note && verdict === "needs_attention" && (
+        <p className="mt-1 pl-6 text-[11px] leading-snug text-[#d4183d]">{note}</p>
       )}
-      <button
-        type="button"
-        onClick={onRemove}
-        disabled={removing}
-        aria-label={`Remove ${file.name}`}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#d4183d] disabled:opacity-40 dark:hover:bg-[#1c2a32]"
-      >
-        {removing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />}
-      </button>
     </div>
   );
 }

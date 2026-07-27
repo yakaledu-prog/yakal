@@ -15,8 +15,14 @@ export interface DriveFile {
   iconLink?: string;
   modifiedTime?: string;
   size?: string;
-  /** Custom metadata we set. `slot` records which named slot this fills. */
-  appProperties?: { slot?: string };
+  /** Custom metadata we set, kept on the file so it needs no second source. */
+  appProperties?: {
+    slot?: string;
+    review?: ReviewVerdict;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    reviewNote?: string;
+  };
 }
 
 export interface DriveSection {
@@ -118,6 +124,23 @@ export function createEssayDoc(args: {
   counselorEmail?: string | null;
 }) {
   return call<{ file: DriveFile }>({ action: "createDoc", ...args });
+}
+
+export type ReviewVerdict = "pending" | "verified" | "needs_attention";
+
+/**
+ * Record a counselor's verdict on a file.
+ *
+ * A file with no verdict is treated as pending rather than approved: silence
+ * must never read as a pass.
+ */
+export function reviewDocument(args: {
+  fileId: string;
+  verdict: ReviewVerdict;
+  reviewerId?: string | null;
+  note?: string | null;
+}) {
+  return call<{ file: DriveFile }>({ action: "review", ...args });
 }
 
 export function deleteDocument(fileId: string) {

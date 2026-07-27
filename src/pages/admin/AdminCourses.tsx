@@ -122,10 +122,10 @@ export function AdminCourses() {
           ) : (
             <div className={cn(viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-6")}>
               {filteredCourses.map((c) => (
-                <div 
-                  key={c.id} 
+                <div
+                  key={c.id}
                   onClick={() => navigate(`/admin/courses/${c.id}`)}
-                  className={cn("bg-white dark:bg-[#111b21] cursor-pointer rounded-3xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-all hover:shadow-lg hover:border-[#1099A1]/30", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}
+                  className={cn("bg-white dark:bg-[#111b21] cursor-pointer rounded-xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-all ring-2 ring-primary/0 hover:ring-primary/30 hover:border-[#1099A1]/30", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}
                 >
                   {/* Thumbnail */}
                   <div className={cn("bg-gray-100 dark:bg-[#202c33] shrink-0 relative", viewMode === "grid" ? "w-full h-[220px]" : "w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto")}>
@@ -179,10 +179,10 @@ export function AdminCourses() {
                         {c.google_classroom_url && (
                           <>
                             <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
-                            <a 
-                              href={c.google_classroom_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
+                            <a
+                              href={c.google_classroom_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="text-[13px] text-[#1099A1] hover:underline flex items-center gap-1 font-medium"
                             >
@@ -219,12 +219,12 @@ export function AdminCourses() {
 
                       {/* Admin Actions */}
                       <div className="flex items-center gap-5 ml-auto">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
                             openEditModal(c);
-                          }} 
+                          }}
                           className="h-9 px-4 text-[13px] gap-2 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50"
                         >
                           <Pencil size={14} /> Edit

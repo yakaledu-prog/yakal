@@ -1,4 +1,4 @@
-import { BadgeCheck, CircleDashed, Landmark } from "lucide-react";
+import { AlertCircle, BadgeCheck, Clock, CircleDashed, Landmark } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 /**
@@ -15,7 +15,11 @@ export type Provenance =
   /** A student or parent entered it. Nobody has checked it. */
   | "unverified"
   /** A counselor confirmed it against the school's own page. */
-  | "verified";
+  | "verified"
+  /** Uploaded and queued for review. Nobody has looked at it yet. */
+  | "pending"
+  /** A counselor looked and found a problem. The reason travels with it. */
+  | "needs_attention";
 
 const CONFIG: Record<
   Provenance,
@@ -38,6 +42,18 @@ const CONFIG: Record<
     label: "Not verified",
     className: "text-[#CAA25F]",
     title: "Entered by you. Your counselor has not checked it yet.",
+  },
+  pending: {
+    icon: Clock,
+    label: "Pending review",
+    className: "text-[#a8adb8]",
+    title: "Uploaded. Your counselor has not reviewed it yet.",
+  },
+  needs_attention: {
+    icon: AlertCircle,
+    label: "Needs attention",
+    className: "text-[#d4183d]",
+    title: "Your counselor found a problem with this file.",
   },
 };
 

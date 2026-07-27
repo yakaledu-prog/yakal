@@ -358,6 +358,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ file: doc.data });
       }
 
+      /**
+       * A counselor's verdict on an uploaded file.
+       *
+       * Review here is not about tracking edits, since a transcript is never
+       * edited. It is about fitness for purpose: is this the official document
+       * rather than a portal screenshot, is it legible, is it current, does its
+       * GPA match the profile. Catching a blurry photo in October beats a
+       * college rejecting it in December.
+       *
+       * Stored in appProperties so the verdict travels with the file and needs
+       * no second source of truth to stay in sync.
+       */
+      case 'review': {
+        const { fileId, verdict, reviewerId, note } = req.body;
+        if (!fileId || !['verified', 'needs_attention', 'pending'].includes(verdict)) {
+          return res
+            .status(400)
+            .json({ error: 'fileId and a verdict of verified, needs_attention or pending are required' });
+        }
+
+        const updated = await ctx.drive.files.update({
+          fileId,
+          requestBody: {
+            appProperties: {
+              review: verdict,
+              reviewedBy: reviewerId ?? '',
+              reviewedAt: new Date().toISOString(),
+              // appProperties caps each value, and a review note is a nudge
+              // rather than an essay.
+              reviewNote: String(note ?? '').slice(0, 300),
+            },
+          },
+          fields: 'id, name, appProperties',
+          supportsAllDrives: true,
+        });
+
+        return res.status(200).json({ file: updated.data });
+      }
+
       case 'delete': {
         const { fileId } = req.body;
         if (!fileId) return res.status(400).json({ error: 'fileId is required' });
