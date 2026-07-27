@@ -260,7 +260,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Anything dropped at the top level rather than into a subfolder.
         const files = await ctx.drive.files.list({
           q: `'${folderId}' in parents and mimeType != '${FOLDER_MIME}' and trashed = false`,
-          fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size)',
+          fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size, appProperties)',
           orderBy: 'modifiedTime desc',
           ...scope(ctx),
         });
@@ -272,7 +272,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (!sub?.id) return { name, files: [] };
             const inner = await ctx.drive.files.list({
               q: `'${sub.id}' in parents and trashed = false`,
-              fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size)',
+              fields: 'files(id, name, mimeType, webViewLink, iconLink, modifiedTime, size, appProperties)',
               orderBy: 'modifiedTime desc',
               ...scope(ctx),
             });
@@ -294,7 +294,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * streaming would be a premature complication.
        */
       case 'upload': {
-        const { studentId, studentName, studentEmail, section, filename, mimeType, dataBase64 } =
+        const { studentId, studentName, studentEmail, section, slot, filename, mimeType, dataBase64 } =
           req.body;
         if (!studentId || !filename || !dataBase64) {
           return res.status(400).json({ error: 'studentId, filename and dataBase64 are required' });
@@ -308,7 +308,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : folderId;
 
         const created = await ctx.drive.files.create({
-          requestBody: { name: filename, parents: [target] },
+          requestBody: {
+            name: filename,
+            parents: [target],
+            // Which named slot this fills, kept on the file rather than inferred
+            // from its name so a student renaming it in Drive breaks nothing.
+            ...(slot ? { appProperties: { slot } } : {}),
+          },
           media: {
             mimeType: mimeType || 'application/octet-stream',
             // googleapis pipes this into a multipart request, so it has to be a
@@ -316,7 +322,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // function", which does not obviously point at the cause.
             body: Readable.from(Buffer.from(dataBase64, 'base64')),
           },
-          fields: 'id, name, mimeType, webViewLink, modifiedTime, size',
+          fields: 'id, name, mimeType, webViewLink, modifiedTime, size, appProperties',
           supportsAllDrives: true,
         });
 

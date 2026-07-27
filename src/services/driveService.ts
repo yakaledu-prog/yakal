@@ -15,6 +15,8 @@ export interface DriveFile {
   iconLink?: string;
   modifiedTime?: string;
   size?: string;
+  /** Custom metadata we set. `slot` records which named slot this fills. */
+  appProperties?: { slot?: string };
 }
 
 export interface DriveSection {
@@ -83,7 +85,8 @@ export async function uploadDocument(
   studentName: string,
   section: DocumentSection,
   file: File,
-  studentEmail?: string | null
+  studentEmail?: string | null,
+  slot?: string
 ) {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(
@@ -99,6 +102,7 @@ export async function uploadDocument(
     studentName,
     studentEmail,
     section,
+    slot,
     filename: file.name,
     mimeType: file.type,
     dataBase64,
