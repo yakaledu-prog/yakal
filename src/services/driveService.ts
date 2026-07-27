@@ -143,6 +143,29 @@ export function reviewDocument(args: {
   return call<{ file: DriveFile }>({ action: "review", ...args });
 }
 
+/**
+ * Live word counts for essay Docs, keyed by Drive file id.
+ *
+ * Batched deliberately: one request for a whole page of essays rather than one
+ * per row, since each count is a full text export on the server.
+ */
+export async function wordCounts(fileIds: string[]) {
+  if (fileIds.length === 0) return new Map<string, number>();
+  const { counts } = await call<{ counts: { fileId: string; words: number | null }[] }>({
+    action: "wordCount",
+    fileIds,
+  });
+  return new Map(
+    counts.filter((c) => c.words !== null).map((c) => [c.fileId, c.words as number])
+  );
+}
+
+/** Drive URLs carry the file id between /d/ and the next slash. */
+export function fileIdFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ?? null;
+}
+
 export function deleteDocument(fileId: string) {
   return call<{ ok: true }>({ action: "delete", fileId });
 }

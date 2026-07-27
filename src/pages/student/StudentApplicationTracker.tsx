@@ -27,7 +27,12 @@ import {
   updateTask,
 } from "@/services/collegeService";
 import { OVERRIDE_LABEL, ReqKey, StudentContext } from "@/services/requirementsService";
-import { createEssayDoc, listDocuments } from "@/services/driveService";
+import {
+  createEssayDoc,
+  fileIdFromUrl,
+  listDocuments,
+  wordCounts,
+} from "@/services/driveService";
 
 type Tab = "requirements" | "essays" | "documents" | "recommendations";
 
@@ -57,6 +62,24 @@ export function StudentApplicationTracker() {
     queryKey: ["drive-docs", user?.id],
     queryFn: () => listDocuments(user!.id, profile?.full_name || "Student", user!.email),
     enabled: !!user?.id,
+    retry: false,
+  });
+
+  const essayFileIds = useMemo(
+    () =>
+      (data?.essays ?? [])
+        .map((e) => fileIdFromUrl(e.drive_url))
+        .filter((id): id is string => !!id),
+    [data]
+  );
+
+  // One request for the whole page rather than one per row: each count is a
+  // full text export on the server.
+  const { data: counts } = useQuery({
+    queryKey: ["essay-words", essayFileIds.join(",")],
+    queryFn: () => wordCounts(essayFileIds),
+    enabled: essayFileIds.length > 0,
+    staleTime: 60_000,
     retry: false,
   });
 
@@ -153,6 +176,18 @@ export function StudentApplicationTracker() {
     } finally {
       setCreatingDoc(null);
     }
+  };
+
+  /**
+   * Hand the draft to the counselor. Sets the status rather than just sending a
+   * message, so the essay itself carries the fact that it is waiting on someone
+   * and shows up in a counselor's queue.
+   */
+  const askReview = async (essay: Essay) => {
+    const res = await updateEssay(essay.id, { status: "in_review" });
+    if (!res.success) return toast.error(res.error || "Could not send for review.");
+    toast.success("Sent to your counselor.");
+    refresh();
   };
 
   const addRec = async (r: NewRecommender) => {
@@ -303,7 +338,9 @@ export function StudentApplicationTracker() {
                   onAdd={addEssayRow}
                   onStatusChange={setEssayStatus}
                   onCreateDoc={makeDoc}
+                  onAskReview={askReview}
                   creatingDoc={creatingDoc}
+                  counts={counts}
                   saving={saving}
                 />
               )}

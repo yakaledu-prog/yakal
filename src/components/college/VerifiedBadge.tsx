@@ -49,7 +49,9 @@ const CONFIG: Record<
   pending: {
     icon: BadgeHelp,
     label: "Pending review",
-    className: "text-[#a8adb8]",
+    // Brand gold, the same weight as any other "needs a human" state. Grey
+    // read as disabled, which is the opposite of something awaiting action.
+    className: "text-[#CAA25F]",
     title: "Uploaded. Your counselor has not reviewed it yet.",
   },
   needs_attention: {

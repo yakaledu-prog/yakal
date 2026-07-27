@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ExternalLink, FileText, Loader2, Plus } from "lucide-react";
+import { ExternalLink, FileText, Loader2, MessageSquare, Plus } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { fileIdFromUrl } from "@/services/driveService";
 import { FieldLabel } from "@/components/ui/InfoHint";
+import { NumberStepper } from "@/components/ui/NumberStepper";
 
 const STATUS: { value: EssayStatus; label: string }[] = [
   { value: "todo", label: "Not started" },
@@ -35,6 +37,8 @@ export interface NewEssay {
   title: string;
   kind: "personal_statement" | "supplement";
   college_list_item_id: string | null;
+  prompt: string | null;
+  word_limit: number | null;
 }
 
 /**
@@ -50,20 +54,27 @@ export function EssaysPanel({
   onAdd,
   onStatusChange,
   onCreateDoc,
+  onAskReview,
   creatingDoc,
   saving,
+  counts,
 }: {
   essays: Essay[];
   schools: CollegeListItem[];
   onAdd: (e: NewEssay) => void;
   onStatusChange: (id: string, status: EssayStatus) => void;
   onCreateDoc: (essay: Essay) => void;
+  onAskReview: (essay: Essay) => void;
   creatingDoc: string | null;
   saving: boolean;
+  /** Live counts from Drive, keyed by file id. Absent while they load. */
+  counts?: Map<string, number>;
 }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [schoolId, setSchoolId] = useState<string>("");
+  const [prompt, setPrompt] = useState("");
+  const [limit, setLimit] = useState<number | null>(null);
 
   const core = essays.filter((e) => e.kind === "personal_statement");
   const supplements = essays.filter((e) => e.kind === "supplement");
@@ -76,6 +87,8 @@ export function EssaysPanel({
   const reset = () => {
     setTitle("");
     setSchoolId("");
+    setPrompt("");
+    setLimit(null);
     setAdding(false);
   };
 
@@ -85,6 +98,10 @@ export function EssaysPanel({
       title: title.trim(),
       kind: schoolId ? "supplement" : "personal_statement",
       college_list_item_id: schoolId || null,
+      prompt: prompt.trim() || null,
+      // The Common App personal statement limit is fixed at 650, so it is
+      // filled in rather than asked for.
+      word_limit: limit ?? (schoolId ? null : 650),
     });
     reset();
   };
@@ -141,6 +158,36 @@ export function EssaysPanel({
               />
             </div>
           </div>
+          <div>
+            <FieldLabel
+              htmlFor="essay-prompt"
+              hint="Paste the college's exact question. Keeping it beside the draft means you never have to go looking for what you were asked."
+            >
+              Prompt
+            </FieldLabel>
+            <textarea
+              id="essay-prompt"
+              rows={3}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Paste the question from the college's application"
+              className={cn(input, "h-auto resize-none py-2.5 leading-relaxed")}
+            />
+          </div>
+
+          <div>
+            <FieldLabel hint="Colleges enforce these. Leave blank if the prompt does not state one.">
+              Word limit
+            </FieldLabel>
+            <NumberStepper
+              value={limit}
+              onChange={setLimit}
+              max={2000}
+              placeholder={schoolId ? "-" : "650"}
+              ariaLabel="Word limit"
+            />
+          </div>
+
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -176,7 +223,9 @@ export function EssaysPanel({
             schools={schools}
             onStatusChange={onStatusChange}
             onCreateDoc={onCreateDoc}
+            onAskReview={onAskReview}
             creatingDoc={creatingDoc}
+            counts={counts}
           />
           <Group
             title="Supplements"
@@ -184,7 +233,9 @@ export function EssaysPanel({
             schools={schools}
             onStatusChange={onStatusChange}
             onCreateDoc={onCreateDoc}
+            onAskReview={onAskReview}
             creatingDoc={creatingDoc}
+            counts={counts}
           />
         </>
       )}
@@ -198,14 +249,18 @@ function Group({
   schools,
   onStatusChange,
   onCreateDoc,
+  onAskReview,
   creatingDoc,
+  counts,
 }: {
   title: string;
   essays: Essay[];
   schools: CollegeListItem[];
   onStatusChange: (id: string, s: EssayStatus) => void;
   onCreateDoc: (e: Essay) => void;
+  onAskReview: (e: Essay) => void;
   creatingDoc: string | null;
+  counts?: Map<string, number>;
 }) {
   if (essays.length === 0) return null;
 
@@ -216,69 +271,158 @@ function Group({
         <span className="tabular-nums text-[#a8adb8]">{essays.length}</span>
       </h3>
       <div className="space-y-2">
-        {essays.map((e) => {
-          const school = schools.find((s) => s.id === e.college_list_item_id);
-          return (
-            <div
-              key={e.id}
-              className="flex items-center gap-3 rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]"
-            >
-              <FileText size={17} className="shrink-0 text-[#717182]" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[14px] text-[#111] dark:text-white">
-                  {e.title}
-                </div>
-                <div className="truncate text-[12px] text-[#717182]">
-                  {/* A supplement is college-specific by definition, so a failed
-                      lookup means its college left the list, not that it applies
-                      everywhere. Saying "every college" there is simply false. */}
-                  {school
-                    ? school.school_name
-                    : e.kind === "supplement"
-                      ? "College no longer on your list"
-                      : "Every college"}
-                  {e.due_date && ` · ${dueLabel(e.due_date)}`}
-                </div>
-              </div>
-
-              {e.drive_url ? (
-                <a
-                  href={e.drive_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-[#1099A1] hover:underline"
-                  )}
-                >
-                  Open doc
-                  <ExternalLink size={12} />
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onCreateDoc(e)}
-                  disabled={creatingDoc === e.id}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#e9edef] px-2.5 py-1.5 text-[12px] font-medium text-[#54656f] transition-colors hover:border-[#1099A1] hover:text-[#1099A1] disabled:opacity-50 dark:border-[#2a3942] dark:text-[#aebac1]"
-                >
-                  {creatingDoc === e.id && <Loader2 size={12} className="animate-spin" />}
-                  Create doc
-                </button>
-              )}
-
-              <Dropdown
-                value={e.status}
-                onChange={(v) => onStatusChange(e.id, v as EssayStatus)}
-                options={STATUS}
-                size="sm"
-                align="end"
-                className="w-[150px] shrink-0"
-                buttonClassName="font-normal"
-                ariaLabel={`Status for ${e.title}`}
-              />
-            </div>
-          );
-        })}
+        {essays.map((e) => (
+          <EssayRow
+            key={e.id}
+            essay={e}
+            schools={schools}
+            words={counts?.get(fileIdFromUrl(e.drive_url) ?? "")}
+            onStatusChange={onStatusChange}
+            onCreateDoc={onCreateDoc}
+            onAskReview={onAskReview}
+            creating={creatingDoc === e.id}
+          />
+        ))}
       </div>
     </section>
+  );
+}
+
+
+/**
+ * One essay.
+ *
+ * The word count is the point of this row. A college enforces its limit, so
+ * "631 of 650" tells a student whether they are nearly done, and "102 over"
+ * tells them they have cutting to do, which no status label ever conveys.
+ */
+function EssayRow({
+  essay,
+  schools,
+  words,
+  onStatusChange,
+  onCreateDoc,
+  onAskReview,
+  creating,
+}: {
+  essay: Essay;
+  schools: CollegeListItem[];
+  words?: number;
+  onStatusChange: (id: string, s: EssayStatus) => void;
+  onCreateDoc: (e: Essay) => void;
+  onAskReview: (e: Essay) => void;
+  creating: boolean;
+}) {
+  const school = schools.find((s) => s.id === essay.college_list_item_id);
+  const limit = essay.word_limit ?? null;
+  const over = limit !== null && words !== undefined && words > limit;
+  const pct = limit && words !== undefined ? Math.min(1, words / limit) : 0;
+
+  return (
+    <div className="rounded-xl border border-[#e9edef] bg-white p-3 dark:border-[#2a3942] dark:bg-[#182229]">
+      <div className="flex items-center gap-3">
+        <FileText size={17} className="shrink-0 text-[#717182]" />
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[14px] text-[#111] dark:text-white">
+            {essay.title}
+          </div>
+          <div className="truncate text-[12px] text-[#717182]">
+            {/* A supplement is college-specific by definition, so a failed
+                lookup means its college left the list, not that it applies
+                everywhere. Saying "every college" there is simply false. */}
+            {school
+              ? school.school_name
+              : essay.kind === "supplement"
+                ? "College no longer on your list"
+                : "Every college"}
+            {essay.due_date && ` \u00b7 ${dueLabel(essay.due_date)}`}
+            {(essay.rounds_used ?? 0) > 0 &&
+              ` \u00b7 round ${essay.rounds_used}`}
+          </div>
+        </div>
+
+        {/* Only meaningful once a doc exists and a limit is known. */}
+        {words !== undefined && (
+          <div className="hidden w-[120px] shrink-0 sm:block">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-[#f3f3f5] dark:bg-[#1c2a32]">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width]",
+                  over ? "bg-[#d4183d]" : "bg-[#1099A1]"
+                )}
+                style={{ width: `${Math.round((over ? 1 : pct) * 100)}%` }}
+              />
+            </div>
+            <div
+              className={cn(
+                "mt-0.5 text-[11px] tabular-nums",
+                over ? "text-[#d4183d]" : "text-[#717182]"
+              )}
+            >
+              {limit === null
+                ? `${words} words`
+                : over
+                  ? `${words - limit} over`
+                  : `${words}/${limit}`}
+            </div>
+          </div>
+        )}
+
+        {essay.drive_url ? (
+          <a
+            href={essay.drive_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-[#1099A1] hover:underline"
+          >
+            Open doc
+            <ExternalLink size={12} />
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onCreateDoc(essay)}
+            disabled={creating}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#e9edef] px-2.5 py-1.5 text-[12px] font-medium text-[#54656f] transition-colors hover:border-[#1099A1] hover:text-[#1099A1] disabled:opacity-50 dark:border-[#2a3942] dark:text-[#aebac1]"
+          >
+            {creating && <Loader2 size={12} className="animate-spin" />}
+            Create doc
+          </button>
+        )}
+
+        {/* The handoff the tiers are actually sold on. Pointless before a doc
+            exists, and redundant once it is already with the counselor. */}
+        {essay.drive_url && essay.status !== "in_review" && (
+          <button
+            type="button"
+            onClick={() => onAskReview(essay)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#e9edef] px-2.5 py-1.5 text-[12px] font-medium text-[#54656f] transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942] dark:text-[#aebac1]"
+          >
+            <MessageSquare size={12} />
+            Ask for review
+          </button>
+        )}
+
+        <Dropdown
+          value={essay.status}
+          onChange={(v) => onStatusChange(essay.id, v as EssayStatus)}
+          options={STATUS}
+          size="sm"
+          align="end"
+          className="w-[150px] shrink-0"
+          buttonClassName="font-normal"
+          ariaLabel={`Status for ${essay.title}`}
+        />
+      </div>
+
+      {/* The college's actual question, kept with the essay so a student never
+          has to go looking for what they were asked. */}
+      {essay.prompt && (
+        <p className="mt-2 border-l-2 border-[#e9edef] pl-2.5 text-[12px] leading-relaxed text-[#717182] dark:border-[#2a3942]">
+          {essay.prompt}
+        </p>
+      )}
+    </div>
   );
 }
