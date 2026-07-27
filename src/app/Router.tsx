@@ -12,6 +12,7 @@ import { SettingsPage } from "../pages/shared/SettingsPage";
 import { ProposalPage } from "../pages/shared/ProposalPage";
 import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
 import { CollegeListPreview } from "../pages/preview/CollegeListPreview";
+import { TrackerPreview } from "../pages/preview/TrackerPreview";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
 import { CancellationPolicyPage } from "../pages/shared/CancellationPolicyPage";
@@ -164,6 +165,7 @@ const previewRoutes = DEV_PREVIEW
     { path: "/preview/explore", element: <StudentExploreUniversities /> },
     { path: "/preview/college-list", element: <StudentCollegeList /> },
     { path: "/preview/college-rows", element: <CollegeListPreview /> },
+    { path: "/preview/tracker", element: <TrackerPreview /> },
   ]
   : [];
 

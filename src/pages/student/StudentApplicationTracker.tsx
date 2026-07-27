@@ -1,65 +1,49 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { getCollegeProfile, updateSchool } from "@/services/collegeService";
-import { ChevronDown, Plus, Circle, CheckCircle2, ClipboardList, Loader2, Check, ExternalLink, FileText, Image as ImageIcon, File, Folder, MoreVertical, FileSpreadsheet, HardDrive, RefreshCw, FolderSyncIcon, FolderSymlinkIcon } from "lucide-react";
-import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { useGoogleDrivePicker, GoogleDriveFolder, GoogleDriveFile } from "@/hooks/useGoogleDrivePicker";
-import { GoogleDrive } from "@/components/icons/GoogleDrive";
+import { RequirementsMatrix } from "@/components/college/RequirementsMatrix";
+import { EssaysPanel, NewEssay } from "@/components/college/EssaysPanel";
+import { DocumentsPanel } from "@/components/college/DocumentsPanel";
+import { RecommendersPanel, NewRecommender } from "@/components/college/RecommendersPanel";
+import {
+  Essay,
+  EssayStatus,
+  RecStatus,
+  Recommendation,
+  addEssay,
+  addRecommendation,
+  addRequirement,
+  deleteRecommendation,
+  getCollegeProfile,
+  toggleRequirement,
+  updateEssay,
+  updateRecommendation,
+  updateTask,
+} from "@/services/collegeService";
+import { OVERRIDE_LABEL, ReqKey, StudentContext } from "@/services/requirementsService";
+import { createEssayDoc, listDocuments } from "@/services/driveService";
+
+type Tab = "requirements" | "essays" | "documents" | "recommendations";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "requirements", label: "Requirements" },
+  { id: "essays", label: "Essays" },
+  { id: "documents", label: "Documents" },
+  { id: "recommendations", label: "Recommendations" },
+];
 
 export function StudentApplicationTracker() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"requirements" | "documents" | "checklists" | "recommendations">("requirements");
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [localReqs, setLocalReqs] = useState<Record<string, string[]>>({});
-  const [localStatus, setLocalStatus] = useState<Record<string, string>>({});
-
-  // Google Drive state
-  const { pickFolder, fetchFolderFiles, isReady, isPicking, isFetching } = useGoogleDrivePicker();
-  const [connectedFolder, setConnectedFolder] = useState<GoogleDriveFolder | null>(() => {
-    const saved = localStorage.getItem('yakal_drive_folder');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [folderFiles, setFolderFiles] = useState<GoogleDriveFile[]>([]);
-  const [transcriptFileId, setTranscriptFileId] = useState<string | null>(() => {
-    return localStorage.getItem('yakal_transcript_id');
-  });
-
-  useEffect(() => {
-    if (connectedFolder) {
-      localStorage.setItem('yakal_drive_folder', JSON.stringify(connectedFolder));
-    }
-  }, [connectedFolder]);
-
-  useEffect(() => {
-    if (transcriptFileId) {
-      localStorage.setItem('yakal_transcript_id', transcriptFileId);
-    } else {
-      localStorage.removeItem('yakal_transcript_id');
-    }
-  }, [transcriptFileId]);
-
-  useEffect(() => {
-    if (connectedFolder && isReady) {
-      fetchFolderFiles(connectedFolder.id)
-        .then(files => setFolderFiles(files))
-        .catch(err => console.error("Error fetching synced files:", err));
-    }
-  }, [connectedFolder, isReady, fetchFolderFiles]);
-
-  const handleConnectFolder = async () => {
-    try {
-      const folder = await pickFolder();
-      if (folder) {
-        setConnectedFolder(folder);
-      }
-    } catch (err) {
-      console.error('Failed to pick folder:', err);
-    }
-  };
+  const [tab, setTab] = useState<Tab>("requirements");
+  const [saving, setSaving] = useState(false);
+  const [creatingDoc, setCreatingDoc] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", user?.id],
@@ -67,468 +51,282 @@ export function StudentApplicationTracker() {
     enabled: !!user?.id,
   });
 
-  if (!user) return null;
+  // Only used to decide whether the transcript requirement is met, so a failure
+  // here should degrade the matrix rather than break the page.
+  const { data: docs } = useQuery({
+    queryKey: ["drive-docs", user?.id],
+    queryFn: () => listDocuments(user!.id, profile?.full_name || "Student"),
+    enabled: !!user?.id,
+    retry: false,
+  });
 
-  const schools = data?.schools || [];
-  const submittedCount = schools.filter(s => s.status === "submitted").length;
-  const acceptedCount = schools.filter(s => s.status === "accepted").length;
+  const schools = useMemo(() => data?.schools ?? [], [data]);
+  const essays = useMemo(() => data?.essays ?? [], [data]);
+  const recommendations = useMemo(() => data?.recommendations ?? [], [data]);
+  const tasks = useMemo(() => data?.tasks ?? [], [data]);
 
-  const essays = data?.essays || [];
-  const tasks = data?.tasks || [];
+  const hasTranscript =
+    (docs?.sections.find((s) => s.name === "Transcripts")?.files.length ?? 0) > 0;
+
+  const ctx: StudentContext = useMemo(
+    () => ({
+      academics: data?.academics ?? null,
+      essays,
+      recommendations,
+      hasTranscript,
+      // Stored on the umbrella application record so one answer covers every
+      // college, which is how these two forms actually work.
+      fafsaSubmitted: !!(data?.application as any)?.fafsa_submitted,
+      cssSubmitted: !!(data?.application as any)?.css_submitted,
+    }),
+    [data, essays, recommendations, hasTranscript]
+  );
+
+  const earliestDeadline = useMemo(() => {
+    const dates = schools.map((s) => s.deadline).filter(Boolean).sort() as string[];
+    return dates[0] ?? null;
+  }, [schools]);
+
+  const openTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.status !== "done")
+        .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))
+        .slice(0, 3),
+    [tasks]
+  );
+
+  const refresh = () =>
+    qc.invalidateQueries({ queryKey: ["college-profile", user?.id] });
+
+  /**
+   * Writing an override rather than mutating the derived value. The derivation
+   * stays intact underneath, so clearing the override later restores it.
+   */
+  const toggleReq = async (
+    school: (typeof schools)[number],
+    key: ReqKey,
+    next: boolean
+  ) => {
+    const existing = school.requirements?.find((r) => r.label === OVERRIDE_LABEL[key]);
+    const res = existing
+      ? await toggleRequirement(existing.id, next)
+      : await addRequirement(school.id, OVERRIDE_LABEL[key], null).then(async (r) => {
+          if (r.success && r.data && next) await toggleRequirement(r.data.id, true);
+          return r;
+        });
+    if (!res.success) return toast.error(res.error || "Could not update.");
+    refresh();
+  };
+
+  const addEssayRow = async (e: NewEssay) => {
+    if (!user) return;
+    setSaving(true);
+    const res = await addEssay(user.id, e);
+    setSaving(false);
+    if (!res.success) return toast.error(res.error || "Could not add that essay.");
+    toast.success(`${e.title} added.`);
+    refresh();
+  };
+
+  const setEssayStatus = async (id: string, status: EssayStatus) => {
+    const res = await updateEssay(id, { status });
+    if (!res.success) return toast.error(res.error || "Could not update.");
+    refresh();
+  };
+
+  const makeDoc = async (essay: Essay) => {
+    if (!user) return;
+    setCreatingDoc(essay.id);
+    try {
+      const { file } = await createEssayDoc({
+        studentId: user.id,
+        studentName: profile?.full_name || "Student",
+        title: essay.title,
+        studentEmail: user.email,
+      });
+      await updateEssay(essay.id, { drive_url: file.webViewLink ?? null });
+      toast.success("Google Doc created.");
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create the doc.");
+    } finally {
+      setCreatingDoc(null);
+    }
+  };
+
+  const addRec = async (r: NewRecommender) => {
+    if (!user) return;
+    setSaving(true);
+    const res = await addRecommendation(user.id, r);
+    setSaving(false);
+    if (!res.success) return toast.error(res.error || "Could not add.");
+    toast.success(`${r.recommender_name} added.`);
+    refresh();
+  };
+
+  const setRecStatus = async (id: string, status: RecStatus) => {
+    const res = await updateRecommendation(id, { status });
+    if (!res.success) return toast.error(res.error || "Could not update.");
+    refresh();
+  };
+
+  const removeRec = async (r: Recommendation) => {
+    const res = await deleteRecommendation(r.id);
+    if (!res.success) return toast.error(res.error || "Could not remove.");
+    refresh();
+  };
+
+  const completeTask = async (id: string) => {
+    const res = await updateTask(id, { status: "done" });
+    if (!res.success) return toast.error(res.error || "Could not update.");
+    refresh();
+  };
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
-        {/* Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+      <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
+        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+          <svg
+            className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
+            viewBox="0 0 400 200"
+            preserveAspectRatio="none"
+            fill="none"
+          >
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <path
+              d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              opacity="0.3"
+            />
             <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
             <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
-          <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">Application Tracker</h1>
-              <p className="text-white/80 text-[15px] mt-1 mb-6">Every school, every requirement</p>
-            </div>
 
-            {/* Stats in Header Bottom Right */}
-            <div className="flex gap-6 pb-6 text-[13px] font-semibold text-white/80 text-center">
-              <div>
-                <p className="text-[22px] text-white font-bold leading-none mb-1">{schools.length}</p>
-                <p>Schools</p>
-              </div>
-              <div>
-                <p className="text-[22px] text-white font-bold leading-none mb-1">{submittedCount}</p>
-                <p>Submitted</p>
-              </div>
-              <div>
-                <p className="text-[22px] text-white font-bold leading-none mb-1">{acceptedCount}</p>
-                <p>Accepted</p>
-              </div>
-            </div>
+          <div className="relative z-10 mx-auto max-w-[1100px]">
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Applications</h1>
+            <p className="pb-6 pt-1 text-[15px] text-white/80">
+              What each college still needs from you.
+            </p>
+
+            <nav className="flex gap-1 overflow-x-auto">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
+                    tab === t.id
+                      ? "border-white font-semibold text-white"
+                      : "border-transparent text-white/60 hover:text-white"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
           </div>
+        </header>
 
-          {/* Tabs */}
-          <div className="max-w-[1100px] mx-auto flex gap-1 overflow-x-auto">
-            {[
-              { id: "requirements", label: "Requirements" },
-              { id: "documents", label: "Documents" },
-              { id: "checklists", label: "Checklists" },
-              { id: "recommendations", label: "Recommendations" }
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id as any)}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap border-b-[3px] transition-colors",
-                  tab === t.id
-                    ? "border-white text-white"
-                    : "border-transparent text-white/60 hover:text-white"
-                )}
+        <div className="mx-auto max-w-[1100px] space-y-6 p-6 md:p-10">
+          {/* Tasks are cross-cutting, so they get a strip here and a home on the
+              roadmap rather than a tab nobody would think to open. */}
+          {openTasks.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-[#e9edef] bg-white px-4 py-3 dark:border-[#2a3942] dark:bg-[#182229]">
+              <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
+                Next up
+              </span>
+              {openTasks.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => completeTask(t.id)}
+                  className="group inline-flex items-center gap-1.5 text-[13px] text-[#111] transition-colors hover:text-[#1099A1] dark:text-white"
+                >
+                  <CheckCircle2
+                    size={14}
+                    className="text-[#c2c7d0] transition-colors group-hover:text-[#1099A1]"
+                  />
+                  {t.title}
+                  {t.due_date && (
+                    <span className="tabular-nums text-[#a8adb8]">
+                      {new Date(t.due_date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  )}
+                </button>
+              ))}
+              <Link
+                to="/student/roadmap"
+                className="ml-auto text-[13px] font-medium text-[#1099A1] hover:underline"
               >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
+                All tasks
+              </Link>
+            </div>
+          )}
 
-        <div className="mx-auto p-6 md:p-10 md:pt-2 space-y-10">
           {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin text-[#1099A1]" />
+            </div>
+          ) : schools.length === 0 && tab === "requirements" ? (
+            <div className="rounded-xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
+              <p className="text-[15px] text-[#111] dark:text-white">
+                No colleges on your list yet
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#717182]">
+                Requirements appear here once you add a college.
+              </p>
+              <Link
+                to="/student/college-list"
+                className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+              >
+                Go to my list
+              </Link>
+            </div>
           ) : (
             <>
               {tab === "requirements" && (
-                <div>
-                  <div className="flex flex-col gap-6 mt-4">
-                    {schools.map(s => {
-                      const reqs = s.requirements || [];
-                      const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
-
-                      let defaultReqs: string[] = [];
-                      if (s.notes && s.notes.startsWith("[")) {
-                        try { defaultReqs = JSON.parse(s.notes); } catch (e) {}
-                      } else {
-                        defaultReqs = standardReqs.filter(r => {
-                          if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
-                          if (s.school_name.includes("Maryland")) return false;
-                          if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
-                          return false;
-                        });
-                      }
-
-                      const schoolReqs = localReqs[s.id] || defaultReqs;
-
-                      const toggleReq = (schoolId: string, schoolName: string, req: string) => {
-                        setLocalReqs(prev => {
-                          const current = prev[schoolId] || defaultReqs;
-                          let next;
-                          if (current.includes(req)) {
-                            next = current.filter(r => r !== req);
-                          } else {
-                            next = [...current, req];
-                          }
-                          // Fire and forget update to persist to DB
-                          updateSchool(schoolId, { notes: JSON.stringify(next) }).catch(console.error);
-                          return { ...prev, [schoolId]: next };
-                        });
-                      };
-
-                      const mockDoneCount = schoolReqs.length;
-                      const currentStatus = localStatus[s.id] || s.status;
-
-                      return (
-                        <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg p-6">
-                          {/* Top Row */}
-                          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <h3 className="font-bold text-[18px] text-[#111] dark:text-white leading-tight">{s.school_name}</h3>
-                              <span className="text-[14px] text-[#8696a0] font-medium">EA • {s.deadline ? s.deadline : "2026-11-01"}</span>
-                            </div>
-
-                            <div className="flex items-center gap-3 self-end md:self-auto">
-                              <span className="text-[14px] font-bold text-[#54656f]">{mockDoneCount}/{Math.max(reqs.length, 8)}</span>
-
-                              <div className="relative">
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setOpenDropdownId(openDropdownId === s.id ? null : s.id);
-                                  }}
-                                  className={cn(
-                                    "bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-full px-3 py-1.5 text-[13px] font-semibold flex items-center gap-1.5 hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942] transition-colors",
-                                    currentStatus === "accepted" ? "text-[#4FA86A]" :
-                                      currentStatus === "waitlisted" ? "text-[#CAA25F]" :
-                                        currentStatus === "denied" ? "text-[#CA5F5F]" :
-                                          // currentStatus === "denied" ? "text-[#697780]" :
-                                          currentStatus === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
-                                  )}
-                                >
-                                  {currentStatus === "accepted" ? "Accepted" :
-                                    currentStatus === "waitlisted" ? "Waitlisted" :
-                                      currentStatus === "denied" ? "Denied" :
-                                        currentStatus === "enrolled" ? "Enrolled" :
-                                          currentStatus === "considering" ? "Considering" :
-                                            currentStatus === "applying" ? "Applying" :
-                                              currentStatus === "submitted" ? "Submitted" :
-                                                "Status..."}
-                                  <ChevronDown size={14} className={cn("transition-transform opacity-50 ml-1", openDropdownId === s.id && "rotate-180")} />
-                                </button>
-
-                                {openDropdownId === s.id && (
-                                  <>
-                                    <div className="fixed inset-0 z-40" onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenDropdownId(null);
-                                    }} />
-                                    <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-[#202c33] rounded-[12px] shadow-xl overflow-hidden z-50 text-black dark:text-white py-1 border border-[#e9edef] dark:border-[#2a3942]">
-                                      <div className="px-4 py-2 text-[11px] font-bold text-muted-foreground/55 uppercase tracking-wider ">Set Status</div>
-                                      {["considering", "applying", "submitted", "waitlisted", "accepted", "denied", "enrolled"].map((status) => (
-                                        <button
-                                          key={status}
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            setLocalStatus(prev => ({ ...prev, [s.id]: status }));
-                                            setOpenDropdownId(null);
-                                            try {
-                                              await updateSchool(s.id, { status: status as any });
-                                              qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
-                                            } catch (err) { }
-                                          }}
-                                          className={cn(
-                                            "block w-full text-left px-4 py-2.5 text-[13px] font-bold capitalize transition-colors hover:bg-[#f8f9fa] dark:hover:bg-[#2a3942]",
-                                            status === "accepted" ? "text-[#4FA86A]" :
-                                              status === "waitlisted" ? "text-[#CAA25F]" :
-                                                status === "denied" ? "text-[#CA5F5F]" :
-                                                  status === "enrolled" ? "text-[#1099A1]" : "text-muted-foreground"
-                                          )}
-                                        >
-                                          {status}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Progress bar */}
-
-                          <div className={`${mockDoneCount > 0 ? 'scale-y-100' : 'scale-y-0'} transition ease-in-out duration-300 origin-left`}>
-                            <div className={`h-2.5 w-full bg-[#f8f9fa] dark:bg-[#202c33] rounded-full overflow-hidden border border-[#e9edef] dark:border-[#2a3942]`}>
-                              <div className="h-full bg-[#1099A1] rounded-full transition-all duration-500 ease-out" style={{ width: `${(mockDoneCount / Math.max(reqs.length, 8)) * 100}%` }} />
-                            </div>
-                            <div className={`${mockDoneCount > 0 ? 'h-5' : 'h-0'}`} />
-                          </div>
-
-                          {/* Pills */}
-                          <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2 pb-1">
-                            {standardReqs.map((req, i) => {
-                              const isDone = schoolReqs.includes(req);
-
-                              return isDone ? (
-                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="text-[#1099A1] border bg-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-none hover:bg-black/5 transition-colors">
-                                  <Check size={14} strokeWidth={3} /> {req}
-                                </button>
-                              ) : (
-                                <button key={i} onClick={() => toggleReq(s.id, s.school_name, req)} className="text-[#202c33] dark:text-[#e9edef] dark:bg-[#202c33] bg-transparent border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                                  {req}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {schools.length === 0 && (
-                      <p className="text-[14px] text-muted-foreground text-center py-10">Add schools in the College List to see requirements.</p>
-                    )}
-                  </div>
-                </div>
+                <RequirementsMatrix schools={schools} ctx={ctx} onToggle={toggleReq} />
               )}
 
-              {tab === "documents" && (
-                <div className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-6 h-full">
-
-                  {!connectedFolder ? (
-                    <div className="flex flex-col items-center justify-center h-full min-h-[350px] text-center">
-                      <div className="w-24 h-24 mb-6">
-                        <GoogleDrive className="w-full h-full" />
-                      </div>
-                      <h3 className="text-[18px] font-semibold text-foreground mb-2">Connect Google Drive</h3>
-                      <p className="text-[14px] text-muted-foreground mb-6 max-w-[400px]">
-                        Sync a dedicated folder from your Google Drive. All documents inside will automatically appear here for your college applications.
-                      </p>
-                      <button
-                        onClick={handleConnectFolder}
-                        disabled={!isReady || isPicking}
-                        className={cn(
-                          "flex items-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-full text-[14px] font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5",
-                          (!isReady || isPicking) && "opacity-50 cursor-not-allowed transform-none"
-                        )}
-                      >
-                        <HardDrive size={18} />
-                        {isPicking ? "Opening..." : !isReady ? "Loading..." : "Select Folder to Sync"}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Drive Breadcrumb & Actions Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                        <div className="flex items-center text-[18px] text-[#5f6368] dark:text-[#9aa0a6] font-medium gap-2">
-                          <a
-                            href="https://drive.google.com/drive/my-drive"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded cursor-pointer transition-colors"
-                          >
-                            My Drive
-                          </a>
-                          <span className="text-[14px]">›</span>
-                          <span className="text-primary font hover:bg-black/5 cursor-pointer hover:dark:bg-white/5 px-2 py-1 rounded">
-                            {connectedFolder.name}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => fetchFolderFiles(connectedFolder.id).then(setFolderFiles)}
-                            disabled={isFetching}
-                            className={cn(
-                              "flex items-center justify-center w-10 h-10 rounded-full text-[#5f6368] hover:bg-black/5 dark:hover:bg-white/5 transition-colors",
-                              isFetching && "animate-pulse"
-                            )}
-                            title="Refresh synced folder"
-                          >
-                            <FolderSyncIcon size={16} />
-                          </button>
-                          <a
-                            href={`https://drive.google.com/drive/folders/${connectedFolder.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 border border-[#e9edef] dark:border-[#2a3942] rounded-full text-[14px] font-semibold text-[#1099A1] hover:bg-[#1099a1]/10 transition-colors"
-                          >
-                            <FolderSymlinkIcon size={16} /> Open in Drive
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Empty State vs Grid */}
-                      {isFetching && folderFiles.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                          <Loader2 className="animate-spin mb-4" size={32} />
-                          <p className="text-[14px] font-medium">Syncing folder contents...</p>
-                        </div>
-                      ) : folderFiles.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                          <div className="w-16 h-16 mb-4 opacity-20">
-                            <Folder size={64} strokeWidth={1} />
-                          </div>
-                          <p className="text-[14px] font-medium">This folder is empty</p>
-                          <p className="text-[13px] mt-1">Add files to this folder in Google Drive to see them here.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {folderFiles.map(doc => {
-                            const isTranscript = doc.id === transcriptFileId;
-                            return (
-                              <div
-                                key={doc.id}
-                                className={cn(
-                                  "group relative flex flex-col h-44 bg-[#f8f9fa] dark:bg-[#202c33] border rounded-xl overflow-hidden transition-colors",
-                                  isTranscript
-                                    ? "border-[#1099A1] ring-1 ring-[#1099A1]"
-                                    : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
-                                )}
-                              >
-                                {isTranscript && (
-                                  <div className="absolute top-2 left-2 z-10 bg-[#1099A1] text-white p-1 rounded-md shadow-sm" title="Official Transcript">
-                                    <Check size={12} strokeWidth={3} />
-                                  </div>
-                                )}
-
-                                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <div className="relative group/menu">
-                                    <button className="p-1 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-sm text-[#5f6368] hover:text-foreground">
-                                      <MoreVertical size={16} />
-                                    </button>
-                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
-                                      <button
-                                        onClick={() => setTranscriptFileId(isTranscript ? null : doc.id)}
-                                        className="w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-[#f8f9fa] dark:hover:bg-[#202c33] flex items-center gap-2"
-                                      >
-                                        <CheckCircle2 size={14} className={isTranscript ? "text-[#1099A1]" : "text-transparent"} />
-                                        {isTranscript ? "Unmark Transcript" : "Mark as Transcript"}
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <a
-                                  href={doc.webViewLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex-1 flex items-center justify-center bg-white dark:bg-[#182229] group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors cursor-pointer"
-                                >
-                                  {doc.iconLink ? (
-                                    <img src={doc.iconLink.replace('16', '64')} alt="icon" className="w-12 h-12 opacity-90 group-hover:scale-110 transition-transform" />
-                                  ) : (
-                                    <div className="text-muted-foreground group-hover:scale-110 transition-transform">
-                                      {doc.mimeType?.includes('pdf') ? <FileText size={48} className="text-red-500" strokeWidth={1} /> :
-                                        doc.mimeType?.includes('spreadsheet') ? <FileSpreadsheet size={48} className="text-green-600" strokeWidth={1} /> :
-                                          doc.mimeType?.includes('document') ? <FileText size={48} className="text-blue-600" strokeWidth={1} /> :
-                                            doc.mimeType?.includes('image') ? <ImageIcon size={48} className="text-purple-500" strokeWidth={1} /> :
-                                              <File size={48} strokeWidth={1} />}
-                                    </div>
-                                  )}
-                                </a>
-                                <div className="h-12 border-t border-[#e9edef] dark:border-[#2a3942] px-3 flex items-center bg-[#f8f9fa] dark:bg-[#202c33]">
-                                  <div className="flex items-center gap-2 w-full">
-                                    {doc.iconLink ? (
-                                      <img src={doc.iconLink} alt="" className="w-4 h-4 flex-shrink-0" />
-                                    ) : (
-                                      <File size={14} className="text-muted-foreground flex-shrink-0" />
-                                    )}
-                                    <span className="text-[12px] font-semibold text-[#3c4043] dark:text-[#e8eaed] truncate" title={doc.name}>
-                                      {doc.name}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+              {tab === "essays" && (
+                <EssaysPanel
+                  essays={essays}
+                  schools={schools}
+                  onAdd={addEssayRow}
+                  onStatusChange={setEssayStatus}
+                  onCreateDoc={makeDoc}
+                  creatingDoc={creatingDoc}
+                  saving={saving}
+                />
               )}
 
-              {tab === "checklists" && (
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Essays Checklist */}
-                  <div>
-                    <h2 className="text-[15px] font-bold uppercase tracking-wider mb-4 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
-                      Essays · {essays.filter(e => e.status === "done").length}/{essays.length || 3}
-                    </h2>
-                    <div className="space-y-3">
-                      {/* Mock MVP data as requested */}
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 size={16} className="text-[#1099A1]" />
-                          <span className="text-[14px] font-semibold">Activities descriptions</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-muted-foreground">Complete</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 size={16} className="text-[#1099A1]" />
-                          <span className="text-[14px] font-semibold">Common App personal statement</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-muted-foreground">Complete</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <Circle size={16} className="text-muted-foreground/40" />
-                          <span className="text-[14px] font-semibold">JHU "why us" supplement</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-[#CAA25F]">In progress</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* To-Do */}
-                  <div>
-                    <h2 className="text-[15px] font-bold uppercase tracking-wider mb-4 text-foreground border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
-                      To-do · {tasks.filter(t => t.status === "done").length}/{tasks.length || 3}
-                    </h2>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <Circle size={16} className="text-muted-foreground/40" />
-                          <span className="text-[14px] font-semibold">Request recommendation letters</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-[#CAA25F]">In progress</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <Circle size={16} className="text-muted-foreground/40" />
-                          <span className="text-[14px] font-semibold">Finalize school list</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-[#CAA25F]">In progress</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229]">
-                        <div className="flex items-center gap-3">
-                          <Circle size={16} className="text-muted-foreground/40" />
-                          <span className="text-[14px] font-semibold">Submit FAFSA</span>
-                        </div>
-                        <span className="text-[12px] font-bold text-[#CAA25F]">In progress</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {tab === "documents" && user && (
+                <DocumentsPanel
+                  studentId={user.id}
+                  studentName={profile?.full_name || "Student"}
+                />
               )}
 
               {tab === "recommendations" && (
-                <div>
-                  <div className="flex items-center justify-between mb-2 border-b border-[#e9edef] dark:border-[#2a3942] pb-2">
-                    <h2 className="text-[15px] font-bold uppercase tracking-wider text-foreground">Recommendation letters</h2>
-                    <button className="text-[13px] font-bold text-[#1099A1] flex items-center gap-1"><Plus size={14} /> Add</button>
-                  </div>
-                  <p className="text-[14px] text-muted-foreground mb-4">Recommenders and where each letter lives in Google Drive</p>
-
-                  <div className="border border-[#e9edef] dark:border-[#2a3942] border-dashed p-6 text-center bg-[#f8fafc] dark:bg-[#1a2730]">
-                    <p className="text-[14px] text-muted-foreground mb-2">Add each teacher or counselor writing a letter, then drop the signed letter in the student’s Drive folder and paste its link.</p>
-                  </div>
-                </div>
+                <RecommendersPanel
+                  recommendations={recommendations}
+                  earliestDeadline={earliestDeadline}
+                  onAdd={addRec}
+                  onStatusChange={setRecStatus}
+                  onRemove={removeRec}
+                  saving={saving}
+                />
               )}
             </>
           )}
-
         </div>
       </div>
     </PageWrapper>
