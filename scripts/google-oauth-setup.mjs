@@ -16,7 +16,10 @@ import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { google } from 'googleapis';
 
-const PORT = 5599;
+// Override with --port if 5599 is taken, or to match a URI already registered
+// on the client: node scripts/google-oauth-setup.mjs --port 5173
+const portArg = process.argv.indexOf('--port');
+const PORT = portArg !== -1 ? Number(process.argv[portArg + 1]) : 5599;
 const REDIRECT = `http://localhost:${PORT}/callback`;
 
 /**
@@ -58,7 +61,17 @@ const url = oauth.generateAuthUrl({
   prompt: 'consent',
 });
 
-console.log('\nOpen this URL, signed in as the account that should own the files:\n');
+// Printed up front because redirect_uri_mismatch is the failure everyone hits
+// first, and Google's error page does not say which URI it expected.
+const projectNumber = clientId.split('-')[0];
+console.log('Before you continue, this exact URI must be registered on the client:\n');
+console.log(`  Redirect URI  ${REDIRECT}`);
+console.log(`  OAuth client  ${clientId}`);
+console.log(
+  `  Register at   https://console.cloud.google.com/apis/credentials?project=${projectNumber}`
+);
+console.log('                (open the client, Authorised redirect URIs, Add URI, Save)\n');
+console.log('Then open this URL, signed in as the account that should own the files:\n');
 console.log(url + '\n');
 
 const server = http.createServer(async (req, res) => {
