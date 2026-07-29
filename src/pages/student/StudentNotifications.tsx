@@ -140,7 +140,7 @@ export function StudentNotifications() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
+      <div className="flex-1 !h-[100vh] bg-background dark:bg-[#111b21] flex flex-col">
 
         {/* Massive Integrated Header */}
         <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
@@ -285,7 +285,7 @@ export function StudentNotifications() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329]">
+              <div className="flex-1 flex flex-col items-center justify-center !h-full min-h-[400px] text-[#54656f] dark:text-[#aebac1] bg-[#f8f9fa] dark:bg-[#182329]">
                 <Mail size={48} className="mb-4 opacity-30" />
                 <p className="text-[15px] font-medium text-[#111] dark:text-white mb-1">Select an item to read</p>
                 <p className="text-[13px]">Click on any notification from the list to view its contents.</p>

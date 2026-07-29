@@ -147,8 +147,8 @@ export function CounselorNotifications() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
-        
+      <div className="flex-1 !h-[100vh] bg-background dark:bg-[#111b21] flex flex-col">
+
         {/* Massive Integrated Header */}
         <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
@@ -172,7 +172,7 @@ export function CounselorNotifications() {
             </div>
           </div>
         </div>
-        
+
         {/* Email Layout Container */}
         <div className="flex-1 max-w-[1440px] mx-auto w-full bg-white dark:bg-[#111b21] border-x border-[#e9edef] dark:border-[#2a3942] overflow-hidden flex flex-col md:flex-row min-h-0 shadow-sm">
 
@@ -276,33 +276,29 @@ export function CounselorNotifications() {
                 </div>
 
                 {/* Bottom Actions Bar */}
-                <div className="border-t border-[#e9edef] dark:border-[#2a3942] p-4 bg-[#fafafa] dark:bg-[#152026] flex items-center justify-between mt-auto flex-shrink-0">
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => toggleArchive(activeNotification.id)}
-                      className="text-[#54656f] dark:text-[#aebac1]"
-                    >
-                      {activeNotification.archived ? (
-                        <><Inbox size={16} className="mr-2" /> Move to Inbox</>
-                      ) : (
-                        <><Archive size={16} className="mr-2" /> Archive</>
-                      )}
-                    </Button>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => deleteNotification(activeNotification.id)}
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                <div className="border-t border-[#e9edef] dark:border-[#2a3942] p-4 bg-[#fafafa] dark:bg-[#152026] flex items-center justify-end gap-2 mt-auto flex-shrink-0">
+                  <button
+                    onClick={() => toggleArchive(activeNotification.id)}
+                    className="text-[#54656f] dark:text-[#aebac1] !w-[40px] !h-[40px] !min-w-[40px] !min-h-[40px] !p-0 rounded-md hover:bg-[#f0f2f5] dark:hover:bg-[#202c33] transition-colors flex items-center justify-center shrink-0"
+                    title={activeNotification.archived ? "Move to Inbox" : "Archive"}
                   >
-                    <Trash2 size={16} className="mr-2" /> Delete
-                  </Button>
+                    {activeNotification.archived ? (
+                      <Inbox size={18} />
+                    ) : (
+                      <Archive size={18} />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => deleteNotification(activeNotification.id)}
+                    className="text-[#54656f] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 !w-[40px] !h-[40px] !min-w-[40px] !min-h-[40px] !p-0 rounded-md transition-colors flex items-center justify-center shrink-0"
+                    title="Delete"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-[#54656f] dark:text-[#aebac1]">
+              <div className="flex-1 flex flex-col items-center justify-center !h-full min-h-[400px] text-[#54656f] dark:text-[#aebac1]">
                 <Mail size={48} className="mb-4 opacity-20" />
                 <p className="text-[15px]">Select a notification to read</p>
               </div>
