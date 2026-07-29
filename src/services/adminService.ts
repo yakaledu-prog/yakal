@@ -332,6 +332,28 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
       }
     }
 
+    if (details.sessions && details.sessions.length > 0) {
+      const userIds = new Set<string>();
+      details.sessions.forEach((s: any) => {
+        if (s.tutor_id) userIds.add(s.tutor_id);
+        if (s.counselor_id) userIds.add(s.counselor_id);
+        if (s.student_id) userIds.add(s.student_id);
+      });
+      userIds.delete(id);
+      if (userIds.size > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url, role").in("id", Array.from(userIds));
+        if (profiles) {
+          const profileMap = new Map(profiles.map(p => [p.id, p]));
+          details.sessions = details.sessions.map((s: any) => {
+            const otherId = s.tutor_id && s.tutor_id !== id ? s.tutor_id :
+                            s.counselor_id && s.counselor_id !== id ? s.counselor_id :
+                            s.student_id !== id ? s.student_id : null;
+            return { ...s, other_profile: otherId ? profileMap.get(otherId) : null };
+          });
+        }
+      }
+    }
+
     return { success: true, data: details };
   } catch (error: any) {
     return { success: false, error: error.message };

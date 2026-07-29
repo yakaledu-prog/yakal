@@ -8,16 +8,10 @@ import { getUsers, approveUser, rejectUser, deleteUser, type AdminUser } from "@
 import { dicebearUrl } from "@/utils/avatar";
 import { Search, Loader2, Check, X, Eye, Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { AdminUserViewModal } from "./AdminUserViewModal";
+import { AdminUserViewModalTabbed } from "./AdminUserViewModalTabbed";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const ROLES = ["all", "student", "tutor", "counselor", "parent"];
-
-const statusColor: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
-};
 
 export function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -121,13 +115,11 @@ export function AdminUsers() {
           ) : (
             <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
               {filtered.map((u) => (
-                <div key={u.id} className="flex items-center gap-3 p-4">
+                <div key={u.id} className={cn("flex items-center gap-3 p-4", u.status !== "active" && "opacity-50 grayscale")}>
                   <img src={u.avatar_url || dicebearUrl(u.full_name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
-                      <span>{u.full_name}</span>
-                      <span className="inline-block mx-1 font-thin text-muted">|</span>
-                      <span className="text-primary font-normal text-sm">{u.role}</span>
+                      {u.full_name}
                     </p>
                     <p className="text-[12px] text-muted-foreground truncate">{u.email || "-"}</p>
                   </div>
@@ -143,12 +135,11 @@ export function AdminUsers() {
                   )}
 
 
-                  {/* <span className="text-center text-[12px] font-medium capitalize text-muted-foreground w-20 hidden sm:block">{u.role}</span> */}
-                  <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize", statusColor[u.status] || "bg-muted text-muted-foreground")}>
-                    {u.status}
+                  <span className="text-[13px] font-medium capitalize text-[#1099A1] mr-4">
+                    {u.role}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => handleView(u)} className="p-1.5 rounded-md text-muted-foreground hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors" title="View details">
+                    <button onClick={() => handleView(u)} className="p-1.5 rounded-md text-muted-foreground hover:bg-[#1099A1]/10 hover:text-[#1099A1] transition-colors" title="View details">
                       <Eye size={16} />
                     </button>
                     <button onClick={() => setUserToDelete(u)} className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete user">
@@ -165,7 +156,7 @@ export function AdminUsers() {
         </div>
       </div>
 
-      <AdminUserViewModal
+      <AdminUserViewModalTabbed
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         user={selectedUser}
