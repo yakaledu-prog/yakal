@@ -47,6 +47,82 @@ export function CounselorHome() {
 
   const isLoading = dashLoading || sessionsLoading;
 
+  // --- MOCK DATA INJECTION ---
+  const mockDashboard = dashboard ? {
+    ...dashboard,
+    totalStudents: 1,
+    essaysInReview: 0,
+    upcomingDeadlines: [
+      {
+        id: "mock1",
+        school: "Massachusetts Institute of Technology",
+        student: "Amen Worku",
+        studentAvatar: null,
+        deadline: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
+        image: "https://upload.wikimedia.org/wikipedia/en/4/44/MIT_Seal.svg",
+        requirements: [
+          { label: "Application submitted", is_complete: true },
+          { label: "Supplemental essays", is_complete: false },
+          { label: "Transcript sent", is_complete: true }
+        ]
+      },
+      {
+        id: "mock2",
+        school: "Harvard University",
+        student: "Amen Worku",
+        studentAvatar: null,
+        deadline: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
+        image: "https://upload.wikimedia.org/wikipedia/en/2/29/Harvard_shield_wreath.svg",
+        requirements: [
+          { label: "Application submitted", is_complete: true },
+          { label: "Supplemental essays", is_complete: true }
+        ]
+      },
+      {
+        id: "mock3",
+        school: "Stanford University",
+        student: "Amen Worku",
+        studentAvatar: null,
+        deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
+        image: "https://upload.wikimedia.org/wikipedia/en/b/b7/Stanford_University_seal_2003.svg",
+        requirements: [
+          { label: "Application submitted", is_complete: false },
+          { label: "Transcript sent", is_complete: false }
+        ]
+      }
+    ]
+  } : null;
+
+  const activeDashboard = mockDashboard || dashboard;
+  
+  const mockSessions = [
+    {
+      id: "s1",
+      date: new Date().toISOString().split('T')[0],
+      start_time: "15:00:00",
+      duration_minutes: 60,
+      subject: "College Essay Review",
+      student_name: "Amen Worku",
+      student_avatar: null,
+      status: "scheduled",
+      meeting_link: "https://zoom.us/j/123456789"
+    },
+    {
+      id: "s2",
+      date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+      start_time: "10:00:00",
+      duration_minutes: 45,
+      subject: "Application Strategy",
+      student_name: "Amen Worku",
+      student_avatar: null,
+      status: "scheduled",
+      meeting_link: "https://zoom.us/j/987654321"
+    }
+  ];
+  
+  const activeUpcomingSessions = mockSessions.length > 0 ? mockSessions : upcomingSessions;
+  // ---------------------------
+
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
@@ -64,8 +140,8 @@ export function CounselorHome() {
               <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
-                  {upcomingSessions.length > 0
-                    ? `You have ${upcomingSessions.length} upcoming session${upcomingSessions.length === 1 ? '' : 's'}. Guide your students through their college journey.`
+                  {activeUpcomingSessions.length > 0
+                    ? `You have ${activeUpcomingSessions.length} upcoming session${activeUpcomingSessions.length === 1 ? '' : 's'}. Guide your students through their college journey.`
                     : "You have no sessions scheduled today. Enjoy the breather!"}
                 </p>
               </div>
@@ -80,10 +156,10 @@ export function CounselorHome() {
 
             {/* Bottom row: Integrated Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/20">
-              <IntegratedStat label="Total Students" value={dashboard?.totalStudents ?? "-"} />
-              <IntegratedStat label="Essays in Review" value={dashboard?.essaysInReview ?? "-"} />
-              <IntegratedStat label="Upcoming Deadlines" value={dashboard?.upcomingDeadlines.length ?? "-"} />
-              <IntegratedStat label="Upcoming Sessions" value={upcomingSessions.length} />
+              <IntegratedStat label="Total Students" value={activeDashboard?.totalStudents ?? "-"} />
+              <IntegratedStat label="Essays in Review" value={activeDashboard?.essaysInReview ?? "-"} />
+              <IntegratedStat label="Upcoming Deadlines" value={activeDashboard?.upcomingDeadlines.length ?? "-"} />
+              <IntegratedStat label="Upcoming Sessions" value={activeUpcomingSessions.length} />
             </div>
           </div>
         </div>
@@ -99,15 +175,17 @@ export function CounselorHome() {
               </h2>
             </div>
 
-            {isLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-            ) : (dashboard?.upcomingDeadlines.length ?? 0) === 0 ? (
-              <div className="text-center py-12 border border-dashed rounded-xl border-border bg-card/50">
+            {dashLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="animate-spin text-muted-foreground" size={24} />
+              </div>
+            ) : !activeDashboard || activeDashboard.upcomingDeadlines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 bg-card border border-dashed rounded-xl p-6 text-center">
                 <p className="text-[14px] text-muted-foreground">No deadlines on file.</p>
               </div>
             ) : (
               <div className="space-y-0">
-                {dashboard!.upcomingDeadlines.map((d, i) => {
+                {activeDashboard!.upcomingDeadlines.map((d, i) => {
                   const daysLeft = getDaysLeft(d.deadline);
                   const isUrgent = daysLeft <= 7;
                   
@@ -170,14 +248,16 @@ export function CounselorHome() {
             </div>
 
             {sessionsLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-            ) : upcomingSessions.length === 0 ? (
-              <div className="text-center py-12 border border-dashed rounded-xl border-border bg-card/50">
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="animate-spin text-muted-foreground" size={24} />
+              </div>
+            ) : activeUpcomingSessions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 bg-card border border-dashed rounded-xl p-6 text-center">
                 <p className="text-[14px] text-muted-foreground">No upcoming sessions scheduled.</p>
               </div>
             ) : (
               <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                {upcomingSessions.map((session, index) => (
+                {activeUpcomingSessions.map((session, index) => (
                   <div key={session.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                     {/* Timeline Marker */}
                     <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 text-slate-500 group-[.is-active]:bg-[#1099A1] group-[.is-active]:text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10">
