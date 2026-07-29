@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
-import { Search, Users, Loader2, Mail, GraduationCap } from "lucide-react";
+import { Search, Users, Loader2, Mail, GraduationCap, BookOpen, FileText, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCounselorStudents, getStudentProfile } from "@/services/counselorService";
+import { getCollegeProfile } from "@/services/collegeService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -181,12 +182,7 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
 
       <div className="w-full flex-1">
         {activeTab === "overview" && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 mt-8">
-            <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border border-border shadow-sm">
-              <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Profile Notes</h3>
-              <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{profile.bio || "No bio provided."}</p>
-            </div>
-          </div>
+          <OverviewTab profile={profile} studentId={studentId} />
         )}
         
         {activeTab === "requirements" && (
@@ -219,6 +215,88 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
           </div>
         )}
         
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab({ profile, studentId }: { profile: any, studentId: string }) {
+  const { data: cp, isLoading } = useQuery({
+    queryKey: ["college-profile", studentId],
+    queryFn: () => getCollegeProfile(studentId),
+    enabled: !!studentId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="py-20 flex justify-center mt-8">
+        <Loader2 className="animate-spin text-[#1099A1] w-8 h-8" />
+      </div>
+    );
+  }
+
+  const schools = cp?.schools || [];
+  const essays = cp?.essays || [];
+  const recs = cp?.recommendations || [];
+
+  const reachCount = schools.filter(s => s.status === 'Reach').length;
+  const targetCount = schools.filter(s => s.status === 'Target').length;
+  const safetyCount = schools.filter(s => s.status === 'Safety').length;
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 mt-8 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Colleges Stat */}
+        <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border shadow-sm flex flex-col justify-between hover:border-[#1099A1]/30 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">College List</h3>
+             <BookOpen className="text-[#1099A1]" size={20} />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-foreground">{schools.length} <span className="text-lg font-medium text-muted-foreground">tracked</span></div>
+            <div className="flex gap-4 mt-4 text-[13px] font-medium text-muted-foreground">
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>{reachCount} Reach</span>
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#1099A1]"></div>{targetCount} Target</span>
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-400"></div>{safetyCount} Safety</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Essays Stat */}
+        <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border shadow-sm flex flex-col justify-between hover:border-[#1099A1]/30 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Essays</h3>
+             <FileText className="text-[#1099A1]" size={20} />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-foreground">{essays.length} <span className="text-lg font-medium text-muted-foreground">total</span></div>
+            <div className="flex gap-4 mt-4 text-[13px] font-medium text-muted-foreground">
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#1099A1]"></div>{essays.filter(e => e.status === 'Completed').length} Done</span>
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>{essays.filter(e => e.status === 'In Progress').length} Active</span>
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700"></div>{essays.filter(e => e.status === 'Not Started').length} Pending</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recommendations Stat */}
+        <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border shadow-sm flex flex-col justify-between hover:border-[#1099A1]/30 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Recommendations</h3>
+             <CheckCircle className="text-[#1099A1]" size={20} />
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-foreground">{recs.length} <span className="text-lg font-medium text-muted-foreground">requests</span></div>
+            <div className="flex gap-4 mt-4 text-[13px] font-medium text-muted-foreground">
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#1099A1]"></div>{recs.filter(r => r.status === 'Submitted').length} Submitted</span>
+               <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>{recs.filter(r => r.status !== 'Submitted').length} Pending</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border border-border shadow-sm">
+        <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Profile Notes & Bio</h3>
+        <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{profile.bio || "No bio or notes provided."}</p>
       </div>
     </div>
   );
