@@ -16,7 +16,7 @@ export interface CounselorDashboard {
   students: CounselorStudent[];
   totalStudents: number;
   essaysInReview: number;
-  upcomingDeadlines: { school: string; student: string; deadline: string }[];
+  upcomingDeadlines: { id: string; school: string; student: string; studentAvatar: string | null; deadline: string; image: string | null; requirements: { label: string; is_complete: boolean }[] }[];
 }
 
 // Students assigned to this counselor (via college_guide_applications.counselor_id).
@@ -64,20 +64,51 @@ export async function getCounselorDashboard(counselorId: string): Promise<Counse
       .eq("status", "in_review"),
     supabase
       .from("college_list_items")
-      .select("school_name, deadline, student_id")
+      .select("id, school_name, deadline, student_id, unitid")
       .in("student_id", studentIds)
       .not("deadline", "is", null)
       .order("deadline", { ascending: true })
       .limit(8),
   ]);
 
+  const schoolIds = schools?.map((s) => s.id) || [];
+  const unitIds = schools?.map((s) => s.unitid).filter(Boolean) || [];
+
+  const [{ data: reqs }, { data: catalogs }] = await Promise.all([
+    schoolIds.length > 0 
+      ? supabase.from("application_requirements").select("college_list_item_id, label, is_complete").in("college_list_item_id", schoolIds)
+      : Promise.resolve({ data: [] }),
+    unitIds.length > 0
+      ? supabase.from("college_catalog").select("unitid, image").in("unitid", unitIds)
+      : Promise.resolve({ data: [] })
+  ]);
+
+  const reqBySchool = new Map<string, { label: string; is_complete: boolean }[]>();
+  reqs?.forEach(r => {
+    if (!reqBySchool.has(r.college_list_item_id)) {
+      reqBySchool.set(r.college_list_item_id, []);
+    }
+    reqBySchool.get(r.college_list_item_id)!.push({ label: r.label, is_complete: r.is_complete });
+  });
+
+  const imageByUnitId = new Map<number, string | null>();
+  catalogs?.forEach(c => {
+    imageByUnitId.set(c.unitid, c.image);
+  });
+
   const nameById = new Map(students.map((s) => [s.id, s.full_name]));
+  const avatarById = new Map(students.map((s) => [s.id, s.avatar_url]));
+  
   const upcomingDeadlines = (schools || [])
     .filter((s) => s.deadline)
     .map((s) => ({
+      id: s.id,
       school: s.school_name,
       student: nameById.get(s.student_id) || "Student",
+      studentAvatar: avatarById.get(s.student_id) || null,
       deadline: s.deadline as string,
+      image: s.unitid ? imageByUnitId.get(s.unitid) || null : null,
+      requirements: reqBySchool.get(s.id) || [],
     }));
 
   return {
