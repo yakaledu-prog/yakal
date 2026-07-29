@@ -50,9 +50,16 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "recommendations", label: "Recommendations" },
 ];
 
-export function StudentApplicationTracker() {
+export function StudentApplicationTracker({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
+  const targetId = studentId || user?.id;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["college-profile", targetId],
+    queryFn: () => getCollegeProfile(targetId!),
+    enabled: !!targetId,
+  });
   const [tab, setTab] = useState<Tab>("requirements");
   const [saving, setSaving] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState<string | null>(null);
@@ -62,12 +69,6 @@ export function StudentApplicationTracker() {
   const [reqView, setReqView] = useState<"cards" | "matrix">("cards");
   const [pendingEssayDelete, setPendingEssayDelete] = useState<Essay | null>(null);
   const [reqQuery, setReqQuery] = useState("");
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["college-profile", user?.id],
-    queryFn: () => getCollegeProfile(user!.id),
-    enabled: !!user?.id,
-  });
 
   // Only used to decide whether the transcript requirement is met, so a failure
   // here should degrade the matrix rather than break the page.

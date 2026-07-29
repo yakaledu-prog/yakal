@@ -13,14 +13,16 @@ const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enro
 
 const field = "bg-white/10 border-transparent text-white placeholder-white/50 focus:border-white focus:bg-white/20 transition-all rounded-sm px-3 py-2 text-[13px] outline-none w-full";
 
-export function StudentRoadmap() {
+export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
+  
+  const targetId = studentId || user?.id;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["college-profile", user?.id],
-    queryFn: () => getCollegeProfile(user!.id),
-    enabled: !!user?.id,
+    queryKey: ["college-profile", targetId],
+    queryFn: () => getCollegeProfile(targetId!),
+    enabled: !!targetId,
   });
 
   const app = data?.application;

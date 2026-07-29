@@ -41,14 +41,16 @@ const SORTS: DropdownOption<SortKey>[] = [
   { value: "name", label: "Name, A to Z" },
 ];
 
-export function StudentCollegeList() {
+export function StudentCollegeList({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
+  const targetId = studentId || user?.id;
+
   const { data, isLoading } = useQuery({
-    queryKey: ["college-profile", user?.id],
-    queryFn: () => getCollegeProfile(user!.id),
-    enabled: !!user?.id,
+    queryKey: ["college-profile", targetId],
+    queryFn: () => getCollegeProfile(targetId!),
+    enabled: !!targetId,
   });
 
   const { data: catalog } = useQuery({
@@ -239,14 +241,14 @@ export function StudentCollegeList() {
                 Export CSV
               </button>
 
-              <button
-                type="button"
-                onClick={() => setShowAdd(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-4 text-[14px] font-semibold text-[#1099A1] transition-colors hover:bg-white/90"
-              >
-                <Plus size={16} />
-                Add a college
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
+                >
+                  <Plus size={16} /> Add School
+                </button>
+              )}
             </div>
           </div>
         </header>

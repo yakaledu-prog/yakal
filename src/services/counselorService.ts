@@ -97,3 +97,62 @@ export async function getStudentProfile(studentId: string) {
     .single();
   return data;
 }
+
+export interface SessionRow {
+  id: string;
+  tutor_id: string;
+  counselor_id?: string;
+  student_id: string;
+  subject: string;
+  date: string;
+  start_time: string;
+  duration_minutes: number;
+  status: string;
+  meeting_link?: string;
+  zoom_meeting_id?: string;
+  zoom_link?: string;
+  notes?: string;
+  student_name?: string;
+  student_avatar?: string;
+  course_id?: string;
+}
+
+export async function getCounselorSessionsFull(counselorId: string): Promise<SessionRow[]> {
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("counselor_id", counselorId)
+    .order("date", { ascending: false })
+    .order("start_time", { ascending: false });
+
+  if (error || !sessions) return [];
+  if (sessions.length === 0) return sessions as SessionRow[];
+
+  const studentIds = [...new Set(sessions.map((s: any) => s.student_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", studentIds);
+
+  return sessions.map((s: any) => {
+    const p = profiles?.find((x) => x.id === s.student_id);
+    return { ...s, student_name: p?.full_name || "Student", student_avatar: p?.avatar_url };
+  }) as SessionRow[];
+}
+
+export async function completeSession(id: string, notes?: string) {
+  const patch: Record<string, unknown> = { status: "completed" };
+  if (notes !== undefined) patch.notes = notes;
+  const { error } = await supabase.from("sessions").update(patch).eq("id", id);
+  return !error;
+}
+
+export async function saveSessionNotes(id: string, notes: string) {
+  const { error } = await supabase.from("sessions").update({ notes }).eq("id", id);
+  return !error;
+}
+
+export async function cancelSession(id: string) {
+  const { error } = await supabase.from("sessions").update({ status: "cancelled" }).eq("id", id);
+  return !error;
+}

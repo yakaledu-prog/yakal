@@ -1,61 +1,216 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/utils/cn";
+import { Search, Users, Loader2, Mail, GraduationCap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { PageWrapper } from "@/components/ui/PageWrapper";
-import { getCounselorStudents } from "@/services/counselorService";
-import { Loader2, GraduationCap, ChevronRight } from "lucide-react";
+import { getCounselorStudents, getStudentProfile } from "@/services/counselorService";
+import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
 
+// Components for tabs
+import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
+import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
+import { StudentRoadmap } from "@/pages/student/StudentRoadmap";
+
 export function CounselorStudents() {
-  const { user } = useAuth();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { data: students = [], isLoading } = useQuery({
-    queryKey: ["counselor-students", user?.id],
+  const { user } = useAuth();
+  
+  const [query, setQuery] = useState("");
+
+  const { data: students = [], isLoading: loading } = useQuery({
+    queryKey: ['counselor-students', user?.id],
     queryFn: () => getCounselorStudents(user!.id),
     enabled: !!user?.id,
   });
 
+  const activeId = id ?? students[0]?.id;
+
+  const { data: profile, isLoading: detailLoading } = useQuery({
+    queryKey: ['counselor-student-detail', user?.id, activeId],
+    queryFn: () => getStudentProfile(activeId),
+    enabled: !!user?.id && !!activeId,
+  });
+
+  useSetBreadcrumb(activeId, profile?.full_name);
+
+  useEffect(() => {
+    if (!id && students.length > 0) navigate(`/counselor/students/${students[0].id}`, { replace: true });
+  }, [id, students, navigate]);
+
+  const filtered = useMemo(
+    () => students.filter((s) => s.full_name.toLowerCase().includes(query.toLowerCase())),
+    [students, query]
+  );
+
   return (
-    <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
-        <div className="bg-[#1099A1] text-white p-6 md:p-10">
-          <div className="max-w-[1440px] mx-auto">
-            <h1 className="text-3xl font-bold tracking-tight">Students</h1>
-            <p className="text-white/80 text-[15px] mt-1">Advisees and their college applications</p>
+    <div className="students-page flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
+      {/* Left pane */}
+      <aside className="students-list w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+        
+        <div className="students-list__search px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+            <input
+              autoFocus
+              type="text"
+              placeholder="Search advisees..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="bg-transparent border-none outline-none w-full text-[15px] placeholder:text-[#697780] text-[#111] dark:text-white"
+            />
           </div>
         </div>
 
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-          {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-          ) : students.length === 0 ? (
-            <div className="text-center py-16 text-[#8696a0]">
-              <GraduationCap size={40} className="mx-auto mb-3 opacity-60" />
-              <p className="text-[14px]">No students assigned to you yet.</p>
+        <div className="students-list__content flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
+          {loading ? (
+            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center">
+              <Users className="mx-auto mb-3 opacity-30" size={32} />
+              <p className="text-[14px] text-muted-foreground font-medium">No students found.</p>
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {students.map((s) => (
+            <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+              {filtered.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => navigate(`/counselor/students/${s.id}`)}
-                  className="flex items-center gap-3 p-5 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl hover:shadow-sm transition text-left"
+                  className={cn(
+                    "w-full text-left p-4 flex items-start gap-3 hover:bg-[#f5f6f6] dark:hover:bg-[#202c33] transition-colors",
+                    activeId === s.id && "bg-[#f0f2f5] dark:bg-[#2a3942]"
+                  )}
                 >
-                  <img src={s.avatar_url || dicebearUrl(s.full_name)} alt={s.full_name} className="w-12 h-12 rounded-full object-cover" />
+                  <img
+                    src={s.avatar_url || dicebearUrl(s.full_name)}
+                    alt={s.full_name}
+                    className="w-10 h-10 rounded-full object-cover shrink-0 border border-black/5"
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{s.full_name}</p>
-                    <p className="text-[12px] text-[#667781] dark:text-[#8696a0] truncate">
+                    <div className="flex justify-between items-baseline mb-0.5">
+                      <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate pr-2">{s.full_name}</p>
+                    </div>
+                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
                       {s.program_interest || "Undecided"}
                       {s.grade_level ? ` · ${s.grade_level}` : ""}
                     </p>
                   </div>
-                  <ChevronRight size={18} className="text-[#8696a0] shrink-0" />
                 </button>
               ))}
             </div>
           )}
         </div>
+      </aside>
+
+      {/* Right pane */}
+      <main className="students-detail flex-1 flex flex-col min-w-0 bg-[#efeae2] dark:bg-[#0b141a]">
+        {activeId ? (
+          detailLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="animate-spin text-[#1099A1] w-8 h-8" />
+            </div>
+          ) : profile ? (
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 md:pt-8 custom-scrollbar">
+              <StudentDetailView profile={profile} studentId={activeId} />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
+              Student not found.
+            </div>
+          )
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#8696a0]">
+            <Users size={48} className="mb-4 opacity-50" />
+            <h2 className="text-xl font-semibold mb-2">Advisees</h2>
+            <p className="max-w-[300px]">Select a student from the list to view their progress.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "pb-3 px-1 text-[13px] font-bold uppercase tracking-wider transition-colors border-b-4 whitespace-nowrap",
+        active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white"
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function StudentDetailView({ profile, studentId }: { profile: any, studentId: string }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "tracker" | "colleges" | "roadmap">("overview");
+
+  return (
+    <div className="flex flex-col h-full pb-10">
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
+        <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+          <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+          <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{profile.full_name}</h1>
+              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
+                {profile.email && <span className="flex items-center gap-1.5 truncate"><Mail size={13} /> {profile.email}</span>}
+                {profile.grade_level && <span className="flex items-center gap-1.5"><GraduationCap size={13} /> {profile.grade_level}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
+          <TabButton active={activeTab === 'tracker'} onClick={() => setActiveTab('tracker')} label="Tracker" />
+          <TabButton active={activeTab === 'colleges'} onClick={() => setActiveTab('colleges')} label="College List" />
+          <TabButton active={activeTab === 'roadmap'} onClick={() => setActiveTab('roadmap')} label="Roadmap" />
+        </div>
       </div>
-    </PageWrapper>
+
+      <div className="w-full flex-1">
+        {activeTab === "overview" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border border-border shadow-sm">
+              <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Profile Notes</h3>
+              <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{profile.bio || "No bio provided."}</p>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === "tracker" && (
+          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
+            <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
+              <StudentApplicationTracker studentId={studentId} readOnly />
+            </div>
+          </div>
+        )}
+        
+        {activeTab === "colleges" && (
+          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
+             <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
+               <StudentCollegeList studentId={studentId} readOnly />
+             </div>
+          </div>
+        )}
+        
+        {activeTab === "roadmap" && (
+          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
+             <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
+               <StudentRoadmap studentId={studentId} readOnly />
+             </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -58,10 +58,13 @@ import { TutorMeeting } from "../pages/tutor/TutorMeeting";
 import { CounselorLayout } from "../pages/counselor/CounselorLayout";
 import { CounselorHome } from "../pages/counselor/CounselorHome";
 import { CounselorStudents } from "../pages/counselor/CounselorStudents";
-import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
+import { CounselorProfile } from "../pages/counselor/CounselorProfile";
+// import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
 import { CounselorMessages } from "../pages/counselor/CounselorMessages";
 import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
-import { CounselorProfile } from "../pages/counselor/CounselorProfile";
+import { CounselorCalendar } from "@/pages/counselor/CounselorCalendar";
+import { CounselorSessions } from "@/pages/counselor/CounselorSessions";
+import { CounselorSessionDetail } from "@/pages/counselor/CounselorSessionDetail";
 import { AdminLayout } from "../pages/admin/AdminLayout";
 import { AdminHome } from "../pages/admin/AdminHome";
 import { AdminUsers } from "../pages/admin/AdminUsers";
@@ -273,10 +276,14 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <CounselorHome /> },
           { path: "students", element: <CounselorStudents /> },
-          { path: "students/:id", element: <CounselorStudentDetail /> },
+          { path: "students/:id", element: <CounselorStudents /> },
           { path: "messages", element: <CounselorMessages /> },
           { path: "notifications", element: <CounselorNotifications /> },
+          { path: "calendar", element: <CounselorCalendar /> },
+          { path: "sessions", element: <CounselorSessions /> },
           { path: "profile", element: <CounselorProfile /> },
+          { path: "meeting/:id", element: <CounselorSessionDetail /> },
+          { path: "session/:id", element: <CounselorSessionDetail /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "*", element: <NotFoundPage /> },
         ]
