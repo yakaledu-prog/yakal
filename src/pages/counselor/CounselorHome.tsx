@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,7 @@ import { collegeImageUrl } from "@/services/collegeCatalogService";
 
 function getDaysLeft(deadline: string) {
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
   const d = new Date(deadline + "T00:00:00");
   const diffTime = d.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -23,6 +24,7 @@ function fmtDate(d: string) {
 export function CounselorHome() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [expandedReqs, setExpandedReqs] = useState<Record<string, boolean>>({});
 
   const { data: dashboard, isLoading: dashLoading } = useQuery({
     queryKey: ["counselor-dashboard", user?.id],
@@ -59,11 +61,16 @@ export function CounselorHome() {
         student: "Amen Worku",
         studentAvatar: null,
         deadline: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
-        image: "https://upload.wikimedia.org/wikipedia/en/4/44/MIT_Seal.svg",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/MIT%20Dome%20night1%20Edit.jpg?width=640",
         requirements: [
           { label: "Application submitted", is_complete: true },
           { label: "Supplemental essays", is_complete: false },
-          { label: "Transcript sent", is_complete: true }
+          { label: "Transcript sent", is_complete: true },
+          { label: "Recommendations requested", is_complete: true },
+          { label: "Recommendations submitted", is_complete: true },
+          { label: "Test scores", is_complete: true },
+          { label: "FAFSA", is_complete: true },
+          { label: "CSS Profile", is_complete: true }
         ]
       },
       {
@@ -72,10 +79,16 @@ export function CounselorHome() {
         student: "Amen Worku",
         studentAvatar: null,
         deadline: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
-        image: "https://upload.wikimedia.org/wikipedia/en/2/29/Harvard_shield_wreath.svg",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sanders%20theater%202009y.JPG?width=640",
         requirements: [
           { label: "Application submitted", is_complete: true },
-          { label: "Supplemental essays", is_complete: true }
+          { label: "Supplemental essays", is_complete: false },
+          { label: "Transcript sent", is_complete: true },
+          { label: "Recommendations requested", is_complete: true },
+          { label: "Recommendations submitted", is_complete: true },
+          { label: "Test scores", is_complete: true },
+          { label: "FAFSA", is_complete: true },
+          { label: "CSS Profile", is_complete: true }
         ]
       },
       {
@@ -84,17 +97,23 @@ export function CounselorHome() {
         student: "Amen Worku",
         studentAvatar: null,
         deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
-        image: "https://upload.wikimedia.org/wikipedia/en/b/b7/Stanford_University_seal_2003.svg",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sanders%20theater%202009y.JPG?width=640",
         requirements: [
-          { label: "Application submitted", is_complete: false },
-          { label: "Transcript sent", is_complete: false }
+          { label: "Application submitted", is_complete: true },
+          { label: "Supplemental essays", is_complete: false },
+          { label: "Transcript sent", is_complete: true },
+          { label: "Recommendations requested", is_complete: true },
+          { label: "Recommendations submitted", is_complete: true },
+          { label: "Test scores", is_complete: true },
+          { label: "FAFSA", is_complete: true },
+          { label: "CSS Profile", is_complete: true }
         ]
       }
     ]
   } : null;
 
   const activeDashboard = mockDashboard || dashboard;
-  
+
   const mockSessions = [
     {
       id: "s1",
@@ -105,7 +124,8 @@ export function CounselorHome() {
       student_name: "Amen Worku",
       student_avatar: null,
       status: "scheduled",
-      meeting_link: "https://zoom.us/j/123456789"
+      meeting_link: "https://zoom.us/j/123456789",
+      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800"
     },
     {
       id: "s2",
@@ -116,10 +136,11 @@ export function CounselorHome() {
       student_name: "Amen Worku",
       student_avatar: null,
       status: "scheduled",
-      meeting_link: "https://zoom.us/j/987654321"
+      meeting_link: "https://zoom.us/j/987654321",
+      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=800"
     }
   ];
-  
+
   const activeUpcomingSessions = mockSessions.length > 0 ? mockSessions : upcomingSessions;
   // ---------------------------
 
@@ -170,7 +191,7 @@ export function CounselorHome() {
           {/* Left: Upcoming Deadlines */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+              <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
                 <CalendarClock size={20} className="text-[#1099A1]" /> Upcoming Deadlines
               </h2>
             </div>
@@ -188,44 +209,60 @@ export function CounselorHome() {
                 {activeDashboard!.upcomingDeadlines.map((d, i) => {
                   const daysLeft = getDaysLeft(d.deadline);
                   const isUrgent = daysLeft <= 7;
-                  
+
                   return (
-                    <div key={i} className="flex flex-col gap-4 py-5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4 min-w-0 pr-4">
-                          <div className="w-16 h-16 bg-slate-100 flex items-center justify-center shrink-0 border overflow-hidden">
-                            <img src={d.image ? (collegeImageUrl(d.image, 128) || "") : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.school)}&background=f1f5f9&color=64748b&size=128&rounded=false`} alt={d.school} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="min-w-0 mt-0.5">
-                            <p className="text-[16px] font-semibold text-foreground truncate leading-tight">{d.school}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <img src={d.studentAvatar || dicebearUrl(d.student)} alt={d.student} className="w-5 h-5 rounded-full object-cover shrink-0" />
-                              <p className="text-[13px] font-medium text-muted-foreground truncate">{d.student}</p>
+                    <div key={i} className="flex flex-col py-6 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
+                      <div className="flex items-start gap-5">
+                        {/* Bigger Image on the left */}
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 bg-slate-100/0 flex items-center justify-center shrink-0 border border-border/0 overflow-hidden rounded-xl" style={{ boxShadow: "inset 10px 10px 8px 8px rgba(0, 0, 0, 0.85);" }}>
+                          <img src={d.image ? d.image : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.school)}&background=f1f5f9&color=64748b&size=128&rounded=false`} alt={d.school} className="w-full h-full object-cover" />
+                        </div>
+
+                        {/* Right side content */}
+                        <div className="flex-1 min-w-0 flex flex-col">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 pr-4">
+                              <p className="text-[16px] sm:text-[17px] font-semibold text-foreground truncate leading-tight">{d.school}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <img src={d.studentAvatar || dicebearUrl(d.student)} alt={d.student} className="w-5 h-5 rounded-full object-cover shrink-0" />
+                                <p className="text-[13px] font-medium text-muted-foreground truncate">{d.student}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end shrink-0">
+                              <span className={cn("text-[14px] font-bold", isUrgent ? "text-red-500" : "text-[#1099A1]")}>
+                                {fmtDate(d.deadline)}
+                              </span>
+                              {isUrgent && (
+                                <span className="text-[11px] font-semibold mt-0.5 uppercase tracking-wider text-red-500">
+                                  {daysLeft === 0 ? "Today" : daysLeft < 0 ? "Passed" : `${daysLeft} days`}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex flex-col items-end shrink-0">
-                          <span className={cn("text-[14px] font-bold", isUrgent ? "text-red-500" : "text-[#1099A1]")}>
-                            {fmtDate(d.deadline)}
-                          </span>
-                          {isUrgent && (
-                            <span className="text-[11px] font-semibold mt-0.5 uppercase tracking-wider text-red-500">
-                              {daysLeft === 0 ? "Today" : daysLeft < 0 ? "Passed" : `${daysLeft} days`}
-                            </span>
+
+                          {/* Requirements directly below the text, beside the image */}
+                          {d.requirements && d.requirements.length > 0 && (
+                            <div className="mt-4">
+                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
+                                {(expandedReqs[d.id] ? d.requirements : d.requirements.slice(0, 2)).map((r, ri) => (
+                                  <span key={ri} className={cn("inline-flex items-center text-[11px] px-2.5 py-1.5 rounded-md font-medium border truncate", r.is_complete ? "bg-[#1099A1]/10 text-[#1099A1] border-[#1099A1]/20" : "bg-transparent text-muted-foreground border-border")}>
+                                    {r.is_complete && <Check size={12} className="mr-1.5 shrink-0" />}
+                                    <span className="truncate">{r.label}</span>
+                                  </span>
+                                ))}
+                              </div>
+                              {d.requirements.length > 2 && (
+                                <button
+                                  onClick={() => setExpandedReqs(prev => ({ ...prev, [d.id]: !prev[d.id] }))}
+                                  className="mt-2 text-[12px] font-medium text-[#1099A1] hover:underline"
+                                >
+                                  {expandedReqs[d.id] ? "View less" : `View all ${d.requirements.length} requirements`}
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
-                      
-                      {d.requirements && d.requirements.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 ml-[5rem]">
-                          {d.requirements.map((r, ri) => (
-                            <span key={ri} className={cn("inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full font-medium border", r.is_complete ? "bg-[#1099A1] text-white border-[#1099A1]" : "bg-transparent text-muted-foreground border-border")}>
-                              {r.is_complete && <Check size={12} className="mr-1 -ml-0.5" />}
-                              {r.label}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -236,7 +273,7 @@ export function CounselorHome() {
           {/* Right: What's Next (Sessions) */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+              <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
                 <CalendarDays size={20} className="text-[#1099A1]" /> What's next
               </h2>
               <button
@@ -256,46 +293,38 @@ export function CounselorHome() {
                 <p className="text-[14px] text-muted-foreground">No upcoming sessions scheduled.</p>
               </div>
             ) : (
-              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                {activeUpcomingSessions.map((session, index) => (
-                  <div key={session.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    {/* Timeline Marker */}
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 text-slate-500 group-[.is-active]:bg-[#1099A1] group-[.is-active]:text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10">
-                      <Video size={16} />
+              <div className="flex flex-col">
+                {activeUpcomingSessions.map((session: any, index) => (
+                  <div key={session.id} className="relative flex flex-col py-5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[12px] font-semibold text-[#1099A1] uppercase tracking-wider flex items-center gap-1.5">
+                        <Video size={14} /> {fmtDate(session.date)} • {session.start_time.slice(0, 5)}
+                      </span>
                     </div>
-
-                    {/* Card */}
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border bg-card shadow-sm group-[.is-active]:border-[#1099A1]/30 hover:border-[#1099A1]/50 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[12px] font-semibold text-[#1099A1] uppercase tracking-wider">
-                          {fmtDate(session.date)} • {session.start_time.slice(0, 5)}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-[15px] mb-1 truncate">{session.subject}</h3>
-                      <div className="flex items-center gap-2 mt-3">
-                        {session.student_avatar ? (
-                          <img src={session.student_avatar} alt={session.student_name} className="w-6 h-6 rounded-full" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-[#1099A1]/10 flex items-center justify-center text-[10px] font-bold text-[#1099A1]">
-                            {session.student_name?.charAt(0) || "S"}
-                          </div>
-                        )}
-                        <span className="text-[13px] text-muted-foreground truncate">{session.student_name}</span>
-                      </div>
-
-                      {session.meeting_link && (
-                        <div className="mt-4">
-                          <a
-                            href={session.meeting_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 bg-[#1099A1] text-white text-[13px] font-medium rounded-lg hover:bg-[#0d828a] transition-colors"
-                          >
-                            Join Session
-                          </a>
+                    <h3 className="font-bold text-[15px] mb-1 truncate">{session.subject}</h3>
+                    <div className="flex items-center gap-2 mt-3">
+                      {session.student_avatar ? (
+                        <img src={session.student_avatar} alt={session.student_name} className="w-6 h-6 rounded-full" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-[#1099A1]/10 flex items-center justify-center text-[10px] font-bold text-[#1099A1]">
+                          {session.student_name?.charAt(0) || "S"}
                         </div>
                       )}
+                      <span className="text-[13px] text-muted-foreground truncate">{session.student_name}</span>
                     </div>
+
+                    {index === 0 && session.meeting_link && (
+                      <div className="mt-4">
+                        <a
+                          href={session.meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 bg-[#1099A1] text-white text-[13px] font-medium rounded-lg hover:bg-[#0d828a] transition-colors"
+                        >
+                          Join Session
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
