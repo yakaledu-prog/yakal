@@ -50,7 +50,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "recommendations", label: "Recommendations" },
 ];
 
-export function StudentApplicationTracker({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
+export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { studentId?: string, readOnly?: boolean, forcedTab?: Tab }) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const targetId = studentId || user?.id;
@@ -60,7 +60,9 @@ export function StudentApplicationTracker({ studentId, readOnly }: { studentId?:
     queryFn: () => getCollegeProfile(targetId!),
     enabled: !!targetId,
   });
-  const [tab, setTab] = useState<Tab>("requirements");
+  const [internalTab, setInternalTab] = useState<Tab>("requirements");
+  const tab = forcedTab || internalTab;
+  const setTab = setInternalTab;
   const [saving, setSaving] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState<string | null>(null);
   // Cards answer "what does this college still need", the matrix answers
@@ -371,10 +373,12 @@ export function StudentApplicationTracker({ studentId, readOnly }: { studentId?:
     refresh();
   };
 
-  return (
-    <PageWrapper className="!p-0">
+  const content = (
+    <>
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+        {!forcedTab && (
+          !readOnly ? (
+            <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -419,8 +423,30 @@ export function StudentApplicationTracker({ studentId, readOnly }: { studentId?:
             </nav>
           </div>
         </header>
+        ) : (
+          <div className="px-6 border-b dark:border-[#2a3942] bg-card">
+            <nav className="flex gap-4 overflow-x-auto">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "whitespace-nowrap border-b-[3px] py-3 text-[14px] transition-colors",
+                    tab === t.id
+                      ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+          )
+        )}
 
-        <div className="mx-auto max-w-[1150px] space-y-6 p-6 md:p-10">
+        <div className={cn("mx-auto space-y-6", readOnly ? "px-6 py-6" : "p-6 md:p-10 max-w-[1150px]")}>
           {/* Tasks are cross-cutting, so they get a strip here and a home on the
               roadmap rather than a tab nobody would think to open. */}
           {openTasks.length > 0 && (
@@ -607,6 +633,14 @@ export function StudentApplicationTracker({ studentId, readOnly }: { studentId?:
         }}
         onCancel={() => setPendingEssayDelete(null)}
       />
+    </>
+  );
+
+  if (readOnly) return content;
+
+  return (
+    <PageWrapper className="!p-0">
+      {content}
     </PageWrapper>
   );
 }

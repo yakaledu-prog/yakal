@@ -4,6 +4,7 @@ import { Columns3, Download, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/utils/cn";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
 import { ListBalance } from "@/components/college/ListBalance";
@@ -170,9 +171,10 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
 
   // No early return on a missing user: ProtectedRoute already guarantees one
   // here, and bailing out only blanked the page while auth was resolving.
-  return (
-    <PageWrapper className="!p-0">
+  const content = (
+    <>
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
+      {!readOnly ? (
         <header className="relative overflow-hidden bg-[#1099A1] px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -241,19 +243,46 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
                 Export CSV
               </button>
 
-              {!readOnly && (
-                <button
-                  onClick={() => setShowAdd(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
-                >
-                  <Plus size={16} /> Add School
-                </button>
-              )}
+              <button
+                onClick={() => setShowAdd(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
+              >
+                <Plus size={16} /> Add School
+              </button>
             </div>
           </div>
         </header>
+      ) : (
+        <div className="px-6 py-4 flex items-center justify-between border-b dark:border-[#2a3942] bg-card">
+          <Dropdown
+            value={sort}
+            onChange={setSort}
+            options={SORTS}
+            ariaLabel="Sort colleges"
+            className="w-[180px]"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setComparing(true)}
+              disabled={schools.length < 2}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition-colors hover:bg-muted disabled:opacity-40"
+            >
+              <Columns3 size={15} /> Compare
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCsv(`yakal-college-list-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(schools, matchCollege))}
+              disabled={schools.length === 0}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition-colors hover:bg-muted disabled:opacity-40"
+            >
+              <Download size={15} /> Export CSV
+            </button>
+          </div>
+        </div>
+      )}
 
-        <div className="mx-auto max-w-[1100px] space-y-6 p-6 md:p-10">
+      <div className={cn("mx-auto space-y-6", readOnly ? "px-6 py-6" : "p-6 md:p-10 max-w-[1100px]")}>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-[#1099A1]" />
@@ -324,6 +353,14 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
         alreadyAdded={addedNames}
         saving={saving}
       />
+    </>
+  );
+
+  if (readOnly) return content;
+
+  return (
+    <PageWrapper className="!p-0">
+      {content}
     </PageWrapper>
   );
 }

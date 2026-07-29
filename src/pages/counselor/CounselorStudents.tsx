@@ -11,7 +11,7 @@ import { dicebearUrl } from "@/utils/avatar";
 // Components for tabs
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
-import { StudentRoadmap } from "@/pages/student/StudentRoadmap";
+
 
 export function CounselorStudents() {
   const { id } = useParams();
@@ -137,7 +137,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={cn(
-        "pb-3 px-1 text-[13px] font-bold uppercase tracking-wider transition-colors border-b-4 whitespace-nowrap",
+        "pb-3 px-1 text-[13px] font-semibold uppercase tracking-wider transition-colors border-b-4 whitespace-nowrap",
         active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white"
       )}
     >
@@ -147,11 +147,11 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
 }
 
 function StudentDetailView({ profile, studentId }: { profile: any, studentId: string }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "tracker" | "colleges" | "roadmap">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "requirements" | "essays" | "documents" | "recommendations" | "colleges">("overview");
 
   return (
     <div className="flex flex-col h-full pb-10">
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 relative overflow-hidden shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
           <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
           <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -171,15 +171,17 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
 
         <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
-          <TabButton active={activeTab === 'tracker'} onClick={() => setActiveTab('tracker')} label="Tracker" />
+          <TabButton active={activeTab === 'requirements'} onClick={() => setActiveTab('requirements')} label="Requirements" />
+          <TabButton active={activeTab === 'essays'} onClick={() => setActiveTab('essays')} label="Essays" />
+          <TabButton active={activeTab === 'documents'} onClick={() => setActiveTab('documents')} label="Documents" />
+          <TabButton active={activeTab === 'recommendations'} onClick={() => setActiveTab('recommendations')} label="Recommendations" />
           <TabButton active={activeTab === 'colleges'} onClick={() => setActiveTab('colleges')} label="College List" />
-          <TabButton active={activeTab === 'roadmap'} onClick={() => setActiveTab('roadmap')} label="Roadmap" />
         </div>
       </div>
 
       <div className="w-full flex-1">
         {activeTab === "overview" && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 mt-8">
             <div className="bg-white dark:bg-[#111b21] rounded-2xl p-6 border border-border shadow-sm">
               <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Profile Notes</h3>
               <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{profile.bio || "No bio provided."}</p>
@@ -187,29 +189,36 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
           </div>
         )}
         
-        {activeTab === "tracker" && (
-          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
-            <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
-              <StudentApplicationTracker studentId={studentId} readOnly />
-            </div>
+        {activeTab === "requirements" && (
+          <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
+            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="requirements" />
+          </div>
+        )}
+
+        {activeTab === "essays" && (
+          <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
+            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="essays" />
+          </div>
+        )}
+
+        {activeTab === "documents" && (
+          <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
+            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="documents" />
+          </div>
+        )}
+
+        {activeTab === "recommendations" && (
+          <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
+            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="recommendations" />
           </div>
         )}
         
         {activeTab === "colleges" && (
-          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
-             <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
-               <StudentCollegeList studentId={studentId} readOnly />
-             </div>
+          <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
+            <StudentCollegeList studentId={studentId} readOnly />
           </div>
         )}
         
-        {activeTab === "roadmap" && (
-          <div className="animate-in fade-in duration-300 relative" style={{ minHeight: '600px' }}>
-             <div className="absolute inset-x-0 -top-8 bottom-0 overflow-y-auto custom-scrollbar">
-               <StudentRoadmap studentId={studentId} readOnly />
-             </div>
-          </div>
-        )}
       </div>
     </div>
   );

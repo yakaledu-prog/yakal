@@ -63,10 +63,10 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
 
   if (!user) return null;
 
-  return (
-    <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
-        {/* Header */}
+  const content = (
+    <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
+      {/* Header */}
+      {!readOnly ? (
         <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -154,9 +154,35 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
             </div>
           </div>
         </div>
+      ) : (
+        <div className="px-6 border-b dark:border-[#2a3942] bg-card">
+          <div className="flex gap-4 overflow-x-auto pb-0">
+            {[
+              { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
+              { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
+              { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id as any)}
+                className={cn(
+                  "whitespace-nowrap border-b-[3px] py-3 text-[14px] flex items-center gap-2 transition-colors",
+                  tab === t.id
+                    ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-        <div className="max-w-[1100px] mx-auto p-6 md:p-10 space-y-8">
-
+      {/* Main Content */}
+      <div className={cn("mx-auto", readOnly ? "p-0" : "p-6 md:p-10 max-w-[1100px]")}>
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
           ) : (
@@ -164,20 +190,22 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
               {tab === "timeline" && (
                 <div className="space-y-8">
                   {/* Milestones Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
-                      <p className="text-[15px] font-semibold">FAFSA opens</p>
+                  {!readOnly && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
+                        <p className="text-[15px] font-semibold">FAFSA opens</p>
+                      </div>
+                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
+                        <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
+                      </div>
+                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
+                        <p className="text-[15px] font-semibold">Decision Day</p>
+                      </div>
                     </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
-                      <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
-                    </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
-                      <p className="text-[15px] font-semibold">Decision Day</p>
-                    </div>
-                  </div>
+                  )}
 
                   <RoadmapTimeline
                     gradYear={gradYear ? Number(gradYear) : app?.grad_year}
@@ -217,7 +245,14 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
           )}
 
         </div>
-      </div>
+    </div>
+  );
+
+  if (readOnly) return content;
+
+  return (
+    <PageWrapper className="!p-0">
+      {content}
     </PageWrapper>
   );
 }

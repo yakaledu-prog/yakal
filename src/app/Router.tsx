@@ -282,6 +282,7 @@ const router = createBrowserRouter([
           { path: "calendar", element: <CounselorCalendar /> },
           { path: "sessions", element: <CounselorSessions /> },
           { path: "profile", element: <CounselorProfile /> },
+          { path: "roadmap", element: <StudentRoadmap /> },
           { path: "meeting/:id", element: <CounselorSessionDetail /> },
           { path: "session/:id", element: <CounselorSessionDetail /> },
           { path: "settings", element: <SettingsPage /> },
