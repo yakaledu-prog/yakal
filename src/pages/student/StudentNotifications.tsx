@@ -92,6 +92,15 @@ const mockNotifications: Notification[] = [
   }
 ];
 
+function MinimalStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-2xl font-medium">{value}</p>
+    </div>
+  );
+}
+
 export function StudentNotifications() {
   const [notifications, setNotifications] = useState(mockNotifications);
   const [activeTab, setActiveTab] = useState<"inbox" | "unread" | "archived">("inbox");
@@ -130,27 +139,35 @@ export function StudentNotifications() {
   };
 
   return (
-    <PageWrapper>
-      <div className="w-full h-[100vh] flex flex-col">
+    <PageWrapper className="!p-0">
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
 
-        {/* Header */}
-        {/* <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 flex-shrink-0">
-          <div className="relative w-full md:w-[300px]">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-[#54656f] dark:text-[#aebac1]" />
+        {/* Massive Integrated Header */}
+        <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="max-w-[1440px] mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">Notifications</h1>
+                <p className="text-white/80 text-[15px]">Stay updated with your latest alerts</p>
+              </div>
+              <div className="flex items-center gap-8">
+                <MinimalStat label="Unread" value={notifications.filter(n => !n.read && !n.archived).length} />
+                <MinimalStat label="Total" value={notifications.filter(n => !n.archived).length} />
+              </div>
             </div>
-            <input
-              type="text"
-              placeholder="Search notifications..."
-              className="pl-9 pr-3 py-2 h-10 bg-white dark:bg-[#111b21] text-[#111] dark:text-white border border-[#e9edef] dark:border-[#2a3942] rounded-md focus:outline-none focus:border-primary w-full text-[14px]"
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-            />
           </div>
-        </div> */}
+        </div>
 
         {/* Email Layout Container */}
-        <div className="flex-1 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] overflow-hidden flex flex-col md:flex-row min-h-0">
+        <div className="flex-1 max-w-[1440px] mx-auto w-full bg-white dark:bg-[#111b21] border-x border-[#e9edef] dark:border-[#2a3942] overflow-hidden flex flex-col md:flex-row min-h-0 shadow-sm">
 
           {/* Left Pane: List */}
           <div className={cn(
