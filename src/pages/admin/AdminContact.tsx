@@ -12,8 +12,8 @@ function fmtDate(d: string) {
 }
 const isNew = (m: ContactMessage) => m.status === "new" || !m.status;
 
-// TODO: rename to unread and archived
-type Tab = "inbox" | "new" | "handled";
+// Tabs state
+type Tab = "inbox" | "unread" | "archived";
 
 export function AdminContact() {
   const qc = useQueryClient();
@@ -21,9 +21,9 @@ export function AdminContact() {
   const [tab, setTab] = useState<Tab>("inbox");
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const filtered = messages.filter((m) => (tab === "new" ? isNew(m) : tab === "handled" ? !isNew(m) : true));
+  const filtered = messages.filter((m) => (tab === "unread" ? isNew(m) : tab === "archived" ? !isNew(m) : true));
   const active = messages.find((m) => m.id === activeId) || null;
-  const newCount = messages.filter(isNew).length;
+  const unreadCount = messages.filter(isNew).length;
 
   useEffect(() => {
     if (!activeId && filtered.length > 0) setActiveId(filtered[0].id);
@@ -38,19 +38,26 @@ export function AdminContact() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
-        {/* Header */}
+        {/* Massive Integrated Header */}
         <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
-          <div className="relative z-10 max-w-[1440px] mx-auto flex items-end justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
-              <p className="text-white/80 text-[15px] mt-1">Enquiries submitted through your website</p>
-            </div>
-            <div className="flex items-center gap-10">
-              <Stat label="New" value={newCount} />
-              <Stat label="Total" value={messages.length} />
+
+          <div className="max-w-[1440px] mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">Notifications</h1>
+                <p className="text-white/80 text-[15px]">Enquiries submitted through your website</p>
+              </div>
+              <div className="flex items-center gap-8">
+                <MinimalStat label="Unread" value={unreadCount} />
+                <MinimalStat label="Total" value={messages.length} />
+              </div>
             </div>
           </div>
         </div>
@@ -60,7 +67,7 @@ export function AdminContact() {
           {/* List */}
           <div className="w-full md:w-[380px] shrink-0 flex flex-col border-r border-[#e9edef] dark:border-[#2a3942]">
             <div className="flex border-b border-[#e9edef] dark:border-[#2a3942]">
-              {(["inbox", "new", "handled"] as Tab[]).map((t) => (
+              {(["inbox", "unread", "archived"] as Tab[]).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn("flex-1 py-3 text-[13px] font-semibold capitalize border-b-2 transition-colors",
                     tab === t ? "border-[#1099A1] text-[#1099A1]" : "border-transparent text-muted-foreground hover:text-foreground")}>
@@ -155,11 +162,11 @@ export function AdminContact() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function MinimalStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="text-3xl font-bold leading-none">{value}</span>
-      <span className="text-[11px] uppercase tracking-wider text-white/70 font-medium mt-1.5">{label}</span>
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-2xl font-medium">{value}</p>
     </div>
   );
 }
