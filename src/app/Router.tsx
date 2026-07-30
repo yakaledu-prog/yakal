@@ -24,7 +24,7 @@ import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
 import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
 import { StudentCourseDashboard } from "../pages/student/StudentCourseDashboard";
-import { StudentCourseOverview } from "../pages/student/StudentCourseOverview";
+
 import { StudentCourseSessions } from "../pages/student/StudentCourseSessions";
 import { StudentCourseMessages } from "../pages/student/StudentCourseMessages";
 import { StudentCourseCatalogDetail } from "../pages/student/StudentCourseCatalogDetail";
@@ -341,13 +341,12 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "my-learning", element: <Navigate to="/student/my-learning/CAT-01/overview" replace /> },
+          { path: "my-learning", element: <Navigate to="/student/my-learning/CAT-01/tasks" replace /> },
           {
             path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,
             children: [
-              { index: true, element: <Navigate to="overview" replace /> },
-              { path: "overview", element: <StudentCourseOverview /> },
+              { index: true, element: <Navigate to="tasks" replace /> },
               { path: "tasks", element: <StudentCourseTasks /> },
               { path: "sessions", element: <StudentCourseSessions /> },
               { path: "messages", element: <StudentCourseMessages /> },
