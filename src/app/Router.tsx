@@ -62,6 +62,7 @@ import { CounselorProfile } from "../pages/counselor/CounselorProfile";
 // import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
 import { CounselorMessages } from "../pages/counselor/CounselorMessages";
 import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
+import { CounselorEarnings } from "../pages/counselor/CounselorEarnings";
 import { CounselorCalendar } from "@/pages/counselor/CounselorCalendar";
 import { CounselorSessions } from "@/pages/counselor/CounselorSessions";
 import { CounselorSessionDetail } from "@/pages/counselor/CounselorSessionDetail";
@@ -281,6 +282,7 @@ const router = createBrowserRouter([
           { path: "notifications", element: <CounselorNotifications /> },
           { path: "calendar", element: <CounselorCalendar /> },
           { path: "sessions", element: <CounselorSessions /> },
+          { path: "earnings", element: <CounselorEarnings /> },
           { path: "profile", element: <CounselorProfile /> },
           { path: "roadmap", element: <StudentRoadmap /> },
           { path: "explore", element: <StudentExploreUniversities /> },

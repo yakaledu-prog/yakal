@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Users, MessagesSquare, Bell, Calendar, History, Map, GraduationCap, Compass } from "lucide-react";
+import { Home, Users, MessagesSquare, Bell, Calendar, History, Map, GraduationCap, Compass, Wallet } from "lucide-react";
 
 export function CounselorLayout() {
   const navItems = [
@@ -18,6 +18,7 @@ export function CounselorLayout() {
     },
     { name: "Messages", href: "/counselor/messages", icon: <MessagesSquare size={20} /> },
     { name: "Notifications", href: "/counselor/notifications", icon: <Bell size={20} /> },
+    { name: "Earnings", href: "/counselor/earnings", icon: <Wallet size={20} /> },
   ];
 
   return <DashboardLayout navItems={navItems} basePath="/counselor" />;
