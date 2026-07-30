@@ -241,25 +241,25 @@ export function TutorSessions() {
                     <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
                       {s.status === "upcoming" ? (
                         <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
-                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-6 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 text-white">
+                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r text-white">
                             <Video size={16} /> Join
                           </Button>
-                          <div className="w-[1px] bg-white/30 h-full" />
-                          <button 
+                          {/* <div className="!w-[1px] !bg-white/55 !h-[60%] block" /> */}
+                          <button
                             onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
                             className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
                           >
                             <ChevronDown size={16} />
                           </button>
-                          
+
                           {openDropdownId === s.id && (
                             <>
                               <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
                               <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-border/50 rounded-md shadow-lg z-50 py-1 overflow-hidden">
-                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2 text-left text-[14px] font-normal hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#111] dark:text-white flex items-center gap-2">
+                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors">
                                   <Video size={16} /> Join
                                 </button>
-                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2 text-left text-[14px] font-normal hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#111] dark:text-white flex items-center gap-2">
+                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
                                   <CalendarRange size={16} /> Reschedule
                                 </button>
                               </div>
@@ -306,7 +306,7 @@ export function TutorSessions() {
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-6 mt-8 pt-4">
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
@@ -316,7 +316,7 @@ export function TutorSessions() {
                   <span className="text-[13px] text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
