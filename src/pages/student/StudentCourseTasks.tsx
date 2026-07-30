@@ -84,16 +84,16 @@ export function StudentCourseTasks() {
         <div
           key={task.id}
           className={cn(
-            "bg-white dark:bg-[#111b21] border rounded-md overflow-hidden transition-all",
+            " dark:bg-[#111b21] border rounded-md overflow-hidden transition-all",
             task.status === 'Completed'
-              ? "border-transparent ring-1 ring-[#97CE9D]/30 dark:ring-[#2a3942]"
+              ? "bg-[#1099A1]/5 border-[#1099A1]/50 dark:border-[#2a3942]"
               : "border-[#e9edef] dark:border-[#2a3942]"
           )}
         >
           <div className={cn(
             "border-b px-5 py-3 flex items-center justify-between",
             task.status === 'Completed'
-              ? "bg-[#97CE9D]/30 border-[#97CE9D]/30"
+              ? "bg-[#1099A1]/10 border-[#1099A1]/30"
               : "bg-[#f8f9fa] dark:bg-[#182329] border-[#e9edef] dark:border-[#2a3942]"
           )}>
             <div className="flex items-center gap-3">
@@ -139,12 +139,13 @@ export function StudentCourseTasks() {
             </div>
             {/* Graded Row */}
             {task.status === 'Completed' && task.grade && (
-              <div className="px-2 pt-3 border-t border-[#97CE9D]/30 flex items-center justify-between">
+              <div className="px-2 pt-3 border-t border-[#1099A1]/30 flex items-center justify-between">
                 <span className="text-[13px] font-normal text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider">Grade</span>
-                <span className="text-[15px] font-normal text-[#1099A1]">
+                <span className="text-[15px] font-normal text-primary">
                   {task.grade.split('/')[0]}
                   {task.grade.includes('/') && (
-                    <span className="text-[#697780] dark:text-[#8696a0]"> / {task.grade.split('/')[1]}</span>
+                    <span className=""> / {task.grade.split('/')[1]}</span>
+                    // <span className="text-[#555] dark:text-[#8696a0]"> / {task.grade.split('/')[1]}</span>
                   )}
                 </span>
               </div>

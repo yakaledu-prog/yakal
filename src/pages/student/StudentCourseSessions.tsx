@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Calendar, X, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Clock, X, ChevronRight, CheckCircle2, Video, CalendarRange, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 type Session = {
@@ -23,6 +23,7 @@ export function StudentCourseSessions() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const handleRescheduleClick = (session: Session) => {
     setRescheduleSession(session);
@@ -45,29 +46,63 @@ export function StudentCourseSessions() {
 
   return (
     <div className="w-full relative">
-      <div className="space-y-4">
-        {MOCK_SESSIONS.map((session) => (
-          <div key={session.id} className="bg-white dark:bg-[#182329] p-4 rounded-xl border border-[#e9edef] dark:border-[#2a3942] flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <p className="text-[16px] font-bold text-[#111] dark:text-white">{session.title}</p>
-              <div className="flex items-center gap-4 mt-2 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="flex items-center gap-1.5"><Calendar size={15} /> {session.date}</span>
-                <span className="flex items-center gap-1.5"><Clock size={15} /> {session.time}</span>
+      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {MOCK_SESSIONS.map((session) => {
+          const dateParts = session.date.includes(', ') ? session.date.split(', ')[1].split(' ') : ["", ""];
+          const month = dateParts[0];
+          const day = dateParts[1];
+
+          return (
+            <div key={session.id} className="pb-3 border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
+              <div className="flex flex-col md:flex-row items-center gap-6 p-4">
+                {/* Date Column */}
+                <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
+                  <span className="text-[24px] font-bold text-[#1099A1] leading-none tracking-tight">{day}</span>
+                  <span className="text-[12px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{month}</span>
+                </div>
+
+                {/* Title & Time Column */}
+                <div className="flex flex-col justify-center flex-1 min-w-0 py-2 w-full md:w-auto text-center md:text-left border-l-2 border-transparent md:border-[#1099A1] md:pl-6">
+                  <h2 className="text-[15px] md:text-[16px] font-medium text-[#111] dark:text-white leading-tight mb-1.5 truncate">
+                    {session.title}
+                  </h2>
+                  <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] font-medium leading-tight flex items-center gap-1.5 md:justify-start justify-center">
+                    <Clock size={14} /> {session.time}
+                  </span>
+                </div>
+
+                {/* Actions Column */}
+                <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
+                  <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
+                    <Button className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r border-[#0d848b] text-white">
+                      <Video size={16} /> Join
+                    </Button>
+                    <button
+                      onClick={() => setOpenDropdownId(openDropdownId === session.id ? null : session.id)}
+                      className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+
+                    {openDropdownId === session.id && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                        <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-lg z-50 py-1 overflow-hidden">
+                          <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors border-b !border-[#1099A1]/10">
+                            <Video size={16} /> Join Meeting
+                          </button>
+                          <button onClick={() => { setOpenDropdownId(null); handleRescheduleClick(session); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
+                            <CalendarRange size={16} /> Reschedule
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Button
-                className="flex-1 md:flex-none h-10 font-bold text-[14px] border-[#CAA25F] !bg-[#697780] text-white hover:bg-[#CAA25F]/10 transition-colors"
-                onClick={() => handleRescheduleClick(session)}
-              >
-                Reschedule
-              </Button>
-              <Button className="flex-1 md:flex-none h-10 font-bold text-[14px]">
-                Join Meeting
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Reschedule Modal */}

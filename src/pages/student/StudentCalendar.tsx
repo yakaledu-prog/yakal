@@ -326,8 +326,6 @@ export function StudentCalendar() {
                 <span className="text-md text-center font-medium min-w-[140px]">{getHeaderText()}</span>
                 <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></Button>
               </div>
-
-              <div className="hidden md:block w-[100px]"></div>
             </div>
           </div>
         </div>
