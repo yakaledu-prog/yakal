@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,9 +20,13 @@ function formatTime(t?: string) {
   const hour = h % 12 === 0 ? 12 : h % 12;
   return `${hour}:${String(m).padStart(2, "0")} ${period}`;
 }
-function formatDate(d?: string) {
-  if (!d) return "";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+function getDateParts(d?: string) {
+  if (!d) return { day: "", month: "" };
+  const date = new Date(d + "T00:00:00");
+  return {
+    day: date.getDate(),
+    month: date.toLocaleDateString(undefined, { month: "short" })
+  };
 }
 
 export function TutorSessions() {
@@ -37,6 +41,13 @@ export function TutorSessions() {
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [editingNotesText, setEditingNotesText] = useState("");
   const [inlineSaving, setInlineSaving] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedCourse, filterText]);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -86,6 +97,11 @@ export function TutorSessions() {
       return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
     });
   }, [courseSessions, activeTab]);
+
+  const paginatedSessions = useMemo(() => {
+    return filteredSessions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredSessions, currentPage]);
+  const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
 
   const completedCount = courseSessions.filter((s) => s.status === "completed").length;
   const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
@@ -189,85 +205,113 @@ export function TutorSessions() {
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
             </div>
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {filteredSessions.map((s) => (
-                <div key={s.id} className="space-y-6 pb-8 border-b border-border/50 last:border-0">
-
-                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-none hover:shadow-sm transition ease-in-out duration-300 flex flex-col overflow-hidden">
-                    <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-3 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <CalendarRange size={15} />
-                        <span className="text-[13px] font-medium">{formatDate(s.date)} • {formatTime(s.start_time)} ({s.duration_minutes}m)</span>
-                      </div>
-
-                      {s.status === "upcoming" ? (
-                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-primary hover:opacity-80 transition-opacity">
-                          <CheckCheck size={16} /> Mark As Done
-                        </button>
-                      ) : s.status === "completed" ? (
-                        <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[13px] font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                          <SquarePenIcon size={16} /> {s.notes ? "Edit Notes" : "Add Notes"}
-                        </button>
-                      ) : (
-                        <Badge variant="destructive" className="rounded-sm text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
-                          {s.status}
-                        </Badge>
-                      )}
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {paginatedSessions.map((s) => (
+                <div key={s.id} className="pb-4 border-b border-border/50 last:border-0">
+                  <div className="bg-white dark:bg-[#111b21] flex flex-col md:flex-row gap-6 p-4">
+                    {/* Left Sidebar: Date & Time */}
+                    <div className="flex flex-col items-center shrink-0 w-[80px]">
+                      <span className="text-[28px] font-bold text-[#1099A1] leading-none tracking-tight">{getDateParts(s.date).day}</span>
+                      <span className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{getDateParts(s.date).month}</span>
+                      <div className="h-4" />
+                      <span className="text-[12.5px] text-[#54656f] dark:text-[#aebac1] font-medium text-center leading-tight">{formatTime(s.start_time)}</span>
                     </div>
 
-                    <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">{s.subject}</h2>
-                        <div className="flex items-center gap-3">
-                          {s.student_avatar ? (
-                            <img src={s.student_avatar} alt={s.student_name} className="w-9 h-9 rounded-full object-cover shrink-0 border border-[#e9edef] dark:border-[#2a3942]" />
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[14px] shrink-0 border border-primary/20">
-                              {s.student_name ? s.student_name.charAt(0).toUpperCase() : "S"}
-                            </div>
-                          )}
-                          <div className="flex flex-col justify-center">
-                            <span className="text-[14.5px] font-bold text-[#111] dark:text-white leading-tight mb-0.5">{s.student_name}</span>
-                            <span className="text-[12.5px] text-[#54656f] dark:text-[#aebac1] leading-tight">Student</span>
-                          </div>
+                    {/* Main Content Area */}
+                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                      {/* Row 1: Title and Status */}
+                      <div className="flex items-start justify-between gap-4 mb-5">
+                        <h2 className="text-[18px] md:text-[20px] font-medium text-[#111] dark:text-white leading-tight">{s.subject}</h2>
+                        
+                        <div className="flex items-center gap-3 shrink-0">
+                          {s.status === "completed" ? (
+                            <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[14px] font-semibold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                              <SquarePenIcon size={18} /> {s.notes ? "Edit Notes" : "Add Notes"}
+                            </button>
+                          ) : s.status !== "upcoming" ? (
+                            <Badge variant="destructive" className="rounded-sm text-[11px] uppercase font-bold tracking-wider px-2 py-0.5">
+                              {s.status}
+                            </Badge>
+                          ) : null}
                         </div>
-                        {editingNotesId === s.id ? (
-                          <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
-                            <TipTapEditor
-                              value={editingNotesText}
-                              onChange={setEditingNotesText}
-                              toolbarRight={
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => setEditingNotesId(null)} className="text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
-                                  <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="!h-7 text-[11px] px-3 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
-                                    {inlineSaving ? "Saving..." : "Save"}
-                                  </Button>
-                                </div>
-                              }
-                            />
-                          </div>
-                        ) : s.notes && s.status === "completed" ? (
-                          <div className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
-                        ) : null}
                       </div>
 
-                      <div className="flex items-center gap-3 w-full md:w-auto">
-                        {s.status === "upcoming" ? (
-                          <>
-                            <Button onClick={() => join(s)} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-full">
-                              <Video size={16} /> Join
-                            </Button>
-                            <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
-                              <CalendarRange size={16} /> Reschedule
-                            </Button>
-                          </>
-                        ) : null}
+                      {/* Row 2: Student Details & Actions */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-4">
+                            {s.student_avatar ? (
+                              <img src={s.student_avatar} alt={s.student_name} className="w-11 h-11 rounded-full object-cover shrink-0 border border-white dark:border-[#2a3942] shadow-sm" />
+                            ) : (
+                              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[16px] shrink-0 border border-white dark:border-[#2a3942] shadow-sm">
+                                {s.student_name ? s.student_name.charAt(0).toUpperCase() : "S"}
+                              </div>
+                            )}
+                            <div className="flex flex-col justify-center">
+                              <span className="text-[15px] font-bold text-[#111] dark:text-white leading-tight mb-0.5">{s.student_name}</span>
+                              <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-tight">Student</span>
+                            </div>
+                          </div>
+
+                          {editingNotesId === s.id ? (
+                            <div className="mt-5 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329] shadow-sm">
+                              <TipTapEditor
+                                value={editingNotesText}
+                                onChange={setEditingNotesText}
+                                toolbarRight={
+                                  <div className="flex items-center gap-2">
+                                    <button onClick={() => setEditingNotesId(null)} className="text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
+                                    <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="!h-8 text-[12px] px-4 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
+                                      {inlineSaving ? "Saving..." : "Save"}
+                                    </Button>
+                                  </div>
+                                }
+                              />
+                            </div>
+                          ) : s.notes && s.status === "completed" ? (
+                            <div className="mt-5 text-[14px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-4 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
+                          ) : null}
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0">
+                          {s.status === "upcoming" ? (
+                            <>
+                              <Button onClick={() => join(s)} className="flex-1 md:flex-none h-[42px] px-6 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-md shadow-sm">
+                                <Video size={16} /> Join
+                              </Button>
+                              <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-[42px] px-6 text-[14px] font-normal border-0 flex items-center justify-center gap-2 rounded-md hover:opacity-90 transition-opacity shadow-sm">
+                                <CalendarRange size={16} /> Reschedule
+                              </Button>
+                            </>
+                          ) : null}
                       </div>
                     </div>
                   </div>
-
                 </div>
+              </div>
               ))}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-6 mt-8 pt-4">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-[13px] text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
