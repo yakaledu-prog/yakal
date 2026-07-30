@@ -172,8 +172,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
         {/* Profile Card */}
         <div className="p-2 border-t dark:border-[#2a3942]">
-          <Link to={`/${profile?.role || 'student'}/profile`} className={cn("flex items-center gap-3 w-full p-4 rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", !sidebarOpen && "justify-center")}>
-            <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d"} alt="Profile" className="h-10 w-10 shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
+          <Link to={`/${profile?.role || 'student'}/profile`} className={cn("flex items-center gap-3 w-full rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", sidebarOpen ? "p-4" : "p-2 justify-center")}>
+            <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=a042581f4e29026704d"} alt="Profile" className="h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
               <div className="flex flex-col gap-1 w-full min-w-0">
                 <p className="text-sm font-semibold truncate">{profile?.full_name || user?.email || "User"}</p>

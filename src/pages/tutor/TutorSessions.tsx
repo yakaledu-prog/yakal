@@ -209,7 +209,7 @@ export function TutorSessions() {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {paginatedSessions.map((s) => (
                 <div key={s.id} className="pb-4 border-b border-border/50 last:border-0">
-                  <div className="bg-white dark:bg-[#111b21] flex flex-col md:flex-row items-center gap-6 p-4">
+                  <div className="flex flex-col md:flex-row items-center gap-6 p-4">
                     {/* Column 1: Date */}
                     <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
                       <span className="text-[28px] font-bold text-[#1099A1] leading-none tracking-tight">{getDateParts(s.date).day}</span>
