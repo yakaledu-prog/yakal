@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCheck } from "lucide-react";
+import { ExternalLink, CalendarDays } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 interface Task {
@@ -11,6 +11,8 @@ interface Task {
   materials: { title: string; link: string }[];
   actionLabel: string;
   status: 'Pending' | 'In Progress' | 'Completed';
+  dueDate: string;
+  grade?: string;
 }
 
 const mockTasks: Task[] = [
@@ -33,7 +35,9 @@ const mockTasks: Task[] = [
       { title: "lecture_notes_ch2.pdf", link: "#" }
     ],
     actionLabel: "Submit Worksheet",
-    status: "Completed"
+    status: "Completed",
+    dueDate: "2026-08-01",
+    grade: "95/100"
   },
   {
     id: "T-01",
@@ -50,7 +54,8 @@ const mockTasks: Task[] = [
       { title: "derivatives_practice.pdf", link: "#" }
     ],
     actionLabel: "Submit Practice Set",
-    status: "Pending"
+    status: "Pending",
+    dueDate: "2026-08-10"
   },
   {
     id: "T-02",
@@ -67,7 +72,8 @@ const mockTasks: Task[] = [
       { title: "chain_rule_advanced.pdf", link: "#" }
     ],
     actionLabel: "Mark as Complete",
-    status: "Pending"
+    status: "Pending",
+    dueDate: "2026-08-15"
   }
 ];
 
@@ -75,42 +81,37 @@ export function StudentCourseTasks() {
   return (
     <div className="space-y-8">
       {mockTasks.map((task) => (
-        <div 
-          key={task.id} 
+        <div
+          key={task.id}
           className={cn(
             "bg-white dark:bg-[#111b21] border rounded-md overflow-hidden transition-all",
-            task.status === 'Completed' 
-              ? "border-[#1099A1] ring-1 ring-[#1099A1]/20" 
+            task.status === 'Completed'
+              ? "border-transparent ring-1 ring-[#97CE9D]/30 dark:ring-[#2a3942]"
               : "border-[#e9edef] dark:border-[#2a3942]"
           )}
         >
           <div className={cn(
             "border-b px-5 py-3 flex items-center justify-between",
             task.status === 'Completed'
-              ? "bg-[#1099A1]/5 border-[#1099A1]/20"
+              ? "bg-[#97CE9D]/30 border-[#97CE9D]/30"
               : "bg-[#f8f9fa] dark:bg-[#182329] border-[#e9edef] dark:border-[#2a3942]"
           )}>
             <div className="flex items-center gap-3">
-              <h2 className="text-[16px] font-semibold text-[#111] dark:text-white">
+              <h2 className="text-[16px] font-normal text-[#111] dark:text-white">
                 {task.index}. {task.title}
               </h2>
             </div>
-            {task.status === 'Completed' ? (
-              <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[#1099A1]">
-                <CheckCheck size={16} /> Completed
-              </span>
-            ) : (
-              <button className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors">
-                <CheckCheck size={16} /> Mark As Done
-              </button>
-            )}
+
+            <a href="#" className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors">
+              <ExternalLink size={16} /> Open in Google Classroom
+            </a>
           </div>
 
           {/* Task Body */}
           <div className="p-5 flex flex-col gap-6">
             <div className="text-[#111] dark:text-[#e9edef]">
               {task.description}
-              
+
               {/* Materials */}
               <div className="mt-5">
                 <h4 className="text-[12px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-2">Materials</h4>
@@ -127,8 +128,29 @@ export function StudentCourseTasks() {
                   ))}
                 </div>
               </div>
+
+              {/* Due Date & Grade */}
+              <div className="mt-6 pt-4 flex flex-col gap-3">
+                <div className="flex items-center text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                  <CalendarDays size={16} className="mr-2" />
+                  <span>Due Date: <span className="font-normal text-[#111] dark:text-white">{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></span>
+                </div>
+              </div>
             </div>
+            {/* Graded Row */}
+            {task.status === 'Completed' && task.grade && (
+              <div className="px-2 pt-3 border-t border-[#97CE9D]/30 flex items-center justify-between">
+                <span className="text-[13px] font-normal text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider">Grade</span>
+                <span className="text-[15px] font-normal text-[#1099A1]">
+                  {task.grade.split('/')[0]}
+                  {task.grade.includes('/') && (
+                    <span className="text-[#697780] dark:text-[#8696a0]"> / {task.grade.split('/')[1]}</span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
+
         </div>
       ))}
     </div>
