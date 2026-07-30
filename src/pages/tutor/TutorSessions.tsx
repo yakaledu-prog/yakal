@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, User, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
+import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -217,9 +217,19 @@ export function TutorSessions() {
 
                     <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex-1 min-w-0">
-                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-1">{s.subject}</h2>
-                        <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
-                          <User size={14} /> <span>Student: <span className="font-medium text-foreground">{s.student_name}</span></span>
+                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">{s.subject}</h2>
+                        <div className="flex items-center gap-3">
+                          {s.student_avatar ? (
+                            <img src={s.student_avatar} alt={s.student_name} className="w-9 h-9 rounded-full object-cover shrink-0 border border-[#e9edef] dark:border-[#2a3942]" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[14px] shrink-0 border border-primary/20">
+                              {s.student_name ? s.student_name.charAt(0).toUpperCase() : "S"}
+                            </div>
+                          )}
+                          <div className="flex flex-col justify-center">
+                            <span className="text-[14.5px] font-bold text-[#111] dark:text-white leading-tight mb-0.5">{s.student_name}</span>
+                            <span className="text-[12.5px] text-[#54656f] dark:text-[#aebac1] leading-tight">Student</span>
+                          </div>
                         </div>
                         {editingNotesId === s.id ? (
                           <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
