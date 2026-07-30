@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
+import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +41,7 @@ export function TutorSessions() {
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [editingNotesText, setEditingNotesText] = useState("");
   const [inlineSaving, setInlineSaving] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -239,14 +240,32 @@ export function TutorSessions() {
                     {/* Column 4: Actions */}
                     <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
                       {s.status === "upcoming" ? (
-                        <>
-                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-[40px] px-6 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-md">
+                        <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
+                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-6 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 text-white">
                             <Video size={16} /> Join
                           </Button>
-                          <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-[40px] px-6 text-[14px] font-normal border-0 flex items-center justify-center gap-2 rounded-md hover:opacity-90 transition-opacity">
-                            <CalendarRange size={16} /> Reschedule
-                          </Button>
-                        </>
+                          <div className="w-[1px] bg-white/30 h-full" />
+                          <button 
+                            onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                            className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                          
+                          {openDropdownId === s.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                              <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-border/50 rounded-md shadow-lg z-50 py-1 overflow-hidden">
+                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2 text-left text-[14px] font-normal hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#111] dark:text-white flex items-center gap-2">
+                                  <Video size={16} /> Join
+                                </button>
+                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2 text-left text-[14px] font-normal hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#111] dark:text-white flex items-center gap-2">
+                                  <CalendarRange size={16} /> Reschedule
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       ) : s.status === "completed" ? (
                         <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[14px] font-semibold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                           <SquarePenIcon size={18} /> {s.notes ? "Edit Notes" : "Add Notes"}
