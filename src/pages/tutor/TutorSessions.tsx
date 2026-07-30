@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon, ChevronDown } from "lucide-react";
+import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -188,9 +188,25 @@ export function TutorSessions() {
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
-            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
+          <div className="relative z-10 flex items-center justify-between gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+            <div className="flex items-center gap-6">
+              <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
+              <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-4 text-white pb-3 pr-2">
+                <span className="text-[13px] font-medium">Page {currentPage}</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-7 h-7 flex items-center justify-center border border-white/30 rounded text-white hover:bg-white/10 disabled:opacity-30 transition-colors">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-7 h-7 flex items-center justify-center border border-white/30 rounded text-white hover:bg-white/10 disabled:opacity-30 transition-colors">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -309,19 +325,19 @@ export function TutorSessions() {
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
+                    className="w-9 h-9 flex items-center justify-center border border-[#e9edef] dark:border-[#2a3942] rounded-md text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#182329] disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
                   >
-                    Previous
+                    <ChevronLeft size={18} />
                   </button>
-                  <span className="text-[13px] text-muted-foreground">
-                    Page {currentPage} of {totalPages}
+                  <span className="text-[14px] font-medium text-[#111] dark:text-white">
+                    Page {currentPage}
                   </span>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="text-[14px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground transition-colors"
+                    className="w-9 h-9 flex items-center justify-center border border-[#e9edef] dark:border-[#2a3942] rounded-md text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#182329] disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
                   >
-                    Next
+                    <ChevronRight size={18} />
                   </button>
                 </div>
               )}
