@@ -3,14 +3,13 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
 import { Info, TrendingUp, TrendingDown, Database } from "lucide-react";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, PieChart, Pie,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCounselorSessionsFull } from "@/services/counselorService";
 import { computeEarnings, type EarningsSummary } from "@/services/tutorService";
 
-// Brand-only palette (teal + gold + supporting warm/greens, no blue/purple).
-const PALETTE = ["#1099A1", "#CAA25F", "#97CE9D", "#0d848b", "#d98f5a", "#7d8f69", "#b06f9a", "#c98a2b"];
+
 
 // Custom tooltip, recharts' default uses inline styles that ignore CSS vars and
 // break in dark mode; a component with our classes renders correctly in both.
@@ -104,61 +103,24 @@ export function CounselorEarnings() {
         {/* Content Below Banner */}
         <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-12">
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
-            {/* Bar Chart */}
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-[18px] font-semibold text-foreground border-b border-border/50 pb-3">Monthly Trends</h3>
-              <div className="h-[280px] w-full pt-4">
-                {barData.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-[14px] text-muted-foreground">No earnings to chart yet.</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} vertical={false} />
-                      <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
-                      <Tooltip cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.4 }} content={<ChartTooltip money={money} />} />
-                      <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                        {barData.map((m) => <Cell key={m.key} fill={m.key === thisKey ? "#CAA25F" : "#1099A1"} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            {/* Pie Chart */}
-            <div className="space-y-4">
-              <h3 className="text-[18px] font-semibold text-foreground border-b border-border/50 pb-3">By Subject</h3>
-              {summary.bySubject.length === 0 ? (
-                <div className="h-[180px] flex items-center justify-center text-[14px] text-muted-foreground">No data yet.</div>
+          {/* Bar Chart */}
+          <div className="space-y-4">
+            <h3 className="text-[18px] font-semibold text-foreground border-b border-border/50 pb-3">Monthly Trends</h3>
+            <div className="h-[280px] w-full pt-4">
+              {barData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-[14px] text-muted-foreground">No earnings to chart yet.</div>
               ) : (
-                <div className="pt-2">
-                  <div className="relative h-[220px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={summary.bySubject} dataKey="amount" nameKey="subject" cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={2} stroke="none">
-                          {summary.bySubject.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-[13px] text-muted-foreground uppercase tracking-widest font-medium">Total</span>
-                      <span className="text-xl font-bold text-foreground">{money(summary.total)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3 mt-6">
-                    {summary.bySubject.map((s, i) => (
-                      <div key={s.subject} className="flex items-center justify-between text-[14px]">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
-                          <span className="truncate font-medium text-foreground">{s.subject}</span>
-                        </span>
-                        <span className="font-semibold shrink-0 text-muted-foreground">{money(s.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barData} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} vertical={false} />
+                    <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
+                    <Tooltip cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.4 }} content={<ChartTooltip money={money} />} />
+                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                      {barData.map((m) => <Cell key={m.key} fill={m.key === thisKey ? "#CAA25F" : "#1099A1"} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>

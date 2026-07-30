@@ -94,7 +94,8 @@ export function TutorProfile() {
                 <button onClick={() => setEditOpen(true)} className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                   <Edit2 size={16} /> Edit Profile
                 </button>
-                <button onClick={() => signOut()} className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-transparent !text-[#CAA25F] px-4 py-2 rounded-lg font-medium transition-colors">
+                <button onClick={() => signOut()}
+                  className="flex items-center justify-center gap-2 !bg-[#97CE9D]/40 border border-[#97CE9D]/40 hover:!bg-[#CAA25F]/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
                   <LogOut size={16} /> Log Out
                 </button>
               </div>
