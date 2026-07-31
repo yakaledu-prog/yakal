@@ -1,29 +1,31 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { Link } from "react-router-dom";
-import { Search, LayoutGrid, List } from "lucide-react";
+import { Search, LayoutGrid, List, Loader2, BookOpen } from "lucide-react";
 import { cn } from "@/utils/cn";
-
-interface Course {
-  id: string;
-  title: string;
-  thumbnail: string;
-  subject: string;
-  progress: number;
-  status: "In progress" | "Done" | "Pending";
-  deadline: string;
-}
-
-const mockCourses: Course[] = [
-  { id: "CAT-01", title: "Algebra Fundamentals", thumbnail: "https://picsum.photos/seed/algebra/400/225", subject: "Mathematics", progress: 65, status: "In progress", deadline: "Oct 16, 2023" },
-  { id: "CAT-02", title: "Geometry Mastery", thumbnail: "https://picsum.photos/seed/geometry/400/225", subject: "Mathematics", progress: 20, status: "In progress", deadline: "Oct 20, 2023" },
-  { id: "CAT-03", title: "Pre-Calculus Intensive", thumbnail: "https://picsum.photos/seed/precalc/400/225", subject: "Mathematics", progress: 100, status: "Done", deadline: "Oct 10, 2023" },
-  { id: "CAT-04", title: "SAT Prep Complete", thumbnail: "https://picsum.photos/seed/sat/400/225", subject: "Test Prep", progress: 0, status: "Pending", deadline: "Nov 01, 2023" },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { getStudentCourses } from "@/services/studentService";
 
 export function StudentMyLearning() {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [query, setQuery] = useState("");
+
+  const { data: courses = [], isLoading } = useQuery({
+    queryKey: ["student-courses", user?.id],
+    queryFn: () => getStudentCourses(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const visible = useMemo(
+    () =>
+      courses.filter((c) =>
+        `${c.title} ${c.subject}`.toLowerCase().includes(query.trim().toLowerCase())
+      ),
+    [courses, query]
+  );
 
   return (
     <PageWrapper className="!p-0">
@@ -72,6 +74,8 @@ export function StudentMyLearning() {
                   </div>
                   <input
                     type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search enrolled courses..."
                     className="pl-9 pr-3 py-2 h-9 bg-black/10 text-white placeholder:text-white/60 border border-white/20 rounded-lg focus:outline-none focus:border-white w-full text-[13px]"
                   />
@@ -83,14 +87,31 @@ export function StudentMyLearning() {
 
         <div className="max-w-[1440px] mx-auto p-4 md:p-8 w-full h-full">
 
-        {/* Course List/Grid */}
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-[#1099A1]" size={26} />
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="text-center py-20">
+            <BookOpen size={40} className="mx-auto text-[#aebac1] mb-3" />
+            <p className="text-[15px] font-semibold text-foreground">
+              {query ? "No course matches that" : "No courses yet"}
+            </p>
+            <p className="text-[13px] text-muted-foreground mt-1 max-w-sm mx-auto">
+              {query
+                ? "Try a different search."
+                : "Courses appear here once a session has been booked for you."}
+            </p>
+          </div>
+        ) : (
+        /* Course List/Grid */
         <div className={cn(
           "grid gap-4",
           viewMode === "grid"
             ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             : "grid-cols-1"
         )}>
-          {mockCourses.map(course => (
+          {visible.map(course => (
             <Link
               key={course.id}
               to={`/student/my-learning/${course.id}/overview`}
@@ -105,7 +126,7 @@ export function StudentMyLearning() {
                 viewMode === "grid" ? "w-full aspect-video border-b" : "w-full sm:w-[280px] aspect-video sm:h-full sm:border-r"
               )}>
                 <img
-                  src={course.thumbnail}
+                  src={course.thumbnailUrl ?? ""}
                   alt={course.title}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -122,15 +143,30 @@ export function StudentMyLearning() {
                   </Badge>
                 </div>
 
-                <div className="text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6">
-                  <span className="font-semibold text-[#111] dark:text-[#e9edef]">Subject:</span> {course.subject}
+                <div className="text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 flex flex-wrap gap-x-4 gap-y-1">
+                  <span>
+                    <span className="font-semibold text-[#111] dark:text-[#e9edef]">Subject:</span> {course.subject}
+                  </span>
+                  {course.tutorName && (
+                    <span>
+                      <span className="font-semibold text-[#111] dark:text-[#e9edef]">Tutor:</span> {course.tutorName}
+                    </span>
+                  )}
                 </div>
 
                 {/* Deadline & Progress */}
                 <div className="mt-auto w-full flex flex-col gap-2">
                   <div className="flex justify-between text-[12px] font-semibold">
-                    <span className="text-[#54656f] dark:text-[#aebac1]">Deadline: {course.deadline}</span>
-                    <span className="text-[#111] dark:text-white">{course.progress}%</span>
+                    <span className="text-[#54656f] dark:text-[#aebac1]">
+                      {course.nextDue
+                        ? `Next due ${course.nextDue.toLocaleDateString(undefined, { day: "numeric", month: "short" })}`
+                        : course.total === 0
+                          ? "No assignments yet"
+                          : "All caught up"}
+                    </span>
+                    <span className="text-[#111] dark:text-white">
+                      {course.completed}/{course.total} - {course.progress}%
+                    </span>
                   </div>
 
                   {/* Progress Bar */}
@@ -148,6 +184,7 @@ export function StudentMyLearning() {
             </Link>
           ))}
         </div>
+        )}
         </div>
       </div>
     </PageWrapper>

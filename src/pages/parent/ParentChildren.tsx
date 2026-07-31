@@ -1,37 +1,65 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Search, Loader2, Users, CalendarDays, Clock } from "lucide-react";
+import { Search, Loader2, Users, UserPlus, X } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
 import { Button } from "@/components/ui/Button";
 import { useQuery } from "@tanstack/react-query";
 import { getCollegeProfile } from "@/services/collegeService";
-import { supabase } from "@/lib/supabase";
-
-// Mock children data (we'll hydrate the actual ID for Amen Worku dynamically)
-const INITIAL_MOCK_CHILDREN = [
-  { id: "c1", name: "Brooklyn Student", avatar: "", grade: "10th Grade", sessions: 4, active_services: ['tutoring'] },
-  { id: "usr_student_123", name: "Amen Worku", avatar: "", grade: "12th Grade", sessions: 2, active_services: ['tutoring', 'admissions'] }
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { ManageChildrenPanel } from "@/components/shared/ManageChildrenPanel";
+import {
+  getLinkedChildren,
+  getChildServices,
+  getUpcomingSessionCounts,
+} from "@/services/parentService";
 
 export function ParentChildren() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
-  const [childrenData, setChildrenData] = useState(INITIAL_MOCK_CHILDREN);
+  const [managing, setManaging] = useState(false);
 
-  useEffect(() => {
-    supabase.from('profiles').select('id').eq('email', 'student@yakal.com').maybeSingle().then(({ data }: { data: any }) => {
-      if (data?.id) {
-        setChildrenData(prev => prev.map(c =>
-          c.name === "Amen Worku" ? { ...c, id: data.id } : c
-        ));
-      }
-    });
-  }, []);
+  // Real linked children. This page used to render two invented ones and then
+  // patch the second's id with a lookup of student@yakal.com, so it only ever
+  // worked for the seeded demo account.
+  const { data: linked = [], isLoading } = useQuery({
+    queryKey: ["linked-children", user?.id],
+    queryFn: () => getLinkedChildren(user!.id),
+    enabled: !!user?.id,
+  });
 
-  const activeId = id ?? childrenData[1]?.id ?? childrenData[0]?.id;
+  const childIds = linked.map((c) => c.id);
+  const { data: services = [] } = useQuery({
+    queryKey: ["children-services", childIds.join(",")],
+    queryFn: () => getChildServices(childIds),
+    enabled: childIds.length > 0,
+  });
+
+  const { data: sessionCounts = {} } = useQuery({
+    queryKey: ["children-session-counts", childIds.join(",")],
+    queryFn: () => getUpcomingSessionCounts(childIds),
+    enabled: childIds.length > 0,
+  });
+
+  const childrenData = useMemo(
+    () =>
+      linked.map((c) => ({
+        id: c.id,
+        name: c.full_name,
+        avatar: c.avatar_url ?? "",
+        grade: c.grade_level ?? "Grade not set",
+        sessions: sessionCounts[c.id] ?? 0,
+        active_services: services
+          .filter((s) => s.student_id === c.id && s.is_active)
+          .map((s) => s.service),
+      })),
+    [linked, services, sessionCounts]
+  );
+
+  const activeId = id ?? childrenData[0]?.id;
 
   const filtered = useMemo(
     () => childrenData.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
@@ -59,8 +87,22 @@ export function ParentChildren() {
           </div>
 
           <div className="flex-1 md:overflow-y-auto max-h-[34vh] md:max-h-none overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="text-center text-[13px] text-muted-foreground py-8 px-4">No matches.</p>
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-10 px-4">
+                <Users size={28} className="mx-auto text-[#aebac1] mb-2" />
+                <p className="text-[13.5px] font-medium text-foreground">
+                  {query ? "No matches." : "No children linked yet"}
+                </p>
+                {!query && (
+                  <p className="text-[12.5px] text-muted-foreground mt-1">
+                    A child appears here once their account is linked to yours.
+                  </p>
+                )}
+              </div>
             ) : (
               filtered.map((c) => {
                 const active = c.id === activeId;
@@ -78,6 +120,17 @@ export function ParentChildren() {
               })
             )}
           </div>
+
+          {/* Bottom of the sidebar: the list is what the page is about, so the
+              action sits under it rather than above the search. */}
+          <div className="p-3 border-t border-[#e9edef] dark:border-[#2a3942] shrink-0">
+            <button
+              onClick={() => setManaging(true)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#1099A1] text-white text-[13.5px] font-semibold hover:bg-[#0d7f86] transition-colors"
+            >
+              <UserPlus size={15} /> Add child
+            </button>
+          </div>
         </aside>
 
         {/* Right pane */}
@@ -85,13 +138,35 @@ export function ParentChildren() {
           {!activeChild ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
               <Users size={48} className="text-[#aebac1] mb-4" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No child selected</h3>
+              <p className="text-[16px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2">No child selected</p>
             </div>
           ) : (
             <ChildDetailView child={activeChild} />
           )}
         </section>
       </div>
+      {managing && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#182229] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-5 md:p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h2 className="text-[18px] font-bold text-foreground">Manage children</h2>
+                <p className="text-[13px] text-muted-foreground mt-1">
+                  Add a child by email, then choose which services they can use.
+                </p>
+              </div>
+              <button
+                onClick={() => setManaging(false)}
+                aria-label="Close"
+                className="p-1.5 rounded-full text-muted-foreground hover:bg-muted/60 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <ManageChildrenPanel />
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }

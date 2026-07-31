@@ -23,6 +23,7 @@ import { CookiePreferencesPage } from "../pages/shared/CookiePreferencesPage";
 import { StudentLayout } from "../pages/student/StudentLayout";
 import { StudentHome } from "../pages/student/StudentHome";
 import { StudentCalendar } from "../pages/student/StudentCalendar";
+import { StudentMyLearning } from "../pages/student/StudentMyLearning";
 import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
 import { StudentCourseDashboard } from "../pages/student/StudentCourseDashboard";
 
@@ -347,7 +348,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "my-learning", element: <Navigate to="/student/my-learning/CAT-01/tasks" replace /> },
+          { path: "my-learning", element: <StudentMyLearning /> },
           {
             path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,

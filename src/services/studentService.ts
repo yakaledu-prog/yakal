@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { MOCK_DASHBOARD_SUMMARY, delay } from "@/mock";
 
 export const studentService = {
@@ -13,3 +14,88 @@ export const studentService = {
     return MOCK_DASHBOARD_SUMMARY;
   },
 };
+
+// ------------------------------------------------------------
+// Enrolled courses
+// ------------------------------------------------------------
+
+export interface StudentCourse {
+  id: string;
+  title: string;
+  subject: string;
+  thumbnailUrl: string | null;
+  tutorName: string | null;
+  /** Assignments marked reviewed, over the total set for the course. */
+  completed: number;
+  total: number;
+  progress: number;
+  status: "In progress" | "Done" | "Pending";
+  /** Soonest assignment still outstanding. */
+  nextDue: Date | null;
+  sessionCount: number;
+}
+
+/**
+ * The courses a student is taking, with real progress.
+ *
+ * There is no enrolments table, so membership is inferred from the sessions
+ * booked for them. That is the only link the schema actually has between a
+ * student and a course.
+ */
+export async function getStudentCourses(studentId: string): Promise<StudentCourse[]> {
+  const { data: sessions, error: sErr } = await supabase
+    .from("sessions")
+    .select("course_id, status")
+    .eq("student_id", studentId)
+    .not("course_id", "is", null);
+  if (sErr) throw sErr;
+
+  const courseIds = [...new Set((sessions ?? []).map((s: any) => s.course_id))];
+  if (courseIds.length === 0) return [];
+
+  const [coursesRes, assignmentsRes, submissionsRes] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, title, subject, thumbnail_url, tutor:profiles!courses_tutor_id_fkey(full_name)")
+      .in("id", courseIds),
+    supabase.from("assignments").select("id, course_id, due_date").in("course_id", courseIds),
+    supabase.from("submissions").select("assignment_id, status").eq("student_id", studentId),
+  ]);
+  if (coursesRes.error) throw coursesRes.error;
+  if (assignmentsRes.error) throw assignmentsRes.error;
+  if (submissionsRes.error) throw submissionsRes.error;
+
+  const submissionByAssignment = new Map(
+    (submissionsRes.data ?? []).map((s: any) => [s.assignment_id, s.status])
+  );
+
+  return (coursesRes.data ?? []).map((c: any) => {
+    const assignments = (assignmentsRes.data ?? []).filter((a: any) => a.course_id === c.id);
+    const total = assignments.length;
+    // "Done" means the tutor has reviewed it, not merely that it was handed in.
+    const completed = assignments.filter(
+      (a: any) => submissionByAssignment.get(a.id) === "reviewed"
+    ).length;
+
+    const outstanding = assignments
+      .filter((a: any) => submissionByAssignment.get(a.id) !== "reviewed" && a.due_date)
+      .map((a: any) => new Date(a.due_date))
+      .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+    const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    return {
+      id: c.id,
+      title: c.title,
+      subject: c.subject,
+      thumbnailUrl: c.thumbnail_url ?? null,
+      tutorName: c.tutor?.full_name ?? null,
+      completed,
+      total,
+      progress,
+      status: total > 0 && completed === total ? "Done" : completed > 0 ? "In progress" : "Pending",
+      nextDue: outstanding[0] ?? null,
+      sessionCount: (sessions ?? []).filter((s: any) => s.course_id === c.id).length,
+    };
+  });
+}

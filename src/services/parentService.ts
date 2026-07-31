@@ -79,3 +79,155 @@ export async function setChildService(
   }
   return { success: true };
 }
+
+/** Upcoming session count per child, for the children list. */
+export async function getUpcomingSessionCounts(
+  childIds: string[]
+): Promise<Record<string, number>> {
+  if (childIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("student_id")
+    .in("student_id", childIds)
+    .eq("status", "upcoming");
+  if (error) {
+    console.warn("Could not count sessions", error.message);
+    return {};
+  }
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.student_id] = (counts[row.student_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+// ------------------------------------------------------------
+// Linking a child
+//
+// A parent creates the request and the student accepts it. RLS enforces that
+// split: a parent may insert a row for themselves, only the student may update
+// its status. So a parent cannot silently attach themselves to an account.
+// ------------------------------------------------------------
+
+export interface PendingChildLink {
+  id: string;
+  student_id: string;
+  full_name: string;
+  email: string | null;
+  avatar_url: string | null;
+  status: "pending" | "rejected";
+}
+
+export async function getPendingChildLinks(parentId: string): Promise<PendingChildLink[]> {
+  const { data: links, error } = await supabase
+    .from("parent_student_links")
+    .select("id, student_id, status")
+    .eq("parent_id", parentId)
+    .in("status", ["pending", "rejected"]);
+  if (error) throw error;
+  if (!links?.length) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, avatar_url")
+    .in("id", links.map((l) => l.student_id));
+
+  const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+  return links.map((l) => {
+    const p = byId.get(l.student_id);
+    return {
+      id: l.id,
+      student_id: l.student_id,
+      full_name: p?.full_name ?? "Unknown",
+      email: p?.email ?? null,
+      avatar_url: p?.avatar_url ?? null,
+      status: l.status as "pending" | "rejected",
+    };
+  });
+}
+
+/** Asks a student to link their account to this parent. */
+export async function requestChildLink(
+  parentId: string,
+  parentName: string,
+  email: string
+): Promise<{ success: boolean; error?: string }> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return { success: false, error: "Enter your child's email address." };
+
+  const { data: student } = await supabase
+    .from("profiles")
+    .select("id, role, full_name")
+    .eq("email", trimmed)
+    .maybeSingle();
+
+  if (!student) {
+    return { success: false, error: "No account uses that email address yet." };
+  }
+  if (student.role !== "student") {
+    return { success: false, error: `That account is a ${student.role}, not a student.` };
+  }
+  if (student.id === parentId) {
+    return { success: false, error: "That is your own account." };
+  }
+
+  const { error } = await supabase
+    .from("parent_student_links")
+    .insert({ parent_id: parentId, student_id: student.id, status: "pending" });
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "You have already asked to link this account." };
+    return { success: false, error: error.message };
+  }
+
+  // Best effort: the request exists either way, and the student also sees it
+  // on their own screen.
+  const { error: notifErr } = await supabase.from("notifications").insert({
+    user_id: student.id,
+    type: "parent_link",
+    title: "Parent link request",
+    message: `${parentName} has asked to link to your account as your parent.`,
+    link: `/student/notifications`,
+  });
+  if (notifErr) console.warn("Could not notify the student", notifErr.message);
+
+  return { success: true };
+}
+
+/** The student's side: accept or decline a pending parent link. */
+export async function respondToChildLink(
+  linkId: string,
+  accept: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("parent_student_links")
+    .update({ status: accept ? "active" : "rejected" })
+    .eq("id", linkId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Pending link requests addressed to this student. */
+export async function getIncomingLinkRequests(studentId: string) {
+  const { data: links, error } = await supabase
+    .from("parent_student_links")
+    .select("id, parent_id")
+    .eq("student_id", studentId)
+    .eq("status", "pending");
+  if (error) throw error;
+  if (!links?.length) return [];
+
+  const { data: parents } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, avatar_url")
+    .in("id", links.map((l) => l.parent_id));
+
+  const byId = new Map((parents ?? []).map((p) => [p.id, p]));
+  return links.map((l) => ({
+    id: l.id,
+    parentId: l.parent_id,
+    parentName: byId.get(l.parent_id)?.full_name ?? "A parent",
+    parentEmail: byId.get(l.parent_id)?.email ?? null,
+    avatarUrl: byId.get(l.parent_id)?.avatar_url ?? null,
+  }));
+}
