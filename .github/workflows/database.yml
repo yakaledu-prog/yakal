@@ -38,7 +38,7 @@ on:
       seed_demo_data:
         description: "Load demo accounts and sample data into the hosted project"
         type: boolean
-        default: false
+        default: true
       fresh_seed:
         description: "With seeding on, clear the dataset's rows first"
         type: boolean
@@ -169,8 +169,10 @@ jobs:
   seed:
     name: Seed the hosted project
     needs: deploy
-    # Opt in only. These accounts share a password that is written down in the
-    # repository, so this must never fire on an ordinary push.
+    # Manual only. The accounts are throwaway and their password is public by
+    # design, but reseeding still rewrites profiles and can add conversations,
+    # so it should be something you asked for rather than a side effect of a
+    # push.
     if: github.event_name == 'workflow_dispatch' && inputs.seed_demo_data
     runs-on: ubuntu-latest
     environment: production

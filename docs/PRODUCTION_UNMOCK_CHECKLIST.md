@@ -28,9 +28,9 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   database.
 
 - [ ] **Demo accounts share a public password.** Everything the seeder creates
-  uses `demo123`, which is written down in this repository. The seed job in
-  `.github/workflows/database.yml` is opt-in for that reason, but the accounts
-  must not exist in production at all.
+  uses `demo123`, which is written down in this repository. That is fine for a
+  throwaway testing project and deliberate, but these accounts must not exist
+  in a production database at all.
 
 - [ ] **Demo login buttons**, `src/pages/shared/AuthPage.tsx` shows one-click
   logins for those accounts. Remove for production.
@@ -55,6 +55,20 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   `src/pages/parent/ParentCourseCatalogDetail.tsx` drives the tutor cards, so
   those ids are not real profiles. The chat and the booking call on that page
   are wired to the real services and will fail against a fake id.
+
+- [ ] **Student and parent home figures are hardcoded.**
+  `MOCK_DASHBOARD_SUMMARY` in `src/mock/index.ts`, served by
+  `studentService.getDashboardSummary`. Needs a query joining sessions,
+  assignments and submissions for the signed-in student.
+
+- [ ] **Diagnostic results live in localStorage.**
+  `src/services/diagnosticService.ts` keeps them in the browser, so they do not
+  follow a student between devices and a tutor sees nothing. Needs a
+  `diagnostic_results` table and a migration.
+
+The mock surface is deliberately concentrated: `src/mock/index.ts` is the only
+module holding hardcoded application data. When it is empty, the app runs
+entirely on the database.
 
 ## Notes
 

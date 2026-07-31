@@ -1,4 +1,4 @@
-import { delay } from "../mock/mockData";
+import { delay } from "@/mock";
 
 export type DiagnosticResult = {
   id: string; // e.g. "algebra"

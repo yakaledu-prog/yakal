@@ -72,8 +72,8 @@ if (target === "remote" && !confirmed) {
       "  Refusing to seed the hosted project without confirmation.",
       `  Target: ${url}`,
       "",
-      "  This creates demo accounts whose password is public knowledge.",
-      "  Re-run with --yes if that is what you want.",
+      "  Seeding rewrites profiles and can add conversations, so make sure",
+      "  this is the database you meant. Re-run with --yes to go ahead.",
       "",
     ].join("\n")
   );

@@ -1,29 +1,15 @@
-import { delay } from "../mock/mockData";
+import { MOCK_DASHBOARD_SUMMARY, delay } from "@/mock";
 
 export const studentService = {
+  /**
+   * Student and parent home screen figures.
+   *
+   * Still mock data. Replacing it means querying sessions for the next booking,
+   * assignments and submissions for what is due, and counting completed
+   * sessions for the progress block. See src/mock/index.ts.
+   */
   async getDashboardSummary() {
     await delay(600);
-    return {
-      nextSession: {
-        id: "s1",
-        subject: "AP Calculus AB",
-        tutor: "Dr. Alex",
-        date: "Today, 4:00 PM",
-        link: "https://zoom.us/j/mock",
-        image: "/course_math_1782503062614.png" // We will use the generated image path later, using a placeholder for now
-      },
-      homeworkDue: [
-        { id: "h1", title: "Derivatives Practice", subject: "Calculus", due: "Tomorrow" },
-        { id: "h2", title: "Kinematics Lab Report", subject: "Physics", due: "Friday" }
-      ],
-      progress: {
-        completedSessions: 12,
-        currentStreak: 4,
-        overallGrade: "A-"
-      },
-      announcements: [
-        { id: "a1", title: "Upcoming SAT Prep Seminar", date: "Oct 15" }
-      ]
-    };
-  }
+    return MOCK_DASHBOARD_SUMMARY;
+  },
 };
