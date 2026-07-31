@@ -43,14 +43,33 @@ export interface StudentCourse {
  * student and a course.
  */
 export async function getStudentCourses(studentId: string): Promise<StudentCourse[]> {
-  const { data: sessions, error: sErr } = await supabase
-    .from("sessions")
-    .select("course_id, status")
-    .eq("student_id", studentId)
-    .not("course_id", "is", null);
-  if (sErr) throw sErr;
+  // Enrolment is what puts a course on this list. It used to be derived from
+  // booked sessions, so a course a parent had paid for did not exist here
+  // until somebody scheduled something, which is exactly backwards.
+  //
+  // Sessions still count too: courses arranged before enrolments existed have
+  // no row, and dropping them would make work disappear from a student's page.
+  const [enrolRes, sessionRes] = await Promise.all([
+    supabase
+      .from("enrolments")
+      .select("course_id")
+      .eq("student_id", studentId)
+      .eq("status", "active"),
+    supabase
+      .from("sessions")
+      .select("course_id")
+      .eq("student_id", studentId)
+      .not("course_id", "is", null),
+  ]);
+  if (enrolRes.error) throw enrolRes.error;
+  if (sessionRes.error) throw sessionRes.error;
 
-  const courseIds = [...new Set((sessions ?? []).map((s: any) => s.course_id))];
+  const courseIds = [
+    ...new Set([
+      ...(enrolRes.data ?? []).map((e: any) => e.course_id),
+      ...(sessionRes.data ?? []).map((s: any) => s.course_id),
+    ]),
+  ];
   if (courseIds.length === 0) return [];
 
   const [coursesRes, assignmentsRes, submissionsRes] = await Promise.all([
@@ -95,7 +114,7 @@ export async function getStudentCourses(studentId: string): Promise<StudentCours
       progress,
       status: total > 0 && completed === total ? "Done" : completed > 0 ? "In progress" : "Pending",
       nextDue: outstanding[0] ?? null,
-      sessionCount: (sessions ?? []).filter((s: any) => s.course_id === c.id).length,
+      sessionCount: (sessionRes.data ?? []).filter((s: any) => s.course_id === c.id).length,
     };
   });
 }

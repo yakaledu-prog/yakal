@@ -7,9 +7,12 @@ import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
-import { bookAndPay } from "@/services/billingService";
+import { useQuery } from "@tanstack/react-query";
+import { bookAndPay, money } from "@/services/billingService";
+import { getCourseForBooking } from "@/services/courseApplicationService";
+import { getLinkedChildren } from "@/services/parentService";
+import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
-import Flag from 'react-flagpack';
 import 'react-flagpack/dist/style.css';
 import { ChatBody, useDirectConversation } from "@/components/messaging";
 
@@ -31,77 +34,57 @@ const courseData = {
   ]
 };
 
-const MOCK_TUTORS = [
-  {
-    id: "t1",
-    name: "Avery M.",
-    avatar: "https://i.pravatar.cc/150?u=avery",
-    country: "US",
-    headline: "Senior Mathematics Instructor with 10+ years of experience.",
-    bio: "Learning with Avery is truly amazing. You feel comfortable from day one. Every lesson feels relaxed, but also productive and engaging at the same time. I specialize in helping students overcome their math anxiety.",
-    price: "$49.99",
-    rating: 4.8,
-    reviews: 120,
-    students: 12,
-    responseTime: "Usually responds in 2 hrs",
-    certifications: [
-      { id: 1, year: "2026 - 2026", title: "Advanced Math Teaching", issuer: "National Math Board", verified: true },
-      { id: 2, year: "2025 - 2025", title: "Algebra Certified", issuer: "Tutors Assoc.", verified: true },
-    ],
-    reviews_data: [
-      { id: 1, name: "María Alicia", date: "June 5, 2026", text: "Learning with Avery is truly amazing. You feel comfortable from day one. Every lesson feels relaxed, but also productive and engaging at the same time." },
-      { id: 2, name: "Linh", date: "June 2, 2026", text: "She has fun lessons that make me feel excited for the next lesson." },
-    ]
-  },
-  {
-    id: "t2",
-    name: "David K.",
-    avatar: "https://i.pravatar.cc/150?u=david",
-    country: "GB-UKM",
-    headline: "Math enthusiast and patient tutor for all levels.",
-    bio: "I love making math simple. I break down complex algebraic problems into easy steps.",
-    price: "$35.00",
-    rating: 4.9,
-    reviews: 45,
-    students: 8,
-    responseTime: "Usually responds in 1 hr",
-    certifications: [
-      { id: 1, year: "2023 - 2024", title: "B.S. Mathematics", issuer: "University of Oxford", verified: true },
-    ],
-    reviews_data: [
-      { id: 1, name: "John Doe", date: "July 12, 2026", text: "David is incredibly patient. My son loves his classes!" },
-    ]
-  },
-  {
-    id: "t3",
-    name: "Sarah L.",
-    avatar: "https://i.pravatar.cc/150?u=sarah",
-    country: "CA",
-    headline: "Former high school teacher with a passion for Algebra.",
-    bio: "With over 15 years in the classroom, I know exactly where students get stuck and how to help them push through.",
-    price: "$55.00",
-    rating: 5.0,
-    reviews: 210,
-    students: 34,
-    responseTime: "Usually responds in 4 hrs",
-    certifications: [
-      { id: 1, year: "2015 - 2020", title: "State Teaching License", issuer: "Ontario Board of Ed.", verified: true },
-    ],
-    reviews_data: [
-      { id: 1, name: "Emma W.", date: "Aug 1, 2026", text: "Best math teacher I've ever had. She makes algebra fun." },
-    ]
-  }
-];
+/** First hour shown in the availability grid. */
+const HOUR_START = 7;
 
 const TABS = ["Availability", "Resume", "Reviews", "Messages"];
 
 export function ParentCourseCatalogDetail() {
-  useParams();
+  const { id: courseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // The real course and the tutor an admin accepted for it. This page used to
+  // render four invented tutors with invented prices, so the id it handed to
+  // checkout was not a real profile and the booking could never have worked.
+  const { data: realCourse } = useQuery({
+    queryKey: ["course-for-booking", courseId],
+    queryFn: () => getCourseForBooking(courseId!),
+    enabled: !!courseId,
+  });
+
+  // A parent buys for a child, so which child has to be part of the purchase.
+  const { data: children = [] } = useQuery({
+    queryKey: ["linked-children", user?.id],
+    queryFn: () => getLinkedChildren(user!.id),
+    enabled: !!user?.id,
+  });
+  const [childId, setChildId] = useState<string | null>(null);
+  const bookingFor = children.find((c) => c.id === childId) ?? children[0] ?? null;
+
+  const realTutor = realCourse?.tutor ?? null;
+
+  // One approved tutor per course, so there is nobody to choose between: the
+  // page opens on them rather than on a picker of one.
   const [selectedTutorId, setSelectedTutorId] = useState<string | null>(null);
-  const selectedTutor = MOCK_TUTORS.find(t => t.id === selectedTutorId);
+  useEffect(() => {
+    if (realTutor && !selectedTutorId) setSelectedTutorId(realTutor.id);
+  }, [realTutor, selectedTutorId]);
+
+  const selectedTutor = realTutor
+    ? {
+        id: realTutor.id,
+        name: realTutor.name,
+        avatar: realTutor.avatarUrl || dicebearUrl(realTutor.name),
+        headline: (realTutor.subjects ?? []).join(", ") || "Tutor",
+        bio: realTutor.bio ?? "",
+        price: realCourse?.priceCents != null ? money(realCourse.priceCents) : "",
+        students: undefined,
+        responseTime: "",
+        certifications: [] as any[],
+        reviews_data: [] as any[],
+      }
+    : undefined;
 
   const [activeTab, setActiveTab] = useState("Availability");
   const [availability, setAvailability] = useState<TutorAvailability | null>(null);
@@ -111,11 +94,7 @@ export function ParentCourseCatalogDetail() {
   const [isBooking, setIsBooking] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
 
-  // Note: the tutor cards on this page still come from the MOCK_TUTORS list, so
-  // `selectedTutor.id` is not a real profile id yet. The chat below is wired to
-  // the real messaging stack, which means it will work as soon as this catalog
-  // is backed by profiles, and fails loudly rather than silently pretending
-  // until then.
+  // Now a real profile id, so messaging the tutor from this page works.
   const { conversation: tutorConversation, send: sendToTutor, isPeerTyping, notifyTyping } =
     useDirectConversation({
       userId: user?.id,
@@ -126,9 +105,19 @@ export function ParentCourseCatalogDetail() {
     });
 
   const [prefilledMessage, setPrefilledMessage] = useState("");
-  const [favoriteTutors, setFavoriteTutors] = useState<Record<string, boolean>>({});
 
-  const course = courseData;
+  // Falls back to the placeholder only while the real one loads, so the page
+  // never renders half a course.
+  const course = realCourse
+    ? {
+        ...courseData,
+        id: realCourse.id,
+        title: realCourse.title,
+        description: realCourse.description ?? "",
+        thumbnail: realCourse.thumbnailUrl ?? courseData.thumbnail,
+        price: realCourse.priceCents != null ? money(realCourse.priceCents) : "",
+      }
+    : courseData;
 
   useEffect(() => {
     const fetchAvail = async () => {
@@ -153,7 +142,7 @@ export function ParentCourseCatalogDetail() {
   };
 
   const weekDays = getWeekDays(currentWeekOffset);
-  const hours = Array.from({ length: 15 }).map((_, i) => i + 7);
+  const hours = Array.from({ length: 15 }).map((_, i) => i + HOUR_START);
 
   const tzOffset = selectedTimezone === "Local Time" ? 0
     : selectedTimezone === "US/Eastern" ? -4
@@ -199,12 +188,54 @@ export function ParentCourseCatalogDetail() {
     }
     setIsBooking(true);
 
-    try {
-      const unit = parseFloat(selectedTutor?.price.replace(/[^0-9.]/g, "") || "0");
-      const amountCents = Math.round(unit * 100 * selectedSlots.length);
-      const label = `${course.title} with ${selectedTutor?.name} (${selectedSlots.length} session${selectedSlots.length > 1 ? "s" : ""})`;
+    if (!realCourse || !realTutor) {
+      toast.error("This course does not have a tutor yet.");
+      setIsBooking(false);
+      return;
+    }
+    if (!bookingFor) {
+      toast.error("Add a child before booking a course.");
+      setIsBooking(false);
+      return;
+    }
 
-      const { error } = await bookAndPay({ description: label, amountCents, kind: "tutoring", tutorId: selectedTutor?.id ?? "" });
+    try {
+      // Priced from the course, not from a string parsed back out of the UI.
+      const unitCents = realCourse.priceCents ?? 0;
+      const amountCents = unitCents * selectedSlots.length;
+      const label = `${realCourse.title} with ${realTutor.name} (${selectedSlots.length} session${selectedSlots.length > 1 ? "s" : ""})`;
+
+      // The chosen slots travel with the invoice, so the payment webhook can
+      // turn them into sessions without asking the browser after the fact.
+      // The week grid runs Sunday to Saturday, so the current week still shows
+      // days that have already gone. Paying for a session in the past is not
+      // something to discover after the money has moved.
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const past = selectedSlots.filter((slot) => slot.date < startOfToday);
+      if (past.length > 0) {
+        toast.error("Some of those times have already passed. Pick a later slot.");
+        setIsBooking(false);
+        return;
+      }
+
+      const booking = selectedSlots.map((slot) => ({
+        date: slot.date.toISOString().slice(0, 10),
+        // The grid starts at 07:00, so the row index is offset from there.
+        // Getting this wrong books every session an hour out.
+        startTime: `${String(slot.hourIndex + HOUR_START).padStart(2, "0")}:00`,
+        durationMinutes: 60,
+      }));
+
+      const { error } = await bookAndPay({
+        description: label,
+        amountCents,
+        kind: "tutoring",
+        studentId: bookingFor.id,
+        tutorId: realTutor.id,
+        courseId: realCourse.id,
+        booking,
+      });
       if (error) throw new Error(error);
     } catch (error: any) {
       console.error(error);
@@ -333,67 +364,18 @@ export function ParentCourseCatalogDetail() {
         )}>
           {/* Dynamic Section: Gallery OR Master-Detail */}
           {!selectedTutorId ? (
-            /* GALLERY VIEW */
-            <div>
-              <h2 className="text-2xl font-bold text-[#111] dark:text-white mb-6">Available Tutors for this Course</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {MOCK_TUTORS.map(tutor => (
-                  <div key={tutor.id} className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl p-6 shadow-sm flex flex-col hover:border-[#1099A1] transition-colors cursor-pointer" onClick={() => setSelectedTutorId(tutor.id)}>
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex items-start gap-4">
-                        <img src={tutor.avatar} alt={tutor.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                        <div>
-                          <h3 className="text-lg font-bold text-[#111] dark:text-white flex items-center gap-2 mb-1">
-                            {tutor.name}
-                            <Flag code={tutor.country} size="m" />
-                          </h3>
-                          <div className="flex items-center gap-1.5 text-[14px] text-yellow-500 font-bold mb-1">
-                            <Star size={14} fill="currentColor" /> {tutor.rating}
-                            <span className="text-[#54656f] font-normal underline ml-1">({tutor.reviews})</span>
-                          </div>
-                          <p className="text-[#54656f] text-[13px]">{tutor.students} active students</p>
-                        </div>
-                      </div>
-                      <button
-                        className={cn("transition-colors", favoriteTutors[tutor.id] ? "text-secondary" : "text-[#aebac1] hover:text-secondary")}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFavoriteTutors(prev => ({ ...prev, [tutor.id]: !prev[tutor.id] }));
-                        }}
-                      >
-                        <Heart size={20} className={favoriteTutors[tutor.id] ? "fill-secondary" : ""} />
-                      </button>
-                    </div>
-
-                    <div className="text-[14px] font-medium text-[#111] dark:text-white mb-2 line-clamp-1">
-                      {tutor.headline}
-                    </div>
-                    <div className="text-[13px] text-[#54656f] dark:text-[#aebac1] line-clamp-2 mb-4">
-                      {tutor.bio}
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-end pt-4 border-t border-[#e9edef] dark:border-[#2a3942]">
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="ghost"
-                          className="!bg-[#87bE8D] hover:!bg-[#97CE9D]/95 border-transparent !text-white hover:!text-secondary-foreground gap-2 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTutorId(tutor.id);
-                            setTimeout(() => {
-                              setActiveTab("Messages");
-                              setPrefilledMessage(`Hi ${tutor.name.split(' ')[0]},\n\nI'm interested in booking a lesson for my child. Could we discuss availability?`);
-                            }, 10);
-                          }}
-                        >
-                          <MessageCircle size={16} /> Send Message
-                        </Button>
-                        <Button className="bg-[#1099A1] hover:bg-[#0d848b] text-white">View Profile</Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            /* No tutor accepted for this course yet. There is nobody to
+               book with, and inventing three to fill the space is what this
+               page did before. */
+            <div className="rounded-2xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
+              <Users size={32} className="mx-auto mb-3 text-[#aebac1]" />
+              <p className="text-[15px] font-medium text-[#111] dark:text-white">
+                No tutor assigned yet
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                This course is open for tutors to apply to. It becomes bookable once one is
+                approved.
+              </p>
             </div>
           ) : (
             /* SELECTED TUTOR VIEW */
@@ -415,6 +397,33 @@ export function ParentCourseCatalogDetail() {
                         <h3 className="text-xl font-bold">Book a session with {selectedTutor?.name}</h3>
                         <div className="text-xl font-bold text-[#1099A1]">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
                       </div> */}
+
+                        {/* A parent buys for a child, so which child is part
+                            of the purchase rather than something guessed at
+                            checkout. */}
+                        <div className="flex flex-wrap items-center gap-2 px-2 text-[13.5px]">
+                          <span className="text-[#54656f] dark:text-[#aebac1]">Booking for</span>
+                          {children.length === 0 ? (
+                            <span className="font-medium text-[#CAA25F]">
+                              No children linked yet
+                            </span>
+                          ) : children.length === 1 ? (
+                            <span className="font-semibold text-[#111] dark:text-white">
+                              {children[0].full_name}
+                            </span>
+                          ) : (
+                            <select
+                              value={bookingFor?.id ?? ""}
+                              onChange={(e) => setChildId(e.target.value)}
+                              aria-label="Which child this course is for"
+                              className="rounded-lg border border-[#e9edef] bg-transparent px-2 py-1 font-semibold text-foreground outline-none dark:border-[#2a3942]"
+                            >
+                              {children.map((c) => (
+                                <option key={c.id} value={c.id}>{c.full_name}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
 
                         {!availability ? (
                           <div className="p-12 text-center text-[#54656f] dark:text-[#aebac1] border border-dashed rounded-xl border-[#e9edef] dark:border-[#2a3942]">
@@ -511,7 +520,9 @@ export function ParentCourseCatalogDetail() {
                           <div className="xl:hidden bg-white dark:bg-[#202c33] p-6 border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg sticky bottom-4 flex items-center justify-between">
                             <div>
                               <div className="text-lg font-bold">{selectedSlots.length} slot(s) selected</div>
-                              <div className="text-[#54656f]">Total: ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * selectedSlots.length).toFixed(2)}</div>
+                              <div className="text-[#54656f]">
+                                Total: {money((realCourse?.priceCents ?? 0) * selectedSlots.length)}
+                              </div>
                             </div>
                             <Button
                               onClick={handleBookSlot}
@@ -627,19 +638,9 @@ export function ParentCourseCatalogDetail() {
                     {/* REVIEWS TAB */}
                     {activeTab === "Reviews" && (
                       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="flex items-center gap-4">
-                          <div className="text-[48px] font-bold text-[#111] dark:text-white">{selectedTutor?.rating}</div>
-                          <div className="flex flex-col gap-1">
-                            <div className="flex text-yellow-500">
-                              <Star size={20} fill="currentColor" />
-                              <Star size={20} fill="currentColor" />
-                              <Star size={20} fill="currentColor" />
-                              <Star size={20} fill="currentColor" />
-                              <Star size={20} fill="currentColor" className="opacity-50" />
-                            </div>
-                            <span className="text-[#54656f] dark:text-[#aebac1] font-bold text-[14px]">Tutor Rating ({selectedTutor?.reviews})</span>
-                          </div>
-                        </div>
+                        <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">
+                          No reviews yet. Ratings appear here once students have left them.
+                        </p>
 
                         <div className="space-y-4">
                           {selectedTutor?.reviews_data.map((review: any) => (
@@ -707,13 +708,9 @@ export function ParentCourseCatalogDetail() {
                     <div className="p-6">
                       {/* Stats */}
                       <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-1.5">
-                          <Star size={20} fill="currentColor" className="text-yellow-500" />
-                          <span className="text-[20px] font-bold text-[#111] dark:text-white">{selectedTutor?.rating}</span>
-                        </div>
                         <div className="text-center">
-                          <div className="text-[16px] font-bold text-[#111] dark:text-white">{selectedTutor?.students}</div>
-                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">students</div>
+                          <div className="text-[16px] font-bold text-[#111] dark:text-white">{course.title}</div>
+                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">course</div>
                         </div>
                         <div className="text-center">
                           <div className="text-[20px] font-bold text-[#111] dark:text-white">

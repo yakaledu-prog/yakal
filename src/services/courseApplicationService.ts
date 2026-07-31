@@ -331,3 +331,56 @@ export async function rejectApplicant(input: {
 
   return { success: true };
 }
+
+// ------------------------------------------------------------
+// Booking a course
+// ------------------------------------------------------------
+
+export interface CourseWithTutor extends CourseSummary {
+  tutor: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    bio: string | null;
+    subjects: string[] | null;
+    hourlyRate: number | null;
+  } | null;
+}
+
+/**
+ * A course and the tutor teaching it, for the booking page.
+ *
+ * The tutor comes from the accepted application, so the person a parent books
+ * with is the person an admin approved. The page used to show four invented
+ * tutors with invented prices, which meant the id it handed to checkout was
+ * not a real profile.
+ */
+export async function getCourseForBooking(courseId: string): Promise<CourseWithTutor | null> {
+  const { data, error } = await supabase
+    .from("courses")
+    .select(`${COURSE_FIELDS},
+             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate)`)
+    .eq("id", courseId)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) console.error("getCourseForBooking failed:", error);
+    return null;
+  }
+
+  const base = toCourse(data)!;
+  const t = (data as any).tutor;
+  return {
+    ...base,
+    tutor: t
+      ? {
+          id: t.id,
+          name: t.full_name,
+          avatarUrl: t.avatar_url ?? null,
+          bio: t.bio ?? null,
+          subjects: t.subjects ?? null,
+          hourlyRate: t.hourly_rate ?? null,
+        }
+      : null,
+  };
+}
