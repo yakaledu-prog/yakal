@@ -66,7 +66,6 @@ export function CounselorMessages() {
               <ContactInfoPanel
                 contact={activeConversation.contact}
                 onClose={() => setShowProfile(false)}
-                className="hidden lg:flex"
               />
             ) : null
           }

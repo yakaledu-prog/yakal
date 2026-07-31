@@ -193,7 +193,11 @@ export function ContactInfoPanel({
   return (
     <aside
       className={cn(
-        "relative w-full md:w-[300px] md:shrink-0 flex flex-col border-l border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] overflow-y-auto",
+        // There is no room for a third column on a phone, so below lg the panel
+        // covers the conversation instead of sitting beside it. Its close
+        // button is the way back either way.
+        "absolute inset-0 z-30 w-full flex flex-col overflow-y-auto bg-white dark:bg-[#111b21]",
+        "lg:static lg:z-auto lg:w-[300px] lg:shrink-0 lg:border-l lg:border-[#e9edef] lg:dark:border-[#2a3942]",
         className
       )}
     >
@@ -206,7 +210,7 @@ export function ContactInfoPanel({
         <button
           onClick={onClose}
           aria-label="Close contact info"
-          className="pointer-events-auto mt-2 mr-2 p-1.5 rounded-full bg-white/85 dark:bg-[#111b21]/85 backdrop-blur hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[#54656f] dark:text-[#aebac1]"
+          className="relative pointer-events-auto mt-2 mr-2 p-1.5 rounded-full hover:opacity-85 transition ease-in-out text-[#54656f] dark:text-[#aebac1]"
         >
           <X size={18} />
         </button>
@@ -217,7 +221,7 @@ export function ContactInfoPanel({
           <Loader2 className="animate-spin text-[#1099A1]" size={20} />
         </div>
       ) : (
-        <div className="pt-11 divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+        <div className="pt-4 divide-y divide-[#e9edef] dark:divide-[#2a3942]">
           {profile?.bio && (
             <div className="px-4 py-3">
               <p className="text-[11px] uppercase tracking-wider text-[#8696a0] mb-1">About</p>
