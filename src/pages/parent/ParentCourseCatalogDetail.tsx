@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, PlayCircle, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, Send, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
+import { Star, Clock, Users, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
@@ -11,8 +11,7 @@ import { bookAndPay } from "@/services/billingService";
 import { toast } from "sonner";
 import Flag from 'react-flagpack';
 import 'react-flagpack/dist/style.css';
-import { ChatPane } from "@/components/chat/ChatPane";
-import type { Conversation } from "@/mock/chatData";
+import { ChatBody, useDirectConversation } from "@/components/messaging";
 
 const courseData = {
   id: "CAT-01",
@@ -112,21 +111,20 @@ export function ParentCourseCatalogDetail() {
   const [isBooking, setIsBooking] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
 
-  const [mockConversations, setMockConversations] = useState<Conversation[]>([]);
-  const mockActiveConv: Conversation = {
-    id: `mock-conv-${selectedTutor?.id}`,
-    isPinned: false,
-    unreadCount: 0,
-    contact: {
-      id: selectedTutor?.id || "unknown",
-      name: selectedTutor?.name || "Tutor",
-      avatar: selectedTutor?.avatar || "https://i.pravatar.cc/150",
-      isOnline: true,
-      lastSeen: new Date(),
-      role: "Tutor"
-    },
-    messages: mockConversations.find(c => c.id === `mock-conv-${selectedTutor?.id}`)?.messages || []
-  };
+  // Note: the tutor cards on this page still come from the MOCK_TUTORS list, so
+  // `selectedTutor.id` is not a real profile id yet. The chat below is wired to
+  // the real messaging stack, which means it will work as soon as this catalog
+  // is backed by profiles, and fails loudly rather than silently pretending
+  // until then.
+  const { conversation: tutorConversation, send: sendToTutor, isPeerTyping, notifyTyping } =
+    useDirectConversation({
+      userId: user?.id,
+      peerId: selectedTutor?.id,
+      peerName: selectedTutor?.name,
+      peerRole: "tutor",
+      peerAvatarUrl: selectedTutor?.avatar,
+    });
+
   const [prefilledMessage, setPrefilledMessage] = useState("");
   const [favoriteTutors, setFavoriteTutors] = useState<Record<string, boolean>>({});
 
@@ -671,12 +669,16 @@ export function ParentCourseCatalogDetail() {
                     {activeTab === "Messages" && (
                       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full w-full">
                         <div className="bg-[#f8f9fa] dark:bg-[#182329] h-full overflow-hidden flex flex-col">
-                          <ChatPane
-                            activeConv={mockActiveConv}
-                            setConversations={setMockConversations}
-                            showHeader={false}
-                            initialInputText={prefilledMessage}
-                          />
+                          {tutorConversation && (
+                            <ChatBody
+                              conversation={tutorConversation}
+                              currentUserId={user?.id}
+                              onSendText={sendToTutor}
+                              onTyping={notifyTyping}
+                              isPeerTyping={isPeerTyping}
+                              draft={prefilledMessage}
+                            />
+                          )}
                         </div>
                       </div>
                     )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
@@ -13,10 +13,9 @@ import { supabase } from "@/lib/supabase";
 import {
   getTutorStudents, getStudentDetail, StudentDetail,
 } from "@/services/tutorService";
-import { getConversations, mapDbToLocalConversations, subscribeToMessages } from "@/services/messageService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { dicebearUrl } from "@/utils/avatar";
-import { ChatPane } from "@/components/chat/ChatPane";
+import { ChatBody, useDirectConversation } from "@/components/messaging";
 import { TutorStudentDiagnosticsTab } from "@/components/tutor/TutorStudentDiagnosticsTab";
 
 function fmtDate(d?: string | null) {
@@ -159,49 +158,18 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
 
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data: dbConversations } = useQuery({
-    queryKey: ['conversations', user?.id],
-    queryFn: () => getConversations(user!.id),
-    enabled: !!user,
-  });
-
-  const [conversations, setConversations] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (dbConversations && dbConversations.length > 0) {
-      setConversations(mapDbToLocalConversations(dbConversations));
-    } else {
-      setConversations([]);
-    }
-  }, [dbConversations]);
-
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = subscribeToMessages(() => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
-    });
-    return () => unsubscribe();
-  }, [user, queryClient]);
 
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "diagnostics">("overview");
-  
-  // Find or mock an active conversation for this student
-  const activeConv = conversations.find(c => c.contact.id === detail.profile?.id) || {
-    id: `conv-${detail.profile?.id}`,
-    contact: {
-      id: detail.profile?.id || "unknown",
-      name: detail.profile?.full_name || "Unknown",
-      role: "Student",
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${detail.profile?.full_name || 'U'}&backgroundColor=1099A1`,
-      isOnline: false,
-      lastSeen: new Date(),
-    },
-    messages: [],
-    unreadCount: 0,
-    isPinned: false
-  };
+
+  // The page already says whose record this is, so the Messages tab shows the
+  // conversation on its own - no list, no second name in a header.
+  const { conversation, send, isPeerTyping, notifyTyping } = useDirectConversation({
+    userId: user?.id,
+    peerId: detail.profile?.id,
+    peerName: detail.profile?.full_name ?? undefined,
+    peerRole: "student",
+    peerAvatarUrl: detail.profile?.avatar_url,
+  });
 
   if (!p) return <div className="p-8 text-center text-muted-foreground">Student not found.</div>;
 
@@ -366,11 +334,15 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
 
         {activeTab === "messages" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex-1 flex flex-col min-h-[600px] bg-white dark:bg-[#111b21]">
-            <ChatPane
-              activeConv={activeConv}
-              setConversations={setConversations}
-              showHeader={false}
-            />
+            {conversation && (
+              <ChatBody
+                conversation={conversation}
+                currentUserId={user?.id}
+                onSendText={send}
+                onTyping={notifyTyping}
+                isPeerTyping={isPeerTyping}
+              />
+            )}
           </div>
         )}
       </div>

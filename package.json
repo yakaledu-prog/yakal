@@ -78,6 +78,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "playwright": "^1.62.1",
     "sharp": "^0.34.5",
     "supabase": "^2.110.0",
     "tailwindcss": "4.1.12",

@@ -12,8 +12,7 @@ import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 
 import { stripHtml } from "@/components/ui/RichTextEditor";
 import { dicebearUrl } from "@/utils/avatar";
-import { ChatPane } from "@/components/chat/ChatPane";
-import { mockConversations } from "@/mock/chatData";
+import { ChatBody, ConversationList, useMessaging } from "@/components/messaging";
 
 
 function fmtDate(d?: string | null) {
@@ -133,7 +132,6 @@ export function TutorCourses() {
 function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: string) => void }) {
   const { course, students, sessions, assignments } = ws;
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "students">("overview");
-  const [conversations, setConversations] = useState(mockConversations);
 
   return (
     <div className={cn("flex flex-col h-full", activeTab !== 'students' && "pb-10")}>
@@ -299,7 +297,7 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
 
         {activeTab === 'students' && (
           <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col overflow-hidden border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
-            <CourseMessagesTab conversations={conversations} setConversations={setConversations} />
+            <CourseMessagesTab />
           </div>
         )}
       </div>
@@ -307,53 +305,50 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
   );
 }
 
-function CourseMessagesTab({ conversations, setConversations }: { conversations: any[]; setConversations: any }) {
-  const [activeConvId, setActiveConvId] = useState<string>(conversations[0]?.id);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const activeConv = conversations.find((c) => c.id === activeConvId) || conversations[0];
-
-  const filtered = conversations.filter((c) =>
-    c.contact.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+// The tutor's real conversations, in a narrower two-pane arrangement that fits
+// inside the course tab. Used to render mockConversations, so every student
+// listed here was fictional and nothing sent could be delivered.
+function CourseMessagesTab() {
+  const { user } = useAuth();
+  const {
+    conversations,
+    activeConversation,
+    openConversation,
+    sendMessage,
+    searchQuery,
+    setSearchQuery,
+    isLoading,
+    onlineIds,
+    isPeerTyping,
+    notifyTyping,
+  } = useMessaging({ userId: user?.id, includeContacts: false });
 
   return (
     <div className="flex flex-1 overflow-hidden h-full">
-      {/* Left Pane: Conversation List */}
-      <div className="hidden md:flex w-[280px] flex-shrink-0 flex-col bg-white dark:bg-[#111b21] border-r border-[#e9edef] dark:border-[#2a3942]">
-        <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-1 py-1 transition ease-in-out">
-            <Search size={16} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search students..."
-              className="bg-transparent text-[13px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
-            />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map(conv => (
-            <div
-              key={conv.id}
-              onClick={() => setActiveConvId(conv.id)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b-2",
-                activeConvId === conv.id ? "bg-primary/5 border-b-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
-              )}
-            >
-              <img src={conv.contact.avatar || dicebearUrl(conv.contact.name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className={cn("text-[14px] truncate", activeConvId === conv.id ? "text-primary" : "text-[#111] dark:text-white")}>{conv.contact.name}</p>
-                <p className="text-[12px] text-muted-foreground truncate">{conv.messages[conv.messages.length - 1]?.text || "New conversation"}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Right Pane: Chat Pane */}
+      <ConversationList
+        conversations={conversations}
+        activeConversationId={activeConversation?.id}
+        onSelectConversation={openConversation}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        isLoading={isLoading}
+        onlineIds={onlineIds}
+        className="hidden md:flex w-[280px] shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]"
+      />
       <div className="flex-1 flex flex-col min-w-0">
-        {activeConv ? <ChatPane activeConv={activeConv} setConversations={setConversations} /> : <div className="p-10 text-center text-muted-foreground text-[14px]">Select a student to message.</div>}
+        {activeConversation ? (
+          <ChatBody
+            conversation={activeConversation}
+            currentUserId={user?.id}
+            onSendText={sendMessage}
+            onTyping={notifyTyping}
+            isPeerTyping={isPeerTyping}
+          />
+        ) : (
+          <div className="p-10 text-center text-muted-foreground text-[14px]">
+            Select a student to message.
+          </div>
+        )}
       </div>
     </div>
   );
