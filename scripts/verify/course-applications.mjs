@@ -73,6 +73,29 @@ try {
 }
 pass('a tutor cannot accept their own application', selfAccept === '0', `accepted=${selfAccept}`);
 
+// ---------- the admin decides ----------
+const admin = await signIn('admin@yakal.com');
+const courseId = psql("select id from courses where title like 'Chemistry%' limit 1;");
+await admin.goto(`${BASE}/admin/courses/${courseId}`, { waitUntil: 'domcontentloaded' });
+await admin.waitForTimeout(3500);
+const adminText = await admin.locator('body').innerText();
+pass('the applicant is listed for the admin', /Bethlehem Alemu/.test(adminText));
+pass('their reason is shown', /taught this syllabus for six years/i.test(adminText));
+pass('no invented tutors remain', !/Sarah|4\.9|Verified Pro/i.test(adminText));
+pass('the course reads as unassigned', /No tutor assigned yet/i.test(adminText));
+await admin.screenshot({ path: `${S}/admin-course-applicants.png`, fullPage: true });
+
+await admin.getByRole('button', { name: /Accept and assign/i }).click();
+await admin.waitForTimeout(3000);
+pass('the tutor is assigned to the course', psql(`select tutor_id is not null from courses where id='${courseId}';`) === 't');
+pass('the application is marked accepted', psql("select status from course_applications limit 1;") === 'accepted');
+pass('the tutor is told', Number(psql("select count(*) from notifications where type='course_application_decided';")) > 0);
+
+// It should now be one of their teaching courses.
+await tutor.goto(`${BASE}/tutor/courses`, { waitUntil: 'domcontentloaded' });
+await tutor.waitForTimeout(3500);
+pass('it moves to the tutor Teaching tab', /Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
+
 pass('no page errors', errs.length === 0, errs[0]?.slice(0, 140) ?? '');
 await b.close();
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);

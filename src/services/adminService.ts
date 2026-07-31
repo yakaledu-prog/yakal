@@ -37,6 +37,8 @@ export interface AdminCourse {
   thumbnail_url: string | null;
   google_classroom_url: string | null;
   is_active: boolean;
+  /** Null until an admin accepts one of the applicants. */
+  tutor_id: string | null;
 }
 
 export interface ContactMessage {
@@ -275,7 +277,7 @@ export async function getAllInvoices(): Promise<AdminInvoice[]> {
 export async function getCourses(): Promise<AdminCourse[]> {
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_id")
     .order("created_at", { ascending: false });
   return courses || [];
 }
@@ -283,7 +285,7 @@ export async function getCourses(): Promise<AdminCourse[]> {
 export async function getCourse(id: string): Promise<AdminCourse | null> {
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_id")
     .eq("id", id)
     .single();
   return course || null;

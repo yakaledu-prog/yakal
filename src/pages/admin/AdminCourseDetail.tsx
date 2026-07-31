@@ -1,47 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, Star, Users, ExternalLink, Calendar, Search, LayoutGrid, Heart } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, Users, ExternalLink, Calendar, Star } from "lucide-react";
 import { getCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
-import { Button } from "@/components/ui/Button";
+import { CourseApplicants } from "@/components/admin/CourseApplicants";
 
 // Mock Tutors
-const mockTutors = [
-  {
-    id: "t1",
-    name: "Avery M.",
-    flag: "🇺🇸",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Avery",
-    rating: 4.8,
-    reviews: 120,
-    students: 12,
-    title: "Senior Mathematics Instructor with 10+ years of experience.",
-    quote: "Learning with Avery is truly amazing. You feel comfortable from day one. Every lesson feels relaxed, but also...",
-  },
-  {
-    id: "t2",
-    name: "David K.",
-    flag: "🇬🇧",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-    rating: 4.9,
-    reviews: 45,
-    students: 8,
-    title: "Math enthusiast and patient tutor for all levels.",
-    quote: "I love making math simple. I break down complex algebraic problems into easy steps.",
-  },
-  {
-    id: "t3",
-    name: "Sarah L.",
-    flag: "🇨🇦",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-    rating: 5.0,
-    reviews: 210,
-    students: 34,
-    title: "Former high school teacher with a passion for...",
-    quote: "With over 15 years in the classroom, I know exactly where students get stuck and how to help them push through.",
-  }
-];
 
 export function AdminCourseDetail() {
   const { id } = useParams();
@@ -161,56 +126,12 @@ export function AdminCourseDetail() {
         
         {/* TUTORS TAB */}
         {activeTab === "tutors" && (
-          <div className="animate-in fade-in duration-300">
-            <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">Available Tutors for this Course</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockTutors.map((tutor) => (
-                <div key={tutor.id} className="bg-white dark:bg-[#182329] rounded-[24px] border border-[#e9edef] dark:border-[#2a3942] p-6 hover:shadow-lg transition-all flex flex-col h-full relative group">
-                  <button className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition-colors">
-                    <Heart size={22} className="stroke-[1.5px]" />
-                  </button>
-                  
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
-                      <img src={tutor.avatar} alt={tutor.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-[18px] font-bold text-[#111] dark:text-white">{tutor.name}</h3>
-                        <span className="text-[14px]">{tutor.flag}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground mb-1">
-                        <Star className="w-3.5 h-3.5 fill-[#F2C94C] text-[#F2C94C]" />
-                        <span className="font-medium text-[#111] dark:text-white">{tutor.rating}</span>
-                        <span>({tutor.reviews})</span>
-                      </div>
-                      <div className="text-[12px] text-muted-foreground">
-                        {tutor.students} active students
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-6 flex-grow">
-                    <h4 className="text-[14px] font-semibold text-[#111] dark:text-white mb-2 leading-relaxed">
-                      {tutor.title}
-                    </h4>
-                    <p className="text-[13px] text-muted-foreground leading-relaxed italic">
-                      "{tutor.quote}"
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3 mt-auto">
-                    <Button variant="outline" className="flex-1 bg-[#f0f9f9] hover:bg-[#e0f2f2] text-[#1099A1] border-transparent font-semibold shadow-none rounded-xl h-11">
-                      Send Message
-                    </Button>
-                    <Button className="flex-1 rounded-xl h-11 font-semibold shadow-none">
-                      View Profile
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <CourseApplicants
+            courseId={course.id}
+            courseTitle={course.title}
+            assignedTutorId={course.tutor_id ?? null}
+            onAssigned={() => id && getCourse(id).then(setCourse)}
+          />
         )}
 
         {/* OVERVIEW TAB */}
