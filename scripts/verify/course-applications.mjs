@@ -26,15 +26,17 @@ async function signIn(email) {
 }
 
 const tutor = await signIn('tutor@yakal.com');
+// Finding work has its own page, laid out like the parent catalog. My Courses
+// stays a workspace for what is already being taught.
 await tutor.goto(`${BASE}/tutor/courses`, { waitUntil: 'domcontentloaded' });
 await tutor.waitForTimeout(4000);
-pass('courses page has the three tabs', await tutor.getByRole('button', { name: /^Teaching/ }).isVisible()
-  && await tutor.getByRole('button', { name: /^Open/ }).isVisible()
-  && await tutor.getByRole('button', { name: /^Applied/ }).isVisible());
-await tutor.screenshot({ path: `${S}/tutor-courses-tabs.png` });
+pass('My Courses has no marketplace in it', !/Find a course|Apply/.test(await tutor.locator('body').innerText()));
 
-await tutor.getByRole('button', { name: /^Open/ }).click();
-await tutor.waitForTimeout(2500);
+await tutor.goto(`${BASE}/tutor/find-courses`, { waitUntil: 'domcontentloaded' });
+await tutor.waitForTimeout(3000);
+pass('the catalog page loads', /Find a course/.test(await tutor.locator('body').innerText()));
+pass('no available-tutors section', !/Available Tutors/i.test(await tutor.locator('body').innerText()));
+await tutor.screenshot({ path: `${S}/tutor-find-courses.png`, fullPage: true });
 pass('open courses are listed', /Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
 // The payout is the tutor's business; what the parent pays is not, and
 // inviting the comparison helps nobody.
@@ -51,15 +53,15 @@ await tutor.waitForTimeout(2500);
 pass('the application reaches the database', psql("select count(*) from course_applications where status='pending';") === '1');
 pass('admins are notified', Number(psql("select count(*) from notifications where type='course_application';")) > 0);
 
-await tutor.getByRole('button', { name: /^Applied/ }).click();
+await tutor.getByRole('button', { name: /My applications/i }).click();
 await tutor.waitForTimeout(2000);
 const appliedText = await tutor.locator('body').innerText();
 pass('it appears under Applied', /Chemistry, Grade 11 Foundations/.test(appliedText));
 pass('its state is shown', /Waiting on a decision/i.test(appliedText));
 
-await tutor.getByRole('button', { name: /^Open/ }).click();
+await tutor.getByRole('button', { name: /My applications/i }).click();
 await tutor.waitForTimeout(2000);
-pass('an applied course leaves the Open tab', !/Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
+pass('an applied course leaves the catalog', !/Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
 
 // A tutor must not be able to accept themselves. The policy lets them move a
 // pending row to withdrawn and nothing else, so this write has to be refused.
@@ -94,7 +96,7 @@ pass('the tutor is told', Number(psql("select count(*) from notifications where 
 // It should now be one of their teaching courses.
 await tutor.goto(`${BASE}/tutor/courses`, { waitUntil: 'domcontentloaded' });
 await tutor.waitForTimeout(3500);
-pass('it moves to the tutor Teaching tab', /Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
+pass('it moves to My Courses', /Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
 
 pass('no page errors', errs.length === 0, errs[0]?.slice(0, 140) ?? '');
 await b.close();

@@ -47,6 +47,7 @@ import { TutorLayout } from "../pages/tutor/TutorLayout";
 import { TutorHome } from "../pages/tutor/TutorHome";
 import { TutorCalendar } from "../pages/tutor/TutorCalendar";
 import { TutorCourses } from "../pages/tutor/TutorCourses";
+import { TutorCourseCatalog } from "../pages/tutor/TutorCourseCatalog";
 import { TutorStudents } from "../pages/tutor/TutorStudents";
 import { TutorAssignments } from "../pages/tutor/TutorAssignments";
 import { TutorAssignmentNew } from "../pages/tutor/TutorAssignmentNew";
@@ -313,6 +314,7 @@ const router = createBrowserRouter([
           { path: "meeting/:sessionId", element: <TutorMeeting /> },
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
+          { path: "find-courses", element: <TutorCourseCatalog /> },
           { path: "courses/:id", element: <TutorCourses /> },
           { path: "earnings", element: <TutorEarnings /> },
           { path: "assignments", element: <TutorAssignments /> },
