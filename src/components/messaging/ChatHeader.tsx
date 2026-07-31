@@ -1,7 +1,7 @@
-import { ArrowLeft, MoreVertical, PanelRightOpen, Search } from "lucide-react";
+import { ArrowLeft, MoreVertical, Search } from "lucide-react";
 import type { ChatContact } from "@/services/messageService";
 import { cn } from "@/utils/cn";
-import { formatListDate } from "./format";
+import { formatLastSeen } from "./format";
 import { RoleBadge, ROLE_LABEL, normalizeRole } from "./RoleIcon";
 
 // ============================================================
@@ -19,7 +19,6 @@ import { RoleBadge, ROLE_LABEL, normalizeRole } from "./RoleIcon";
 export function ChatHeader({
   contact,
   isTyping = false,
-  isProfileOpen = false,
   onProfileClick,
   onBack,
   onSearch,
@@ -28,8 +27,6 @@ export function ChatHeader({
 }: {
   contact: ChatContact;
   isTyping?: boolean;
-  /** Whether the contact panel is currently showing, for the toggle's state. */
-  isProfileOpen?: boolean;
   onProfileClick?: () => void;
   /** Shown on small screens to get back to the conversation list. */
   onBack?: () => void;
@@ -38,13 +35,18 @@ export function ChatHeader({
   className?: string;
 }) {
   const role = normalizeRole(contact.role);
+
+  // One slot after the role, sharing it between the three things worth saying:
+  // what they are doing now, or when they were last around.
+  const lastSeen = formatLastSeen(contact.lastSeen);
   const status = isTyping
     ? "typing..."
     : contact.isOnline
       ? "online"
-      : contact.lastSeen
-        ? `last seen ${formatListDate(contact.lastSeen)}`
+      : lastSeen
+        ? `last seen ${lastSeen}`
         : null;
+  const statusIsLive = isTyping || contact.isOnline;
 
   return (
     <div
@@ -112,7 +114,9 @@ export function ChatHeader({
               {status && (
                 <>
                   <span className="w-1 h-1 rounded-full bg-white/40 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{status}</span>
+                  <span className={cn("truncate", statusIsLive && "text-white font-medium")}>
+                    {status}
+                  </span>
                 </>
               )}
             </span>
@@ -120,25 +124,6 @@ export function ChatHeader({
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* The panel is easy to miss otherwise: tapping the name opens it
-              too, but nothing about a name says it is a button. */}
-          {onProfileClick && (
-            <button
-              onClick={onProfileClick}
-              aria-expanded={isProfileOpen}
-              title={isProfileOpen ? "Hide contact info" : "Show contact info"}
-              className={cn(
-                "flex items-center gap-2 rounded-full border transition-colors px-3 py-1.5",
-                isProfileOpen
-                  ? "bg-white text-[#1099A1] border-white"
-                  : "border-white/40 text-white hover:bg-white/15"
-              )}
-            >
-              <PanelRightOpen size={16} />
-              <span className="hidden md:inline text-[13px] font-medium">Contact info</span>
-            </button>
-          )}
-
           <div className="flex items-center gap-0.5 text-white/90">
             {onSearch && (
               <button

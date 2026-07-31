@@ -184,6 +184,10 @@ async function seedProfiles() {
     rate_currency: u.rateCurrency ?? "ETB",
     grade_level: u.gradeLevel ?? null,
     accepting_students: u.acceptingStudents ?? true,
+    last_seen_at:
+      u.lastSeenMinutesAgo === undefined
+        ? null
+        : new Date(Date.now() - u.lastSeenMinutesAgo * 60_000).toISOString(),
     is_onboarded: u.isOnboarded ?? true,
   }));
 

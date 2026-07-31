@@ -27,6 +27,12 @@ export interface SeedUser {
   acceptingStudents?: boolean;
   isOnboarded?: boolean;
   avatarUrl?: string;
+  /**
+   * Staggers profiles.last_seen_at so the headers show a spread of "last seen"
+   * values straight after seeding, rather than everyone being idle forever.
+   * A real session overwrites it on the next heartbeat.
+   */
+  lastSeenMinutesAgo?: number;
 }
 
 /** Every demo account shares this password, matching the sign-in page shortcuts. */
@@ -63,6 +69,7 @@ const avatarFor = (name: string) => AVATAR_URLS[name];
 export const USERS: SeedUser[] = [
   {
     email: "admin@yakal.com",
+    lastSeenMinutesAgo: 2880,
     fullName: "Almaz Tadesse",
     role: "admin",
     avatarUrl: avatarFor("Almaz Tadesse"),
@@ -72,6 +79,7 @@ export const USERS: SeedUser[] = [
   },
   {
     email: "tutor@yakal.com",
+    lastSeenMinutesAgo: 12,
     fullName: "Bethlehem Alemu",
     role: "tutor",
     avatarUrl: avatarFor("Bethlehem Alemu"),
@@ -86,6 +94,7 @@ export const USERS: SeedUser[] = [
   },
   {
     email: "counselor@yakal.com",
+    lastSeenMinutesAgo: 180,
     fullName: "Daniel Haile",
     role: "counselor",
     avatarUrl: avatarFor("Daniel Haile"),
@@ -97,6 +106,7 @@ export const USERS: SeedUser[] = [
   },
   {
     email: "student@yakal.com",
+    lastSeenMinutesAgo: 4,
     fullName: "Amen Worku",
     role: "student",
     avatarUrl: avatarFor("Amen Worku"),
@@ -107,6 +117,7 @@ export const USERS: SeedUser[] = [
   },
   {
     email: "parent@yakal.com",
+    lastSeenMinutesAgo: 1500,
     fullName: "Tigist Worku",
     role: "parent",
     avatarUrl: avatarFor("Tigist Worku"),

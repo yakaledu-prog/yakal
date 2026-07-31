@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { useLastSeenHeartbeat } from "@/hooks/usePresence";
 
 export interface Profile {
   id: string;
@@ -46,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Stamps profiles.last_seen_at while the app is open, anywhere in it.
+  useLastSeenHeartbeat(user?.id);
 
   useEffect(() => {
     // Fetch initial session

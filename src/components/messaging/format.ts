@@ -15,6 +15,32 @@ export function formatListDate(date: Date | null | undefined): string {
   return date.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
+/**
+ * How long ago someone was last around, phrased the way a person would say it.
+ *
+ * The heartbeat runs every minute, so anything fresher than that is rounded to
+ * "just now" rather than claiming a precision it does not have.
+ */
+export function formatLastSeen(date: Date | null | undefined): string | null {
+  if (!date) return null;
+
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 0) return "just now";
+  if (seconds < 90) return "just now";
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return `yesterday at ${formatTime(date)}`;
+  if (days < 7) return `${days} days ago`;
+
+  return date.toLocaleDateString([], { day: "numeric", month: "short" });
+}
+
 /** Heading for a day separator inside the history. */
 export function formatDaySeparator(date: Date): string {
   const diffDays = Math.floor((Date.now() - date.getTime()) / 86_400_000);

@@ -130,7 +130,6 @@ export function MessagingLayout({
               isTyping={isPeerTyping}
               onBack={() => setShowChatOnMobile(false)}
               onProfileClick={onProfileClick}
-              isProfileOpen={!!aside}
             />
             <div className="flex-1 min-h-0 flex">
               <ChatBody

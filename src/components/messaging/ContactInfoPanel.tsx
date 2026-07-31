@@ -193,18 +193,20 @@ export function ContactInfoPanel({
   return (
     <aside
       className={cn(
-        "w-full md:w-[300px] md:shrink-0 flex flex-col border-l border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] overflow-y-auto",
+        "relative w-full md:w-[300px] md:shrink-0 flex flex-col border-l border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] overflow-y-auto",
         className
       )}
     >
       {/* No avatar, name or role here: the header directly above already
-          carries all three, and repeating them pushed the actual details out
-          of view. */}
-      <div className="flex justify-end px-2 pt-2 shrink-0">
+          carries all three.
+          The wrapper is zero height so the button costs no row, and sticky so
+          it stays reachable once the panel scrolls. The content below reserves
+          headroom for it, otherwise the first label runs underneath. */}
+      <div className="sticky top-0 z-10 h-0 flex justify-end pointer-events-none">
         <button
           onClick={onClose}
           aria-label="Close contact info"
-          className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[#54656f] dark:text-[#aebac1]"
+          className="pointer-events-auto mt-2 mr-2 p-1.5 rounded-full bg-white/85 dark:bg-[#111b21]/85 backdrop-blur hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[#54656f] dark:text-[#aebac1]"
         >
           <X size={18} />
         </button>
@@ -215,7 +217,7 @@ export function ContactInfoPanel({
           <Loader2 className="animate-spin text-[#1099A1]" size={20} />
         </div>
       ) : (
-        <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+        <div className="pt-11 divide-y divide-[#e9edef] dark:divide-[#2a3942]">
           {profile?.bio && (
             <div className="px-4 py-3">
               <p className="text-[11px] uppercase tracking-wider text-[#8696a0] mb-1">About</p>

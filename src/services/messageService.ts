@@ -59,6 +59,7 @@ interface ProfileRow {
   full_name: string | null;
   role: string | null;
   avatar_url: string | null;
+  last_seen_at?: string | null;
 }
 
 function toContact(p: ProfileRow | undefined, fallbackId: string): ChatContact {
@@ -69,7 +70,7 @@ function toContact(p: ProfileRow | undefined, fallbackId: string): ChatContact {
     role: p?.role ?? "student",
     avatarUrl: p?.avatar_url || initialsAvatarUrl(name),
     isOnline: false,
-    lastSeen: null,
+    lastSeen: p?.last_seen_at ? new Date(p.last_seen_at) : null,
   };
 }
 
@@ -120,7 +121,7 @@ export async function getConversations(userId: string): Promise<ChatConversation
 
   const [profilesRes, messagesRes] = await Promise.all([
     peerIds.length
-      ? supabase.from("profiles").select("id, full_name, role, avatar_url").in("id", peerIds)
+      ? supabase.from("profiles").select("id, full_name, role, avatar_url, last_seen_at").in("id", peerIds)
       : Promise.resolve({ data: [], error: null } as any),
     supabase
       .from("messages")
@@ -167,7 +168,7 @@ export async function getConversations(userId: string): Promise<ChatConversation
 export async function getContacts(userId: string): Promise<ContactProfile[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, avatar_url")
+    .select("id, full_name, role, avatar_url, last_seen_at")
     .neq("id", userId)
     .order("full_name");
   if (error) throw error;
@@ -309,7 +310,7 @@ export async function getLinkedStudentConversations(
   const everyoneIds = [...new Set(allParts.map((p) => p.user_id))];
   const { data: profiles, error: profErr } = await supabase
     .from("profiles")
-    .select("id, full_name, role, avatar_url")
+    .select("id, full_name, role, avatar_url, last_seen_at")
     .in("id", everyoneIds);
   if (profErr) throw profErr;
 

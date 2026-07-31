@@ -168,3 +168,54 @@ export function useTypingIndicators(conversationIds: string[], userId?: string) 
 
   return { typingByConversation, notifyTyping };
 }
+
+// How often the signed-in user stamps profiles.last_seen_at.
+const HEARTBEAT_MS = 60_000;
+
+/**
+ * Records that the signed-in user is around, so other people can be told when
+ * they were last seen.
+ *
+ * Presence covers "online now" but goes silent the moment a tab closes, and
+ * nothing survives a reload. This writes a timestamp instead, slowly, and only
+ * while the tab is actually visible, so a window left open in the background
+ * does not keep someone looking active forever.
+ */
+export function useLastSeenHeartbeat(userId?: string) {
+  useEffect(() => {
+    if (!userId) return;
+
+    let stopped = false;
+
+    const beat = async () => {
+      if (stopped || document.visibilityState !== "visible") return;
+
+      // Confirm there is still a session before writing. Without this the beat
+      // can fire against a torn-down or expired one during a reload and come
+      // back 401, which is noise rather than a real failure.
+      const { data } = await supabase.auth.getSession();
+      if (stopped || !data.session) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("id", userId);
+
+      // Not worth surfacing: a missed beat only makes "last seen" a little
+      // staler than it should be.
+      if (error) console.warn("Could not record last seen", error.message);
+    };
+
+    const tick = () => void beat();
+
+    tick();
+    const interval = setInterval(tick, HEARTBEAT_MS);
+    document.addEventListener("visibilitychange", tick);
+
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [userId]);
+}
