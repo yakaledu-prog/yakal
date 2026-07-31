@@ -238,7 +238,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       <span className="block truncate text-[13.5px] font-medium text-foreground">
                         {sug.full_name}
                       </span>
-                      <span className="block truncate text-[12px] text-muted-foreground">
+                      <span className="block truncate text-[12px] italic text-muted-foreground">
                         {sug.masked_email}
                         {sug.grade_level ? ` - ${sug.grade_level}` : ""}
                       </span>

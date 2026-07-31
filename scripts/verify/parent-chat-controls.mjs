@@ -25,6 +25,12 @@ await p.goto(`${BASE}/parent/children`, { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4000);
 await p.getByRole('button', { name: 'Messages', exact: true }).click();
 await p.waitForTimeout(2500);
+// The tab lists the child's threads, not the parent's own.
+const sidebar = await p.locator('body').innerText();
+pass("lists the child's conversations", /Bethlehem Alemu/.test(sidebar) && /Daniel Haile/.test(sidebar));
+pass("not the parent's own threads", !/how is Amen progressing/i.test(sidebar));
+pass('no way to start a chat while watching', (await p.getByPlaceholder(/Search or start new chat/i).count()) === 0);
+pass('no redundant subtitle on a row', !/Amen Worku and Bethlehem/i.test(sidebar));
 await p.locator('button').filter({ has: p.locator('img') }).filter({ hasText: 'Bethlehem' }).first().click();
 await p.waitForTimeout(2500);
 
@@ -40,7 +46,7 @@ pass('no voice note button', (await p.getByRole('button', { name: /Record a voic
 pass('says it is view only', await p.getByText(/Viewing only/i).isVisible());
 await p.getByText(/Viewing only/i).hover();
 await p.waitForTimeout(400);
-pass('view only explains itself on hover', await p.getByRole('tooltip').filter({ hasText: /watching over/i }).isVisible());
+pass('view only explains itself on hover', await p.getByRole('tooltip').filter({ hasText: /your child's conversations/i }).isVisible());
 pass('does not offer a reply route', (await p.getByText(/Reply from/i).count()) === 0);
 await p.screenshot({ path: `${S}/parent-chat-no-header.png` });
 
@@ -60,14 +66,14 @@ await p.screenshot({ path: `${S}/parent-chat-flag-dialog.png` });
 pass('reasons hidden until a message is picked', (await p.getByText('Moving off the platform').count()) === 0);
 pass('stepper is the header', await p.locator('div[role="dialog"]').getByRole('button', { name: /Messages/ }).isVisible());
 const dialog = p.locator('div[class*="max-w-lg"]');
-await dialog.getByText(/steady on algebra now/i).first().click();
+await dialog.getByText(/how did the practice set go/i).first().click();
 await p.waitForTimeout(600);
 await p.screenshot({ path: `${S}/parent-chat-flag-picker.png` });
-await dialog.getByText(/how is Amen progressing/i).first().click();
+await dialog.getByText(/catches everyone/i).first().click();
 await p.waitForTimeout(400);
 pass('more than one message can be picked', await dialog.getByText('2 selected').isVisible());
 // Report one message, so the rest of the flow has a single known subject.
-await dialog.getByText(/how is Amen progressing/i).first().click();
+await dialog.getByText(/catches everyone/i).first().click();
 await p.waitForTimeout(400);
 pass('whole conversation is offered in the footer', await p.getByText('Whole conversation').isVisible());
 await p.getByRole('button', { name: 'Next' }).click();
@@ -91,8 +97,8 @@ const dlg = p.locator('div[role="dialog"]');
 pass('picked message shows as already reported', await dlg.getByText(/already reported/i).first().isVisible());
 await dlg.getByRole('button', { name: /Reported/ }).click();
 await p.waitForTimeout(700);
-pass('the reported message is listed', await dlg.getByText(/steady on algebra now/i).first().isVisible());
-await dlg.getByText(/steady on algebra now/i).first().click();
+pass('the reported message is listed', await dlg.getByText(/how did the practice set go/i).first().isVisible());
+await dlg.getByText(/how did the practice set go/i).first().click();
 await p.waitForTimeout(700);
 pass('the report names the message', await dlg.getByText('Reported', { exact: true }).isVisible());
 pass('the report keeps the note', await dlg.getByText(/bank transfer/i).isVisible());

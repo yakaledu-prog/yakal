@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getContacts,
+  getChildConversations,
   getConversations,
   getOrCreateConversation,
   markMessagesAsRead,
@@ -31,6 +32,12 @@ export interface UseMessagingOptions {
    * as the page loads. Used by the "Message" button on a student detail page.
    */
   openWithUserId?: string;
+  /**
+   * Watch a linked child's conversations instead of your own. Used by the
+   * parent's child tab, which is a monitoring view: the list is the child's
+   * threads, and nothing can be sent from it.
+   */
+  monitorChildId?: string;
 }
 
 export function useMessaging({
@@ -38,9 +45,13 @@ export function useMessaging({
   autoSelectFirst = true,
   includeContacts = true,
   openWithUserId,
+  monitorChildId,
 }: UseMessagingOptions) {
   const queryClient = useQueryClient();
-  const conversationsKey = useMemo(() => ["conversations", userId], [userId]);
+  const conversationsKey = useMemo(
+    () => (monitorChildId ? ["child-conversations", userId, monitorChildId] : ["conversations", userId]),
+    [userId, monitorChildId]
+  );
 
   const {
     data: conversations = [],
@@ -49,14 +60,18 @@ export function useMessaging({
     refetch,
   } = useQuery({
     queryKey: conversationsKey,
-    queryFn: () => getConversations(userId!),
+    queryFn: () =>
+      monitorChildId
+        ? getChildConversations(userId!, monitorChildId)
+        : getConversations(userId!),
     enabled: !!userId,
   });
 
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts", userId],
     queryFn: () => getContacts(userId!),
-    enabled: !!userId && includeContacts,
+    // A watcher has nobody to start a chat with from here.
+    enabled: !!userId && includeContacts && !monitorChildId,
   });
 
   const [activeConversationId, setActiveConversationId] = useState<string>("");

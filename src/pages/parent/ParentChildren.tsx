@@ -285,7 +285,7 @@ function ChildDetailView({ child }: { child: any }) {
           </div>
         )}
         {activeTab === 'messages' && (
-          <ParentMessages embedded />
+          <ParentMessages embedded childId={child.id} />
           // <div className="flex-1 flex flex-col min-h-[500px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-background relative mt-6">
           //   <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
           //   <div className="relative z-10 flex-1 flex items-center justify-center p-6 text-center">

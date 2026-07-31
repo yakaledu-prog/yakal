@@ -159,7 +159,10 @@ export async function getFlags(status: FlagStatus | "all" = "open"): Promise<Adm
     .select(
       `id, conversation_id, reason, reasons, note, status, created_at, reviewed_at, message_id,
        reporter:profiles!conversation_flags_reported_by_fkey (id, full_name, role, avatar_url),
-       message:messages!conversation_flags_message_id_fkey (id, content, created_at, sender_id)`
+       message:messages!conversation_flags_message_id_fkey (
+         id, content, created_at,
+         sender:profiles!messages_sender_profile_fkey (id, full_name, role, avatar_url)
+       )`
     )
     .order("created_at", { ascending: false });
 
@@ -171,24 +174,8 @@ export async function getFlags(status: FlagStatus | "all" = "open"): Promise<Adm
     return [];
   }
 
-  // messages.sender_id points at auth.users, not profiles, so PostgREST cannot
-  // embed the sender through it. One extra query for the whole page rather
-  // than one per report.
-  const senderIds = [
-    ...new Set((data ?? []).map((r: any) => r.message?.sender_id).filter(Boolean)),
-  ] as string[];
-
-  const senders = new Map<string, any>();
-  if (senderIds.length > 0) {
-    const { data: people } = await supabase
-      .from("profiles")
-      .select("id, full_name, role, avatar_url")
-      .in("id", senderIds);
-    (people ?? []).forEach((p: any) => senders.set(p.id, p));
-  }
-
   return (data ?? []).map((row: any) => {
-    const sender = row.message?.sender_id ? senders.get(row.message.sender_id) : null;
+    const sender = row.message?.sender ?? null;
     return ({
     id: row.id,
     conversationId: row.conversation_id,

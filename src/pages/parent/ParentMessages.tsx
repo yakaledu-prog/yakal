@@ -13,11 +13,20 @@ import {
 import { getMyFlags } from "@/services/flagService";
 
 /**
+ * The parent's messages.
+ *
  * `embedded` drops the page banner and the full-height wrapper, for use inside
  * a tab that already has its own header. Without it the child detail page
  * showed a second "Messages" banner under the child's name.
+ *
+ * `childId` switches this from the parent's own threads to that child's. The
+ * child tab used to show the parent's conversations under a heading with the
+ * child's name, which was simply the wrong list.
  */
-export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}) {
+export function ParentMessages({
+  embedded = false,
+  childId,
+}: { embedded?: boolean; childId?: string } = {}) {
   const { user } = useAuth();
   const location = useLocation();
   const nav = location.state as
@@ -45,7 +54,8 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
     notifyTyping,
   } = useMessaging({
     userId: user?.id,
-    openWithUserId: nav?.openWith ?? nav?.contactId,
+    openWithUserId: childId ? undefined : (nav?.openWith ?? nav?.contactId),
+    monitorChildId: childId,
   });
 
   // Some callers pass a tutor's name instead of an id. Match a real thread; do
@@ -94,7 +104,7 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
             openConversation(id);
             setShowProfile(false);
           }}
-          onStartConversation={startConversation}
+          onStartConversation={childId ? undefined : startConversation}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           currentUserId={user?.id}
@@ -103,7 +113,7 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
           onlineIds={onlineIds}
           isPeerTyping={isPeerTyping}
           typingConversationIds={typingConversationIds}
-          onSendText={sendMessage}
+          onSendText={childId ? undefined : sendMessage}
           onTyping={notifyTyping}
           draft={nav?.draftMessage}
           onProfileClick={() => setShowProfile((v) => !v)}
@@ -114,9 +124,21 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
           // Watching, not taking part. The composer, emoji picker and
           // attachment button have nothing to do here, so the footer carries
           // only the two things a watcher can act on.
-          readOnly={embedded}
+          readOnly={embedded || !!childId}
           readOnlyNotice="Viewing only"
-          readOnlyTooltip="You are watching over your child's conversations. You can read them and report anything of concern, but you cannot take part."
+          readOnlyTooltip="These are your child's conversations. You can read them and report anything of concern, but you cannot take part."
+          emptyState={
+            childId ? (
+              <>
+                <p className="text-[15px] font-semibold text-[#111] dark:text-white">
+                  No conversations yet
+                </p>
+                <p className="max-w-xs text-[13px] text-[#667781] dark:text-[#8696a0]">
+                  Your child's messages with their tutors and counselor appear here.
+                </p>
+              </>
+            ) : undefined
+          }
           onFlag={() => setFlagging(true)}
           isFlagged={myFlags.length > 0}
           aside={

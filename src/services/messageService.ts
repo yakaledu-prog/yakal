@@ -347,3 +347,37 @@ export async function getLinkedStudentConversations(
 
   return views.sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime());
 }
+
+/**
+ * A single child's conversations, shaped like any other conversation list.
+ *
+ * The parent's child tab used to render the parent's own threads, so a tab
+ * headed with the child's name listed conversations the child was not in. This
+ * returns what the child is actually part of.
+ *
+ * Read only by construction: a parent's row level security grants SELECT on a
+ * linked child's messages and nothing else, so there is no send path here even
+ * if a caller wanted one. `subtitle` names the other party's role, since the
+ * parent is looking at somebody else's correspondence and "who is this person
+ * to my child" is the question they have.
+ */
+export async function getChildConversations(
+  parentId: string,
+  childId: string
+): Promise<ChatConversation[]> {
+  const views = await getLinkedStudentConversations(parentId);
+  return views
+    .filter((v) => v.childId === childId)
+    .map((v) => ({
+      id: v.id,
+      contact: v.contact,
+      messages: v.messages,
+      // Unread belongs to the child, not to the parent reading over their
+      // shoulder. Marking it here would clear the child's own badge.
+      unreadCount: 0,
+      updatedAt: v.lastAt,
+      // No subtitle. The tab is already headed with the child's name and the
+      // row already names the other person, so "Amen and Bethlehem" only says
+      // it a third time.
+    }));
+}

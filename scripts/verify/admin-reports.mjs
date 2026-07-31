@@ -35,7 +35,7 @@ await parent.waitForTimeout(2500);
 await parent.getByRole('button', { name: /Report this conversation/i }).click();
 await parent.waitForTimeout(800);
 const dlg = parent.locator('div[role="dialog"]');
-await dlg.getByText(/steady on algebra now/i).first().click();
+await dlg.getByText(/how did the practice set go/i).first().click();
 await parent.getByRole('button', { name: 'Next' }).click();
 await parent.waitForTimeout(500);
 await parent.getByText('Moving off the platform').click();
@@ -69,7 +69,7 @@ const admin = await signIn('admin@yakal.com');
 await admin.goto(`${BASE}/admin/reports`, { waitUntil: 'domcontentloaded' });
 await admin.waitForTimeout(3500);
 const body = await admin.locator('body').innerText();
-pass('report is listed for the admin', /steady on algebra now/i.test(body));
+pass('report is listed for the admin', /how did the practice set go/i.test(body));
 pass('the reporter is named', /Tigist Worku/.test(body));
 pass('the subject is named', /Bethlehem Alemu/.test(body));
 pass('both reasons are shown', /Moving off the platform/.test(body) && /Inappropriate content/.test(body));
@@ -92,7 +92,7 @@ pass('a report can be reopened', psql("select status from conversation_flags lim
 const student = await signIn('student@yakal.com');
 await student.goto(`${BASE}/admin/reports`, { waitUntil: 'domcontentloaded' });
 await student.waitForTimeout(3000);
-pass('a student cannot read the queue', !/steady on algebra now/i.test(await student.locator('body').innerText()));
+pass('a student cannot read the queue', !/how did the practice set go/i.test(await student.locator('body').innerText()));
 
 pass('no page errors', errs.length === 0, errs[0]?.slice(0, 140) ?? '');
 await b.close();

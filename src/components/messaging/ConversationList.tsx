@@ -192,7 +192,9 @@ export function ConversationList({
           <input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search or start new chat"
+            // Nothing can be started from a watching view, so the field
+            // should not offer it.
+            placeholder={onStartConversation ? "Search or start new chat" : "Search"}
             aria-label="Search conversations"
             className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
           />
