@@ -52,8 +52,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useLastSeenHeartbeat(user?.id);
 
   useEffect(() => {
-    // Fetch initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // getSession only reads the token out of storage; it never asks whether
+    // the account behind it still exists. After the local database is reset the
+    // stored token still parses, so the app came up "signed in" as somebody who
+    // had been deleted: profile lookups returned 406 and every write with a
+    // foreign key to auth.users failed. getUser checks with the server, so a
+    // dead session is cleared instead of half-working.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          console.warn("Stored session is no longer valid, signing out.", error.message);
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -82,11 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
+      // maybeSingle, not single: a missing row is a state to handle, not a 406.
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setProfile(data as Profile);

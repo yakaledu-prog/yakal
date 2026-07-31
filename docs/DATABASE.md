@@ -100,9 +100,12 @@ Edit `scripts/seed/data.ts`. It holds the accounts, parent links, tutor
 availability, courses, conversations and blog posts as plain arrays, and
 `npm run db:seed` applies them.
 
-Nothing in that file uses a hardcoded UUID. Rows refer to people by email and
-the seeder resolves those to real ids at run time, so the same dataset applies
-to a database that has never been seeded before, local or hosted.
+Accounts carry a fixed `id` matching the hosted project; everything else refers
+to people by email and is resolved at run time. The fixed ids matter: without
+them each reseed minted new ones, and a session still open in a browser kept a
+token whose subject no longer existed, so the app came up signed in as a
+deleted user. It also means an account is the same person whether you are
+pointed at the local stack or the hosted one.
 
 The seeder converges rather than duplicating: accounts are matched by email and
 updated, courses and posts by title, conversations by the pair of people in

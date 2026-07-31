@@ -146,6 +146,7 @@ async function seedUsers() {
       ok(`kept    ${u.email}`);
     } else {
       const { data, error } = await db.auth.admin.createUser({
+        id: u.id,
         email: u.email,
         password: DEMO_PASSWORD,
         email_confirm: true,

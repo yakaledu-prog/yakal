@@ -13,6 +13,16 @@
 export type Role = "student" | "tutor" | "parent" | "counselor" | "admin";
 
 export interface SeedUser {
+  /**
+   * Fixed on purpose, and matching the hosted project.
+   *
+   * Without it every reseed minted new ids, which invalidated any session
+   * still in a browser: the JWT kept working but its subject no longer
+   * existed, so profile lookups 406'd and anything writing a foreign key to
+   * auth.users failed. It also means an account is the same person whether you
+   * are pointed at the local stack or the hosted one.
+   */
+  id: string;
   email: string;
   fullName: string;
   role: Role;
@@ -68,6 +78,7 @@ const avatarFor = (name: string) => AVATAR_URLS[name];
 
 export const USERS: SeedUser[] = [
   {
+    id: "82b1793a-db13-49ee-a81a-9e02a5cb51fd",
     email: "admin@yakal.com",
     lastSeenMinutesAgo: 2880,
     fullName: "Almaz Tadesse",
@@ -78,6 +89,7 @@ export const USERS: SeedUser[] = [
     phone: "+251911000001",
   },
   {
+    id: "39b5cc44-5ce1-4822-9414-01c27a9bb940",
     email: "tutor@yakal.com",
     lastSeenMinutesAgo: 12,
     fullName: "Bethlehem Alemu",
@@ -93,6 +105,7 @@ export const USERS: SeedUser[] = [
     acceptingStudents: true,
   },
   {
+    id: "861ab9d4-186c-46c9-bbcf-ed392fe34343",
     email: "counselor@yakal.com",
     lastSeenMinutesAgo: 180,
     fullName: "Daniel Haile",
@@ -105,6 +118,7 @@ export const USERS: SeedUser[] = [
     subjects: ["College Advising"],
   },
   {
+    id: "9ef3ccc6-977b-44b2-8694-45c27d1e5a09",
     email: "student@yakal.com",
     lastSeenMinutesAgo: 4,
     fullName: "Amen Worku",
@@ -116,6 +130,7 @@ export const USERS: SeedUser[] = [
     phone: "+251911000004",
   },
   {
+    id: "1bcda665-40a3-40e3-b613-fcaf5ca93b9f",
     email: "parent@yakal.com",
     lastSeenMinutesAgo: 1500,
     fullName: "Tigist Worku",
