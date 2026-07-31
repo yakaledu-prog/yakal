@@ -124,6 +124,7 @@ export function MessagingLayout({
             <ChatHeader
               contact={activeConversation.contact}
               isTyping={isPeerTyping}
+              messageCount={activeConversation.messages.length}
               onBack={() => setShowChatOnMobile(false)}
               onProfileClick={onProfileClick}
             />
