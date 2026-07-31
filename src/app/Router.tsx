@@ -11,6 +11,7 @@ import { ErrorPage } from "../pages/shared/ErrorPage";
 import { SettingsPage } from "../pages/shared/SettingsPage";
 import { ProposalPage } from "../pages/shared/ProposalPage";
 import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
+import { DevConsole } from "../pages/dev/DevConsole";
 import { CollegeListPreview } from "../pages/preview/CollegeListPreview";
 import { TrackerPreview } from "../pages/preview/TrackerPreview";
 import BlogsPage from "../pages/BlogsPage";
@@ -162,6 +163,9 @@ function PendingPreview() {
 
 const previewRoutes = DEV_PREVIEW
   ? [
+    // The developer console. Its own route so no dev affordance ever appears
+    // inside real product screens.
+    { path: "/dev", element: <DevConsole /> },
     { path: "/preview/onboarding/:role", element: <OnboardingPreview /> },
     { path: "/preview/pending/:role/:status?", element: <PendingPreview /> },
     // The catalog is public data and reads fine with no session, so this is the

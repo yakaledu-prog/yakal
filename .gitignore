@@ -28,6 +28,8 @@ service-account*.json
 # that should not leave this machine. See .local/README.md.
 .local/
 *.local
+# A top level notes/ keeps reappearing from the editor; it belongs in .local/.
+notes/
 
 # Editor / OS
 .vscode/*

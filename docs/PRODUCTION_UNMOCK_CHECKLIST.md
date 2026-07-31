@@ -10,10 +10,12 @@ Legend: `[ ]` still needs action before production, `[x]` handled
 
 ## Security
 
-- [ ] **Dev preview routes**, `src/config/dev.ts` -> `DEV_PREVIEW = true`.
-  Exposes public, no-auth routes (`/preview/onboarding/:role`,
-  `/preview/pending/:role/:status`). Set to `false` before deploy. A red
-  console warning fires if a production build ships with it on.
+- [ ] **Dev preview routes and the developer console**, `src/config/dev.ts` ->
+  `DEV_PREVIEW = true`. Exposes public, no-auth routes: `/preview/*` and
+  `/dev`. The console lists every account and can sign in as any of them with
+  the shared demo password, so it must never reach production. Set the flag to
+  `false` before deploy; a red console warning fires if a production build
+  ships with it on.
 
 - [ ] **Notifications INSERT policy is wide open.** The
   "Authenticated users can insert notifications" policy in the baseline
