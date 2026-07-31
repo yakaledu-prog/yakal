@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, User, Video, CalendarRange, Loader2, FileText } from "lucide-react";
+import { Search, User, Video, CalendarRange, Loader2, FileText, ChevronDown, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentSessions } from "@/services/sessions";
@@ -34,6 +34,14 @@ function formatDate(d?: string) {
   if (!d) return "";
   return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
+function getDateParts(d?: string) {
+  if (!d) return { day: "", month: "" };
+  const date = new Date(d + "T00:00:00");
+  return {
+    day: date.getDate(),
+    month: date.toLocaleDateString(undefined, { month: "short" })
+  };
+}
 
 export function StudentSessions() {
   const { user } = useAuth();
@@ -41,6 +49,7 @@ export function StudentSessions() {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -83,43 +92,7 @@ export function StudentSessions() {
   const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
 
   return (
-    <div className="h-full flex flex-col min-h-0 bg-background overflow-hidden">
-      {/* Integrated Header */}
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
-        <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-          <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-          <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-          <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-          <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-          <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-        </svg>
-
-        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
-              <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
-                <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
-            <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full xl:w-auto">
-              <MinimalStat label="Total" value={courseSessions.length} />
-              <MinimalStat label="Completed" value={completedCount} />
-              <MinimalStat label="Upcoming" value={upcomingCount} />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-          <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
-          <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden bg-background">
+    <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
       {/* Left pane */}
       <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
         {/* Search bar */}
@@ -170,6 +143,41 @@ export function StudentSessions() {
 
       {/* Right pane */}
       <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto flex flex-col">
+        {/* Integrated Header */}
+        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
+            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
+          </svg>
+
+          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
+                  <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
+              <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full xl:w-auto">
+                <MinimalStat label="Total" value={courseSessions.length} />
+                <MinimalStat label="Completed" value={completedCount} />
+                <MinimalStat label="Upcoming" value={upcomingCount} />
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
+            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
+          </div>
+        </div>
+
         <div className="p-4 md:p-8 w-full flex-1">
           {loading ? (
             <div className="flex justify-center items-center py-20">
@@ -182,83 +190,83 @@ export function StudentSessions() {
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Book a session from the course catalog to get started.</p>
             </div>
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {filteredSessions.map((s) => (
-                <div key={s.id} className="space-y-6 pb-8 border-b border-border/50 last:border-0">
-
-                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-none hover:shadow-sm transition ease-in-out duration-300 flex flex-col overflow-hidden">
-                    <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-3 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <CalendarRange size={15} />
-                        <span className="text-[13px] font-medium">{formatDate(s.date)} • {formatTime(s.start_time)} ({s.duration_minutes}m)</span>
-                      </div>
-
-                      <Badge
-                        variant={s.status === "completed" ? "success" : s.status === "upcoming" ? "secondary" : "destructive"}
-                        className="rounded-sm text-[10px] uppercase font-bold tracking-wider px-2 py-0.5"
-                      >
-                        {s.status}
-                      </Badge>
+                <div key={s.id} className="pb-3 border-b border-border/50 last:border-0">
+                  <div className="flex flex-col md:flex-row items-center gap-6 p-4">
+                    {/* Date Column */}
+                    <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
+                      <span className="text-[24px] font-bold text-[#1099A1] leading-none tracking-tight">{getDateParts(s.date).day}</span>
+                      <span className="text-[12px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{getDateParts(s.date).month}</span>
                     </div>
 
-                    <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-1">{s.subject}</h2>
-                        <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
-                          <User size={14} /> <span>Tutor: <span className="font-medium text-foreground">{s.tutor_name}</span></span>
-                        </div>
-                        {s.status !== "upcoming" && (
-                          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg bg-[#f0f2f5] dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942]">
-                            <div>
-                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Session Status</p>
-                              <p className={cn("text-[13px] font-semibold", s.status === 'completed' ? 'text-[#1099A1]' : 'text-destructive')}>
-                                {s.status === 'completed' ? 'Attended' : 'Missed'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Duration</p>
-                              <p className="text-[13px] font-semibold text-foreground">{s.duration_minutes} Minutes</p>
-                            </div>
-                            <div className="col-span-2 md:col-span-4 lg:col-span-2">
-                              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Tutor Feedback</p>
-                              {s.notes ? (
-                                <div className="text-[13px] text-foreground italic border-l-2 border-[#1099A1] pl-3 py-0.5 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
-                              ) : (
-                                <p className="text-[13px] text-muted-foreground italic">No feedback provided yet.</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                    {/* Title & Time Column */}
+                    <div className="flex flex-col justify-center flex-1 min-w-0 py-2 w-full md:w-auto text-center md:text-left border-l-2 border-transparent md:border-[#1099A1] md:pl-6">
+                      <h2 className="text-[15px] md:text-[16px] font-medium text-[#111] dark:text-white leading-tight mb-1.5 truncate">{s.subject}</h2>
+                      <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] font-medium leading-tight flex items-center gap-1.5 md:justify-start justify-center">
+                        <Clock size={14} /> {formatTime(s.start_time)} ({s.duration_minutes}m)
+                      </span>
+                    </div>
 
-                      <div className="flex items-center gap-3 w-full md:w-auto">
-                        {s.status === "upcoming" ? (
-                          <>
-                            <Button style={{ backgroundColor: '#697780', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
-                              <CalendarRange size={16} /> Reschedule
-                            </Button>
-                            {(s.zoom_meeting_id || s.zoom_link) && (
-                              <Button onClick={() => join(s)} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-full">
-                                <Video size={16} /> Join
-                              </Button>
-                            )}
-                          </>
-                        ) : s.status === "completed" && s.notes ? (
-                          <Button variant="outline" className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 rounded-full border-[#e9edef] dark:border-[#2a3942]">
-                            <FileText size={16} /> Notes Above
-                          </Button>
-                        ) : null}
+                    {/* Tutor Profile Column */}
+                    <div className="flex items-center justify-center md:justify-start gap-3 shrink-0 w-full md:w-[220px]">
+                      <div className="w-10 h-10 rounded-full bg-[#CAA25F]/10 flex items-center justify-center text-[#CAA25F] font-bold text-[15px] shrink-0 border border-white dark:border-[#2a3942]">
+                        {s.tutor_name ? s.tutor_name.charAt(0).toUpperCase() : "T"}
                       </div>
+                      <div className="flex flex-col justify-center gap-0.5 min-w-0 text-left">
+                        <span className="text-[14.5px] font-normal text-[#111] dark:text-white leading-tight truncate">{s.tutor_name}</span>
+                        <span className="text-[12.5px] font-normal text-[#54656f] dark:text-[#aebac1] leading-tight truncate">Tutor</span>
+                      </div>
+                    </div>
+
+                    {/* Actions Column */}
+                    <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
+                      {s.status === "upcoming" ? (
+                        <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
+                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r border-[#0d848b] text-white">
+                            <Video size={16} /> Join
+                          </Button>
+                          <button
+                            onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
+                            className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+
+                          {openDropdownId === s.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                              <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-lg z-50 py-1 overflow-hidden">
+                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors border-b !border-[#1099A1]/10">
+                                  <Video size={16} /> Join Meeting
+                                </button>
+                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
+                                  <CalendarRange size={16} /> Reschedule
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <Button variant="outline" className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 rounded-md border-[#e9edef] dark:border-[#2a3942]">
+                          <FileText size={16} /> View Notes
+                        </Button>
+                      )}
                     </div>
                   </div>
 
+                  {/* Notes Section for completed sessions */}
+                  {s.status !== "upcoming" && s.notes && (
+                    <div className="px-4 pb-2 md:pl-[96px]">
+                      <div className="text-[13px] text-foreground italic border-l-2 border-[#1099A1] pl-4 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
       </section>
-      </div>
     </div>
   );
 }

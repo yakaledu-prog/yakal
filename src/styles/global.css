@@ -3,3 +3,11 @@
 body {
   font-family: 'Apfel Grotezk', sans-serif !important;
 }
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
