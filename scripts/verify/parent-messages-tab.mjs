@@ -1,0 +1,25 @@
+import { chromium } from 'playwright';
+const BASE=process.env.BASE||'http://localhost:5173';
+const S='/tmp/claude-1000/-home-binyam-products-yakal/470a1a43-cc42-4652-988d-ac4539a37912/scratchpad/shots';
+const b=await chromium.launch();
+const p=await (await b.newContext({viewport:{width:1440,height:950}})).newPage();
+const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+const pass=(s,ok,d='')=>console.log(`${ok?'PASS':'FAIL'}  ${s}${d?'  -> '+d:''}`);
+await p.goto(`${BASE}/login`,{waitUntil:'domcontentloaded'});
+await p.locator('input[type="email"]').first().fill('parent@yakal.com');
+await p.locator('input[type="password"]').first().fill('demo123');
+await p.locator('form button[type="submit"]').first().click();
+await p.waitForURL(u=>!u.pathname.includes('/login'),{timeout:20000});
+await p.goto(`${BASE}/parent/children`,{waitUntil:'domcontentloaded'});
+await p.waitForTimeout(4000);
+await p.getByRole('button',{name:'Messages',exact:true}).click();
+await p.waitForTimeout(3000);
+// the child's name header stays; the second "Messages" banner must be gone
+pass('no nested Messages banner', !(await p.getByText(/Talk to your children's tutors/i).isVisible().catch(()=>false)));
+const row = p.locator('button').filter({has:p.locator('img')}).filter({hasText:'Bethlehem'}).first();
+await row.click();
+await p.waitForTimeout(2500);
+pass('composer is shown after opening a chat', await p.getByPlaceholder('Type a message').isVisible().catch(()=>false));
+await p.screenshot({path:`${S}/parent-child-messages.png`});
+pass('no page errors', errs.length===0, errs[0]?.slice(0,110)??'');
+await b.close();

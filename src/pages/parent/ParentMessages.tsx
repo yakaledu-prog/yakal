@@ -9,7 +9,12 @@ import {
   useMessaging,
 } from "@/components/messaging";
 
-export function ParentMessages() {
+/**
+ * `embedded` drops the page banner and the full-height wrapper, for use inside
+ * a tab that already has its own header. Without it the child detail page
+ * showed a second "Messages" banner under the child's name.
+ */
+export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const location = useLocation();
   const nav = location.state as
@@ -47,14 +52,27 @@ export function ParentMessages() {
     if (match) setActiveConversationId(match.id);
   }, [nav?.tutorName, nav?.openWith, nav?.contactId, conversations, setActiveConversationId]);
 
+  // One wrapper for both modes: embedded fills its tab, standalone fills the page.
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
+    embedded ? (
+      <div className="flex flex-col flex-1 min-h-0 h-full bg-background dark:bg-[#111b21]">
+        {children}
+      </div>
+    ) : (
+      <PageWrapper className="!p-0 h-full overflow-hidden">
+        <div className="flex flex-col h-full min-h-0 bg-background dark:bg-[#111b21]">
+          {children}
+        </div>
+      </PageWrapper>
+    );
+
   return (
-    <PageWrapper className="!p-0 h-full overflow-hidden">
-      <div className="flex flex-col h-full min-h-0 bg-background dark:bg-[#111b21]">
+    <Wrapper>
         <MessagingLayout
           header={
-            <MessagesPageHeader
-              subtitle="Talk to your children's tutors and counselors"
-            />
+            embedded ? undefined : (
+              <MessagesPageHeader subtitle="Talk to your children's tutors and counselors" />
+            )
           }
           conversations={conversations}
           contacts={contacts}
@@ -85,7 +103,6 @@ export function ParentMessages() {
             ) : null
           }
         />
-      </div>
-    </PageWrapper>
+    </Wrapper>
   );
 }
