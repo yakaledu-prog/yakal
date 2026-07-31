@@ -1,4 +1,4 @@
-import { ArrowLeft, MoreVertical, Search } from "lucide-react";
+import { ArrowLeft, MoreVertical, PanelRightOpen, Search } from "lucide-react";
 import type { ChatContact } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 import { formatListDate } from "./format";
@@ -16,19 +16,10 @@ import { RoleBadge, ROLE_LABEL, normalizeRole } from "./RoleIcon";
 // and repeating it there wastes a row.
 // ============================================================
 
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-xl md:text-2xl font-bold leading-none tabular-nums">{value}</p>
-    </div>
-  );
-}
-
 export function ChatHeader({
   contact,
   isTyping = false,
-  messageCount,
+  isProfileOpen = false,
   onProfileClick,
   onBack,
   onSearch,
@@ -37,8 +28,8 @@ export function ChatHeader({
 }: {
   contact: ChatContact;
   isTyping?: boolean;
-  /** Shown as a figure on the right, in the style of the other page headers. */
-  messageCount?: number;
+  /** Whether the contact panel is currently showing, for the toggle's state. */
+  isProfileOpen?: boolean;
   onProfileClick?: () => void;
   /** Shown on small screens to get back to the conversation list. */
   onBack?: () => void;
@@ -128,11 +119,24 @@ export function ChatHeader({
           </span>
         </button>
 
-        <div className="flex items-center gap-5 md:gap-8 shrink-0">
-          {messageCount !== undefined && (
-            <div className="hidden sm:block">
-              <Stat label="Messages" value={messageCount} />
-            </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* The panel is easy to miss otherwise: tapping the name opens it
+              too, but nothing about a name says it is a button. */}
+          {onProfileClick && (
+            <button
+              onClick={onProfileClick}
+              aria-expanded={isProfileOpen}
+              title={isProfileOpen ? "Hide contact info" : "Show contact info"}
+              className={cn(
+                "flex items-center gap-2 rounded-full border transition-colors px-3 py-1.5",
+                isProfileOpen
+                  ? "bg-white text-[#1099A1] border-white"
+                  : "border-white/40 text-white hover:bg-white/15"
+              )}
+            >
+              <PanelRightOpen size={16} />
+              <span className="hidden md:inline text-[13px] font-medium">Contact info</span>
+            </button>
           )}
 
           <div className="flex items-center gap-0.5 text-white/90">

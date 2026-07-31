@@ -140,7 +140,7 @@ async function seedUsers() {
       const { error } = await db.auth.admin.updateUserById(existing, {
         password: DEMO_PASSWORD,
         email_confirm: true,
-        user_metadata: { full_name: u.fullName, role: u.role },
+        user_metadata: { full_name: u.fullName, role: u.role, avatar_url: u.avatarUrl },
       });
       if (error) fail(`updating ${u.email}`, error);
       ok(`kept    ${u.email}`);
@@ -149,7 +149,7 @@ async function seedUsers() {
         email: u.email,
         password: DEMO_PASSWORD,
         email_confirm: true,
-        user_metadata: { full_name: u.fullName, role: u.role },
+        user_metadata: { full_name: u.fullName, role: u.role, avatar_url: u.avatarUrl },
       });
       if (error) fail(`creating ${u.email}`, error);
       idByEmail.set(key, data.user.id);
@@ -176,6 +176,7 @@ async function seedProfiles() {
     full_name: u.fullName,
     role: u.role,
     status: u.status ?? "active",
+    avatar_url: u.avatarUrl ?? null,
     bio: u.bio ?? null,
     phone: u.phone ?? null,
     subjects: u.subjects ?? null,

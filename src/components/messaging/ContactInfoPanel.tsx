@@ -4,8 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { getTutorAvailability } from "@/services/availability";
 import type { ChatContact } from "@/services/messageService";
 import { cn } from "@/utils/cn";
-import { formatListDate } from "./format";
-import { ROLE_LABEL, RoleBadge, normalizeRole } from "./RoleIcon";
+import { normalizeRole } from "./RoleIcon";
 
 // ============================================================
 // Contact info beside a conversation.
@@ -198,7 +197,9 @@ export function ContactInfoPanel({
         className
       )}
     >
-      {/* No title: the avatar and name below say what this is. */}
+      {/* No avatar, name or role here: the header directly above already
+          carries all three, and repeating them pushed the actual details out
+          of view. */}
       <div className="flex justify-end px-2 pt-2 shrink-0">
         <button
           onClick={onClose}
@@ -207,35 +208,6 @@ export function ContactInfoPanel({
         >
           <X size={18} />
         </button>
-      </div>
-
-      <div className="flex flex-col items-center gap-2 pb-6 px-4 border-b border-[#e9edef] dark:border-[#2a3942]">
-        <img
-          src={profile?.avatar_url || contact.avatarUrl}
-          alt={contact.name}
-          className="w-24 h-24 rounded-full object-cover ring-4 ring-[#97CE9D]/30"
-        />
-        <div className="text-center">
-          <h2 className="text-lg font-bold text-[#111] dark:text-white">
-            {profile?.full_name || contact.name}
-          </h2>
-          <span className="inline-flex items-center gap-1.5 mt-1 text-[12px] font-medium text-[#667781] dark:text-[#8696a0]">
-            <RoleBadge role={role} />
-            {ROLE_LABEL[role]}
-          </span>
-          <p
-            className={cn(
-              "text-[13px] mt-1",
-              contact.isOnline ? "text-[#1099A1]" : "text-[#667781] dark:text-[#8696a0]"
-            )}
-          >
-            {contact.isOnline
-              ? "online"
-              : contact.lastSeen
-                ? `last seen ${formatListDate(contact.lastSeen)}`
-                : ""}
-          </p>
-        </div>
       </div>
 
       {isLoading ? (

@@ -26,16 +26,46 @@ export interface SeedUser {
   gradeLevel?: string;
   acceptingStudents?: boolean;
   isOnboarded?: boolean;
+  avatarUrl?: string;
 }
 
 /** Every demo account shares this password, matching the sign-in page shortcuts. */
 export const DEMO_PASSWORD = "demo123";
+
+// Profile pictures, served from Cloudinary under yakal/avatars.
+//
+// Bethlehem's and Daniel's are the photos that were actually uploaded to their
+// profiles in the hosted project. The other three had no photo of their own;
+// these are the placeholder portraits the app was already showing for them,
+// mirrored to Cloudinary so nothing depends on the hosted project's storage
+// bucket or on a third party staying up.
+//
+// The transform crops square around the detected face and lets Cloudinary pick
+// the format, so one URL serves the 34px list row and the 96px contact card.
+//
+// To add or replace one: upload to the same folder with a matching public_id
+// and paste the URL here.
+const AVATAR_URLS: Record<string, string> = {
+  "Amen Worku":
+    "https://res.cloudinary.com/xzveklkp/image/upload/c_fill,g_face,w_400,h_400,q_auto,f_auto/v1785498447/yakal/avatars/student-amen-worku.jpg",
+  "Bethlehem Alemu":
+    "https://res.cloudinary.com/xzveklkp/image/upload/c_fill,g_face,w_400,h_400,q_auto,f_auto/v1785498443/yakal/avatars/tutor-bethlehem-alemu.webp",
+  "Daniel Haile":
+    "https://res.cloudinary.com/xzveklkp/image/upload/c_fill,g_face,w_400,h_400,q_auto,f_auto/v1785498445/yakal/avatars/counselor-daniel-haile.webp",
+  "Tigist Worku":
+    "https://res.cloudinary.com/xzveklkp/image/upload/c_fill,g_face,w_400,h_400,q_auto,f_auto/v1785498449/yakal/avatars/parent-tigist-worku.jpg",
+  "Almaz Tadesse":
+    "https://res.cloudinary.com/xzveklkp/image/upload/c_fill,g_face,w_400,h_400,q_auto,f_auto/v1785498450/yakal/avatars/admin-almaz-tadesse.jpg",
+};
+
+const avatarFor = (name: string) => AVATAR_URLS[name];
 
 export const USERS: SeedUser[] = [
   {
     email: "admin@yakal.com",
     fullName: "Almaz Tadesse",
     role: "admin",
+    avatarUrl: avatarFor("Almaz Tadesse"),
     status: "active",
     isOnboarded: true,
     phone: "+251911000001",
@@ -44,6 +74,7 @@ export const USERS: SeedUser[] = [
     email: "tutor@yakal.com",
     fullName: "Bethlehem Alemu",
     role: "tutor",
+    avatarUrl: avatarFor("Bethlehem Alemu"),
     status: "active",
     isOnboarded: true,
     bio: "Senior Mathematics and Physics tutor with 8 years of experience. Specializes in SAT Prep and University Entrance Exams.",
@@ -57,6 +88,7 @@ export const USERS: SeedUser[] = [
     email: "counselor@yakal.com",
     fullName: "Daniel Haile",
     role: "counselor",
+    avatarUrl: avatarFor("Daniel Haile"),
     status: "active",
     isOnboarded: true,
     bio: "College admissions counselor. Helps students build a balanced school list and write essays that sound like them.",
@@ -67,6 +99,7 @@ export const USERS: SeedUser[] = [
     email: "student@yakal.com",
     fullName: "Amen Worku",
     role: "student",
+    avatarUrl: avatarFor("Amen Worku"),
     status: "active",
     isOnboarded: true,
     gradeLevel: "Grade 12",
@@ -76,6 +109,7 @@ export const USERS: SeedUser[] = [
     email: "parent@yakal.com",
     fullName: "Tigist Worku",
     role: "parent",
+    avatarUrl: avatarFor("Tigist Worku"),
     status: "active",
     isOnboarded: true,
     phone: "+251911000005",
