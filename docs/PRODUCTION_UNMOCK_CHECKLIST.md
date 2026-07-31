@@ -69,6 +69,11 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   follow a student between devices and a tutor sees nothing. Needs a
   `diagnostic_results` table and a migration.
 
+- [x] **Notification screens.** All four roles now read real notifications
+  through `notificationService`, sharing one `NotificationsScreen` component.
+  They previously rendered four separate hardcoded arrays, so a real
+  notification was written to the database and shown to nobody.
+
 The mock surface is deliberately concentrated: `src/mock/index.ts` is the only
 module holding hardcoded application data. When it is empty, the app runs
 entirely on the database.
