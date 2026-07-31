@@ -35,6 +35,26 @@ export interface ChildService {
   is_active: boolean;
 }
 
+/**
+ * The services active for the signed-in student.
+ *
+ * A student can read their own rows (child_services_student_select), so this
+ * works without going through the parent. A service with no row at all counts
+ * as inactive: nothing is unlocked until a parent turns it on.
+ */
+export async function getMyActiveServices(studentId: string): Promise<ServiceName[]> {
+  const { data, error } = await supabase
+    .from("child_services")
+    .select("service, is_active")
+    .eq("student_id", studentId)
+    .eq("is_active", true);
+  if (error) {
+    console.warn("Could not read services", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => r.service as ServiceName);
+}
+
 export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
   if (childIds.length === 0) return [];
   const { data } = await supabase

@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import { writeFileSync } from 'fs';
 
-const BASE = 'http://localhost:5174';
+const BASE = process.env.BASE || 'http://localhost:5173';
 const SHOTS = '/tmp/claude-1000/-home-binyam-products-yakal/470a1a43-cc42-4652-988d-ac4539a37912/scratchpad/shots';
 const SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 const db = createClient('http://127.0.0.1:54321', SERVICE, { auth: { persistSession: false } });

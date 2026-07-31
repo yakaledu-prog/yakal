@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, RotateCcw, Check, Clock, X, LogIn } from "lucide-react";
+import { Loader2, ExternalLink, RotateCcw, Check, Clock, X, LogIn, Trash2, Lock, Unlock } from "lucide-react";
 import { supabase, BACKEND } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { postAuthPath } from "@/utils/roleRoutes";
+import { getChildServices, setChildService, type ServiceName } from "@/services/parentService";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -50,6 +51,7 @@ export function DevConsole() {
   const queryClient = useQueryClient();
   const { profile: me } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<DevProfile | null>(null);
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["dev-profiles"],
@@ -62,6 +64,59 @@ export function DevConsole() {
       return data ?? [];
     },
   });
+
+  const studentIds = profiles.filter((p) => p.role === "student").map((p) => p.id);
+
+  const { data: services = [] } = useQuery({
+    queryKey: ["dev-services", studentIds.join(",")],
+    queryFn: () => getChildServices(studentIds),
+    enabled: studentIds.length > 0,
+  });
+
+  const isActive = (studentId: string, service: ServiceName) =>
+    services.some((s) => s.student_id === studentId && s.service === service && s.is_active);
+
+  /**
+   * Flips a service directly, skipping the request-and-grant round trip. The
+   * point is to reach the locked or unlocked state in one click when showing
+   * someone the difference.
+   */
+  async function toggleService(student: DevProfile, service: ServiceName) {
+    setBusy(student.id);
+    try {
+      const next = !isActive(student.id, service);
+      const result = await setChildService(student.id, service, next);
+      if (!result.success) throw new Error(result.error);
+      await queryClient.invalidateQueries({ queryKey: ["dev-services"] });
+      toast.success(`${student.full_name}: ${service} ${next ? "unlocked" : "locked"}`);
+    } catch (err: any) {
+      toast.error(
+        isAdmin ? err.message : "Sign in as admin first, row level security blocks this otherwise."
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteAccount(target: DevProfile) {
+    setBusy(target.id);
+    try {
+      const res = await fetch("/api/dev-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", userId: target.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Delete failed");
+      await queryClient.invalidateQueries({ queryKey: ["dev-profiles"] });
+      toast.success(`Deleted ${target.email}`);
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not delete that account");
+    } finally {
+      setBusy(null);
+      setConfirmDelete(null);
+    }
+  }
 
   const isAdmin = me?.role === "admin";
 
@@ -207,6 +262,28 @@ export function DevConsole() {
                         Sign in
                       </button>
 
+                      {p.role === "student" &&
+                        (["tutoring", "admissions"] as ServiceName[]).map((service) => {
+                          const on = isActive(p.id, service);
+                          return (
+                            <button
+                              key={service}
+                              onClick={() => toggleService(p, service)}
+                              disabled={isBusy}
+                              title={`${on ? "Lock" : "Unlock"} ${service} for ${p.full_name}`}
+                              className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium border transition-colors disabled:opacity-50",
+                                on
+                                  ? "border-[#1099A1] bg-[#1099A1]/10 text-[#1099A1]"
+                                  : "border-[#e9edef] dark:border-[#2a3942] text-[#667781] dark:text-[#8696a0]"
+                              )}
+                            >
+                              {on ? <Unlock size={12} /> : <Lock size={12} />}
+                              {service}
+                            </button>
+                          );
+                        })}
+
                       <button
                         onClick={() =>
                           patch(
@@ -263,6 +340,15 @@ export function DevConsole() {
                           </button>
                         </>
                       )}
+
+                      <button
+                        onClick={() => setConfirmDelete(p)}
+                        disabled={isBusy}
+                        title="Delete this account"
+                        className="p-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#CAA25F] hover:bg-[#CAA25F]/10 disabled:opacity-50 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </li>
                 );
@@ -286,6 +372,41 @@ npm run demo clean                     drop leftover test accounts`}
           </pre>
         </section>
       </main>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#182229] rounded-2xl w-full max-w-md p-5 shadow-xl">
+            <h3 className="text-[16px] font-bold">Delete {confirmDelete.full_name}?</h3>
+            <p className="text-[13px] text-[#667781] dark:text-[#8696a0] mt-2 leading-relaxed">
+              This removes <strong>{confirmDelete.email}</strong> and everything attached to
+              it: profile, conversations, messages, sessions. It cannot be undone.
+            </p>
+            <p className="text-[12.5px] text-[#667781] dark:text-[#8696a0] mt-2">
+              A seeded account comes back with <code>npm run db:seed</code>.
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium border border-[#e9edef] dark:border-[#2a3942] hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteAccount(confirmDelete)}
+                disabled={busy === confirmDelete.id}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-[#CAA25F] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {busy === confirmDelete.id ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Trash2 size={14} />
+                )}
+                Delete account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

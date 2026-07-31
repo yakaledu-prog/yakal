@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { LockedOverlay } from "@/components/shared/LockedOverlay";
 import {
   Search,
   ChevronRight,
@@ -26,6 +27,8 @@ interface NavItem {
   icon: React.ReactNode;
   badge?: number;
   isLocked?: boolean;
+  /** The service that unlocks this item, named in the unlock request. */
+  lockedBy?: string;
   /** Renders this item as a collapsible group instead of a link. */
   children?: NavItem[];
 }
@@ -43,7 +46,6 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [demoUnlocked, setDemoUnlocked] = useState<string[]>([]);
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
@@ -63,8 +65,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Locked state comes from the data now. It used to be overridden by a local
+  // list that a 500ms timer wrote to, so anything "unlocked" itself moments
+  // after the request and nothing was ever really gated.
   const lockedItem = flattenNav(navItems).find(item => {
-    if (demoUnlocked.includes(item.href)) return false;
     if (item.href === basePath) return location.pathname === item.href && item.isLocked;
     return location.pathname.startsWith(item.href) && item.isLocked;
   });
@@ -86,21 +90,18 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       const { error: notifError } = await supabase.from("notifications").insert({
         user_id: linkData.parent_id,
-        type: "system",
-        title: "Feature Unlock Request",
-        message: `${profile.full_name} has requested access to ${lockedItem.name}.`,
-        link: "/parent/children"
+        // The type and link carry enough for the parent screen to offer a
+        // one-click grant rather than sending them off to find the setting.
+        type: "unlock_request",
+        title: "Feature unlock request",
+        message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
+        link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
       });
 
       if (notifError) throw notifError;
-      toast.success("Request sent to your parent successfully!", { id: "request-access" });
-
-      // DEMO: Auto-unlock after 1.5 seconds
-      setTimeout(() => {
-        toast.success(`${lockedItem.name} has been unlocked for this demo!`, { id: "demo-unlock", duration: 4000 });
-        setDemoUnlocked(prev => [...prev, lockedItem.href]);
-      }, 500);
-
+      toast.success("Request sent. Your parent can turn it on from their account.", {
+        id: "request-access",
+      });
     } catch (err: any) {
       toast.error(err.message || "Failed to send request.", { id: "request-access" });
     }
@@ -153,7 +154,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 key={item.name}
                 item={item}
                 sidebarOpen={sidebarOpen}
-                demoUnlocked={demoUnlocked}
                 basePath={basePath}
                 pathname={location.pathname}
               />
@@ -162,7 +162,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 key={item.href}
                 item={item}
                 sidebarOpen={sidebarOpen}
-                demoUnlocked={demoUnlocked}
                 basePath={basePath}
                 pathname={location.pathname}
               />
@@ -277,36 +276,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
 
           {lockedItem && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-background/20 dark:bg-background/40 backdrop-blur-[2px] animate-in fade-in duration-300">
-              <div className="max-w-sm w-full bg-white dark:bg-[#202c33] px-8 py-10 rounded-2xl shadow-xl border border-[#e9edef] dark:border-[#2a3942] text-center pointer-events-auto">
-                {/* Bare icon. No tinted circle, no ring: the card is already a
-                    contained surface, so wrapping the glyph again just adds noise. */}
-                <Lock
-                  size={44}
-                  strokeWidth={1.25}
-                  className="mx-auto mb-6 text-[#1099A1]"
-                />
-                <h2 className="text-2xl font-bold text-[#111] dark:text-white mb-2.5">
-                  Access Restricted
-                </h2>
-                <p className="text-[14px] leading-relaxed text-[#54656f] dark:text-[#aebac1] mb-7">
-                  {lockedItem.name} is not part of your current plan. Ask your
-                  parent to unlock it to get access.
-                </p>
-                <button
-                  onClick={handleRequestAccess}
-                  className="w-full rounded-xl bg-[#1099A1] px-6 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#0d848b]"
-                >
-                  Request Access from Parent
-                </button>
-                <Link
-                  to={basePath}
-                  className="mt-4 inline-block text-[13px] text-[#54656f] transition-colors hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
-                >
-                  Return to Dashboard
-                </Link>
-              </div>
-            </div>
+            <LockedOverlay
+              featureName={lockedItem.name}
+              onRequestAccess={handleRequestAccess}
+              homePath={basePath}
+            />
           )}
         </div>
 
@@ -342,7 +316,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 interface NavNodeProps {
   item: NavItem;
   sidebarOpen: boolean;
-  demoUnlocked: string[];
   basePath: string;
   pathname: string;
   /** Nested items sit under a group header and are indented. */
@@ -354,10 +327,10 @@ function matches(href: string, basePath: string, pathname: string) {
 }
 
 function NavLeaf({
-  item, sidebarOpen, demoUnlocked, basePath, pathname, nested = false,
+  item, sidebarOpen, basePath, pathname, nested = false,
 }: NavNodeProps) {
   const isActive = matches(item.href, basePath, pathname);
-  const isLocked = item.isLocked && !demoUnlocked.includes(item.href);
+  const isLocked = !!item.isLocked;
 
   return (
     <Link
@@ -400,7 +373,7 @@ function NavLeaf({
 }
 
 function NavGroup({
-  item, sidebarOpen, demoUnlocked, basePath, pathname,
+  item, sidebarOpen, basePath, pathname,
 }: NavNodeProps) {
   const children = item.children ?? [];
   const hasActiveChild = children.some((c) => matches(c.href, basePath, pathname));
@@ -421,7 +394,6 @@ function NavGroup({
             key={c.href}
             item={c}
             sidebarOpen={sidebarOpen}
-            demoUnlocked={demoUnlocked}
             basePath={basePath}
             pathname={pathname}
           />
@@ -431,7 +403,7 @@ function NavGroup({
   }
 
   const allLocked = children.every(
-    (c) => c.isLocked && !demoUnlocked.includes(c.href)
+    (c) => c.isLocked
   );
 
   return (
@@ -470,7 +442,6 @@ function NavGroup({
               key={c.href}
               item={c}
               sidebarOpen={sidebarOpen}
-              demoUnlocked={demoUnlocked}
               basePath={basePath}
               pathname={pathname}
               nested

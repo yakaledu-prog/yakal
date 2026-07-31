@@ -15,6 +15,7 @@ import stripeConfirmHandler from '../api/stripe-confirm.ts';
 import stripePaymentMethodsHandler from '../api/stripe-payment-methods.ts';
 import createInvoiceHandler from '../api/create-invoice.ts';
 import driveHandler from '../api/drive.ts';
+import devUserHandler from '../api/dev-user.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,6 +53,8 @@ app.all('/api/stripe-confirm', createVercelHandler(stripeConfirmHandler));
 app.all('/api/stripe-payment-methods', createVercelHandler(stripePaymentMethodsHandler));
 app.all('/api/create-invoice', createVercelHandler(createInvoiceHandler));
 app.all('/api/drive', createVercelHandler(driveHandler));
+// Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
+app.all('/api/dev-user', createVercelHandler(devUserHandler));
 
 const PORT = 3001;
 app.listen(PORT, () => {

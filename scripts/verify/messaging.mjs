@@ -3,7 +3,7 @@
 // and confirm it lands.
 import { chromium } from 'playwright';
 
-const BASE = process.env.BASE || 'http://localhost:5174';
+const BASE = process.env.BASE || 'http://localhost:5173';
 const SHOTS = '/tmp/claude-1000/-home-binyam-products-yakal/470a1a43-cc42-4652-988d-ac4539a37912/scratchpad/shots';
 
 const ROLES = [
