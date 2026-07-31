@@ -13,6 +13,8 @@ import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { stripHtml } from "@/components/ui/RichTextEditor";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatBody, ConversationList, useMessaging } from "@/components/messaging";
+import { TutorCourseMarket } from "./TutorCourseMarket";
+import { getMyApplications, getOpenCourses } from "@/services/courseApplicationService";
 
 
 function fmtDate(d?: string | null) {
@@ -31,6 +33,10 @@ export function TutorCourses() {
   const { user } = useAuth();
   
   const [query, setQuery] = useState("");
+  // Teaching is a workspace; Open and Applied are a marketplace. They share a
+  // page because they are all "courses", and a nav item that is empty most of
+  // the time gets ignored.
+  const [tab, setTab] = useState<"teaching" | "open" | "applied">("teaching");
 
   const { data: rawCourses, isLoading: loadingCourses } = useQuery({
     queryKey: ['tutor-courses', user?.id],
@@ -53,17 +59,90 @@ export function TutorCourses() {
 
   useSetBreadcrumb(activeId, ws?.course?.title);
 
+  // Only jump into a course while the Teaching tab is showing, or opening
+  // Open would bounce straight back out of it.
   useEffect(() => {
-    if (!id && courses.length > 0) navigate(`/tutor/courses/${courses[0].id}`, { replace: true });
-  }, [id, courses, navigate]);
+    if (tab === "teaching" && !id && courses.length > 0) {
+      navigate(`/tutor/courses/${courses[0].id}`, { replace: true });
+    }
+  }, [tab, id, courses, navigate]);
+
+  const { data: openCourses = [] } = useQuery({
+    queryKey: ["open-courses", user?.id],
+    queryFn: () => getOpenCourses(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ["my-course-applications", user?.id],
+    queryFn: () => getMyApplications(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const pendingCount = myApplications.filter((a) => a.status === "pending").length;
+
+  const TABS = [
+    { id: "teaching" as const, label: "Teaching", count: courses.length },
+    { id: "open" as const, label: "Open", count: openCourses.length },
+    { id: "applied" as const, label: "Applied", count: pendingCount },
+  ];
+
+  const tabBar = (
+    <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-[#e9edef] bg-white px-4 dark:border-[#2a3942] dark:bg-[#111b21]">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => {
+            setTab(t.id);
+            if (t.id !== "teaching" && id) navigate("/tutor/courses", { replace: true });
+          }}
+          className={cn(
+            "flex items-center gap-1.5 whitespace-nowrap border-b-[3px] px-3 py-3 text-[14px] transition-colors",
+            tab === t.id
+              ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {t.label}
+          {t.count > 0 && (
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                tab === t.id ? "bg-[#1099A1] text-white" : "bg-muted text-muted-foreground"
+              )}
+            >
+              {t.count}
+            </span>
+          )}
+        </button>
+      ))}
+    </nav>
+  );
 
   const filtered = useMemo(
     () => courses.filter((c) => c.title.toLowerCase().includes(query.toLowerCase()) || c.subject.toLowerCase().includes(query.toLowerCase())),
     [courses, query]
   );
 
+  // After every hook. Returning above the useMemo below changed how many hooks
+  // ran between renders, which React rejects outright.
+  if (tab !== "teaching") {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        {tabBar}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <TutorCourseMarket mode={tab} />
+        </div>
+      </div>
+    );
+  }
+
+
   return (
-    <div className="course-page flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      {tabBar}
+      <div className="course-page flex flex-1 min-h-0 flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* Left pane: search + course list */}
       <aside className="course-list w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
         {/* Search bar */}
@@ -124,7 +203,8 @@ export function TutorCourses() {
         ) : (
           <CourseDetail ws={ws} navigate={navigate} />
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
