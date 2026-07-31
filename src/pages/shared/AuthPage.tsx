@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
 import { toast } from "sonner";
+import { DEV_PREVIEW } from "@/config/dev";
 
 type Mode = "login" | "signup";
 type RoleType = "student" | "parent" | "tutor";
@@ -270,8 +271,10 @@ export function AuthPage() {
             </Button>
           </form>
 
-          {/* Demo Section */}
-          {mode === "login" && (
+          {/* One-click demo logins. Hidden unless DEV_PREVIEW is on, so a
+              production sign-in page never advertises accounts whose password
+              is published in this repository. */}
+          {mode === "login" && DEV_PREVIEW && (
             <div className="mt-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />

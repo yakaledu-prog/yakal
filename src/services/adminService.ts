@@ -175,12 +175,74 @@ export async function getPendingApprovals(): Promise<AdminUser[]> {
   return (data as AdminUser[]) || [];
 }
 
+export interface Applicant {
+  id: string;
+  full_name: string;
+  email: string | null;
+  role: string;
+  status: string;
+  avatar_url: string | null;
+  created_at: string;
+  rejection_reason: string | null;
+  bio: string | null;
+  phone: string | null;
+  subjects: string[] | null;
+  hourly_rate: number | null;
+  rate_currency: string | null;
+  resume_url: string | null;
+}
+
+/**
+ * Tutors and counselors awaiting a decision, or already decided.
+ *
+ * Everything the reviewer needs is fetched in one go, including resume_url, so
+ * the CV can be opened without a second round trip per row.
+ */
+export async function getApplicants(
+  status: "pending" | "active" | "rejected" | "all" = "pending"
+): Promise<Applicant[]> {
+  let query = supabase
+    .from("profiles")
+    .select(
+      "id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, phone, subjects, hourly_rate, rate_currency, resume_url"
+    )
+    .in("role", ["tutor", "counselor"]);
+
+  if (status !== "all") query = query.eq("status", status);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as Applicant[]) ?? [];
+}
+
+/**
+ * Tells an applicant what was decided.
+ *
+ * Best effort: a failure here must not make the caller think the decision
+ * itself failed, because the profile row is already updated by then.
+ */
+async function notifyDecision(userId: string, approved: boolean, reason?: string) {
+  const { error } = await supabase.from("notifications").insert({
+    user_id: userId,
+    type: "system",
+    title: approved ? "Your application was approved" : "Your application was not approved",
+    message: approved
+      ? "Welcome aboard. Your account is active and you can start taking on students."
+      : reason?.trim()
+        ? `Reason given: ${reason.trim()}`
+        : "Your application was not approved at this time.",
+    link: approved ? "/" : "/pending-approval",
+  });
+  if (error) console.warn("Could not notify the applicant", error.message);
+}
+
 export async function approveUser(id: string): Promise<Result> {
   const { error } = await supabase
     .from("profiles")
     .update({ status: "active", rejection_reason: null })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
+  await notifyDecision(id, true);
   return { success: true };
 }
 
@@ -190,6 +252,7 @@ export async function rejectUser(id: string, reason: string): Promise<Result> {
     .update({ status: "rejected", rejection_reason: reason || "Not approved" })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
+  await notifyDecision(id, false, reason);
   return { success: true };
 }
 

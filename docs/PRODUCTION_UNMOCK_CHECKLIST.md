@@ -34,8 +34,9 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   throwaway testing project and deliberate, but these accounts must not exist
   in a production database at all.
 
-- [ ] **Demo login buttons**, `src/pages/shared/AuthPage.tsx` shows one-click
-  logins for those accounts. Remove for production.
+- [x] **Demo login buttons**, `src/pages/shared/AuthPage.tsx`. Now behind
+  `DEV_PREVIEW`, so turning that flag off for production hides them along with
+  `/dev` and the `/preview/*` routes. No separate step to remember.
 
 - [ ] **Any signed-in user can list every profile.** `getContacts` in
   `src/services/messageService.ts` returns every other profile so a new chat can

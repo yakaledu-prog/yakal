@@ -70,6 +70,7 @@ import { CounselorSessionDetail } from "@/pages/counselor/CounselorSessionDetail
 import { AdminLayout } from "../pages/admin/AdminLayout";
 import { AdminHome } from "../pages/admin/AdminHome";
 import { AdminUsers } from "../pages/admin/AdminUsers";
+import { AdminApplicants } from "../pages/admin/AdminApplicants";
 import { AdminCourses } from "../pages/admin/AdminCourses";
 import { AdminCourseDetail } from "../pages/admin/AdminCourseDetail";
 import { AdminPosts } from "../pages/admin/cms/AdminPosts";
@@ -263,6 +264,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <AdminHome /> },
           { path: "users", element: <AdminUsers /> },
+          { path: "applicants", element: <AdminApplicants /> },
           { path: "courses", element: <AdminCourses /> },
           { path: "courses/:id", element: <AdminCourseDetail /> },
           { path: "posts", element: <AdminPosts /> },
