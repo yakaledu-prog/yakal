@@ -34,6 +34,7 @@ export function StudentMessages() {
     startingContactId,
     onlineIds,
     isPeerTyping,
+    typingConversationIds,
     notifyTyping,
   } = useMessaging({ userId: user?.id, openWithUserId: nav?.openWith });
 
@@ -70,6 +71,7 @@ export function StudentMessages() {
           startingContactId={startingContactId}
           onlineIds={onlineIds}
           isPeerTyping={isPeerTyping}
+          typingConversationIds={typingConversationIds}
           onSendText={sendMessage}
           onTyping={notifyTyping}
           draft={nav?.draftMessage}

@@ -45,64 +45,126 @@ export function usePresence(userId?: string): Set<string> {
 }
 
 /**
- * Typing indicator for one conversation, over a Supabase broadcast channel.
- * Call `notifyTyping` on every keystroke (it self-throttles); `typingUserIds`
- * holds the peers who broadcast recently.
+ * Typing indicators for a set of conversations at once.
+ *
+ * Watches every conversation the user can see, not just the open one, so a row
+ * in the sidebar can say "typing..." while you are reading a different thread.
+ * One broadcast channel per conversation, reconciled as the list changes
+ * rather than torn down and rebuilt on every render.
+ *
+ * `notifyTyping` self-throttles, so it is safe to call on every keystroke.
  */
-export function useTypingIndicator(conversationId?: string, userId?: string) {
-  const [typingUserIds, setTypingUserIds] = useState<Set<string>>(new Set());
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const lastSentRef = useRef(0);
-  const expiryTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+export function useTypingIndicators(conversationIds: string[], userId?: string) {
+  // conversation id -> the peers typing in it right now
+  const [typingByConversation, setTypingByConversation] = useState<Map<string, Set<string>>>(
+    new Map()
+  );
+
+  const channelsRef = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
+  const expiryRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastSentRef = useRef<Map<string, number>>(new Map());
+
+  // Sorted so a reorder of the same conversations does not resubscribe.
+  const key = [...conversationIds].sort().join(",");
 
   useEffect(() => {
-    if (!conversationId || !userId) return;
+    if (!userId) return;
 
-    const channel = supabase.channel(`typing:${conversationId}`);
-    channelRef.current = channel;
-    const expiryTimers = expiryTimersRef.current;
+    const wanted = new Set(key ? key.split(",") : []);
+    const channels = channelsRef.current;
+    const expiry = expiryRef.current;
 
-    channel
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        const typerId = payload?.user_id;
-        if (!typerId || typerId === userId) return;
-        setTypingUserIds((prev) => new Set(prev).add(typerId));
-        const existing = expiryTimers.get(typerId);
-        if (existing) clearTimeout(existing);
-        expiryTimers.set(
-          typerId,
-          setTimeout(() => {
-            setTypingUserIds((prev) => {
-              const next = new Set(prev);
-              next.delete(typerId);
-              return next;
-            });
-            expiryTimers.delete(typerId);
-          }, TYPING_EXPIRY_MS)
-        );
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-      expiryTimers.forEach((t) => clearTimeout(t));
-      expiryTimers.clear();
-      setTypingUserIds(new Set());
+    const clearTyper = (conversationId: string, typerId: string) => {
+      setTypingByConversation((prev) => {
+        const peers = prev.get(conversationId);
+        if (!peers?.has(typerId)) return prev;
+        const next = new Map(prev);
+        const remaining = new Set(peers);
+        remaining.delete(typerId);
+        if (remaining.size) next.set(conversationId, remaining);
+        else next.delete(conversationId);
+        return next;
+      });
     };
-  }, [conversationId, userId]);
 
-  const notifyTyping = useCallback(() => {
-    if (!channelRef.current || !userId) return;
-    const now = Date.now();
-    if (now - lastSentRef.current < TYPING_THROTTLE_MS) return;
-    lastSentRef.current = now;
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { user_id: userId },
-    });
-  }, [userId]);
+    // Drop channels for conversations that are gone.
+    for (const [id, channel] of channels) {
+      if (wanted.has(id)) continue;
+      supabase.removeChannel(channel);
+      channels.delete(id);
+      setTypingByConversation((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
+    }
 
-  return { typingUserIds, notifyTyping };
+    // Add channels for new ones.
+    for (const id of wanted) {
+      if (channels.has(id)) continue;
+
+      const channel = supabase
+        .channel(`typing:${id}`)
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          const typerId = payload?.user_id;
+          if (!typerId || typerId === userId) return;
+
+          setTypingByConversation((prev) => {
+            const next = new Map(prev);
+            next.set(id, new Set(prev.get(id) ?? []).add(typerId));
+            return next;
+          });
+
+          // Nobody sends a "stopped typing" event, so each burst carries its
+          // own expiry and the last one wins.
+          const timerKey = `${id}:${typerId}`;
+          const running = expiry.get(timerKey);
+          if (running) clearTimeout(running);
+          expiry.set(
+            timerKey,
+            setTimeout(() => {
+              clearTyper(id, typerId);
+              expiry.delete(timerKey);
+            }, TYPING_EXPIRY_MS)
+          );
+        })
+        .subscribe();
+
+      channels.set(id, channel);
+    }
+  }, [key, userId]);
+
+  // Tear everything down when the component using this goes away.
+  useEffect(() => {
+    const channels = channelsRef.current;
+    const expiry = expiryRef.current;
+    return () => {
+      channels.forEach((c) => supabase.removeChannel(c));
+      channels.clear();
+      expiry.forEach((t) => clearTimeout(t));
+      expiry.clear();
+    };
+  }, []);
+
+  const notifyTyping = useCallback(
+    (conversationId?: string) => {
+      if (!conversationId || !userId) return;
+      const channel = channelsRef.current.get(conversationId);
+      if (!channel) return;
+
+      const now = Date.now();
+      if (now - (lastSentRef.current.get(conversationId) ?? 0) < TYPING_THROTTLE_MS) return;
+      lastSentRef.current.set(conversationId, now);
+
+      channel.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { user_id: userId, conversation_id: conversationId },
+      });
+    },
+    [userId]
+  );
+
+  return { typingByConversation, notifyTyping };
 }

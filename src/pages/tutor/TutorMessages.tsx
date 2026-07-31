@@ -25,6 +25,7 @@ export function TutorMessages() {
     startingContactId,
     onlineIds,
     isPeerTyping,
+    typingConversationIds,
     notifyTyping,
   } = useMessaging({ userId: user?.id });
 
@@ -52,6 +53,7 @@ export function TutorMessages() {
           startingContactId={startingContactId}
           onlineIds={onlineIds}
           isPeerTyping={isPeerTyping}
+          typingConversationIds={typingConversationIds}
           onSendText={sendMessage}
           onTyping={notifyTyping}
           onProfileClick={() => setShowProfile((v) => !v)}

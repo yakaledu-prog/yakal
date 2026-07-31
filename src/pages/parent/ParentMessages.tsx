@@ -32,6 +32,7 @@ export function ParentMessages() {
     startingContactId,
     onlineIds,
     isPeerTyping,
+    typingConversationIds,
     notifyTyping,
   } = useMessaging({
     userId: user?.id,
@@ -70,6 +71,7 @@ export function ParentMessages() {
           startingContactId={startingContactId}
           onlineIds={onlineIds}
           isPeerTyping={isPeerTyping}
+          typingConversationIds={typingConversationIds}
           onSendText={sendMessage}
           onTyping={notifyTyping}
           draft={nav?.draftMessage}

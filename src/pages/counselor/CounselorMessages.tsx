@@ -29,6 +29,7 @@ export function CounselorMessages() {
     startingContactId,
     onlineIds,
     isPeerTyping,
+    typingConversationIds,
     notifyTyping,
   } = useMessaging({ userId: user?.id, openWithUserId: openWith });
 
@@ -56,6 +57,7 @@ export function CounselorMessages() {
           startingContactId={startingContactId}
           onlineIds={onlineIds}
           isPeerTyping={isPeerTyping}
+          typingConversationIds={typingConversationIds}
           onSendText={sendMessage}
           onTyping={notifyTyping}
           onProfileClick={() => setShowProfile((v) => !v)}

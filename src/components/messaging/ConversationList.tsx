@@ -25,6 +25,7 @@ function Row({
   preview,
   previewUnread,
   previewIsPrompt,
+  isTyping,
   unreadCount,
   busy,
   disabled,
@@ -40,6 +41,7 @@ function Row({
   preview: string;
   previewUnread?: boolean;
   previewIsPrompt?: boolean;
+  isTyping?: boolean;
   unreadCount?: number;
   busy?: boolean;
   disabled?: boolean;
@@ -98,18 +100,35 @@ function Row({
         )}
 
         <div className="flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "text-[13px] truncate flex-1",
-              previewIsPrompt
-                ? "text-[#1099A1] font-medium"
-                : previewUnread
-                  ? "text-[#111] dark:text-[#e9edef] font-semibold"
-                  : "text-[#667781] dark:text-[#8696a0]"
-            )}
-          >
-            {preview}
-          </span>
+          {/* Typing wins over the last message: it is the newer fact, and it
+              is what you would look at the row to find out. */}
+          {isTyping ? (
+            <span className="text-[13px] truncate flex-1 text-[#1099A1] font-medium flex items-center gap-1.5">
+              <span className="flex items-center gap-[3px]" aria-hidden="true">
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="w-1 h-1 rounded-full bg-[#1099A1] animate-bounce"
+                    style={{ animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </span>
+              typing...
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "text-[13px] truncate flex-1",
+                previewIsPrompt
+                  ? "text-[#1099A1] font-medium"
+                  : previewUnread
+                    ? "text-[#111] dark:text-[#e9edef] font-semibold"
+                    : "text-[#667781] dark:text-[#8696a0]"
+              )}
+            >
+              {preview}
+            </span>
+          )}
           {!!unreadCount && (
             <span className="min-w-[20px] h-5 px-1.5 bg-[#1099A1] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none shrink-0">
               {unreadCount}
@@ -132,6 +151,7 @@ export function ConversationList({
   isLoading = false,
   startingContactId,
   onlineIds,
+  typingConversationIds,
   className,
 }: {
   conversations: ChatConversation[];
@@ -145,6 +165,8 @@ export function ConversationList({
   isLoading?: boolean;
   startingContactId?: string | null;
   onlineIds?: Set<string>;
+  /** Conversations someone is typing in right now. */
+  typingConversationIds?: Set<string>;
   className?: string;
 }) {
   const query = searchQuery.trim().toLowerCase();
@@ -202,6 +224,7 @@ export function ConversationList({
               previewIsPrompt={!preview}
               previewUnread={conv.unreadCount > 0}
               unreadCount={conv.unreadCount}
+              isTyping={typingConversationIds?.has(conv.id)}
             />
           );
         })}

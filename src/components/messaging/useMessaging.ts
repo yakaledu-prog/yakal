@@ -11,7 +11,7 @@ import {
   type ChatMessage,
   type ContactProfile,
 } from "@/services/messageService";
-import { usePresence, useTypingIndicator } from "@/hooks/usePresence";
+import { usePresence, useTypingIndicators } from "@/hooks/usePresence";
 
 // ============================================================
 // Everything the messaging screens need: loading, selection, sending, presence.
@@ -64,9 +64,23 @@ export function useMessaging({
   const [startingContactId, setStartingContactId] = useState<string | null>(null);
 
   const onlineIds = usePresence(userId);
-  const { typingUserIds, notifyTyping } = useTypingIndicator(
-    activeConversationId || undefined,
+
+  // Watch every thread, not just the open one, so the sidebar can show that
+  // someone is typing in a conversation you are not currently reading.
+  const conversationIds = useMemo(() => conversations.map((c) => c.id), [conversations]);
+  const { typingByConversation, notifyTyping: notifyTypingIn } = useTypingIndicators(
+    conversationIds,
     userId
+  );
+
+  const notifyTyping = useCallback(
+    () => notifyTypingIn(activeConversationId),
+    [notifyTypingIn, activeConversationId]
+  );
+
+  const typingConversationIds = useMemo(
+    () => new Set(typingByConversation.keys()),
+    [typingByConversation]
   );
 
   // Overlay live presence so a green dot appears without a refetch.
@@ -212,7 +226,8 @@ export function useMessaging({
   );
 
   const isPeerTyping =
-    !!activeConversation && typingUserIds.has(activeConversation.contact.id);
+    !!activeConversation &&
+    !!typingByConversation.get(activeConversation.id)?.has(activeConversation.contact.id);
 
   return {
     conversations: liveConversations,
@@ -232,6 +247,8 @@ export function useMessaging({
     startingContactId,
     onlineIds,
     isPeerTyping,
+    /** Conversations someone is typing in right now, for the sidebar. */
+    typingConversationIds,
     notifyTyping,
     totalUnread: conversations.reduce((sum, c) => sum + c.unreadCount, 0),
   };

@@ -31,6 +31,7 @@ export function MessagingLayout({
   startingContactId,
   onlineIds,
   isPeerTyping,
+  typingConversationIds,
   onSendText,
   onTyping,
   onProfileClick,
@@ -58,6 +59,8 @@ export function MessagingLayout({
   startingContactId?: string | null;
   onlineIds?: Set<string>;
   isPeerTyping?: boolean;
+  /** Conversations someone is typing in right now, shown in the list. */
+  typingConversationIds?: Set<string>;
   onSendText?: (text: string) => void | Promise<void>;
   onTyping?: () => void;
   onProfileClick?: () => void;
@@ -105,6 +108,7 @@ export function MessagingLayout({
         isLoading={isLoading}
         startingContactId={startingContactId}
         onlineIds={onlineIds}
+        typingConversationIds={typingConversationIds}
         className={cn(
           "w-full md:w-[340px] md:shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]",
           showChatOnMobile ? "hidden md:flex" : "flex"
