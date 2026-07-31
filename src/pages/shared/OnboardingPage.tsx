@@ -48,6 +48,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const role = previewRole ?? profile?.role ?? "student";
 
   const [step, setStep] = useState(1);
+  // Students do the short wizard first, then the diagnostic assessment.
+  const [studentStage, setStudentStage] = useState<"profile" | "diagnostic">("profile");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCv, setUploadingCv] = useState(false);
@@ -58,6 +60,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
   const [subjects, setSubjects] = useState<string[]>([]);
   const [bio, setBio] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvUrl, setCvUrl] = useState("");
 
@@ -76,6 +79,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       setAvatarUrl(profile.avatar_url || dicebearUrl(profile.id || profile.full_name || "yakal", "identicon"));
       setSubjects(profile.subjects || []);
       setBio(profile.bio || "");
+      setGradeLevel(profile.grade_level || "");
       setCvUrl((profile as any).resume_url || "");
     }
   }, [profile, isPreview]);
@@ -189,24 +193,32 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       const path = `${user.id}/cv_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("resumes")
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from("resumes").getPublicUrl(path);
-      setCvUrl(data.publicUrl);
+
+      // The path, not a URL. The bucket is private because a CV carries a home
+      // address and a phone number, so anyone reading it later asks for a
+      // short-lived signed URL instead.
+      setCvUrl(path);
       setCvFile(file);
-      toast.success("CV uploaded successfully.");
+      toast.success("CV uploaded.");
     } catch (err: any) {
-      toast.error(err.message || "Upload failed. Ensure 'resumes' bucket exists.");
+      toast.error(err.message || "Could not upload your CV. Please try again.");
     } finally {
       setUploadingCv(false);
     }
   };
 
+  const StudentSteps = ["Profile", "Preferences"];
   const TutorSteps = ["Profile", "CV / Resume", "Subjects"];
   const ParentSteps = ["Profile", "Theme", "Children"];
   const CounselorSteps = ["Profile", "Bio"];
 
-  const stepsList = role === "tutor" ? TutorSteps : role === "parent" ? ParentSteps : CounselorSteps;
+  const stepsList =
+    role === "student" ? StudentSteps
+      : role === "tutor" ? TutorSteps
+        : role === "parent" ? ParentSteps
+          : CounselorSteps;
   const isLastStep = step === stepsList.length;
 
   const handleNextOrSubmit = async (e: React.FormEvent) => {
@@ -241,12 +253,18 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       const updates: Record<string, unknown> = {
         theme,
         avatar_url: avatarUrl,
-        is_onboarded: true,
+        // A student is not finished here: the diagnostic assessment comes next
+        // and marks them onboarded when it ends, whether they answer or skip.
+        is_onboarded: role !== "student",
       };
 
       // We only update fullName if it's Parent/Counselor since Tutor doesn't ask for it
       if (role !== "tutor") {
         updates.full_name = fullName.trim();
+      }
+
+      if (role === "student") {
+        updates.grade_level = gradeLevel || null;
       }
 
       if (role === "tutor") {
@@ -262,6 +280,14 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
       // In real life, we would save `childrenDetails` to a database table here for Parent
 
+      await refreshProfile();
+
+      if (role === "student") {
+        // Straight into the assessment, no confetti yet: the journey is not over.
+        setStudentStage("diagnostic");
+        return;
+      }
+
       const fresh = await refreshProfile();
       const dest = postAuthPath(fresh ?? { role, status: profile?.status ?? "active", is_onboarded: true });
       fireConfetti();
@@ -274,7 +300,22 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     }
   };
 
-  if (role === "student") {
+  // Wait for the profile rather than assuming a role.
+  //
+  // `role` falls back to "student" when the profile has not arrived, and the
+  // student branch below hands the whole screen to the diagnostic assessment.
+  // Straight after signup the profile is always still loading, so every new
+  // tutor and counselor was dropped into the student diagnostic and never saw
+  // their own wizard.
+  if (!isPreview && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21]">
+        <Loader2 className="animate-spin text-[#1099A1]" size={26} />
+      </div>
+    );
+  }
+
+  if (role === "student" && (studentStage === "diagnostic" || isPreview)) {
     return <div className="min-h-screen flex font-sans bg-[#f8f9fa] dark:bg-[#111b21]">
       <div className="hidden lg:block lg:w-[45%] relative">
         <img src={logoImg} alt="Yakal Education" className="absolute z-50 left-5 top-5 h-15 object-cover" />
@@ -403,7 +444,9 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     <p className="text-[#54656f] dark:text-[#aebac1] text-[13px]">
                       PDF, DOCX, or Image (Max 5MB)
                     </p>
-                    <input ref={cvInputRef} type="file" accept=".pdf,.doc,.docx,image/*" className="hidden" onChange={handleCvUpload} />
+                    {/* Matches the mime types the resumes bucket accepts. It
+                        used to offer image/* as well, which the bucket rejects. */}
+                    <input ref={cvInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCvUpload} />
                   </div>
 
                   {cvFile && (
@@ -473,8 +516,29 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
+              {/* Student Step 2: grade level, then the same theme cards */}
+              {role === "student" && step === 2 && (
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">
+                      What grade are you in?
+                    </label>
+                    <select
+                      value={gradeLevel}
+                      onChange={(e) => setGradeLevel(e.target.value)}
+                      className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                    >
+                      <option value="">Select your grade</option>
+                      {["Grade 9", "Grade 10", "Grade 11", "Grade 12", "University", "Other"].map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Parent Step 2: Theme Cards */}
-              {role === "parent" && step === 2 && (
+              {(role === "parent" || role === "student") && step === 2 && (
                 <div className="flex flex-col gap-6">
                   <div>
                     <div className="grid grid-cols-2 gap-4">
