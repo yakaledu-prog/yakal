@@ -42,11 +42,31 @@ const SORTS: DropdownOption<SortKey>[] = [
   { value: "name", label: "Name, A to Z" },
 ];
 
-export function StudentCollegeList({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
+/**
+ * A student's college list.
+ *
+ * Shared rather than copied: the counselor's student drawer and the parent's
+ * College List render this same component against a different `studentId`.
+ * The two flags are separate on purpose. `embedded` is about chrome, whether
+ * the page owns its banner or sits inside someone else's. `canEdit` is about
+ * permission. A counselor is embedded and may still edit; a parent is embedded
+ * and may not, because row level security gives them SELECT and nothing else.
+ */
+export function StudentCollegeList({
+  studentId,
+  embedded,
+  canEdit = true,
+}: {
+  /** Whose list to show. Defaults to the signed-in user's own. */
+  studentId?: string;
+  embedded?: boolean;
+  canEdit?: boolean;
+}) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
   const targetId = studentId || user?.id;
+  const refresh = () => qc.invalidateQueries({ queryKey: ["college-profile", targetId] });
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", targetId],
@@ -143,30 +163,34 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
     [schools]
   );
 
+  // Every mutation writes against targetId and refreshes targetId's cache.
+  // These used to use the signed-in user's id, so a counselor editing a
+  // student's list refreshed their own empty profile and the change appeared
+  // to have been lost.
   const submitAdd = async (input: AddCollegeInput) => {
-    if (!user) return;
+    if (!targetId || !canEdit) return;
     setSaving(true);
-    const res = await addSchoolFromCatalog(user.id, input);
+    const res = await addSchoolFromCatalog(targetId, input);
     setSaving(false);
     if (!res.success) return toast.error(res.error || "Could not add that college.");
     setShowAdd(false);
     toast.success(`${input.school_name} added.`);
-    qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+    refresh();
   };
 
   const changeStatus = async (id: string, status: SchoolStatus) => {
-    if (!user) return;
+    if (!canEdit) return;
     const res = await updateSchool(id, { status });
     if (!res.success) return toast.error(res.error || "Could not update.");
-    qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+    refresh();
   };
 
   const remove = async (item: CollegeListItem) => {
-    if (!user) return;
+    if (!canEdit) return;
     const res = await deleteSchool(item.id);
     if (!res.success) return toast.error(res.error || "Could not remove.");
     toast.success(`${item.school_name} removed.`);
-    qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+    refresh();
   };
 
   // No early return on a missing user: ProtectedRoute already guarantees one
@@ -174,7 +198,7 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
   const content = (
     <>
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
-      {!readOnly ? (
+      {!embedded ? (
         <header className="relative overflow-hidden bg-[#1099A1] px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -243,12 +267,14 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
                 Export CSV
               </button>
 
-              <button
-                onClick={() => setShowAdd(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
-              >
-                <Plus size={16} /> Add School
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
+                >
+                  <Plus size={16} /> Add School
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -278,11 +304,20 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
             >
               <Download size={15} /> Export CSV
             </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setShowAdd(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#1099A1] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+              >
+                <Plus size={15} /> Add School
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      <div className={cn("mx-auto space-y-6", readOnly ? "px-6 py-6" : "p-6 md:p-10 max-w-[1100px]")}>
+      <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10 max-w-[1100px]")}>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-[#1099A1]" />
@@ -293,16 +328,19 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
                 No colleges yet
               </p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#717182]">
-                Browse the catalog and add the ones you are curious about. You can
-                change your mind later.
+                {canEdit
+                  ? "Browse the catalog and add the ones you are curious about. You can change your mind later."
+                  : "Nothing has been added to this list yet. It appears here as soon as it is."}
               </p>
-              <a
-                href="/student/explore"
-                className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
-              >
-                <Search size={15} />
-                Explore colleges
-              </a>
+              {canEdit && (
+                <a
+                  href="/student/explore"
+                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                >
+                  <Search size={15} />
+                  Explore colleges
+                </a>
+              )}
             </div>
           ) : (
             <>
@@ -326,6 +364,7 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
                           student={student}
                           onStatusChange={changeStatus}
                           onRemove={remove}
+                          canEdit={canEdit}
                         />
                       ))}
                     </div>
@@ -345,7 +384,7 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
       />
 
       <AddCollegeModal
-        open={showAdd}
+        open={showAdd && canEdit}
         onClose={() => setShowAdd(false)}
         onSubmit={submitAdd}
         catalog={catalog ?? []}
@@ -356,7 +395,7 @@ export function StudentCollegeList({ studentId, readOnly }: { studentId?: string
     </>
   );
 
-  if (readOnly) return content;
+  if (embedded) return content;
 
   return (
     <PageWrapper className="!p-0">

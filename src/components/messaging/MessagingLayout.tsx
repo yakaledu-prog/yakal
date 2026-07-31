@@ -35,11 +35,15 @@ export function MessagingLayout({
   onSendText,
   onTyping,
   onProfileClick,
+  hideChatHeader,
+  onFlag,
+  isFlagged,
   draft,
   aside,
   emptyState,
   readOnly,
   readOnlyNotice,
+  readOnlyTooltip,
   className,
 }: {
   /**
@@ -64,6 +68,16 @@ export function MessagingLayout({
   onSendText?: (text: string) => void | Promise<void>;
   onTyping?: () => void;
   onProfileClick?: () => void;
+  /**
+   * Drops the contact header above the history. For a view where something
+   * else already names the person, such as the parent's child tab where the
+   * sidebar shows who is selected, a second name is only repetition. The
+   * contact panel then opens from the composer instead.
+   */
+  hideChatHeader?: boolean;
+  /** Opens the report dialog from the composer. Omit to hide the flag. */
+  onFlag?: () => void;
+  isFlagged?: boolean;
   /** Pre-fills the composer, e.g. a message started from another page. */
   draft?: string;
   /** Optional panel beside the history, below the contact header. */
@@ -71,6 +85,7 @@ export function MessagingLayout({
   emptyState?: ReactNode;
   readOnly?: boolean;
   readOnlyNotice?: string;
+  readOnlyTooltip?: string;
   className?: string;
 }) {
   // Which column the phone shows. Desktop shows both regardless.
@@ -125,12 +140,14 @@ export function MessagingLayout({
           <>
             {/* Once a conversation is open, the person you are talking to is
                 the heading. The page banner would only push the history down. */}
-            <ChatHeader
-              contact={activeConversation.contact}
-              isTyping={isPeerTyping}
-              onBack={() => setShowChatOnMobile(false)}
-              onProfileClick={onProfileClick}
-            />
+            {!hideChatHeader && (
+              <ChatHeader
+                contact={activeConversation.contact}
+                isTyping={isPeerTyping}
+                onBack={() => setShowChatOnMobile(false)}
+                onProfileClick={onProfileClick}
+              />
+            )}
             <div className="relative flex-1 min-h-0 flex">
               <ChatBody
                 conversation={activeConversation}
@@ -141,6 +158,10 @@ export function MessagingLayout({
                 draft={draft}
                 readOnly={readOnly}
                 readOnlyNotice={readOnlyNotice}
+                readOnlyTooltip={readOnlyTooltip}
+                onOpenContactInfo={hideChatHeader ? onProfileClick : undefined}
+                onFlag={onFlag}
+                isFlagged={isFlagged}
               />
               {aside}
             </div>

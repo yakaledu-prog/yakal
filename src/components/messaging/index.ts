@@ -26,3 +26,4 @@ export {
   countUnread,
   previewText,
 } from "./format";
+export { FlagConversationDialog } from "./FlagConversationDialog";

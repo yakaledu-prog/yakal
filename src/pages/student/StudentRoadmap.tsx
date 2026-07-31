@@ -11,12 +11,46 @@ import { cn } from "@/utils/cn";
 
 const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
 
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-[14px] font-medium text-foreground capitalize mt-0.5">{value}</p>
+    </div>
+  );
+}
+
 const field = "bg-white/10 border-transparent text-white placeholder-white/50 focus:border-white focus:bg-white/20 transition-all rounded-sm px-3 py-2 text-[13px] outline-none w-full";
 
-export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, readOnly?: boolean }) {
+/**
+ * The college roadmap: stage, intended major, graduation year and the
+ * grade-by-grade timeline.
+ *
+ * Shared with the parent's read-only view. `embedded` drops the banner so it
+ * can sit inside another page's chrome; `canEdit` decides whether the header
+ * fields are inputs or plain text.
+ */
+export function StudentRoadmap({
+  studentId,
+  embedded,
+  canEdit = true,
+  gradeLevel,
+}: {
+  studentId?: string;
+  embedded?: boolean;
+  canEdit?: boolean;
+  /**
+   * The student's grade level. Only needed when viewing someone else: the
+   * timeline highlights the current year, and reading it off the signed-in
+   * profile would anchor a parent's view to the parent.
+   */
+  gradeLevel?: string | null;
+}) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
-  
+
   const targetId = studentId || user?.id;
 
   const { data, isLoading } = useQuery({
@@ -43,11 +77,16 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
     }
   }, [app]);
 
-  // Debounce save when inputs change
+  // Debounced autosave, against the student whose roadmap this is.
+  //
+  // This used to write to the signed-in user's id unconditionally, so opening
+  // someone else's roadmap created a college application row on the viewer's
+  // own account and did nothing to the student's. A reader saves nothing at
+  // all.
   useEffect(() => {
-    if (!user || isLoading) return;
+    if (!canEdit || !targetId || isLoading) return;
     const timeout = setTimeout(async () => {
-      const res = await upsertApplication(user.id, {
+      const res = await upsertApplication(targetId, {
         stage,
         program_interest: major.trim() || null,
         grad_year: gradYear ? Number(gradYear) : null,
@@ -55,18 +94,18 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
       if (!res.success) {
         toast.error(res.error || "Failed to save profile");
       } else {
-        qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+        qc.invalidateQueries({ queryKey: ["college-profile", targetId] });
       }
     }, 1000);
     return () => clearTimeout(timeout);
-  }, [stage, major, gradYear, user, isLoading, qc]);
+  }, [stage, major, gradYear, targetId, canEdit, isLoading, qc]);
 
-  if (!user) return null;
+  if (!targetId) return null;
 
   const content = (
     <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
       {/* Header */}
-      {!readOnly ? (
+      {!embedded ? (
         <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -156,6 +195,14 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
         </div>
       ) : (
         <div className="px-6 border-b dark:border-[#2a3942] bg-card">
+          {/* The banner carries stage, major and graduation year. Embedded
+              there is no banner, so they get a compact strip instead rather
+              than disappearing. */}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2 pt-4 pb-3">
+            <Fact label="Stage" value={stage === "research" ? "Researching" : stage} />
+            <Fact label="Intended major" value={major || "Not chosen yet"} />
+            <Fact label="Grad year" value={gradYear || "Not set"} />
+          </div>
           <div className="flex gap-4 overflow-x-auto pb-0">
             {[
               { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
@@ -182,7 +229,7 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
       )}
 
       {/* Main Content */}
-      <div className={cn("mx-auto", readOnly ? "p-0" : "p-6 md:p-10 max-w-[1100px]")}>
+      <div className={cn("mx-auto", embedded ? "p-0" : "p-6 md:p-10 max-w-[1100px]")}>
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
           ) : (
@@ -190,7 +237,7 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
               {tab === "timeline" && (
                 <div className="space-y-8">
                   {/* Milestones Grid */}
-                  {!readOnly && (
+                  {!embedded && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
                         <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
@@ -209,7 +256,7 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
 
                   <RoadmapTimeline
                     gradYear={gradYear ? Number(gradYear) : app?.grad_year}
-                    gradeLevel={profile?.grade_level}
+                    gradeLevel={studentId ? gradeLevel : profile?.grade_level}
                   />
                 </div>
               )}
@@ -248,7 +295,7 @@ export function StudentRoadmap({ studentId, readOnly }: { studentId?: string, re
     </div>
   );
 
-  if (readOnly) return content;
+  if (embedded) return content;
 
   return (
     <PageWrapper className="!p-0">

@@ -33,6 +33,7 @@ export function CollegeListRow({
   student,
   onStatusChange,
   onRemove,
+  canEdit = true,
 }: {
   item: CollegeListItem;
   /** Catalog match, absent for manually added colleges. */
@@ -40,6 +41,13 @@ export function CollegeListRow({
   student: StudentProfile;
   onStatusChange: (id: string, status: SchoolStatus) => void;
   onRemove: (item: CollegeListItem) => void;
+  /**
+   * False for a viewer who may look but not change, such as a parent reading
+   * their child's list. The controls are not rendered at all rather than
+   * disabled: a parent's row level security would reject the write anyway, so
+   * a greyed-out dropdown would only promise something that cannot happen.
+   */
+  canEdit?: boolean;
 }) {
   const [menu, setMenu] = useState(false);
   const img = college ? collegeImageUrl(college.image, 160) : null;
@@ -142,40 +150,48 @@ export function CollegeListRow({
         )}
       </div>
 
-      <Dropdown
-        value={item.status}
-        onChange={(v) => onStatusChange(item.id, v as SchoolStatus)}
-        options={STATUS}
-        size="sm"
-        align="end"
-        className="w-[130px] shrink-0"
-        buttonClassName="font-normal"
-        ariaLabel={`Status for ${item.school_name}`}
-      />
+      {canEdit ? (
+        <Dropdown
+          value={item.status}
+          onChange={(v) => onStatusChange(item.id, v as SchoolStatus)}
+          options={STATUS}
+          size="sm"
+          align="end"
+          className="w-[130px] shrink-0"
+          buttonClassName="font-normal"
+          ariaLabel={`Status for ${item.school_name}`}
+        />
+      ) : (
+        <span className="w-[130px] shrink-0 text-[13px] text-[#54656f] dark:text-[#aebac1]">
+          {STATUS.find((s) => s.value === item.status)?.label ?? item.status}
+        </span>
+      )}
 
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={() => setMenu((m) => !m)}
-          onBlur={() => setTimeout(() => setMenu(false), 150)}
-          aria-label={`More options for ${item.school_name}`}
-          className="grid h-8 w-8 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#111] dark:hover:bg-[#1c2a32] dark:hover:text-white"
-        >
-          <MoreHorizontal size={16} />
-        </button>
-        {menu && (
-          <div className="absolute right-0 top-9 z-20 w-40 rounded-lg border border-[#e9edef] bg-white py-1 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]">
-            <button
-              type="button"
-              onClick={() => onRemove(item)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#d4183d] transition-colors hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
-            >
-              <Trash2 size={14} />
-              Remove
-            </button>
-          </div>
-        )}
-      </div>
+      {canEdit && (
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setMenu((m) => !m)}
+            onBlur={() => setTimeout(() => setMenu(false), 150)}
+            aria-label={`More options for ${item.school_name}`}
+            className="grid h-8 w-8 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#111] dark:hover:bg-[#1c2a32] dark:hover:text-white"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          {menu && (
+            <div className="absolute right-0 top-9 z-20 w-40 rounded-lg border border-[#e9edef] bg-white py-1 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]">
+              <button
+                type="button"
+                onClick={() => onRemove(item)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#d4183d] transition-colors hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
+              >
+                <Trash2 size={14} />
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

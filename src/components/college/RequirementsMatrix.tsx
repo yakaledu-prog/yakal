@@ -32,10 +32,13 @@ export function RequirementsMatrix({
   schools,
   ctx,
   onToggle,
+  canEdit = true,
 }: {
   schools: CollegeListItem[];
   ctx: StudentContext;
   onToggle: (school: CollegeListItem, key: ReqKey, next: boolean) => void;
+  /** False for a viewer who may read the tracker but not change it. */
+  canEdit?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -99,8 +102,10 @@ export function RequirementsMatrix({
                     <td key={c.key} className="px-2 py-3 text-center">
                       <Cell
                         cell={c}
-                        onClick={() =>
-                          onToggle(s, c.key, c.status !== "done")
+                        onClick={
+                          canEdit
+                            ? () => onToggle(s, c.key, c.status !== "done")
+                            : undefined
                         }
                       />
                     </td>
@@ -117,7 +122,7 @@ export function RequirementsMatrix({
   );
 }
 
-function Cell({ cell, onClick }: { cell: ReqCell; onClick: () => void }) {
+function Cell({ cell, onClick }: { cell: ReqCell; onClick?: () => void }) {
   const { status, derived, reason, progress } = cell;
 
   if (status === "not_required") {
@@ -137,9 +142,13 @@ function Cell({ cell, onClick }: { cell: ReqCell; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
+      disabled={!onClick}
       title={reason}
       aria-label={reason}
-      className="group inline-flex flex-col items-center gap-0.5"
+      className={cn(
+        "group inline-flex flex-col items-center gap-0.5",
+        !onClick && "cursor-default"
+      )}
     >
       <span
         className={cn(
@@ -148,7 +157,10 @@ function Cell({ cell, onClick }: { cell: ReqCell; onClick: () => void }) {
             ? "border-[#1099A1] bg-[#1099A1] text-white"
             : status === "partial"
               ? "border-[#1099A1] text-[#1099A1]"
-              : "border-[#dfe3e6] text-transparent group-hover:border-[#1099A1] dark:border-[#3a4a52]",
+              : cn(
+                "border-[#dfe3e6] text-transparent dark:border-[#3a4a52]",
+                onClick && "group-hover:border-[#1099A1]"
+              ),
           // A dashed edge marks a value the system worked out, so a student can
           // tell at a glance which ticks are theirs and which are ours. On a
           // filled square the border is invisible against the fill, so the

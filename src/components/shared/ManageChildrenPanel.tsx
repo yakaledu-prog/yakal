@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Trash2, Clock } from "lucide-react";
+import { Clock, Loader2, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getLinkedChildren,
@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 // ============================================================
 // Adding children and choosing their services.
@@ -32,13 +33,69 @@ const SERVICES: { key: ServiceName; label: string }[] = [
   { key: "admissions", label: "Admissions" },
 ];
 
+/**
+ * The on/off control for one service.
+ *
+ * A drawn tick rather than an icon in a box: the stroke animates in, so
+ * turning something on reads as an action rather than a repaint, and the empty
+ * state is a plain outline instead of an invisible glyph.
+ */
+function ServiceTick({
+  on,
+  busy,
+  label,
+  onClick,
+}: {
+  on: boolean;
+  busy: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={on ? "Switch off" : "Switch on"}
+      className={cn(
+        "mx-auto grid h-10 w-10 place-items-center rounded-full transition-all duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1099A1] focus-visible:ring-offset-2",
+        busy && "opacity-60",
+        on
+          ? "bg-[#1099A1] text-white shadow-sm hover:bg-[#0d848b]"
+          : "border-2 border-dashed border-[#c2c7d0] text-[#c2c7d0] hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#3a4a52]"
+      )}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M4.5 12.5 L9.5 17.5 L19.5 6.5"
+          stroke="currentColor"
+          strokeWidth={on ? 3.2 : 2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          // Drawn on, wiped off. 30 is a little over the path length, so the
+          // dash clears it completely at either end.
+          strokeDasharray="30"
+          strokeDashoffset={on ? 0 : 30}
+          className="transition-[stroke-dashoffset,stroke-width] duration-300 ease-out"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export function ManageChildrenPanel({ className }: { className?: string }) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [service, setService] = useState<ServiceName | "">("");
   const [adding, setAdding] = useState(false);
-  const [busyChild, setBusyChild] = useState<string | null>(null);
+  // Keyed by child and service. Keying by child alone disabled both ticks in
+  // the row, so toggling one made the other flicker as though it had changed
+  // too.
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -86,7 +143,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   }
 
   async function toggle(studentId: string, s: ServiceName) {
-    setBusyChild(studentId);
+    setBusyKey(`${studentId}:${s}`);
     try {
       const result = await setChildService(studentId, s, !isOn(studentId, s));
       if (!result.success) throw new Error(result.error);
@@ -94,13 +151,13 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     } catch (err: any) {
       toast.error(err.message ?? "Could not change that");
     } finally {
-      setBusyChild(null);
+      setBusyKey(null);
     }
   }
 
   async function unlink(studentId: string, name: string) {
     if (!user) return;
-    setBusyChild(studentId);
+    setBusyKey(`${studentId}:unlink`);
     try {
       const { error } = await supabase
         .from("parent_student_links")
@@ -113,7 +170,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     } catch (err: any) {
       toast.error(err.message ?? "Could not remove that child");
     } finally {
-      setBusyChild(null);
+      setBusyKey(null);
     }
   }
 
@@ -129,16 +186,15 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
         />
         <div className="hidden sm:block w-px bg-border" />
-        <select
+        <Dropdown
           value={service}
-          onChange={(e) => setService(e.target.value as ServiceName | "")}
-          className="bg-transparent px-3 py-2.5 text-[14px] text-foreground outline-none sm:w-[170px]"
-        >
-          <option value="">Select service</option>
-          {SERVICES.map((s) => (
-            <option key={s.key} value={s.key}>{s.label}</option>
-          ))}
-        </select>
+          onChange={setService}
+          options={SERVICES.map((s) => ({ value: s.key as ServiceName | "", label: s.label }))}
+          placeholder="Select service"
+          ariaLabel="Service to start with"
+          className="sm:w-[180px]"
+          buttonClassName="border-0 bg-transparent font-normal"
+        />
         <button
           onClick={add}
           disabled={adding || !email.trim()}
@@ -149,8 +205,6 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
       </div>
 
       <div>
-        <h3 className="text-[14px] font-bold text-foreground mb-3">Children with access</h3>
-
         {isLoading ? (
           <div className="flex justify-center py-6">
             <Loader2 className="animate-spin text-[#1099A1]" size={20} />
@@ -160,76 +214,116 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             No children yet. Add one with their email address above.
           </p>
         ) : (
-          <ul className="divide-y divide-border">
-            {children.map((c) => (
-              <li key={c.id} className="flex items-center gap-3 py-3">
-                <img
-                  src={c.avatar_url || dicebearUrl(c.full_name)}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold text-foreground truncate">{c.full_name}</p>
-                  <p className="text-[12.5px] text-muted-foreground truncate">
-                    {c.grade_level ?? "Grade not set"}
-                  </p>
-                </div>
-
-                <div className="flex items-center rounded-xl border border-border overflow-hidden shrink-0">
+          /* A table rather than a segmented control: which services a child has
+             is a grid question, and a row of tinted pills made "on" and "off"
+             look like two labels rather than two states. */
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-border/50">
+                  <th className="pb-2 text-left text-[14px] font-bold text-foreground">
+                    Children with access
+                  </th>
                   {SERVICES.map((s) => (
-                    <button
+                    <th
                       key={s.key}
-                      onClick={() => toggle(c.id, s.key)}
-                      disabled={busyChild === c.id}
-                      className={cn(
-                        "px-3 py-1.5 text-[12.5px] font-medium transition-colors disabled:opacity-50",
-                        isOn(c.id, s.key)
-                          ? "text-[#1099A1] bg-[#1099A1]/10"
-                          : "text-muted-foreground hover:bg-muted/50"
-                      )}
+                      className="w-[110px] pb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
                     >
                       {s.label}
-                    </button>
+                    </th>
                   ))}
-                </div>
+                  <th className="w-[52px]" />
+                </tr>
+              </thead>
+              <tbody>
+                {children.map((c) => (
+                  <tr key={c.id} className="border-b border-border/30 last:border-0">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={c.avatar_url || dicebearUrl(c.full_name)}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-semibold text-foreground">
+                            {c.full_name}
+                          </p>
+                          <p className="truncate text-[12.5px] text-muted-foreground">
+                            {c.grade_level ?? "Grade not set"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
 
-                <button
-                  onClick={() => unlink(c.id, c.full_name)}
-                  disabled={busyChild === c.id}
-                  title={`Remove ${c.full_name}`}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-[#CAA25F] hover:bg-muted/50 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
+                    {SERVICES.map((s) => {
+                      const on = isOn(c.id, s.key);
+                      return (
+                        <td key={s.key} className="py-3 text-center">
+                          <ServiceTick
+                            on={on}
+                            busy={busyKey === `${c.id}:${s.key}`}
+                            label={`${s.label} for ${c.full_name}`}
+                            onClick={() => toggle(c.id, s.key)}
+                          />
+                        </td>
+                      );
+                    })}
 
-            {pending.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 py-3 opacity-70">
-                <img
-                  src={p.avatar_url || dicebearUrl(p.full_name)}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold text-foreground truncate">{p.full_name}</p>
-                  <p className="text-[12.5px] text-muted-foreground truncate">{p.email}</p>
-                </div>
-                <span className="flex items-center gap-1.5 text-[12px] font-medium text-[#8a6a2a] dark:text-[#CAA25F] shrink-0">
-                  <Clock size={13} />
-                  {p.status === "rejected" ? "Declined" : "Waiting to accept"}
-                </span>
-                <button
-                  onClick={() => unlink(p.student_id, p.full_name)}
-                  disabled={busyChild === p.student_id}
-                  title="Withdraw the request"
-                  className="p-2 rounded-lg text-muted-foreground hover:text-[#CAA25F] hover:bg-muted/50 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
+                    <td className="py-3 text-right">
+                      <button
+                        onClick={() => unlink(c.id, c.full_name)}
+                        disabled={busyKey === `${c.id}:unlink`}
+                        title={`Remove ${c.full_name}`}
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Pending children have no services yet: the policy on
+                    child_services needs an active link, so the columns would
+                    only offer a toggle that cannot be saved. */}
+                {pending.map((p) => (
+                  <tr key={p.id} className="border-b border-border/30 last:border-0 opacity-70">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={p.avatar_url || dicebearUrl(p.full_name)}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-semibold text-foreground">
+                            {p.full_name}
+                          </p>
+                          <p className="truncate text-[12.5px] text-muted-foreground">{p.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td colSpan={SERVICES.length} className="py-3 text-center">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+                        <Clock size={13} />
+                        {p.status === "rejected" ? "Declined" : "Waiting to accept"}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <button
+                        onClick={() => unlink(p.student_id, p.full_name)}
+                        disabled={busyKey === `${p.student_id}:unlink`}
+                        title="Withdraw the request"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

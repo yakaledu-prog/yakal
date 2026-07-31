@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Paperclip, Smile, Mic, Send, Trash2, ExternalLink } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, Trash2, ExternalLink, Info, Flag } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { LiveAudioVisualizer } from "react-audio-visualize";
 import type { ChatConversation, ChatMessage } from "@/services/messageService";
 import { cn } from "@/utils/cn";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { groupByDay } from "./format";
 import { MessageBubble, type LocalAttachment } from "./MessageBubble";
 
@@ -82,10 +83,14 @@ export function ChatBody({
   onSendText,
   onTyping,
   onExpand,
+  onOpenContactInfo,
+  onFlag,
+  isFlagged = false,
   isPeerTyping = false,
   draft,
   readOnly = false,
   readOnlyNotice,
+  readOnlyTooltip,
   className,
 }: {
   conversation: ChatConversation;
@@ -94,12 +99,23 @@ export function ChatBody({
   onTyping?: () => void;
   /** Shows a button to open this thread on the full messages page. */
   onExpand?: () => void;
+  /**
+   * Opens the contact panel from the composer. Used where the chat header is
+   * hidden, so there is nothing else to click to see who this is.
+   */
+  onOpenContactInfo?: () => void;
+  /** Opens the report dialog. Omit to hide the flag entirely. */
+  onFlag?: () => void;
+  /** Whether this person has already reported the conversation. */
+  isFlagged?: boolean;
   isPeerTyping?: boolean;
   /** Pre-fills the composer, e.g. a message started from another page. */
   draft?: string;
   /** Hides the composer. Used for a parent viewing a child's chat. */
   readOnly?: boolean;
   readOnlyNotice?: string;
+  /** Explains the restriction on hover, since the label has to stay short. */
+  readOnlyTooltip?: string;
   className?: string;
 }) {
   const isDark = useIsDark();
@@ -308,10 +324,46 @@ export function ChatBody({
       </div>
 
       {readOnly ? (
-        <div className="px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942] text-center">
-          <p className="text-[12.5px] text-[#667781] dark:text-[#8696a0]">
-            {readOnlyNotice ?? "This conversation is read only."}
-          </p>
+        <div className="flex items-center gap-1 px-3 py-2.5 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942]">
+          {onOpenContactInfo && (
+            <button
+              onClick={onOpenContactInfo}
+              title="Contact info"
+              aria-label="Contact info"
+              className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+            >
+              <Info size={20} />
+            </button>
+          )}
+          {onFlag && (
+            <button
+              onClick={onFlag}
+              title={isFlagged ? "You reported this conversation" : "Report this conversation"}
+              aria-label={isFlagged ? "You reported this conversation" : "Report this conversation"}
+              className={cn(
+                "p-2 transition-colors shrink-0",
+                isFlagged ? "text-[#CAA25F]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]"
+              )}
+            >
+              <Flag size={20} fill={isFlagged ? "currentColor" : "none"} />
+            </button>
+          )}
+          <span className="flex flex-1 justify-end pr-1">
+            <Tooltip
+              side="top"
+              content={
+                readOnlyTooltip ??
+                "You can read this conversation and report anything of concern, but not take part in it."
+              }
+            >
+              <span
+                tabIndex={0}
+                className="cursor-help text-[12.5px] text-[#667781] underline decoration-dotted underline-offset-4 outline-none focus-visible:text-[#1099A1] dark:text-[#8696a0]"
+              >
+                {readOnlyNotice ?? "This conversation is read only."}
+              </span>
+            </Tooltip>
+          </span>
         </div>
       ) : (
         <div className="relative flex items-center gap-2 px-4 py-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942]">
@@ -333,6 +385,31 @@ export function ChatBody({
                   className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
                 >
                   <ExternalLink size={22} />
+                </button>
+              )}
+              {onOpenContactInfo && (
+                <button
+                  onClick={onOpenContactInfo}
+                  title="Contact info"
+                  aria-label="Contact info"
+                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+                >
+                  <Info size={22} />
+                </button>
+              )}
+              {onFlag && (
+                <button
+                  onClick={onFlag}
+                  title={isFlagged ? "You reported this conversation" : "Report this conversation"}
+                  aria-label={isFlagged ? "You reported this conversation" : "Report this conversation"}
+                  className={cn(
+                    "p-2 transition-colors shrink-0",
+                    isFlagged
+                      ? "text-[#CAA25F]"
+                      : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]"
+                  )}
+                >
+                  <Flag size={22} fill={isFlagged ? "currentColor" : "none"} />
                 </button>
               )}
               <button

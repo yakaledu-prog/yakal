@@ -142,9 +142,24 @@ export const USERS: SeedUser[] = [
   },
 ];
 
-/** Active parent to child links. Both sides are emails from USERS. */
-export const PARENT_LINKS: { parent: string; student: string }[] = [
-  { parent: "parent@yakal.com", student: "student@yakal.com" },
+/**
+ * Active parent to child links. Both sides are emails from USERS.
+ *
+ * `services` is what the parent has opted the child into. Without a row the
+ * child is locked out of both, which is correct but made a fresh database
+ * look broken: every admissions page showed "ask your parent to unlock it"
+ * and the parent's own college views had nothing to show.
+ */
+export const PARENT_LINKS: {
+  parent: string;
+  student: string;
+  services: ("tutoring" | "admissions")[];
+}[] = [
+  {
+    parent: "parent@yakal.com",
+    student: "student@yakal.com",
+    services: ["tutoring", "admissions"],
+  },
 ];
 
 // ------------------------------------------------------------
@@ -356,6 +371,233 @@ export const BLOG_POSTS: SeedBlogPost[] = [
         heading: "Check the money early",
         body: "Look at what each school offers international students before you apply, not after you are admitted. It changes the list more than anything else.",
       },
+    ],
+  },
+];
+
+// ------------------------------------------------------------
+// The college profile for the demo student
+//
+// getCollegeProfile used to invent three colleges whenever a student's list
+// came back empty, which is why the parent's application tracking and the
+// counselor's view both showed MIT to everybody. The fallback is gone, so the
+// data has to exist for real.
+//
+// Requirements are mostly derived, not stored: whether a transcript is on
+// file, whether the essays for a college are done, how far the recommenders
+// got. Only a hand override is written to application_requirements. So the
+// academics, essays and recommendations below are what make the requirements
+// matrix show anything.
+// ------------------------------------------------------------
+
+export interface SeedSchool {
+  name: string;
+  /** IPEDS unit id, so the row points at the catalog instead of a name string. */
+  unitid: number | null;
+  tier: "dream" | "target" | "safety";
+  status: "considering" | "applying" | "submitted" | "accepted" | "rejected" | "waitlisted";
+  /** Days from the seed date. Negative is a deadline already past. */
+  deadlineInDays: number | null;
+  deadlineRound: "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling" | null;
+  applicationUrl?: string | null;
+  suppEssayCount?: number | null;
+  whySchool?: string | null;
+  /** Hand overrides only. Everything else is worked out from the data. */
+  completed?: string[];
+}
+
+export interface SeedEssay {
+  title: string;
+  kind: "personal_statement" | "supplement";
+  /** Matches SeedSchool.name. Null for the Common App personal statement. */
+  school: string | null;
+  status: "todo" | "drafting" | "in_review" | "done";
+  wordLimit?: number | null;
+}
+
+export interface SeedRecommender {
+  name: string;
+  email: string | null;
+  relationship: string;
+  status: "requested" | "received" | "submitted";
+  askedDaysAgo?: number;
+  ferpaWaived?: boolean;
+}
+
+export interface SeedCollegeProfile {
+  student: string;
+  counselor: string | null;
+  stage: "research" | "apply" | "submitted" | "decisions" | "enrolled";
+  programInterest: string;
+  gradYear: number;
+  fafsaSubmitted: boolean;
+  cssSubmitted: boolean;
+  academics: {
+    gpa: number;
+    gpaScale: number;
+    satScore: number | null;
+    actScore: number | null;
+    toeflScore: number | null;
+    apCourses: string[];
+  };
+  schools: SeedSchool[];
+  essays: SeedEssay[];
+  recommendations: SeedRecommender[];
+  tasks: { title: string; status: "todo" | "in_progress" | "done"; dueInDays: number | null }[];
+}
+
+export const COLLEGE_PROFILES: SeedCollegeProfile[] = [
+  {
+    student: "student@yakal.com",
+    counselor: "counselor@yakal.com",
+    stage: "apply",
+    programInterest: "Computer Science",
+    gradYear: 2026,
+    fafsaSubmitted: false,
+    cssSubmitted: false,
+    academics: {
+      gpa: 3.82,
+      gpaScale: 4.0,
+      satScore: 1450,
+      actScore: null,
+      // An Ethiopian student applying abroad needs this, and it is the kind of
+      // detail the invented data never had.
+      toeflScore: 104,
+      apCourses: ["AP Calculus BC", "AP Physics C", "AP Computer Science A"],
+    },
+    schools: [
+      {
+        name: "Massachusetts Institute of Technology",
+        unitid: 166683,
+        tier: "dream",
+        status: "applying",
+        deadlineInDays: 21,
+        deadlineRound: "rd",
+        applicationUrl: "https://apply.mitadmissions.org",
+        suppEssayCount: 5,
+        whySchool: "Undergraduate research from first year, and the strongest robotics work anywhere.",
+      },
+      {
+        name: "Stanford University",
+        unitid: 243744,
+        tier: "dream",
+        status: "considering",
+        deadlineInDays: 34,
+        deadlineRound: "rd",
+        suppEssayCount: 8,
+        whySchool: "CS and entrepreneurship in the same place.",
+      },
+      {
+        name: "University of Toronto",
+        unitid: null,
+        tier: "target",
+        status: "applying",
+        deadlineInDays: 48,
+        deadlineRound: "rolling",
+        applicationUrl: "https://future.utoronto.ca/apply",
+        suppEssayCount: 2,
+        whySchool: "Strong CS, and far more affordable than the American privates.",
+        completed: ["Application", "Transcript"],
+      },
+      {
+        name: "University of Cape Town",
+        unitid: null,
+        tier: "target",
+        status: "submitted",
+        deadlineInDays: -6,
+        deadlineRound: "rd",
+        suppEssayCount: 0,
+        whySchool: "Best engineering faculty on the continent, and a shorter flight home.",
+        completed: ["Application", "Transcript", "Test scores"],
+      },
+      {
+        name: "Addis Ababa University",
+        unitid: null,
+        tier: "safety",
+        status: "submitted",
+        deadlineInDays: -20,
+        deadlineRound: "rolling",
+        suppEssayCount: 0,
+        whySchool: "Home, and a course I would be glad to take.",
+        completed: ["Application", "Transcript", "Test scores"],
+      },
+    ],
+    essays: [
+      {
+        title: "Common App personal statement",
+        kind: "personal_statement",
+        school: null,
+        status: "done",
+        wordLimit: 650,
+      },
+      {
+        title: "MIT, what you build for fun",
+        kind: "supplement",
+        school: "Massachusetts Institute of Technology",
+        status: "in_review",
+        wordLimit: 200,
+      },
+      {
+        title: "MIT, a challenge you faced",
+        kind: "supplement",
+        school: "Massachusetts Institute of Technology",
+        status: "drafting",
+        wordLimit: 200,
+      },
+      {
+        title: "Toronto, statement of interest",
+        kind: "supplement",
+        school: "University of Toronto",
+        status: "done",
+        wordLimit: 400,
+      },
+      {
+        title: "Toronto, supplementary essay",
+        kind: "supplement",
+        school: "University of Toronto",
+        status: "done",
+        wordLimit: 250,
+      },
+      {
+        title: "Stanford, what matters to you",
+        kind: "supplement",
+        school: "Stanford University",
+        status: "todo",
+        wordLimit: 250,
+      },
+    ],
+    recommendations: [
+      {
+        name: "Bethlehem Alemu",
+        email: "tutor@yakal.com",
+        relationship: "Mathematics and Physics tutor",
+        status: "submitted",
+        askedDaysAgo: 40,
+        ferpaWaived: true,
+      },
+      {
+        name: "Meseret Gebre",
+        email: "m.gebre@school.edu.et",
+        relationship: "English teacher, Grade 11 and 12",
+        status: "received",
+        askedDaysAgo: 26,
+        ferpaWaived: true,
+      },
+      {
+        name: "Yonas Bekele",
+        email: "y.bekele@school.edu.et",
+        relationship: "Head of school",
+        status: "requested",
+        askedDaysAgo: 9,
+        ferpaWaived: true,
+      },
+    ],
+    tasks: [
+      { title: "Finish the second MIT supplement", status: "in_progress", dueInDays: 5 },
+      { title: "Submit the FAFSA", status: "todo", dueInDays: 12 },
+      { title: "Send SAT scores to Stanford", status: "todo", dueInDays: 18 },
+      { title: "Ask Yonas to confirm he has the link", status: "todo", dueInDays: 3 },
+      { title: "Request the official transcript", status: "done", dueInDays: null },
     ],
   },
 ];

@@ -188,67 +188,13 @@ export async function getCollegeProfile(studentId: string): Promise<CollegeProfi
     schools.forEach((s) => (s.requirements = byItem.get(s.id) || []));
   }
 
-  let activeSchools = schools;
-  if (activeSchools.length === 0) {
-    activeSchools = [
-      {
-        id: "mock1",
-        student_id: studentId,
-        school_name: "Massachusetts Institute of Technology",
-        unitid: 166683,
-        tier: "reach",
-        status: "applying",
-        deadline: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
-        requirements: [
-          { id: "mr1", college_list_item_id: "mock1", label: "Application submitted", is_complete: true },
-          { id: "mr2", college_list_item_id: "mock1", label: "Supplemental essays", is_complete: false },
-          { id: "mr3", college_list_item_id: "mock1", label: "Recommendations requested", is_complete: true },
-          { id: "mr4", college_list_item_id: "mock1", label: "Recommendations submitted", is_complete: true },
-          { id: "mr5", college_list_item_id: "mock1", label: "Transcript sent", is_complete: true },
-          { id: "mr6", college_list_item_id: "mock1", label: "Test scores", is_complete: true },
-          { id: "mr7", college_list_item_id: "mock1", label: "FAFSA", is_complete: true },
-          { id: "mr8", college_list_item_id: "mock1", label: "CSS Profile", is_complete: true }
-        ]
-      },
-      {
-        id: "mock2",
-        student_id: studentId,
-        school_name: "Harvard University",
-        unitid: 166027,
-        tier: "reach",
-        status: "applying",
-        deadline: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
-        requirements: [
-          { id: "hr1", college_list_item_id: "mock2", label: "Application submitted", is_complete: true },
-          { id: "hr2", college_list_item_id: "mock2", label: "Supplemental essays", is_complete: true },
-          { id: "hr3", college_list_item_id: "mock2", label: "Recommendations requested", is_complete: true },
-          { id: "hr4", college_list_item_id: "mock2", label: "Recommendations submitted", is_complete: true },
-          { id: "hr5", college_list_item_id: "mock2", label: "Transcript sent", is_complete: true },
-          { id: "hr6", college_list_item_id: "mock2", label: "Test scores", is_complete: true },
-          { id: "hr7", college_list_item_id: "mock2", label: "FAFSA", is_complete: true }
-        ]
-      },
-      {
-        id: "mock3",
-        student_id: studentId,
-        school_name: "Addis Ababa University",
-        unitid: null,
-        tier: "safety",
-        status: "applying",
-        deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
-        requirements: [
-          { id: "ar1", college_list_item_id: "mock3", label: "Application submitted", is_complete: true },
-          { id: "ar2", college_list_item_id: "mock3", label: "Supplemental essays", is_complete: true },
-          { id: "ar3", college_list_item_id: "mock3", label: "Recommendations requested", is_complete: true },
-          { id: "ar5", college_list_item_id: "mock3", label: "Transcript sent", is_complete: true }
-        ]
-      }
-    ] as any;
-  }
-
+  // An empty list used to be filled with three invented colleges. That made
+  // every student, and every parent and counselor looking at one, see MIT and
+  // Harvard on a list nobody had built. An empty list is a real answer, and
+  // each surface has an empty state that says what to do about it.
   return {
     application,
-    schools: activeSchools,
+    schools,
     essays: (essaysRes.data as Essay[]) || [],
     academics: (academicsRes.data as StudentAcademics) ?? null,
     recommendations: (recsRes.data as Recommendation[]) || [],

@@ -44,11 +44,14 @@ export function RequirementsCards({
   ctx,
   onToggle,
   onDecision,
+  canEdit = true,
 }: {
   schools: CollegeListItem[];
   ctx: StudentContext;
   onToggle: (school: CollegeListItem, key: ReqKey, next: boolean) => void;
   onDecision: (school: CollegeListItem, decision: SchoolStatus | null) => void;
+  /** False for a viewer who may read the tracker but not change it. */
+  canEdit?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -102,6 +105,7 @@ export function RequirementsCards({
                 {done.done}/{done.total}
               </span>
 
+              {canEdit ? (
               <Dropdown
                 value={decided}
                 onChange={(v) => onDecision(s, (v || null) as SchoolStatus | null)}
@@ -121,6 +125,11 @@ export function RequirementsCards({
                 )}
                 ariaLabel={`Decision for ${s.school_name}`}
               />
+              ) : (
+                <span className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                  {DECISIONS.find((d) => d.value === decided)?.label ?? "No decision yet"}
+                </span>
+              )}
             </div>
 
             {/* Inset and rounded rather than a rule welded to the card edges,
@@ -137,7 +146,7 @@ export function RequirementsCards({
                 <Chip
                   key={c.key}
                   cell={c}
-                  onClick={() => onToggle(s, c.key, c.status !== "done")}
+                  onClick={canEdit ? () => onToggle(s, c.key, c.status !== "done") : undefined}
                 />
               ))}
             </div>
@@ -148,7 +157,7 @@ export function RequirementsCards({
   );
 }
 
-function Chip({ cell, onClick }: { cell: ReqCell; onClick: () => void }) {
+function Chip({ cell, onClick }: { cell: ReqCell; onClick?: () => void }) {
   const label = REQUIREMENTS.find((r) => r.key === cell.key)?.label ?? cell.key;
   const { status, derived, reason, progress } = cell;
 
@@ -168,16 +177,19 @@ function Chip({ cell, onClick }: { cell: ReqCell; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
+      disabled={!onClick}
       title={reason}
       aria-label={reason}
       aria-pressed={status === "done"}
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] transition-colors",
+        // No hover affordance for a reader who cannot change it.
+        !onClick && "cursor-default",
         status === "done"
-          ? "bg-[#1099A1] font-medium text-white hover:bg-[#0d848b]"
+          ? cn("bg-[#1099A1] font-medium text-white", onClick && "hover:bg-[#0d848b]")
           : status === "partial"
-            ? "bg-[#1099A1]/12 font-medium text-[#0d757b] hover:bg-[#1099A1]/20 dark:text-[#5fc9cf]"
-            : "bg-[#f3f3f5] text-[#54656f] hover:bg-[#ececf0] dark:bg-[#1c2a32] dark:text-[#aebac1]",
+            ? cn("bg-[#1099A1]/12 font-medium text-[#0d757b] dark:text-[#5fc9cf]", onClick && "hover:bg-[#1099A1]/20")
+            : cn("bg-[#f3f3f5] text-[#54656f] dark:bg-[#1c2a32] dark:text-[#aebac1]", onClick && "hover:bg-[#ececf0]"),
         // A dashed edge marks a value the system worked out rather than one
         // somebody ticked, so a student can tell whose claim it is.
         derived && status === "done" && "ring-1 ring-inset ring-dashed ring-white/60",

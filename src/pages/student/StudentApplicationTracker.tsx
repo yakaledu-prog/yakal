@@ -50,7 +50,25 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "recommendations", label: "Recommendations" },
 ];
 
-export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { studentId?: string, readOnly?: boolean, forcedTab?: Tab }) {
+/**
+ * What each college still needs.
+ *
+ * Shared with the counselor's student drawer and the parent's child view.
+ * `embedded` drops the banner, `canEdit` decides whether a requirement can be
+ * ticked. A parent gets neither: row level security gives them SELECT on their
+ * linked child's rows and nothing more.
+ */
+export function StudentApplicationTracker({
+  studentId,
+  embedded,
+  canEdit = true,
+  forcedTab,
+}: {
+  studentId?: string;
+  embedded?: boolean;
+  canEdit?: boolean;
+  forcedTab?: Tab;
+}) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const targetId = studentId || user?.id;
@@ -75,9 +93,9 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
   // Only used to decide whether the transcript requirement is met, so a failure
   // here should degrade the matrix rather than break the page.
   const { data: docs } = useQuery({
-    queryKey: ["drive-docs", user?.id],
-    queryFn: () => listDocuments(user!.id, profile?.full_name || "Student", user!.email),
-    enabled: !!user?.id,
+    queryKey: ["drive-docs", targetId],
+    queryFn: () => listDocuments(targetId!, profile?.full_name || "Student", user?.email),
+    enabled: !!targetId,
     retry: false,
   });
 
@@ -140,10 +158,12 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
     [tasks]
   );
 
-  const refresh = () =>
-    qc.invalidateQueries({ queryKey: ["college-profile", user?.id] });
+  // Keyed on targetId. These used to key on the signed-in user, so a
+  // counselor's edit to a student's tracker invalidated their own empty
+  // profile and the change never appeared until a reload.
+  const profileKey = ["college-profile", targetId];
 
-  const profileKey = ["college-profile", user?.id];
+  const refresh = () => qc.invalidateQueries({ queryKey: profileKey });
 
   /**
    * Patch the cached profile in place.
@@ -240,9 +260,9 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
     toggleReqM.mutate({ school, key, next });
 
   const addEssayRow = async (e: NewEssay) => {
-    if (!user) return;
+    if (!targetId || !canEdit) return;
     setSaving(true);
-    const res = await addEssay(user.id, e);
+    const res = await addEssay(targetId, e);
     setSaving(false);
     if (!res.success) return toast.error(res.error || "Could not add that essay.");
     toast.success(`${e.title} added.`);
@@ -338,9 +358,9 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
   );
 
   const addRec = async (r: NewRecommender) => {
-    if (!user) return;
+    if (!targetId || !canEdit) return;
     setSaving(true);
-    const res = await addRecommendation(user.id, r);
+    const res = await addRecommendation(targetId, r);
     setSaving(false);
     if (!res.success) return toast.error(res.error || "Could not add.");
     toast.success(`${r.recommender_name} added.`);
@@ -368,6 +388,7 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
   };
 
   const completeTask = async (id: string) => {
+    if (!canEdit) return;
     const res = await updateTask(id, { status: "done" });
     if (!res.success) return toast.error(res.error || "Could not update.");
     refresh();
@@ -377,7 +398,7 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
     <>
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
         {!forcedTab && (
-          !readOnly ? (
+          !embedded ? (
             <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -446,10 +467,13 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
           )
         )}
 
-        <div className={cn("mx-auto space-y-6", readOnly ? "px-6 py-6" : "p-6 md:p-10 max-w-[1150px]")}>
+        <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10 max-w-[1150px]")}>
           {/* Tasks are cross-cutting, so they get a strip here and a home on the
               roadmap rather than a tab nobody would think to open. */}
-          {openTasks.length > 0 && (
+          {/* Real rows from application_tasks, and ticking one writes. For a
+              reader there is nothing to tick, so the strip would be three
+              disabled buttons taking up the top of the page. */}
+          {canEdit && openTasks.length > 0 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-[#e9edef] bg-white px-4 py-3 dark:border-[#2a3942] dark:bg-[#182229]">
               <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
                 Next up
@@ -459,11 +483,18 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
                   key={t.id}
                   type="button"
                   onClick={() => completeTask(t.id)}
-                  className="group inline-flex items-center gap-1.5 text-[13px] text-[#111] transition-colors hover:text-[#1099A1] dark:text-white"
+                  disabled={!canEdit}
+                  className={cn(
+                    "group inline-flex items-center gap-1.5 text-[13px] text-[#111] transition-colors dark:text-white",
+                    canEdit ? "hover:text-[#1099A1]" : "cursor-default"
+                  )}
                 >
                   <CheckCircle2
                     size={14}
-                    className="text-[#c2c7d0] transition-colors group-hover:text-[#1099A1]"
+                    className={cn(
+                      "text-[#c2c7d0] transition-colors",
+                      canEdit && "group-hover:text-[#1099A1]"
+                    )}
                   />
                   {t.title}
                   {t.due_date && (
@@ -476,12 +507,14 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
                   )}
                 </button>
               ))}
-              <Link
-                to="/student/roadmap"
-                className="ml-auto text-[13px] font-medium text-[#1099A1] hover:underline"
-              >
-                All tasks
-              </Link>
+              {canEdit && (
+                <Link
+                  to="/student/roadmap"
+                  className="ml-auto text-[13px] font-medium text-[#1099A1] hover:underline"
+                >
+                  All tasks
+                </Link>
+              )}
             </div>
           )}
 
@@ -492,17 +525,21 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
           ) : schools.length === 0 && tab === "requirements" ? (
             <div className="rounded-xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
               <p className="text-[15px] text-[#111] dark:text-white">
-                No colleges on your list yet
+                {canEdit ? "No colleges on your list yet" : "No colleges on this list yet"}
               </p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#717182]">
-                Requirements appear here once you add a college.
+                {canEdit
+                  ? "Requirements appear here once you add a college."
+                  : "Requirements appear here once a college is added."}
               </p>
-              <Link
-                to="/student/college-list"
-                className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
-              >
-                Go to my list
-              </Link>
+              {canEdit && (
+                <Link
+                  to="/student/college-list"
+                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                >
+                  Go to my list
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -565,9 +602,15 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
                       ctx={ctx}
                       onToggle={toggleReq}
                       onDecision={setDecision}
+                      canEdit={canEdit}
                     />
                   ) : (
-                    <RequirementsMatrix schools={visibleSchools} ctx={ctx} onToggle={toggleReq} />
+                    <RequirementsMatrix
+                      schools={visibleSchools}
+                      ctx={ctx}
+                      onToggle={toggleReq}
+                      canEdit={canEdit}
+                    />
                   )}
                 </div>
               )}
@@ -588,11 +631,11 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
                 />
               )}
 
-              {tab === "documents" && user && (
+              {tab === "documents" && targetId && (
                 <DocumentsPanel
-                  studentId={user.id}
+                  studentId={targetId}
                   studentName={profile?.full_name || "Student"}
-                  studentEmail={user.email}
+                  studentEmail={user?.email}
                 />
               )}
 
@@ -636,7 +679,7 @@ export function StudentApplicationTracker({ studentId, readOnly, forcedTab }: { 
     </>
   );
 
-  if (readOnly) return content;
+  if (embedded) return content;
 
   return (
     <PageWrapper className="!p-0">

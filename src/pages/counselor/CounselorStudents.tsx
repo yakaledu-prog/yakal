@@ -181,31 +181,31 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
       <div className="w-full flex-1">
         {activeTab === "requirements" && (
           <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
-            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="requirements" />
+            <StudentApplicationTracker studentId={studentId} embedded forcedTab="requirements" />
           </div>
         )}
 
         {activeTab === "essays" && (
           <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
-            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="essays" />
+            <StudentApplicationTracker studentId={studentId} embedded forcedTab="essays" />
           </div>
         )}
 
         {activeTab === "documents" && (
           <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
-            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="documents" />
+            <StudentApplicationTracker studentId={studentId} embedded forcedTab="documents" />
           </div>
         )}
 
         {activeTab === "recommendations" && (
           <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
-            <StudentApplicationTracker studentId={studentId} readOnly forcedTab="recommendations" />
+            <StudentApplicationTracker studentId={studentId} embedded forcedTab="recommendations" />
           </div>
         )}
         
         {activeTab === "colleges" && (
           <div className="animate-in fade-in duration-300 -mx-4 md:-mx-8 bg-background min-h-[600px]">
-            <StudentCollegeList studentId={studentId} readOnly />
+            <StudentCollegeList studentId={studentId} embedded />
           </div>
         )}
         

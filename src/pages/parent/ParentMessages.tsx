@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ContactInfoPanel,
+  FlagConversationDialog,
   MessagesPageHeader,
   MessagingLayout,
   useMessaging,
 } from "@/components/messaging";
+import { getMyFlags } from "@/services/flagService";
 
 /**
  * `embedded` drops the page banner and the full-height wrapper, for use inside
@@ -22,6 +25,7 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
     | null;
 
   const [showProfile, setShowProfile] = useState(false);
+  const [flagging, setFlagging] = useState(false);
 
   const {
     conversations,
@@ -51,6 +55,15 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
     const match = conversations.find((c) => c.contact.name === nav.tutorName);
     if (match) setActiveConversationId(match.id);
   }, [nav?.tutorName, nav?.openWith, nav?.contactId, conversations, setActiveConversationId]);
+
+  // Whether this parent has already reported the open conversation, so the
+  // flag can show as set rather than inviting a second report that the unique
+  // index would reject anyway.
+  const { data: myFlags = [], refetch: refetchFlag } = useQuery({
+    queryKey: ["conversation-flags", activeConversation?.id, user?.id],
+    queryFn: () => getMyFlags(activeConversation!.id, user!.id),
+    enabled: !!activeConversation?.id && !!user?.id,
+  });
 
   // One wrapper for both modes: embedded fills its tab, standalone fills the page.
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -94,6 +107,18 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
           onTyping={notifyTyping}
           draft={nav?.draftMessage}
           onProfileClick={() => setShowProfile((v) => !v)}
+          // Embedded, the sidebar already shows whose conversation is open, so
+          // the contact header would only repeat the name. Contact info moves
+          // to the composer instead.
+          hideChatHeader={embedded}
+          // Watching, not taking part. The composer, emoji picker and
+          // attachment button have nothing to do here, so the footer carries
+          // only the two things a watcher can act on.
+          readOnly={embedded}
+          readOnlyNotice="Viewing only"
+          readOnlyTooltip="You are watching over your child's conversations. You can read them and report anything of concern, but you cannot take part."
+          onFlag={() => setFlagging(true)}
+          isFlagged={myFlags.length > 0}
           aside={
             showProfile && activeConversation ? (
               <ContactInfoPanel
@@ -103,6 +128,18 @@ export function ParentMessages({ embedded = false }: { embedded?: boolean } = {}
             ) : null
           }
         />
+        {activeConversation && user && (
+          <FlagConversationDialog
+            open={flagging}
+            contactName={activeConversation.contact.name}
+            conversationId={activeConversation.id}
+            userId={user.id}
+            messages={activeConversation.messages}
+            existing={myFlags}
+            onClose={() => setFlagging(false)}
+            onDone={() => void refetchFlag()}
+          />
+        )}
     </Wrapper>
   );
 }

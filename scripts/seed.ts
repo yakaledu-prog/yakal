@@ -20,6 +20,7 @@ import { fileURLToPath } from "url";
 import {
   AVAILABILITY,
   BLOG_POSTS,
+  COLLEGE_PROFILES,
   CONVERSATIONS,
   COURSES,
   DEMO_PASSWORD,
@@ -103,6 +104,13 @@ function timestamp(daysAgo: number, at: string): string {
   d.setDate(d.getDate() - daysAgo);
   d.setHours(h, m, 0, 0);
   return d.toISOString();
+}
+
+/** A date `days` from today as YYYY-MM-DD. Negative is in the past. */
+function dateIn(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 function blogHtml(post: SeedBlogPost): string {
@@ -225,7 +233,23 @@ async function seedParentLinks() {
         .insert({ parent_id, student_id, status: "active" });
       if (error) fail("inserting a parent link", error);
     }
-    ok(`${link.parent} -> ${link.student}`);
+    // Which services the parent has switched on for this child. Anything not
+    // listed is explicitly off rather than absent, so toggling one off in the
+    // dev console and reseeding puts it back.
+    for (const service of ["tutoring", "admissions"] as const) {
+      const { error } = await db.from("child_services").upsert(
+        {
+          student_id,
+          service,
+          is_active: link.services.includes(service),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "student_id,service" }
+      );
+      if (error) fail(`setting ${service} for ${link.student}`, error);
+    }
+
+    ok(`${link.parent} -> ${link.student}  [${link.services.join(", ") || "no services"}]`);
   }
 }
 
@@ -361,7 +385,194 @@ async function seedConversations() {
   }
 }
 
-// ---------- 7. blog posts ----------
+// ---------- 7. college profiles ----------
+
+/**
+ * The demo student's college list, essays, recommenders and tasks.
+ *
+ * Written in dependency order because requirements hang off a college list
+ * item and essays point at one. Each table is matched on a natural key so a
+ * rerun updates rather than duplicates: a college by student and name, an
+ * essay by student and title, a recommender by student and name.
+ */
+async function seedCollegeProfiles() {
+  step("College profiles");
+
+  for (const p of COLLEGE_PROFILES) {
+    const student_id = idFor(p.student);
+
+    const application = {
+      student_id,
+      counselor_id: p.counselor ? idFor(p.counselor) : null,
+      stage: p.stage,
+      program_interest: p.programInterest,
+      grad_year: p.gradYear,
+      fafsa_submitted: p.fafsaSubmitted,
+      css_submitted: p.cssSubmitted,
+      status: "in_review",
+    };
+    const { data: existingApp, error: appFindErr } = await db
+      .from("college_guide_applications")
+      .select("id")
+      .eq("student_id", student_id)
+      .maybeSingle();
+    if (appFindErr) fail("reading college applications", appFindErr);
+    const { error: appErr } = existingApp
+      ? await db.from("college_guide_applications").update(application).eq("id", existingApp.id)
+      : await db.from("college_guide_applications").insert(application);
+    if (appErr) fail("writing a college application", appErr);
+
+    const { error: acadErr } = await db.from("student_academics").upsert(
+      {
+        student_id,
+        gpa: p.academics.gpa,
+        gpa_scale: p.academics.gpaScale,
+        sat_score: p.academics.satScore,
+        act_score: p.academics.actScore,
+        toefl_score: p.academics.toeflScore,
+        ap_courses: p.academics.apCourses,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "student_id" }
+    );
+    if (acadErr) fail("upserting academics", acadErr);
+
+    // school name -> row id, so essays can point at the right college.
+    const schoolIds = new Map<string, string>();
+
+    for (const s of p.schools) {
+      const row = {
+        student_id,
+        school_name: s.name,
+        unitid: s.unitid,
+        tier: s.tier,
+        status: s.status,
+        deadline: s.deadlineInDays === null ? null : dateIn(s.deadlineInDays),
+        deadline_round: s.deadlineRound,
+        application_url: s.applicationUrl ?? null,
+        supp_essay_count: s.suppEssayCount ?? null,
+        why_school: s.whySchool ?? null,
+        entered_by: student_id,
+      };
+
+      const { data: existing, error: findErr } = await db
+        .from("college_list_items")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("school_name", s.name)
+        .maybeSingle();
+      if (findErr) fail("reading college list items", findErr);
+
+      let itemId: string;
+      if (existing) {
+        const { error } = await db.from("college_list_items").update(row).eq("id", existing.id);
+        if (error) fail(`updating "${s.name}"`, error);
+        itemId = existing.id;
+      } else {
+        const { data: created, error } = await db
+          .from("college_list_items")
+          .insert(row)
+          .select("id")
+          .single();
+        if (error) fail(`inserting "${s.name}"`, error);
+        itemId = created!.id;
+      }
+      schoolIds.set(s.name, itemId);
+
+      // Requirements are derived from the rest of the data. Only the hand
+      // overrides are stored, so the rows here are exactly the ticks a student
+      // set themselves.
+      const { error: clearErr } = await db
+        .from("application_requirements")
+        .delete()
+        .eq("college_list_item_id", itemId);
+      if (clearErr) fail("clearing requirements", clearErr);
+
+      if (s.completed?.length) {
+        const { error } = await db.from("application_requirements").insert(
+          s.completed.map((label) => ({
+            college_list_item_id: itemId,
+            label,
+            is_complete: true,
+          }))
+        );
+        if (error) fail(`writing requirements for "${s.name}"`, error);
+      }
+
+      ok(`${existing ? "updated" : "created"} ${s.name}`);
+    }
+
+    for (const e of p.essays) {
+      const row = {
+        student_id,
+        title: e.title,
+        kind: e.kind,
+        college_list_item_id: e.school ? (schoolIds.get(e.school) ?? null) : null,
+        status: e.status,
+        word_limit: e.wordLimit ?? null,
+      };
+      const { data: existing, error: findErr } = await db
+        .from("essays")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("title", e.title)
+        .maybeSingle();
+      if (findErr) fail("reading essays", findErr);
+      const { error } = existing
+        ? await db.from("essays").update(row).eq("id", existing.id)
+        : await db.from("essays").insert(row);
+      if (error) fail(`writing essay "${e.title}"`, error);
+    }
+    ok(`${p.essays.length} essays`);
+
+    for (const r of p.recommendations) {
+      const row = {
+        student_id,
+        recommender_name: r.name,
+        recommender_email: r.email,
+        relationship: r.relationship,
+        status: r.status,
+        asked_on: r.askedDaysAgo === undefined ? null : dateIn(-r.askedDaysAgo),
+        ferpa_waived: r.ferpaWaived ?? null,
+      };
+      const { data: existing, error: findErr } = await db
+        .from("recommendations")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("recommender_name", r.name)
+        .maybeSingle();
+      if (findErr) fail("reading recommendations", findErr);
+      const { error } = existing
+        ? await db.from("recommendations").update(row).eq("id", existing.id)
+        : await db.from("recommendations").insert(row);
+      if (error) fail(`writing recommender "${r.name}"`, error);
+    }
+    ok(`${p.recommendations.length} recommenders`);
+
+    for (const t of p.tasks) {
+      const row = {
+        student_id,
+        title: t.title,
+        status: t.status,
+        due_date: t.dueInDays === null ? null : dateIn(t.dueInDays),
+      };
+      const { data: existing, error: findErr } = await db
+        .from("application_tasks")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("title", t.title)
+        .maybeSingle();
+      if (findErr) fail("reading application tasks", findErr);
+      const { error } = existing
+        ? await db.from("application_tasks").update(row).eq("id", existing.id)
+        : await db.from("application_tasks").insert(row);
+      if (error) fail(`writing task "${t.title}"`, error);
+    }
+    ok(`${p.tasks.length} tasks`);
+  }
+}
+
+// ---------- 8. blog posts ----------
 
 async function seedBlogPosts() {
   step("Blog posts");
@@ -408,6 +619,14 @@ async function wipeDemoData() {
     ok(`${conversationIds.length} conversations`);
   }
 
+  // Requirements and essays cascade from the college list item, so the list
+  // has to go last of the three.
+  for (const table of ["application_tasks", "essays", "recommendations", "college_list_items"] as const) {
+    const { error } = await db.from(table).delete().in("student_id", ids);
+    if (error) fail(`clearing ${table}`, error);
+  }
+  ok("college list, essays, recommenders and tasks");
+
   for (const [table, column] of [
     ["courses", "title"],
     ["blog_posts", "title"],
@@ -433,6 +652,7 @@ async function main() {
   await seedAvailability();
   await seedCourses();
   await seedConversations();
+  await seedCollegeProfiles();
   await seedBlogPosts();
 
   console.log(`\nDone. ${USERS.length} accounts, all with the password "${DEMO_PASSWORD}".\n`);

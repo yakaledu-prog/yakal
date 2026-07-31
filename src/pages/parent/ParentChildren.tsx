@@ -4,9 +4,7 @@ import { cn } from "@/utils/cn";
 import { Search, Loader2, Users, UserPlus, X } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
-import { Button } from "@/components/ui/Button";
 import { useQuery } from "@tanstack/react-query";
-import { getCollegeProfile } from "@/services/collegeService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ManageChildrenPanel } from "@/components/shared/ManageChildrenPanel";
 import {
@@ -137,7 +135,7 @@ export function ParentChildren() {
         </aside>
 
         {/* Right pane */}
-        <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto bg-white dark:bg-[#111b21]">
+        <section className="flex-1 min-w-0 md:h-full md:overflow-hidden bg-white dark:bg-[#111b21]">
           {!activeChild ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
               <Users size={48} className="text-[#aebac1] mb-4" />
@@ -174,25 +172,17 @@ export function ParentChildren() {
   );
 }
 
-import { Lock, FileText, CheckCircle2, Circle, ChevronDown, Check } from "lucide-react";
+import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
+import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
 function ChildDetailView({ child }: { child: any }) {
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "applications">("overview");
 
   const hasAdmissions = child.active_services?.includes('admissions');
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ["college-profile", child.id],
-    queryFn: () => getCollegeProfile(child.id),
-    enabled: activeTab === 'applications' && hasAdmissions
-  });
-
-  const schools = profile?.schools || [];
-  const standardReqs = ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores", "FAFSA", "CSS Profile"];
-
   return (
-    <div className={cn("flex flex-col h-full", activeTab !== 'messages' && "pb-10")}>
+    <div className="flex flex-col h-full min-h-0">
       {/* Massive Integrated Header with Inline Stats */}
       <div className={cn("bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0", activeTab !== 'messages' ? "mb-8" : "mb-0")}>
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
@@ -224,7 +214,14 @@ function ChildDetailView({ child }: { child: any }) {
         </div>
       </div>
 
-      <div className={cn("mx-auto flex flex-col w-full flex-1", activeTab !== 'messages' ? "px-4 md:px-8" : "")}>
+      {/* min-h-0 is what lets this shrink inside the column. Without it the
+          chat grew to its content height and pushed the composer off screen. */}
+      <div
+        className={cn(
+          "mx-auto flex w-full flex-1 min-h-0 flex-col",
+          activeTab !== 'messages' ? "px-4 md:px-8 pb-10 overflow-y-auto" : "overflow-hidden"
+        )}
+      >
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity for {child.name}</h3>
@@ -256,7 +253,6 @@ function ChildDetailView({ child }: { child: any }) {
         )}
         {activeTab === 'applications' && (
           <div className="space-y-6">
-            {/* <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Application Progress</h3> */}
             {!hasAdmissions ? (
               <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-xl dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-muted/10 animate-in fade-in zoom-in-95">
                 <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
@@ -270,93 +266,20 @@ function ChildDetailView({ child }: { child: any }) {
                   Manage Services
                 </Link>
               </div>
-            ) : isLoading ? (
-              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-            ) : schools.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground">
-                <p className="text-[14px]">No schools added yet.</p>
-              </div>
             ) : (
-              <div className="flex flex-col gap-6">
-                {schools.map((s: any) => {
-                  const reqs = s.requirements || [];
-                  let schoolReqs: string[] = [];
-                  if (s.notes && s.notes.startsWith("[")) {
-                    try { schoolReqs = JSON.parse(s.notes); } catch (e) { }
-                  } else {
-                    schoolReqs = standardReqs.filter(r => {
-                      if (s.school_name.includes("Hopkins")) return ["Application", "Essays", "Recs requested", "Recs received", "Transcript", "Test scores"].includes(r);
-                      if (s.school_name.includes("Maryland")) return false;
-                      if (s.school_name.includes("Michigan")) return ["Application", "Essays", "Test scores", "FAFSA", "CSS Profile"].includes(r);
-                      return false;
-                    });
-                  }
-
-                  const mockDoneCount = schoolReqs.length;
-                  const currentStatus = s.status || "applying";
-
-                  return (
-                    <div key={s.id} className="border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#182229] rounded-lg p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <h3 className="font-bold text-[18px] text-[#111] dark:text-white leading-tight">{s.school_name}</h3>
-                          <span className="text-[14px] text-[#8696a0] font-medium">EA • {s.deadline ? s.deadline : "2026-11-01"}</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 self-end md:self-auto">
-                          <span className="text-[14px] font-bold text-[#54656f]">{mockDoneCount}/{Math.max(reqs.length, 8)}</span>
-
-                          <div className="relative">
-                            <div
-                              className={cn(
-                                "bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-full px-3 py-1.5 text-[13px] font-semibold flex items-center gap-1.5 cursor-default",
-                                currentStatus === "accepted" ? "text-[#4FA86A]" :
-                                  currentStatus === "waitlisted" ? "text-[#CAA25F]" :
-                                    currentStatus === "denied" ? "text-[#CA5F5F]" :
-                                      currentStatus === "enrolled" ? "text-[#1099A1]" : "text-[#54656f]"
-                              )}
-                            >
-                              {currentStatus === "accepted" ? "Accepted" :
-                                currentStatus === "waitlisted" ? "Waitlisted" :
-                                  currentStatus === "denied" ? "Denied" :
-                                    currentStatus === "enrolled" ? "Enrolled" :
-                                      currentStatus === "considering" ? "Considering" :
-                                        currentStatus === "applying" ? "Applying" :
-                                          currentStatus === "submitted" ? "Submitted" :
-                                            "Status..."}
-                              {/* <ChevronDown size={14} className="opacity-50 ml-1" /> */}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress bar */}
-                      {/* <div className={`${mockDoneCount > 0 ? 'scale-y-100' : 'scale-y-0'} transition ease-in-out duration-300 origin-left`}>
-                        <div className={`h-2.5 w-full bg-[#f8f9fa] dark:bg-[#202c33] rounded-full overflow-hidden border border-[#e9edef] dark:border-[#2a3942]`}>
-                          <div className="h-full bg-[#1099A1] rounded-full transition-all duration-500 ease-out" style={{ width: `${(mockDoneCount / Math.max(reqs.length, 8)) * 100}%` }} />
-                        </div>
-                        <div className={`${mockDoneCount > 0 ? 'h-5' : 'h-0'}`} />
-                      </div> */}
-
-                      <div className="w-full flex overflow-x-auto whitespace-nowrap gap-2 pb-1">
-                        {standardReqs.map((req, i) => {
-                          const isDone = schoolReqs.includes(req);
-                          return isDone ? (
-                            // <div key={i} className="bg-[#1099A1] text-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-sm cursor-default">
-                            <div key={i} className="text-[#1099A1] border bg-white px-3.5 py-1.5 rounded-full text-[13px] flex items-center gap-1.5 shadow-none cursor-default">
-                              <Check size={14} strokeWidth={3} /> {req}
-                            </div>
-                          ) : (
-                            // <div key={i} className="bg-[#f8f9fa] dark:bg-[#202c33] text-[#8696a0] border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] cursor-default">
-                            <div key={i} className="text-[#202c33] dark:bg-[#202c33] bg-[#8696a0]/0 border border-[#e9edef] dark:border-[#2a3942] px-3.5 py-1.5 rounded-full text-[13px] cursor-default">
-                              {req}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              /* The student's own requirements view, read only.
+                 What was here before derived the ticks from the school's name:
+                 anything containing "Hopkins" got six requirements, anything
+                 containing "Maryland" got none. So it agreed with the student's
+                 own tracker only by accident. Sharing the component means a
+                 parent sees exactly what their child sees. */
+              <div className="-mx-4 md:-mx-8">
+                <StudentApplicationTracker
+                  studentId={child.id}
+                  embedded
+                  canEdit={false}
+                  forcedTab="requirements"
+                />
               </div>
             )}
           </div>
