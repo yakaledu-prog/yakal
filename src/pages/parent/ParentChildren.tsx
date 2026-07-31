@@ -119,18 +119,21 @@ export function ParentChildren() {
                 );
               })
             )}
+
+            {/* Sits at the end of the list rather than pinned to the bottom of
+                the pane, so it reads as the next item after the children. */}
+            {!isLoading && (
+              <div className="p-3">
+                <button
+                  onClick={() => setManaging(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#1099A1]/50 text-[#1099A1] text-[13.5px] font-semibold hover:bg-[#1099A1]/5 transition-colors"
+                >
+                  <UserPlus size={15} /> Add child
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Bottom of the sidebar: the list is what the page is about, so the
-              action sits under it rather than above the search. */}
-          <div className="p-3 border-t border-[#e9edef] dark:border-[#2a3942] shrink-0">
-            <button
-              onClick={() => setManaging(true)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#1099A1] text-white text-[13.5px] font-semibold hover:bg-[#0d7f86] transition-colors"
-            >
-              <UserPlus size={15} /> Add child
-            </button>
-          </div>
         </aside>
 
         {/* Right pane */}
