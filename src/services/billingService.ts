@@ -93,6 +93,10 @@ export async function bookAndPay(input: {
   kind?: "tutoring" | "admissions" | "registration" | "other";
   studentId?: string | null;
   tutorId?: string | null;
+  /** The course being bought. Payment creates the enrolment from this. */
+  courseId?: string | null;
+  /** Slots picked at checkout. Payment turns these into sessions. */
+  booking?: { date: string; startTime: string; durationMinutes?: number }[];
 }): Promise<{ error?: string }> {
   const res = await authedPost("/api/create-invoice", input);
   if (res.error) return { error: res.error };

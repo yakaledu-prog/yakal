@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { getStripe, getServiceClient, requireUser } from './utils/billing';
+import { fulfilInvoices } from './utils/fulfil';
 
 // Confirms a Checkout Session right after the parent returns from Stripe, and
 // marks the linked invoices paid. This makes local testing work WITHOUT the
@@ -51,6 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .in('id', invoiceIds)
         .not('tutor_id', 'is', null)
         .eq('payout_status', 'none');
+
+      // The same fulfilment as the webhook. Both can fire for one payment, so
+      // every step of it is idempotent.
+      await fulfilInvoices(db, invoiceIds);
     }
 
     return res.status(200).json({ status: 'paid' });

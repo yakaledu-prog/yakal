@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import type Stripe from 'stripe';
 import { getStripe, getServiceClient } from './utils/billing';
+import { fulfilInvoices } from './utils/fulfil';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.
 export const config = { api: { bodyParser: false } };
@@ -57,6 +58,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           .in('id', invoiceIds);
         if (error) console.error('Failed to mark invoices paid:', error.message);
+
+        // Marking paid was the whole of it before, so a parent paid and
+        // nothing appeared anywhere. Enrolment, sessions and telling people
+        // happen here.
+        await fulfilInvoices(db, invoiceIds);
 
         // The tutor's cut becomes a pending payout once paid.
         await db

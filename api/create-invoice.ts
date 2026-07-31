@@ -19,6 +19,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : 'tutoring';
     const studentId: string | null = req.body?.studentId || null;
     const tutorId: string | null = req.body?.tutorId || null;
+    // What this invoice is for. The webhook cannot ask the browser once the
+    // payer has been redirected away, and a client-supplied answer at that
+    // point is worth nothing, so the intent is recorded up front.
+    const courseId: string | null = req.body?.courseId || null;
+    const booking = Array.isArray(req.body?.booking)
+      ? req.body.booking
+          .filter((s: any) => s?.date && s?.startTime)
+          .slice(0, 40)
+          .map((s: any) => ({
+            date: String(s.date).slice(0, 10),
+            startTime: String(s.startTime).slice(0, 5),
+            durationMinutes: Number(s.durationMinutes) || 60,
+          }))
+      : null;
 
     if (!description) return res.status(400).json({ error: 'Missing description' });
     if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > 5_000_000) {
@@ -40,6 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount_cents: amountCents,
         payout_cents: payoutCents,
         kind,
+        course_id: courseId,
+        booking: booking && booking.length > 0 ? booking : null,
         status: 'open',
         payout_status: 'none',
       }])
