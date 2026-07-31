@@ -130,6 +130,23 @@ export const USERS: SeedUser[] = [
     phone: "+251911000004",
   },
   {
+    // A second student, deliberately not linked to any parent. Without one
+    // there was nothing for the add-a-child search to find: the only student
+    // was already linked, and the function excludes those.
+    id: "5c1f0a2e-9d3b-4a17-8f6c-2e7b41d0a933",
+    email: "student2@yakal.com",
+    lastSeenMinutesAgo: 45,
+    fullName: "Selam Girma",
+    role: "student",
+    // No Cloudinary portrait for this one yet, so the UI falls back to the
+    // generated avatar rather than pointing at an image that does not exist.
+    avatarUrl: avatarFor("Selam Girma"),
+    status: "active",
+    isOnboarded: true,
+    gradeLevel: "Grade 11",
+    phone: "+251911000006",
+  },
+  {
     id: "1bcda665-40a3-40e3-b613-fcaf5ca93b9f",
     email: "parent@yakal.com",
     lastSeenMinutesAgo: 1500,

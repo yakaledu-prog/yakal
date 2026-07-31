@@ -8,8 +8,10 @@ import {
   getChildServices,
   getPendingChildLinks,
   requestChildLink,
+  searchStudentsByEmail,
   setChildService,
   type ServiceName,
+  type StudentSuggestion,
 } from "@/services/parentService";
 import { supabase } from "@/lib/supabase";
 import { dicebearUrl } from "@/utils/avatar";
@@ -90,6 +92,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [service, setService] = useState<ServiceName | "">("");
   const [adding, setAdding] = useState(false);
   // Keyed by child and service. Keying by child alone disabled both ticks in
@@ -114,6 +117,16 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     queryKey: ["children-services", childIds.join(",")],
     queryFn: () => getChildServices(childIds),
     enabled: childIds.length > 0,
+  });
+
+  // Suggestions come from a SECURITY DEFINER function that needs five
+  // characters and returns the address masked, so this confirms an address the
+  // parent already knows rather than letting anyone browse for students.
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ["student-suggestions", email.trim().toLowerCase()],
+    queryFn: () => searchStudentsByEmail(email),
+    enabled: email.trim().length >= 5,
+    staleTime: 30_000,
   });
 
   const refresh = async () => {
@@ -176,15 +189,66 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
-      <div className="flex flex-col sm:flex-row items-stretch gap-2 border border-border rounded-2xl p-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !adding && add()}
-          placeholder="Child's email address"
-          className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
-        />
+      <div className="relative flex flex-col sm:flex-row items-stretch gap-2 border border-border rounded-2xl p-2">
+        <div className="relative flex-1 min-w-0">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setSuggestOpen(true);
+            }}
+            onFocus={() => setSuggestOpen(true)}
+            // A blur that fires before the click would close the list out from
+            // under the pointer, so it waits.
+            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSuggestOpen(false);
+              if (e.key === "Enter" && !adding) add();
+            }}
+            placeholder="Child's email address"
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={suggestOpen && suggestions.length > 0}
+            aria-autocomplete="list"
+            className="w-full bg-transparent px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+          />
+
+          {suggestOpen && suggestions.length > 0 && (
+            <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-border bg-white py-1 shadow-lg dark:bg-[#202c33]">
+              {suggestions.map((sug: StudentSuggestion) => (
+                <li key={sug.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      // The stored address is masked, so the field keeps what
+                      // was typed. Picking a row confirms the person exists,
+                      // it does not reveal an address.
+                      setSuggestOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <img
+                      src={sug.avatar_url || dicebearUrl(sug.full_name)}
+                      alt=""
+                      className="h-7 w-7 shrink-0 rounded-full object-cover"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-medium text-foreground">
+                        {sug.full_name}
+                      </span>
+                      <span className="block truncate text-[12px] text-muted-foreground">
+                        {sug.masked_email}
+                        {sug.grade_level ? ` - ${sug.grade_level}` : ""}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className="hidden sm:block w-px bg-border" />
         <Dropdown
           value={service}

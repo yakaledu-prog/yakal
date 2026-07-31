@@ -49,6 +49,8 @@ export interface ConversationFlag {
   conversation_id: string;
   reported_by: string;
   reason: FlagReason;
+  /** Every reason chosen. `reason` holds the first, for older rows. */
+  reasons: FlagReason[] | null;
   note: string | null;
   message_id: string | null;
   status: "open" | "reviewed" | "dismissed";
@@ -73,18 +75,30 @@ export async function getMyFlags(
 export async function flagConversation(input: {
   conversationId: string;
   userId: string;
-  reason: FlagReason;
+  /** All reasons chosen. These are not exclusive in practice. */
+  reasons: FlagReason[];
   note?: string | null;
-  /** The message being reported. Null for a concern about the thread overall. */
-  messageId?: string | null;
+  /**
+   * The messages being reported. Empty means a concern about the thread
+   * overall. Several at once because a problem is often a short exchange
+   * rather than one line, and filing them separately would split one
+   * complaint across several rows in the admin queue.
+   */
+  messageIds?: string[];
 }): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase.from("conversation_flags").insert({
-    conversation_id: input.conversationId,
-    reported_by: input.userId,
-    reason: input.reason,
-    note: input.note?.trim() || null,
-    message_id: input.messageId ?? null,
-  });
+  const ids = input.messageIds?.length ? input.messageIds : [null];
+  const { error } = await supabase.from("conversation_flags").insert(
+    ids.map((message_id) => ({
+      conversation_id: input.conversationId,
+      reported_by: input.userId,
+      // `reason` carries the first choice so the column stays populated for
+      // anything reading it directly.
+      reason: input.reasons[0],
+      reasons: input.reasons,
+      note: input.note?.trim() || null,
+      message_id,
+    }))
+  );
 
   if (error) {
     // The partial unique index is what stops a second open report. Say so
@@ -92,8 +106,8 @@ export async function flagConversation(input: {
     if (error.code === "23505") {
       return {
         success: false,
-        error: input.messageId
-          ? "You have already reported that message."
+        error: input.messageIds?.length
+          ? "You have already reported one of those messages."
           : "You have already reported this conversation.",
       };
     }
@@ -106,6 +120,134 @@ export async function flagConversation(input: {
 /** Withdraw a report the reporter changed their mind about. */
 export async function withdrawFlag(flagId: string): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase.from("conversation_flags").delete().eq("id", flagId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+// ------------------------------------------------------------
+// The admin side.
+//
+// A report is only worth filing if somebody acts on it, so the queue has to
+// answer three things at a glance: who complained, about whom, and what was
+// actually said. That means joining the message and both people, not just
+// listing report rows.
+//
+// Reads go through the admin policy on conversation_flags, so a non-admin
+// calling these gets an empty list rather than an error.
+// ------------------------------------------------------------
+
+export type FlagStatus = "open" | "reviewed" | "dismissed";
+
+export interface AdminFlag {
+  id: string;
+  conversationId: string;
+  reasons: FlagReason[];
+  note: string | null;
+  status: FlagStatus;
+  createdAt: Date;
+  reviewedAt: Date | null;
+  reporter: { id: string; name: string; role: string; avatarUrl: string | null };
+  /** The message complained about. Null for a concern about the thread. */
+  message: { id: string; text: string; createdAt: Date } | null;
+  /** Who wrote the reported message, or the other party in the conversation. */
+  subject: { id: string; name: string; role: string; avatarUrl: string | null } | null;
+}
+
+export async function getFlags(status: FlagStatus | "all" = "open"): Promise<AdminFlag[]> {
+  let query = supabase
+    .from("conversation_flags")
+    .select(
+      `id, conversation_id, reason, reasons, note, status, created_at, reviewed_at, message_id,
+       reporter:profiles!conversation_flags_reported_by_fkey (id, full_name, role, avatar_url),
+       message:messages!conversation_flags_message_id_fkey (id, content, created_at, sender_id)`
+    )
+    .order("created_at", { ascending: false });
+
+  if (status !== "all") query = query.eq("status", status);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("getFlags failed:", error);
+    return [];
+  }
+
+  // messages.sender_id points at auth.users, not profiles, so PostgREST cannot
+  // embed the sender through it. One extra query for the whole page rather
+  // than one per report.
+  const senderIds = [
+    ...new Set((data ?? []).map((r: any) => r.message?.sender_id).filter(Boolean)),
+  ] as string[];
+
+  const senders = new Map<string, any>();
+  if (senderIds.length > 0) {
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, avatar_url")
+      .in("id", senderIds);
+    (people ?? []).forEach((p: any) => senders.set(p.id, p));
+  }
+
+  return (data ?? []).map((row: any) => {
+    const sender = row.message?.sender_id ? senders.get(row.message.sender_id) : null;
+    return ({
+    id: row.id,
+    conversationId: row.conversation_id,
+    reasons: (row.reasons?.length ? row.reasons : [row.reason]) as FlagReason[],
+    note: row.note,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : null,
+    reporter: {
+      id: row.reporter?.id ?? "",
+      name: row.reporter?.full_name ?? "Someone",
+      role: row.reporter?.role ?? "",
+      avatarUrl: row.reporter?.avatar_url ?? null,
+    },
+    message: row.message
+      ? {
+          id: row.message.id,
+          text: row.message.content ?? "",
+          createdAt: new Date(row.message.created_at),
+        }
+      : null,
+    subject: sender
+      ? {
+          id: sender.id,
+          name: sender.full_name ?? "Someone",
+          role: sender.role ?? "",
+          avatarUrl: sender.avatar_url ?? null,
+        }
+      : null,
+  });
+  });
+}
+
+/**
+ * Close a report.
+ *
+ * "reviewed" means acted on, "dismissed" means looked at and found to be
+ * nothing. Both are decisions, and both are recorded with who made them:
+ * deleting the row instead would lose the fact that anybody looked.
+ */
+export async function setFlagStatus(
+  flagId: string,
+  status: Exclude<FlagStatus, "open">,
+  adminId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("conversation_flags")
+    .update({ status, reviewed_by: adminId, reviewed_at: new Date().toISOString() })
+    .eq("id", flagId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Reopen something closed by mistake. */
+export async function reopenFlag(flagId: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("conversation_flags")
+    .update({ status: "open", reviewed_by: null, reviewed_at: null })
+    .eq("id", flagId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

@@ -231,3 +231,36 @@ export async function getIncomingLinkRequests(studentId: string) {
     avatarUrl: byId.get(l.parent_id)?.avatar_url ?? null,
   }));
 }
+
+// ------------------------------------------------------------
+// Confirming a child's email while typing it.
+//
+// Backed by a SECURITY DEFINER function rather than a table query on purpose.
+// An open search over profiles would let any account enumerate every student
+// on the platform, most of whom are minors. The function requires a parent, a
+// five character prefix, and returns the address masked. See
+// supabase/migrations/20260731000900_search_students_by_email.sql.
+// ------------------------------------------------------------
+
+export interface StudentSuggestion {
+  id: string;
+  full_name: string;
+  /** e.g. "am*******@gmail.com". Never the full address. */
+  masked_email: string;
+  avatar_url: string | null;
+  grade_level: string | null;
+}
+
+export async function searchStudentsByEmail(prefix: string): Promise<StudentSuggestion[]> {
+  if (prefix.trim().length < 5) return [];
+  const { data, error } = await supabase.rpc("search_students_by_email", {
+    p_prefix: prefix.trim(),
+  });
+  if (error) {
+    // A failed suggestion is not worth interrupting anyone for: the field
+    // still works by typing the whole address.
+    console.warn("search_students_by_email failed:", error.message);
+    return [];
+  }
+  return (data as StudentSuggestion[]) ?? [];
+}

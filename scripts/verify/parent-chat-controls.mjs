@@ -53,21 +53,30 @@ await p.waitForTimeout(700);
 
 await p.getByRole('button', { name: /Report this conversation/i }).click();
 await p.waitForTimeout(700);
-pass('report dialog opens', await p.getByRole('heading', { name: 'Report a message' }).isVisible());
+pass('report dialog opens', await p.locator('div[role="dialog"]').isVisible());
 await p.screenshot({ path: `${S}/parent-chat-flag-dialog.png` });
 
 // A report must name the message: no reason list until one is picked.
 pass('reasons hidden until a message is picked', (await p.getByText('Moving off the platform').count()) === 0);
-pass('message picker is offered', await p.getByText(/Pick the message from/i).isVisible());
+pass('stepper is the header', await p.locator('div[role="dialog"]').getByRole('button', { name: /Messages/ }).isVisible());
 const dialog = p.locator('div[class*="max-w-lg"]');
 await dialog.getByText(/steady on algebra now/i).first().click();
 await p.waitForTimeout(600);
 await p.screenshot({ path: `${S}/parent-chat-flag-picker.png` });
+await dialog.getByText(/how is Amen progressing/i).first().click();
+await p.waitForTimeout(400);
+pass('more than one message can be picked', await dialog.getByText('2 selected').isVisible());
+// Report one message, so the rest of the flow has a single known subject.
+await dialog.getByText(/how is Amen progressing/i).first().click();
+await p.waitForTimeout(400);
+pass('whole conversation is offered in the footer', await p.getByText('Whole conversation').isVisible());
 await p.getByRole('button', { name: 'Next' }).click();
 await p.waitForTimeout(600);
 pass('step two asks for a reason', await p.getByText('Moving off the platform').isVisible());
-pass('step two keeps the message in view', await p.getByText('Reporting').isVisible());
 await p.getByText('Moving off the platform').click();
+await p.getByText('Inappropriate content').click();
+await p.waitForTimeout(300);
+pass('more than one reason can be picked', (await p.locator('div[role="dialog"] button[aria-pressed="true"]').count()) === 2);
 await p.getByPlaceholder(/Anything else the team/i).fill('Asked to pay by bank transfer.');
 await p.getByRole('button', { name: 'Send report' }).click();
 await p.waitForTimeout(2500);
@@ -75,15 +84,20 @@ pass('report is accepted', await p.getByText(/Reported\. The Yakal team/i).isVis
 await p.waitForTimeout(1200);
 pass('flag now reads as set', await p.getByRole('button', { name: /You reported this conversation/i }).isVisible().catch(() => false));
 
-// Reopening shows the existing report rather than a fresh form.
+// Reopening: the report lives on the third step now, not mixed into the picker.
 await p.getByRole('button', { name: /You reported this conversation/i }).click();
 await p.waitForTimeout(800);
-pass('the reported message is listed', await p.getByText('Already reported', { exact: true }).isVisible());
-await p.locator('div[class*="max-w-lg"]').getByText(/steady on algebra now/i).first().click();
+const dlg = p.locator('div[role="dialog"]');
+pass('picked message shows as already reported', await dlg.getByText(/already reported/i).first().isVisible());
+await dlg.getByRole('button', { name: /Reported/ }).click();
 await p.waitForTimeout(700);
-pass('the report names the message', await p.getByText('Reported message').isVisible());
-pass('the report keeps the note', await p.getByText(/bank transfer/i).isVisible());
-await p.getByRole('button', { name: 'Withdraw report' }).click();
+pass('the reported message is listed', await dlg.getByText(/steady on algebra now/i).first().isVisible());
+await dlg.getByText(/steady on algebra now/i).first().click();
+await p.waitForTimeout(700);
+pass('the report names the message', await dlg.getByText('Reported', { exact: true }).isVisible());
+pass('the report keeps the note', await dlg.getByText(/bank transfer/i).isVisible());
+await p.screenshot({ path: `${S}/parent-chat-flag-reported.png` });
+await dlg.getByRole('button', { name: 'Withdraw report' }).click();
 await p.waitForTimeout(2000);
 pass('report can be withdrawn', await p.getByText(/Report withdrawn/i).isVisible().catch(() => false));
 
