@@ -16,7 +16,7 @@ import { createClient } from '@supabase/supabase-js'
 // Signup and login work fully offline, and any email the app sends lands in
 // Mailpit at http://localhost:54324 instead of a real inbox.
 //
-// See docs/LOCAL_BACKEND.md.
+// See docs/DATABASE.md.
 // ============================================================
 
 type Backend = 'local' | 'remote'
