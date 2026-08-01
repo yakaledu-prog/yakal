@@ -114,13 +114,6 @@ export function Billing2() {
                     className="overflow-hidden rounded-xl border border-border bg-card"
                   >
                     <div className="flex gap-4 p-5">
-                      {p.thumbnailUrl && (
-                        <img
-                          src={p.thumbnailUrl}
-                          alt=""
-                          className="hidden h-20 w-28 shrink-0 rounded-lg object-cover sm:block"
-                        />
-                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0">

@@ -15,9 +15,7 @@ export function ParentLayout() {
     // that lose along with their folders.
     { name: "Billing 1", href: "/parent/billing-1", icon: <CreditCard size={20} /> },
     { name: "Billing 2", href: "/parent/billing-2", icon: <CreditCard size={20} /> },
-    { name: "Billing 3", href: "/parent/billing-3", icon: <CreditCard size={20} /> },
     { name: "Billing 4", href: "/parent/billing-4", icon: <CreditCard size={20} /> },
-    { name: "Billing 5", href: "/parent/billing-5", icon: <CreditCard size={20} /> },
     { name: "Notifications", href: "/parent/notifications", icon: <Bell size={20} /> },
   ];
 

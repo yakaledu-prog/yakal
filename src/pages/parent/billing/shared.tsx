@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Loader2, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Users, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getTutorAvailability } from "@/services/availability";
 
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
@@ -184,14 +186,6 @@ export function PackageActions({
       >
         Add slots
       </button>
-      {/* Only offered when there is something paid for that has no time yet.
-          With slots picked at checkout that never happens, so it stays hidden
-          until packages exist. */}
-      {pkg.slotsUnscheduled > 0 && (
-        <button className={cn(base, "border border-border font-medium hover:bg-muted/60")}>
-          Book a time
-        </button>
-      )}
       {!pkg.recurring && (
         <button
           className={cn(
@@ -259,113 +253,173 @@ export function BillingHeader({
   );
 }
 
-/**
- * The sessions in a package, with what has happened to each.
- *
- * The answer to "what did I actually book". Everything else on the page is a
- * count; this is the list behind it.
- */
-export function SlotAccordion({ pkg }: { pkg: CoursePackage }) {
-  if (pkg.sessions.length === 0) {
-    return <p className="py-3 text-[13px] text-muted-foreground">No sessions booked yet.</p>;
-  }
-
-  const fmt = (s: { date: string; startTime: string }) => {
-    const [h, m] = s.startTime.split(":").map(Number);
-    const d = new Date(`${s.date}T00:00:00`);
-    d.setHours(h, m ?? 0);
-    return d.toLocaleString(undefined, {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
-
-  return (
-    <ul className="divide-y divide-border">
-      {pkg.sessions.map((s) => (
-        <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
-          <span className="text-[13.5px] text-foreground">{fmt(s)}</span>
-          <span
-            className={cn(
-              "text-[12.5px] font-medium capitalize",
-              s.status === "completed" ? "text-[#1099A1]" : "text-muted-foreground"
-            )}
-          >
-            {s.status}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
+/** Sunday of the week `offset` weeks from today. */
+function weekOf(offset: number): Date[] {
+  const d = new Date();
+  d.setDate(d.getDate() + offset * 7);
+  const sunday = new Date(d);
+  sunday.setDate(d.getDate() - d.getDay());
+  sunday.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(sunday);
+    day.setDate(sunday.getDate() + i);
+    return day;
+  });
 }
 
+const HOUR_START = 8;
+const HOUR_COUNT = 13;
+
 /**
- * Every session as a square, oldest first.
+ * A package's sessions laid out as the week they were booked into.
  *
- * The same information as the meter, read differently: a run of filled squares
- * is a course being attended, and a gap is one that stalled. Useful once there
- * are enough sessions for a shape to exist, which is the open question about
- * whether it earns its place.
+ * The same shape the parent chose them in, which is the point: a list of dates
+ * makes you reconstruct the week in your head, and the calendar is what they
+ * were looking at when they picked.
+ *
+ * Nothing extra is stored for this. A session already carries its date, its
+ * time and its status, and past or future is a comparison against today, so
+ * the grid is drawn from what is there.
  */
-export function CoverageHeatmap({ pkg }: { pkg: CoursePackage }) {
-  const cells = [
-    ...pkg.sessions.map((s) => s.status),
-    ...Array.from({ length: pkg.slotsUnscheduled }, () => "unbooked"),
-  ];
+export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
+  const [offset, setOffset] = useState(0);
+  const days = weekOf(offset);
+  const hours = Array.from({ length: HOUR_COUNT }, (_, i) => i + HOUR_START);
+
+  const sessionAt = (day: Date, hour: number) => {
+    const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    return pkg.sessions.find(
+      (x) => x.date === iso && Number(x.startTime.split(":")[0]) === hour
+    );
+  };
+
+  // Only draw rows that hold something, or an empty week is 13 blank rows.
+  const usedHours = hours.filter((h) => days.some((d) => sessionAt(d, h)));
+  const inThisWeek = pkg.sessions.filter((x) =>
+    days.some(
+      (d) =>
+        x.date ===
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    )
+  ).length;
 
   return (
     <div>
-      <div className="flex flex-wrap gap-1">
-        {cells.map((status, i) => (
-          <span
-            key={i}
-            title={status}
-            className={cn(
-              "h-4 w-4 rounded-[3px]",
-              status === "completed"
-                ? "bg-[#1099A1]"
-                : status === "upcoming"
-                  ? "bg-[#97CE9D]"
-                  : "border border-dashed border-border bg-transparent"
-            )}
-          />
-        ))}
+      <div className="mb-3 flex items-center gap-3">
+        <button
+          onClick={() => setOffset((o) => o - 1)}
+          aria-label="Previous week"
+          className="rounded-lg border border-border p-1.5 transition-colors hover:bg-muted/60"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        <button
+          onClick={() => setOffset((o) => o + 1)}
+          aria-label="Next week"
+          className="rounded-lg border border-border p-1.5 transition-colors hover:bg-muted/60"
+        >
+          <ChevronRight size={15} />
+        </button>
+        <p className="text-[13.5px] font-medium text-foreground">
+          {days[0].toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+          {" - "}
+          {days[6].toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+        </p>
+        <p className="ml-auto text-[12.5px] text-muted-foreground">
+          {inThisWeek === 0 ? "Nothing this week" : `${inThisWeek} this week`}
+        </p>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted-foreground">
+
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day, di) => {
+          const isToday = day.toDateString() === new Date().toDateString();
+          return (
+            <div key={di} className="text-center">
+              <div className="mb-2 border-b-2 border-[#CAA25F] pb-2">
+                <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                  {day.toLocaleDateString(undefined, { weekday: "short" })}
+                </p>
+                <p
+                  className={cn(
+                    "mt-0.5 text-[16px]",
+                    isToday ? "font-bold text-[#1099A1]" : "text-foreground"
+                  )}
+                >
+                  {day.getDate()}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {usedHours.length === 0 && <span className="text-[12px] text-[#c2c7d0]">-</span>}
+                {usedHours.map((h) => {
+                  const s = sessionAt(day, h);
+                  if (!s) return <div key={h} className="h-[34px]" />;
+                  const label = new Date(0, 0, 0, h).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+                  return (
+                    <div
+                      key={h}
+                      title={s.status}
+                      className={cn(
+                        "rounded py-2 text-[12.5px] font-bold",
+                        s.status === "completed"
+                          ? "bg-[#1099A1] text-white"
+                          : s.status === "upcoming"
+                            ? "bg-[#1099A1]/10 text-[#1099A1]"
+                            : "bg-muted text-muted-foreground line-through"
+                      )}
+                    >
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-[3px] bg-[#1099A1]" /> Completed
+          <span className="h-3 w-3 rounded-sm bg-[#1099A1]" /> Completed
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-[3px] bg-[#97CE9D]" /> Still to come
+          <span className="h-3 w-3 rounded-sm bg-[#1099A1]/10" /> Still to come
         </span>
-        {pkg.slotsUnscheduled > 0 && (
-          <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-[3px] border border-dashed border-border" /> Not booked
-          </span>
-        )}
       </div>
     </div>
   );
 }
 
 /**
- * Buying more sessions on a plan that already exists.
+ * Adding sessions to a plan that already exists.
  *
- * A modal rather than a trip back to the course page: the parent is looking at
- * the plan, and sending them away to buy more of it loses their place.
+ * A stepper asked for a number, which is not the decision being made. The
+ * parent is choosing times, and the count falls out of what they pick, so this
+ * is the tutor's real availability with the slots they already hold marked as
+ * taken.
  */
-export function AddSlotsModal({
-  pkg,
-  onClose,
-}: {
-  pkg: CoursePackage;
-  onClose: () => void;
-}) {
-  const [count, setCount] = useState(1);
+export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: () => void }) {
+  const [offset, setOffset] = useState(0);
+  const [picked, setPicked] = useState<string[]>([]);
+
+  const { data: availability, isLoading } = useQuery({
+    queryKey: ["tutor-availability", pkg.tutorId],
+    queryFn: () => getTutorAvailability(pkg.tutorId!),
+    enabled: !!pkg.tutorId,
+  });
+
+  const days = weekOf(offset);
+  const hours = Array.from({ length: HOUR_COUNT }, (_, i) => i + HOUR_START);
   const unit = pkg.pricePerSlotCents ?? 0;
+
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const key = (d: Date, h: number) => `${iso(d)}|${String(h).padStart(2, "0")}:00`;
+  const taken = (d: Date, h: number) =>
+    pkg.sessions.some((s) => s.date === iso(d) && Number(s.startTime.split(":")[0]) === h);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -374,49 +428,128 @@ export function AddSlotsModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Add sessions to ${pkg.courseTitle}`}
-        className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl"
+        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-2xl bg-card shadow-xl"
       >
-        <h2 className="text-[17px] font-medium text-foreground">{pkg.courseTitle}</h2>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
-          {pkg.studentName}
-          {pkg.tutorName && ` with ${pkg.tutorName}`}
-        </p>
-
-        <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-border p-4">
+        <div className="flex items-start justify-between gap-4 p-6 pb-4">
           <div>
-            <p className="text-[13px] text-muted-foreground">Sessions to add</p>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">
-              <Money cents={unit} /> each
+            <h2 className="text-[17px] font-medium text-foreground">{pkg.courseTitle}</h2>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
+              {pkg.studentName}
+              {pkg.tutorName && ` with ${pkg.tutorName}`}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setCount((n) => Math.max(1, n - 1))}
-              aria-label="One fewer"
-              className="grid h-9 w-9 place-items-center rounded-lg border border-border text-[18px] transition-colors hover:bg-muted/60"
-            >
-              -
-            </button>
-            <span className="w-8 text-center text-[18px] font-medium tabular-nums text-foreground">
-              {count}
-            </span>
-            <button
-              onClick={() => setCount((n) => Math.min(20, n + 1))}
-              aria-label="One more"
-              className="grid h-9 w-9 place-items-center rounded-lg border border-border text-[18px] transition-colors hover:bg-muted/60"
-            >
-              +
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <p className="mt-4 text-[13px] text-muted-foreground">
-          Times are chosen next, from {pkg.tutorName ?? "the tutor"}'s calendar.
-        </p>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6">
+          <div className="mb-3 flex items-center gap-3">
+            <button
+              onClick={() => setOffset((o) => Math.max(0, o - 1))}
+              disabled={offset <= 0}
+              aria-label="Previous week"
+              className="rounded-lg border border-border p-1.5 transition-colors hover:bg-muted/60 disabled:opacity-40"
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <button
+              onClick={() => setOffset((o) => o + 1)}
+              aria-label="Next week"
+              className="rounded-lg border border-border p-1.5 transition-colors hover:bg-muted/60"
+            >
+              <ChevronRight size={15} />
+            </button>
+            <p className="text-[13.5px] font-medium text-foreground">
+              {days[0].toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+              {" - "}
+              {days[6].toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+            </p>
+          </div>
 
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <p className="text-[15px] font-medium text-foreground">
-            <Money cents={unit * count} />
+          {isLoading ? (
+            <Spinner />
+          ) : !availability ? (
+            <p className="py-10 text-center text-[13.5px] text-muted-foreground">
+              {pkg.tutorName ?? "This tutor"} has not published any times yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-7 gap-2 pb-4">
+              {days.map((day, di) => (
+                <div key={di} className="text-center">
+                  <div className="mb-2 border-b-2 border-[#CAA25F] pb-2">
+                    <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                      {day.toLocaleDateString(undefined, { weekday: "short" })}
+                    </p>
+                    <p className="mt-0.5 text-[16px] text-foreground">{day.getDate()}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {availability.disabled_days?.includes(di) ? (
+                      <span className="text-[12px] text-muted-foreground">Off</span>
+                    ) : (
+                      hours.map((h, hi) => {
+                        if (!(availability.time_grid[hi]?.[di] || 0)) return null;
+                        const start = new Date(day);
+                        start.setHours(h, 0, 0, 0);
+                        if (start.getTime() <= Date.now()) return null;
+
+                        const k = key(day, h);
+                        const already = taken(day, h);
+                        const on = picked.includes(k);
+                        const label = new Date(0, 0, 0, h).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        });
+
+                        return (
+                          <button
+                            key={h}
+                            disabled={already}
+                            onClick={() =>
+                              setPicked((prev) =>
+                                prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+                              )
+                            }
+                            title={already ? "Already booked" : undefined}
+                            className={cn(
+                              "w-full rounded py-2 text-[12.5px] font-bold transition-colors",
+                              already
+                                ? "cursor-not-allowed bg-muted text-muted-foreground"
+                                : on
+                                  ? "bg-[#1099A1] text-white"
+                                  : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-6 pt-4">
+          <p className="text-[13.5px] text-muted-foreground">
+            {picked.length === 0 ? (
+              "Pick the times you want"
+            ) : (
+              <>
+                <span className="font-medium text-foreground">{picked.length}</span> selected
+                {" - "}
+                <span className="font-medium text-foreground">
+                  <Money cents={unit * picked.length} />
+                </span>
+              </>
+            )}
           </p>
           <div className="flex gap-2">
             <button
@@ -425,8 +558,11 @@ export function AddSlotsModal({
             >
               Cancel
             </button>
-            <button className="rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]">
-              Choose times
+            <button
+              disabled={picked.length === 0}
+              className="rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            >
+              {picked.length === 0 ? "Pay" : <>Pay <Money cents={unit * picked.length} /></>}
             </button>
           </div>
         </div>

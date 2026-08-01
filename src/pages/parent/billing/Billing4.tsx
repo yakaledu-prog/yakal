@@ -15,7 +15,7 @@ import {
   Empty,
   Money,
   PackageActions,
-  SlotAccordion,
+  SessionWeekGrid,
   SlotMeter,
   Spinner,
 } from "./shared";
@@ -172,7 +172,7 @@ export function Billing4() {
 
                       {openPlan === `${p.courseId}|${p.studentId}` && (
                         <div className="mt-3 border-t border-border pt-2">
-                          <SlotAccordion pkg={p} />
+                          <SessionWeekGrid pkg={p} />
                         </div>
                       )}
                     </article>
