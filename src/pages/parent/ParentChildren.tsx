@@ -2,6 +2,13 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
+import { getStudentSessions } from "@/services/sessions";
+import {
+  PastSessions,
+  UpcomingSessions,
+  useSessionExtras,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
 import { Search, Loader2, Users, UserPlus, X, ChevronLeft } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
@@ -190,7 +197,36 @@ import { ParentMessages } from "./ParentMessages";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
 function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "applications">("overview");
+  // A parent watches rather than attends, so no join and no reschedule here:
+  // the rows are there to be read.
+  const { data: sessionRows = [], isLoading: sessionsLoading } = useQuery({
+    queryKey: ["student-sessions", child.id],
+    queryFn: async () => {
+      const { data } = await getStudentSessions(child.id);
+      return (data ?? []) as any[];
+    },
+    enabled: !!child.id,
+  });
+
+  const { data: sessionExtras } = useSessionExtras(sessionRows);
+
+  const childSessions: SessionListItem[] = sessionRows.map((s) => ({
+    id: s.id,
+    date: s.date,
+    startTime: s.start_time,
+    durationMinutes: s.duration_minutes,
+    status: s.status,
+    title: s.subject,
+    personName: s.tutor_name ?? null,
+    personAvatarUrl: s.tutor_avatar ?? null,
+    rating: sessionExtras?.ratings[s.id] ?? null,
+    attendedMinutes: sessionExtras?.minutes[s.id] ?? null,
+  }));
+
+  // Sessions first: what is coming up is the question a parent opens this to
+  // ask. Overview was a feed of invented activity, naming tutors and homework
+  // that do not exist, so it is gone rather than moved.
+  const [activeTab, setActiveTab] = useState<"sessions" | "assignments" | "applications" | "messages">("sessions");
 
   const hasAdmissions = child.active_services?.includes('admissions');
 
@@ -229,7 +265,6 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
 
         {/* Tab Navigation */}
         <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
           <TabButton active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} label="Application Tracking" />
@@ -245,25 +280,20 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           activeTab !== 'messages' ? "px-4 md:px-8 pb-10 overflow-y-auto" : "overflow-hidden"
         )}
       >
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity for {child.name}</h3>
-            <div className="space-y-0">
-              <FeedItem text={`${child.name} submitted Math Homework #3`} time="2 hours ago" />
-              <FeedItem text={`Dr. Alex graded ${child.name}'s Lab Report`} time="5 hours ago" />
-              <FeedItem text="System processed your course enrollment for AP Calculus" time="Yesterday" />
-            </div>
-          </div>
-        )}
         {activeTab === 'sessions' && (
-          <div className="space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Upcoming Sessions</h3>
-            <div className="space-y-0">
-              <FeedItem text="Algebra II Tutoring with Sarah J." time="Today, 4:00 PM" />
-              <FeedItem text="Physics Exam Prep with Dr. Alex" time="Tomorrow, 5:30 PM" />
-              <FeedItem text="College Essay Review" time="Oct 15, 6:00 PM" />
-            </div>
-          </div>
+          // The child's real sessions. What was here named tutors who do not
+          // work here and lessons nobody booked, which is a worse answer to
+          // "what has my child got on" than no answer at all.
+          childSessions.length === 0 && !sessionsLoading ? (
+            <p className="py-16 text-center text-[14px] text-muted-foreground">
+              Nothing booked for {child.name} yet.
+            </p>
+          ) : (
+            <>
+              <UpcomingSessions sessions={childSessions} isLoading={sessionsLoading} hideIfEmpty />
+              <PastSessions sessions={childSessions} hideIfEmpty />
+            </>
+          )
         )}
         {activeTab === 'assignments' && (
           <div className="space-y-6">

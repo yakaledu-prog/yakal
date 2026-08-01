@@ -4,12 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import {
-  Search, Users, Loader2, Mail, GraduationCap, Clock,
+  Search, Users, Loader2, Mail, GraduationCap,
   ExternalLink, ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/Button";
 import { supabase } from "@/lib/supabase";
 import {
   getTutorStudents, getStudentDetail, StudentDetail,
@@ -217,7 +216,10 @@ function StudentDetailView({
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
 
-  const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "diagnostics">("overview");
+  // Sessions first: a tutor opening a student's record wants to know what is
+  // next with them. The Overview tab that used to sit here only previewed the
+  // other tabs, so it said everything twice and nothing first.
+  const [activeTab, setActiveTab] = useState<"sessions" | "assignments" | "diagnostics" | "messages">("sessions");
 
   // The page already says whose record this is, so the Messages tab shows the
   // conversation on its own - no list, no second name in a header.
@@ -277,74 +279,14 @@ function StudentDetailView({
 
         {/* Tab Navigation */}
         <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" />
-          <TabButton active={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} label="Diagnostics" />
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
+          <TabButton active={activeTab === 'diagnostics'} onClick={() => setActiveTab('diagnostics')} label="Diagnostics" />
           <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
         </div>
       </div>
 
       <div className={cn("mx-auto flex flex-col", activeTab === 'messages' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "w-full flex-1")}>
-        {activeTab === "overview" && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex-1 flex flex-col md:flex-row gap-8 md:gap-12 min-h-[500px]">
-            
-            {/* Left Pane: Sessions Preview */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Recent Sessions</h3>
-                <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[11px] font-bold underline-offset-2 hover:underline" onClick={() => setActiveTab('sessions')}>View All</Button>
-              </div>
-              
-              {sessions.length === 0 ? <p className="text-[14px] text-muted-foreground">No sessions yet.</p> : (
-                <div className="space-y-0">
-                  {sessions.slice(0, 5).map((s) => (
-                    <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-none cursor-default">
-                      <div className="min-w-0">
-                        <p className="font-bold text-[14px] text-foreground leading-tight truncate">{s.subject}</p>
-                        <p className="text-[12px] text-muted-foreground flex items-center gap-1.5 mt-1 font-medium"><Clock size={12} /> {new Date(s.date).toLocaleDateString()} · {s.start_time}</p>
-                      </div>
-                      <span className={cn("text-[10px] font-bold px-2 py-1 uppercase tracking-wider shrink-0",
-                        s.status === "completed" ? "text-green-600 dark:text-green-400" :
-                          s.status === "upcoming" ? "text-[#1099A1]" : "text-red-600 dark:text-red-400")}>{s.status}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Right Pane: Assignments Preview */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
-                <h3 className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">Recent Submissions</h3>
-                <Button variant="link" className="text-[#1099A1] p-0 h-auto text-[11px] font-bold underline-offset-2 hover:underline" onClick={() => setActiveTab('assignments')}>View All</Button>
-              </div>
-
-              {submissions.length === 0 ? <p className="text-[14px] text-muted-foreground">No submissions yet.</p> : (
-                <div className="space-y-0">
-                  {submissions.slice(0, 5).map((s) => (
-                    <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-none cursor-default">
-                      <div className="min-w-0">
-                        <p className="font-bold text-[14px] text-foreground leading-tight truncate">{s.assignment_title}</p>
-                        <p className="text-[12px] text-muted-foreground flex items-center gap-3 mt-1 font-medium">
-                          <span>{new Date(s.submitted_at).toLocaleDateString()}</span>
-                          {s.drive_url && <a href={s.drive_url} target="_blank" rel="noreferrer" className="text-[#1099A1] flex items-center gap-1 hover:underline"><ExternalLink size={11} /> Open</a>}
-                        </p>
-                      </div>
-                      <span className={cn("text-[10px] font-bold px-2 py-1 uppercase tracking-wider shrink-0",
-                        s.status === "reviewed" ? "text-green-600 dark:text-green-400" :
-                          s.status === "revision_needed" ? "text-red-600 dark:text-red-400" : "text-[#1099A1]")}>
-                        {s.status.replace("_", " ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-
         {activeTab === "diagnostics" && (
           <TutorStudentDiagnosticsTab studentId={detail.profile?.id || ""} />
         )}
