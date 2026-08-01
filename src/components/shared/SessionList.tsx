@@ -10,8 +10,16 @@ import { cn } from "@/utils/cn";
 // whom, and is there anything to do about it. So the list is shared, and what
 // differs is only which person is named and which action is offered.
 //
-// Used in the student's course Sessions tab for now. It is written to be used
-// elsewhere, but only wired in one place until the shape has settled.
+// Three pieces, because every page shows the same two lists in a different
+// frame: SessionList draws the rows, UpcomingSessions and PastSessions decide
+// which rows belong in which and what can be done about them. A page that
+// wants tabs renders the two separately; a page that wants one column renders
+// them one after the other.
+//
+// The split is by clock, not by the status column. A session still marked
+// upcoming an hour after it ended has not been confirmed by anybody, so it
+// belongs in the past list with something to do about it, not in the upcoming
+// one pretending it is still to come.
 // ============================================================
 
 export interface SessionListItem {
@@ -32,11 +40,51 @@ export interface SessionListItem {
   rating?: number | null;
 }
 
-function startsAt(item: SessionListItem): Date {
+export function startsAt(item: SessionListItem): Date {
   const [h, m] = item.startTime.split(":").map(Number);
   const d = new Date(`${item.date}T00:00:00`);
   d.setHours(h, m ?? 0, 0, 0);
   return d;
+}
+
+function endsAt(item: SessionListItem): Date {
+  return new Date(startsAt(item).getTime() + (item.durationMinutes || 60) * 60_000);
+}
+
+/**
+ * The session has been and gone and nobody has said what happened.
+ *
+ * This is the state the tutor's Mark as done acts on, and the only reason the
+ * split is by clock rather than by status.
+ */
+export function isAwaitingConfirmation(item: SessionListItem): boolean {
+  return item.status === "upcoming" && endsAt(item).getTime() < Date.now();
+}
+
+/** Still to come: not yet finished, and not cancelled. */
+export function isStillToCome(item: SessionListItem): boolean {
+  return item.status === "upcoming" && !isAwaitingConfirmation(item);
+}
+
+/**
+ * Joining is only useful on the day. A link offered a fortnight early invites
+ * somebody to click it and find an empty room, so what a later session offers
+ * instead is a way to move it.
+ */
+export function isJoinable(item: SessionListItem): boolean {
+  if (!isStillToCome(item)) return false;
+  return startsAt(item).toDateString() === new Date().toDateString();
+}
+
+/** Soonest first for what is coming, most recent first for what has been. */
+export function splitSessions(sessions: SessionListItem[]) {
+  const byTime = (a: SessionListItem, b: SessionListItem) =>
+    startsAt(a).getTime() - startsAt(b).getTime();
+
+  return {
+    upcoming: sessions.filter(isStillToCome).sort(byTime),
+    past: sessions.filter((s) => !isStillToCome(s)).sort((a, b) => byTime(b, a)),
+  };
 }
 
 function timeRange(item: SessionListItem): string {
@@ -53,22 +101,28 @@ function timeRange(item: SessionListItem): string {
  * same thing twice. What is worth saying is how soon it is.
  */
 function whenLabel(item: SessionListItem): string {
-  if (item.status !== "upcoming") return item.status;
+  if (item.status !== "upcoming") {
+    return item.status.charAt(0).toUpperCase() + item.status.slice(1);
+  }
+  // Not "Missed": nobody knows yet whether it happened, which is the point.
+  if (isAwaitingConfirmation(item)) return "Awaiting confirmation";
 
   const start = startsAt(item);
   const midnight = new Date();
   midnight.setHours(0, 0, 0, 0);
   const days = Math.floor((start.getTime() - midnight.getTime()) / 86_400_000);
 
-  if (days < 0) return "Missed";
   if (days === 0) return "Today";
   if (days === 1) return "Tomorrow";
   return "Upcoming";
 }
 
-function StatusIcon({ status }: { status: string }) {
-  if (status === "completed") return <CheckCircle2 size={15} />;
-  if (status === "cancelled" || status === "no-show") return <XCircle size={15} />;
+function StatusIcon({ item }: { item: SessionListItem }) {
+  // Waiting on somebody carries no icon. The words say it, and the colour
+  // already sets it apart from the rows that are settled.
+  if (isAwaitingConfirmation(item)) return null;
+  if (item.status === "completed") return <CheckCircle2 size={15} />;
+  if (item.status === "cancelled" || item.status === "no-show") return <XCircle size={15} />;
   return <CalendarDays size={15} />;
 }
 
@@ -102,7 +156,7 @@ export function SessionList({
     <div className={cn("divide-y divide-border", className)}>
       {sessions.map((s) => {
         const start = startsAt(s);
-        const upcoming = s.status === "upcoming";
+        const upcoming = isStillToCome(s);
         const completed = s.status === "completed";
         const label = whenLabel(s);
 
@@ -142,11 +196,15 @@ export function SessionList({
             <div className="shrink-0">
               <p
                 className={cn(
-                  "flex items-center gap-1.5 text-[13.5px] font-medium capitalize",
-                  upcoming ? "text-[#1099A1]" : "text-muted-foreground"
+                  "flex items-center gap-1.5 text-[13.5px] font-medium",
+                  isAwaitingConfirmation(s)
+                    ? "text-[#CAA25F]"
+                    : upcoming
+                      ? "text-[#1099A1]"
+                      : "text-muted-foreground"
                 )}
               >
-                <StatusIcon status={s.status} />
+                <StatusIcon item={s} />
                 {label}
               </p>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">{timeRange(s)}</p>
@@ -165,5 +223,113 @@ export function SessionList({
         );
       })}
     </div>
+  );
+}
+
+// ============================================================
+// The two lists every page shows.
+//
+// Both take the whole set of sessions and choose their own rows, so a page
+// never has to know that "upcoming" in the status column and upcoming on the
+// clock are different things.
+// ============================================================
+
+/**
+ * What is still to come.
+ *
+ * Today's session offers Join because that is the only day the link works.
+ * Everything later offers Reschedule, which is the useful thing to do with a
+ * session that is a fortnight away.
+ */
+export function UpcomingSessions({
+  sessions,
+  isLoading,
+  emptyText = "Nothing booked yet.",
+  hideIfEmpty = false,
+  onJoin,
+  onReschedule,
+  className,
+}: {
+  sessions: SessionListItem[];
+  isLoading?: boolean;
+  emptyText?: string;
+  /** For a page that runs both lists together and owns the empty state itself. */
+  hideIfEmpty?: boolean;
+  /** Omitted, and no session offers Join: a parent watches, they do not attend. */
+  onJoin?: (session: SessionListItem) => void;
+  onReschedule?: (session: SessionListItem) => void;
+  className?: string;
+}) {
+  const { upcoming } = splitSessions(sessions);
+  if (hideIfEmpty && upcoming.length === 0) return null;
+
+  return (
+    <SessionList
+      sessions={upcoming}
+      isLoading={isLoading}
+      emptyText={emptyText}
+      className={className}
+      renderAction={(s) => {
+        if (onJoin && isJoinable(s)) {
+          return (
+            <button
+              type="button"
+              onClick={() => onJoin(s)}
+              className="h-10 rounded-md bg-[#1099A1] px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Join
+            </button>
+          );
+        }
+        if (onReschedule) {
+          return (
+            <button
+              type="button"
+              onClick={() => onReschedule(s)}
+              className="h-10 rounded-md border border-[#1099A1] px-5 text-[14px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+            >
+              Reschedule
+            </button>
+          );
+        }
+        return null;
+      }}
+    />
+  );
+}
+
+/**
+ * What has been.
+ *
+ * Completed, cancelled, and the ones that have run their hour without anybody
+ * saying so. That last group is why renderAction is here at all: it is where
+ * the tutor's Mark as done belongs, and only the tutor's page passes it.
+ */
+export function PastSessions({
+  sessions,
+  isLoading,
+  emptyText = "No past sessions.",
+  hideIfEmpty = false,
+  renderAction,
+  className,
+}: {
+  sessions: SessionListItem[];
+  isLoading?: boolean;
+  emptyText?: string;
+  hideIfEmpty?: boolean;
+  renderAction?: (session: SessionListItem) => React.ReactNode;
+  className?: string;
+}) {
+  const { past } = splitSessions(sessions);
+  if (hideIfEmpty && past.length === 0) return null;
+
+  return (
+    <SessionList
+      sessions={past}
+      isLoading={isLoading}
+      emptyText={emptyText}
+      className={className}
+      renderAction={renderAction}
+    />
   );
 }

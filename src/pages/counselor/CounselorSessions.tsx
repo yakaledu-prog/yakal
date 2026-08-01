@@ -1,29 +1,22 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, User, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon } from "lucide-react";
+import { Search, CalendarRange, CheckCheck, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCounselorSessionsFull, completeSession, saveSessionNotes, SessionRow,
 } from "@/services/counselorService";
-import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-
-function formatTime(t?: string) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
-}
-function formatDate(d?: string) {
-  if (!d) return "";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
+import {
+  PastSessions,
+  UpcomingSessions,
+  isAwaitingConfirmation,
+  splitSessions,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
 
 export function CounselorSessions() {
   const { user, profile } = useAuth();
@@ -34,9 +27,7 @@ export function CounselorSessions() {
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
-  const [editingNotesText, setEditingNotesText] = useState("");
-  const [inlineSaving, setInlineSaving] = useState(false);
+  const [completing, setCompleting] = useState<string | null>(null);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -46,7 +37,9 @@ export function CounselorSessions() {
     enabled: !!user?.id,
   });
 
-  const join = (s: SessionRow) => {
+  const join = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (!s) return;
     if (s.zoom_meeting_id) {
       navigate(`/counselor/meeting/${s.id}`);
       return;
@@ -56,16 +49,22 @@ export function CounselorSessions() {
     else toast.error("This session has no Zoom meeting or link attached.");
   };
 
-  const saveInlineNotes = async (id: string) => {
-    setInlineSaving(true);
-    const ok = await saveSessionNotes(id, editingNotesText.trim());
-    setInlineSaving(false);
+  const openNotes = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (s) setNotesFor(s);
+  };
+
+  // Advising sessions are confirmed the same way tutoring ones are. Counselors
+  // are not paid per session, so this only settles what happened.
+  const markDone = async (id: string) => {
+    setCompleting(id);
+    const ok = await completeSession(id);
+    setCompleting(null);
     if (ok) {
-      toast.success("Notes saved.");
-      setEditingNotesId(null);
+      toast.success("Session confirmed.");
       queryClient.invalidateQueries({ queryKey: ['counselor-sessions', user?.id] });
     } else {
-      toast.error("Something went wrong.");
+      toast.error("Could not confirm that session.");
     }
   };
 
@@ -80,15 +79,25 @@ export function CounselorSessions() {
     [sessions, selectedCourse]
   );
 
-  const filteredSessions = useMemo(() => {
-    return courseSessions.filter((s) => {
-      const isUpcoming = s.status === "upcoming";
-      return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-    });
-  }, [courseSessions, activeTab]);
+  // Counselors advise students, so the named person is the student.
+  const items: SessionListItem[] = useMemo(
+    () =>
+      courseSessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+        title: s.subject,
+        personName: s.student_name ?? null,
+        personAvatarUrl: s.student_avatar,
+        note: s.notes,
+      })),
+    [courseSessions]
+  );
 
+  const { upcoming } = useMemo(() => splitSessions(items), [items]);
   const completedCount = courseSessions.filter((s) => s.status === "completed").length;
-  const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
@@ -166,7 +175,7 @@ export function CounselorSessions() {
               <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
                 <MinimalStat label="Total" value={courseSessions.length} />
                 <MinimalStat label="Completed" value={completedCount} />
-                <MinimalStat label="Upcoming" value={upcomingCount} />
+                <MinimalStat label="Upcoming" value={upcoming.length} />
               </div>
             </div>
           </div>
@@ -178,87 +187,39 @@ export function CounselorSessions() {
         </div>
 
         <div className="p-4 md:p-8 w-full flex-1">
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="animate-spin text-primary h-8 w-8" />
-            </div>
-          ) : filteredSessions.length === 0 ? (
-            <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
-              <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
-              <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
-            </div>
+          {activeTab === "upcoming" ? (
+            <UpcomingSessions
+              sessions={items}
+              isLoading={loading}
+              emptyText="Nothing booked yet."
+              onJoin={(s) => join(s.id)}
+            />
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {filteredSessions.map((s) => (
-                <div key={s.id} className="space-y-6 pb-8 border-b border-border/50 last:border-0">
-
-                  <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg shadow-none hover:shadow-sm transition ease-in-out duration-300 flex flex-col overflow-hidden">
-                    <div className="bg-[#f8f9fa] dark:bg-[#182329] px-5 py-3 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <CalendarRange size={15} />
-                        <span className="text-[13px] font-medium">{formatDate(s.date)} • {formatTime(s.start_time)} ({s.duration_minutes}m)</span>
-                      </div>
-
-                      {s.status === "upcoming" ? (
-                        <button onClick={() => setNotesFor(s)} className="text-[13px] font-bold flex items-center gap-1.5 text-primary hover:opacity-80 transition-opacity">
-                          <CheckCheck size={16} /> Mark As Done
-                        </button>
-                      ) : s.status === "completed" ? (
-                        <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[13px] font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                          <SquarePenIcon size={16} /> {s.notes ? "Edit Notes" : "Add Notes"}
-                        </button>
-                      ) : (
-                        <Badge variant="destructive" className="rounded-sm text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
-                          {s.status}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-1">{s.subject}</h2>
-                        <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
-                          <User size={14} /> <span>Student: <span className="font-medium text-foreground">{s.student_name}</span></span>
-                        </div>
-                        {editingNotesId === s.id ? (
-                          <div className="mt-4 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329]">
-                            <TipTapEditor
-                              value={editingNotesText}
-                              onChange={setEditingNotesText}
-                              toolbarRight={
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => setEditingNotesId(null)} className="text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
-                                  <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="!h-7 text-[11px] px-3 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
-                                    {inlineSaving ? "Saving..." : "Save"}
-                                  </Button>
-                                </div>
-                              }
-                            />
-                          </div>
-                        ) : s.notes && s.status === "completed" ? (
-                          <div className="mt-4 text-[13px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-3 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
-                        ) : null}
-                      </div>
-
-                      <div className="flex items-center gap-3 w-full md:w-auto">
-                        {s.status === "upcoming" ? (
-                          <>
-                            <Button onClick={() => join(s)} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-full">
-                              <Video size={16} /> Join
-                            </Button>
-                            <Button style={{ backgroundColor: '#CAA25F', color: 'white' }} className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold border-0 flex items-center gap-2 rounded-full hover:opacity-90 transition-opacity">
-                              <CalendarRange size={16} /> Reschedule
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-            </div>
+            <PastSessions
+              sessions={items}
+              isLoading={loading}
+              emptyText="No past sessions."
+              renderAction={(s) =>
+                isAwaitingConfirmation(s) ? (
+                  <button
+                    type="button"
+                    onClick={() => markDone(s.id)}
+                    disabled={completing === s.id}
+                    className="h-10 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                  >
+                    {completing === s.id ? "Confirming..." : "Mark as done"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openNotes(s.id)}
+                    className="h-10 rounded-md border border-border px-5 text-[14px] font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    {s.note ? "Edit note" : "Add note"}
+                  </button>
+                )
+              }
+            />
           )}
         </div>
       </section>

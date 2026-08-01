@@ -135,6 +135,35 @@ export async function createMeeting(input: {
   };
 }
 
+/**
+ * Move an existing meeting.
+ *
+ * The timezone is resent with every change. Zoom keeps the one the meeting was
+ * created with, but a naive start_time arriving without it is read as UTC, so
+ * a rescheduled session would quietly shift by the offset.
+ */
+export async function updateMeeting(input: {
+  meetingId: string;
+  topic?: string;
+  date: string;
+  startTime: string;
+  durationMinutes?: number;
+}): Promise<void> {
+  const res = await zoomFetch(`/meetings/${input.meetingId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      topic: input.topic?.slice(0, 200),
+      start_time: `${input.date}T${input.startTime.slice(0, 5)}:00`,
+      duration: input.durationMinutes ?? 60,
+      timezone: TIMEZONE,
+    }),
+  });
+
+  if (!res.ok && res.status !== 204) {
+    throw new Error(`Zoom update failed (${res.status}): ${await res.text()}`);
+  }
+}
+
 export async function deleteMeeting(meetingId: string): Promise<void> {
   const res = await zoomFetch(`/meetings/${meetingId}`, { method: "DELETE" });
   // 404 means it is already gone, which is the state we wanted.

@@ -76,11 +76,15 @@ export const getStudentSessions = async (studentId: string) => {
 
   if (sessions && sessions.length > 0) {
     const tutorIds = [...new Set(sessions.map(s => s.tutor_id))];
-    const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', tutorIds);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', tutorIds);
     return {
       data: sessions.map(s => ({
         ...s,
-        tutor_name: profiles?.find(p => p.id === s.tutor_id)?.full_name || 'Unknown Tutor'
+        tutor_name: profiles?.find(p => p.id === s.tutor_id)?.full_name || 'Unknown Tutor',
+        tutor_avatar: profiles?.find(p => p.id === s.tutor_id)?.avatar_url ?? null,
       })),
       error
     };
@@ -141,3 +145,57 @@ export const getSessionAttendance = async (sessionId: string) => {
   }
   return data ?? [];
 };
+
+/**
+ * Move an upcoming session to a new slot.
+ *
+ * Students and parents cannot update a session row, so the move goes through
+ * reschedule_session, which re-checks the tutor's published hours and both
+ * sides' clashes. Every refusal comes back as a sentence worth showing.
+ *
+ * The Zoom meeting is moved afterwards rather than first: a failed booking
+ * would otherwise leave the meeting on a date no session points at. If Zoom
+ * refuses, the session has still moved and the meeting keeps its old time,
+ * which is visible and fixable, unlike the reverse.
+ */
+export const rescheduleSession = async (
+  sessionId: string,
+  date: string,
+  startTime: string
+): Promise<{ success: boolean; error?: string }> => {
+  const { data, error } = await supabase.rpc('reschedule_session', {
+    p_session_id: sessionId,
+    p_date: date,
+    p_start_time: startTime.length === 5 ? `${startTime}:00` : startTime,
+  });
+
+  if (error) {
+    return { success: false, error: error.message || 'Could not move that session.' };
+  }
+
+  const moved = Array.isArray(data) ? data[0] : data;
+  if (moved?.zoom_meeting_id) {
+    try {
+      await updateZoomMeeting(moved.zoom_meeting_id, date, startTime, moved.duration_minutes ?? 60);
+    } catch (e) {
+      console.error('Session moved but its Zoom meeting did not', e);
+    }
+  }
+
+  return { success: true };
+};
+
+/** PATCH the meeting to the session's new date and time. */
+async function updateZoomMeeting(
+  meetingId: string,
+  date: string,
+  startTime: string,
+  durationMinutes: number
+) {
+  const res = await fetch('/api/zoom-meetings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ meetingId, date, time: startTime, duration: durationMinutes }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}

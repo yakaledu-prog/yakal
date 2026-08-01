@@ -1,6 +1,18 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { createMeeting, deleteMeeting, getZoomToken, getPastParticipants } from './utils/zoom';
+import { createMeeting, deleteMeeting, updateMeeting, getPastParticipants } from './utils/zoom';
+
+/**
+ * Sessions hold a date and a time separately; older callers send one ISO
+ * timestamp. Both end up as local parts, because converting through UTC on the
+ * way in is how a 4 PM lesson becomes an 8 PM one.
+ */
+function splitStart(date?: string, time?: string, startTime?: string) {
+  if (date && time) return { date, time: time.slice(0, 5) };
+  if (!startTime) return null;
+  const [d, t = '00:00'] = String(startTime).replace('Z', '').split('T');
+  return { date: d, time: t.slice(0, 5) };
+}
 
 // ============================================================
 // Meetings, on demand.
@@ -23,23 +35,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const { topic, startTime, duration, date, time } = req.body ?? {};
 
-      // Older callers send one ISO timestamp; sessions hold a date and a time
-      // separately and must not be pushed through a UTC conversion on the way.
-      let meetingDate = date;
-      let meetingTime = time;
-      if (!meetingDate && startTime) {
-        const [d, t = '00:00'] = String(startTime).replace('Z', '').split('T');
-        meetingDate = d;
-        meetingTime = t.slice(0, 5);
-      }
-      if (!meetingDate || !meetingTime) {
-        return res.status(400).json({ error: 'date and time (or startTime) required' });
-      }
+      const parts = splitStart(date, time, startTime);
+      if (!parts) return res.status(400).json({ error: 'date and time (or startTime) required' });
 
       const meeting = await createMeeting({
         topic: topic || 'Yakal Tutoring Session',
-        date: meetingDate,
-        startTime: meetingTime,
+        date: parts.date,
+        startTime: parts.time,
         durationMinutes: duration || 60,
       });
 
@@ -52,19 +54,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // UPDATE MEETING
     if (req.method === 'PATCH') {
-      const { meetingId, topic, startTime, duration } = req.body ?? {};
+      const { meetingId, topic, startTime, duration, date, time } = req.body ?? {};
       if (!meetingId) return res.status(400).json({ error: 'meetingId required' });
 
-      const token = await getZoomToken();
-      const response = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, start_time: startTime, duration }),
-      });
+      const parts = splitStart(date, time, startTime);
+      if (!parts) return res.status(400).json({ error: 'date and time (or startTime) required' });
 
-      if (!response.ok && response.status !== 204) {
-        throw new Error(`Failed to update meeting: ${await response.text()}`);
-      }
+      await updateMeeting({
+        meetingId,
+        topic,
+        date: parts.date,
+        startTime: parts.time,
+        durationMinutes: duration || 60,
+      });
       return res.status(200).json({ success: true });
     }
 

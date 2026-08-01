@@ -1,33 +1,26 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, Video, CalendarRange, CheckCheck, X, Loader2, SquarePenIcon, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, Loader2, CalendarRange, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTutorSessionsFull, completeSession, saveSessionNotes, SessionRow,
 } from "@/services/tutorService";
-import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-
-function formatTime(t?: string) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
-}
-function getDateParts(d?: string) {
-  if (!d) return { day: "", month: "" };
-  const date = new Date(d + "T00:00:00");
-  return {
-    day: date.getDate(),
-    month: date.toLocaleDateString(undefined, { month: "short" })
-  };
-}
+import {
+  PastSessions,
+  UpcomingSessions,
+  isAwaitingConfirmation,
+  splitSessions,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
+import {
+  RescheduleDialog,
+  type ReschedulableSession,
+} from "@/components/shared/RescheduleDialog";
 
 export function TutorSessions() {
   const { user, profile } = useAuth();
@@ -38,17 +31,8 @@ export function TutorSessions() {
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
-  const [editingNotesText, setEditingNotesText] = useState("");
-  const [inlineSaving, setInlineSaving] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, selectedCourse, filterText]);
+  const [moving, setMoving] = useState<ReschedulableSession | null>(null);
+  const [completing, setCompleting] = useState<string | null>(null);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -58,7 +42,9 @@ export function TutorSessions() {
     enabled: !!user?.id,
   });
 
-  const join = (s: SessionRow) => {
+  const join = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (!s) return;
     if (s.zoom_meeting_id) {
       navigate(`/tutor/meeting/${s.id}`);
       return;
@@ -68,16 +54,22 @@ export function TutorSessions() {
     else toast.error("This session has no Zoom meeting or link attached.");
   };
 
-  const saveInlineNotes = async (id: string) => {
-    setInlineSaving(true);
-    const ok = await saveSessionNotes(id, editingNotesText.trim());
-    setInlineSaving(false);
+  const openNotes = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (s) setNotesFor(s);
+  };
+
+  // Confirming a session is what makes it payable, so the server has the last
+  // word on whether it happened. This asks; it does not decide.
+  const markDone = async (id: string) => {
+    setCompleting(id);
+    const ok = await completeSession(id);
+    setCompleting(null);
     if (ok) {
-      toast.success("Notes saved.");
-      setEditingNotesId(null);
+      toast.success("Session confirmed.");
       queryClient.invalidateQueries({ queryKey: ['tutor-sessions', user?.id] });
     } else {
-      toast.error("Something went wrong.");
+      toast.error("Could not confirm that session.");
     }
   };
 
@@ -92,20 +84,37 @@ export function TutorSessions() {
     [sessions, selectedCourse]
   );
 
-  const filteredSessions = useMemo(() => {
-    return courseSessions.filter((s) => {
-      const isUpcoming = s.status === "upcoming";
-      return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-    });
-  }, [courseSessions, activeTab]);
+  // The tutor sees who they are teaching, so the named person is the student.
+  const items: SessionListItem[] = useMemo(
+    () =>
+      courseSessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+        title: s.subject,
+        personName: s.student_name ?? null,
+        personAvatarUrl: s.student_avatar,
+        note: s.notes,
+      })),
+    [courseSessions]
+  );
 
-  const paginatedSessions = useMemo(() => {
-    return filteredSessions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  }, [filteredSessions, currentPage]);
-  const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
-
+  const { upcoming } = useMemo(() => splitSessions(items), [items]);
   const completedCount = courseSessions.filter((s) => s.status === "completed").length;
-  const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
+
+  const toReschedulable = (s: SessionListItem): ReschedulableSession => {
+    const row = sessions.find((r) => r.id === s.id);
+    return {
+      id: s.id,
+      title: s.title,
+      date: s.date,
+      startTime: s.startTime,
+      tutorId: row?.tutor_id ?? user?.id ?? null,
+      studentId: row?.student_id ?? null,
+    };
+  };
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
@@ -183,167 +192,59 @@ export function TutorSessions() {
               <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
                 <MinimalStat label="Total" value={courseSessions.length} />
                 <MinimalStat label="Completed" value={completedCount} />
-                <MinimalStat label="Upcoming" value={upcomingCount} />
+                <MinimalStat label="Upcoming" value={upcoming.length} />
               </div>
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center justify-between gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-            <div className="flex items-center gap-6">
-              <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
-              <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center gap-4 text-white pb-3 pr-2">
-                <span className="text-[13px] font-medium">Page {currentPage}</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-7 h-7 flex items-center justify-center border border-white/30 rounded text-white hover:bg-white/10 disabled:opacity-30 transition-colors">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-7 h-7 flex items-center justify-center border border-white/30 rounded text-white hover:bg-white/10 disabled:opacity-30 transition-colors">
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
+          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
+            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
+            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
           </div>
         </div>
 
         <div className="p-4 md:p-8 w-full flex-1">
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="animate-spin text-primary h-8 w-8" />
-            </div>
-          ) : filteredSessions.length === 0 ? (
-            <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
-              <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
-              <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Sessions will appear here once students book with you.</p>
-            </div>
+          {activeTab === "upcoming" ? (
+            <UpcomingSessions
+              sessions={items}
+              isLoading={loading}
+              emptyText="Nothing booked yet."
+              onJoin={(s) => join(s.id)}
+              onReschedule={(s) => setMoving(toReschedulable(s))}
+            />
           ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {paginatedSessions.map((s) => (
-                <div key={s.id} className="pb-4 border-b border-border/50 last:border-0">
-                  <div className="flex flex-col md:flex-row items-center gap-6 p-4">
-                    {/* Column 1: Date */}
-                    <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
-                      <span className="text-[28px] font-bold text-[#1099A1] leading-none tracking-tight">{getDateParts(s.date).day}</span>
-                      <span className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{getDateParts(s.date).month}</span>
-                    </div>
-
-                    {/* Column 2: Title and Time */}
-                    <div className="flex flex-col justify-center flex-1 min-w-0 py-2 w-full md:w-auto text-center md:text-left">
-                      <h2 className="text-[16px] md:text-[18px] font-medium text-[#111] dark:text-white leading-tight mb-1.5 truncate">{s.subject}</h2>
-                      <span className="text-[13.5px] text-[#54656f] dark:text-[#aebac1] font-medium leading-tight">{formatTime(s.start_time)}</span>
-                    </div>
-
-                    {/* Column 3: Profile Card */}
-                    <div className="flex items-center justify-center md:justify-start gap-3 shrink-0 w-full md:w-[220px]">
-                      {s.student_avatar ? (
-                        <img src={s.student_avatar} alt={s.student_name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-white dark:border-[#2a3942]" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[15px] shrink-0 border border-white dark:border-[#2a3942]">
-                          {s.student_name ? s.student_name.charAt(0).toUpperCase() : "S"}
-                        </div>
-                      )}
-                      <div className="flex flex-col justify-center gap-0.5 min-w-0 text-left">
-                        <span className="text-[14.5px] font-normal text-[#111] dark:text-white leading-tight truncate">{s.student_name}</span>
-                        <span className="text-[12.5px] font-normal text-[#54656f] dark:text-[#aebac1] leading-tight truncate">Student</span>
-                      </div>
-                    </div>
-
-                    {/* Column 4: Actions */}
-                    <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
-                      {s.status === "upcoming" ? (
-                        <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
-                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r text-white">
-                            <Video size={16} /> Join
-                          </Button>
-                          {/* <div className="!w-[1px] !bg-white/55 !h-[60%] block" /> */}
-                          <button
-                            onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
-                            className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
-                          >
-                            <ChevronDown size={16} />
-                          </button>
-
-                          {openDropdownId === s.id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                              <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-border/50 rounded-md shadow-lg z-50 py-1 overflow-hidden">
-                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors">
-                                  <Video size={16} /> Join
-                                </button>
-                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
-                                  <CalendarRange size={16} /> Reschedule
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ) : s.status === "completed" ? (
-                        <button onClick={() => { setEditingNotesId(s.id); setEditingNotesText(s.notes || ""); }} className="text-[14px] font-semibold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                          <SquarePenIcon size={18} /> {s.notes ? "Edit Notes" : "Add Notes"}
-                        </button>
-                      ) : (
-                        <Badge variant="destructive" className="rounded-sm text-[11px] uppercase font-bold tracking-wider px-2 py-0.5">
-                          {s.status}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Notes Section */}
-                  {(editingNotesId === s.id || (s.notes && s.status === "completed")) && (
-                    <div className="px-4 pb-2">
-                      {editingNotesId === s.id ? (
-                        <div className="mt-2 border border-border/50 rounded-lg overflow-hidden flex flex-col bg-[#f8f9fa] dark:bg-[#182329] shadow-sm">
-                          <TipTapEditor
-                            value={editingNotesText}
-                            onChange={setEditingNotesText}
-                            toolbarRight={
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => setEditingNotesId(null)} className="text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2">Cancel</button>
-                                <Button size="sm" onClick={() => saveInlineNotes(s.id)} disabled={inlineSaving} className="!h-8 text-[12px] px-4 font-semibold bg-[#1099A1] hover:bg-[#0d848b] text-white border-0">
-                                  {inlineSaving ? "Saving..." : "Save"}
-                                </Button>
-                              </div>
-                            }
-                          />
-                        </div>
-                      ) : (
-                        <div className="mt-2 text-[14px] text-muted-foreground italic border-l-2 border-[#1099A1] pl-4 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes! }} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-6 mt-8 pt-4">
+            <PastSessions
+              sessions={items}
+              isLoading={loading}
+              emptyText="No past sessions."
+              renderAction={(s) =>
+                // A session that has run its hour with nothing said about it is
+                // the tutor's to confirm. Once confirmed, all that is left is
+                // what happened in it.
+                isAwaitingConfirmation(s) ? (
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="w-9 h-9 flex items-center justify-center border border-[#e9edef] dark:border-[#2a3942] rounded-md text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#182329] disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                    type="button"
+                    onClick={() => markDone(s.id)}
+                    disabled={completing === s.id}
+                    className="h-10 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
-                    <ChevronLeft size={18} />
+                    {completing === s.id ? "Confirming..." : "Mark as done"}
                   </button>
-                  <span className="text-[14px] font-medium text-[#111] dark:text-white">
-                    Page {currentPage}
-                  </span>
+                ) : (
                   <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="w-9 h-9 flex items-center justify-center border border-[#e9edef] dark:border-[#2a3942] rounded-md text-[#54656f] dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#182329] disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                    type="button"
+                    onClick={() => openNotes(s.id)}
+                    className="h-10 rounded-md border border-border px-5 text-[14px] font-medium text-foreground transition-colors hover:bg-muted"
                   >
-                    <ChevronRight size={18} />
+                    {s.note ? "Edit note" : "Add note"}
                   </button>
-                </div>
-              )}
-            </div>
+                )
+              }
+            />
           )}
         </div>
+
+        {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
       </section>
 
       {notesFor && (

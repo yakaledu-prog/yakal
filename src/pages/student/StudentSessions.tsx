@@ -1,18 +1,28 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Search, User, Video, CalendarRange, Loader2, FileText, ChevronDown, Clock } from "lucide-react";
+import { Search, CalendarRange, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentSessions } from "@/services/sessions";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
+import {
+  PastSessions,
+  UpcomingSessions,
+  splitSessions,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
+import {
+  RescheduleDialog,
+  type ReschedulableSession,
+} from "@/components/shared/RescheduleDialog";
 
 interface StudentSessionRow {
   id: string;
   subject: string;
+  tutor_id: string;
   tutor_name: string;
+  tutor_avatar: string | null;
   date: string;
   start_time: string;
   duration_minutes: number;
@@ -23,33 +33,13 @@ interface StudentSessionRow {
   zoom_link: string | null;
 }
 
-function formatTime(t?: string) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
-}
-function formatDate(d?: string) {
-  if (!d) return "";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-function getDateParts(d?: string) {
-  if (!d) return { day: "", month: "" };
-  const date = new Date(d + "T00:00:00");
-  return {
-    day: date.getDate(),
-    month: date.toLocaleDateString(undefined, { month: "short" })
-  };
-}
-
 export function StudentSessions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [moving, setMoving] = useState<ReschedulableSession | null>(null);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -62,7 +52,11 @@ export function StudentSessions() {
     enabled: !!user?.id,
   });
 
-  const join = (s: StudentSessionRow) => {
+  const join = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (!s) return;
+    // The in-app meeting whenever there is one; the raw link is the fallback
+    // for a session booked before meetings were created for them.
     if (s.zoom_meeting_id) {
       navigate(`/student/meeting/${s.id}`);
       return;
@@ -81,15 +75,36 @@ export function StudentSessions() {
     [sessions, selectedCourse]
   );
 
-  const filteredSessions = useMemo(() => {
-    return courseSessions.filter((s) => {
-      const isUpcoming = s.status === "upcoming";
-      return activeTab === "upcoming" ? isUpcoming : !isUpcoming;
-    });
-  }, [courseSessions, activeTab]);
+  // One shape for the shared lists, whatever the page around them looks like.
+  const items: SessionListItem[] = useMemo(
+    () =>
+      courseSessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+        title: s.subject,
+        personName: s.tutor_name,
+        personAvatarUrl: s.tutor_avatar,
+        note: s.notes,
+      })),
+    [courseSessions]
+  );
 
+  // The lists decide what is still to come by the clock, so the counts beside
+  // the title have to agree with them rather than count the status column.
+  const { upcoming, past } = useMemo(() => splitSessions(items), [items]);
   const completedCount = courseSessions.filter((s) => s.status === "completed").length;
-  const upcomingCount = courseSessions.filter((s) => s.status === "upcoming").length;
+
+  const toReschedulable = (s: SessionListItem): ReschedulableSession => ({
+    id: s.id,
+    title: s.title,
+    date: s.date,
+    startTime: s.startTime,
+    tutorId: sessions.find((r) => r.id === s.id)?.tutor_id ?? null,
+    studentId: user?.id ?? null,
+  });
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
@@ -167,7 +182,7 @@ export function StudentSessions() {
               <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full xl:w-auto">
                 <MinimalStat label="Total" value={courseSessions.length} />
                 <MinimalStat label="Completed" value={completedCount} />
-                <MinimalStat label="Upcoming" value={upcomingCount} />
+                <MinimalStat label="Upcoming" value={upcoming.length} />
               </div>
             </div>
           </div>
@@ -183,89 +198,24 @@ export function StudentSessions() {
             <div className="flex justify-center items-center py-20">
               <Loader2 className="animate-spin text-primary h-8 w-8" />
             </div>
-          ) : filteredSessions.length === 0 ? (
+          ) : (activeTab === "upcoming" ? upcoming : past).length === 0 ? (
             <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
               <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
               <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Book a session from the course catalog to get started.</p>
             </div>
+          ) : activeTab === "upcoming" ? (
+            <UpcomingSessions
+              sessions={items}
+              onJoin={(s) => join(s.id)}
+              onReschedule={(s) => setMoving(toReschedulable(s))}
+            />
           ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {filteredSessions.map((s) => (
-                <div key={s.id} className="pb-3 border-b border-border/50 last:border-0">
-                  <div className="flex flex-col md:flex-row items-center gap-6 p-4">
-                    {/* Date Column */}
-                    <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
-                      <span className="text-[24px] font-bold text-[#1099A1] leading-none tracking-tight">{getDateParts(s.date).day}</span>
-                      <span className="text-[12px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{getDateParts(s.date).month}</span>
-                    </div>
-
-                    {/* Title & Time Column */}
-                    <div className="flex flex-col justify-center flex-1 min-w-0 py-2 w-full md:w-auto text-center md:text-left border-l-2 border-transparent md:border-[#1099A1] md:pl-6">
-                      <h2 className="text-[15px] md:text-[16px] font-medium text-[#111] dark:text-white leading-tight mb-1.5 truncate">{s.subject}</h2>
-                      <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] font-medium leading-tight flex items-center gap-1.5 md:justify-start justify-center">
-                        <Clock size={14} /> {formatTime(s.start_time)} ({s.duration_minutes}m)
-                      </span>
-                    </div>
-
-                    {/* Tutor Profile Column */}
-                    <div className="flex items-center justify-center md:justify-start gap-3 shrink-0 w-full md:w-[220px]">
-                      <div className="w-10 h-10 rounded-full bg-[#CAA25F]/10 flex items-center justify-center text-[#CAA25F] font-bold text-[15px] shrink-0 border border-white dark:border-[#2a3942]">
-                        {s.tutor_name ? s.tutor_name.charAt(0).toUpperCase() : "T"}
-                      </div>
-                      <div className="flex flex-col justify-center gap-0.5 min-w-0 text-left">
-                        <span className="text-[14.5px] font-normal text-[#111] dark:text-white leading-tight truncate">{s.tutor_name}</span>
-                        <span className="text-[12.5px] font-normal text-[#54656f] dark:text-[#aebac1] leading-tight truncate">Tutor</span>
-                      </div>
-                    </div>
-
-                    {/* Actions Column */}
-                    <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
-                      {s.status === "upcoming" ? (
-                        <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
-                          <Button onClick={() => join(s)} className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r border-[#0d848b] text-white">
-                            <Video size={16} /> Join
-                          </Button>
-                          <button
-                            onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)}
-                            className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
-                          >
-                            <ChevronDown size={16} />
-                          </button>
-
-                          {openDropdownId === s.id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                              <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-lg z-50 py-1 overflow-hidden">
-                                <button onClick={() => { setOpenDropdownId(null); join(s); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors border-b !border-[#1099A1]/10">
-                                  <Video size={16} /> Join Meeting
-                                </button>
-                                <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
-                                  <CalendarRange size={16} /> Reschedule
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <Button variant="outline" className="flex-1 md:flex-none h-10 px-5 text-[14px] font-semibold flex items-center gap-2 rounded-md border-[#e9edef] dark:border-[#2a3942]">
-                          <FileText size={16} /> View Notes
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Notes Section for completed sessions */}
-                  {s.status !== "upcoming" && s.notes && (
-                    <div className="px-4 pb-2 md:pl-[96px]">
-                      <div className="text-[13px] text-foreground italic border-l-2 border-[#1099A1] pl-4 py-1 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: s.notes }} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            <PastSessions sessions={items} />
           )}
         </div>
+
+        {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
       </section>
     </div>
   );

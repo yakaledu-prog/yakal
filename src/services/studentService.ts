@@ -127,6 +127,8 @@ export interface CourseSessionRow {
   status: string;
   subject: string;
   zoom_link: string | null;
+  /** Needed to draw their free hours when a session is being moved. */
+  tutor_id: string | null;
   tutor_name: string | null;
   tutor_avatar: string | null;
   notes: string | null;
@@ -139,7 +141,7 @@ export async function getCourseSessions(
 ): Promise<CourseSessionRow[]> {
   const { data, error } = await supabase
     .from("sessions")
-    .select(`id, date, start_time, duration_minutes, status, subject, zoom_link, notes,
+    .select(`id, date, start_time, duration_minutes, status, subject, zoom_link, notes, tutor_id,
              tutor:profiles!sessions_tutor_id_fkey (full_name, avatar_url)`)
     .eq("student_id", studentId)
     .eq("course_id", courseId)
@@ -159,6 +161,7 @@ export async function getCourseSessions(
     subject: r.subject,
     zoom_link: r.zoom_link,
     notes: r.notes,
+    tutor_id: r.tutor_id ?? null,
     tutor_name: r.tutor?.full_name ?? null,
     tutor_avatar: r.tutor?.avatar_url ?? null,
   }));
