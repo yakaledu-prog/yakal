@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-08-01T06:47:24.454Z",
+  "model": "gemini-flash-lite-latest",
+  "people": [
+    {
+      "id": "5d8a4cae-3a9e-540e-99b7-a843e80af575",
+      "email": "dawit.bekele@yakal.demo",
+      "fullName": "Dawit Bekele",
+      "role": "student",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": "Grade 11"
+    },
+    {
+      "id": "81b6564f-cb39-518b-a947-2e36fe503b00",
+      "email": "meron.tadesse@yakal.demo",
+      "fullName": "Meron Tadesse",
+      "role": "student",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": "Grade 12"
+    },
+    {
+      "id": "e9cb08ea-386e-51c1-8e1a-26243d03d0f4",
+      "email": "kidus.lemma@yakal.demo",
+      "fullName": "Kidus Lemma",
+      "role": "student",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": "Grade 9"
+    },
+    {
+      "id": "1a7d7e6f-54d4-5b4d-a2ac-aba534e2bb5a",
+      "email": "hanna.kebede@yakal.demo",
+      "fullName": "Hanna Kebede",
+      "role": "student",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": "Grade 10"
+    },
+    {
+      "id": "ecbff605-09c8-5ab4-997b-72db25edac58",
+      "email": "edom.tesfaye@yakal.demo",
+      "fullName": "Edom Tesfaye",
+      "role": "tutor",
+      "bio": "I teach Mathematics and Physics using interactive online whiteboards and practice problems. My goal is to help students in Addis Ababa build strong analytical skills.",
+      "subjects": [
+        "Mathematics",
+        "Physics"
+      ],
+      "gradeLevel": null
+    },
+    {
+      "id": "377709d2-04b5-5fc1-8799-a0321a79dfe9",
+      "email": "yared.mekonnen@yakal.demo",
+      "fullName": "Yared Mekonnen",
+      "role": "tutor",
+      "bio": "I specialize in SAT Prep and English with a focus on practical reading strategies and essay writing. I guide my students step by step to achieve their target university scores.",
+      "subjects": [
+        "SAT Prep",
+        "English"
+      ],
+      "gradeLevel": null
+    },
+    {
+      "id": "a88052da-17ab-5051-be63-ad89253c2cf1",
+      "email": "senait.gashaw@yakal.demo",
+      "fullName": "Senait Gashaw",
+      "role": "tutor",
+      "bio": "I teach Chemistry and Biology by breaking down complex scientific concepts into simple real world examples. I am passionate about making science engaging for every learner.",
+      "subjects": [
+        "Chemistry",
+        "Biology"
+      ],
+      "gradeLevel": null
+    },
+    {
+      "id": "c7a74173-2f13-5425-9f03-52a7f4a1f868",
+      "email": "abebech.desta@yakal.demo",
+      "fullName": "Abebech Desta",
+      "role": "parent",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": null
+    },
+    {
+      "id": "8503d3cf-0a66-5a99-b242-38d09861a84d",
+      "email": "samuel.assefa@yakal.demo",
+      "fullName": "Samuel Assefa",
+      "role": "parent",
+      "bio": null,
+      "subjects": null,
+      "gradeLevel": null
+    }
+  ],
+  "courses": [
+    {
+      "title": "Entrance Mathematics Mastery",
+      "subject": "Mathematics",
+      "description": "This course covers core national exam topics and suits students aiming for high scores on the Ethiopian University Entrance Examination.",
+      "priceCents": 4000,
+      "tutorPayoutCents": 2800
+    },
+    {
+      "title": "Global SAT Strategies",
+      "subject": "SAT Prep",
+      "description": "This course teaches critical reading and math problem solving methods suited for high schoolers applying to universities abroad.",
+      "priceCents": 5500,
+      "tutorPayoutCents": 3850
+    },
+    {
+      "title": "International University Admissions",
+      "subject": "College Advising",
+      "description": "This course guides students through the application process and suits ambitious learners seeking scholarships overseas.",
+      "priceCents": 7500,
+      "tutorPayoutCents": 5250
+    },
+    {
+      "title": "National Exam Physics Review",
+      "subject": "Physics",
+      "description": "This course reviews mechanics and thermodynamics tailored for students preparing for grade 12 national examinations.",
+      "priceCents": 4000,
+      "tutorPayoutCents": 2800
+    },
+    {
+      "title": "Academic English Proficiency",
+      "subject": "English",
+      "description": "This course focuses on advanced grammar and comprehension suited for students taking international standardized tests.",
+      "priceCents": 8000,
+      "tutorPayoutCents": 5600
+    }
+  ]
+}

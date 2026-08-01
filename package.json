@@ -26,7 +26,8 @@
     "demo": "tsx scripts/demo.ts",
     "verify": "tsx scripts/verify/run-all.mjs",
     "db:snapshot": "tsx scripts/snapshot.ts save",
-    "db:restore": "tsx scripts/snapshot.ts restore"
+    "db:restore": "tsx scripts/snapshot.ts restore",
+    "seed:generate": "tsx scripts/seed/generate.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",

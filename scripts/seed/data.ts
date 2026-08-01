@@ -10,6 +10,8 @@
 // database that has never been seeded before.
 // ============================================================
 
+import generatedData from "./generated.json" with { type: "json" };
+
 export type Role = "student" | "tutor" | "parent" | "counselor" | "admin";
 
 export interface SeedUser {
@@ -75,6 +77,37 @@ const AVATAR_URLS: Record<string, string> = {
 };
 
 const avatarFor = (name: string) => AVATAR_URLS[name];
+
+/**
+ * Extra people and courses written by Gemini, via `npm run seed:generate`.
+ *
+ * Committed rather than generated at seed time: a fresh call every run would
+ * give every developer a different database and break any test that names a
+ * person. Regenerating is deliberate, and the file is reviewed like any other
+ * change.
+ *
+ * The hand-written accounts below stay hand-written. They carry fixed ids that
+ * match the hosted project and are what the verification suites sign in as, so
+ * they are not the model's to rewrite.
+ */
+const generated = generatedData as {
+  people: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: Role;
+    bio: string | null;
+    subjects: string[] | null;
+    gradeLevel: string | null;
+  }[];
+  courses: {
+    title: string;
+    subject: string;
+    description: string;
+    priceCents: number;
+    tutorPayoutCents: number;
+  }[];
+};
 
 export const USERS: SeedUser[] = [
   {
@@ -158,6 +191,25 @@ export const USERS: SeedUser[] = [
     phone: "+251911000005",
   },
 ];
+
+// The generated people, given the same shape as the hand-written ones. No
+// avatar: there is no real photograph for an invented person, so the UI falls
+// back to its generated one rather than pointing at a stranger.
+USERS.push(
+  ...generated.people.map((p) => ({
+    id: p.id,
+    email: p.email,
+    fullName: p.fullName,
+    role: p.role,
+    status: "active" as const,
+    isOnboarded: true,
+    lastSeenMinutesAgo: 60 + Math.round(Math.random() * 4000),
+    bio: p.bio ?? undefined,
+    subjects: p.subjects ?? undefined,
+    gradeLevel: p.gradeLevel ?? undefined,
+    acceptingStudents: p.role === "tutor" ? true : undefined,
+  }))
+);
 
 /**
  * Active parent to child links. Both sides are emails from USERS.
@@ -312,6 +364,18 @@ export const COURSES: SeedCourse[] = [
     tutorPayoutCents: 3500,
   },
 ];
+
+// Generated courses join the catalog with no tutor, which is the state a real
+// one starts in: an admin creates it and tutors apply.
+COURSES.push(
+  ...generated.courses.map((c) => ({
+    title: c.title,
+    subject: c.subject,
+    description: c.description,
+    priceCents: c.priceCents,
+    tutorPayoutCents: c.tutorPayoutCents,
+  }))
+);
 
 // ------------------------------------------------------------
 // Conversations
