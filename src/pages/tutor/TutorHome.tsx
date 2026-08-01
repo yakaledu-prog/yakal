@@ -1,11 +1,13 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { CalendarDays, Wallet, Settings, Activity, MessagesSquareIcon } from "lucide-react";
+import { CalendarDays, Wallet, Settings, MessagesSquareIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
-import { getTutorDashboard, getPendingSubmissions, SessionRow } from "@/services/tutorService";
+import { getTutorDashboard, SessionRow } from "@/services/tutorService";
+import { getTutorEarnings } from "@/services/payoutService";
+import { money } from "@/services/billingService";
 import { dicebearUrl } from "@/utils/avatar";
 
 export function TutorHome() {
@@ -18,11 +20,18 @@ export function TutorHome() {
     enabled: !!profile?.id,
   });
 
-  const { data: pendingSubmissions = [] } = useQuery({
-    queryKey: ['tutor-pending-submissions', profile?.id],
-    queryFn: () => getPendingSubmissions(profile!.id),
+  const { data: earningRows = [] } = useQuery({
+    queryKey: ['tutor-earnings', profile?.id],
+    queryFn: () => getTutorEarnings(profile!.id),
     enabled: !!profile?.id,
   });
+
+  const unclaimed = earningRows.filter((r) => r.payoutStatus === 'none');
+  const totals = {
+    unclaimed: unclaimed.reduce((n, r) => n + r.amountCents, 0),
+    awaiting: earningRows.filter((r) => r.payoutStatus === 'requested').reduce((n, r) => n + r.amountCents, 0),
+    paid: earningRows.filter((r) => r.payoutStatus === 'paid').reduce((n, r) => n + r.amountCents, 0),
+  };
 
   if (isLoading || !data) {
     return (
@@ -57,9 +66,10 @@ export function TutorHome() {
     personName: s.student_name ?? null,
     personAvatarUrl: s.student_avatar ?? null,
   }));
-  const rate = profile?.hourly_rate ?? 0;
-  const currency = profile?.rate_currency || "ETB";
-  const earnings = stats.completed * rate;
+  // The banner used to multiply the profile's hourly rate by the completed
+  // count and label it ETB, while the earnings page showed the real per
+  // session figures in USD. One number, from the ledger, in one currency.
+  const totalEarned = totals.unclaimed + totals.awaiting + totals.paid;
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tutor";
 
@@ -109,7 +119,7 @@ export function TutorHome() {
               <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => navigate("/tutor/earnings")}>
                 <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">Earnings</p>
                 <div className="flex items-end justify-between">
-                  <p className="text-3xl font-bold">{earnings.toLocaleString()} <span className="text-lg font-normal text-white/70">{currency}</span></p>
+                  <p className="text-3xl font-bold">{money(totalEarned)}</p>
                   <Sparkline />
                 </div>
               </div>
@@ -124,46 +134,68 @@ export function TutorHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-[#1099A1]" /> Waiting on you</h2>
-              <button onClick={() => navigate("/tutor/assignments")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Wallet size={20} className="text-[#1099A1]" /> Earnings</h2>
+              <button onClick={() => navigate("/tutor/earnings")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
-            {/* A queue, not a feed. What was here listed invented homework from
-                named students and a payout in the wrong currency, none of
-                which a tutor could act on. */}
-            {pendingSubmissions.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground">Nothing to mark right now.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {pendingSubmissions.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => navigate(`/tutor/assignments/${s.assignmentId}`)}
-                    className="flex w-full items-center gap-4 py-4 text-left transition-colors hover:bg-muted/20"
-                  >
-                    <img
-                      src={s.studentAvatar || dicebearUrl(s.studentName ?? "Yakal")}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded-full object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium text-foreground">
-                        {s.assignmentTitle}
-                      </p>
-                      <p className="truncate text-[13px] text-muted-foreground">
-                        {s.studentName ?? "A student"}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[13px] text-muted-foreground">
-                      {new Date(s.submittedAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </button>
-                ))}
+            {/* Sessions taught and not yet claimed. Asking to be paid is the
+                one step nobody else can do for a tutor, and it was buried a
+                page away where a quiet week meant forgetting about it. */}
+            <div className="grid grid-cols-3 gap-4 border-b border-border/50 pb-6">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Not requested</p>
+                <p className="mt-1 text-2xl font-bold text-[#CAA25F]">{money(totals.unclaimed)}</p>
               </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Awaiting</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">{money(totals.awaiting)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Paid</p>
+                <p className="mt-1 text-2xl font-bold text-[#1099A1]">{money(totals.paid)}</p>
+              </div>
+            </div>
+
+            {unclaimed.length === 0 ? (
+              <p className="text-[14px] text-muted-foreground">
+                Nothing left to claim. Every session you have taught has been asked for.
+              </p>
+            ) : (
+              <>
+                <div className="divide-y divide-border">
+                  {unclaimed.slice(0, 5).map((r) => (
+                    <div key={r.sessionId} className="flex items-center gap-4 py-4">
+                      <img
+                        src={r.studentAvatarUrl || dicebearUrl(r.studentName ?? "Yakal")}
+                        alt=""
+                        className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-medium text-foreground">{r.subject}</p>
+                        <p className="truncate text-[13px] text-muted-foreground">
+                          {r.studentName ?? "Student"} ·{" "}
+                          {new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[14px] font-medium tabular-nums text-foreground">
+                        {r.amountCents === 0 ? "-" : money(r.amountCents)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/tutor/earnings")}
+                  className="mt-2 h-11 w-full rounded-md bg-[#1099A1] text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Request payment for {unclaimed.length}{" "}
+                  {unclaimed.length === 1 ? "session" : "sessions"}
+                </button>
+              </>
             )}
           </div>
 
