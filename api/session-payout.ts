@@ -123,8 +123,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error('session-payout error:', err);
-    return res
-      .status(err.message?.includes('session') ? 401 : 500)
-      .json({ error: err.message || 'Server error' });
+    // A missing or expired token is the caller's problem to fix by signing in
+    // again, not a server fault, and saying 500 sends them nowhere useful.
+    const unauthorised = /token|session expired|Invalid or expired/i.test(err.message ?? '');
+    return res.status(unauthorised ? 401 : 500).json({ error: err.message || 'Server error' });
   }
 }
