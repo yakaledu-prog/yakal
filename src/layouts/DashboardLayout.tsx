@@ -103,13 +103,13 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       // who happens to open the app first.
       const { error: notifError } = await supabase.from("notifications").insert(
         parentIds.map((parentId) => ({
-        user_id: parentId,
-        // The type and link carry enough for the parent screen to offer a
-        // one-click grant rather than sending them off to find the setting.
-        type: "unlock_request",
-        title: "Feature unlock request",
-        message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
-        link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
+          user_id: parentId,
+          // The type and link carry enough for the parent screen to offer a
+          // one-click grant rather than sending them off to find the setting.
+          type: "unlock_request",
+          title: "Feature unlock request",
+          message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
+          link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
         }))
       );
 
@@ -225,11 +225,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 const items = segments
                   .filter((segment) => bcLabels[segment] || !isUuid(segment))
                   .map((segment, index) => ({
-                  label: bcLabels[segment]
-                    ? bcLabels[segment]
-                    : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-                  path: '/' + segments.slice(0, index + 1).join('/')
-                }));
+                    label: bcLabels[segment]
+                      ? bcLabels[segment]
+                      : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                    path: '/' + segments.slice(0, index + 1).join('/')
+                  }));
 
                 if (items.length === 1) {
                   items.push({ label: 'Home', path: items[0].path });
@@ -283,8 +283,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             </button>
 
             {topbarActions}
-            <NotificationBell basePath={basePath} />
             <ThemeToggle />
+            <NotificationBell basePath={basePath} />
           </div>
         </header>
 

@@ -134,7 +134,7 @@ export function TutorHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Wallet size={20} className="text-[#1099A1]" /> Earnings</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><Wallet size={20} className="text-[#1099A1]" /> Earnings</h2>
               <button onClick={() => navigate("/tutor/earnings")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
@@ -156,11 +156,7 @@ export function TutorHome() {
               </div>
             </div>
 
-            {unclaimed.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground">
-                Nothing left to claim. Every session you have taught has been asked for.
-              </p>
-            ) : (
+            {unclaimed.length > 0 && (
               <>
                 <div className="divide-y divide-border">
                   {unclaimed.slice(0, 5).map((r) => (
@@ -202,7 +198,7 @@ export function TutorHome() {
           {/* Right: Vertical Agenda */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Agenda</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Sessions</h2>
               <button onClick={() => navigate("/tutor/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 

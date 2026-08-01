@@ -11,9 +11,9 @@ import { cn } from "@/utils/cn";
 // ============================================================
 // Ctrl+K.
 //
-// Two kinds of answer, kept apart rather than mixed: places to go, and things
-// to do. Merging them reads fine with four results and badly with forty,
-// because "Sign out" and "Sessions" are not alternatives to each other.
+// One list. Someone typing "dark" does not know or care whether that is a page
+// or a switch, and a tab in the way means typing the right word and being told
+// there are no results.
 //
 // Navigation is built from the same nav the sidebar draws, so nothing here can
 // point somewhere this role cannot reach. Every action is one that exists;
@@ -78,7 +78,6 @@ export function CommandPalette({
   const queryClient = useQueryClient();
   const { user, signOut } = useAuth();
 
-  const [tab, setTab] = useState<"navigation" | "actions">("navigation");
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const [theme, setTheme] = useState(currentTheme);
@@ -140,19 +139,18 @@ export function CommandPalette({
     [theme, user?.id, queryClient, signOut]
   );
 
-  // A search is about what you want, not which tab you are on, so typing looks
-  // through both and the tabs become filters on the result rather than on the
-  // question.
+  // Pages first because that is what most people came for, actions after
+  // because there are few of them and they are easier to name exactly.
   const results = useMemo(() => {
-    const pool = tab === "navigation" ? navigation : actions;
+    const pool = [...navigation, ...actions];
     const needle = query.trim().toLowerCase();
     if (!needle) return pool;
     return pool.filter(
       (e) => e.label.toLowerCase().includes(needle) || e.hint.toLowerCase().includes(needle)
     );
-  }, [tab, query, navigation, actions]);
+  }, [query, navigation, actions]);
 
-  useEffect(() => setIndex(0), [tab, query]);
+  useEffect(() => setIndex(0), [query]);
 
   // Arrowing past the fold has to bring the row with it, or the highlight
   // disappears and the keyboard stops feeling connected to anything.
@@ -173,9 +171,6 @@ export function CommandPalette({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setIndex((i) => (i - 1 + results.length) % Math.max(results.length, 1));
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      setTab((t) => (t === "navigation" ? "actions" : "navigation"));
     } else if (e.key === "Enter") {
       e.preventDefault();
       choose(results[index]);
@@ -204,11 +199,6 @@ export function CommandPalette({
           >
             Esc
           </button>
-        </div>
-
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Tab active={tab === "navigation"} onClick={() => setTab("navigation")} icon={<Compass size={14} />} label="Navigation" />
-          <Tab active={tab === "actions"} onClick={() => setTab("actions")} icon={<Zap size={14} />} label="Quick Actions" />
         </div>
 
         {results.length === 0 ? (
@@ -265,9 +255,6 @@ export function CommandPalette({
             <Key>&uarr;</Key>
             <Key>&darr;</Key>
             to navigate
-            <span className="px-1">&middot;</span>
-            <Key>Tab</Key>
-            to switch
           </span>
           <span className="flex items-center gap-1.5">
             <Key>Enter</Key>
@@ -279,33 +266,6 @@ export function CommandPalette({
   );
 }
 
-function Tab({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors",
-        active
-          ? "bg-[#1099A1]/10 text-[#1099A1]"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-      )}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
 function Key({ children }: { children: React.ReactNode }) {
   return (
