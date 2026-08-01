@@ -1,0 +1,292 @@
+import { supabase } from "@/lib/supabase";
+import { sendNotification } from "./notificationService";
+
+// ============================================================
+// Paying a tutor, with a receipt.
+//
+// Marking an invoice paid used to be the whole of it, so a tutor had no way to
+// tell whether the money had actually moved. Every rail a US platform uses
+// produces an identifier the recipient can look up in their own bank, so that
+// identifier is what turns "we paid you" into something checkable.
+//
+// Stripe Connect would remove the manual step for most payouts. It does not
+// remove this: an off-platform payment always happens eventually, and the
+// annual total per tutor is needed for a 1099 either way.
+// ============================================================
+
+export type PayoutMethod =
+  | "stripe_connect"
+  | "ach"
+  | "zelle"
+  | "paypal"
+  | "venmo"
+  | "check"
+  | "wire"
+  | "other";
+
+/**
+ * What the reference field holds, per rail. Shown as the input's hint.
+ *
+ * stripe_connect is not in here: it is never chosen by hand. A transfer
+ * records itself, with the transfer id as its reference.
+ */
+export const METHODS: { id: PayoutMethod; label: string; referenceLabel: string }[] = [
+  { id: "ach", label: "ACH direct deposit", referenceLabel: "Trace number" },
+  { id: "zelle", label: "Zelle", referenceLabel: "Confirmation code" },
+  { id: "paypal", label: "PayPal", referenceLabel: "Transaction ID" },
+  { id: "venmo", label: "Venmo", referenceLabel: "Transaction ID" },
+  { id: "check", label: "Check", referenceLabel: "Check number" },
+  { id: "wire", label: "Wire transfer", referenceLabel: "Fed reference or IMAD" },
+  { id: "other", label: "Something else", referenceLabel: "Reference" },
+];
+
+export const methodLabel = (m: string) =>
+  m === "stripe_connect" ? "Stripe" : (METHODS.find((x) => x.id === m)?.label ?? m);
+export const referenceLabel = (m: string) =>
+  METHODS.find((x) => x.id === m)?.referenceLabel ?? "Reference";
+
+export interface Payout {
+  id: string;
+  tutorId: string;
+  tutorName: string | null;
+  invoiceId: string | null;
+  description: string | null;
+  amountCents: number;
+  currency: string;
+  method: PayoutMethod;
+  reference: string;
+  paidOn: string;
+  receiptUrl: string | null;
+  note: string | null;
+  recordedByName: string | null;
+  voidedAt: string | null;
+  voidReason: string | null;
+}
+
+const FIELDS = `id, tutor_id, invoice_id, amount_cents, currency, method, reference,
+                paid_on, receipt_url, note, voided_at, void_reason,
+                tutor:profiles!tutor_payouts_tutor_id_fkey (full_name),
+                recorder:profiles!tutor_payouts_recorded_by_fkey (full_name),
+                invoice:invoices (description)`;
+
+function toPayout(r: any): Payout {
+  return {
+    id: r.id,
+    tutorId: r.tutor_id,
+    tutorName: r.tutor?.full_name ?? null,
+    invoiceId: r.invoice_id,
+    description: r.invoice?.description ?? null,
+    amountCents: r.amount_cents,
+    currency: r.currency ?? "usd",
+    method: r.method,
+    reference: r.reference,
+    paidOn: r.paid_on,
+    receiptUrl: r.receipt_url,
+    note: r.note,
+    recordedByName: r.recorder?.full_name ?? null,
+    voidedAt: r.voided_at,
+    voidReason: r.void_reason,
+  };
+}
+
+/** Everything paid to one tutor, newest first. Their own receipt list. */
+export async function getTutorPayoutHistory(tutorId: string): Promise<Payout[]> {
+  const { data, error } = await supabase
+    .from("tutor_payouts")
+    .select(FIELDS)
+    .eq("tutor_id", tutorId)
+    .order("paid_on", { ascending: false });
+
+  if (error) {
+    console.error("getTutorPayoutHistory failed:", error);
+    return [];
+  }
+  return (data ?? []).map(toPayout);
+}
+
+/**
+ * What a tutor has been paid this calendar year.
+ *
+ * A US platform files a 1099-NEC once a contractor passes the annual
+ * threshold, so this is a number somebody will need in January.
+ */
+export async function getPayoutYearTotal(
+  tutorId: string,
+  year = new Date().getFullYear()
+): Promise<{ totalCents: number; count: number }> {
+  const { data, error } = await supabase
+    .from("tutor_payout_totals")
+    .select("total_cents, payout_count")
+    .eq("tutor_id", tutorId)
+    .eq("tax_year", year)
+    .maybeSingle();
+
+  if (error || !data) return { totalCents: 0, count: 0 };
+  return { totalCents: Number(data.total_cents), count: data.payout_count };
+}
+
+/**
+ * Record a payment that has already been made.
+ *
+ * This does not move money. It is the platform writing down that somebody
+ * moved it elsewhere, which is why the reference is not optional: without it
+ * there is nothing to check the claim against.
+ *
+ * The invoice is marked paid out only once the record exists, so a failure
+ * halfway leaves the payout still owed rather than silently settled.
+ */
+export async function recordPayout(input: {
+  tutorId: string;
+  invoiceId: string | null;
+  amountCents: number;
+  currency?: string;
+  method: PayoutMethod;
+  reference: string;
+  paidOn: string;
+  receiptUrl?: string | null;
+  note?: string | null;
+  adminId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const reference = input.reference.trim();
+  if (!reference) return { success: false, error: "A reference is required." };
+
+  const { error } = await supabase.from("tutor_payouts").insert({
+    tutor_id: input.tutorId,
+    invoice_id: input.invoiceId,
+    amount_cents: input.amountCents,
+    currency: input.currency ?? "usd",
+    method: input.method,
+    reference,
+    paid_on: input.paidOn,
+    receipt_url: input.receiptUrl ?? null,
+    note: input.note?.trim() || null,
+    recorded_by: input.adminId,
+  });
+
+  if (error) {
+    // The partial unique index refuses a second live payout on one invoice,
+    // which is the double payment this exists to prevent.
+    if (error.code === "23505") {
+      return { success: false, error: "That invoice has already been paid out." };
+    }
+    return { success: false, error: error.message };
+  }
+
+  if (input.invoiceId) {
+    const { error: invErr } = await supabase
+      .from("invoices")
+      .update({ payout_status: "paid" })
+      .eq("id", input.invoiceId);
+    if (invErr) return { success: false, error: invErr.message };
+  }
+
+  await sendNotification({
+    userId: input.tutorId,
+    type: "payout",
+    title: "You have been paid",
+    message: `${(input.amountCents / 100).toLocaleString(undefined, { style: "currency", currency: (input.currency ?? "usd").toUpperCase() })} by ${methodLabel(input.method)}, reference ${reference}.`,
+    link: "/tutor/earnings",
+  }).catch(() => undefined);
+
+  return { success: true };
+}
+
+/**
+ * Undo a payout that was recorded in error.
+ *
+ * Voided, never deleted: a financial record that can vanish is not a record.
+ * The invoice goes back to owing, so it reappears in the queue.
+ */
+export async function voidPayout(input: {
+  payoutId: string;
+  invoiceId: string | null;
+  adminId: string;
+  reason: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const reason = input.reason.trim();
+  if (!reason) return { success: false, error: "Say why it is being voided." };
+
+  const { error } = await supabase
+    .from("tutor_payouts")
+    .update({
+      voided_at: new Date().toISOString(),
+      voided_by: input.adminId,
+      void_reason: reason,
+    })
+    .eq("id", input.payoutId);
+  if (error) return { success: false, error: error.message };
+
+  if (input.invoiceId) {
+    await supabase
+      .from("invoices")
+      .update({ payout_status: "pending" })
+      .eq("id", input.invoiceId);
+  }
+
+  return { success: true };
+}
+
+// ------------------------------------------------------------
+// Stripe Connect
+//
+// A tutor connects their own bank on Stripe's hosted pages, so the platform
+// never holds a bank number or a tax ID. Nothing here can pay anybody until
+// they have finished: connect-transfer refuses an account Stripe has not
+// cleared, which is why the fallback above still exists.
+// ------------------------------------------------------------
+
+export interface ConnectStatus {
+  accountId: string | null;
+  payoutsEnabled: boolean;
+}
+
+export async function getConnectStatus(profileId: string): Promise<ConnectStatus> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("stripe_account_id, stripe_payouts_enabled")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  return {
+    accountId: data?.stripe_account_id ?? null,
+    payoutsEnabled: !!data?.stripe_payouts_enabled,
+  };
+}
+
+async function authedPost(path: string, body: unknown): Promise<any> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) return { error: "You must be signed in." };
+
+  const res = await fetch(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+/**
+ * Start or resume connecting a bank.
+ *
+ * An onboarding link is single use and expires, so this is called every time
+ * rather than stored. Coming back to a spent link is the most common way
+ * onboarding fails.
+ */
+export async function startConnectOnboarding(): Promise<{ error?: string }> {
+  const res = await authedPost("/api/connect-onboard", {});
+  if (res.error) return { error: res.error };
+  if (res.url) window.location.assign(res.url);
+  return {};
+}
+
+/** Pay one tutor for one or more settled invoices, out of the Stripe balance. */
+export async function payViaConnect(
+  invoiceIds: string[]
+): Promise<{ transferId?: string; error?: string }> {
+  return authedPost("/api/connect-transfer", { invoiceIds });
+}

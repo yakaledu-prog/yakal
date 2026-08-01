@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getAllInvoices, getTutorPayouts, markPayoutPaid } from "@/services/adminService";
+import { getAllInvoices, getConnectReadiness, getTutorPayouts, type TutorPayout } from "@/services/adminService";
+import { payViaConnect } from "@/services/payoutService";
+import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
 import { money } from "@/services/billingService";
-import { Loader2, CheckCircle2, Clock, Wallet, Check, ReceiptTextIcon, ScrollTextIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Wallet, Check, ScrollTextIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -30,12 +32,28 @@ export function AdminBilling() {
     };
   }, [invoices, payouts]);
 
-  async function settle(id: string) {
-    const res = await markPayoutPaid(id);
-    if (!res.success) return toast.error(res.error || "Could not update.");
-    toast.success("Payout marked paid.");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [recording, setRecording] = useState<TutorPayout | null>(null);
+
+  const { data: ready } = useQuery({
+    queryKey: ["connect-readiness", payouts.map((p) => p.tutor_id).join(",")],
+    queryFn: () => getConnectReadiness([...new Set(payouts.map((p) => p.tutor_id))]),
+    enabled: payouts.length > 0,
+  });
+
+  function refresh() {
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
     qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
+  }
+
+  /** Money out of the Stripe balance into the tutor's connected account. */
+  async function payByTransfer(p: TutorPayout) {
+    setBusyId(p.id);
+    const res = await payViaConnect([p.id]);
+    setBusyId(null);
+    if (res.error) return toast.error(res.error);
+    toast.success(`Sent to ${p.tutor_name}. Reference ${res.transferId}.`);
+    refresh();
   }
 
   return (
@@ -70,9 +88,28 @@ export function AdminBilling() {
                       <p className="text-[12px] text-muted-foreground truncate">{p.description} - from {p.parent_name}</p>
                     </div>
                     <span className="text-[15px] font-bold text-[#1099A1] w-24 text-right">{money(p.payout_cents, p.currency)}</span>
-                    <button onClick={() => settle(p.id)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b] shrink-0">
-                      <Check size={14} /> Mark paid
-                    </button>
+                    {/* Two ways to settle, and which one is offered is not a
+                        choice: a tutor Stripe has not cleared cannot receive a
+                        transfer, so for them the only honest option is to pay
+                        by hand and write down how. */}
+                    {ready?.get(p.tutor_id) ? (
+                      <button
+                        onClick={() => void payByTransfer(p)}
+                        disabled={busyId === p.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b] shrink-0 disabled:opacity-50"
+                      >
+                        {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        Pay via Stripe
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setRecording(p)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1099A1] text-[#1099A1] text-[12px] font-semibold hover:bg-[#1099A1]/10 shrink-0"
+                        title="This tutor has not connected a bank. Record how you paid them."
+                      >
+                        Record payment
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -117,6 +154,16 @@ export function AdminBilling() {
           </div>
         </div>
       </div>
+      {recording && (
+        <RecordPayoutModal
+          payout={recording}
+          onClose={() => setRecording(null)}
+          onSaved={() => {
+            setRecording(null);
+            refresh();
+          }}
+        />
+      )}
     </PageWrapper>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PayoutHistory } from "@/components/shared/PayoutHistory";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
 import { Info, TrendingUp, TrendingDown, Database } from "lucide-react";
@@ -193,9 +194,18 @@ export function TutorEarnings() {
             )}
           </div>
 
+          {/* Earnings above are what the sessions came to. This is what has
+              actually been paid, which is a different question and was
+              previously unanswerable from here. */}
+          {user && (
+            <div className="mt-10">
+              <PayoutHistory tutorId={user.id} />
+            </div>
+          )}
+
           <div className="mt-8 flex items-start gap-2.5 bg-muted/30 px-4 py-3 rounded-lg text-[13px] text-muted-foreground">
             <Info size={16} className="mt-0.5 shrink-0 text-[#1099A1]" />
-            <span>Earnings are estimated from your completed sessions at your current rate of {money(rate)}. Payments are settled separately.</span>
+            <span>Earnings are estimated from your completed sessions at your current rate of {money(rate)}. What has actually been paid is listed above.</span>
           </div>
 
         </div>

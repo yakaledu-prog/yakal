@@ -149,10 +149,31 @@ export async function getTutorPayouts(): Promise<TutorPayout[]> {
   }));
 }
 
+/**
+ * Settle a payout without recording how.
+ *
+ * Kept only so nothing that still calls it breaks. It flips a column and
+ * leaves the tutor no way to check the money moved, which is the problem
+ * recordPayout and payViaConnect exist to fix. Use one of those.
+ *
+ * @deprecated
+ */
 export async function markPayoutPaid(id: string): Promise<Result> {
   const { error } = await supabase.from("invoices").update({ payout_status: "paid" }).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+/** Whether each of these tutors can receive a Stripe transfer yet. */
+export async function getConnectReadiness(tutorIds: string[]): Promise<Map<string, boolean>> {
+  const out = new Map<string, boolean>();
+  if (tutorIds.length === 0) return out;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, stripe_payouts_enabled")
+    .in("id", tutorIds);
+  for (const p of data ?? []) out.set(p.id, !!p.stripe_payouts_enabled);
+  return out;
 }
 
 // ---- Users / approvals ----

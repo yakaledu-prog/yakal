@@ -172,6 +172,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await recordInstalment(event);
     }
 
+    // A tutor finishing, or failing, Stripe's onboarding. Nothing else knows
+    // when this happens: the tutor is on Stripe's pages, not ours.
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+      const db = getServiceClient();
+      const { error } = await db
+        .from('profiles')
+        .update({ stripe_payouts_enabled: !!account.payouts_enabled })
+        .eq('stripe_account_id', account.id);
+      if (error) console.error('webhook: could not update connect status:', error.message);
+    }
+
     return res.status(200).json({ received: true });
   } catch (err: any) {
     console.error('Webhook handler error:', err);
