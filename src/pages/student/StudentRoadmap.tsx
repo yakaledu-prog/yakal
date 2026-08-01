@@ -127,14 +127,14 @@ export function StudentRoadmap({
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">Stage</label>
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setStageOpen(!stageOpen)}
                       className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider bg-black/20 hover:bg-black/30 transition-colors rounded-sm text-white min-w-[140px] justify-between border border-transparent focus:border-white/50 outline-none"
                     >
                       {stage === "research" ? "Researching" : stage}
                       <ChevronDown size={14} className={cn("transition-transform", stageOpen && "rotate-180")} />
                     </button>
-                    
+
                     {stageOpen && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setStageOpen(false)} />
@@ -229,69 +229,69 @@ export function StudentRoadmap({
       )}
 
       {/* Main Content */}
-      <div className={cn("mx-auto", embedded ? "p-0" : "p-6 md:p-10 max-w-[1100px]")}>
-          {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
-          ) : (
-            <>
-              {tab === "timeline" && (
-                <div className="space-y-8">
-                  {/* Milestones Grid */}
-                  {!embedded && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
-                        <p className="text-[15px] font-semibold">FAFSA opens</p>
-                      </div>
-                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
-                        <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
-                      </div>
-                      <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                        <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
-                        <p className="text-[15px] font-semibold">Decision Day</p>
-                      </div>
+      <div className={cn("mx-auto p-6 md:p-10")}>
+        {isLoading ? (
+          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+        ) : (
+          <>
+            {tab === "timeline" && (
+              <div className="space-y-8">
+                {/* Milestones Grid */}
+                {!embedded && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
+                      <p className="text-[15px] font-semibold">FAFSA opens</p>
                     </div>
-                  )}
-
-                  <RoadmapTimeline
-                    gradYear={gradYear ? Number(gradYear) : app?.grad_year}
-                    gradeLevel={studentId ? gradeLevel : profile?.grade_level}
-                  />
-                </div>
-              )}
-
-              {tab === "testing" && <TestingPlan />}
-
-              {tab === "resources" && (
-                <div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
-                      { title: "FAFSA - Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
-                      { title: "CSS Profile", desc: "Institutional aid at many private colleges", url: "#" },
-                      { title: "BigFuture (College Board)", desc: "College search, planning & scholarships", url: "#" },
-                      { title: "Digital SAT & Bluebook", desc: "Register and practice for the digital SAT", url: "#" },
-                      { title: "The ACT", desc: "Register and prep for the ACT", url: "#" },
-                      { title: "Khan Academy", desc: "Free SAT prep and academic help", url: "#" },
-                      { title: "College Essay Guy", desc: "Step-by-step walkthroughs and essay guides", url: "#" }
-                    ].map((r, i) => (
-                      <a key={i} href={r.url} className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors">
-                        <div>
-                          <p className="font-semibold text-[#1099A1] group-hover:underline text-[14px]">{r.title}</p>
-                          <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
-                        </div>
-                        <ExternalLink size={14} className="text-muted-foreground opacity-50 group-hover:opacity-100" />
-                      </a>
-                    ))}
+                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
+                      <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
+                    </div>
+                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
+                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
+                      <p className="text-[15px] font-semibold">Decision Day</p>
+                    </div>
                   </div>
+                )}
+
+                <RoadmapTimeline
+                  gradYear={gradYear ? Number(gradYear) : app?.grad_year}
+                  gradeLevel={studentId ? gradeLevel : profile?.grade_level}
+                />
+              </div>
+            )}
+
+            {tab === "testing" && <TestingPlan />}
+
+            {tab === "resources" && (
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
+                    { title: "FAFSA - Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
+                    { title: "CSS Profile", desc: "Institutional aid at many private colleges", url: "#" },
+                    { title: "BigFuture (College Board)", desc: "College search, planning & scholarships", url: "#" },
+                    { title: "Digital SAT & Bluebook", desc: "Register and practice for the digital SAT", url: "#" },
+                    { title: "The ACT", desc: "Register and prep for the ACT", url: "#" },
+                    { title: "Khan Academy", desc: "Free SAT prep and academic help", url: "#" },
+                    { title: "College Essay Guy", desc: "Step-by-step walkthroughs and essay guides", url: "#" }
+                  ].map((r, i) => (
+                    <a key={i} href={r.url} className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="font-semibold text-[#1099A1] group-hover:underline text-[14px]">{r.title}</p>
+                        <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
+                      </div>
+                      <ExternalLink size={14} className="text-muted-foreground opacity-50 group-hover:opacity-100" />
+                    </a>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-            </>
-          )}
+          </>
+        )}
 
-        </div>
+      </div>
     </div>
   );
 

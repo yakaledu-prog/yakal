@@ -136,7 +136,7 @@ export function AdminApplicants() {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background">
-      <div className="bg-[#1099A1] text-white pt-6 px-6 pb-6 md:pt-8 md:px-8 relative overflow-hidden">
+      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden">
         <svg
           className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none"
           viewBox="0 0 400 200" preserveAspectRatio="none" fill="none" aria-hidden="true"

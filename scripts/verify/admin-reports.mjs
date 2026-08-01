@@ -68,12 +68,20 @@ await parent.screenshot({ path: `${S}/parent-email-autocomplete.png` });
 const admin = await signIn('admin@yakal.com');
 await admin.goto(`${BASE}/admin/reports`, { waitUntil: 'domcontentloaded' });
 await admin.waitForTimeout(3500);
-const body = await admin.locator('body').innerText();
-pass('report is listed for the admin', /how did the practice set go/i.test(body));
-pass('the reporter is named', /Tigist Worku/.test(body));
-pass('the subject is named', /Bethlehem Alemu/.test(body));
+const listBody = await admin.locator('body').innerText();
+pass('the reporter is named in the list', /Tigist Worku/.test(listBody));
+pass('the subject is named in the list', /Bethlehem Alemu/.test(listBody));
+pass('the reason is in the list', /Moving off the platform/.test(listBody));
+
+// Judging a report needs the conversation, so it opens in a dialog rather
+// than sitting in the table.
+await admin.getByRole('button', { name: 'Review' }).first().click();
+await admin.waitForTimeout(2500);
+const body = await admin.getByRole('dialog').innerText();
+pass('the conversation is shown', /how did the practice set go/i.test(body));
 pass('both reasons are shown', /Moving off the platform/.test(body) && /Inappropriate content/.test(body));
 pass("the reporter's note is shown", /bank transfer/i.test(body));
+pass('the reported message is marked as such', /reported/i.test(body));
 await admin.screenshot({ path: `${S}/admin-reports.png`, fullPage: true });
 
 await admin.getByRole('button', { name: /Mark actioned/i }).click();
@@ -82,9 +90,11 @@ pass('marking actioned is recorded', psql("select status from conversation_flags
 pass('who reviewed it is recorded', psql("select reviewed_by is not null from conversation_flags limit 1;") === 't');
 pass('the open queue empties', (await admin.getByText(/Nothing waiting/i).isVisible().catch(() => false)));
 
-await admin.getByRole('button', { name: 'Actioned', exact: true }).click();
+await admin.getByLabel('Filter by status').selectOption('reviewed');
 await admin.waitForTimeout(2000);
-await admin.getByRole('button', { name: /Reopen/i }).click();
+await admin.getByRole('button', { name: 'Review' }).first().click();
+await admin.waitForTimeout(2000);
+await admin.getByRole('button', { name: /Put back in the queue/i }).click();
 await admin.waitForTimeout(2000);
 pass('a report can be reopened', psql("select status from conversation_flags limit 1;") === 'open');
 

@@ -238,3 +238,53 @@ export async function reopenFlag(flagId: string): Promise<{ success: boolean; er
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
+
+export interface ReportedMessage {
+  id: string;
+  text: string;
+  createdAt: Date;
+  senderId: string;
+  senderName: string;
+  senderAvatarUrl: string | null;
+  /** True for the message the report is actually about. */
+  isFlagged: boolean;
+}
+
+/**
+ * The conversation around a reported message.
+ *
+ * A single quoted line is rarely enough to judge. "Asked to pay by bank
+ * transfer" reads differently depending on what came before it, and an admin
+ * deciding whether to act needs to see that rather than guess.
+ *
+ * Admins can read these only while an open report exists, which is enforced by
+ * row level security rather than here.
+ */
+export async function getReportedConversation(
+  conversationId: string,
+  flaggedMessageId: string | null,
+  limit = 30
+): Promise<ReportedMessage[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select(`id, content, created_at, sender_id,
+             sender:profiles!messages_sender_profile_fkey (full_name, avatar_url)`)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("getReportedConversation failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((m: any) => ({
+    id: m.id,
+    text: m.content ?? "",
+    createdAt: new Date(m.created_at),
+    senderId: m.sender_id,
+    senderName: m.sender?.full_name ?? "Someone",
+    senderAvatarUrl: m.sender?.avatar_url ?? null,
+    isFlagged: m.id === flaggedMessageId,
+  }));
+}

@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Flag, Loader2, RotateCcw, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, RotateCcw, Search, X } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { AdminHeader } from "./AdminHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
 import {
   FLAG_REASONS,
   getFlags,
+  getReportedConversation,
   reopenFlag,
   setFlagStatus,
   type AdminFlag,
@@ -17,18 +19,24 @@ import {
 } from "@/services/flagService";
 
 // ============================================================
-// Reported messages.
+// Reported conversations.
 //
-// A report is only worth filing if somebody acts on it, so this shows the
-// message itself rather than a row saying one exists. Who complained, about
-// whom, and what was actually said, without opening anything.
+// The list answers "what is waiting", and nothing more: who complained, about
+// whom, what for, and how long it has sat there. Judging a report needs the
+// conversation, and the conversation needs room, so it opens in a dialog
+// rather than crushing the table into an accordion.
 //
-// Closing a report records who closed it and how, rather than deleting the
-// row. Deleting would lose the fact that anybody looked, which is exactly what
-// you want to know when the same pair is reported again.
+// The dialog shows the messages around the reported one, not the reported one
+// alone. "Asked to pay by bank transfer" reads very differently depending on
+// what came before it, and an admin deciding whether to act on somebody's
+// livelihood should not have to guess.
+//
+// Closing a report records who closed it and how. Deleting the row would lose
+// the fact that anyone looked, which is exactly what you want to know when the
+// same pair turns up again.
 // ============================================================
 
-const TABS: { value: FlagStatus | "all"; label: string }[] = [
+const STATUSES: { value: FlagStatus | "all"; label: string }[] = [
   { value: "open", label: "Open" },
   { value: "reviewed", label: "Actioned" },
   { value: "dismissed", label: "Dismissed" },
@@ -36,6 +44,7 @@ const TABS: { value: FlagStatus | "all"; label: string }[] = [
 ];
 
 const REASON_LABEL = Object.fromEntries(FLAG_REASONS.map((r) => [r.value, r.label]));
+const PER_PAGE = 8;
 
 function when(date: Date): string {
   const mins = Math.round((Date.now() - date.getTime()) / 60000);
@@ -46,153 +55,53 @@ function when(date: Date): string {
   return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  open: "text-[#8a6a2a] dark:text-[#CAA25F]",
+  reviewed: "text-[#1099A1]",
+  dismissed: "text-muted-foreground",
+};
+const STATUS_LABEL: Record<string, string> = {
+  open: "Open",
+  reviewed: "Actioned",
+  dismissed: "Dismissed",
+};
+
 function Person({
   person,
-  caption,
+  role,
 }: {
-  person: { name: string; role: string; avatarUrl: string | null } | null;
-  caption: string;
+  person: { name: string; avatarUrl: string | null } | null;
+  role?: string;
 }) {
-  if (!person) return null;
+  if (!person) return <span className="text-[13px] text-muted-foreground">Unknown</span>;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2.5">
       <img
         src={person.avatarUrl || dicebearUrl(person.name)}
         alt=""
         className="h-8 w-8 shrink-0 rounded-full object-cover"
       />
       <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{caption}</p>
-        <p className="truncate text-[13.5px] font-medium text-foreground">
-          {person.name}
-          <span className="ml-1.5 font-normal capitalize text-muted-foreground">{person.role}</span>
-        </p>
+        <p className="truncate text-[13.5px] font-medium text-foreground">{person.name}</p>
+        {role && <p className="text-[11.5px] capitalize text-muted-foreground">{role}</p>}
       </div>
     </div>
-  );
-}
-
-function ReportCard({
-  flag,
-  busy,
-  onAction,
-  onReopen,
-}: {
-  flag: AdminFlag;
-  busy: boolean;
-  onAction: (status: "reviewed" | "dismissed") => void;
-  onReopen: () => void;
-}) {
-  return (
-    <article className="rounded-2xl border border-border bg-white p-4 dark:bg-[#182229] md:p-5">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <Person person={flag.reporter} caption="Reported by" />
-          <Person person={flag.subject} caption="About" />
-        </div>
-
-        <div className="flex items-center gap-2">
-          {flag.reasons.map((r) => (
-            <span
-              key={r}
-              className="rounded-full bg-[#CAA25F]/15 px-2.5 py-1 text-[12px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]"
-            >
-              {REASON_LABEL[r] ?? r}
-            </span>
-          ))}
-          <span className="text-[12px] text-muted-foreground">{when(flag.createdAt)}</span>
-        </div>
-      </div>
-
-      {/* The message itself, as it appeared. An admin should not have to open
-          the conversation to see what the complaint is about. */}
-      {flag.message ? (
-        <blockquote className="rounded-xl rounded-bl-sm border border-border bg-muted/40 px-3.5 py-2.5">
-          <p className="text-[13.5px] leading-snug text-foreground">{flag.message.text}</p>
-          <p className="mt-1 text-[11.5px] text-muted-foreground">
-            {flag.subject?.name ?? "Sender"}
-            {" - "}
-            {flag.message.createdAt.toLocaleString(undefined, {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </blockquote>
-      ) : (
-        <p className="rounded-xl border border-dashed border-border px-3.5 py-2.5 text-[13px] text-muted-foreground">
-          A concern about the conversation as a whole, not one message.
-        </p>
-      )}
-
-      {flag.note && (
-        <div className="mt-3">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            What they said
-          </p>
-          <p className="mt-0.5 text-[13.5px] text-foreground">{flag.note}</p>
-        </div>
-      )}
-
-      <div className="mt-4 flex items-center gap-2 border-t border-border/50 pt-3">
-        {flag.status === "open" ? (
-          <>
-            <button
-              onClick={() => onAction("dismissed")}
-              disabled={busy}
-              className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 disabled:opacity-50"
-            >
-              <X size={14} /> Dismiss
-            </button>
-            <button
-              onClick={() => onAction("reviewed")}
-              disabled={busy}
-              className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
-            >
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              Mark actioned
-            </button>
-          </>
-        ) : (
-          <>
-            <span
-              className={cn(
-                "text-[13px] font-medium",
-                flag.status === "reviewed" ? "text-[#1099A1]" : "text-muted-foreground"
-              )}
-            >
-              {flag.status === "reviewed" ? "Actioned" : "Dismissed"}
-              {flag.reviewedAt && (
-                <span className="ml-1.5 font-normal text-muted-foreground">
-                  {when(flag.reviewedAt)}
-                </span>
-              )}
-            </span>
-            <div className="flex-1" />
-            <button
-              onClick={onReopen}
-              disabled={busy}
-              className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 disabled:opacity-50"
-            >
-              <RotateCcw size={14} /> Reopen
-            </button>
-          </>
-        )}
-      </div>
-    </article>
   );
 }
 
 export function AdminReports() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<FlagStatus | "all">("open");
-  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const { data: flags = [], isLoading } = useQuery({
-    queryKey: ["admin-flags", tab],
-    queryFn: () => getFlags(tab),
+  const [status, setStatus] = useState<FlagStatus | "all">("open");
+  const [query, setQuery] = useState("");
+  const [newestFirst, setNewestFirst] = useState(true);
+  const [page, setPage] = useState(1);
+  const [open, setOpen] = useState<AdminFlag | null>(null);
+
+  const { data: flags = [], isLoading, isFetching } = useQuery({
+    queryKey: ["admin-flags", status],
+    queryFn: () => getFlags(status),
   });
 
   const { data: openFlags = [] } = useQuery({
@@ -200,115 +109,399 @@ export function AdminReports() {
     queryFn: () => getFlags("open"),
   });
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["admin-flags"] });
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const rows = q
+      ? flags.filter((f) =>
+          [f.reporter.name, f.subject?.name, f.note, f.message?.text]
+            .filter(Boolean)
+            .some((s) => String(s).toLowerCase().includes(q))
+        )
+      : flags;
+    return [...rows].sort((a, b) =>
+      newestFirst
+        ? b.createdAt.getTime() - a.createdAt.getTime()
+        : a.createdAt.getTime() - b.createdAt.getTime()
+    );
+  }, [flags, query, newestFirst]);
 
-  async function act(flag: AdminFlag, status: "reviewed" | "dismissed") {
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const current = Math.min(page, pageCount);
+  const visible = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+
+  async function decide(flag: AdminFlag, next: "reviewed" | "dismissed") {
     if (!user) return;
-    setBusyId(flag.id);
-    const res = await setFlagStatus(flag.id, status, user.id);
-    setBusyId(null);
+    const res = await setFlagStatus(flag.id, next, user.id);
     if (!res.success) return toast.error(res.error ?? "Could not update that report.");
-    toast.success(status === "reviewed" ? "Marked as actioned" : "Dismissed");
-    refresh();
+    toast.success(next === "reviewed" ? "Marked actioned." : "Dismissed.");
+    setOpen(null);
+    await qc.invalidateQueries({ queryKey: ["admin-flags"] });
   }
 
   async function reopen(flag: AdminFlag) {
-    setBusyId(flag.id);
     const res = await reopenFlag(flag.id);
-    setBusyId(null);
     if (!res.success) return toast.error(res.error ?? "Could not reopen that report.");
-    refresh();
+    toast.success("Back in the queue.");
+    setOpen(null);
+    await qc.invalidateQueries({ queryKey: ["admin-flags"] });
   }
 
   return (
     <PageWrapper className="!p-0">
-      <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
-          <svg
-            className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
-            viewBox="0 0 400 200"
-            preserveAspectRatio="none"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path
-              d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.3"
-            />
-          </svg>
+      <div className="min-h-screen flex-1 bg-background dark:bg-[#111b21]">
+        <AdminHeader
+          title="Reports"
+          subtitle="Review flagged conversations and take action."
+          stats={[{ label: "Open reports", value: openFlags.length }]}
+        />
 
-          <div className="relative z-10 mx-auto max-w-[1000px]">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Reports</h1>
-                <p className="pt-1 text-[15px] text-white/80">
-                  Messages parents and students have asked the team to look at.
-                </p>
-              </div>
-              <div className="pb-1 text-center">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-white/70">
-                  Open
-                </p>
-                <p className="text-2xl font-medium">{openFlags.length}</p>
-              </div>
+        <div className="mx-auto max-w-[1440px] p-6 md:p-8">
+          {/* Search, then the filter, then sort. Refresh sits hard right,
+              away from anything that changes what you are looking at. */}
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[220px] flex-1 md:max-w-sm">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search reports by keyword"
+                className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
+              />
             </div>
 
-            <nav className="mt-6 flex gap-1 overflow-x-auto">
-              {TABS.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setTab(t.value)}
-                  className={cn(
-                    "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
-                    tab === t.value
-                      ? "border-white font-semibold text-white"
-                      : "border-transparent text-white/60 hover:text-white"
-                  )}
-                >
-                  {t.label}
-                </button>
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as FlagStatus | "all");
+                setPage(1);
+              }}
+              aria-label="Filter by status"
+              className="h-10 rounded-xl border border-border bg-card px-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
+            >
+              {STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  Status: {s.label}
+                </option>
               ))}
-            </nav>
-          </div>
-        </header>
+            </select>
 
-        <div className="mx-auto max-w-[1000px] p-6 md:p-10">
+            <select
+              value={newestFirst ? "new" : "old"}
+              onChange={(e) => setNewestFirst(e.target.value === "new")}
+              aria-label="Sort order"
+              className="h-10 rounded-xl border border-border bg-card px-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
+            >
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
+
+            <button
+              onClick={() => qc.invalidateQueries({ queryKey: ["admin-flags"] })}
+              aria-label="Refresh"
+              className="ml-auto grid h-10 w-10 place-items-center rounded-xl border border-border transition-colors hover:bg-muted/60"
+            >
+              <RotateCcw size={15} className={cn(isFetching && "animate-spin")} />
+            </button>
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-[#1099A1]" />
             </div>
-          ) : flags.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border py-16 text-center">
-              <Flag size={32} className="mx-auto mb-3 text-[#aebac1]" />
-              <p className="text-[15px] font-medium text-foreground">
-                {tab === "open" ? "Nothing waiting" : "Nothing here"}
-              </p>
-              <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-                {tab === "open"
-                  ? "Reported messages appear here as soon as somebody sends one."
-                  : "No reports with this status."}
-              </p>
-            </div>
+          ) : visible.length === 0 ? (
+            <p className="py-20 text-center text-[14px] text-muted-foreground">
+              {query
+                ? "Nothing matches that."
+                : status === "open"
+                  ? "Nothing waiting. Reports appear here when somebody flags a conversation."
+                  : "Nothing here."}
+            </p>
           ) : (
-            <div className="space-y-3">
-              {flags.map((f) => (
-                <ReportCard
-                  key={f.id}
-                  flag={f}
-                  busy={busyId === f.id}
-                  onAction={(status) => void act(f, status)}
-                  onReopen={() => void reopen(f)}
-                />
-              ))}
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <table className="w-full min-w-[820px]">
+                <thead>
+                  <tr className="border-b border-border">
+                    {["Reported by", "About", "Reason", "Time", "Status", ""].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((f) => (
+                    <tr key={f.id} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3">
+                        <Person person={f.reporter} role={f.reporter.role} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Person person={f.subject} role={f.subject?.role} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-[12.5px] text-[#8a6a2a] dark:text-[#CAA25F]">
+                          {f.reasons.map((r) => REASON_LABEL[r] ?? r).join(", ")}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-[12.5px] text-muted-foreground">
+                        {when(f.createdAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn("text-[12.5px] font-medium", STATUS_STYLE[f.status])}
+                        >
+                          {STATUS_LABEL[f.status] ?? f.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setOpen(f)}
+                          className="rounded-lg border border-border px-3.5 py-1.5 text-[12.5px] font-medium transition-colors hover:bg-muted/60"
+                        >
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[12.5px] text-muted-foreground">
+                Showing {(current - 1) * PER_PAGE + 1}-
+                {Math.min(current * PER_PAGE, filtered.length)} of {filtered.length} reports
+              </p>
+              {pageCount > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={current <= 1}
+                    aria-label="Previous page"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-border transition-colors hover:bg-muted/60 disabled:opacity-40"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setPage(n)}
+                      className={cn(
+                        "h-8 min-w-8 rounded-lg border px-2 text-[12.5px] transition-colors",
+                        n === current
+                          ? "border-[#1099A1] font-semibold text-[#1099A1]"
+                          : "border-border hover:bg-muted/60"
+                      )}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                    disabled={current >= pageCount}
+                    aria-label="Next page"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-border transition-colors hover:bg-muted/60 disabled:opacity-40"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {open && (
+        <ReviewDialog
+          flag={open}
+          onClose={() => setOpen(null)}
+          onDecide={decide}
+          onReopen={reopen}
+        />
+      )}
     </PageWrapper>
+  );
+}
+
+function ReviewDialog({
+  flag,
+  onClose,
+  onDecide,
+  onReopen,
+}: {
+  flag: AdminFlag;
+  onClose: () => void;
+  onDecide: (flag: AdminFlag, next: "reviewed" | "dismissed") => void;
+  onReopen: (flag: AdminFlag) => void;
+}) {
+  const { data: messages = [], isLoading } = useQuery({
+    queryKey: ["reported-conversation", flag.conversationId],
+    queryFn: () => getReportedConversation(flag.conversationId, flag.message?.id ?? null),
+  });
+
+  const settled = flag.status !== "open";
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Review report"
+        className="flex max-h-[88vh] w-full max-w-lg flex-col rounded-2xl bg-card shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-6 border-b border-border p-5">
+          <div>
+            <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Reported by
+            </p>
+            <Person person={flag.reporter} role={flag.reporter.role} />
+          </div>
+          <div>
+            <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              About
+            </p>
+            <Person person={flag.subject} role={flag.subject?.role} />
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* The conversation, with the reported message picked out. Context is
+            the point: one quoted line is rarely enough to judge. */}
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/20 p-5">
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-[#1099A1]" />
+            </div>
+          ) : messages.length === 0 ? (
+            <p className="py-6 text-center text-[13px] text-muted-foreground">
+              {flag.message
+                ? "Only the reported message is readable."
+                : "This is a concern about the conversation rather than one message."}
+            </p>
+          ) : (
+            messages.map((m) => {
+              const mine = m.senderId === flag.reporter.id;
+              return (
+                <div
+                  key={m.id}
+                  className={cn("flex items-end gap-2", mine ? "justify-end" : "justify-start")}
+                >
+                  {!mine && (
+                    <img
+                      src={m.senderAvatarUrl || dicebearUrl(m.senderName)}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded-full object-cover"
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-[78%] rounded-2xl px-3.5 py-2.5",
+                      m.isFlagged
+                        ? "border border-[#CAA25F] bg-[#CAA25F]/10"
+                        : mine
+                          ? "bg-[#1099A1]/10"
+                          : "bg-card border border-border"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-foreground">
+                      {m.text}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {m.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                      {m.isFlagged && " - reported"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="space-y-3 border-t border-border p-5">
+          <div>
+            <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Report tags
+            </p>
+            <p className="text-[13px] text-[#8a6a2a] dark:text-[#CAA25F]">
+              {flag.reasons.map((r) => REASON_LABEL[r] ?? r).join(", ")}
+            </p>
+          </div>
+
+          {flag.note && (
+            <div>
+              <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Reporter's note
+              </p>
+              <p className="rounded-xl bg-muted/40 p-3 text-[13px] leading-relaxed text-foreground">
+                {flag.note}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Reported
+            </p>
+            <p className="text-[13px] text-muted-foreground">
+              {when(flag.createdAt)}
+              {" - "}
+              {flag.createdAt.toLocaleString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border p-5">
+          {settled ? (
+            <button
+              onClick={() => onReopen(flag)}
+              className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
+            >
+              <RotateCcw size={15} /> Put back in the queue
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => onDecide(flag, "dismissed")}
+                className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
+              >
+                <X size={15} /> Dismiss
+              </button>
+              <button
+                onClick={() => onDecide(flag, "reviewed")}
+                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+              >
+                <Check size={15} /> Mark actioned
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

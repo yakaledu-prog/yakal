@@ -65,11 +65,11 @@ export function ChildViewFrame({
 
   const child: FramedChild | null = active
     ? {
-        id: active.id,
-        name: active.full_name,
-        avatarUrl: active.avatar_url ?? null,
-        gradeLevel: active.grade_level ?? null,
-      }
+      id: active.id,
+      name: active.full_name,
+      avatarUrl: active.avatar_url ?? null,
+      gradeLevel: active.grade_level ?? null,
+    }
     : null;
 
   const allowed =
@@ -103,7 +103,7 @@ export function ChildViewFrame({
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 mx-auto max-w-[1100px]">
+          <div className="relative z-10 mx-auto">
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
             <p className="pt-1 text-[15px] text-white/80">{subtitle}</p>
 
@@ -180,7 +180,7 @@ function Empty({
   action: { to: string; label: string };
 }) {
   return (
-    <div className="mx-auto max-w-[1100px] p-6 md:p-10">
+    <div className="mx-auto p-6 md:p-10">
       <div className="rounded-xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
         <div className="mb-4 flex justify-center">{icon}</div>
         <p className="text-[15px] font-medium text-[#111] dark:text-white">{title}</p>
