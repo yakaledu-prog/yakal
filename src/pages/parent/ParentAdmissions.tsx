@@ -174,11 +174,13 @@ function TierCard({
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{tier.blurb}</p>
       )}
 
+      {/* The cadence used to sit directly under the price, which made a
+          one-off price read as a monthly rate. How often you meet is a feature
+          and it is already in the list below; what belongs here is what the
+          number actually is. */}
       <p className="mt-4 text-[26px] font-bold text-foreground">{money(tier.priceCents)}</p>
       <p className="text-[12.5px] text-muted-foreground">
-        {tier.sessionsPerMonth
-          ? `${tier.sessionsPerMonth} ${tier.sessionsPerMonth === 1 ? "session" : "sessions"} a month`
-          : "One payment"}
+        One payment, not a subscription
       </p>
 
       <ul className="mt-5 flex-1 space-y-2.5">
