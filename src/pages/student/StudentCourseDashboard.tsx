@@ -1,19 +1,49 @@
 
-import { useParams, Link, Outlet, useLocation } from "react-router-dom";
-import { CheckSquare, History, Search, MessagesSquareIcon } from "lucide-react";
+import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { CheckSquare, History, Search, MessagesSquareIcon, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getStudentCourses } from "@/services/studentService";
 
-const mockEnrolledCourses = [
-  { id: "CAT-01", title: "Algebra Fundamentals", subject: "Mathematics", progress: 65, totalTasks: 24, completedTasks: 12 },
-  { id: "CAT-02", title: "Geometry Mastery", subject: "Mathematics", progress: 20, totalTasks: 18, completedTasks: 3 },
-  { id: "CAT-03", title: "Pre-Calculus Intensive", subject: "Mathematics", progress: 100, totalTasks: 30, completedTasks: 30 },
-  { id: "CAT-04", title: "SAT Prep Complete", subject: "Test Prep", progress: 0, totalTasks: 45, completedTasks: 0 },
-];
+// The sidebar listed four invented courses while the page it was reached from
+// listed the real ones, so the two disagreed with each other. It reads the
+// student's enrolments now, and My Learning opens straight into it rather than
+// through a catalog page that showed the same list again.
 
 export function StudentCourseDashboard() {
   const { courseId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const { data: enrolled = [], isLoading } = useQuery({
+    queryKey: ["student-courses", user?.id],
+    queryFn: () => getStudentCourses(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const enrolledCourses = useMemo(
+    () =>
+      enrolled.map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        subject: c.subject,
+        progress: c.progress ?? 0,
+        totalTasks: c.total ?? 0,
+        completedTasks: c.completed ?? 0,
+      })),
+    [enrolled]
+  );
+
+  // Land on the first course, so /student/my-learning is the workspace rather
+  // than a list that has to be clicked through.
+  useEffect(() => {
+    if (!courseId && enrolledCourses.length > 0) {
+      navigate(`/student/my-learning/${enrolledCourses[0].id}/tasks`, { replace: true });
+    }
+  }, [courseId, enrolledCourses, navigate]);
 
   const tabs = [
     { id: "tasks", label: "Assignments", icon: <CheckSquare size={16} /> },
@@ -24,12 +54,34 @@ export function StudentCourseDashboard() {
 
   const [filterText, setFilterText] = useState("");
 
+  // The list is fetched now rather than a module constant, so the memo has to
+  // depend on it. Without that it kept the empty array from the first render
+  // and the sidebar stayed blank once the courses arrived.
   const filteredCourses = useMemo(
-    () => mockEnrolledCourses.filter((c) => c.title.toLowerCase().includes(filterText.toLowerCase())),
-    [filterText]
+    () => enrolledCourses.filter((c) => c.title.toLowerCase().includes(filterText.toLowerCase())),
+    [enrolledCourses, filterText]
   );
 
-  const activeCourse = mockEnrolledCourses.find(c => c.id === courseId) || mockEnrolledCourses[0];
+  const activeCourse = enrolledCourses.find(c => c.id === courseId) || enrolledCourses[0];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="animate-spin text-[#1099A1]" />
+      </div>
+    );
+  }
+
+  if (enrolledCourses.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+        <p className="text-[15px] font-medium text-foreground">No courses yet</p>
+        <p className="mt-1 max-w-sm text-[13px] text-muted-foreground">
+          A course appears here once it has been booked for you.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col md:flex-row min-h-0 bg-background overflow-hidden">

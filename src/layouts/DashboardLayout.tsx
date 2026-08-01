@@ -207,12 +207,12 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               {(() => {
                 const segments = location.pathname.split('/').filter(Boolean);
                 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-/i.test(s);
-                const items = segments.map((segment, index) => ({
+                const items = segments
+                  .filter((segment) => bcLabels[segment] || !isUuid(segment))
+                  .map((segment, index) => ({
                   label: bcLabels[segment]
                     ? bcLabels[segment]
-                    : isUuid(segment)
-                      ? 'Details'
-                      : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                    : segment.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
                   path: '/' + segments.slice(0, index + 1).join('/')
                 }));
 

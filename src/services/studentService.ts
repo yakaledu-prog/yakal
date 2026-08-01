@@ -118,3 +118,48 @@ export async function getStudentCourses(studentId: string): Promise<StudentCours
     };
   });
 }
+
+export interface CourseSessionRow {
+  id: string;
+  date: string;
+  start_time: string;
+  duration_minutes: number;
+  status: string;
+  subject: string;
+  zoom_link: string | null;
+  tutor_name: string | null;
+  tutor_avatar: string | null;
+  notes: string | null;
+}
+
+/** A student's sessions on one course, soonest first. */
+export async function getCourseSessions(
+  studentId: string,
+  courseId: string
+): Promise<CourseSessionRow[]> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select(`id, date, start_time, duration_minutes, status, subject, zoom_link, notes,
+             tutor:profiles!sessions_tutor_id_fkey (full_name, avatar_url)`)
+    .eq("student_id", studentId)
+    .eq("course_id", courseId)
+    .order("date", { ascending: true });
+
+  if (error) {
+    console.error("getCourseSessions failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    date: r.date,
+    start_time: r.start_time,
+    duration_minutes: r.duration_minutes,
+    status: r.status,
+    subject: r.subject,
+    zoom_link: r.zoom_link,
+    notes: r.notes,
+    tutor_name: r.tutor?.full_name ?? null,
+    tutor_avatar: r.tutor?.avatar_url ?? null,
+  }));
+}

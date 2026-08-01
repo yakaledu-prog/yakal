@@ -18,6 +18,12 @@ interface AdminCourseModalProps {
   isSubmitting?: boolean;
 }
 
+/** Everything courses_subject_check will accept. */
+const SUBJECTS = [
+  "Mathematics", "Physics", "Chemistry", "Biology",
+  "English", "SAT Prep", "College Advising", "Other",
+];
+
 export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSubmitting }: AdminCourseModalProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -146,7 +152,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
     const patch: Partial<AdminCourse> = {
       title: formData.title,
-      subject: "Mathematics", // Hardcoded to satisfy Supabase check constraint
+      subject: formData.subject || "Other",
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
@@ -229,6 +235,18 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   placeholder="Course Title"
                   className="bg-gray-50 dark:bg-[#182329] !border !border-gray-300 dark:!border-gray-700 focus:bg-white text-lg font-medium py-6"
                 />
+
+                <select
+                  value={formData.subject}
+                  onChange={e => setFormData({ ...formData, subject: e.target.value })}
+                  aria-label="Subject"
+                  className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-3 text-[15px] text-[#111] outline-none focus:bg-white dark:border-gray-700 dark:bg-[#182329] dark:text-white"
+                >
+                  <option value="">Choose a subject</option>
+                  {SUBJECTS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
             </div>
           )}

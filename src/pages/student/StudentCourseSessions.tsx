@@ -1,29 +1,45 @@
 import { useState } from "react";
-import { Clock, X, ChevronRight, CheckCircle2, Video, CalendarRange, ChevronDown } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { X, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { SessionList, type SessionListItem } from "@/components/shared/SessionList";
+import { useAuth } from "@/contexts/AuthContext";
+import { getCourseSessions } from "@/services/studentService";
 
-type Session = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: string;
-};
+// The rows are the shared SessionList, so a session reads the same here as it
+// will anywhere else. What is specific to a student is the action on the
+// right: join the one happening now, ask to move a later one.
 
-const MOCK_SESSIONS: Session[] = [
-  { id: "1", title: "Understanding Variables", date: "Friday, Nov 17", time: "4:00 PM", type: "1-on-1" },
-  { id: "2", title: "Linear Equations", date: "Monday, Nov 20", time: "6:00 PM", type: "Group" },
-  { id: "3", title: "Graphing Functions", date: "Wednesday, Nov 22", time: "3:30 PM", type: "1-on-1" },
-  { id: "4", title: "Polynomials Review", date: "Friday, Dec 1", time: "5:00 PM", type: "Group" },
-];
+type Session = SessionListItem;
 
 export function StudentCourseSessions() {
+  const { courseId } = useParams();
+  const { user } = useAuth();
+
   const [rescheduleSession, setRescheduleSession] = useState<Session | null>(null);
   const [rescheduleStep, setRescheduleStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["course-sessions", user?.id, courseId],
+    queryFn: () => getCourseSessions(user!.id, courseId!),
+    enabled: !!user?.id && !!courseId,
+  });
+
+  const sessions: SessionListItem[] = rows.map((r) => ({
+    id: r.id,
+    date: r.date,
+    startTime: r.start_time,
+    durationMinutes: r.duration_minutes,
+    status: r.status,
+    title: r.subject,
+    personName: r.tutor_name,
+    personAvatarUrl: r.tutor_avatar,
+    note: r.notes,
+  }));
 
   const handleRescheduleClick = (session: Session) => {
     setRescheduleSession(session);
@@ -44,68 +60,34 @@ export function StudentCourseSessions() {
     }, 2000);
   };
 
+  /** Joinable only on the day, which is the only time the link is any use. */
+  const isToday = (s: SessionListItem) => {
+    const d = new Date(`${s.date}T00:00:00`);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  };
+
   return (
-    <div className="w-full relative">
-      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {MOCK_SESSIONS.map((session) => {
-          const dateParts = session.date.includes(', ') ? session.date.split(', ')[1].split(' ') : ["", ""];
-          const month = dateParts[0];
-          const day = dateParts[1];
+    <div className="p-4 md:p-8">
+      <SessionList
+        sessions={sessions}
+        isLoading={isLoading}
+        emptyText="No sessions booked for this course yet."
+        renderAction={(s) =>
+          s.status !== "upcoming" ? null : isToday(s) ? (
+            <Button className="h-10 px-6 text-[14px] font-semibold">Join</Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => handleRescheduleClick(s)}
+              className="h-10 px-5 text-[14px] font-medium"
+            >
+              Reschedule
+            </Button>
+          )
+        }
+      />
 
-          return (
-            <div key={session.id} className="pb-3 border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
-              <div className="flex flex-col md:flex-row items-center gap-6 p-4">
-                {/* Date Column */}
-                <div className="flex flex-col items-center justify-center shrink-0 w-[60px]">
-                  <span className="text-[24px] font-bold text-[#1099A1] leading-none tracking-tight">{day}</span>
-                  <span className="text-[12px] font-bold text-[#1099A1] uppercase tracking-wider mt-1">{month}</span>
-                </div>
-
-                {/* Title & Time Column */}
-                <div className="flex flex-col justify-center flex-1 min-w-0 py-2 w-full md:w-auto text-center md:text-left border-l-2 border-transparent md:border-[#1099A1] md:pl-6">
-                  <h2 className="text-[15px] md:text-[16px] font-medium text-[#111] dark:text-white leading-tight mb-1.5 truncate">
-                    {session.title}
-                  </h2>
-                  <span className="text-[13px] text-[#54656f] dark:text-[#aebac1] font-medium leading-tight flex items-center gap-1.5 md:justify-start justify-center">
-                    <Clock size={14} /> {session.time}
-                  </span>
-                </div>
-
-                {/* Actions Column */}
-                <div className="flex items-center justify-center gap-3 w-full md:w-auto shrink-0">
-                  <div className="relative inline-flex flex-1 md:flex-none h-[40px] shadow-sm rounded-md">
-                    <Button className="flex-1 md:flex-none h-full px-4 text-[14px] font-normal flex items-center justify-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] rounded-l-md rounded-r-none border-0 border-r border-[#0d848b] text-white">
-                      <Video size={16} /> Join
-                    </Button>
-                    <button
-                      onClick={() => setOpenDropdownId(openDropdownId === session.id ? null : session.id)}
-                      className="h-full px-2 flex items-center justify-center bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-r-md transition-colors"
-                    >
-                      <ChevronDown size={16} />
-                    </button>
-
-                    {openDropdownId === session.id && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
-                        <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-md shadow-lg z-50 py-1 overflow-hidden">
-                          <button onClick={() => { setOpenDropdownId(null); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#1099A1] flex items-center gap-2 transition-colors border-b !border-[#1099A1]/10">
-                            <Video size={16} /> Join Meeting
-                          </button>
-                          <button onClick={() => { setOpenDropdownId(null); handleRescheduleClick(session); }} className="w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-[#f8f9fa] dark:hover:bg-[#182329] text-[#CAA25F] flex items-center gap-2 transition-colors">
-                            <CalendarRange size={16} /> Reschedule
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Reschedule Modal */}
       {rescheduleSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-[#202c33] rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -135,7 +117,7 @@ export function StudentCourseSessions() {
                 <>
                   <div className="mb-6">
                     <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] mb-1">Current Session:</p>
-                    <p className="font-semibold text-[#111] dark:text-white">{rescheduleSession.title} ({rescheduleSession.date} at {rescheduleSession.time})</p>
+                    <p className="font-semibold text-[#111] dark:text-white">{rescheduleSession.title} ({rescheduleSession.date} at {rescheduleSession.startTime})</p>
                   </div>
 
                   {rescheduleStep === 1 && (
