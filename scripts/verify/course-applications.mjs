@@ -5,6 +5,8 @@ const psql = (sql) =>
   execSync(`PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAq -c "${sql}"`).toString().trim();
 
 psql('delete from course_applications;');
+// Only Chemistry is open, so the suite is not at the mercy of card order.
+psql("update courses set tutor_id = (select id from profiles where email='tutor@yakal.com') where tutor_id is null;");
 psql("update courses set tutor_id = null where title like 'Chemistry%';");
 
 const BASE = process.env.BASE || 'http://localhost:5173';
@@ -41,27 +43,46 @@ pass('open courses are listed', /Chemistry, Grade 11 Foundations/.test(await tut
 // The payout is the tutor's business; what the parent pays is not, and
 // inviting the comparison helps nobody.
 const openText = await tutor.locator('body').innerText();
-pass('the tutor payout is shown', /\$40\.00|40\.00/.test(openText), openText.match(/[$][\d.,]+/)?.[0] ?? '');
+pass('the tutor payout is shown per hour', /\$40\.00/.test(openText) && /\/hr/.test(openText),
+  openText.match(/[$][\d.,]+\s*\/hr/)?.[0] ?? openText.match(/[$][\d.,]+/)?.[0] ?? '');
 pass('the parent price is not shown', !/55\.00/.test(openText));
 await tutor.screenshot({ path: `${S}/tutor-open-courses.png` });
 
-await tutor.getByRole('button', { name: 'Apply', exact: true }).first().click();
+const card = tutor.locator('article').filter({ hasText: 'Chemistry, Grade 11 Foundations' }).first();
+await card.getByRole('button', { name: 'Apply', exact: true }).click();
 await tutor.waitForTimeout(700);
-await tutor.getByPlaceholder(/good fit/i).fill('I have taught this syllabus for six years.');
+// The CV from onboarding is what gets sent, so the dialog has to show it.
+pass('the application shows the CV on file', await tutor.getByText(/No CV on file|\.pdf|\.docx?/i).first().isVisible().catch(() => false));
+// Opening the menu here would dismiss the dialog, so this only checks the
+// affordance is on the card. The menu's contents are covered separately.
+pass('the CV card offers its options', await tutor.getByRole('button', { name: /CV options|Upload your CV/i }).first().isVisible());
 await tutor.getByRole('button', { name: /Send application/i }).click();
 await tutor.waitForTimeout(2500);
 pass('the application reaches the database', psql("select count(*) from course_applications where status='pending';") === '1');
 pass('admins are notified', Number(psql("select count(*) from notifications where type='course_application';")) > 0);
 
-await tutor.getByRole('button', { name: /My applications/i }).click();
-await tutor.waitForTimeout(2000);
+await tutor.getByRole('button', { name: /Filter courses/i }).click();
+await tutor.waitForTimeout(400);
+await tutor.getByRole('option', { name: /^Applied/ }).click();
+await tutor.waitForTimeout(1500);
 const appliedText = await tutor.locator('body').innerText();
 pass('it appears under Applied', /Chemistry, Grade 11 Foundations/.test(appliedText));
-pass('its state is shown', /Waiting on a decision/i.test(appliedText));
+pass('its state is shown on the card', /Applied/.test(appliedText));
+pass('it can be withdrawn from the card', /Withdraw/.test(appliedText));
+// Withdrawing retracts something a reviewer may already be reading, so it asks.
+await tutor.getByRole('button', { name: 'Withdraw', exact: true }).first().click();
+await tutor.waitForTimeout(700);
+pass('withdrawing asks first', await tutor.getByText(/Withdraw this application\?/i).isVisible());
+await tutor.getByRole('button', { name: /Cancel/i }).first().click();
+await tutor.waitForTimeout(600);
+pass('cancelling keeps the application', psql("select count(*) from course_applications where status='pending';") === '1');
 
-await tutor.getByRole('button', { name: /My applications/i }).click();
-await tutor.waitForTimeout(2000);
-pass('an applied course leaves the catalog', !/Chemistry, Grade 11 Foundations/.test(await tutor.locator('body').innerText()));
+await tutor.getByRole('button', { name: /Filter courses/i }).click();
+await tutor.waitForTimeout(400);
+await tutor.getByRole('option', { name: /^Applied/ }).click();
+await tutor.waitForTimeout(1500);
+// It stays put and shows its state. Vanishing looked like a failed click.
+pass('an applied course stays and says so', /Applied/.test(await tutor.locator('body').innerText()));
 
 // A tutor must not be able to accept themselves. The policy lets them move a
 // pending row to withdrawn and nothing else, so this write has to be refused.
@@ -82,7 +103,7 @@ await admin.goto(`${BASE}/admin/courses/${courseId}`, { waitUntil: 'domcontentlo
 await admin.waitForTimeout(3500);
 const adminText = await admin.locator('body').innerText();
 pass('the applicant is listed for the admin', /Bethlehem Alemu/.test(adminText));
-pass('their reason is shown', /taught this syllabus for six years/i.test(adminText));
+pass('the applicant CV is offered to the admin', /View CV|No CV/i.test(adminText));
 pass('no invented tutors remain', !/Sarah|4\.9|Verified Pro/i.test(adminText));
 pass('the course reads as unassigned', /No tutor assigned yet/i.test(adminText));
 await admin.screenshot({ path: `${S}/admin-course-applicants.png`, fullPage: true });

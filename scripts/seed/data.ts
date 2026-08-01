@@ -235,6 +235,73 @@ export const COURSES: SeedCourse[] = [
     priceCents: 6500,
     tutorPayoutCents: 5000,
   },
+  // The catalog the parent browses. These were six hardcoded cards on
+  // ParentCourses with invented ratings and student counts, pointing at ids
+  // that did not exist, so every one of them led to a dead booking page.
+  // Seeded now, which also puts them in front of admins and tutors.
+  {
+    title: "K-12 Mathematics",
+    subject: "Mathematics",
+    description:
+      "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&q=80",
+    priceCents: 4999,
+    tutorPayoutCents: 3500,
+  },
+  {
+    title: "K-12 English Language Arts",
+    subject: "English",
+    description:
+      "Reading, writing and analysis across the school years, with the writing feedback that makes the difference.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&q=80",
+    priceCents: 8900,
+    tutorPayoutCents: 6200,
+  },
+  {
+    title: "Standardized Test Preparation",
+    subject: "SAT Prep",
+    description:
+      "SAT and ACT preparation built around a diagnostic, so the time goes where the marks are.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
+    priceCents: 5500,
+    tutorPayoutCents: 3900,
+  },
+  {
+    title: "AP Subject Coaching",
+    subject: "Other",
+    description:
+      "Advanced Placement coaching across the sciences and humanities, aimed squarely at the exam.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80",
+    priceCents: 12000,
+    tutorPayoutCents: 8400,
+  },
+  {
+    title: "College Essay Writing",
+    subject: "College Advising",
+    description:
+      "The personal statement and supplements, from a blank page to something that sounds like the student.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80",
+    priceCents: 3500,
+    tutorPayoutCents: 2400,
+  },
+  {
+    title: "Biology, Foundations and Exam Practice",
+    subject: "Biology",
+    description:
+      "Cells, genetics and physiology, with the past-paper practice that turns knowing it into scoring it.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=800&q=80",
+    priceCents: 5000,
+    tutorPayoutCents: 3500,
+  },
+  {
+    title: "Chemistry, Grade 11 Foundations",
+    subject: "Chemistry",
+    description:
+      "Atomic structure, bonding and stoichiometry for the national exam.",
+    thumbnailUrl: "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=800&q=80",
+    priceCents: 5500,
+    tutorPayoutCents: 4000,
+  },
   {
     title: "English Comprehension and Grammar",
     subject: "English",

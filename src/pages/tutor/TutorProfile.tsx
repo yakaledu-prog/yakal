@@ -1,16 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
+import { ResumePanel } from "@/components/shared/ResumePanel";
 import { Button } from "@/components/ui/Button";
+import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import {
-  Edit2, Mail, Phone, Link2, Calendar, CheckCircle, Users, LogOut,
-  Camera, X, Loader2, Check,
-} from "lucide-react";
+import { Calendar, CalendarDays, Camera, Check, CheckCircle, CheckCircle2, ChevronRight, Copy, Edit2, Loader2, LogOut, Mail, Phone, Users, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, SessionRow } from "@/services/tutorService";
-import { MoneyInput, Currency } from "@/components/ui/MoneyInput";
 import { dicebearUrl } from "@/utils/avatar";
 
 const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "SAT Prep", "College Advising", "Other"];
@@ -130,45 +128,122 @@ export function TutorProfile() {
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {/* Details */}
             <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground">Contact & Details</h3>
+              <h3 className="text-[16px] font-bold text-foreground">Contact Details</h3>
               <div className="space-y-4">
-                <DetailRow icon={<Mail size={18} />} label="Email" value={profile?.email || user?.email || "-"} />
-                <DetailRow icon={<Phone size={18} />} label="Phone" value={profile?.phone || "Not set"} />
-                <DetailRow icon={<Link2 size={18} />} label="Session Link" value={profile?.zoom_link || "Not set"} truncate />
                 <DetailRow
-                  icon={<span className="text-[13px] font-bold">{profile?.rate_currency === "USD" ? "$" : "Br"}</span>}
-                  label="Rate / session"
-                  value={profile?.hourly_rate != null ? `${profile.hourly_rate} ${profile.rate_currency || "ETB"}` : "Not set"}
+                  icon={<Mail size={18} />}
+                  label="Email"
+                  value={profile?.email || user?.email || "-"}
+                  href={profile?.email || user?.email ? `mailto:${profile?.email || user?.email}` : undefined}
+                  truncate
                 />
+                <DetailRow
+                  icon={<Phone size={18} />}
+                  label="Phone"
+                  value={profile?.phone || "Not set"}
+                  copy={!!profile?.phone}
+                />
+              </div>
 
+              {/* The CV given at onboarding. It goes out with every course
+                  application, so it belongs somewhere a tutor can check and
+                  replace it rather than only inside the application.
+
+                  No rate row: an admin prices a course, a tutor does not quote
+                  for one, so showing a rate here would imply a negotiation
+                  that does not exist. */}
+              <div className="border-t border-border/60 pt-6">
+                {user && (
+                  <ResumePanel
+                    userId={user.id}
+                    resumePath={(profile as any)?.resume_url ?? null}
+                    onReplaced={() => refreshProfile?.()}
+                  />
+                )}
               </div>
             </div>
 
             {/* Right column */}
             <div className="flex-1 w-full space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground border-b border-border/50 pb-4">Recent Sessions</h3>
-              <div className="space-y-0">
+              <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <h3 className="text-[16px] font-bold text-foreground">Recent Sessions</h3>
+                <Link
+                  to="/tutor/sessions"
+                  className="flex items-center gap-1 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:underline"
+                >
+                  View all sessions <ChevronRight size={15} />
+                </Link>
+              </div>
+
+              <div>
                 {recent.length === 0 ? (
-                  <p className="text-center text-[14px] text-muted-foreground py-10">No sessions yet.</p>
-                ) : recent.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-                    <div className="flex items-center gap-6 min-w-0">
-                      <div className="text-center w-12 shrink-0">
-                        <p className="text-[20px] font-bold text-foreground leading-none">{formatDate(item.date).split(" ")[1]}</p>
-                        <p className="text-[12px] font-medium text-muted-foreground mt-1">{formatDate(item.date).split(" ")[0]}</p>
+                  <p className="py-10 text-center text-[14px] text-muted-foreground">
+                    No sessions yet.
+                  </p>
+                ) : (
+                  recent.map((item) => {
+                    const upcoming = item.status === "upcoming";
+                    const completed = item.status === "completed";
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-5 border-b border-border/40 py-4 last:border-0"
+                      >
+                        <div className="w-11 shrink-0 text-center">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
+                            {formatDate(item.date).split(" ")[0]}
+                          </p>
+                          <p className="text-[22px] font-medium leading-none text-foreground">
+                            {formatDate(item.date).split(" ")[1]}
+                          </p>
+                        </div>
+
+                        <img
+                          src={item.student_avatar || dicebearUrl(item.student_name || "Student")}
+                          alt=""
+                          className="h-11 w-11 shrink-0 rounded-full object-cover"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[15px] font-medium text-foreground">
+                            {item.subject}
+                          </p>
+                          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                            {item.student_name}
+                          </p>
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          {/* Upcoming is the one worth picking out. Completed
+                              is the resting state and does not need a colour
+                              competing with it. */}
+                          <p
+                            className={cn(
+                              "flex items-center justify-end gap-1.5 text-[13.5px] font-medium capitalize",
+                              upcoming
+                                ? "text-[#1099A1]"
+                                : completed
+                                  ? "text-muted-foreground"
+                                  : "text-[#8a6a2a] dark:text-[#CAA25F]"
+                            )}
+                          >
+                            {upcoming ? (
+                              <CalendarDays size={14} />
+                            ) : completed ? (
+                              <CheckCircle2 size={14} />
+                            ) : (
+                              <XCircle size={14} />
+                            )}
+                            {item.status}
+                          </p>
+                          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                            {timeRange(item.start_time, item.duration_minutes)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-[15px] font-bold text-foreground truncate">{item.subject}</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">{item.student_name}</p>
-                      </div>
-                    </div>
-                    <span className={cn("text-[14px] font-bold capitalize shrink-0",
-                      item.status === "completed" ? "text-green-600 dark:text-green-400" :
-                        item.status === "upcoming" ? "text-[#1099A1]" : "text-red-600 dark:text-red-400")}>
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -180,13 +255,116 @@ export function TutorProfile() {
   );
 }
 
-function DetailRow({ icon, label, value, truncate }: { icon: React.ReactNode; label: string; value: string; truncate?: boolean }) {
+/**
+ * A labelled contact detail.
+ *
+ * `href` makes the value a link, for an email where mailto does the obvious
+ * thing. `copy` makes it click-to-copy instead, which is what a phone number
+ * actually needs: a tel: link does nothing on a desktop browser, and the
+ * reason anyone clicks a number is to paste it somewhere else.
+ */
+/**
+ * Copy text, falling back to a hidden selection.
+ *
+ * navigator.clipboard resolves in places where nothing actually reaches the
+ * clipboard: an unfocused document, or any non-secure origin. Reporting
+ * success on the strength of that promise alone showed "copied" over an empty
+ * clipboard, so the result is verified and the old execCommand path is kept
+ * for when it is not available.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the selection path.
+  }
+
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(area);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** "10:00 AM - 11:00 AM" from a start time and a length. */
+function timeRange(start: string, minutes: number): string {
+  const [h, m] = start.split(":").map(Number);
+  const from = new Date();
+  from.setHours(h, m, 0, 0);
+  const to = new Date(from.getTime() + (minutes || 60) * 60_000);
+  const fmt = (d: Date) =>
+    d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return `${fmt(from)} - ${fmt(to)}`;
+}
+
+function DetailRow({
+  icon,
+  label,
+  value,
+  href,
+  copy,
+  truncate,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  href?: string;
+  copy?: boolean;
+  truncate?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const body = cn("text-[14px]", truncate && "truncate max-w-[220px]");
+
   return (
     <div className="flex items-start gap-4">
       <div className="shrink-0 text-muted-foreground mt-0.5">{icon}</div>
       <div className="min-w-0">
         <p className="text-[12px] text-muted-foreground font-medium mb-0.5">{label}</p>
-        <p className={cn("text-[14px] font-semibold text-foreground", truncate && "truncate max-w-[220px]")}>{value}</p>
+
+        {href ? (
+          <a href={href} className={cn(body, "text-[#1099A1] hover:underline")}>
+            {value}
+          </a>
+        ) : copy ? (
+          <button
+            type="button"
+            onClick={async () => {
+              if (await copyText(value)) {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              } else {
+                toast.error("Could not copy that.");
+              }
+            }}
+            title="Copy to clipboard"
+            className={cn(
+              body,
+              "group flex items-center gap-1.5 text-foreground transition-colors hover:text-[#1099A1]"
+            )}
+          >
+            {value}
+            {copied ? (
+              <Check size={13} className="text-[#1099A1]" />
+            ) : (
+              <Copy size={13} className="opacity-0 transition-opacity group-hover:opacity-60" />
+            )}
+          </button>
+        ) : (
+          <p className={cn(body, "text-foreground")}>{value}</p>
+        )}
       </div>
     </div>
   );
@@ -197,9 +375,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [bio, setBio] = useState(profile?.bio || "");
-  const [zoomLink, setZoomLink] = useState(profile?.zoom_link || "");
-  const [rate, setRate] = useState(profile?.hourly_rate != null ? String(profile.hourly_rate) : "");
-  const [currency, setCurrency] = useState<Currency>((profile?.rate_currency as Currency) || "ETB");
   const [subjects, setSubjects] = useState<string[]>(profile?.subjects || []);
   const [saving, setSaving] = useState(false);
 
@@ -212,9 +387,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
       full_name: fullName.trim(),
       phone: phone.trim() || null,
       bio: bio.trim() || null,
-      zoom_link: zoomLink.trim() || null,
-      hourly_rate: rate ? Number(rate) : null,
-      rate_currency: currency,
       subjects,
     }).eq("id", user.id);
     setSaving(false);
@@ -237,10 +409,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
         <div className="p-6 space-y-4">
           <div className="space-y-1.5"><label className={lbl}>Full Name</label><input className={field} value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
           <div className="space-y-1.5"><label className={lbl}>Phone</label><input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Session Link (Zoom / Meet)</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /></div>
-          <div className="space-y-1.5"><label className={lbl}>Rate per session</label>
-            <MoneyInput label="Rate per session" value={rate} onChange={setRate} currency={currency} onCurrencyChange={setCurrency} />
-          </div>
           <div className="space-y-1.5"><label className={lbl}>Bio</label><textarea className={cn(field, "h-auto py-2 resize-none")} rows={3} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
           <div className="space-y-1.5">
             <label className={lbl}>Subjects</label>

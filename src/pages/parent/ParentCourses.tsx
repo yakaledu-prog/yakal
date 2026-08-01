@@ -1,45 +1,35 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { money } from "@/services/billingService";
+import { dicebearUrl } from "@/utils/avatar";
+import { getCatalogCourses } from "@/services/courseApplicationService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Search, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
-import imgMath from "@/assets/images/subject-math.png";
-import imgEla from "@/assets/images/subject-ela.png";
-import imgPhysics from "@/assets/images/subject-physics-new.png";
-import imgStandardized from "@/assets/images/subject-standardized.png";
-import imgAp from "@/assets/images/subject-ap.png";
-import imgEssays from "@/assets/images/subject-essays.png";
-
-interface CatalogCourse {
-  id: string;
-  title: string;
-  thumbnail: string;
-  price: string;
-  coursePrice: string;
-  students: number;
-  tutorsCount: number;
-  rating: number;
-  reviewers: number;
-}
-
-const baseCourses = [
-  { id: "CAT-01", title: "K-12 Math", thumbnail: imgMath, price: "$49.99", coursePrice: "$199.96", students: 1204, tutorsCount: 12, rating: 4.8, reviewers: 320 },
-  { id: "CAT-02", title: "K-12 ELA", thumbnail: imgEla, price: "$89.00", coursePrice: "$249.00", students: 850, tutorsCount: 8, rating: 4.7, reviewers: 210 },
-  { id: "CAT-03", title: "Physics", thumbnail: imgPhysics, price: "$29.50", coursePrice: "$149.50", students: 3400, tutorsCount: 15, rating: 4.9, reviewers: 1024 },
-  { id: "CAT-04", title: "Standardized Testing", thumbnail: imgStandardized, price: "$55.00", coursePrice: "$199.00", students: 5600, tutorsCount: 22, rating: 4.6, reviewers: 450 },
-  { id: "CAT-05", title: "AP Courses", thumbnail: imgAp, price: "$120.00", coursePrice: "$399.00", students: 430, tutorsCount: 5, rating: 5.0, reviewers: 89 },
-  { id: "CAT-06", title: "College Essays", thumbnail: imgEssays, price: "$35.00", coursePrice: "$99.00", students: 2100, tutorsCount: 10, rating: 4.8, reviewers: 530 },
-];
+// ============================================================
+// The course catalog.
+//
+// Six hardcoded cards before this, with invented ratings, student counts and
+// tutor avatars pulled from pravatar, under ids like "CAT-01" that matched no
+// row. Clicking any of them opened a booking page for a course that did not
+// exist.
+//
+// Real courses now. A card shows the tutor if one has been approved, and says
+// so plainly when none has, rather than promising three faces.
+// ============================================================
 
 export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
 
-  const catalogCourses: CatalogCourse[] = baseCourses.map((c) => ({
-    ...c,
-  }));
+  const { data: catalogCourses = [], isLoading } = useQuery({
+    queryKey: ["catalog-courses"],
+    queryFn: getCatalogCourses,
+  });
 
   const totalPages = Math.ceil(catalogCourses.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -127,6 +117,19 @@ export function ParentCourses() {
         <div className="max-w-[1440px] mx-auto p-4 md:p-8 w-full h-full">
 
           {/* Catalog Grid */}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin text-[#1099A1]" />
+            </div>
+          ) : catalogCourses.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#e9edef] dark:border-[#2a3942] py-16 text-center">
+              <BookOpen size={32} className="mx-auto mb-3 text-[#aebac1]" />
+              <p className="text-[15px] font-medium text-[#111] dark:text-white">No courses yet</p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                Courses appear here as soon as they are published.
+              </p>
+            </div>
+          ) : (
           <div className={cn(
             "grid gap-4 md:gap-6",
             viewMode === "grid"
@@ -147,11 +150,18 @@ export function ParentCourses() {
                   "relative overflow-hidden shrink-0",
                   viewMode === "list" ? "w-full h-[180px] sm:h-full sm:w-[220px]" : "w-full aspect-video"
                 )}>
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                  {course.thumbnailUrl ? (
+                    <img
+                      src={course.thumbnailUrl}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center bg-[#1099A1]/10 text-[#1099A1]">
+                      <BookOpen size={28} />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
 
@@ -165,29 +175,22 @@ export function ParentCourses() {
                       {course.title}
                     </h3>
                     <div className="text-right shrink-0 flex flex-col items-end">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-[16px] font-bold text-[#111] dark:text-white leading-none">{course.coursePrice}</span>
-                        <span className="text-[11px] text-[#54656f] dark:text-[#aebac1]">/course</span>
-                      </div>
-                      <div className="text-[10px] text-[#54656f] dark:text-[#aebac1] mt-0.5">
-                        or from <span className="font-medium text-[#111] dark:text-white">{course.price}</span>/hr
-                      </div>
+                      {course.priceCents != null ? (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[16px] font-bold text-[#111] dark:text-white leading-none">{money(course.priceCents)}</span>
+                          <span className="text-[11px] text-[#54656f] dark:text-[#aebac1]">/session</span>
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-[#54656f] dark:text-[#aebac1]">Price on request</span>
+                      )}
                     </div>
                   </div>
 
                   <div className={cn(
-                    "flex items-center gap-3 text-[12px] text-[#54656f] dark:text-[#aebac1]",
+                    "text-[12px] text-[#54656f] dark:text-[#aebac1] line-clamp-2",
                     viewMode === "list" ? "mb-2" : "mb-4 mt-auto"
                   )}>
-                    <span className="flex items-center gap-1">
-                      <span className="text-yellow-500 flex items-center">
-                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/></svg>
-                      </span>
-                      <strong className="text-[#111] dark:text-[#e9edef] font-bold">{course.rating}</strong>
-                      <span>({course.reviewers})</span>
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-[#e9edef] dark:bg-[#2a3942]" />
-                    <span>{course.students.toLocaleString()} Students</span>
+                    {course.description ?? course.subject}
                   </div>
 
                   {/* Divider */}
@@ -197,20 +200,29 @@ export function ParentCourses() {
                   )} />
 
                   {/* Avatar Stack & Count */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-3">
-                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}1`} alt="Tutor avatar" />
-                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}2`} alt="Tutor avatar" />
-                      <img className="w-8 h-8 rounded-full border-2 border-white dark:border-[#202c33] object-cover" src={`https://i.pravatar.cc/150?u=${course.id}3`} alt="Tutor avatar" />
-                    </div>
-                    <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-                      + {course.tutorsCount - 3} available tutors
-                    </span>
+                  <div className="flex items-center gap-2.5">
+                    {course.tutor ? (
+                      <>
+                        <img
+                          className="w-8 h-8 rounded-full object-cover"
+                          src={course.tutor.avatarUrl || dicebearUrl(course.tutor.name)}
+                          alt=""
+                        />
+                        <span className="text-[13px] font-medium text-[#111] dark:text-white truncate">
+                          {course.tutor.name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                        Tutor being assigned
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>
             ))}
           </div>
+          )}
         </div>
       </div>
     </PageWrapper>

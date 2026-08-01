@@ -44,3 +44,30 @@ export function resumeFileName(path: string | null | undefined): string {
   if (!path) return "CV";
   return path.split("/").pop() || "CV";
 }
+
+/**
+ * Replace the signed-in tutor's CV.
+ *
+ * Same bucket and same path shape as onboarding, so the two paths cannot drift
+ * apart. Storage keeps every upload under the owner's folder, which is what
+ * the bucket policy is written against.
+ */
+export async function uploadResume(
+  userId: string,
+  file: File
+): Promise<{ success: boolean; path?: string; error?: string }> {
+  const ext = file.name.split(".").pop();
+  const path = `${userId}/cv_${Date.now()}.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) return { success: false, error: upErr.message };
+
+  // The path, not a URL: the bucket is private, so readers ask for a
+  // short-lived signed link instead.
+  const { error } = await supabase.from("profiles").update({ resume_url: path }).eq("id", userId);
+  if (error) return { success: false, error: error.message };
+
+  return { success: true, path };
+}

@@ -26,6 +26,8 @@ export interface CourseSummary {
   tutorPayoutCents: number | null;
   tutorId: string | null;
   createdAt: Date;
+  /** This tutor's own application, if they have one. Null means not applied. */
+  myApplication?: { id: string; status: ApplicationStatus } | null;
 }
 
 export interface CourseApplication {
@@ -74,11 +76,12 @@ export async function getTeachingCourses(tutorId: string): Promise<CourseSummary
 }
 
 /**
- * Courses with no tutor yet.
+ * Courses with no tutor yet, each carrying this tutor's application if any.
  *
- * Excludes anything this tutor has a live application on, so the Open tab is
- * what is left to do rather than a list they have to remember their way
- * through.
+ * Applied courses used to be filtered out. Applying then emptied the catalog,
+ * which read as the click having failed: the card vanished, and the only trace
+ * was a count on another view. They stay put now and show their state, so the
+ * page still says what happened.
  */
 export async function getOpenCourses(tutorId: string): Promise<CourseSummary[]> {
   const [coursesRes, mine] = await Promise.all([
@@ -96,12 +99,17 @@ export async function getOpenCourses(tutorId: string): Promise<CourseSummary[]> 
     return [];
   }
 
-  const applied = new Set(
-    mine.filter((a) => a.status === "pending" || a.status === "accepted").map((a) => a.courseId)
-  );
+  // Newest decision per course, so a rejected application followed by a fresh
+  // one shows the fresh one.
+  const byCourse = new Map<string, { id: string; status: ApplicationStatus }>();
+  for (const a of mine) {
+    if (!byCourse.has(a.courseId)) byCourse.set(a.courseId, { id: a.id, status: a.status });
+  }
+
   return (coursesRes.data ?? [])
     .map(toCourse)
-    .filter((c): c is CourseSummary => !!c && !applied.has(c.id));
+    .filter((c): c is CourseSummary => !!c)
+    .map((c) => ({ ...c, myApplication: byCourse.get(c.id) ?? null }));
 }
 
 export async function getMyApplications(tutorId: string): Promise<CourseApplication[]> {
@@ -383,4 +391,42 @@ export async function getCourseForBooking(courseId: string): Promise<CourseWithT
         }
       : null,
   };
+}
+
+/**
+ * The catalog a parent browses: every active course.
+ *
+ * ParentCourses used to hold six hardcoded entries with invented ratings and
+ * student counts, and ids like "CAT-01" that matched nothing, so clicking one
+ * led to a booking page for a course that did not exist.
+ */
+export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
+  const { data, error } = await supabase
+    .from("courses")
+    .select(`${COURSE_FIELDS},
+             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate)`)
+    .eq("is_active", true)
+    .order("title");
+
+  if (error) {
+    console.error("getCatalogCourses failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row: any) => {
+    const t = row.tutor;
+    return {
+      ...toCourse(row)!,
+      tutor: t
+        ? {
+            id: t.id,
+            name: t.full_name,
+            avatarUrl: t.avatar_url ?? null,
+            bio: t.bio ?? null,
+            subjects: t.subjects ?? null,
+            hourlyRate: t.hourly_rate ?? null,
+          }
+        : null,
+    };
+  });
 }
