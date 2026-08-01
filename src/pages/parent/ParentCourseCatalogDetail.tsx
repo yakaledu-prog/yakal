@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Star, Users, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
@@ -7,10 +7,11 @@ import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorAvailability, TutorAvailability } from "@/services/availability";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { bookAndPay, money } from "@/services/billingService";
 import { getCourseForBooking } from "@/services/courseApplicationService";
 import { getLinkedChildren } from "@/services/parentService";
+import { getSlotConflicts, slotKey } from "@/services/slotService";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
 import 'react-flagpack/dist/style.css';
@@ -42,12 +43,22 @@ const courseData = {
 const HOUR_START = 8;
 const HOUR_COUNT = 13;
 
+// The day as the parent sees it. toISOString() converts to UTC first, so a
+// date built from a local midnight lands on the day before for anyone west of
+// Greenwich, and the session gets booked twenty four hours out.
+const isoDay = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** How far ahead conflicts are loaded. Far enough that paging never runs past it. */
+const CONFLICT_WEEKS = 26;
+
 const TABS = ["Availability", "Resume", "Reviews", "Messages"];
 
 export function ParentCourseCatalogDetail() {
   const { id: courseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   // The real course and the tutor an admin accepted for it. This page used to
   // render four invented tutors with invented prices, so the id it handed to
@@ -100,7 +111,11 @@ export function ParentCourseCatalogDetail() {
     time_grid: [],
     disabled_days: [],
   };
-  const [selectedSlots, setSelectedSlots] = useState<Array<{ dayIndex: number, hourIndex: number, date: Date, mode: number }>>([]);
+  // Keyed by the actual day, not by its column. Keying on the column meant a
+  // pick in one week showed as picked in every other week at the same square,
+  // and toggling it in either place removed it from both, so buying more than
+  // one week was not possible.
+  const [selectedSlots, setSelectedSlots] = useState<Array<{ key: string, iso: string, hour: number, date: Date }>>([]);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState("Local Time");
   const [isBooking, setIsBooking] = useState(false);
@@ -197,13 +212,45 @@ export function ParentCourseCatalogDetail() {
     return `${h12}:00 ${ampm}`;
   };
 
-  const toggleSlot = (dayIndex: number, hourIndex: number, date: Date, mode: number) => {
-    setSelectedSlots(prev => {
-      const exists = prev.find(s => s.dayIndex === dayIndex && s.hourIndex === hourIndex);
-      if (exists) return prev.filter(s => s.dayIndex !== dayIndex || s.hourIndex !== hourIndex);
-      return [...prev, { dayIndex, hourIndex, date, mode }];
-    });
+  const toggleSlot = (date: Date, hour: number) => {
+    const iso = isoDay(date);
+    const key = `${iso}|${String(hour).padStart(2, "0")}:00`;
+    setSelectedSlots(prev =>
+      prev.some(s => s.key === key)
+        ? prev.filter(s => s.key !== key)
+        : [...prev, { key, iso, hour, date }]
+    );
   };
+
+  // A child cannot sit two lessons at once, and a tutor cannot teach two. The
+  // grid used to draw the tutor's published hours and nothing else, so an hour
+  // already sold looked free and could be sold again.
+  const conflictWindow = useMemo(() => {
+    const from = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + CONFLICT_WEEKS * 7);
+    return { from: isoDay(from), to: isoDay(to) };
+  }, []);
+
+  const { data: conflicts } = useQuery({
+    queryKey: ["slot-conflicts", bookingFor?.id, realTutor?.id, conflictWindow.from],
+    queryFn: () =>
+      getSlotConflicts({
+        studentId: bookingFor?.id ?? null,
+        tutorId: realTutor?.id ?? null,
+        ...conflictWindow,
+      }),
+    enabled: !!(bookingFor?.id || realTutor?.id),
+  });
+
+  const conflictAt = (date: Date, hour: number) =>
+    conflicts?.byKey.get(slotKey(isoDay(date), `${String(hour).padStart(2, "0")}:00`)) ?? null;
+
+  // Switching child changes what clashes, so picks made for the previous one
+  // are not carried over onto a calendar they may no longer fit.
+  useEffect(() => {
+    setSelectedSlots([]);
+  }, [bookingFor?.id]);
 
   const getModeClasses = (mode: number, isSelected: boolean) => {
     if (isSelected) return "bg-[#1099A1] text-white border border-[#1099A1]";
@@ -258,11 +305,32 @@ export function ParentCourseCatalogDetail() {
         return;
       }
 
+      // The greyed-out slots in the grid are a snapshot. Somebody else can buy
+      // an hour while this page sits open, so ask again with the money about to
+      // move rather than find out during fulfilment, after it has.
+      const fresh = await getSlotConflicts({
+        studentId: bookingFor.id,
+        tutorId: realTutor.id,
+        ...conflictWindow,
+      });
+      const clashing = selectedSlots.filter((slot) =>
+        fresh.byKey.has(slotKey(slot.iso, `${String(slot.hour).padStart(2, "0")}:00`))
+      );
+      if (clashing.length > 0) {
+        setSelectedSlots((prev) => prev.filter((s) => !clashing.some((c) => c.key === s.key)));
+        await qc.invalidateQueries({ queryKey: ["slot-conflicts"] });
+        toast.error(
+          clashing.length === 1
+            ? "That time was taken while you were choosing. It has been removed."
+            : `${clashing.length} of those times were taken while you were choosing. They have been removed.`
+        );
+        setIsBooking(false);
+        return;
+      }
+
       const booking = selectedSlots.map((slot) => ({
-        date: slot.date.toISOString().slice(0, 10),
-        // The grid starts at 07:00, so the row index is offset from there.
-        // Getting this wrong books every session an hour out.
-        startTime: `${String(slot.hourIndex + HOUR_START).padStart(2, "0")}:00`,
+        date: slot.iso,
+        startTime: `${String(slot.hour).padStart(2, "0")}:00`,
         durationMinutes: 60,
       }));
 
@@ -437,33 +505,6 @@ export function ParentCourseCatalogDetail() {
                         <div className="text-xl font-bold text-[#1099A1]">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
                       </div> */}
 
-                        {/* A parent buys for a child, so which child is part
-                            of the purchase rather than something guessed at
-                            checkout. */}
-                        <div className="flex flex-wrap items-center gap-2 px-2 text-[13.5px]">
-                          <span className="text-[#54656f] dark:text-[#aebac1]">Booking for</span>
-                          {children.length === 0 ? (
-                            <span className="font-medium text-[#CAA25F]">
-                              No children linked yet
-                            </span>
-                          ) : children.length === 1 ? (
-                            <span className="font-semibold text-[#111] dark:text-white">
-                              {children[0].full_name}
-                            </span>
-                          ) : (
-                            <select
-                              value={bookingFor?.id ?? ""}
-                              onChange={(e) => setChildId(e.target.value)}
-                              aria-label="Which child this course is for"
-                              className="rounded-lg border border-[#e9edef] bg-transparent px-2 py-1 font-semibold text-foreground outline-none dark:border-[#2a3942]"
-                            >
-                              {children.map((c) => (
-                                <option key={c.id} value={c.id}>{c.full_name}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-
                         {(
                           // <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-x-auto bg-white dark:bg-[#182329]">
                           <div className="border-0 border-[#e9edef] dark:border-[#2a3942] rounded-none overflow-x-auto bg-white/0 dark:bg-[#182329]">
@@ -537,7 +578,9 @@ export function ParentCourseCatalogDetail() {
                                           const mode = grid.time_grid[hIndex]?.[dIndex] || 0;
                                           if (mode === 0) return null; // Only show available slots
 
-                                          const isSelected = selectedSlots.some(s => s.dayIndex === dIndex && s.hourIndex === hIndex);
+                                          const isSelected = selectedSlots.some(
+                                            s => s.key === `${isoDay(day)}|${String(hour).padStart(2, "0")}:00`
+                                          );
 
                                           // The week runs Sunday to Saturday, so the
                                           // current one still holds hours that have
@@ -549,13 +592,23 @@ export function ParentCourseCatalogDetail() {
                                           slotStart.setHours(hour, 0, 0, 0);
                                           if (slotStart.getTime() <= Date.now()) return null;
 
+                                          // An hour already sold. Drawn, not hidden:
+                                          // a parent looking for Monday at four needs
+                                          // to see it is gone, not wonder why the
+                                          // tutor stopped offering it.
+                                          const taken = conflictAt(day, hour);
+
                                           return (
                                             <button
                                               key={hIndex}
-                                              onClick={() => toggleSlot(dIndex, hIndex, day, mode)}
+                                              onClick={() => toggleSlot(day, hour)}
+                                              disabled={!!taken}
+                                              title={taken ?? undefined}
                                               className={cn(
                                                 "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
-                                                getModeClasses(mode, isSelected)
+                                                taken
+                                                  ? "bg-[#f8f9fa] dark:bg-[#111b21] text-[#c2c7d0] dark:text-[#54656f] border border-[#e9edef] dark:border-[#2a3942] cursor-not-allowed line-through"
+                                                  : getModeClasses(mode, isSelected)
                                               )}
                                             >
                                               <span>{formatHour(hour, tzOffset)}</span>
@@ -777,9 +830,36 @@ export function ParentCourseCatalogDetail() {
                         </div>
                       </div>
 
+                      {/* Who this is for. It sits with the price and the
+                          button because that is the purchase, and it has to be
+                          answered before the calendar means anything: the
+                          hours a child already has booked are the ones they
+                          cannot have again. */}
+                      <div className="mb-4">
+                        <label htmlFor="booking-child" className="block text-[11px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-1.5">
+                          For
+                        </label>
+                        {children.length === 0 ? (
+                          <p className="text-[13px] font-medium text-[#CAA25F]">
+                            No children linked yet. Add one from My Children first.
+                          </p>
+                        ) : (
+                          <select
+                            id="booking-child"
+                            value={bookingFor?.id ?? ""}
+                            onChange={(e) => setChildId(e.target.value)}
+                            className="w-full h-11 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-3 text-[14px] font-semibold text-[#111] dark:text-white outline-none focus:border-[#1099A1] transition-colors"
+                          >
+                            {children.map((c) => (
+                              <option key={c.id} value={c.id}>{c.full_name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
                       <Button
                         onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
-                        disabled={isBooking}
+                        disabled={isBooking || children.length === 0}
                         className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
                       >
                         {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}

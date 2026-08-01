@@ -1,6 +1,52 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { getStripe, getServiceClient, requireUser, appBaseUrl } from './utils/billing';
 
+// ------------------------------------------------------------
+// What the Stripe page says.
+//
+// The layout of Checkout is Stripe's and cannot be changed from here: the
+// logo, colours and fonts come from the branding settings in the Stripe
+// dashboard, and rearranging the page itself would mean dropping the hosted
+// page for embedded Elements.
+//
+// What is ours is the line item. It used to be one string, "Course with Tutor
+// (5 sessions)", so the last thing a parent saw before paying never mentioned
+// which child it was for or when the lessons are. Both are now on the page.
+// ------------------------------------------------------------
+
+/** "Mon 3 Aug, 12:00" from a booked slot. */
+function slotLabel(slot: { date: string; startTime: string }): string {
+  const d = new Date(`${slot.date}T00:00:00`);
+  const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `${day}, ${String(slot.startTime).slice(0, 5)}`;
+}
+
+/**
+ * Who it is for and when.
+ *
+ * Capped at four times. Stripe gives this a couple of lines before it
+ * truncates, and a wall of dates is not read anyway.
+ */
+function lineDescription(inv: any): string {
+  const parts: string[] = [];
+  if (inv.student?.full_name) parts.push(`For ${inv.student.full_name}`);
+
+  const slots = Array.isArray(inv.booking) ? inv.booking : [];
+  if (slots.length > 0) {
+    const shown = slots.slice(0, 4).map(slotLabel);
+    const rest = slots.length - shown.length;
+    parts.push(shown.join(' - ') + (rest > 0 ? ` and ${rest} more` : ''));
+  }
+
+  // Never empty: Stripe rejects a blank description.
+  return parts.join('. ') || inv.description;
+}
+
+/** Stripe fetches images from its own servers, so localhost is never reachable. */
+function publicImage(url: string | null | undefined): boolean {
+  return !!url && /^https:\/\//.test(url) && !/localhost|127\.0\.0\.1/.test(url);
+}
+
 // Creates a Stripe Checkout Session (mode=payment) for one or more of the
 // authenticated parent's OPEN invoices, and returns the hosted-page URL.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -16,9 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (invoiceIds.length === 0) return res.status(400).json({ error: 'No invoices selected' });
 
     // Load the invoices - scoped to THIS parent and still open (server-derived, not client-trusted).
+    // The child and the chosen times come along so the Checkout page can say
+    // what is being bought rather than only how much it costs.
     const { data: invoices, error: invErr } = await db
       .from('invoices')
-      .select('id, description, amount_cents, currency, status, parent_id')
+      .select(`id, description, amount_cents, currency, status, parent_id, booking,
+               student:profiles!invoices_student_id_fkey (full_name),
+               course:courses (title, thumbnail_url)`)
       .in('id', invoiceIds)
       .eq('parent_id', user.id)
       .eq('status', 'open');
@@ -57,14 +107,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // click to find. None of the wallets are set up for this account anyway.
       payment_method_types: ['card'],
       customer: customerId,
-      line_items: invoices.map((inv) => ({
+      line_items: invoices.map((inv: any) => ({
         quantity: 1,
         price_data: {
           currency: inv.currency || 'usd',
           unit_amount: inv.amount_cents,
-          product_data: { name: inv.description },
+          product_data: {
+            name: inv.course?.title || inv.description,
+            description: lineDescription(inv),
+            ...(publicImage(inv.course?.thumbnail_url) ? { images: [inv.course.thumbnail_url] } : {}),
+          },
         },
       })),
+      // The only wording on the page we control. Says what happens after the
+      // money moves, which is the question somebody has with a card in hand.
+      custom_text: {
+        submit: {
+          message: 'The times you chose are confirmed as soon as this goes through.',
+        },
+      },
       // Save the card on the customer so we can show it later ("connected card").
       payment_intent_data: { setup_future_usage: 'off_session' },
       managed_payments: { enabled: false },

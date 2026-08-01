@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Users, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { getTutorAvailability } from "@/services/availability";
 
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
 import type { CoursePackage } from "@/services/packageService";
+import { DEMO_AVAILABILITY } from "../demoFixtures";
 
 // ============================================================
-// Pieces the three billing designs share.
+// Pieces the billing designs share.
 //
 // The designs differ in how they organise things, not in what a slot count or
 // a child row looks like, so those live here and the comparison stays about
 // the layout rather than about incidental styling.
+//
+// ChildSidebar, BillingHeader, Money, Spinner and Empty are used by the real
+// billing page too. SlotMeter, PackageActions, SessionWeekGrid and
+// AddSlotsModal belong to the alternatives only, and go when they do.
 // ============================================================
 
 export interface ChildOption {
@@ -405,11 +408,8 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
   const [offset, setOffset] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
 
-  const { data: availability, isLoading } = useQuery({
-    queryKey: ["tutor-availability", pkg.tutorId],
-    queryFn: () => getTutorAvailability(pkg.tutorId!),
-    enabled: !!pkg.tutorId,
-  });
+  const availability = DEMO_AVAILABILITY;
+  const isLoading = false;
 
   const days = weekOf(offset);
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => i + HOUR_START);

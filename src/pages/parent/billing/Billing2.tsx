@@ -1,13 +1,10 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, CreditCard } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
-import { getLinkedChildren } from "@/services/parentService";
-import { getBilling } from "@/services/packageService";
-import { getPaymentMethods, money } from "@/services/billingService";
+import { money } from "@/services/billingService";
+import { DEMO_BILLING, DEMO_CARDS, DEMO_CHILDREN } from "../demoFixtures";
 import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, Spinner } from "./shared";
 
 // ============================================================
@@ -22,24 +19,17 @@ import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, S
 // The cost is that this stops working if somebody has a lot of children or a
 // long history. It is the right answer for the size this actually is, and the
 // wrong answer if that changes.
+//
+// Reads fixed data, not the database. See demoFixtures.
 // ============================================================
 
 export function Billing2() {
-  const { user } = useAuth();
   const [childId, setChildId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  const { data: children = [] } = useQuery({
-    queryKey: ["linked-children", user?.id],
-    queryFn: () => getLinkedChildren(user!.id),
-    enabled: !!user?.id,
-  });
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["billing", user?.id],
-    queryFn: () => getBilling(user!.id),
-    enabled: !!user?.id,
-  });
+  const children = DEMO_CHILDREN;
+  const data = DEMO_BILLING;
+  const isLoading = false;
 
   const packages = useMemo(
     () => (data?.packages ?? []).filter((p) => !childId || p.studentId === childId),
@@ -53,10 +43,7 @@ export function Billing2() {
   const countFor = (id: string | null) =>
     (data?.packages ?? []).filter((p) => !id || p.studentId === id).length;
 
-  const { data: cards = [] } = useQuery({
-    queryKey: ["payment-methods"],
-    queryFn: getPaymentMethods,
-  });
+  const cards = DEMO_CARDS;
 
   const paid = packages.reduce((n, p) => n + p.totalPaidCents, 0);
   const upcoming = packages.reduce((n, p) => n + p.slotsUpcoming, 0);

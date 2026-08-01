@@ -121,10 +121,25 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
         status: "upcoming",
       }));
 
-    if (rows.length > 0) {
-      const { error: sessionErr } = await db.from("sessions").insert(rows);
-      if (sessionErr) console.error("fulfil: sessions failed:", sessionErr.message);
-      else created = rows.length;
+    // One at a time rather than one batch. A slot can be taken between the
+    // checkout page and the payment landing, and the unique index on
+    // (student, date, time) will refuse that row. As a batch, one refusal
+    // loses every other session in the same purchase.
+    for (const row of rows) {
+      const { error: sessionErr } = await db.from("sessions").insert(row);
+      if (!sessionErr) {
+        created += 1;
+        continue;
+      }
+      if (sessionErr.code === "23505") {
+        // Paid for, and not bookable. The parent is owed this session at
+        // another time, so it is loud rather than swallowed.
+        console.error(
+          `fulfil: invoice ${invoice.id} paid for ${row.date} ${row.start_time}, but student ${invoice.student_id} is already booked then. Needs rescheduling.`
+        );
+      } else {
+        console.error("fulfil: session insert failed:", sessionErr.message);
+      }
     }
   }
 

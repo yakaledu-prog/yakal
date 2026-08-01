@@ -22,6 +22,41 @@ import { cn } from "@/utils/cn";
 
 const DEMO_PASSWORD = "demo123";
 
+/**
+ * Screens that were built to compare against the one that shipped.
+ *
+ * They stay reachable because showing somebody the alternative is easier than
+ * describing it, and they stay out of the sidebar because a parent seeing
+ * three billing pages is a bug.
+ */
+const PROTOTYPES: { name: string; href: string; note: string }[] = [
+  {
+    name: "Billing 1",
+    href: "/parent/billing-1",
+    note: "Tabs across the body. The shape the real billing page took.",
+  },
+  {
+    name: "Billing 2",
+    href: "/parent/billing-2",
+    note: "One surface, no tabs, card in the header.",
+  },
+  {
+    name: "Billing 4",
+    href: "/parent/billing-4",
+    note: "Tabs, with each plan opening into the week it was booked into.",
+  },
+  {
+    name: "Courses v1",
+    href: "/parent/courses-v1",
+    note: "Monthly lessons: pick a weekly routine, repeated for four weeks.",
+  },
+  {
+    name: "Courses v2",
+    href: "/parent/courses-v2",
+    note: "Monthly lessons: pick individual dates across the month.",
+  },
+];
+
 interface DevProfile {
   id: string;
   full_name: string | null;
@@ -355,6 +390,33 @@ export function DevConsole() {
               })}
             </ul>
           )}
+        </section>
+
+        <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
+            <h2 className="text-[15px] font-semibold">Alternative screens</h2>
+            <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-0.5">
+              Kept for showing a client the options. They are not in the parent's
+              sidebar, so nobody reaches them by accident. Sign in as a parent
+              first or they will bounce you to the login page.
+            </p>
+          </div>
+          <ul className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+            {PROTOTYPES.map((p) => (
+              <li key={p.href} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium">{p.name}</p>
+                  <p className="text-[12px] text-[#667781] dark:text-[#8696a0]">{p.note}</p>
+                </div>
+                <button
+                  onClick={() => navigate(p.href)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[12px] font-medium hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942] transition-colors"
+                >
+                  Open
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl px-4 py-4">

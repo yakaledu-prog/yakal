@@ -24,6 +24,7 @@ export interface CoursePackage {
   studentAvatarUrl: string | null;
   tutorId: string | null;
   tutorName: string | null;
+  tutorAvatarUrl: string | null;
   /** Sessions paid for across every invoice on this course. */
   slotsPurchased: number;
   slotsCompleted: number;
@@ -70,7 +71,7 @@ export async function getBilling(parentId: string): Promise<BillingData> {
     .select(`id, description, amount_cents, status, created_at, paid_at, booking, course_id, student_id,
              student:profiles!invoices_student_id_fkey (id, full_name, avatar_url),
              course:courses (id, title, subject, thumbnail_url, price_cents, tutor_id,
-                             tutor:profiles!courses_tutor_id_fkey (full_name))`)
+                             tutor:profiles!courses_tutor_id_fkey (full_name, avatar_url))`)
     .eq("parent_id", parentId)
     .order("created_at", { ascending: false });
 
@@ -148,6 +149,7 @@ export async function getBilling(parentId: string): Promise<BillingData> {
       studentAvatarUrl: r.student?.avatar_url ?? null,
       tutorId: r.course?.tutor_id ?? null,
       tutorName: r.course?.tutor?.full_name ?? null,
+      tutorAvatarUrl: r.course?.tutor?.avatar_url ?? null,
       slotsPurchased: slots,
       slotsCompleted: 0,
       slotsUpcoming: 0,

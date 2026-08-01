@@ -1,16 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 import { money } from "@/services/billingService";
-import { getTutorAvailability } from "@/services/availability";
-import { getCatalogCourses, getCourseForBooking } from "@/services/courseApplicationService";
-import { getLinkedChildren } from "@/services/parentService";
+import { DEMO_AVAILABILITY, DEMO_CHILDREN, DEMO_COURSE } from "../demoFixtures";
 
 // ============================================================
 // Two ways to buy a month of lessons, so they can be compared.
@@ -30,6 +25,9 @@ import { getLinkedChildren } from "@/services/parentService";
 // sentence rather than an accident. Dates is honest about a life that does not
 // repeat, but it makes the parent do the arithmetic every month and gives the
 // tutor nothing to reserve.
+//
+// Both read fixed data, not the database, so the calendar always has enough in
+// it to show what the mechanic feels like. See demoFixtures.
 // ============================================================
 
 const HOUR_START = 8;
@@ -57,34 +55,9 @@ const hourLabel = (h: number) =>
   new Date(0, 0, 0, h).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
-  const { courseId } = useParams();
-  const { user } = useAuth();
-
-  // Falls back to the first bookable course so the page can be opened from the
-  // nav without hunting for an id.
-  const { data: catalog = [] } = useQuery({
-    queryKey: ["catalog-courses"],
-    queryFn: getCatalogCourses,
-  });
-  const id = courseId ?? catalog[0]?.id;
-
-  const { data: course } = useQuery({
-    queryKey: ["course-for-booking", id],
-    queryFn: () => getCourseForBooking(id!),
-    enabled: !!id,
-  });
-
-  const { data: children = [] } = useQuery({
-    queryKey: ["linked-children", user?.id],
-    queryFn: () => getLinkedChildren(user!.id),
-    enabled: !!user?.id,
-  });
-
-  const { data: availability } = useQuery({
-    queryKey: ["tutor-availability", course?.tutor?.id],
-    queryFn: () => getTutorAvailability(course!.tutor!.id),
-    enabled: !!course?.tutor?.id,
-  });
+  const course = DEMO_COURSE;
+  const children = DEMO_CHILDREN;
+  const availability = DEMO_AVAILABILITY;
 
   // weekly: "dayIndex|hour". dates: "YYYY-MM-DD|hour".
   const [picked, setPicked] = useState<string[]>([]);

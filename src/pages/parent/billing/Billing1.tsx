@@ -1,12 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
-import { getLinkedChildren } from "@/services/parentService";
-import { getBilling } from "@/services/packageService";
 import { money } from "@/services/billingService";
+import { DEMO_BILLING, DEMO_CHILDREN } from "../demoFixtures";
 import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, Spinner } from "./shared";
 
 // ============================================================
@@ -22,6 +19,9 @@ import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, S
 // Tabs keep each answer whole. The cost is that nothing is visible until you
 // pick a tab, so the thing you most often want is one click away rather than
 // on screen. Plans leads because it is the only tab with anything to act on.
+//
+// Reads fixed data, not the database. This is a design to look at, and it
+// should look the same next month. See demoFixtures.
 // ============================================================
 
 const TABS = [
@@ -31,21 +31,12 @@ const TABS = [
 ] as const;
 
 export function Billing1() {
-  const { user } = useAuth();
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
 
-  const { data: children = [] } = useQuery({
-    queryKey: ["linked-children", user?.id],
-    queryFn: () => getLinkedChildren(user!.id),
-    enabled: !!user?.id,
-  });
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["billing", user?.id],
-    queryFn: () => getBilling(user!.id),
-    enabled: !!user?.id,
-  });
+  const children = DEMO_CHILDREN;
+  const data = DEMO_BILLING;
+  const isLoading = false;
 
   const packages = useMemo(
     () => (data?.packages ?? []).filter((p) => !childId || p.studentId === childId),

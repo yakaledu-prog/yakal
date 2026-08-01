@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
-import { getLinkedChildren } from "@/services/parentService";
-import { getBilling, type CoursePackage } from "@/services/packageService";
+import { type CoursePackage } from "@/services/packageService";
 import { money } from "@/services/billingService";
+import { DEMO_BILLING, DEMO_CHILDREN } from "../demoFixtures";
 import {
   AddSlotsModal,
   BillingHeader,
@@ -31,6 +29,8 @@ import {
 // Add slots opens a modal rather than sending the parent back to the course
 // page. They are looking at the plan they want more of, and a redirect loses
 // their place.
+//
+// Reads fixed data, not the database. See demoFixtures.
 // ============================================================
 
 const TABS = [
@@ -40,23 +40,14 @@ const TABS = [
 ] as const;
 
 export function Billing4() {
-  const { user } = useAuth();
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
   const [openPlan, setOpenPlan] = useState<string | null>(null);
   const [adding, setAdding] = useState<CoursePackage | null>(null);
 
-  const { data: children = [] } = useQuery({
-    queryKey: ["linked-children", user?.id],
-    queryFn: () => getLinkedChildren(user!.id),
-    enabled: !!user?.id,
-  });
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["billing", user?.id],
-    queryFn: () => getBilling(user!.id),
-    enabled: !!user?.id,
-  });
+  const children = DEMO_CHILDREN;
+  const data = DEMO_BILLING;
+  const isLoading = false;
 
   const packages = useMemo(
     () => (data?.packages ?? []).filter((p) => !childId || p.studentId === childId),
