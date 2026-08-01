@@ -88,8 +88,9 @@ export async function startCheckout(invoiceIds: string[]): Promise<{ error?: str
 
 // Create an invoice (e.g. from a course booking) and go straight to Checkout.
 export async function bookAndPay(input: {
-  description: string;
-  amountCents: number;
+  /** Omitted when the server derives it, e.g. from an admissions tier. */
+  description?: string;
+  amountCents?: number;
   kind?: "tutoring" | "admissions" | "registration" | "other";
   studentId?: string | null;
   tutorId?: string | null;

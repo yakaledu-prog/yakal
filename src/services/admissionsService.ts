@@ -206,9 +206,10 @@ export async function buyTier(input: {
   tierId: string;
   studentId: string;
 }): Promise<{ error?: string }> {
+  // No amount and no description. Sending a placeholder for the server to
+  // overwrite means a stale or half-deployed server rejects it with "Invalid
+  // amount", which says nothing about what is actually wrong.
   return bookAndPay({
-    description: "Admissions counselling",
-    amountCents: 0,
     kind: "admissions",
     studentId: input.studentId,
     admissionsTierId: input.tierId,

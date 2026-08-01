@@ -61,7 +61,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!finalDescription) return res.status(400).json({ error: 'Missing description' });
     if (!Number.isFinite(finalAmountCents) || finalAmountCents <= 0 || finalAmountCents > 5_000_000) {
-      return res.status(400).json({ error: 'Invalid amount' });
+      // Naming which one is wrong, because "invalid amount" on a request that
+      // deliberately sent no amount sends you looking in the wrong place.
+      return res.status(400).json({
+        error: admissionsTierId
+          ? 'That plan has no price set'
+          : 'Invalid amount',
+      });
     }
 
     // The tutor's cut of this booking (Stripe Connect deferred, so we just
