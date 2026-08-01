@@ -3,6 +3,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
 import { AvailabilityEditor } from "@/components/feature/AvailabilityEditor";
+import { toast } from "sonner";
 import { getTutorAvailability, saveTutorAvailability } from "@/services/availability";
 import { getTutorSessionsFull } from "@/services/tutorService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -416,8 +417,13 @@ export function TutorCalendar() {
         onClose={() => setIsAvailabilityOpen(false)}
         onSave={async (data, disabled) => {
           if (user) {
-            await saveTutorAvailability(user.id, data, disabled);
-            queryClient.invalidateQueries({ queryKey: ['tutor-availability', user.id] });
+            const res = await saveTutorAvailability(user.id, data, disabled);
+            if (!res.success) {
+              toast.error(res.error ?? "Could not save your availability.");
+              return;
+            }
+            await queryClient.invalidateQueries({ queryKey: ['tutor-availability', user.id] });
+            toast.success("Availability updated.");
           }
         }}
         initialData={availabilityData}

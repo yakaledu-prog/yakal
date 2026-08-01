@@ -52,6 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // because the field isn't in the SDK's typed params yet.
     const params: any = {
       mode: 'payment',
+      // Card only. Checkout otherwise leads with Apple Pay, Link and Amazon
+      // Pay and files Card into an accordion, so paying by card takes an extra
+      // click to find. None of the wallets are set up for this account anyway.
+      payment_method_types: ['card'],
       customer: customerId,
       line_items: invoices.map((inv) => ({
         quantity: 1,

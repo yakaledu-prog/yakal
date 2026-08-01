@@ -36,6 +36,19 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // Seed from what is already saved every time it opens.
+  //
+  // The initial state is a lazy initialiser, so it ran once on mount, when the
+  // availability was usually still loading and initialData was undefined. The
+  // component never unmounts, so it never re-seeded: the editor opened blank
+  // and saving replaced a tutor's whole week with whatever they had just
+  // drawn, which read as the change not applying.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initialData && initialData.length === 13) setTimeGrid(initialData as SlotMode[][]);
+    setDisabledDays(initialDisabledDays || []);
+  }, [isOpen, initialData, initialDisabledDays]);
+
   if (!isOpen) return null;
 
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

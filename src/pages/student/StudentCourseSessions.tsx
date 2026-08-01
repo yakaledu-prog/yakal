@@ -80,7 +80,7 @@ export function StudentCourseSessions() {
             <Button
               variant="outline"
               onClick={() => handleRescheduleClick(s)}
-              className="h-10 px-5 text-[14px] font-medium"
+              className="h-10 border !border-[#1099A1] px-5 text-[14px] font-medium !text-[#1099A1] hover:!bg-[#1099A1]/10"
             >
               Reschedule
             </Button>

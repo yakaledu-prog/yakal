@@ -42,21 +42,42 @@ export const getFirstAvailableTutor = async (): Promise<TutorAvailability | null
   }
 };
 
-export const saveTutorAvailability = async (tutorId: string, timeGrid: number[][], disabledDays: number[]) => {
+/**
+ * Write a tutor's availability.
+ *
+ * onConflict has to name tutor_id. The table has a unique constraint on it but
+ * the primary key is a generated id, so an upsert without this conflicts on
+ * the key it just generated, inserts, and then trips the unique constraint. It
+ * worked once, on the first save, and every edit after that failed.
+ *
+ * The failure was also swallowed by a console.error, so the caller believed it
+ * had saved. It returns a result now and the caller says so.
+ */
+export const saveTutorAvailability = async (
+  tutorId: string,
+  timeGrid: number[][],
+  disabledDays: number[]
+): Promise<{ success: boolean; error?: string }> => {
   try {
     const { error } = await supabase
       .from('tutor_availability')
-      .upsert({
-        tutor_id: tutorId,
-        time_grid: timeGrid,
-        disabled_days: disabledDays,
-        updated_at: new Date().toISOString()
-      });
+      .upsert(
+        {
+          tutor_id: tutorId,
+          time_grid: timeGrid,
+          disabled_days: disabledDays,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'tutor_id' }
+      );
 
     if (error) {
       console.error('Failed to save tutor availability', error);
+      return { success: false, error: error.message };
     }
-  } catch (e) {
+    return { success: true };
+  } catch (e: any) {
     console.error('Failed to save tutor availability', e);
+    return { success: false, error: e?.message ?? 'Could not save your availability.' };
   }
 };
