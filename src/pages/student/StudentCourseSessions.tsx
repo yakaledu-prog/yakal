@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   PastSessions,
   UpcomingSessions,
+  useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
 import {
@@ -31,6 +32,8 @@ export function StudentCourseSessions() {
     enabled: !!user?.id && !!courseId,
   });
 
+  const { data: extras } = useSessionExtras(rows);
+
   const sessions: SessionListItem[] = rows.map((r) => ({
     id: r.id,
     date: r.date,
@@ -40,7 +43,8 @@ export function StudentCourseSessions() {
     title: r.subject,
     personName: r.tutor_name,
     personAvatarUrl: r.tutor_avatar,
-    note: r.notes,
+    rating: extras?.ratings[r.id] ?? null,
+    attendedMinutes: extras?.minutes[r.id] ?? null,
   }));
 
   const toReschedulable = (s: SessionListItem): ReschedulableSession => ({

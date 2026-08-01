@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Loader2, Star, XCircle } from "lucide-react";
 
+import { getSessionExtras } from "@/services/sessions";
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
 
@@ -35,9 +37,10 @@ export interface SessionListItem {
   /** The other party: the tutor for a student, the student for a tutor. */
   personName: string | null;
   personAvatarUrl?: string | null;
-  /** Written afterwards by the tutor. */
-  note?: string | null;
+  /** Stars the student gave, once the session has been rated. */
   rating?: number | null;
+  /** Minutes actually spent in the meeting, where we recorded it. */
+  attendedMinutes?: number | null;
 }
 
 export function startsAt(item: SessionListItem): Date {
@@ -132,12 +135,15 @@ export function SessionList({
   emptyText = "No sessions yet.",
   /** Rendered on the right of a row, for whatever this role can do about it. */
   renderAction,
+  /** Given, an unrated finished session invites the student to rate it. */
+  onRate,
   className,
 }: {
   sessions: SessionListItem[];
   isLoading?: boolean;
   emptyText?: string;
   renderAction?: (session: SessionListItem) => React.ReactNode;
+  onRate?: (session: SessionListItem) => void;
   className?: string;
 }) {
   if (isLoading) {
@@ -161,7 +167,7 @@ export function SessionList({
         const label = whenLabel(s);
 
         return (
-          <div key={s.id} className="flex flex-wrap items-center gap-4 py-5 md:flex-nowrap">
+          <div key={s.id} className="flex flex-wrap items-center gap-4 py-8 md:flex-nowrap">
             {/* Date, as its own column so the eye can run down it */}
             <div className="w-12 shrink-0 text-center">
               <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
@@ -183,14 +189,6 @@ export function SessionList({
               {s.personName && (
                 <p className="truncate text-[13px] text-muted-foreground">{s.personName}</p>
               )}
-              {completed && s.note && (
-                <div className="mt-1.5">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Session note
-                  </p>
-                  <p className="text-[13px] text-foreground">{s.note}</p>
-                </div>
-              )}
             </div>
 
             <div className="shrink-0">
@@ -207,14 +205,35 @@ export function SessionList({
                 <StatusIcon item={s} />
                 {label}
               </p>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">{timeRange(s)}</p>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                {timeRange(s)}
+                {completed && s.attendedMinutes != null && ` · ${s.attendedMinutes} min attended`}
+              </p>
             </div>
 
-            {/* A rating only exists once a session has happened. */}
-            {completed && s.rating != null && (
-              <div className="flex shrink-0 items-center gap-1 text-[13.5px] text-foreground">
-                <Star size={14} className="fill-[#CAA25F] text-[#CAA25F]" />
-                {s.rating.toFixed(1)}
+            {/* A rating only exists once a session has happened. The column is
+                kept even when unrated, so the ones that are line up. */}
+            {completed && (
+              <div className="w-20 shrink-0 text-right">
+                {s.rating != null ? (
+                  <span className="inline-flex items-center gap-1 text-[13.5px] text-foreground">
+                    <Star size={14} className="fill-[#CAA25F] text-[#CAA25F]" />
+                    {s.rating.toFixed(1)}
+                  </span>
+                ) : onRate ? (
+                  // The invitation lives in the rating column rather than as
+                  // another button on the right: it is the same slot the
+                  // answer will occupy.
+                  <button
+                    type="button"
+                    onClick={() => onRate(s)}
+                    className="text-[12.5px] font-medium text-[#1099A1] hover:underline"
+                  >
+                    Rate
+                  </button>
+                ) : (
+                  <span className="text-[12.5px] text-muted-foreground">Not rated</span>
+                )}
               </div>
             )}
 
@@ -311,6 +330,7 @@ export function PastSessions({
   emptyText = "No past sessions.",
   hideIfEmpty = false,
   renderAction,
+  onRate,
   className,
 }: {
   sessions: SessionListItem[];
@@ -318,6 +338,7 @@ export function PastSessions({
   emptyText?: string;
   hideIfEmpty?: boolean;
   renderAction?: (session: SessionListItem) => React.ReactNode;
+  onRate?: (session: SessionListItem) => void;
   className?: string;
 }) {
   const { past } = splitSessions(sessions);
@@ -330,6 +351,24 @@ export function PastSessions({
       emptyText={emptyText}
       className={className}
       renderAction={renderAction}
+      onRate={onRate}
     />
   );
+}
+
+/**
+ * Ratings and attended minutes for a list of sessions.
+ *
+ * Every page that shows past sessions wants both, and neither belongs on the
+ * sessions row itself: one is written by the student afterwards, the other is
+ * accumulated while the meeting runs. Asked for the whole list at once, and
+ * keyed on the ids so switching a filter does not refetch what is unchanged.
+ */
+export function useSessionExtras(sessions: { id: string }[]) {
+  const ids = sessions.map((s) => s.id).sort();
+  return useQuery({
+    queryKey: ["session-extras", ids.join(",")],
+    queryFn: () => getSessionExtras(ids),
+    enabled: ids.length > 0,
+  });
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { Search, CalendarRange, Loader2 } from "lucide-react";
@@ -9,13 +9,16 @@ import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import {
   PastSessions,
   UpcomingSessions,
+  useSessionExtras,
   splitSessions,
+  startsAt,
   type SessionListItem,
 } from "@/components/shared/SessionList";
 import {
   RescheduleDialog,
   type ReschedulableSession,
 } from "@/components/shared/RescheduleDialog";
+import { RateSessionDialog } from "@/components/shared/RateSessionDialog";
 
 interface StudentSessionRow {
   id: string;
@@ -40,6 +43,8 @@ export function StudentSessions() {
   const [filterText, setFilterText] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
+  const [rating, setRating] = useState<StudentSessionRow | null>(null);
+  const [asked, setAsked] = useState(false);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -75,6 +80,8 @@ export function StudentSessions() {
     [sessions, selectedCourse]
   );
 
+  const { data: extras } = useSessionExtras(courseSessions);
+
   // One shape for the shared lists, whatever the page around them looks like.
   const items: SessionListItem[] = useMemo(
     () =>
@@ -87,15 +94,35 @@ export function StudentSessions() {
         title: s.subject,
         personName: s.tutor_name,
         personAvatarUrl: s.tutor_avatar,
-        note: s.notes,
+        rating: extras?.ratings[s.id] ?? null,
+        attendedMinutes: extras?.minutes[s.id] ?? null,
       })),
-    [courseSessions]
+    [courseSessions, extras]
   );
 
   // The lists decide what is still to come by the clock, so the counts beside
   // the title have to agree with them rather than count the status column.
   const { upcoming, past } = useMemo(() => splitSessions(items), [items]);
   const completedCount = courseSessions.filter((s) => s.status === "completed").length;
+
+  // A session that ended in the last day and was never rated is the one the
+  // student has just come from, so it is asked about once. Skipping is allowed,
+  // and the Rate link in the list is how they change their mind later.
+  useEffect(() => {
+    if (asked || !extras || sessions.length === 0) return;
+    const now = Date.now();
+    const justFinished = past.find((s) => {
+      if (extras.ratings[s.id] != null) return false;
+      const ended = startsAt(s).getTime() + (s.durationMinutes || 60) * 60_000;
+      return ended < now && now - ended < 24 * 60 * 60_000;
+    });
+    if (!justFinished) return;
+    const row = sessions.find((r) => r.id === justFinished.id);
+    if (row) {
+      setRating(row);
+      setAsked(true);
+    }
+  }, [asked, extras, past, sessions]);
 
   const toReschedulable = (s: SessionListItem): ReschedulableSession => ({
     id: s.id,
@@ -211,11 +238,26 @@ export function StudentSessions() {
               onReschedule={(s) => setMoving(toReschedulable(s))}
             />
           ) : (
-            <PastSessions sessions={items} />
+            <PastSessions
+              sessions={items}
+              onRate={(s) => {
+                const row = sessions.find((r) => r.id === s.id);
+                if (row) setRating(row);
+              }}
+            />
           )}
         </div>
 
         {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
+
+        {rating && (
+          <RateSessionDialog
+            sessionId={rating.id}
+            tutorId={rating.tutor_id}
+            tutorName={rating.tutor_name}
+            onClose={() => setRating(null)}
+          />
+        )}
       </section>
     </div>
   );

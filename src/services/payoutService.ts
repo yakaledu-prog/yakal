@@ -303,3 +303,105 @@ export async function payViaConnect(
 ): Promise<{ transferId?: string; error?: string }> {
   return authedPost("/api/connect-transfer", { invoiceIds });
 }
+
+// ============================================================
+// Earnings, a session at a time.
+//
+// Money is earned per session, so this is the ledger: one row per session with
+// what it was worth, whether it has been asked for, and the reference for the
+// payment that settled it. The by-invoice history it replaces could not answer
+// "which lesson was that for".
+// ============================================================
+
+export interface EarningRow {
+  sessionId: string;
+  date: string;
+  startTime: string;
+  durationMinutes: number;
+  subject: string;
+  studentName: string | null;
+  amountCents: number;
+  /** none = not asked for yet, requested = waiting on an admin, paid = settled. */
+  payoutStatus: "none" | "requested" | "paid";
+  requestedAt: string | null;
+  /** Only once paid. */
+  method: string | null;
+  reference: string | null;
+  paidOn: string | null;
+}
+
+export async function getTutorEarnings(tutorId: string): Promise<EarningRow[]> {
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select(
+      "id, date, start_time, duration_minutes, subject, status, payout_cents, payout_status, payout_requested_at, student:profiles!sessions_student_id_fkey (full_name)"
+    )
+    .eq("tutor_id", tutorId)
+    .order("date", { ascending: false })
+    .order("start_time", { ascending: false });
+
+  if (error) {
+    console.error("getTutorEarnings failed:", error);
+    return [];
+  }
+
+  const rows = (sessions ?? []) as any[];
+
+  // The payment that settled each session, where there is one. Read in a single
+  // query rather than per row.
+  const ids = rows.map((r) => r.id);
+  const { data: payouts } = ids.length
+    ? await supabase
+        .from("tutor_payouts")
+        .select("session_id, method, reference, paid_on")
+        .in("session_id", ids)
+        .is("voided_at", null)
+    : { data: [] as any[] };
+
+  const settled = new Map<string, any>((payouts ?? []).map((p: any) => [p.session_id, p]));
+
+  // Only sessions that have actually run. A lesson next Tuesday is not an
+  // earning, and listing it as one is how a tutor comes to expect money that
+  // is not owed yet.
+  const now = Date.now();
+  return rows
+    .filter((r) => {
+      const ended = new Date(`${r.date}T${String(r.start_time).slice(0, 5)}:00`).getTime()
+        + (r.duration_minutes || 60) * 60_000;
+      return r.status !== "cancelled" && ended < now;
+    })
+    .map((r) => {
+      const paid = settled.get(r.id);
+      return {
+        sessionId: r.id,
+        date: r.date,
+        startTime: String(r.start_time).slice(0, 5),
+        durationMinutes: r.duration_minutes ?? 60,
+        subject: r.subject,
+        studentName: r.student?.full_name ?? null,
+        amountCents: r.payout_cents ?? 0,
+        payoutStatus: (paid ? "paid" : r.payout_status) as EarningRow["payoutStatus"],
+        requestedAt: r.payout_requested_at,
+        method: paid?.method ?? null,
+        reference: paid?.reference ?? null,
+        paidOn: paid?.paid_on ?? null,
+      };
+    });
+}
+
+/**
+ * Ask to be paid for a session.
+ *
+ * The server decides whether it happened, so every refusal here is a sentence
+ * worth putting in front of the tutor rather than flattening to "failed".
+ */
+export async function requestSessionPayment(
+  sessionId: string
+): Promise<{ success: boolean; error?: string; attendanceKnown?: boolean }> {
+  const { data, error } = await supabase.rpc("request_session_payment", {
+    p_session_id: sessionId,
+  });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, attendanceKnown: data?.attendance_known ?? false };
+}

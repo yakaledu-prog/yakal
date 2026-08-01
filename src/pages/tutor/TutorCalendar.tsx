@@ -166,7 +166,7 @@ export function TutorCalendar() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-      <div className="border border-border/60 rounded-none overflow-hidden bg-white dark:bg-[#111b21] mt-4">
+      <div className="border border-border/60 rounded-none overflow-hidden bg-white dark:bg-[#111b21]">
         <div className="grid grid-cols-7 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           {weekdays.map(day => (
             <div key={day} className="text-center text-[13px] font-medium text-[#111] dark:text-[#e9edef] py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
@@ -200,7 +200,7 @@ export function TutorCalendar() {
                   <div className="space-y-1">
                     {getSessionsForDay(day).map(session => (
                       <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded-none border-l-2 border-[#1099A1] bg-[#1099A1]/5 dark:hover:bg-white/5 cursor-pointer">
-                        <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate font-semibold">
+                        <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate font-normal">
                           {formatTime(session.startTime)} {session.subject}
                         </span>
                       </div>
@@ -221,7 +221,7 @@ export function TutorCalendar() {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-      <div className="border border-border/60 rounded-none overflow-x-auto bg-white dark:bg-[#111b21] mt-4">
+      <div className="border border-border/60 rounded-none overflow-x-auto bg-white dark:bg-[#111b21]">
         <div className="min-w-[800px]">
           <div className="grid grid-cols-8 border-b border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
             <div className="border-r border-[#e9edef] dark:border-[#2a3942]"></div>
@@ -249,14 +249,14 @@ export function TutorCalendar() {
                   return (
                     <div key={dIndex} className={cn("h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1 flex flex-col gap-1 overflow-hidden", isDisabled && "opacity-40 grayscale bg-[#f0f2f5] dark:bg-[#111b21]/50")}>
                       {mode > 0 && sessions.length === 0 && (
-                        <div className={cn("flex-1 rounded-none border flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
+                        <div className={cn("flex-1 rounded border flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
                           <div className="flex items-center gap-1 text-[10px] font-bold">
                             {renderModeIcon(mode)} <span className="uppercase tracking-wider hidden md:inline">{getModeLabel(mode)}</span>
                           </div>
                         </div>
                       )}
                       {sessions.map(s => (
-                        <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none px-2 py-1 text-[11px] font-bold truncate cursor-pointer hover:bg-[#1099A1]/10 transition-colors">
+                        <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none px-2 py-1 text-[11px] font-normal truncate cursor-pointer hover:bg-[#1099A1]/10 transition-colors">
                           {formatTime(s.startTime)} {s.subject}
                         </div>
                       ))}
@@ -284,7 +284,7 @@ export function TutorCalendar() {
     const isDayDisabled = disabledDays.includes(dayIndex);
 
     return (
-      <div className={cn("border border-border/60 rounded-none bg-white dark:bg-[#111b21] mt-4 overflow-hidden", isDayDisabled && "opacity-50 grayscale bg-[#f8f9fa] dark:bg-[#182329] pointer-events-none")}>
+      <div className={cn("border border-border/60 rounded-none bg-white dark:bg-[#111b21] overflow-hidden", isDayDisabled && "opacity-50 grayscale bg-[#f8f9fa] dark:bg-[#182329] pointer-events-none")}>
         <div className="grid grid-cols-[100px_1fr] bg-[#f8f9fa] dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="p-3 border-r border-[#e9edef] dark:border-[#2a3942]"></div>
           <div className="p-3 text-[15px] font-medium text-[#111] dark:text-white">
@@ -304,16 +304,16 @@ export function TutorCalendar() {
                 </div>
                 <div className="p-2 min-h-[60px] relative">
                   {mode > 0 && sessions.length === 0 && (
-                    <div className={cn("absolute inset-2 border rounded-none flex items-center justify-center pointer-events-none", getModeClasses(mode))}>
-                      <div className="flex items-center gap-2 text-[13px] font-semibold opacity-90">
+                    <div className={cn("absolute inset-2 border rounded flex items-center justify-center pointer-events-none", getModeClasses(mode))}>
+                      <div className="flex items-center gap-2 text-[13px] font-normal opacity-90">
                         {renderModeIcon(mode)} <span className="uppercase tracking-wider text-[11px]">{getModeLabel(mode)} Availability</span>
                       </div>
                     </div>
                   )}
                   <div className="relative z-10 flex flex-col gap-2">
                     {sessions.map(s => (
-                      <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none p-3 text-[13px] hover:bg-[#1099A1]/10 transition-colors cursor-pointer w-full max-w-md">
-                        <div className="font-bold">{s.subject}</div>
+                      <div key={s.id} className="bg-[#1099A1]/5 text-[#1099A1] border-l-2 border-[#1099A1] rounded-none p-3 text-[13px] hover:bg-[#1099A1]/10 transition-colors cursor-pointer w-full">
+                        <div className="font-medium">{s.subject}</div>
                         <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px] font-medium">
                           <span>{formatTime(s.startTime)}</span>
                           <span>•</span>
@@ -333,10 +333,10 @@ export function TutorCalendar() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col w-full min-h-screen bg-background dark:bg-[#111b21] pb-12">
+      <div className="flex flex-col w-full min-h-screen bg-background dark:bg-[#111b21] pb-0">
 
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-10 relative overflow-hidden shrink-0">
+        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-4 relative overflow-hidden shrink-0">
           {/* Subtle Background Texture/Graph */}
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -350,16 +350,23 @@ export function TutorCalendar() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-3xl md:text-4xl font-bold tracking-tight">Your Calendar</span>
+                  <span className="text-3xl md:text-4xl font-bold tracking-tight">Calendar</span>
                 </div>
-                <p className="text-white/70 text-[14px] pt-1">
+                {/* <p className="text-white/70 text-[14px] pt-1">
                   Manage your availability and upcoming sessions
-                </p>
+                </p> */}
               </div>
             </div>
 
             {/* Controls Row inside header */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-4 border-t border-white/20">
+
+              <div className="flex items-center gap-1 text-white flex-grow">
+                <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronLeft size={18} /></Button>
+                <span className="text-md text-center font-medium min-w-[140px]">{getHeaderText()}</span>
+                <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></Button>
+              </div>
+
               <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
                 <button
                   className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
@@ -381,11 +388,6 @@ export function TutorCalendar() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-1 text-white">
-                <Button variant="outline" size="icon" onClick={navigatePrev} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronLeft size={18} /></Button>
-                <span className="text-md text-center font-medium min-w-[140px]">{getHeaderText()}</span>
-                <Button variant="outline" size="icon" onClick={navigateNext} className="h-9 w-9 border-none !bg-transparent text-white hover:bg-white/10 hover:text-white"><ChevronRight size={18} /></Button>
-              </div>
 
               <div className="flex gap-2">
                 <Button
@@ -402,7 +404,7 @@ export function TutorCalendar() {
         </div>
 
         {/* Calendar Content Wrapper */}
-        <div className="w-full max-w-[1440px] mx-auto p-4 md:p-6 mt-4">
+        <div className="w-full">
           <div className="w-full bg-white dark:bg-[#111b21]">
 
             {calendarView === 'month' && renderMonthView()}

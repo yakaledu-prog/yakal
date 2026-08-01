@@ -199,3 +199,69 @@ async function updateZoomMeeting(
   });
   if (!res.ok) throw new Error(await res.text());
 }
+
+// ============================================================
+// What a finished session is worth knowing after the fact.
+//
+// Both of these are read for a whole list at once rather than per row: a page
+// showing thirty sessions should ask two questions, not sixty.
+// ============================================================
+
+export interface SessionExtras {
+  /** Session id to the stars it was given. */
+  ratings: Record<string, number>;
+  /** Session id to the minutes the people in it actually spent there. */
+  minutes: Record<string, number>;
+}
+
+export const getSessionExtras = async (sessionIds: string[]): Promise<SessionExtras> => {
+  if (sessionIds.length === 0) return { ratings: {}, minutes: {} };
+
+  const [rated, attended] = await Promise.all([
+    supabase.from('session_ratings').select('session_id, stars').in('session_id', sessionIds),
+    supabase.from('session_attendance').select('session_id, seconds').in('session_id', sessionIds),
+  ]);
+
+  const ratings: Record<string, number> = {};
+  for (const r of rated.data ?? []) ratings[r.session_id] = r.stars;
+
+  // The shorter of the two is what the session was worth: an hour of tutor
+  // sitting alone in the room is not an hour of tutoring.
+  const shortest: Record<string, number> = {};
+  for (const a of attended.data ?? []) {
+    const mins = Math.round((a.seconds ?? 0) / 60);
+    shortest[a.session_id] = Math.min(shortest[a.session_id] ?? Infinity, mins);
+  }
+
+  return { ratings, minutes: shortest };
+};
+
+/** The student's verdict on a session. One per person; changing it replaces it. */
+export const rateSession = async (
+  sessionId: string,
+  tutorId: string,
+  stars: number
+): Promise<{ success: boolean; error?: string }> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return { success: false, error: 'You need to be signed in to rate a session.' };
+
+  const { error } = await supabase
+    .from('session_ratings')
+    .upsert(
+      { session_id: sessionId, rated_by: user.user.id, ratee_id: tutorId, stars },
+      { onConflict: 'session_id,rated_by' }
+    );
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+};
+
+/** Has this student already had their say about this session? */
+export const getMyRating = async (sessionId: string): Promise<number | null> => {
+  const { data } = await supabase
+    .from('session_ratings')
+    .select('stars')
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  return data?.stars ?? null;
+};

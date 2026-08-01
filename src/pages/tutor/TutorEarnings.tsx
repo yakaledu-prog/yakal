@@ -1,83 +1,131 @@
-import { useEffect, useState } from "react";
-import { Info, TrendingDown, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
 
-import { PayoutHistory } from "@/components/shared/PayoutHistory";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { cn } from "@/utils/cn";
 import { useAuth } from "@/contexts/AuthContext";
 import { money as usd } from "@/services/billingService";
-import { computeEarnings, getTutorSessionsFull, type EarningsSummary } from "@/services/tutorService";
+import {
+  getTutorEarnings,
+  methodLabel,
+  requestSessionPayment,
+  type EarningRow,
+} from "@/services/payoutService";
+import { cn } from "@/utils/cn";
 
 // ============================================================
-// What a tutor has earned, and what has actually been paid.
+// What a tutor has earned, session by session.
 //
-// The charts are gone. A bar chart of eight months is empty for most of a
-// tutor's first year here, and the version before this one filled the gaps
-// with invented figures to keep it looking full, which is worse than an empty
-// chart: it showed people money they had never earned. A table of months is
-// honest when there is one row and still readable when there are thirty.
+// This page used to be two tables that disagreed about what they were for: one
+// of monthly totals and one of payments, with no way to see which lesson a
+// payment covered. It is one ledger now, a row per session that has run, and
+// the payment state lives on the same row as the money.
 //
-// Earnings and payments are deliberately two sections. What the sessions came
-// to and what has reached a bank account are different questions, and running
-// them together is how a tutor ends up unsure whether they have been paid.
+// Confirming a session lives here rather than on the sessions page. The
+// sessions page answers what happened; this one answers what is owed, and a
+// tutor checking whether they have been paid is exactly the person who should
+// be asked to confirm the ones still waiting.
 // ============================================================
 
-function MonthRow({
-  label,
-  count,
-  amount,
-  isCurrent,
-}: {
-  label: string;
-  count: number;
-  amount: number;
-  isCurrent: boolean;
-}) {
-  return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-3 pr-4">
-        <span className={cn("text-[14px]", isCurrent ? "font-semibold text-[#1099A1]" : "text-foreground")}>
-          {label}
-        </span>
-        {isCurrent && <span className="ml-2 text-[12px] text-muted-foreground">so far</span>}
-      </td>
-      <td className="py-3 pr-4 text-right text-[13.5px] tabular-nums text-muted-foreground">
-        {count === 0 ? "-" : count}
-      </td>
-      <td className="py-3 text-right text-[14px] font-medium tabular-nums text-foreground">
-        {usd(amount * 100)}
-      </td>
-    </tr>
-  );
-}
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "none", label: "Not requested" },
+  { value: "requested", label: "Awaiting payment" },
+  { value: "paid", label: "Paid" },
+];
 
-export function TutorEarnings() {
-  const { user, profile } = useAuth();
-  const [summary, setSummary] = useState<EarningsSummary | null>(null);
-  const rate = profile?.hourly_rate ?? 0;
-
-  useEffect(() => {
-    if (!user) return;
-    getTutorSessionsFull(user.id).then((s) => setSummary(computeEarnings(s, rate)));
-  }, [user, rate]);
-
-  if (!summary) {
+function StatusCell({ row }: { row: EarningRow }) {
+  if (row.payoutStatus === "paid") {
     return (
-      <PageWrapper>
-        <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-        </div>
-      </PageWrapper>
+      <div className="text-right">
+        <p className="text-[13.5px] font-medium text-[#1099A1]">Paid</p>
+        <p className="text-[12px] text-muted-foreground">
+          {row.method ? methodLabel(row.method) : "-"}
+          {row.reference ? ` · ${row.reference}` : ""}
+        </p>
+      </div>
     );
   }
 
-  const now = new Date();
-  const thisKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const up = (summary.momChangePct ?? 0) >= 0;
+  if (row.payoutStatus === "requested") {
+    return (
+      <div className="text-right">
+        <p className="text-[13.5px] font-medium text-[#CAA25F]">Awaiting payment</p>
+        <p className="text-[12px] text-muted-foreground">
+          {row.requestedAt
+            ? `Asked ${new Date(row.requestedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+            : ""}
+        </p>
+      </div>
+    );
+  }
 
-  // Only months that actually happened. No padding, and nothing invented for
-  // the ones that did not.
-  const months = summary.months.filter((m) => m.count > 0 || m.key === thisKey);
+  return <p className="text-right text-[13.5px] text-muted-foreground">Not requested</p>;
+}
+
+export function TutorEarnings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["tutor-earnings", user?.id],
+    queryFn: () => getTutorEarnings(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const totals = useMemo(() => {
+    const sum = (test: (r: EarningRow) => boolean) =>
+      rows.filter(test).reduce((n, r) => n + r.amountCents, 0);
+    return {
+      earned: sum(() => true),
+      paid: sum((r) => r.payoutStatus === "paid"),
+      awaiting: sum((r) => r.payoutStatus === "requested"),
+      unclaimed: sum((r) => r.payoutStatus === "none"),
+    };
+  }, [rows]);
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (filter !== "all" && r.payoutStatus !== filter) return false;
+      if (!needle) return true;
+      return (
+        r.subject.toLowerCase().includes(needle) ||
+        (r.studentName ?? "").toLowerCase().includes(needle) ||
+        (r.reference ?? "").toLowerCase().includes(needle)
+      );
+    });
+  }, [rows, filter, search]);
+
+  const pending = rows.filter((r) => r.payoutStatus === "none");
+
+  const request = async (ids: string[]) => {
+    setBusy(ids.length === 1 ? ids[0] : "all");
+    let done = 0;
+    const problems: string[] = [];
+
+    // One at a time, because each is checked separately and one refusal must
+    // not cost the others.
+    for (const id of ids) {
+      const result = await requestSessionPayment(id);
+      if (result.success) done += 1;
+      else problems.push(result.error ?? "Could not request that session.");
+    }
+
+    setBusy(null);
+    if (done > 0) {
+      toast.success(done === 1 ? "Payment requested." : `${done} sessions requested.`);
+      void queryClient.invalidateQueries({ queryKey: ["tutor-earnings", user?.id] });
+      void queryClient.invalidateQueries({ queryKey: ["tutor-sessions", user?.id] });
+    }
+    // The server's refusals explain themselves, so the first is shown as it is.
+    if (problems.length > 0) toast.error(problems[0]);
+  };
 
   return (
     <PageWrapper>
@@ -98,91 +146,151 @@ export function TutorEarnings() {
               <h1 className="mb-2 text-[14px] font-medium uppercase tracking-wider text-white/80">
                 Total earned
               </h1>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-4xl font-bold tracking-tight md:text-5xl">
-                  {usd(summary.total * 100)}
-                </span>
-                {summary.momChangePct !== null && (
-                  <span className="inline-flex items-center gap-1 text-[13px] font-medium text-white/80">
-                    {up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    {Math.abs(summary.momChangePct)}% on last month
-                  </span>
-                )}
-              </div>
+              <span className="text-4xl font-bold tracking-tight md:text-5xl">
+                {usd(totals.earned)}
+              </span>
               <p className="pt-1 text-[14px] text-white/70">
-                {summary.completedCount} completed{" "}
-                {summary.completedCount === 1 ? "session" : "sessions"}
-                {rate > 0 && ` at ${usd(rate * 100)} an hour`}
+                {rows.length} {rows.length === 1 ? "session" : "sessions"} taught
               </p>
             </div>
 
             <div className="flex items-center gap-8 pb-2 md:gap-12">
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
-                  This month
+                  Paid
                 </p>
-                <p className="text-2xl font-bold">{usd(summary.thisMonth * 100)}</p>
+                <p className="text-2xl font-bold">{usd(totals.paid)}</p>
               </div>
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
-                  Last month
+                  Awaiting
                 </p>
-                <p className="text-2xl font-bold opacity-80">{usd(summary.lastMonth * 100)}</p>
+                <p className="text-2xl font-bold opacity-80">{usd(totals.awaiting)}</p>
+              </div>
+              <div className="text-left md:text-right">
+                <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
+                  Not requested
+                </p>
+                <p className="text-2xl font-bold opacity-80">{usd(totals.unclaimed)}</p>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1440px] space-y-12 p-6 md:p-10">
-          <section className="space-y-4">
-            <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
-              By month
-            </h2>
-            {months.length === 0 ? (
-              <p className="py-10 text-[14px] text-muted-foreground">
-                Nothing yet. A month appears here once you have completed a session in it.
-              </p>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Month
-                    </th>
-                    <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Sessions
-                    </th>
-                    <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      Earned
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {months.map((m) => (
-                    <MonthRow
-                      key={m.key}
-                      label={m.label}
-                      count={m.count}
-                      amount={m.amount}
-                      isCurrent={m.key === thisKey}
-                    />
-                  ))}
-                </tbody>
-              </table>
+        <div className="mx-auto max-w-[1440px] p-6 md:p-10">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-[#1099A1]">
+              <Search size={16} className="shrink-0 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by subject, student or reference"
+                className="w-full bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+
+            <Dropdown
+              value={filter}
+              onChange={setFilter}
+              options={FILTERS}
+              className="w-[190px]"
+            />
+
+            {/* Requesting one at a time is the fiddly part of doing this per
+                session, so a week of teaching can go in one go. */}
+            {pending.length > 1 && (
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => request(pending.map((r) => r.sessionId))}
+                className="h-10 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {busy === "all" ? "Requesting..." : `Request all ${pending.length}`}
+              </button>
             )}
-          </section>
-
-          {/* What the sessions came to is one question. What has reached a bank
-              account is another, and it was previously unanswerable here. */}
-          {user && <PayoutHistory tutorId={user.id} />}
-
-          <div className="flex items-start gap-2.5 rounded-lg bg-muted/30 px-4 py-3 text-[13px] text-muted-foreground">
-            <Info size={16} className="mt-0.5 shrink-0 text-[#1099A1]" />
-            <span>
-              Earnings are worked out from your completed sessions at your current rate. What has
-              actually been paid, and how, is listed above.
-            </span>
           </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin text-[#1099A1]" />
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="py-20 text-center text-[14px] text-muted-foreground">
+              {rows.length === 0
+                ? "Nothing yet. A session appears here once it has run."
+                : "No sessions match that."}
+            </p>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Date
+                  </th>
+                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Session
+                  </th>
+                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Length
+                  </th>
+                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Amount
+                  </th>
+                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="pb-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((r) => (
+                  <tr key={r.sessionId} className="border-b border-border last:border-0">
+                    <td className="py-4 pr-4 align-top">
+                      <p className="text-[14px] text-foreground">
+                        {new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </td>
+                    <td className="py-4 pr-4 align-top">
+                      <p className="text-[14px] font-medium text-foreground">{r.subject}</p>
+                      <p className="text-[12.5px] text-muted-foreground">
+                        {r.studentName ?? "Student"}
+                      </p>
+                    </td>
+                    <td className="py-4 pr-4 text-right align-top text-[13.5px] tabular-nums text-muted-foreground">
+                      {r.durationMinutes} min
+                    </td>
+                    <td
+                      className={cn(
+                        "py-4 pr-4 text-right align-top text-[14px] font-medium tabular-nums",
+                        r.amountCents === 0 ? "text-muted-foreground" : "text-foreground"
+                      )}
+                    >
+                      {r.amountCents === 0 ? "-" : usd(r.amountCents)}
+                    </td>
+                    <td className="py-4 pr-4 align-top">
+                      <StatusCell row={r} />
+                    </td>
+                    <td className="py-4 text-right align-top">
+                      {r.payoutStatus === "none" && (
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          onClick={() => request([r.sessionId])}
+                          className="h-9 rounded-md border border-[#1099A1] px-4 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-60"
+                        >
+                          {busy === r.sessionId ? "Requesting..." : "Request payment"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </PageWrapper>

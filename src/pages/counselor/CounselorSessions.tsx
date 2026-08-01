@@ -13,7 +13,7 @@ import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import {
   PastSessions,
   UpcomingSessions,
-  isAwaitingConfirmation,
+  useSessionExtras,
   splitSessions,
   type SessionListItem,
 } from "@/components/shared/SessionList";
@@ -27,7 +27,6 @@ export function CounselorSessions() {
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  const [completing, setCompleting] = useState<string | null>(null);
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -49,24 +48,7 @@ export function CounselorSessions() {
     else toast.error("This session has no Zoom meeting or link attached.");
   };
 
-  const openNotes = (id: string) => {
-    const s = sessions.find((row) => row.id === id);
-    if (s) setNotesFor(s);
-  };
 
-  // Advising sessions are confirmed the same way tutoring ones are. Counselors
-  // are not paid per session, so this only settles what happened.
-  const markDone = async (id: string) => {
-    setCompleting(id);
-    const ok = await completeSession(id);
-    setCompleting(null);
-    if (ok) {
-      toast.success("Session confirmed.");
-      queryClient.invalidateQueries({ queryKey: ['counselor-sessions', user?.id] });
-    } else {
-      toast.error("Could not confirm that session.");
-    }
-  };
 
   const courses = useMemo(() => Array.from(new Set(sessions.map((s) => s.subject))), [sessions]);
   const filteredCourses = useMemo(
@@ -78,6 +60,8 @@ export function CounselorSessions() {
     () => sessions.filter((s) => (selectedCourse ? s.subject === selectedCourse : true)),
     [sessions, selectedCourse]
   );
+
+  const { data: extras } = useSessionExtras(courseSessions);
 
   // Counselors advise students, so the named person is the student.
   const items: SessionListItem[] = useMemo(
@@ -91,9 +75,10 @@ export function CounselorSessions() {
         title: s.subject,
         personName: s.student_name ?? null,
         personAvatarUrl: s.student_avatar,
-        note: s.notes,
+        rating: extras?.ratings[s.id] ?? null,
+        attendedMinutes: extras?.minutes[s.id] ?? null,
       })),
-    [courseSessions]
+    [courseSessions, extras]
   );
 
   const { upcoming } = useMemo(() => splitSessions(items), [items]);
@@ -199,26 +184,6 @@ export function CounselorSessions() {
               sessions={items}
               isLoading={loading}
               emptyText="No past sessions."
-              renderAction={(s) =>
-                isAwaitingConfirmation(s) ? (
-                  <button
-                    type="button"
-                    onClick={() => markDone(s.id)}
-                    disabled={completing === s.id}
-                    className="h-10 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                  >
-                    {completing === s.id ? "Confirming..." : "Mark as done"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openNotes(s.id)}
-                    className="h-10 rounded-md border border-border px-5 text-[14px] font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    {s.note ? "Edit note" : "Add note"}
-                  </button>
-                )
-              }
             />
           )}
         </div>
