@@ -20,6 +20,10 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
+import {
+  RescheduleDialog,
+  type ReschedulableSession,
+} from "@/components/shared/RescheduleDialog";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatBody, useDirectConversation } from "@/components/messaging";
 import { TutorStudentDiagnosticsTab } from "@/components/tutor/TutorStudentDiagnosticsTab";
@@ -152,12 +156,27 @@ export function TutorStudents() {
 }
 
 function StudentDetailView({ detail }: { detail: StudentDetail }) {
+  const navigate = useNavigate();
+  const { user, profile: me } = useAuth();
   const p = detail.profile;
   const { sessions, submissions } = detail;
+  const [moving, setMoving] = useState<ReschedulableSession | null>(null);
   const { data: extras } = useSessionExtras(sessions);
 
+  const join = (id: string) => {
+    const s = sessions.find((row) => row.id === id);
+    if (!s) return;
+    if (s.zoom_meeting_id) {
+      navigate(`/tutor/meeting/${s.id}`);
+      return;
+    }
+    const link = s.zoom_link || me?.zoom_link;
+    if (link) window.open(link, "_blank");
+    else toast.error("This session has no Zoom meeting or link attached.");
+  };
+
   // This is the student's own page, so the person beside each session is the
-  // one teaching it, not the one being taught.
+  // student, not the tutor reading it.
   const sessionItems: SessionListItem[] = sessions.map((s) => ({
     id: s.id,
     date: s.date,
@@ -173,8 +192,6 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const completed = sessions.filter((s) => s.status === "completed").length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
-
-  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "diagnostics">("overview");
 
@@ -306,7 +323,22 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
               <p className="py-16 text-center text-[14px] text-muted-foreground">No sessions yet.</p>
             ) : (
               <>
-                <UpcomingSessions sessions={sessionItems} hideIfEmpty />
+                <UpcomingSessions
+                  sessions={sessionItems}
+                  hideIfEmpty
+                  onJoin={(s) => join(s.id)}
+                  onReschedule={(s) => {
+                    const row = sessions.find((r) => r.id === s.id);
+                    setMoving({
+                      id: s.id,
+                      title: s.title,
+                      date: s.date,
+                      startTime: s.startTime,
+                      tutorId: row?.tutor_id ?? user?.id ?? null,
+                      studentId: row?.student_id ?? p?.id ?? null,
+                    });
+                  }}
+                />
                 <PastSessions sessions={sessionItems} hideIfEmpty />
               </>
             )}
@@ -355,6 +387,8 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
           </div>
         )}
       </div>
+
+      {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
     </div>
   );
 }
