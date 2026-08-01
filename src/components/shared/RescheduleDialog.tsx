@@ -98,7 +98,7 @@ export function RescheduleDialog({
             // One slot, so a second pick replaces the first rather than adding
             // to it. Tapping the chosen hour again clears it.
             onToggle={(slot) => setPicked((p) => (p?.key === slot.key ? null : slot))}
-            ignoreSessionSlot={{ date: session.date, startTime: session.startTime }}
+            currentSlot={{ date: session.date, startTime: session.startTime }}
           />
         </div>
 

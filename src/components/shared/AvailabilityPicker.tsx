@@ -65,8 +65,8 @@ export function AvailabilityPicker({
   onToggle,
   /** One slot for a reschedule, many for a booking. */
   multiple = false,
-  /** Its own hour must not read as taken when moving a session. */
-  ignoreSessionSlot,
+  /** The hour a session already holds, when one is being moved. */
+  currentSlot,
   className,
 }: {
   tutorId: string | null;
@@ -74,7 +74,7 @@ export function AvailabilityPicker({
   selected: PickedSlot[];
   onToggle: (slot: PickedSlot) => void;
   multiple?: boolean;
-  ignoreSessionSlot?: { date: string; startTime: string } | null;
+  currentSlot?: { date: string; startTime: string } | null;
   className?: string;
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -122,14 +122,16 @@ export function AvailabilityPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availability]);
 
+  const isCurrent = (date: string, time: string) =>
+    currentSlot?.date === date && currentSlot.startTime.slice(0, 5) === time;
+
   const takenAt = (day: Date, hour: number): string | null => {
     const date = isoDay(day);
     const time = `${String(hour).padStart(2, "0")}:00`;
     // The session being moved holds its own hour. Drawing that as taken would
-    // tell someone their session clashes with itself.
-    if (ignoreSessionSlot?.date === date && ignoreSessionSlot.startTime.slice(0, 5) === time) {
-      return null;
-    }
+    // tell someone their session clashes with itself; it is drawn as current
+    // instead.
+    if (isCurrent(date, time)) return null;
     return conflicts?.byKey.get(slotKey(date, time)) ?? null;
   };
 
@@ -210,12 +212,17 @@ export function AvailabilityPicker({
                     // needs to see it is gone, not wonder why it vanished.
                     const taken = takenAt(day, hour);
 
+                    // Where the session sits now. Marked and locked: picking a
+                    // new time and then picking the old one back is a way to
+                    // end up thinking something moved when nothing did.
+                    const current = isCurrent(date, time);
+
                     return (
                       <button
                         key={hour}
                         type="button"
-                        disabled={!!taken}
-                        title={taken ?? undefined}
+                        disabled={!!taken || current}
+                        title={current ? "This session is booked for this time" : (taken ?? undefined)}
                         onClick={() => {
                           const at = new Date(day);
                           at.setHours(hour, 0, 0, 0);
@@ -223,14 +230,21 @@ export function AvailabilityPicker({
                         }}
                         className={cn(
                           "w-full rounded py-2 text-[13px] font-semibold transition-colors",
-                          taken
-                            ? "cursor-not-allowed border border-border bg-muted text-muted-foreground line-through"
-                            : isSelected
-                              ? "border border-[#1099A1] bg-[#1099A1] text-white"
-                              : "border border-[#1099A1]/30 text-[#1099A1] hover:bg-[#1099A1]/10"
+                          current
+                            ? "cursor-default border border-[#CAA25F] bg-[#CAA25F]/10 text-[#CAA25F]"
+                            : taken
+                              ? "cursor-not-allowed border border-border bg-muted text-muted-foreground line-through"
+                              : isSelected
+                                ? "border border-[#1099A1] bg-[#1099A1] text-white"
+                                : "border border-[#1099A1]/30 text-[#1099A1] hover:bg-[#1099A1]/10"
                         )}
                       >
                         {hourLabel(hour)}
+                        {current && (
+                          <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider">
+                            Current
+                          </span>
+                        )}
                       </button>
                     );
                   })
