@@ -38,3 +38,6 @@ notes/
 .claude/
 .DS_Store
 Thumbs.db
+
+# Local database snapshots taken around a db reset.
+.snapshots/
