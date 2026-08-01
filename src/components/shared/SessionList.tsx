@@ -137,6 +137,8 @@ export function SessionList({
   renderAction,
   /** Given, an unrated finished session invites the student to rate it. */
   onRate,
+  /** Stays stacked at every width, for a narrow column like the home agenda. */
+  compact = false,
   className,
 }: {
   sessions: SessionListItem[];
@@ -144,6 +146,7 @@ export function SessionList({
   emptyText?: string;
   renderAction?: (session: SessionListItem) => React.ReactNode;
   onRate?: (session: SessionListItem) => void;
+  compact?: boolean;
   className?: string;
 }) {
   if (isLoading) {
@@ -167,12 +170,17 @@ export function SessionList({
         const label = whenLabel(s);
 
         return (
-          <div key={s.id} className="py-6 md:py-8">
+          <div key={s.id} className={compact ? "py-4" : "py-6 md:py-8"}>
             {/* Two lines on a phone and one on a desktop. Squeezed onto a
                 single line, a narrow screen truncates the subject and the
                 person to initials, which is everything worth reading. */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-              <div className="flex min-w-0 items-center gap-4 md:flex-1">
+            <div
+              className={cn(
+                "flex flex-col gap-3",
+                !compact && "md:flex-row md:items-center md:gap-4"
+              )}
+            >
+              <div className={cn("flex min-w-0 items-center gap-4", !compact && "md:flex-1")}>
                 {/* Date, as its own column so the eye can run down it */}
                 <div className="w-12 shrink-0 text-center">
                   <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
@@ -199,7 +207,12 @@ export function SessionList({
 
               {/* On a phone this is the second line, indented to sit under the
                   subject rather than under the date. */}
-              <div className="flex items-center justify-between gap-4 pl-16 md:justify-end md:gap-4 md:pl-0">
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-4 pl-16",
+                  !compact && "md:justify-end md:gap-4 md:pl-0"
+                )}
+              >
                 <div className="shrink-0">
                   <p
                     className={cn(
@@ -278,6 +291,9 @@ export function UpcomingSessions({
   hideIfEmpty = false,
   onJoin,
   onReschedule,
+  compact = false,
+  /** Show only the first few, for a home page agenda with a View all beside it. */
+  limit,
   className,
 }: {
   sessions: SessionListItem[];
@@ -285,6 +301,8 @@ export function UpcomingSessions({
   emptyText?: string;
   /** For a page that runs both lists together and owns the empty state itself. */
   hideIfEmpty?: boolean;
+  compact?: boolean;
+  limit?: number;
   /** Omitted, and no session offers Join: a parent watches, they do not attend. */
   onJoin?: (session: SessionListItem) => void;
   onReschedule?: (session: SessionListItem) => void;
@@ -295,7 +313,8 @@ export function UpcomingSessions({
 
   return (
     <SessionList
-      sessions={upcoming}
+      compact={compact}
+      sessions={limit ? upcoming.slice(0, limit) : upcoming}
       isLoading={isLoading}
       emptyText={emptyText}
       className={className}
@@ -342,12 +361,16 @@ export function PastSessions({
   hideIfEmpty = false,
   renderAction,
   onRate,
+  compact = false,
+  limit,
   className,
 }: {
   sessions: SessionListItem[];
   isLoading?: boolean;
   emptyText?: string;
   hideIfEmpty?: boolean;
+  compact?: boolean;
+  limit?: number;
   renderAction?: (session: SessionListItem) => React.ReactNode;
   onRate?: (session: SessionListItem) => void;
   className?: string;
@@ -357,7 +380,8 @@ export function PastSessions({
 
   return (
     <SessionList
-      sessions={past}
+      compact={compact}
+      sessions={limit ? past.slice(0, limit) : past}
       isLoading={isLoading}
       emptyText={emptyText}
       className={className}

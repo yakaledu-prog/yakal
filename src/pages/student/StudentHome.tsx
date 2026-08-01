@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, CalendarDays, Activity, MessagesSquareIcon, Settings, X } from "lucide-react";
+import { CalendarDays, Activity, MessagesSquareIcon, Settings, X } from "lucide-react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { studentService } from "@/services/studentService";
 import { cn } from "@/utils/cn";
-import { dicebearUrl } from "@/utils/avatar";
+import { getStudentSessions } from "@/services/sessions";
+import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
 
 export function StudentHome() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
@@ -21,6 +23,17 @@ export function StudentHome() {
   useEffect(() => {
     studentService.getDashboardSummary().then(setData);
   }, []);
+
+  // The agenda reads the real sessions rather than the dashboard summary's one
+  // shaped "next session", so it can show the week rather than the next hour.
+  const { data: sessionRows = [], isLoading: sessionsLoading } = useQuery({
+    queryKey: ["student-sessions", user?.id],
+    queryFn: async () => {
+      const { data } = await getStudentSessions(user!.id);
+      return (data ?? []) as any[];
+    },
+    enabled: !!user?.id,
+  });
 
   if (!data) {
     return (
@@ -38,6 +51,17 @@ export function StudentHome() {
 
   const firstName = profile?.full_name?.split(" ")[0] || "Student";
   const { nextSession, progress } = data;
+
+  const agendaItems: SessionListItem[] = sessionRows.map((s: any) => ({
+    id: s.id,
+    date: s.date,
+    startTime: s.start_time,
+    durationMinutes: s.duration_minutes,
+    status: s.status,
+    title: s.subject,
+    personName: s.tutor_name ?? null,
+    personAvatarUrl: s.tutor_avatar ?? null,
+  }));
 
   return (
     <PageWrapper className="!p-0">
@@ -105,44 +129,31 @@ export function StudentHome() {
               <button onClick={() => navigate("/student/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
-            <div className="space-y-6">
-              {!nextSession && data.homeworkDue.length === 0 ? (
-                <p className="text-muted-foreground text-[14px]">Your schedule is clear!</p>
-              ) : (
-                <>
-                  {nextSession && (
-                    <div className="relative pl-6 border-l-2 border-[#1099A1]">
-                      <div className="absolute w-3 h-3 bg-[#1099A1] rounded-full -left-[7px] top-1.5 shadow-[0_0_0_4px_rgba(16,153,161,0.2)]" />
-                      <span className="text-[#1099A1] text-[11px] font-bold uppercase tracking-wider block mb-1">Next Up</span>
-                      <p className="text-[16px] font-semibold text-foreground">{nextSession.subject}</p>
-                      <div className="flex items-center gap-2 mt-2 text-muted-foreground text-[13px]">
-                        <Clock size={14} /> {nextSession.date}
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-2">
-                          <img src={nextSession.image || dicebearUrl(nextSession.tutor)} alt="" className="w-6 h-6 rounded-full" />
-                          <span className="text-[13px] font-medium text-foreground">{nextSession.tutor}</span>
-                        </div>
-                        <Button className="h-8 gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white" size="sm" onClick={() => window.open(nextSession.link, "_blank")}>
-                          <Video size={14} /> Join
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+            {/* The same rows as the sessions page, stacked so they fit this
+                column. Homework keeps its own shape below: it is not a
+                session and should not pretend to be one. */}
+            <UpcomingSessions
+              sessions={agendaItems}
+              isLoading={sessionsLoading}
+              compact
+              limit={6}
+              emptyText="Your schedule is clear."
+              onJoin={(s) => navigate(`/student/meeting/${s.id}`)}
+            />
 
-                  {data.homeworkDue.map((h: any) => (
-                    <div key={h.id} className="relative pl-6 border-l-2 border-border/50">
-                      <div className="absolute w-2 h-2 bg-border rounded-full -left-[5px] top-1.5" />
-                      <p className="text-[15px] font-medium text-foreground">{h.title}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-muted-foreground text-[13px]">
-                        <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {h.due}</span>
-                        <span className="text-xs text-muted-foreground">{h.subject}</span>
-                      </div>
+            {data.homeworkDue.length > 0 && (
+              <div className="space-y-4 border-t border-border/50 pt-6">
+                {data.homeworkDue.map((h: any) => (
+                  <div key={h.id}>
+                    <p className="text-[15px] font-medium text-foreground">{h.title}</p>
+                    <div className="mt-1.5 flex items-center gap-3 text-[13px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {h.due}</span>
+                      <span>{h.subject}</span>
                     </div>
-                  ))}
-                </>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

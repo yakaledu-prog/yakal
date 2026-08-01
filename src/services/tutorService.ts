@@ -471,3 +471,54 @@ export async function reviewSubmission(id: string, status: "reviewed" | "revisio
     .eq("id", id);
   return !error;
 }
+
+// ============================================================
+// What is waiting to be marked.
+//
+// The tutor's home page carried an invented activity feed: named students
+// submitting homework that does not exist, and a payout in a currency the
+// platform does not use. This is the real version of the same idea, and unlike
+// a feed it is a queue, so every row is something to do.
+// ============================================================
+
+export interface PendingSubmission {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  studentName: string | null;
+  studentAvatar: string | null;
+  submittedAt: string;
+  status: string;
+}
+
+export async function getPendingSubmissions(
+  tutorId: string,
+  limit = 6
+): Promise<PendingSubmission[]> {
+  const { data, error } = await supabase
+    .from("submissions")
+    .select(
+      `id, assignment_id, status, submitted_at,
+       assignments!inner (title, tutor_id),
+       student:profiles!submissions_student_id_fkey (full_name, avatar_url)`
+    )
+    .eq("assignments.tutor_id", tutorId)
+    .eq("status", "submitted")
+    .order("submitted_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getPendingSubmissions failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((s: any) => ({
+    id: s.id,
+    assignmentId: s.assignment_id,
+    assignmentTitle: s.assignments?.title ?? "Assignment",
+    studentName: s.student?.full_name ?? null,
+    studentAvatar: s.student?.avatar_url ?? null,
+    submittedAt: s.submitted_at,
+    status: s.status,
+  }));
+}

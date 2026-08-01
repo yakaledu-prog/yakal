@@ -1,33 +1,12 @@
-import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, CalendarDays, Wallet, Settings, Activity, MessagesSquareIcon } from "lucide-react";
+import { CalendarDays, Wallet, Settings, Activity, MessagesSquareIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { getTutorDashboard, SessionRow } from "@/services/tutorService";
-import { format } from "date-fns";
+import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
+import { getTutorDashboard, getPendingSubmissions, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
-
-function formatTime(timeStr?: string) {
-  if (!timeStr) return "";
-  const [h, m] = timeStr.split(":");
-  const date = new Date();
-  date.setHours(parseInt(h, 10), parseInt(m, 10));
-  return format(date, "h:mm a");
-}
-
-function formatDay(dateStr?: string) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-  return format(d, "MMM d");
-}
 
 export function TutorHome() {
   const { profile } = useAuth();
@@ -36,6 +15,12 @@ export function TutorHome() {
   const { data, isLoading } = useQuery({
     queryKey: ['tutor-dashboard', profile?.id],
     queryFn: () => getTutorDashboard(profile!.id),
+    enabled: !!profile?.id,
+  });
+
+  const { data: pendingSubmissions = [] } = useQuery({
+    queryKey: ['tutor-pending-submissions', profile?.id],
+    queryFn: () => getPendingSubmissions(profile!.id),
     enabled: !!profile?.id,
   });
 
@@ -54,6 +39,24 @@ export function TutorHome() {
   }
 
   const { today, next, upcomingList, stats } = data;
+
+  // Next is the soonest of the upcoming ones, so listing both would show it
+  // twice. The shared list sorts and labels them itself.
+  const agendaRows: SessionRow[] = [
+    ...(next && !upcomingList.some((s) => s.id === next.id) ? [next] : []),
+    ...upcomingList,
+  ];
+
+  const agendaItems: SessionListItem[] = agendaRows.map((s) => ({
+    id: s.id,
+    date: s.date,
+    startTime: s.start_time,
+    durationMinutes: s.duration_minutes,
+    status: s.status,
+    title: s.subject,
+    personName: s.student_name ?? null,
+    personAvatarUrl: s.student_avatar ?? null,
+  }));
   const rate = profile?.hourly_rate ?? 0;
   const currency = profile?.rate_currency || "ETB";
   const earnings = stats.completed * rate;
@@ -121,13 +124,47 @@ export function TutorHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-[#1099A1]" /> Activity Feed</h2>
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-[#1099A1]" /> Waiting on you</h2>
+              <button onClick={() => navigate("/tutor/assignments")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
-            <div className="space-y-0">
-              <FeedItem text="Bethlehem submitted Math Homework #3" time="2 hours ago" />
-              <FeedItem text="Eyob booked a new session for tomorrow" time="5 hours ago" />
-              <FeedItem text="System processed your payout of 1500 ETB" time="Yesterday" />
-            </div>
+
+            {/* A queue, not a feed. What was here listed invented homework from
+                named students and a payout in the wrong currency, none of
+                which a tutor could act on. */}
+            {pendingSubmissions.length === 0 ? (
+              <p className="text-[14px] text-muted-foreground">Nothing to mark right now.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {pendingSubmissions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => navigate(`/tutor/assignments/${s.assignmentId}`)}
+                    className="flex w-full items-center gap-4 py-4 text-left transition-colors hover:bg-muted/20"
+                  >
+                    <img
+                      src={s.studentAvatar || dicebearUrl(s.studentName ?? "Yakal")}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-medium text-foreground">
+                        {s.assignmentTitle}
+                      </p>
+                      <p className="truncate text-[13px] text-muted-foreground">
+                        {s.studentName ?? "A student"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[13px] text-muted-foreground">
+                      {new Date(s.submittedAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Vertical Agenda */}
@@ -137,50 +174,19 @@ export function TutorHome() {
               <button onClick={() => navigate("/tutor/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
-            <div className="space-y-6">
-              {upcomingList.length === 0 && !next ? (
-                <p className="text-muted-foreground text-[14px]">Your schedule is clear!</p>
-              ) : (
-                <>
-                  {next && (
-                    <div className="relative pl-6 border-l-2 border-[#1099A1]">
-                      <div className="absolute w-3 h-3 bg-[#1099A1] rounded-full -left-[7px] top-1.5 shadow-[0_0_0_4px_rgba(16,153,161,0.2)]" />
-                      <span className="text-[#1099A1] text-[11px] font-bold uppercase tracking-wider block mb-1">Next Up</span>
-                      <p className="text-[16px] font-semibold text-foreground">{next.subject}</p>
-                      <div className="flex items-center gap-2 mt-2 text-muted-foreground text-[13px]">
-                        <Clock size={14} /> {formatTime(next.start_time)} ({next.duration_minutes}m)
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-2">
-                          <img src={next.student_avatar || dicebearUrl(next.student_name || "S")} alt="" className="w-6 h-6 rounded-full" />
-                          <span className="text-[13px] font-medium text-foreground">{next.student_name}</span>
-                        </div>
-                        <Button className="h-8 gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white" size="sm" onClick={() => join(next)}>
-                          <Video size={14} /> Join
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {upcomingList.slice(0, 5).map(s => (
-                    <div key={s.id} className="relative pl-6 border-l-2 border-border/50">
-                      <div className="absolute w-2 h-2 bg-border rounded-full -left-[5px] top-1.5" />
-                      <p className="text-[15px] font-medium text-foreground">{s.subject}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-muted-foreground text-[13px]">
-                        <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {formatDay(s.date)}</span>
-                        <span className="flex items-center gap-1.5"><Clock size={13} /> {formatTime(s.start_time)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {s.student_name?.[0] || '?'}
-                        </div>
-                        <span className="text-[13px] text-muted-foreground">{s.student_name || 'Unknown'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
+            {/* The same rows as the sessions page, stacked so they fit this
+                column. An agenda that invents its own layout is a second place
+                a session can look different. */}
+            <UpcomingSessions
+              sessions={agendaItems}
+              compact
+              limit={6}
+              emptyText="Your schedule is clear."
+              onJoin={(s) => {
+                const row = agendaRows.find((r) => r.id === s.id);
+                if (row) join(row);
+              }}
+            />
           </div>
 
         </div>
@@ -215,17 +221,6 @@ function IntegratedStat({ label, value, alert }: { label: string; value: string 
   );
 }
 
-function FeedItem({ text, time }: { text: string; time: string }) {
-  return (
-    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-      <div className="flex items-center gap-4">
-        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-[#1099A1] transition-colors" />
-        <p className="text-[14px] md:text-[15px] font-medium text-foreground">{text}</p>
-      </div>
-      <span className="text-[12px] md:text-[13px] text-muted-foreground mt-2 sm:mt-0">{time}</span>
-    </div>
-  );
-}
 
 function Sparkline() {
   return (

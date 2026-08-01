@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LockedOverlay } from "@/components/shared/LockedOverlay";
 import {
   Search,
@@ -10,7 +11,6 @@ import {
   Moon,
   Sun,
   Menu,
-  FlameIcon,
   Lock,
   ChevronDown
 } from "lucide-react";
@@ -250,28 +250,13 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               })()}
             </div>
 
-            {/* Streak & Info */}
-            {/* <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l">
-              <div className="flex items-center gap-1.5 text-sm font-medium">
-                <span className="text-amber-500 text-lg leading-none">🔥</span>
-                <span>4 Day Streak</span>
-              </div>
-              <div className="w-1 h-1 rounded-full bg-border" />
-              <div className="flex items-center gap-1.5 text-sm font-medium">
-                <span className="text-emerald-500 font-bold">A-</span>
-                <span className="text-muted-foreground">Avg</span>
-              </div>
-            </div> */}
           </div>
 
           <div className="flex items-center gap-4">
             {topbarActions ? (
               topbarActions
             ) : (
-              <button className="flex relative text-muted-foreground">
-                <FlameIcon className="text-[#1099A1] dark:text-[#97CE9D]" size={20} />
-                <span className="text-[#1099A1] dark:text-[#97CE9D] inline font-semibold"> &nbsp;5</span> &nbsp;days
-              </button>
+              <ThemeToggle />
             )}
           </div>
         </header>
