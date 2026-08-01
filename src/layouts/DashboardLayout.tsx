@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 import { LockedOverlay } from "@/components/shared/LockedOverlay";
 import {
   Search,
@@ -46,44 +47,14 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchIndex, setSearchIndex] = useState(0);
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
 
-  // Every destination this role has, parents and children alike, flattened so
-  // one pass can match them.
-  const searchTargets = useMemo(() => {
-    const out: { name: string; href: string; icon: React.ReactNode; parent?: string }[] = [];
-    for (const item of navItems) {
-      out.push({ name: item.name, href: item.href, icon: item.icon });
-      for (const child of item.children ?? []) {
-        out.push({ name: child.name, href: child.href, icon: child.icon, parent: item.name });
-      }
-    }
-    return out;
-  }, [navItems]);
 
-  const searchResults = useMemo(() => {
-    const needle = searchQuery.trim().toLowerCase();
-    if (!needle) return searchTargets;
-    return searchTargets.filter(
-      (t) => t.name.toLowerCase().includes(needle) || (t.parent ?? "").toLowerCase().includes(needle)
-    );
-  }, [searchTargets, searchQuery]);
-
-  // Reopening on a stale query would show yesterday's search.
-  useEffect(() => {
-    if (!searchOpen) {
-      setSearchQuery("");
-      setSearchIndex(0);
-    }
-  }, [searchOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -333,70 +304,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           )}
         </div>
 
-        {/* Floating Search Modal */}
         {searchOpen && (
-          <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4">
-            {/* Raised rather than card: a panel floating above the page needs
-                to sit on top of it, not match it. */}
-            <div className="bg-popover w-full max-w-2xl rounded-xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center px-4 py-4 border-b">
-                <Search className="h-5 w-5 text-muted-foreground mr-3" />
-                <input
-                  autoFocus
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setSearchIndex(0); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setSearchIndex((i) => Math.min(i + 1, searchResults.length - 1));
-                    } else if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setSearchIndex((i) => Math.max(i - 1, 0));
-                    } else if (e.key === "Enter") {
-                      const hit = searchResults[searchIndex];
-                      if (hit) { setSearchOpen(false); navigate(hit.href); }
-                    }
-                  }}
-                  placeholder="Search pages..."
-                  className="flex-1 bg-transparent text-foreground outline-none text-lg"
-                />
-                <button onClick={() => setSearchOpen(false)} className="text-muted-foreground hover:text-foreground text-xs font-mono border rounded px-1.5 py-0.5">ESC</button>
-              </div>
-
-              {/* What is searchable is what this role can actually reach, taken
-                  from the same nav the sidebar draws. A palette offering pages
-                  a counselor has no access to would be a list of dead ends. */}
-              {searchResults.length === 0 ? (
-                <div className="p-6 text-sm text-muted-foreground text-center">
-                  Nothing matches that.
-                </div>
-              ) : (
-                <div className="max-h-[50vh] overflow-y-auto py-2">
-                  {searchResults.map((hit, i) => (
-                    <button
-                      key={hit.href}
-                      type="button"
-                      onMouseEnter={() => setSearchIndex(i)}
-                      onClick={() => { setSearchOpen(false); navigate(hit.href); }}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                        i === searchIndex ? "bg-[#1099A1]/10 text-[#1099A1]" : "text-foreground hover:bg-muted/40"
-                      )}
-                    >
-                      <span className="shrink-0 opacity-70">{hit.icon}</span>
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{hit.name}</span>
-                      {hit.parent && (
-                        <span className="shrink-0 text-[12px] text-muted-foreground">{hit.parent}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* Click outside to close */}
-            <div className="absolute inset-0 -z-10" onClick={() => setSearchOpen(false)} />
-          </div>
+          <CommandPalette navItems={navItems} onClose={() => setSearchOpen(false)} />
         )}
       </main>
     </div>
