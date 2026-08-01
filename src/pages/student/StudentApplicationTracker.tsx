@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle2, LayoutGrid, Loader2, Rows3, Search } from "lucide-react";
+import { LayoutGrid, Loader2, Rows3, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +31,6 @@ import {
   updateEssay,
   updateSchool,
   updateRecommendation,
-  updateTask,
 } from "@/services/collegeService";
 import { OVERRIDE_LABEL, ReqKey, StudentContext } from "@/services/requirementsService";
 import {
@@ -120,8 +119,6 @@ export function StudentApplicationTracker({
   const schools = useMemo(() => data?.schools ?? [], [data]);
   const essays = useMemo(() => data?.essays ?? [], [data]);
   const recommendations = useMemo(() => data?.recommendations ?? [], [data]);
-  const tasks = useMemo(() => data?.tasks ?? [], [data]);
-
   const hasTranscript =
     (docs?.sections.find((s) => s.name === "Transcripts")?.files.length ?? 0) > 0;
 
@@ -149,14 +146,6 @@ export function StudentApplicationTracker({
     return dates[0] ?? null;
   }, [schools]);
 
-  const openTasks = useMemo(
-    () =>
-      tasks
-        .filter((t) => t.status !== "done")
-        .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"))
-        .slice(0, 3),
-    [tasks]
-  );
 
   // Keyed on targetId. These used to key on the signed-in user, so a
   // counselor's edit to a student's tracker invalidated their own empty
@@ -387,12 +376,6 @@ export function StudentApplicationTracker({
     refresh();
   };
 
-  const completeTask = async (id: string) => {
-    if (!canEdit) return;
-    const res = await updateTask(id, { status: "done" });
-    if (!res.success) return toast.error(res.error || "Could not update.");
-    refresh();
-  };
 
   const content = (
     <>
@@ -468,56 +451,6 @@ export function StudentApplicationTracker({
         )}
 
         <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10 max-w-[1150px]")}>
-          {/* Tasks are cross-cutting, so they get a strip here and a home on the
-              roadmap rather than a tab nobody would think to open. */}
-          {/* Real rows from application_tasks, and ticking one writes. For a
-              reader there is nothing to tick, so the strip would be three
-              disabled buttons taking up the top of the page. */}
-          {canEdit && openTasks.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-[#e9edef] bg-white px-4 py-3 dark:border-[#2a3942] dark:bg-[#182229]">
-              <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-                Next up
-              </span>
-              {openTasks.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => completeTask(t.id)}
-                  disabled={!canEdit}
-                  className={cn(
-                    "group inline-flex items-center gap-1.5 text-[13px] text-[#111] transition-colors dark:text-white",
-                    canEdit ? "hover:text-[#1099A1]" : "cursor-default"
-                  )}
-                >
-                  <CheckCircle2
-                    size={14}
-                    className={cn(
-                      "text-[#c2c7d0] transition-colors",
-                      canEdit && "group-hover:text-[#1099A1]"
-                    )}
-                  />
-                  {t.title}
-                  {t.due_date && (
-                    <span className="tabular-nums text-[#a8adb8]">
-                      {new Date(t.due_date).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  )}
-                </button>
-              ))}
-              {canEdit && (
-                <Link
-                  to="/student/roadmap"
-                  className="ml-auto text-[13px] font-medium text-[#1099A1] hover:underline"
-                >
-                  All tasks
-                </Link>
-              )}
-            </div>
-          )}
-
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-[#1099A1]" />

@@ -8,6 +8,7 @@ import {
   FileText,
   Loader2,
   Plus,
+  Search,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -62,6 +63,7 @@ export function DocumentsPanel({
 }) {
   const qc = useQueryClient();
   const [busySlot, setBusySlot] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["drive-docs", studentId],
@@ -189,17 +191,43 @@ export function DocumentsPanel({
     );
   }
 
+  const q = search.trim().toLowerCase();
+  const groups = q
+    ? SLOT_GROUPS.map((g) => ({
+        ...g,
+        slots: g.slots.filter(
+          (sl) =>
+            sl.label.toLowerCase().includes(q) ||
+            sl.description.toLowerCase().includes(q) ||
+            (bySlot.get(sl.id) ?? []).some((f: any) =>
+              String(f.name ?? "").toLowerCase().includes(q)
+            )
+        ),
+      })).filter((g) => g.slots.length > 0)
+    : SLOT_GROUPS;
+
   const allSlots = SLOT_GROUPS.flatMap((g) => g.slots);
   const requiredSlots = allSlots.filter((s) => s.required);
   const done = requiredSlots.filter((s) => (bySlot.get(s.id)?.length ?? 0) > 0).length;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
-          Stored in Yakal's Drive, so your counselor can open them without you
-          sharing anything.
-        </p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Where the reassurance about Drive used to be. Eleven slots across
+            three groups is enough to want to jump to one, and the sentence was
+            only ever read once. */}
+        <div className="relative min-w-[220px] flex-1 md:max-w-xs">
+          <Search
+            size={15}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a8adb8]"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search documents"
+            className="h-9 w-full rounded-xl border border-[#e9edef] bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#182229]"
+          />
+        </div>
         <span className="text-[13px] tabular-nums text-[#a8adb8]">
           {done} of {requiredSlots.length} essentials
         </span>
@@ -216,7 +244,7 @@ export function DocumentsPanel({
         )}
       </div>
 
-      {SLOT_GROUPS.map((group) => (
+      {groups.map((group) => (
         <SlotGroupSection
           key={group.key}
           title={group.title}
