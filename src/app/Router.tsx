@@ -76,6 +76,7 @@ import { AdminApplicants } from "../pages/admin/AdminApplicants";
 import { AdminReports } from "../pages/admin/AdminReports";
 import { AdminCourses } from "../pages/admin/AdminCourses";
 import { AdminCourseDetail } from "../pages/admin/AdminCourseDetail";
+import { AdminCourseDetailClassic } from "../pages/admin/AdminCourseDetailClassic";
 import { AdminPosts } from "../pages/admin/cms/AdminPosts";
 import { AdminPostEditor } from "../pages/admin/cms/AdminPostEditor";
 import { AdminBilling } from "../pages/admin/AdminBilling";
@@ -271,6 +272,8 @@ const router = createBrowserRouter([
           { path: "reports", element: <AdminReports /> },
           { path: "courses", element: <AdminCourses /> },
           { path: "courses/:id", element: <AdminCourseDetail /> },
+          // The previous layout, kept while the new one settles.
+          { path: "courses/:id/classic", element: <AdminCourseDetailClassic /> },
           { path: "posts", element: <AdminPosts /> },
           { path: "posts/new", element: <AdminPostEditor /> },
           { path: "posts/:id/edit", element: <AdminPostEditor /> },

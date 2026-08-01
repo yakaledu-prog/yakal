@@ -424,3 +424,94 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
     return { success: false, error: error.message };
   }
 }
+
+// ------------------------------------------------------------
+// One course, for the admin detail page.
+//
+// The old page had tabs for students and sessions that rendered a placeholder
+// telling you what they would eventually show. These are the real rows.
+// ------------------------------------------------------------
+
+export interface CourseStudent {
+  id: string;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  gradeLevel: string | null;
+  enrolledAt: string;
+  /** The parent who paid, when it was not the student. */
+  purchasedByName: string | null;
+}
+
+export interface CourseSession {
+  id: string;
+  date: string;
+  startTime: string;
+  durationMinutes: number;
+  status: string;
+  studentName: string | null;
+}
+
+export interface AdminCourseDetailData {
+  students: CourseStudent[];
+  sessions: CourseSession[];
+  revenueCents: number;
+  payoutCents: number;
+  unpaidPayoutCents: number;
+}
+
+export async function getCourseDetail(courseId: string): Promise<AdminCourseDetailData> {
+  const [enrolRes, sessionRes, invoiceRes] = await Promise.all([
+    supabase
+      .from("enrolments")
+      .select(`id, created_at, status,
+               student:profiles!enrolments_student_id_fkey (id, full_name, email, avatar_url, grade_level),
+               buyer:profiles!enrolments_purchased_by_fkey (full_name)`)
+      .eq("course_id", courseId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("sessions")
+      .select(`id, date, start_time, duration_minutes, status,
+               student:profiles!sessions_student_id_fkey (full_name)`)
+      .eq("course_id", courseId)
+      .order("date", { ascending: true }),
+    supabase
+      .from("invoices")
+      .select("amount_cents, payout_cents, payout_status, status")
+      .eq("course_id", courseId),
+  ]);
+
+  if (enrolRes.error) console.error("getCourseDetail enrolments:", enrolRes.error);
+  if (sessionRes.error) console.error("getCourseDetail sessions:", sessionRes.error);
+  if (invoiceRes.error) console.error("getCourseDetail invoices:", invoiceRes.error);
+
+  const paid = (invoiceRes.data ?? []).filter((i: any) => i.status === "paid");
+
+  return {
+    students: (enrolRes.data ?? []).map((r: any) => ({
+      id: r.student?.id ?? "",
+      name: r.student?.full_name ?? "A student",
+      email: r.student?.email ?? null,
+      avatarUrl: r.student?.avatar_url ?? null,
+      gradeLevel: r.student?.grade_level ?? null,
+      enrolledAt: r.created_at,
+      purchasedByName: r.buyer?.full_name ?? null,
+    })),
+    sessions: (sessionRes.data ?? []).map((r: any) => ({
+      id: r.id,
+      date: r.date,
+      startTime: r.start_time,
+      durationMinutes: r.duration_minutes,
+      status: r.status,
+      studentName: r.student?.full_name ?? null,
+    })),
+    revenueCents: paid.reduce((n: number, i: any) => n + (i.amount_cents ?? 0), 0),
+    payoutCents: paid.reduce((n: number, i: any) => n + (i.payout_cents ?? 0), 0),
+    // What the admin still owes the tutor. The payout is marked pending by the
+    // payment webhook and settled by hand.
+    unpaidPayoutCents: paid
+      .filter((i: any) => i.payout_status === "pending")
+      .reduce((n: number, i: any) => n + (i.payout_cents ?? 0), 0),
+  };
+}
