@@ -72,6 +72,7 @@ export function TutorMeeting() {
           userEmail={user?.email || ''}
           role={1}
           leaveUrl={`${window.location.origin}/tutor/sessions`}
+          sessionId={session.id}
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#54656f] dark:text-[#aebac1]">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { generateZoomSignature } from '@/services/zoom';
+import { recordAttendance } from '@/services/sessions';
 import { Video, RefreshCw } from 'lucide-react';
 
 // Uses the Meeting SDK "client view" (full-page Zoom UI) loaded from Zoom's
@@ -64,7 +65,13 @@ interface ZoomMeetingProps {
   userEmail: string;
   role: 0 | 1; // 0 for participant, 1 for host
   leaveUrl: string;
+  /** Given, the time spent here counts towards the session having happened. */
+  sessionId?: string;
 }
+
+// Often enough that a dropped tab loses less than a minute, rarely enough that
+// an hour of tutoring is sixty writes rather than six hundred.
+const HEARTBEAT_MS = 60_000;
 
 type Status =
   | { phase: 'loading-sdk' }
@@ -118,9 +125,32 @@ export function ZoomMeeting({
   userEmail,
   role,
   leaveUrl,
+  sessionId,
 }: ZoomMeetingProps) {
   const [status, setStatus] = useState<Status>({ phase: 'loading-sdk' });
   const [attempt, setAttempt] = useState(0);
+
+  // Attendance is what makes a session payable, so it is measured from being
+  // in the meeting rather than from having opened the page. The first beat
+  // opens the record and each later one banks the minute since the last, which
+  // is why closing the laptop mid-session still leaves an honest total.
+  useEffect(() => {
+    if (!sessionId || status.phase !== 'in-meeting') return;
+
+    void recordAttendance(sessionId);
+    const timer = setInterval(() => void recordAttendance(sessionId), HEARTBEAT_MS);
+
+    // A tab that is closed or backgrounded to sleep never runs the interval
+    // again, so bank the time on the way out.
+    const bank = () => void recordAttendance(sessionId);
+    window.addEventListener('pagehide', bank);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('pagehide', bank);
+      bank();
+    };
+  }, [sessionId, status.phase]);
 
   useEffect(() => {
     let cancelled = false;

@@ -108,3 +108,36 @@ export const getTutorSessions = async (tutorId: string) => {
   }
   return { data: sessions, error };
 };
+
+/**
+ * Tell the server the caller is still in the meeting.
+ *
+ * Called on a timer while a meeting is open. The server accumulates the time
+ * and decides what counts, so this deliberately sends nothing but the session
+ * id: a client that could report its own minutes could report itself a payout.
+ *
+ * Returns the running total in seconds, or 0 when the call was refused, which
+ * is not worth telling anyone about mid-meeting.
+ */
+export const recordAttendance = async (sessionId: string): Promise<number> => {
+  const { data, error } = await supabase.rpc('record_attendance', { p_session_id: sessionId });
+  if (error) {
+    console.error('Failed to record attendance', error);
+    return 0;
+  }
+  return data ?? 0;
+};
+
+/** Who was in a session, and for how long. */
+export const getSessionAttendance = async (sessionId: string) => {
+  const { data, error } = await supabase
+    .from('session_attendance')
+    .select('user_id, role, first_joined_at, last_seen_at, seconds')
+    .eq('session_id', sessionId);
+
+  if (error) {
+    console.error('Failed to read attendance', error);
+    return [];
+  }
+  return data ?? [];
+};
