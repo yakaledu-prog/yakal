@@ -5,7 +5,6 @@ export function CounselorLayout() {
   const navItems = [
     { name: "Home", href: "/counselor", icon: <Home size={20} /> },
     { name: "Students", href: "/counselor/students", icon: <Users size={20} /> },
-    { name: "Essays", href: "/counselor/essays", icon: <FileText size={20} /> },
     { name: "Sessions", href: "/counselor/sessions", icon: <History size={20} /> },
     { name: "Calendar", href: "/counselor/calendar", icon: <Calendar size={20} /> },
     { 
@@ -14,6 +13,7 @@ export function CounselorLayout() {
       icon: <GraduationCap size={20} />,
       children: [
         { name: "Roadmap", href: "/counselor/roadmap", icon: <Map size={20} /> },
+        { name: "Essays", href: "/counselor/essays", icon: <FileText size={20} /> },
         { name: "Explore", href: "/counselor/explore", icon: <Compass size={20} /> },
       ]
     },

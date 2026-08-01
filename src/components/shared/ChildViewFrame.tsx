@@ -36,12 +36,18 @@ export interface FramedChild {
 export function ChildViewFrame({
   title,
   subtitle,
+  headerRight,
+  headerBottom,
   /** The service the child must be opted into. Omit to always allow. */
   requiresService,
   children,
 }: {
   title: string;
   subtitle: string;
+  /** Facts that belong beside the title, e.g. stage and graduation year. */
+  headerRight?: ReactNode;
+  /** Tabs or anything else that sits along the bottom edge of the banner. */
+  headerBottom?: ReactNode;
   requiresService?: ServiceName;
   children: (child: FramedChild) => ReactNode;
 }) {
@@ -104,8 +110,13 @@ export function ChildViewFrame({
           </svg>
 
           <div className="relative z-10 mx-auto">
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
-            <p className="pt-1 text-[15px] text-white/80">{subtitle}</p>
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
+                <p className="pt-1 text-[15px] text-white/80">{subtitle}</p>
+              </div>
+              {headerRight}
+            </div>
 
             {/* One child needs no picker, and a row of one tab looks broken. */}
             {linked.length > 1 ? (
@@ -135,8 +146,10 @@ export function ChildViewFrame({
                 })}
               </nav>
             ) : (
-              <div className="h-6" />
+              !headerBottom && <div className="h-6" />
             )}
+
+            {headerBottom}
           </div>
         </header>
 

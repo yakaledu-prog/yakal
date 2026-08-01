@@ -11,6 +11,14 @@ import { cn } from "@/utils/cn";
 
 const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
 
+export type RoadmapTab = "timeline" | "testing" | "resources";
+
+export const ROADMAP_TABS: { id: RoadmapTab; label: string }[] = [
+  { id: "timeline", label: "Timeline" },
+  { id: "testing", label: "Testing Plan" },
+  { id: "resources", label: "Resources" },
+];
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -35,6 +43,9 @@ const field = "bg-white/10 border-transparent text-white placeholder-white/50 fo
 export function StudentRoadmap({
   studentId,
   embedded,
+  tab: tabProp,
+  onTabChange,
+  hideChrome,
   canEdit = true,
   gradeLevel,
 }: {
@@ -47,6 +58,15 @@ export function StudentRoadmap({
    * profile would anchor a parent's view to the parent.
    */
   gradeLevel?: string | null;
+  /**
+   * Lifted out when the page around this one owns the banner, so the tabs can
+   * sit on the teal header instead of in a strip below it. Uncontrolled
+   * otherwise, which is how the student's own page uses it.
+   */
+  tab?: RoadmapTab;
+  onTabChange?: (tab: RoadmapTab) => void;
+  /** Drops the embedded facts-and-tabs strip when the parent renders them. */
+  hideChrome?: boolean;
 }) {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
@@ -65,7 +85,9 @@ export function StudentRoadmap({
   const [stage, setStage] = useState<AppStage>(app?.stage || "research");
   const [major, setMajor] = useState(app?.program_interest || "");
   const [gradYear, setGradYear] = useState(app?.grad_year ? String(app.grad_year) : "");
-  const [tab, setTab] = useState<"timeline" | "testing" | "resources">("timeline");
+  const [ownTab, setOwnTab] = useState<RoadmapTab>("timeline");
+  const tab = tabProp ?? ownTab;
+  const setTab = onTabChange ?? setOwnTab;
   const [stageOpen, setStageOpen] = useState(false);
 
   // Sync state when data loads
@@ -193,7 +215,7 @@ export function StudentRoadmap({
             </div>
           </div>
         </div>
-      ) : (
+      ) : hideChrome ? null : (
         <div className="px-6 border-b dark:border-[#2a3942] bg-card">
           {/* The banner carries stage, major and graduation year. Embedded
               there is no banner, so they get a compact strip instead rather
