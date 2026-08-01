@@ -458,48 +458,49 @@ function ReviewDialog({
             </div>
           )}
 
-          <div>
-            <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-              Reported
-            </p>
-            <p className="text-[13px] text-muted-foreground">
-              {when(flag.createdAt)}
-              {" - "}
-              {flag.createdAt.toLocaleString(undefined, {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </p>
-          </div>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2 border-t border-border p-5">
-          {settled ? (
-            <button
-              onClick={() => onReopen(flag)}
-              className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
-            >
-              <RotateCcw size={15} /> Put back in the queue
-            </button>
-          ) : (
-            <>
+        {/* When it was filed sits with the actions rather than in the body. It
+            is context for the decision, not part of the case. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-5">
+          <p
+            className="text-[12.5px] text-muted-foreground"
+            title={flag.createdAt.toLocaleString(undefined, {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          >
+            Reported {when(flag.createdAt)}
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {settled ? (
               <button
-                onClick={() => onDecide(flag, "dismissed")}
+                onClick={() => onReopen(flag)}
                 className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
               >
-                <X size={15} /> Dismiss
+                <RotateCcw size={15} /> Put back in the queue
               </button>
-              <button
-                onClick={() => onDecide(flag, "reviewed")}
-                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
-              >
-                <Check size={15} /> Mark actioned
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <button
+                  onClick={() => onDecide(flag, "dismissed")}
+                  className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
+                >
+                  <X size={15} /> Dismiss
+                </button>
+                <button
+                  onClick={() => onDecide(flag, "reviewed")}
+                  className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+                >
+                  <Check size={15} /> Mark actioned
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
