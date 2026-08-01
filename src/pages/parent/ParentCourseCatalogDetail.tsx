@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Clock, Users, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
+import { Star, Users, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
 import { useAuth } from "@/contexts/AuthContext";
-import { getFirstAvailableTutor, TutorAvailability } from "@/services/availability";
+import { getTutorAvailability, TutorAvailability } from "@/services/availability";
 import { useQuery } from "@tanstack/react-query";
 import { bookAndPay, money } from "@/services/billingService";
 import { getCourseForBooking } from "@/services/courseApplicationService";
@@ -34,8 +34,13 @@ const courseData = {
   ]
 };
 
-/** First hour shown in the availability grid. */
-const HOUR_START = 7;
+// The availability grid stored on a tutor is 13 rows, 8 AM through 8 PM, one
+// row per hour and seven columns for Sunday to Saturday. The booking grid drew
+// 15 rows starting at 7 AM, so row 0 was labelled 7 AM while holding the
+// tutor's 8 AM, and every slot on the page was an hour earlier than what they
+// had actually offered. These two constants are the contract.
+const HOUR_START = 8;
+const HOUR_COUNT = 13;
 
 const TABS = ["Availability", "Resume", "Reviews", "Messages"];
 
@@ -88,6 +93,13 @@ export function ParentCourseCatalogDetail() {
 
   const [activeTab, setActiveTab] = useState("Availability");
   const [availability, setAvailability] = useState<TutorAvailability | null>(null);
+  // An empty week rather than no week. The calendar keeps its shape whether or
+  // not the tutor has published times, so the page does not rearrange itself
+  // around a missing row of data.
+  const EMPTY_GRID: Pick<TutorAvailability, "time_grid" | "disabled_days"> = {
+    time_grid: [],
+    disabled_days: [],
+  };
   const [selectedSlots, setSelectedSlots] = useState<Array<{ dayIndex: number, hourIndex: number, date: Date, mode: number }>>([]);
   const [isTimezoneOpen, setIsTimezoneOpen] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState("Local Time");
@@ -119,13 +131,21 @@ export function ParentCourseCatalogDetail() {
       }
     : courseData;
 
+  // The tutor assigned to this course. It used to load whichever tutor came
+  // back first, so a parent booked against somebody else's calendar.
   useEffect(() => {
-    const fetchAvail = async () => {
-      const avail = await getFirstAvailableTutor();
-      if (avail) setAvailability(avail);
+    let cancelled = false;
+    if (!realTutor?.id) {
+      setAvailability(null);
+      return;
+    }
+    getTutorAvailability(realTutor.id).then((avail) => {
+      if (!cancelled) setAvailability(avail);
+    });
+    return () => {
+      cancelled = true;
     };
-    fetchAvail();
-  }, [selectedTutorId]); // refetch when tutor changes
+  }, [realTutor?.id]);
 
   const getWeekDays = (offsetWeeks: number) => {
     const d = new Date();
@@ -142,7 +162,26 @@ export function ParentCourseCatalogDetail() {
   };
 
   const weekDays = getWeekDays(currentWeekOffset);
-  const hours = Array.from({ length: 15 }).map((_, i) => i + HOUR_START);
+  const grid = availability ?? EMPTY_GRID;
+
+  // The current week is mostly behind us by Friday, so opening on it shows an
+  // empty grid. Skip to the next one when nothing here is still bookable.
+  useEffect(() => {
+    if (!availability || currentWeekOffset !== 0) return;
+    const week = getWeekDays(0);
+    const anyLeft = week.some((day, dIndex) => {
+      if (grid.disabled_days?.includes(dIndex)) return false;
+      return hours.some((hour, hIndex) => {
+        if (!(grid.time_grid[hIndex]?.[dIndex] || 0)) return false;
+        const start = new Date(day);
+        start.setHours(hour, 0, 0, 0);
+        return start.getTime() > Date.now();
+      });
+    });
+    if (!anyLeft) setCurrentWeekOffset(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availability]);
+  const hours = Array.from({ length: HOUR_COUNT }).map((_, i) => i + HOUR_START);
 
   const tzOffset = selectedTimezone === "Local Time" ? 0
     : selectedTimezone === "US/Eastern" ? -4
@@ -425,12 +464,7 @@ export function ParentCourseCatalogDetail() {
                           )}
                         </div>
 
-                        {!availability ? (
-                          <div className="p-12 text-center text-[#54656f] dark:text-[#aebac1] border border-dashed rounded-xl border-[#e9edef] dark:border-[#2a3942]">
-                            <Clock className="mx-auto mb-4 opacity-50" size={32} />
-                            <p>Loading tutor availability...</p>
-                          </div>
-                        ) : (
+                        {(
                           // <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-x-auto bg-white dark:bg-[#182329]">
                           <div className="border-0 border-[#e9edef] dark:border-[#2a3942] rounded-none overflow-x-auto bg-white/0 dark:bg-[#182329]">
                             <div className="min-w-[600px] p-4 pt-0">
@@ -438,7 +472,7 @@ export function ParentCourseCatalogDetail() {
                               {/* Week Header */}
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-2">
                                 <div className="flex items-center gap-2">
-                                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev - 1)}>
+                                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentWeekOffset <= 0} onClick={() => setCurrentWeekOffset(prev => Math.max(0, prev - 1))}>
                                     <ChevronLeft size={16} />
                                   </Button>
                                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
@@ -485,14 +519,35 @@ export function ParentCourseCatalogDetail() {
                                     </div>
 
                                     <div className="space-y-2">
-                                      {availability.disabled_days?.includes(dIndex) ? (
+                                      {grid.disabled_days?.includes(dIndex) ? (
                                         <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] py-4 bg-[#f8f9fa] dark:bg-[#111b21] rounded">Off</div>
+                                      ) : new Date(day).setHours(23, 59, 59, 999) < Date.now() ? (
+                                        <div className="text-[12px] text-[#c2c7d0] py-4">-</div>
+                                      ) : !hours.some((hour, hIndex) => {
+                                          if (!(grid.time_grid[hIndex]?.[dIndex] || 0)) return false;
+                                          const start = new Date(day);
+                                          start.setHours(hour, 0, 0, 0);
+                                          return start.getTime() > Date.now();
+                                        }) ? (
+                                        <div className="py-4 text-[12px] text-[#c2c7d0]">
+                                          No slots
+                                        </div>
                                       ) : (
                                         hours.map((hour, hIndex) => {
-                                          const mode = availability.time_grid[hIndex]?.[dIndex] || 0;
+                                          const mode = grid.time_grid[hIndex]?.[dIndex] || 0;
                                           if (mode === 0) return null; // Only show available slots
 
                                           const isSelected = selectedSlots.some(s => s.dayIndex === dIndex && s.hourIndex === hIndex);
+
+                                          // The week runs Sunday to Saturday, so the
+                                          // current one still holds hours that have
+                                          // gone. They are not drawn at all: a time
+                                          // nobody can book is not an option, and a
+                                          // column of struck-through rows is just
+                                          // noise to read past.
+                                          const slotStart = new Date(day);
+                                          slotStart.setHours(hour, 0, 0, 0);
+                                          if (slotStart.getTime() <= Date.now()) return null;
 
                                           return (
                                             <button

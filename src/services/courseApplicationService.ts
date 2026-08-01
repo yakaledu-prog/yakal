@@ -394,7 +394,11 @@ export async function getCourseForBooking(courseId: string): Promise<CourseWithT
 }
 
 /**
- * The catalog a parent browses: every active course.
+ * The catalog a parent browses: active courses that have a tutor.
+ *
+ * A course without one cannot be booked, because there is no calendar to pick
+ * a time from, so listing it only produces a dead end. Tutors see those on
+ * their own Find Courses page, where the point is to apply for them.
  *
  * ParentCourses used to hold six hardcoded entries with invented ratings and
  * student counts, and ids like "CAT-01" that matched nothing, so clicking one
@@ -406,6 +410,7 @@ export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
     .select(`${COURSE_FIELDS},
              tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate)`)
     .eq("is_active", true)
+    .not("tutor_id", "is", null)
     .order("title");
 
   if (error) {

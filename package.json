@@ -23,7 +23,8 @@
     "db:seed:fresh": "tsx scripts/seed.ts --fresh",
     "db:seed:remote": "tsx scripts/seed.ts --target=remote",
     "db:push:remote": "supabase db push --db-url \"$SUPABASE_DB_URL\"",
-    "demo": "tsx scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts",
+    "verify": "tsx scripts/verify/run-all.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
