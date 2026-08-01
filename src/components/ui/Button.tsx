@@ -7,7 +7,7 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = "", variant = 'default', size = 'default', ...props }, ref) => {
-    
+
     // Using simple tailwind classes based on theme.css variables
     let variantClasses = "";
     switch (variant) {
@@ -21,7 +21,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     let sizeClasses = "";
     switch (size) {
-      case "default": sizeClasses = "h-10 px-4 py-2"; break;
+      case "default": sizeClasses = "h-fit px-4 py-2"; break;
       case "sm": sizeClasses = "h-9 rounded-md px-3"; break;
       case "lg": sizeClasses = "h-11 rounded-md px-8"; break;
       case "icon": sizeClasses = "h-10 w-10"; break;

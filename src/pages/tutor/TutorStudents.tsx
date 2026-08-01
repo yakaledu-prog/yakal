@@ -14,6 +14,12 @@ import {
   getTutorStudents, getStudentDetail, StudentDetail,
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
+import {
+  PastSessions,
+  UpcomingSessions,
+  useSessionExtras,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatBody, useDirectConversation } from "@/components/messaging";
 import { TutorStudentDiagnosticsTab } from "@/components/tutor/TutorStudentDiagnosticsTab";
@@ -22,11 +28,6 @@ function fmtDate(d?: string | null) {
   if (!d) return "-";
   const s = d.length > 10 ? d : d + "T00:00:00";
   return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-function fmtTime(t?: string) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
 export function TutorStudents() {
@@ -153,6 +154,22 @@ export function TutorStudents() {
 function StudentDetailView({ detail }: { detail: StudentDetail }) {
   const p = detail.profile;
   const { sessions, submissions } = detail;
+  const { data: extras } = useSessionExtras(sessions);
+
+  // This is the student's own page, so the person beside each session is the
+  // one teaching it, not the one being taught.
+  const sessionItems: SessionListItem[] = sessions.map((s) => ({
+    id: s.id,
+    date: s.date,
+    startTime: s.start_time,
+    durationMinutes: s.duration_minutes,
+    status: s.status,
+    title: s.subject,
+    personName: p?.full_name ?? null,
+    personAvatarUrl: p?.avatar_url ?? null,
+    rating: extras?.ratings[s.id] ?? null,
+    attendedMinutes: extras?.minutes[s.id] ?? null,
+  }));
   const completed = sessions.filter((s) => s.status === "completed").length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const reviewed = submissions.filter((s) => s.status === "reviewed").length;
@@ -283,23 +300,15 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
 
         {activeTab === "sessions" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
-              <h3 className="text-[16px] font-semibold text-foreground">Session History</h3>
-            </div>
-            {sessions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No sessions yet.</p> : (
-              <div className="space-y-0">
-                {sessions.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-                    <div className="min-w-0">
-                      <p className="font-medium text-[15px] text-foreground truncate">{s.subject}</p>
-                      <p className="text-[13px] text-muted-foreground flex items-center gap-1.5 mt-0.5"><Clock size={13} /> {fmtDate(s.date)} · {fmtTime(s.start_time)}</p>
-                    </div>
-                    <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
-                      s.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                        s.status === "upcoming" ? "bg-[#1099A1]/10 text-[#1099A1]" : "bg-red-100 text-red-600 dark:bg-red-900/20")}>{s.status}</span>
-                  </div>
-                ))}
-              </div>
+            {/* The same rows as everywhere else. The tab is already named
+                Sessions, so a heading here would only say it twice. */}
+            {sessionItems.length === 0 ? (
+              <p className="py-16 text-center text-[14px] text-muted-foreground">No sessions yet.</p>
+            ) : (
+              <>
+                <UpcomingSessions sessions={sessionItems} hideIfEmpty />
+                <PastSessions sessions={sessionItems} hideIfEmpty />
+              </>
             )}
           </div>
         )}

@@ -392,18 +392,34 @@ export async function getTutorEarnings(tutorId: string): Promise<EarningRow[]> {
 }
 
 /**
- * Ask to be paid for a session.
+ * Ask to be paid for a session, and be paid.
  *
- * The server decides whether it happened, so every refusal here is a sentence
- * worth putting in front of the tutor rather than flattening to "failed".
+ * The server decides whether the session happened and whether the money can
+ * move. A connected tutor is transferred straight away; one without a bank
+ * connected is left waiting for an admin, and told so rather than left
+ * wondering why nothing arrived.
+ *
+ * Every refusal is a sentence worth putting in front of the tutor rather than
+ * flattening to "failed".
  */
-export async function requestSessionPayment(
-  sessionId: string
-): Promise<{ success: boolean; error?: string; attendanceKnown?: boolean }> {
-  const { data, error } = await supabase.rpc("request_session_payment", {
-    p_session_id: sessionId,
+export async function requestSessionPayment(sessionId: string): Promise<{
+  success: boolean;
+  paid?: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const { data: session } = await supabase.auth.getSession();
+  const token = session.session?.access_token;
+  if (!token) return { success: false, error: "You need to be signed in." };
+
+  const res = await fetch("/api/session-payout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ sessionId }),
   });
 
-  if (error) return { success: false, error: error.message };
-  return { success: true, attendanceKnown: data?.attendance_known ?? false };
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return { success: false, error: body.error || "Could not request that payment." };
+
+  return { success: true, paid: !!body.paid, message: body.message };
 }

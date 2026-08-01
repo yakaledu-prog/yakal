@@ -106,7 +106,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
 
   const getSlotColor = (mode: SlotMode) => {
     switch (mode) {
-      case 1: return 'bg-cyan-100 dark:bg-cyan-900/40 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400';
+      case 1: return 'bg-sky-100 dark:bg-sky-900/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
       case 3: return 'bg-orange-100 dark:bg-orange-900/40 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400';
       default: return 'bg-neutral-50 dark:bg-[#202c33]/20 border-[#e9edef] dark:border-[#2a3942]';
@@ -129,7 +129,8 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
 
         <div className="p-2.5 px-4 border-b border-[#e9edef] dark:border-[#2a3942] flex justify-between items-center bg-[#f8f9fa] dark:bg-[#202c33]">
           <div>
-            <h2 className="text-xl font-bold text-[#111] dark:text-white">Set Availability</h2>
+            <h2 className="text-lg font-medium dark:text-white">Set Availability</h2>
+            <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">Click and drag on the calendar to mark your available time slots.</p>
           </div>
           <button onClick={onClose} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
             <X size={24} />
@@ -179,7 +180,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
                           "flex-1 h-12 py-0.5 border-r border-[#e9edef] dark:border-[#2a3942] transition-colors flex items-center justify-center border-b",
                           isDisabled ? "opacity-40 grayscale cursor-not-allowed" : (isDragging ? "cursor-grabbing" : "cursor-grab"),
                           getSlotColor(mode),
-                          mode !== 0 ? 'border border-current scale-[0.98] rounded-md' : (!isDisabled ? 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]' : 'bg-[#f0f2f5] dark:bg-[#111b21]/50')
+                          mode !== 0 ? 'border border-current scale-[0.99] rounded-xs' : (!isDisabled ? 'hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942]' : 'bg-[#f0f2f5] dark:bg-[#111b21]/50')
                         )}
                       >
                         {getSlotIcon(mode)}
@@ -195,43 +196,42 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
         <div className="p-4 px-4 border-t border-[#e9edef] dark:border-[#2a3942] flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 bg-[#f8f9fa] dark:bg-[#202c33]">
 
           <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">Click and drag on the calendar to mark your available time slots.</p>
             <div className="flex flex-wrap gap-1 p-1 bg-[#e9edef]/50 dark:bg-[#111b21]/50 rounded-lg w-fit">
               <button
                 onClick={() => setToolMode(1)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#2a3942] text-sky-600 dark:text-sky-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 1 ? "bg-white dark:bg-[#2a3942] text-sky-600 dark:text-sky-400" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 <Video size={14} /> <span className="hidden sm:inline">Online</span>
               </button>
               <button
                 onClick={() => setToolMode(2)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#2a3942] text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 2 ? "bg-white dark:bg-[#2a3942] text-emerald-600 dark:text-emerald-400" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 <MapPin size={14} /> <span className="hidden sm:inline">In-Person</span>
               </button>
               <button
                 onClick={() => setToolMode(3)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F] shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F]" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 <Layers size={14} /> <span className="hidden sm:inline">Both</span>
               </button>
               <div className="w-px bg-[#d1d7db] dark:bg-[#2a3942] mx-1 my-1"></div>
               <button
                 onClick={() => setToolMode(0)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#2a3942] text-neutral-600 dark:text-neutral-400 shadow-sm" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 0 ? "bg-white dark:bg-[#2a3942] text-neutral-600 dark:text-neutral-400" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 <Eraser size={14} /> <span className="hidden sm:inline">Eraser</span>
               </button>
             </div>
           </div>
 
-          <div className="flex gap-3 w-full sm:w-auto justify-end">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button className="flex items-center gap-2" onClick={() => {
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <Button variant="outline" className='border border-muted' onClick={onClose}>Cancel</Button>
+            <Button className="flex items-center gap-3" onClick={() => {
               onSave(timeGrid, disabledDays);
               onClose();
             }}>
-              <Save size={18} /> Save
+              <Save size={14} /> Save
             </Button>
           </div>
         </div>

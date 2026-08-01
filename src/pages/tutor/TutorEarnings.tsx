@@ -8,9 +8,11 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { money as usd } from "@/services/billingService";
 import {
+  getConnectStatus,
   getTutorEarnings,
   methodLabel,
   requestSessionPayment,
+  startConnectOnboarding,
   type EarningRow,
 } from "@/services/payoutService";
 import { dicebearUrl } from "@/utils/avatar";
@@ -90,10 +92,20 @@ export function TutorEarnings() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tutor-earnings", user?.id],
     queryFn: () => getTutorEarnings(user!.id),
+    enabled: !!user?.id,
+  });
+
+  // Without a connected bank there is nothing to transfer into, so a request
+  // can only sit and wait for an admin. That is worth saying before the tutor
+  // asks and wonders why nothing arrived.
+  const { data: connect } = useQuery({
+    queryKey: ["connect-status", user?.id],
+    queryFn: () => getConnectStatus(user!.id),
     enabled: !!user?.id,
   });
 
@@ -126,21 +138,32 @@ export function TutorEarnings() {
   const request = async (ids: string[]) => {
     setBusy(ids.length === 1 ? ids[0] : "all");
     let done = 0;
+    let paid = 0;
+    let waiting = "";
     const problems: string[] = [];
 
     // One at a time, because each is checked separately and one refusal must
     // not cost the others.
     for (const id of ids) {
       const result = await requestSessionPayment(id);
-      if (result.success) done += 1;
-      else problems.push(result.error ?? "Could not request that session.");
+      if (!result.success) {
+        problems.push(result.error ?? "Could not request that session.");
+        continue;
+      }
+      done += 1;
+      if (result.paid) paid += 1;
+      else if (result.message) waiting = result.message;
     }
 
     setBusy(null);
     if (done > 0) {
-      toast.success(done === 1 ? "Payment requested." : `${done} sessions requested.`);
       void queryClient.invalidateQueries({ queryKey: ["tutor-earnings", user?.id] });
       void queryClient.invalidateQueries({ queryKey: ["tutor-sessions", user?.id] });
+      // Paid and waiting are different outcomes, so they get different words.
+      if (paid > 0) {
+        toast.success(paid === 1 ? "Paid, on its way to your bank." : `${paid} sessions paid.`);
+      }
+      if (waiting) toast.info(waiting);
     }
     // The server's refusals explain themselves, so the first is shown as it is.
     if (problems.length > 0) toast.error(problems[0]);
@@ -197,6 +220,28 @@ export function TutorEarnings() {
         </header>
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
+          {connect && !connect.payoutsEnabled && (
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-[#CAA25F] bg-muted/30 px-5 py-4">
+              <p className="text-[14px] text-foreground">
+                Connect your bank and finished sessions pay out to you straight away. Until then an
+                admin pays them by hand.
+              </p>
+              <button
+                type="button"
+                disabled={connecting}
+                onClick={async () => {
+                  setConnecting(true);
+                  const result = await startConnectOnboarding();
+                  setConnecting(false);
+                  if (result.error) toast.error(result.error);
+                }}
+                className="h-10 shrink-0 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {connecting ? "Opening..." : connect.accountId ? "Finish connecting" : "Connect bank"}
+              </button>
+            </div>
+          )}
+
           <div className="mb-12 flex flex-wrap items-center gap-6 md:gap-8">
             <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-[#1099A1]">
               <Search size={16} className="shrink-0 text-muted-foreground" />

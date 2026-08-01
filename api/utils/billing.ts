@@ -74,6 +74,22 @@ export async function requireUser(req: any): Promise<{ id: string; email: string
   return { id: data.user.id, email: data.user.email ?? null };
 }
 
+/**
+ * A client that acts as the caller rather than as the server.
+ *
+ * Needed wherever a database function decides something from auth.uid(): the
+ * service client is nobody, so those checks would all pass or all fail rather
+ * than answering for the person who asked.
+ */
+export function getUserClient(req: any): SupabaseClient {
+  const header: string = req.headers?.authorization || req.headers?.Authorization || '';
+  const { url, anonKey } = target();
+  return createClient(url, anonKey, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: header } },
+  });
+}
+
 export function appBaseUrl(): string {
   return process.env.APP_BASE_URL || 'http://localhost:5173';
 }
