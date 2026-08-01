@@ -39,12 +39,20 @@ export function CourseApplicants({
   courseTitle,
   assignedTutorId,
   onAssigned,
+  show = "pending",
 }: {
   courseId: string;
   courseTitle: string;
   assignedTutorId: string | null;
   /** Lets the page refetch the course once its tutor changes. */
   onAssigned?: () => void;
+  /**
+   * "pending" is the queue of people waiting on a decision, which sits at the
+   * top of the page because it is the reason an admin opens an unassigned
+   * course. "assigned" is who ended up teaching it, which belongs in the
+   * Tutors tab. They are different questions and share only this component.
+   */
+  show?: "pending" | "assigned";
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -100,27 +108,27 @@ export function CourseApplicants({
   }
 
   const pending = applicants.filter((a) => a.status === "pending");
-  const decided = applicants.filter((a) => a.status !== "pending");
+  const accepted = applicants.filter((a) => a.status === "accepted");
+  const visible = show === "pending" ? pending : accepted;
 
   return (
     <div className="animate-in fade-in duration-300">
-      {!assignedTutorId && (
+      {show === "assigned" && !assignedTutorId && (
         <p className="mb-6 text-[13px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
           No tutor assigned yet
         </p>
       )}
 
-      {applicants.length === 0 ? (
-        <div className="py-16 text-center">
-          <UserCheck size={32} className="mx-auto mb-3 text-[#aebac1]" />
-          <p className="text-[15px] font-medium text-[#111] dark:text-white">No applications yet</p>
-          <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
-            Tutors see this course under Open and can apply for it.
+      {visible.length === 0 ? (
+        show === "assigned" ? (
+          <p className="flex items-center gap-2 text-[13.5px] text-muted-foreground">
+            <UserCheck size={15} className="shrink-0 text-[#aebac1]" />
+            Nobody is teaching this course yet. Accept an applicant to assign one.
           </p>
-        </div>
+        ) : null
       ) : (
         <div className="space-y-3">
-          {[...pending, ...decided].map((a) => (
+          {visible.map((a) => (
             <article
               key={a.id}
               className={cn(
@@ -166,9 +174,11 @@ export function CourseApplicants({
                   </div>
                 </div>
 
-                <span className={cn("shrink-0 text-[12.5px] font-medium", STATUS[a.status].className)}>
-                  {STATUS[a.status].label}
-                </span>
+                {show === "pending" && (
+                  <span className={cn("shrink-0 text-[12.5px] font-medium", STATUS[a.status].className)}>
+                    {STATUS[a.status].label}
+                  </span>
+                )}
               </div>
 
               {a.tutor.bio && (

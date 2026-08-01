@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
-import { getCourse, getCourses, type AdminCourse } from "@/services/adminService";
+import { getCourse, getCourses, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
@@ -13,9 +13,10 @@ export function AdminCourseDetail() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<AdminCourse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("tutors"); // Default to tutors to show off the UI
+  const [activeTab, setActiveTab] = useState("tutors");
   const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [query, setQuery] = useState("");
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (id) {
@@ -31,13 +32,18 @@ export function AdminCourseDetail() {
   // list page in between.
   useEffect(() => {
     getCourses().then(setCourses);
+    getPendingApplicantCounts().then(setPendingCounts);
   }, []);
 
-  const filtered = courses.filter(
-    (c) =>
-      c.title.toLowerCase().includes(query.toLowerCase()) ||
-      c.subject.toLowerCase().includes(query.toLowerCase())
-  );
+  // Courses with someone waiting float to the top, so the ones needing a
+  // decision are found without opening each in turn.
+  const filtered = courses
+    .filter(
+      (c) =>
+        c.title.toLowerCase().includes(query.toLowerCase()) ||
+        c.subject.toLowerCase().includes(query.toLowerCase())
+    )
+    .sort((a, b) => (pendingCounts[b.id] ?? 0) - (pendingCounts[a.id] ?? 0));
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-[#1099A1] border-t-transparent rounded-full" /></div>;
@@ -100,7 +106,7 @@ export function AdminCourseDetail() {
                     <BookOpen size={18} />
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p
                     className={cn(
                       "truncate text-[14px] font-semibold",
@@ -109,7 +115,14 @@ export function AdminCourseDetail() {
                   >
                     {c.title}
                   </p>
-                  <p className="truncate text-[12px] text-muted-foreground">{c.subject}</p>
+                  <p className="truncate text-[12px] text-muted-foreground">
+                    {c.subject}
+                    {pendingCounts[c.id] ? (
+                      <span className="ml-1.5 font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+                        {pendingCounts[c.id]} waiting
+                      </span>
+                    ) : null}
+                  </p>
                 </div>
               </button>
             );
@@ -191,14 +204,37 @@ export function AdminCourseDetail() {
 
       {/* Content Area */}
       <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-        
+
+        {/* Anyone still waiting on a decision, above the tabs because that is
+            what an admin opens an unassigned course to deal with. Who ended up
+            teaching it is a different question and lives in the Tutors tab. */}
+        {(pendingCounts[course.id] ?? 0) > 0 && (
+          <>
+            <CourseApplicants
+              courseId={course.id}
+              courseTitle={course.title}
+              assignedTutorId={course.tutor_id ?? null}
+              show="pending"
+              onAssigned={() => {
+                if (id) getCourse(id).then(setCourse);
+                getPendingApplicantCounts().then(setPendingCounts);
+              }}
+            />
+            <hr className="my-8 border-[#e9edef] dark:border-[#2a3942]" />
+          </>
+        )}
+
         {/* TUTORS TAB */}
         {activeTab === "tutors" && (
           <CourseApplicants
             courseId={course.id}
             courseTitle={course.title}
             assignedTutorId={course.tutor_id ?? null}
-            onAssigned={() => id && getCourse(id).then(setCourse)}
+            show="assigned"
+            onAssigned={() => {
+              if (id) getCourse(id).then(setCourse);
+              getPendingApplicantCounts().then(setPendingCounts);
+            }}
           />
         )}
 

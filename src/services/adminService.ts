@@ -515,3 +515,26 @@ export async function getCourseDetail(courseId: string): Promise<AdminCourseDeta
       .reduce((n: number, i: any) => n + (i.payout_cents ?? 0), 0),
   };
 }
+
+/**
+ * How many tutors are waiting on a decision, per course.
+ *
+ * Lets the course list mark the ones that need attention and float them up,
+ * so an admin does not have to open each course to find out which are
+ * waiting on them.
+ */
+export async function getPendingApplicantCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("course_applications")
+    .select("course_id")
+    .eq("status", "pending");
+
+  if (error) {
+    console.error("getPendingApplicantCounts failed:", error);
+    return {};
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) counts[row.course_id] = (counts[row.course_id] ?? 0) + 1;
+  return counts;
+}
