@@ -94,6 +94,9 @@ import { ParentBilling } from "../pages/parent/ParentBilling";
 import { Billing1 } from "../pages/parent/billing/Billing1";
 import { Billing2 } from "../pages/parent/billing/Billing2";
 import { Billing4 } from "../pages/parent/billing/Billing4";
+// Two ways to buy a month of lessons, to compare. Keep one.
+import { BookingV1 } from "../pages/parent/booking/BookingV1";
+import { BookingV2 } from "../pages/parent/booking/BookingV2";
 import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
 import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentChildChats } from "../pages/parent/ParentChildChats";
@@ -347,6 +350,10 @@ const router = createBrowserRouter([
           { path: "billing-1", element: <Billing1 /> },
           { path: "billing-2", element: <Billing2 /> },
           { path: "billing-4", element: <Billing4 /> },
+          { path: "courses-v1", element: <BookingV1 /> },
+          { path: "courses-v1/:courseId", element: <BookingV1 /> },
+          { path: "courses-v2", element: <BookingV2 /> },
+          { path: "courses-v2/:courseId", element: <BookingV2 /> },
           { path: "profile", element: <ParentProfile /> },
           { path: "notifications", element: <ParentNotifications /> },
           { path: "*", element: <NotFoundPage /> },

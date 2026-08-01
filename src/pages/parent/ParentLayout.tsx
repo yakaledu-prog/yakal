@@ -16,6 +16,8 @@ export function ParentLayout() {
     { name: "Billing 1", href: "/parent/billing-1", icon: <CreditCard size={20} /> },
     { name: "Billing 2", href: "/parent/billing-2", icon: <CreditCard size={20} /> },
     { name: "Billing 4", href: "/parent/billing-4", icon: <CreditCard size={20} /> },
+    { name: "Courses v1", href: "/parent/courses-v1", icon: <Library size={20} /> },
+    { name: "Courses v2", href: "/parent/courses-v2", icon: <Library size={20} /> },
     { name: "Notifications", href: "/parent/notifications", icon: <Bell size={20} /> },
   ];
 
