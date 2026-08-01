@@ -90,6 +90,10 @@ import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
+// Three billing designs to compare. Keep one, delete the rest.
+import { Billing1 } from "../pages/parent/billing/Billing1";
+import { Billing2 } from "../pages/parent/billing/Billing2";
+import { Billing3 } from "../pages/parent/billing/Billing3";
 import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
 import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentChildChats } from "../pages/parent/ParentChildChats";
@@ -340,6 +344,9 @@ const router = createBrowserRouter([
           { path: "college-list", element: <ParentCollegeList /> },
           { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },
+          { path: "billing-1", element: <Billing1 /> },
+          { path: "billing-2", element: <Billing2 /> },
+          { path: "billing-3", element: <Billing3 /> },
           { path: "profile", element: <ParentProfile /> },
           { path: "notifications", element: <ParentNotifications /> },
           { path: "*", element: <NotFoundPage /> },
