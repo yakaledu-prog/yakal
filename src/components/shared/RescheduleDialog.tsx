@@ -74,13 +74,8 @@ export function RescheduleDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#202c33]">
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <div className="min-w-0">
-            <h3 className="text-[18px] font-bold text-foreground">Reschedule</h3>
-            <p className="truncate text-[13px] text-muted-foreground">
-              {session.title}, currently {readableDate(session.date, session.startTime)}
-            </p>
-          </div>
+        <div className="flex items-center justify-between border-b border-border p-5 py-3">
+          <h3 className="text-[18px] font-medium text-foreground">Reschedule</h3>
           <button
             type="button"
             onClick={onClose}
@@ -103,7 +98,10 @@ export function RescheduleDialog({
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border p-5">
-          <Button variant="outline" onClick={onClose} className="h-11 px-5">
+          <p className="truncate text-[13px] text-muted-foreground flex-grow">
+            {session.title}, currently {readableDate(session.date, session.startTime)}
+          </p>
+          <Button variant="outline" onClick={onClose} className="h-11 px-5 border border-muted">
             Cancel
           </Button>
           <Button disabled={!picked || saving} onClick={confirm} className="h-11 px-6 font-semibold">

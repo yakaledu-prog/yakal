@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
-  ExternalLink
+  ExternalLink, ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +40,9 @@ export function TutorStudents() {
   const { user, profile, refreshProfile } = useAuth();
   
   const [query, setQuery] = useState("");
+  // Which column the phone shows. Desktop shows both, so this is only ever
+  // consulted below md.
+  const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
   const [accepting, setAccepting] = useState(profile?.accepting_students !== false);
 
   useEffect(() => setAccepting(profile?.accepting_students !== false), [profile?.accepting_students]);
@@ -82,7 +85,12 @@ export function TutorStudents() {
   return (
     <div className="students-page flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
       {/* Left pane */}
-      <aside className="students-list w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+      <aside
+        className={cn(
+          "students-list w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full",
+          showDetailOnMobile ? "hidden md:flex" : "flex"
+        )}
+      >
         {/* Accepting-students toggle */}
         <div className="students-list__accepting flex items-center justify-between gap-3 p-3.5 border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="min-w-0">
@@ -111,7 +119,7 @@ export function TutorStudents() {
           </div>
         </div>
 
-        <div className="students-list__items flex-1 md:overflow-y-auto max-h-[34vh] md:max-h-none overflow-y-auto">
+        <div className="students-list__items flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
           ) : filtered.length === 0 ? (
@@ -120,7 +128,12 @@ export function TutorStudents() {
             filtered.map((s) => {
               const active = s.id === activeId;
               return (
-                <button key={s.id} onClick={() => navigate(`/tutor/students/${s.id}`)}
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    navigate(`/tutor/students/${s.id}`);
+                    setShowDetailOnMobile(true);
+                  }}
                   className={cn("students-list__item w-full flex items-center gap-3 p-3 text-left border-l-2 transition-colors",
                     active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                   <img src={s.avatar_url || dicebearUrl(s.full_name)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
@@ -136,7 +149,12 @@ export function TutorStudents() {
       </aside>
 
       {/* Right pane: student detail */}
-      <section className="student-detail flex-1 min-w-0 md:h-full md:overflow-y-auto p-4 md:p-8">
+      <section
+        className={cn(
+          "student-detail flex-1 min-w-0 min-h-0 md:h-full overflow-y-auto p-4 md:p-8",
+          showDetailOnMobile ? "block" : "hidden md:block"
+        )}
+      >
         {students.length === 0 && !loading ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-20">
             <Users size={48} className="text-[#aebac1] mb-4" />
@@ -148,14 +166,20 @@ export function TutorStudents() {
         ) : !detail ? (
           <div className="p-8 text-center text-muted-foreground">Student not found.</div>
         ) : (
-          <StudentDetailView detail={detail} />
+          <StudentDetailView detail={detail} onBack={() => setShowDetailOnMobile(false)} />
         )}
       </section>
     </div>
   );
 }
 
-function StudentDetailView({ detail }: { detail: StudentDetail }) {
+function StudentDetailView({
+  detail,
+  onBack,
+}: {
+  detail: StudentDetail;
+  onBack: () => void;
+}) {
   const navigate = useNavigate();
   const { user, profile: me } = useAuth();
   const p = detail.profile;
@@ -221,7 +245,17 @@ function StudentDetailView({ detail }: { detail: StudentDetail }) {
         </svg>
 
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Only the phone needs this: on desktop the list is still beside
+                the record, so there is nothing to go back to. */}
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to students"
+              className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <ChevronLeft size={22} />
+            </button>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{p.full_name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">

@@ -167,77 +167,88 @@ export function SessionList({
         const label = whenLabel(s);
 
         return (
-          <div key={s.id} className="flex flex-wrap items-center gap-4 py-8 md:flex-nowrap">
-            {/* Date, as its own column so the eye can run down it */}
-            <div className="w-12 shrink-0 text-center">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
-                {start.toLocaleDateString(undefined, { month: "short" })}
-              </p>
-              <p className="text-[24px] font-medium leading-none tabular-nums text-foreground">
-                {String(start.getDate()).padStart(2, "0")}
-              </p>
-            </div>
+          <div key={s.id} className="py-6 md:py-8">
+            {/* Two lines on a phone and one on a desktop. Squeezed onto a
+                single line, a narrow screen truncates the subject and the
+                person to initials, which is everything worth reading. */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+              <div className="flex min-w-0 items-center gap-4 md:flex-1">
+                {/* Date, as its own column so the eye can run down it */}
+                <div className="w-12 shrink-0 text-center">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
+                    {start.toLocaleDateString(undefined, { month: "short" })}
+                  </p>
+                  <p className="text-[24px] font-medium leading-none tabular-nums text-foreground">
+                    {String(start.getDate()).padStart(2, "0")}
+                  </p>
+                </div>
 
-            <img
-              src={s.personAvatarUrl || dicebearUrl(s.personName ?? "Yakal")}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-full object-cover"
-            />
+                <img
+                  src={s.personAvatarUrl || dicebearUrl(s.personName ?? "Yakal")}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-full object-cover"
+                />
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-medium text-foreground">{s.title}</p>
-              {s.personName && (
-                <p className="truncate text-[13px] text-muted-foreground">{s.personName}</p>
-              )}
-            </div>
-
-            <div className="shrink-0">
-              <p
-                className={cn(
-                  "flex items-center gap-1.5 text-[13.5px] font-medium",
-                  isAwaitingConfirmation(s)
-                    ? "text-[#CAA25F]"
-                    : upcoming
-                      ? "text-[#1099A1]"
-                      : "text-muted-foreground"
-                )}
-              >
-                <StatusIcon item={s} />
-                {label}
-              </p>
-              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                {timeRange(s)}
-                {completed && s.attendedMinutes != null && ` · ${s.attendedMinutes} min attended`}
-              </p>
-            </div>
-
-            {/* A rating only exists once a session has happened. The column is
-                kept even when unrated, so the ones that are line up. */}
-            {completed && (
-              <div className="w-20 shrink-0 text-right">
-                {s.rating != null ? (
-                  <span className="inline-flex items-center gap-1 text-[13.5px] text-foreground">
-                    <Star size={14} className="fill-[#CAA25F] text-[#CAA25F]" />
-                    {s.rating.toFixed(1)}
-                  </span>
-                ) : onRate ? (
-                  // The invitation lives in the rating column rather than as
-                  // another button on the right: it is the same slot the
-                  // answer will occupy.
-                  <button
-                    type="button"
-                    onClick={() => onRate(s)}
-                    className="text-[12.5px] font-medium text-[#1099A1] hover:underline"
-                  >
-                    Rate
-                  </button>
-                ) : (
-                  <span className="text-[12.5px] text-muted-foreground">Not rated</span>
-                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">{s.title}</p>
+                  {s.personName && (
+                    <p className="truncate text-[13px] text-muted-foreground">{s.personName}</p>
+                  )}
+                </div>
               </div>
-            )}
 
-            {renderAction && <div className="shrink-0">{renderAction(s)}</div>}
+              {/* On a phone this is the second line, indented to sit under the
+                  subject rather than under the date. */}
+              <div className="flex items-center justify-between gap-4 pl-16 md:justify-end md:gap-4 md:pl-0">
+                <div className="shrink-0">
+                  <p
+                    className={cn(
+                      "flex items-center gap-1.5 text-[13.5px] font-medium",
+                      isAwaitingConfirmation(s)
+                        ? "text-[#CAA25F]"
+                        : upcoming
+                          ? "text-[#1099A1]"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    <StatusIcon item={s} />
+                    {label}
+                  </p>
+                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                    {timeRange(s)}
+                    {completed && s.attendedMinutes != null && ` \u00b7 ${s.attendedMinutes} min attended`}
+                  </p>
+                </div>
+
+                {/* A rating only exists once a session has happened. The column
+                    is kept even when unrated, so the ones that are line up. */}
+                {completed && (
+                  <div className="w-20 shrink-0 text-right">
+                    {s.rating != null ? (
+                      <span className="inline-flex items-center gap-1 text-[13.5px] text-foreground">
+                        <Star size={14} className="fill-[#CAA25F] text-[#CAA25F]" />
+                        {s.rating.toFixed(1)}
+                      </span>
+                    ) : onRate ? (
+                      // The invitation lives in the rating column rather than
+                      // as another button on the right: it is the same slot
+                      // the answer will occupy.
+                      <button
+                        type="button"
+                        onClick={() => onRate(s)}
+                        className="text-[12.5px] font-medium text-[#1099A1] hover:underline"
+                      >
+                        Rate
+                      </button>
+                    ) : (
+                      <span className="text-[12.5px] text-muted-foreground">Not rated</span>
+                    )}
+                  </div>
+                )}
+
+                {renderAction && <div className="shrink-0">{renderAction(s)}</div>}
+              </div>
+            </div>
           </div>
         );
       })}
