@@ -19,6 +19,12 @@ import {
   startCheckout,
   type SavedCard,
 } from "@/services/billingService";
+import {
+  getAdmissionsPlans,
+  getAdmissionsUsage,
+  quotaLabel,
+  type AdmissionsPlan,
+} from "@/services/admissionsService";
 import { BillingHeader, ChildSidebar, Empty, Money, Spinner } from "./billing/shared";
 
 // ============================================================
@@ -79,10 +85,34 @@ export function ParentBilling() {
     [data, childId]
   );
 
-  const countFor = (id: string | null) =>
-    (data?.packages ?? []).filter((p) => !id || p.studentId === id).length;
+  // College counselling is bought as a tier rather than as sessions, so it is
+  // not a package. It belongs on this tab all the same: it is a thing they pay
+  // for, and Plans is where a parent looks for those.
+  const studentIds = children.map((c) => c.id);
+  const { data: admissionsByStudent } = useQuery({
+    queryKey: ["admissions-plans", studentIds.join(",")],
+    queryFn: () => getAdmissionsPlans(studentIds),
+    enabled: studentIds.length > 0,
+  });
 
-  const paidTotal = packages.reduce((n, p) => n + p.totalPaidCents, 0);
+  const admissionsPlans = useMemo(
+    () =>
+      [...(admissionsByStudent?.values() ?? [])].filter(
+        (p) => !childId || p.studentId === childId
+      ),
+    [admissionsByStudent, childId]
+  );
+
+  const countFor = (id: string | null) =>
+    (data?.packages ?? []).filter((p) => !id || p.studentId === id).length +
+    [...(admissionsByStudent?.values() ?? [])].filter((p) => !id || p.studentId === id).length;
+
+  // Both stats count everything on the tab, not only the course packages, or
+  // the header disagrees with the list underneath it.
+  const paidTotal =
+    packages.reduce((n, p) => n + p.totalPaidCents, 0) +
+    admissionsPlans.reduce((n, p) => n + p.tier.priceCents, 0);
+  const planCount = packages.length + admissionsPlans.length;
   const open = invoices.filter((i) => i.status === "open");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
 
@@ -134,7 +164,7 @@ export function ParentBilling() {
   }
 
   const stats: { label: string; value: string | number }[] = [
-    { label: "Plans", value: packages.length },
+    { label: "Plans", value: planCount },
     { label: "Paid to date", value: money(paidTotal) },
   ];
   if (dueCents > 0) stats.unshift({ label: "Due now", value: money(dueCents) });
@@ -180,13 +210,16 @@ export function ParentBilling() {
             {isLoading ? (
               <Spinner />
             ) : tab === "plans" ? (
-              packages.length === 0 ? (
+              packages.length === 0 && admissionsPlans.length === 0 ? (
                 <Empty
                   title="No plans yet"
-                  body="A plan appears here once you book a course for one of your children."
+                  body="A plan appears here once you book a course or start college counselling for one of your children."
                 />
               ) : (
                 <div className="space-y-3">
+                  {admissionsPlans.map((p) => (
+                    <AdmissionsCard key={p.id} plan={p} />
+                  ))}
                   {packages.map((p) => (
                     <PlanCard key={`${p.courseId}|${p.studentId}`} pkg={p} />
                   ))}
@@ -293,6 +326,60 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
           <div className="h-full bg-[#1099A1]" style={{ width: `${done}%` }} />
         </div>
       </div>
+    </article>
+  );
+}
+
+/**
+ * College counselling.
+ *
+ * Shows what the tier includes and how much of it has gone. The numbers are
+ * there so a parent can see where they stand before asking for one more round,
+ * not because anything is about to be cut off.
+ */
+function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
+  const { data: usage } = useQuery({
+    queryKey: ["admissions-usage", plan.studentId],
+    queryFn: () => getAdmissionsUsage(plan.studentId),
+  });
+
+  return (
+    <article className="rounded-xl border border-border bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-medium text-foreground">
+            {plan.tier.name} college counselling
+          </h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {plan.studentName}
+            {" - since "}
+            {new Date(plan.startedAt).toLocaleDateString(undefined, {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+        <p className="text-[13px] text-muted-foreground">
+          <Money cents={plan.tier.priceCents} /> paid
+        </p>
+      </div>
+
+      {usage && usage.lines.length > 0 && (
+        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-border pt-3">
+          {usage.lines.map((l) => (
+            <div key={l.label}>
+              <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
+              <dd className="text-[14px] text-foreground">
+                {quotaLabel(l)}
+                {l.limit == null && (
+                  <span className="text-muted-foreground"> - no limit</span>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </article>
   );
 }

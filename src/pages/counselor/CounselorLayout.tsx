@@ -1,10 +1,11 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Users, MessagesSquare, Bell, Calendar, History, Map, GraduationCap, Compass, Wallet } from "lucide-react";
+import { Home, Users, MessagesSquare, Bell, Calendar, History, Map, GraduationCap, Compass, Wallet, FileText } from "lucide-react";
 
 export function CounselorLayout() {
   const navItems = [
     { name: "Home", href: "/counselor", icon: <Home size={20} /> },
     { name: "Students", href: "/counselor/students", icon: <Users size={20} /> },
+    { name: "Essays", href: "/counselor/essays", icon: <FileText size={20} /> },
     { name: "Sessions", href: "/counselor/sessions", icon: <History size={20} /> },
     { name: "Calendar", href: "/counselor/calendar", icon: <Calendar size={20} /> },
     { 

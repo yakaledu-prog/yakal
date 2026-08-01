@@ -65,6 +65,7 @@ import { CounselorProfile } from "../pages/counselor/CounselorProfile";
 import { CounselorMessages } from "../pages/counselor/CounselorMessages";
 import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
 import { CounselorEarnings } from "../pages/counselor/CounselorEarnings";
+import { CounselorEssays } from "../pages/counselor/CounselorEssays";
 import { CounselorCalendar } from "@/pages/counselor/CounselorCalendar";
 import { CounselorSessions } from "@/pages/counselor/CounselorSessions";
 import { CounselorSessionDetail } from "@/pages/counselor/CounselorSessionDetail";
@@ -91,6 +92,7 @@ import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
 // Three billing designs to compare. Keep one, delete the rest.
+import { ParentAdmissions } from "../pages/parent/ParentAdmissions";
 import { Billing1 } from "../pages/parent/billing/Billing1";
 import { Billing2 } from "../pages/parent/billing/Billing2";
 import { Billing4 } from "../pages/parent/billing/Billing4";
@@ -298,6 +300,7 @@ const router = createBrowserRouter([
           { path: "notifications", element: <CounselorNotifications /> },
           { path: "calendar", element: <CounselorCalendar /> },
           { path: "sessions", element: <CounselorSessions /> },
+          { path: "essays", element: <CounselorEssays /> },
           { path: "earnings", element: <CounselorEarnings /> },
           { path: "profile", element: <CounselorProfile /> },
           { path: "roadmap", element: <StudentRoadmap /> },
@@ -347,6 +350,7 @@ const router = createBrowserRouter([
           { path: "college-list", element: <ParentCollegeList /> },
           { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },
+          { path: "admissions", element: <ParentAdmissions /> },
           { path: "billing-1", element: <Billing1 /> },
           { path: "billing-2", element: <Billing2 /> },
           { path: "billing-4", element: <Billing4 /> },

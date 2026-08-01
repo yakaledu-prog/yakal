@@ -34,15 +34,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }))
       : null;
 
-    if (!description) return res.status(400).json({ error: 'Missing description' });
-    if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > 5_000_000) {
+    // Buying an admissions tier. The price and the wording come from the tier
+    // row, never from the request: an amount the browser supplies is an amount
+    // the payer can choose, and a tier has a list price that is not per-family.
+    const admissionsTierId: string | null = req.body?.admissionsTierId || null;
+    let finalDescription = description;
+    let finalAmountCents = amountCents;
+    let finalKind = kind;
+
+    if (admissionsTierId) {
+      const { data: tier, error: tierErr } = await db
+        .from('admissions_tiers')
+        .select('id, name, price_cents, is_active')
+        .eq('id', admissionsTierId)
+        .maybeSingle();
+
+      if (tierErr) throw new Error(tierErr.message);
+      if (!tier || !tier.is_active) {
+        return res.status(400).json({ error: 'That plan is no longer available' });
+      }
+
+      finalDescription = `${tier.name} admissions counselling`;
+      finalAmountCents = tier.price_cents;
+      finalKind = 'admissions';
+    }
+
+    if (!finalDescription) return res.status(400).json({ error: 'Missing description' });
+    if (!Number.isFinite(finalAmountCents) || finalAmountCents <= 0 || finalAmountCents > 5_000_000) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
     // The tutor's cut of this booking (Stripe Connect deferred, so we just
     // record what is owed). Placeholder split: tutor gets 70%, platform keeps
     // 30% as the margin. Real deployments should use the tutor's fixed rate.
-    const payoutCents = tutorId ? Math.round(amountCents * 0.7) : null;
+    const payoutCents = tutorId ? Math.round(finalAmountCents * 0.7) : null;
 
     const { data, error } = await db
       .from('invoices')
@@ -50,11 +75,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         parent_id: user.id,
         student_id: studentId,
         tutor_id: tutorId,
-        description,
-        amount_cents: amountCents,
+        description: finalDescription,
+        amount_cents: finalAmountCents,
         payout_cents: payoutCents,
-        kind,
+        kind: finalKind,
         course_id: courseId,
+        admissions_tier_id: admissionsTierId,
         booking: booking && booking.length > 0 ? booking : null,
         status: 'open',
         payout_status: 'none',

@@ -97,6 +97,12 @@ export async function bookAndPay(input: {
   courseId?: string | null;
   /** Slots picked at checkout. Payment turns these into sessions. */
   booking?: { date: string; startTime: string; durationMinutes?: number }[];
+  /**
+   * The admissions tier being bought. When this is set the server ignores
+   * amountCents and description and takes both from the tier row: a price the
+   * browser supplies is a price the payer can choose.
+   */
+  admissionsTierId?: string | null;
 }): Promise<{ error?: string }> {
   const res = await authedPost("/api/create-invoice", input);
   if (res.error) return { error: res.error };

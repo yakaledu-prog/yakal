@@ -30,6 +30,7 @@ interface Invoice {
   student_id: string | null;
   tutor_id: string | null;
   course_id: string | null;
+  admissions_tier_id: string | null;
   booking: BookingSlot[] | null;
   description: string;
 }
@@ -40,7 +41,9 @@ export async function fulfilInvoices(db: any, invoiceIds: string[]): Promise<voi
 
   const { data: invoices, error } = await db
     .from("invoices")
-    .select("id, parent_id, student_id, tutor_id, course_id, booking, description")
+    .select(
+      "id, parent_id, student_id, tutor_id, course_id, admissions_tier_id, booking, description"
+    )
     .in("id", invoiceIds);
 
   if (error) {
@@ -59,6 +62,13 @@ export async function fulfilInvoices(db: any, invoiceIds: string[]): Promise<voi
 }
 
 async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
+  // An admissions tier grants a plan rather than an enrolment, so it takes a
+  // different path and then stops.
+  if (invoice.admissions_tier_id && invoice.student_id) {
+    await fulfilAdmissions(db, invoice);
+    return;
+  }
+
   // Nothing to enrol on. A plain invoice, e.g. a registration fee, is complete
   // once it is marked paid.
   if (!invoice.course_id || !invoice.student_id) return;
@@ -154,6 +164,127 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     tutorId,
     sessionCount: created,
   });
+}
+
+/**
+ * A paid admissions tier.
+ *
+ * Two things have to become true: the student is on that tier, and the
+ * admissions side of the product is switched on for them. The second is what
+ * the rest of the app already checks, so the plan drives the switch rather
+ * than sitting next to it and disagreeing.
+ *
+ * Idempotent like the rest of this file. A repeated delivery finds the plan
+ * already there and tells nobody twice.
+ */
+async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
+  const { data: tier } = await db
+    .from("admissions_tiers")
+    .select("id, name")
+    .eq("id", invoice.admissions_tier_id)
+    .single();
+  if (!tier) {
+    console.error(`fulfil: admissions tier ${invoice.admissions_tier_id} is missing`);
+    return;
+  }
+
+  // Already on this exact tier from this exact invoice: a second delivery.
+  const { data: existing } = await db
+    .from("admissions_plans")
+    .select("id, tier_id, invoice_id")
+    .eq("student_id", invoice.student_id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (existing?.invoice_id === invoice.id) return;
+
+  // Buying a different tier replaces the old one and keeps the history, so
+  // what a family was on last year is still answerable.
+  if (existing) {
+    await db
+      .from("admissions_plans")
+      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .eq("id", existing.id);
+  }
+
+  const { error: planErr } = await db.from("admissions_plans").insert({
+    student_id: invoice.student_id,
+    purchased_by: invoice.parent_id,
+    tier_id: tier.id,
+    invoice_id: invoice.id,
+  });
+  if (planErr) {
+    // The unique index refuses a second active plan, which is a duplicate
+    // delivery arriving while the first is still in flight.
+    if (planErr.code !== "23505") console.error("fulfil: admissions plan failed:", planErr.message);
+    return;
+  }
+
+  // The switch the rest of the app reads.
+  const { error: svcErr } = await db
+    .from("child_services")
+    .upsert(
+      { student_id: invoice.student_id, service: "admissions", is_active: true },
+      { onConflict: "student_id,service" }
+    );
+  if (svcErr) console.error("fulfil: unlocking admissions failed:", svcErr.message);
+
+  const { data: people } = await db
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", [invoice.student_id, invoice.parent_id]);
+
+  const by = new Map<string, any>((people ?? []).map((p: any) => [p.id, p]));
+  const student = by.get(invoice.student_id!);
+  const parent = by.get(invoice.parent_id);
+
+  const { error: noteErr } = await db.from("notifications").insert([
+    {
+      user_id: invoice.student_id,
+      type: "admissions_plan",
+      title: "College counselling is open",
+      message: `You are on ${tier.name}. Your college list, essays and roadmap are now yours to work on.`,
+      link: "/student/college-list",
+    },
+    {
+      user_id: invoice.parent_id,
+      type: "admissions_plan",
+      title: "Payment received",
+      message: `${student?.full_name ?? "Your child"} is on ${tier.name} admissions counselling.`,
+      link: "/parent/billing",
+    },
+  ]);
+  if (noteErr) console.error("fulfil: admissions notifications failed:", noteErr.message);
+
+  const facts = [
+    { label: "Plan", value: tier.name },
+    { label: "Student", value: student?.full_name ?? "Your child" },
+  ];
+
+  await Promise.all([
+    student?.email &&
+      sendEmail({
+        to: student.email,
+        subject: "Your college counselling is open",
+        html: layout({
+          heading: "College counselling is open",
+          intro: `You are on ${tier.name}. Your college list, essays and roadmap are ready when you are.`,
+          facts,
+          cta: { label: "Open your college list", url: appUrl("/student/college-list") },
+        }),
+      }),
+    parent?.email &&
+      sendEmail({
+        to: parent.email,
+        subject: `${tier.name} admissions counselling`,
+        html: layout({
+          heading: "Payment received",
+          intro: `${student?.full_name ?? "Your child"} is on ${tier.name}. You can follow their progress from your dashboard.`,
+          facts,
+          cta: { label: "View your plans", url: appUrl("/parent/billing") },
+        }),
+      }),
+  ]);
 }
 
 async function announce(

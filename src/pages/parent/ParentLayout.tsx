@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Library, Users, MessagesSquareIcon, Bell, CreditCard, Map, List } from "lucide-react";
+import { Home, Library, Users, MessagesSquareIcon, Bell, CreditCard, Map, List, GraduationCap } from "lucide-react";
 
 export function ParentLayout() {
   // The billing and course-booking alternatives still exist and their routes
@@ -12,6 +12,7 @@ export function ParentLayout() {
     { name: "Roadmap", href: "/parent/roadmap", icon: <Map size={20} /> },
     { name: "College List", href: "/parent/college-list", icon: <List size={20} /> },
     { name: "Messages", href: "/parent/messages", icon: <MessagesSquareIcon size={20} /> },
+    { name: "Counselling", href: "/parent/admissions", icon: <GraduationCap size={20} /> },
     { name: "Billing", href: "/parent/billing", icon: <CreditCard size={20} /> },
     { name: "Notifications", href: "/parent/notifications", icon: <Bell size={20} /> },
   ];
