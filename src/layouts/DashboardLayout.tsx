@@ -78,25 +78,33 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
     toast.loading("Sending request...", { id: "request-access" });
     try {
-      const { data: linkData, error: linkError } = await supabase
+      // Every linked parent, not one. single() threw the moment a student had
+      // two, which is a mother and a father rather than an error, and the
+      // message it produced said the opposite of what was wrong.
+      const { data: links, error: linkError } = await supabase
         .from("parent_student_links")
         .select("parent_id")
         .eq("student_id", user.id)
-        .single();
+        .eq("status", "active");
 
-      if (linkError || !linkData?.parent_id) {
+      const parentIds = [...new Set((links ?? []).map((l) => l.parent_id).filter(Boolean))];
+      if (linkError || parentIds.length === 0) {
         throw new Error("No linked parent account found.");
       }
 
-      const { error: notifError } = await supabase.from("notifications").insert({
-        user_id: linkData.parent_id,
+      // Asking both is right: either can grant, and neither has to be the one
+      // who happens to open the app first.
+      const { error: notifError } = await supabase.from("notifications").insert(
+        parentIds.map((parentId) => ({
+        user_id: parentId,
         // The type and link carry enough for the parent screen to offer a
         // one-click grant rather than sending them off to find the setting.
         type: "unlock_request",
         title: "Feature unlock request",
         message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
         link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
-      });
+        }))
+      );
 
       if (notifError) throw notifError;
       toast.success("Request sent. Your parent can turn it on from their account.", {
