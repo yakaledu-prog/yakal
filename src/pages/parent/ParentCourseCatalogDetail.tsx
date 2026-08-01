@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Users, CheckCircle2, MessageCircle, ChevronDown, ChevronLeft, ChevronRight, Heart, Upload, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
+import { Star, Users, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
@@ -10,7 +10,7 @@ import { getTutorAvailability, TutorAvailability } from "@/services/availability
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { bookAndPay, money } from "@/services/billingService";
 import { getCourseForBooking } from "@/services/courseApplicationService";
-import { getLinkedChildren } from "@/services/parentService";
+import { getLinkedChildren, type LinkedChild } from "@/services/parentService";
 import { getSlotConflicts, slotKey } from "@/services/slotService";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
@@ -53,6 +53,115 @@ const isoDay = (d: Date) =>
 const CONFLICT_WEEKS = 26;
 
 const TABS = ["Availability", "Resume", "Reviews", "Messages"];
+
+/**
+ * Which child the course is being bought for.
+ *
+ * A native select renders as the operating system draws it, which on Windows
+ * is a grey list that ignores everything around it and cannot carry a face.
+ * This is the same button-and-panel the timezone picker on this page already
+ * uses, so the two controls match.
+ */
+function ChildPicker({
+  options,
+  value,
+  onChange,
+}: {
+  options: LinkedChild[];
+  value: string | null;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((c) => c.id === value) ?? options[0];
+
+  // Clicking anywhere else closes it. Without this the panel stays open behind
+  // the calendar and swallows the next slot click.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="w-full h-12 flex items-center gap-2.5 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-3 text-left hover:border-[#1099A1] transition-colors"
+      >
+        <img
+          src={selected?.avatar_url || dicebearUrl(selected?.full_name ?? "Yakal")}
+          alt=""
+          className="w-7 h-7 rounded-full object-cover shrink-0"
+        />
+        <span className="flex-1 min-w-0 truncate text-[14px] font-semibold text-[#111] dark:text-white">
+          {selected?.full_name}
+        </span>
+        <ChevronDown
+          size={16}
+          className={cn("shrink-0 text-[#54656f] dark:text-[#aebac1] transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-full mt-1 z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          {options.map((c) => {
+            const active = c.id === selected?.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onChange(c.id);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+                  active ? "bg-[#1099A1]/10" : "hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                )}
+              >
+                <img
+                  src={c.avatar_url || dicebearUrl(c.full_name)}
+                  alt=""
+                  className="w-7 h-7 rounded-full object-cover shrink-0"
+                />
+                <span
+                  className={cn(
+                    "flex-1 min-w-0 truncate text-[14px] font-medium",
+                    active ? "text-[#1099A1]" : "text-[#111] dark:text-white"
+                  )}
+                >
+                  {c.full_name}
+                </span>
+                {c.grade_level && (
+                  <span className="shrink-0 text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                    {c.grade_level}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ParentCourseCatalogDetail() {
   const { id: courseId } = useParams();
@@ -130,8 +239,6 @@ export function ParentCourseCatalogDetail() {
       peerRole: "tutor",
       peerAvatarUrl: selectedTutor?.avatar,
     });
-
-  const [prefilledMessage, setPrefilledMessage] = useState("");
 
   // Falls back to the placeholder only while the real one loads, so the page
   // never renders half a course.
@@ -785,7 +892,6 @@ export function ParentCourseCatalogDetail() {
                               onSendText={sendToTutor}
                               onTyping={notifyTyping}
                               isPeerTyping={isPeerTyping}
-                              draft={prefilledMessage}
                             />
                           )}
                         </div>
@@ -797,7 +903,10 @@ export function ParentCourseCatalogDetail() {
                 {/* Sticky Booking Card (Right Pane) */}
                 {activeTab !== "Messages" && (
                   <div className="w-full xl:w-[400px] shrink-0 p-6 md:p-10 bg-white dark:bg-[#111b21] border-l border-[#e9edef] dark:border-[#2a3942]">
-                    <div className="sticky top-8 bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                    {/* Not overflow-hidden: the child dropdown opens downwards
+                        and a parent with several children would have the list
+                        cut off at the bottom of the card. */}
+                    <div className="sticky top-8 bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm flex flex-col">
                     {/* Tutor Profile Header (in floating card) */}
                     <div className="p-6 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
                       <img 
@@ -814,19 +923,12 @@ export function ParentCourseCatalogDetail() {
                     </div>
 
                     <div className="p-6">
-                      {/* Stats */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="text-center">
-                          <div className="text-[16px] font-bold text-[#111] dark:text-white">{course.title}</div>
-                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">course</div>
+                      <div className="mb-6 text-center">
+                        <div className="text-[20px] font-bold text-[#111] dark:text-white">
+                          ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
                         </div>
-                        <div className="text-center">
-                          <div className="text-[20px] font-bold text-[#111] dark:text-white">
-                            ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
-                          </div>
-                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                            {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min lesson` : '60-min lesson'}
-                          </div>
+                        <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                          {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min lesson` : '60-min lesson'}
                         </div>
                       </div>
 
@@ -836,49 +938,29 @@ export function ParentCourseCatalogDetail() {
                           hours a child already has booked are the ones they
                           cannot have again. */}
                       <div className="mb-4">
-                        <label htmlFor="booking-child" className="block text-[11px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-1.5">
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-1.5">
                           For
-                        </label>
+                        </span>
                         {children.length === 0 ? (
                           <p className="text-[13px] font-medium text-[#CAA25F]">
                             No children linked yet. Add one from My Children first.
                           </p>
                         ) : (
-                          <select
-                            id="booking-child"
-                            value={bookingFor?.id ?? ""}
-                            onChange={(e) => setChildId(e.target.value)}
-                            className="w-full h-11 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-3 text-[14px] font-semibold text-[#111] dark:text-white outline-none focus:border-[#1099A1] transition-colors"
-                          >
-                            {children.map((c) => (
-                              <option key={c.id} value={c.id}>{c.full_name}</option>
-                            ))}
-                          </select>
+                          <ChildPicker
+                            options={children}
+                            value={bookingFor?.id ?? null}
+                            onChange={setChildId}
+                          />
                         )}
                       </div>
 
                       <Button
                         onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
                         disabled={isBooking || children.length === 0}
-                        className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl mb-4 transition-all"
+                        className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl transition-all"
                       >
                         {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
                       </Button>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { setActiveTab("Messages"); setPrefilledMessage(`Hi ${selectedTutor?.name.split(' ')[0]},\n\nI'm interested in booking a lesson for my child. Could we discuss availability?`); }}
-                          className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors"
-                        >
-                          <MessageCircle size={16} /> Message
-                        </button>
-                        <button className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
-                          <Heart size={16} /> Save
-                        </button>
-                        <button className="flex-1 h-14 flex flex-col items-center justify-center gap-1.5 text-[11px] font-bold text-[#111] dark:text-white bg-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-xl transition-colors">
-                          <Upload size={16} /> Share
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
