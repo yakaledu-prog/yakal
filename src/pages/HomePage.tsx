@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import Hero from "@/sections/Hero";
 import WhyJoinUs from "@/sections/WhyJoinUs";
 import Services from "@/sections/Services";
+import CounsellingTiers from "@/sections/CounsellingTiers";
 import Subjects from "@/sections/Subjects";
 import ParentResources from "@/sections/ParentResources";
 import About from "@/sections/About";
@@ -41,6 +42,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       <WhyJoinUs />
       <Services />
       <Subjects onNavigate={onNavigate} />
+      {/* After Services, which introduces admissions consulting as a program,
+          so the prices arrive once somebody knows what they are for. */}
+      <CounsellingTiers scrollTo={scrollTo} />
       <ParentResources scrollTo={scrollTo} />
       <Testimonials />
       <Team />

@@ -24,6 +24,8 @@ export interface AdmissionsTier {
   /** Null means no ceiling. Never a large number standing in for one. */
   psRoundsLimit: number | null;
   suppEssaysLimit: number | null;
+  /** Null is unlimited. Zero means the tier includes no interview prep. */
+  mockInterviewsLimit: number | null;
   sessionsPerMonth: number | null;
   /** Monthly instalments the total is collected over. 1 is a single payment. */
   instalmentMonths: number;
@@ -51,6 +53,7 @@ function toTier(row: any): AdmissionsTier {
     priceCents: row.price_cents,
     psRoundsLimit: row.ps_rounds_limit,
     suppEssaysLimit: row.supp_essays_limit,
+    mockInterviewsLimit: row.mock_interviews_limit,
     sessionsPerMonth: row.sessions_per_month,
     instalmentMonths: row.instalment_months ?? 1,
     features: Array.isArray(row.features) ? row.features : [],
@@ -61,7 +64,7 @@ function toTier(row: any): AdmissionsTier {
 }
 
 const TIER_FIELDS =
-  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, sessions_per_month, instalment_months, features, fits, is_recommended, sort_order";
+  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, instalment_months, features, fits, is_recommended, sort_order";
 
 /**
  * One instalment. Derived, never stored: a total and a number of months are
@@ -163,25 +166,41 @@ export interface AdmissionsUsage {
 /**
  * How much of the tier has been used.
  *
- * A round is a pass a counselor made over an essay, counted from the review
- * log rather than from a field somebody has to remember to bump. Supplements
- * are counted as distinct essays reviewed at least once, because the tier says
- * "review of up to 12 supplemental essays", not twelve reviews.
+ * The three lines are deliberately not equally trustworthy, and they are
+ * ordered accordingly.
+ *
+ * Supplemental essays are counted as distinct essays reviewed at least once,
+ * not as review events, because the tier says "review of up to 12 supplemental
+ * essays". That also makes it the strongest meter: the ceiling is how many
+ * essays the student actually created against colleges on their own list, so a
+ * counselor cannot inflate it without essays that do not exist.
+ *
+ * Mock interviews are completed appointments. There is a second person in the
+ * room, which is a better check than anything the schema can do.
+ *
+ * Personal statement rounds are the weak one: a round is a click, so it counts
+ * what a counselor did rather than what happened. It is still worth showing,
+ * because a family and a counselor looking at the same number is most of what
+ * the meter is for.
  */
 export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsUsage> {
-  const plan = await getAdmissionsPlan(studentId);
+  const [plan, essaysRes, interviewsRes] = await Promise.all([
+    getAdmissionsPlan(studentId),
+    supabase.from("essays").select("id, kind, rounds_used").eq("student_id", studentId),
+    supabase
+      .from("sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", studentId)
+      .eq("kind", "mock_interview")
+      .eq("status", "completed"),
+  ]);
 
-  const { data: essays, error } = await supabase
-    .from("essays")
-    .select("id, kind, rounds_used")
-    .eq("student_id", studentId);
-
-  if (error) {
-    console.error("getAdmissionsUsage failed:", error);
+  if (essaysRes.error) {
+    console.error("getAdmissionsUsage failed:", essaysRes.error);
     return { plan, lines: [] };
   }
 
-  const rows = essays ?? [];
+  const rows = essaysRes.data ?? [];
   const psRounds = rows
     .filter((e) => e.kind === "personal_statement")
     .reduce((n, e) => n + (e.rounds_used ?? 0), 0);
@@ -189,13 +208,31 @@ export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsU
     (e) => e.kind === "supplement" && (e.rounds_used ?? 0) > 0
   ).length;
 
-  return {
-    plan,
-    lines: [
-      { label: "Personal statement rounds", used: psRounds, limit: plan?.tier.psRoundsLimit ?? null },
-      { label: "Supplemental essays reviewed", used: suppReviewed, limit: plan?.tier.suppEssaysLimit ?? null },
-    ],
-  };
+  const lines: QuotaLine[] = [
+    {
+      label: "Supplemental essays reviewed",
+      used: suppReviewed,
+      limit: plan?.tier.suppEssaysLimit ?? null,
+    },
+    {
+      label: "Personal statement rounds",
+      used: psRounds,
+      limit: plan?.tier.psRoundsLimit ?? null,
+    },
+  ];
+
+  // A tier with no interview prep should say nothing about interviews rather
+  // than show a permanent 0 of 0.
+  const interviewLimit = plan?.tier.mockInterviewsLimit ?? null;
+  if (interviewLimit !== 0) {
+    lines.push({
+      label: "Mock interviews",
+      used: interviewsRes.count ?? 0,
+      limit: interviewLimit,
+    });
+  }
+
+  return { plan, lines };
 }
 
 /** "3 of 6" or "3" when the tier has no ceiling. */

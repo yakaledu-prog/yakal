@@ -204,5 +204,83 @@ pass(
   psql(`select rounds_used from essays where id='${psEssay}';`)
 );
 
+
+// ---- instalments ----
+const premierMonths = Number(psql("select instalment_months from admissions_tiers where key='premier';"));
+pass('a tier is collected over several months', premierMonths > 1, String(premierMonths));
+pass(
+  'the plan records how many payments are due',
+  Number(psql(`select payments_due from admissions_plans where student_id='${studentId}' and status='active';`)) > 0
+);
+pass(
+  'and is granted on the first payment, not the last',
+  Number(psql(`select payments_made from admissions_plans where student_id='${studentId}' and status='active';`)) === 1
+);
+
+// A monthly instalment arriving with nobody watching.
+const planId = psql(`select id from admissions_plans where student_id='${studentId}' and status='active';`);
+psql(`update admissions_plans set stripe_subscription_id='sub_verify_fixture' where id='${planId}';`);
+
+const { recordInstalment: recordInstalmentForTest } = await import('../../api/stripe-webhook.ts');
+await recordInstalmentForTest({
+  type: 'invoice.paid',
+  data: { object: { subscription: 'sub_verify_fixture', billing_reason: 'subscription_cycle' } },
+});
+pass(
+  'a later instalment is counted',
+  Number(psql(`select payments_made from admissions_plans where id='${planId}';`)) === 2
+);
+
+// The first payment arrives twice, once from checkout and once here.
+await recordInstalmentForTest({
+  type: 'invoice.paid',
+  data: { object: { subscription: 'sub_verify_fixture', billing_reason: 'subscription_create' } },
+});
+pass(
+  'the opening payment is not counted twice',
+  Number(psql(`select payments_made from admissions_plans where id='${planId}';`)) === 2
+);
+
+psql("delete from notifications where type='admissions_plan';");
+await recordInstalmentForTest({
+  type: 'invoice.payment_failed',
+  data: { object: { subscription: 'sub_verify_fixture' } },
+});
+pass(
+  'a failed payment marks the plan past due',
+  psql(`select status from admissions_plans where id='${planId}';`) === 'past_due'
+);
+pass(
+  'and nothing is switched off',
+  psql(`select is_active from child_services where student_id='${studentId}' and service='admissions';`) === 't'
+);
+pass('somebody is told', Number(psql("select count(*) from notifications where type='admissions_plan';")) > 0);
+
+await recordInstalmentForTest({
+  type: 'invoice.paid',
+  data: { object: { subscription: 'sub_verify_fixture', billing_reason: 'subscription_cycle' } },
+});
+pass(
+  'paying catches the plan back up',
+  psql(`select status from admissions_plans where id='${planId}';`) === 'active'
+);
+
+// ---- mock interviews ----
+const tutorId2 = psql("select id from profiles where email='counselor@yakal.com';");
+psql(`delete from sessions where kind='mock_interview' and student_id='${studentId}';`);
+psql(`insert into sessions (student_id, tutor_id, subject, kind, date, start_time, status)
+      values ('${studentId}','${tutorId2}','College Advising','mock_interview','2027-05-04','10:00','completed'),
+             ('${studentId}','${tutorId2}','College Advising','mock_interview','2027-05-11','10:00','upcoming');`);
+pass(
+  'only a completed mock interview counts',
+  psql(`select count(*) from sessions where student_id='${studentId}' and kind='mock_interview' and status='completed';`) === '1'
+);
+pass(
+  'a lesson is not a mock interview',
+  psql(`select count(*) from sessions where student_id='${studentId}' and kind='mock_interview' and subject='Chemistry';`) === '0'
+);
+psql(`delete from sessions where kind='mock_interview' and student_id='${studentId}';`);
+
+
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);
