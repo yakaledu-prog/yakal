@@ -3,51 +3,38 @@ import { Moon, Sun } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { currentTheme, subscribeToTheme, toggleTheme } from "@/lib/theme";
 import { cn } from "@/utils/cn";
 
 // ============================================================
 // Light or dark.
 //
-// The class on <html> is the source of truth, because that is what Tailwind
-// reads and what AuthContext sets on sign in. This mirrors it rather than
-// keeping a second copy that could disagree, and saves the choice to the
-// profile so it survives the next sign in on another machine.
+// The choice itself lives in lib/theme, which owns the class on <html> and the
+// browser's memory of it. This is only the button: it flips, subscribes so the
+// icon stays honest if something else flips it, and saves to the profile so
+// the choice follows the person to another machine.
 //
-// Saving is fire and forget. A theme that flips instantly and fails to persist
-// is a smaller problem than one that waits on a round trip before moving.
+// Saving is fire and forget. A theme that changes instantly and fails to sync
+// is a smaller problem than one that waits on the network before moving.
 // ============================================================
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { user } = useAuth();
-  const [isDark, setIsDark] = useState(
-    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
-  );
+  const [theme, setTheme] = useState(currentTheme);
 
-  // AuthContext applies the saved theme after the profile loads, which happens
-  // after this mounts. Without watching for it the icon would show the wrong
-  // half of the pair until something else re-rendered.
-  useEffect(() => {
-    const root = document.documentElement;
-    const observer = new MutationObserver(() => setIsDark(root.classList.contains("dark")));
-    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
+  useEffect(() => subscribeToTheme(setTheme), []);
 
-  const toggle = () => {
-    const next = document.documentElement.classList.toggle("dark");
-    setIsDark(next);
-    if (user?.id) {
-      void supabase
-        .from("profiles")
-        .update({ theme: next ? "dark" : "light" })
-        .eq("id", user.id);
-    }
-  };
+  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={() => {
+        const next = toggleTheme();
+        if (user?.id) {
+          void supabase.from("profiles").update({ theme: next }).eq("id", user.id);
+        }
+      }}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Light mode" : "Dark mode"}
       className={cn(

@@ -73,7 +73,7 @@ export function RescheduleDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#202c33]">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-popover shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-5 py-3">
           <h3 className="text-[18px] font-medium text-foreground">Reschedule</h3>
           <button

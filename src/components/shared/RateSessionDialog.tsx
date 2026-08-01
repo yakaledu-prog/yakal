@@ -61,7 +61,7 @@ export function RateSessionDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#202c33]">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-popover shadow-xl">
         <div className="flex items-start justify-between border-b border-border p-5">
           <div>
             <h3 className="text-[18px] font-bold text-foreground">How was the session?</h3>

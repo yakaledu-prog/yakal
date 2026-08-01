@@ -80,11 +80,15 @@ export function NotificationBell({ basePath }: { basePath: string }) {
   const live = notifications.filter((n) => !n.archived);
   const unread = live.filter((n) => !n.isRead).length;
 
-  const openOne = async (id: string, link: string | null) => {
+  // Every row goes to the notifications page rather than to whatever the
+  // notification points at. The dropdown truncates to one line, so a tap on it
+  // is usually "let me read that properly", and jumping straight to a course
+  // or an invoice answers a question nobody asked yet.
+  const openOne = async (id: string) => {
     setOpen(false);
     await markNotificationRead(id);
     void queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
-    if (link) navigate(link);
+    navigate(`${basePath}/notifications`);
   };
 
   return (
@@ -104,7 +108,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-xl border border-border bg-white shadow-lg dark:bg-[#202c33]">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-[14px] font-semibold text-foreground">Notifications</p>
             {unread > 0 && (
@@ -131,7 +135,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => openOne(n.id, n.link)}
+                  onClick={() => openOne(n.id)}
                   className={cn(
                     "flex w-full gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-0 hover:bg-muted/40",
                     !n.isRead && "bg-[#1099A1]/5"

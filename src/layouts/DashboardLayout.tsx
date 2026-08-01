@@ -48,6 +48,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchIndex, setSearchIndex] = useState(0);
   const location = useLocation();
@@ -240,7 +241,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Topbar */}
-        <header className="h-16 bg-card dark:bg-[#111b21] border-b dark:border-[#2a3942] flex items-center justify-between px-4 sm:px-6">
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4">
             <button className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground" onClick={() => setSidebarOpen(true)}>
               <Menu size={20} />
@@ -287,7 +288,29 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* A shortcut nobody is told about is a shortcut nobody uses, so
+                the palette has a door as well as a key. */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted sm:flex"
+            >
+              <Search size={15} />
+              <span className="pr-6">Search pages</span>
+              <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px]">
+                {isMac ? "\u2318" : "Ctrl"} K
+              </kbd>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10 sm:hidden"
+            >
+              <Search size={20} />
+            </button>
+
             {topbarActions}
             <NotificationBell basePath={basePath} />
             <ThemeToggle />
@@ -313,7 +336,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         {/* Floating Search Modal */}
         {searchOpen && (
           <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4">
-            <div className="bg-card w-full max-w-2xl rounded-xl shadow-2xl border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Raised rather than card: a panel floating above the page needs
+                to sit on top of it, not match it. */}
+            <div className="bg-popover w-full max-w-2xl rounded-xl shadow-2xl border border-border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center px-4 py-4 border-b">
                 <Search className="h-5 w-5 text-muted-foreground mr-3" />
                 <input

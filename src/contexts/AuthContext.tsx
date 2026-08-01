@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { applyTheme } from "@/lib/theme";
 import { useLastSeenHeartbeat } from "@/hooks/usePresence";
 
 export interface Profile {
@@ -110,11 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data && !error) {
         setProfile(data as Profile);
 
-        // Apply theme from profile
-        if (data.theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
+        // The profile is how the choice travels between machines, so on sign
+        // in it wins and is written back to this browser. Between sign ins the
+        // browser is the source, applied before React mounts.
+        if (data.theme === 'dark' || data.theme === 'light') {
+          applyTheme(data.theme);
         }
         return data as Profile;
       }

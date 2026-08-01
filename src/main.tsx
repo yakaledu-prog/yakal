@@ -4,9 +4,27 @@
   import { GoogleOAuthProvider } from "@react-oauth/google";
   import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
   import "./styles/index.css";
+  import { applyTheme, preferredTheme } from "./lib/theme";
+
+  // Before the first paint, so a dark user does not get a white flash on the
+  // way to their own theme.
+  applyTheme(preferredTheme());
 
   const clientId = import.meta.env.VITE_GCP_CLIENT_ID || "";
-  const queryClient = new QueryClient();
+  // Server state is TanStack Query's job everywhere in this app. Defaults are
+  // set once here rather than per call: a minute of freshness stops a tab
+  // switch refetching the world, and one retry covers a dropped connection
+  // without making a genuine failure take four seconds to admit it.
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        gcTime: 5 * 60_000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
 
   createRoot(document.getElementById("root")!).render(
     <GoogleOAuthProvider clientId={clientId}>
