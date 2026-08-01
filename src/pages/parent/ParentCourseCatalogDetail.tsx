@@ -98,12 +98,12 @@ function ChildPicker({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="w-full h-12 flex items-center gap-2.5 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-3 text-left hover:border-[#1099A1] transition-colors"
+        className="w-full h-12 flex items-center gap-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-2.5 text-left hover:border-[#1099A1] transition-colors"
       >
         <img
           src={selected?.avatar_url || dicebearUrl(selected?.full_name ?? "Yakal")}
           alt=""
-          className="w-7 h-7 rounded-full object-cover shrink-0"
+          className="w-6 h-6 rounded-full object-cover shrink-0"
         />
         <span className="flex-1 min-w-0 truncate text-[14px] font-semibold text-[#111] dark:text-white">
           {selected?.full_name}
@@ -149,11 +149,6 @@ function ChildPicker({
                 >
                   {c.full_name}
                 </span>
-                {c.grade_level && (
-                  <span className="shrink-0 text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                    {c.grade_level}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -923,35 +918,34 @@ export function ParentCourseCatalogDetail() {
                     </div>
 
                     <div className="p-6">
-                      <div className="mb-6 text-center">
-                        <div className="text-[20px] font-bold text-[#111] dark:text-white">
-                          ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
+                      {/* The two halves of the purchase: what it costs, and
+                          who it is for. Side by side because they are read
+                          together, and the child has to be answered before the
+                          calendar means anything: the hours a child already has
+                          booked are the ones they cannot have again. */}
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div className="min-w-0 flex-1">
+                          {children.length === 0 ? (
+                            <p className="text-[13px] font-medium text-[#CAA25F]">
+                              No children linked yet.
+                            </p>
+                          ) : (
+                            <ChildPicker
+                              options={children}
+                              value={bookingFor?.id ?? null}
+                              onChange={setChildId}
+                            />
+                          )}
                         </div>
-                        <div className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
-                          {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min lesson` : '60-min lesson'}
-                        </div>
-                      </div>
 
-                      {/* Who this is for. It sits with the price and the
-                          button because that is the purchase, and it has to be
-                          answered before the calendar means anything: the
-                          hours a child already has booked are the ones they
-                          cannot have again. */}
-                      <div className="mb-4">
-                        <span className="block text-[11px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-1.5">
-                          For
-                        </span>
-                        {children.length === 0 ? (
-                          <p className="text-[13px] font-medium text-[#CAA25F]">
-                            No children linked yet. Add one from My Children first.
-                          </p>
-                        ) : (
-                          <ChildPicker
-                            options={children}
-                            value={bookingFor?.id ?? null}
-                            onChange={setChildId}
-                          />
-                        )}
+                        <div className="shrink-0 text-right">
+                          <div className="text-[20px] font-bold leading-none text-[#111] dark:text-white">
+                            ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
+                          </div>
+                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1">
+                            {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min` : '60-min lesson'}
+                          </div>
+                        </div>
                       </div>
 
                       <Button
