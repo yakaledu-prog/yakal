@@ -51,6 +51,7 @@ export function DocumentsPanel({
   studentName,
   studentEmail,
   canReview = false,
+  canUpload = true,
   reviewerId,
 }: {
   studentId: string;
@@ -59,6 +60,12 @@ export function DocumentsPanel({
   studentEmail?: string | null;
   /** Counselors get the verdict controls. Students only see the outcome. */
   canReview?: boolean;
+  /**
+   * Off for staff. Every slot here is the student's own record, a transcript,
+   * a score report, a resume, so a counselor has no copy to add and no
+   * business holding one. They review what is there.
+   */
+  canUpload?: boolean;
   reviewerId?: string | null;
 }) {
   const qc = useQueryClient();
@@ -252,6 +259,7 @@ export function DocumentsPanel({
           bySlot={bySlot}
           busySlot={busySlot}
           canReview={canReview}
+          canUpload={canUpload}
           onFile={(slot, file) => {
             setBusySlot(slot.id);
             upload.mutate({ slot, file });
@@ -309,6 +317,7 @@ function SlotGroupSection({
   bySlot,
   busySlot,
   canReview,
+  canUpload,
   onFile,
   onRemove,
   onReview,
@@ -319,6 +328,7 @@ function SlotGroupSection({
   bySlot: Map<string, DriveFile[]>;
   busySlot: string | null;
   canReview: boolean;
+  canUpload: boolean;
   onFile: (slot: Slot, file: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
@@ -339,6 +349,7 @@ function SlotGroupSection({
             files={bySlot.get(slot.id) ?? []}
             busy={busySlot === slot.id}
             canReview={canReview}
+            canUpload={canUpload}
             onFile={(file) => onFile(slot, file)}
             onRemove={onRemove}
             onReview={onReview}
@@ -355,6 +366,7 @@ function SlotCard({
   files,
   busy,
   canReview,
+  canUpload,
   onFile,
   onRemove,
   onReview,
@@ -364,6 +376,7 @@ function SlotCard({
   files: DriveFile[];
   busy: boolean;
   canReview: boolean;
+  canUpload: boolean;
   onFile: (f: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
@@ -373,7 +386,9 @@ function SlotCard({
   const [over, setOver] = useState(false);
   const filled = files.length > 0;
   // A single-file slot that is already filled has nothing left to ask for.
-  const canAdd = slot.multiple || !filled;
+  // Staff review, they do not upload: a transcript is the student's record
+  // and nobody else has a copy to add.
+  const canAdd = canUpload && (slot.multiple || !filled);
 
   return (
     <div

@@ -69,6 +69,14 @@ export function StudentApplicationTracker({
   forcedTab?: Tab;
 }) {
   const { user, profile } = useAuth();
+
+  // Somebody looking at a student who is not them: a counselor or an admin.
+  // They verify documents, they do not upload them. A transcript belongs to
+  // the student and staff have no copy to add.
+  const staffViewing =
+    !!studentId &&
+    studentId !== user?.id &&
+    (profile?.role === "counselor" || profile?.role === "admin");
   const qc = useQueryClient();
   const targetId = studentId || user?.id;
 
@@ -569,6 +577,12 @@ export function StudentApplicationTracker({
                   studentId={targetId}
                   studentName={profile?.full_name || "Student"}
                   studentEmail={user?.email}
+                  // Built long ago and never switched on: canReview defaults
+                  // to false and nothing passed it, so a counselor saw the
+                  // student's view of their own documents.
+                  canReview={staffViewing}
+                  reviewerId={user?.id}
+                  canUpload={!staffViewing}
                 />
               )}
 
