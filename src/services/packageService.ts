@@ -34,6 +34,16 @@ export interface CoursePackage {
   lastPaidAt: string | null;
   /** No such thing yet. Every purchase today is one-off. */
   recurring: boolean;
+  /** The actual sessions, for showing what was booked and when. */
+  sessions: PackageSession[];
+}
+
+export interface PackageSession {
+  id: string;
+  date: string;
+  startTime: string;
+  durationMinutes: number;
+  status: string;
 }
 
 export interface BillingInvoice {
@@ -84,20 +94,26 @@ export async function getBilling(parentId: string): Promise<BillingData> {
 
   // Sessions tell us what has been used. Purchases tell us what was bought.
   const courseIds = [...new Set(rows.map((r: any) => r.course_id).filter(Boolean))] as string[];
-  const sessionsByKey = new Map<string, { completed: number; upcoming: number }>();
+  const sessionsByKey = new Map<string, PackageSession[]>();
 
   if (courseIds.length > 0) {
     const { data: sessions } = await supabase
       .from("sessions")
-      .select("course_id, student_id, status")
-      .in("course_id", courseIds);
+      .select("id, course_id, student_id, status, date, start_time, duration_minutes")
+      .in("course_id", courseIds)
+      .order("date", { ascending: true });
 
     for (const s of sessions ?? []) {
       const key = `${s.course_id}|${s.student_id}`;
-      const t = sessionsByKey.get(key) ?? { completed: 0, upcoming: 0 };
-      if (s.status === "completed") t.completed += 1;
-      else if (s.status === "upcoming") t.upcoming += 1;
-      sessionsByKey.set(key, t);
+      const list = sessionsByKey.get(key) ?? [];
+      list.push({
+        id: s.id,
+        date: s.date,
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+      });
+      sessionsByKey.set(key, list);
     }
   }
 
@@ -138,11 +154,17 @@ export async function getBilling(parentId: string): Promise<BillingData> {
       pricePerSlotCents: r.course?.price_cents ?? null,
       lastPaidAt: r.paid_at,
       recurring: false,
+      sessions: [],
     });
   }
 
   const packages = [...byKey.values()].map((p) => {
-    const used = sessionsByKey.get(`${p.courseId}|${p.studentId}`) ?? { completed: 0, upcoming: 0 };
+    const list = sessionsByKey.get(`${p.courseId}|${p.studentId}`) ?? [];
+    p.sessions = list;
+    const used = {
+      completed: list.filter((s) => s.status === "completed").length,
+      upcoming: list.filter((s) => s.status === "upcoming").length,
+    };
     p.slotsCompleted = used.completed;
     p.slotsUpcoming = used.upcoming;
     // Never negative: a session can be added by hand without a purchase behind

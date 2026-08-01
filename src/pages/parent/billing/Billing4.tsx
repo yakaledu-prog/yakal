@@ -1,27 +1,36 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
-import { getBilling } from "@/services/packageService";
+import { getBilling, type CoursePackage } from "@/services/packageService";
 import { money } from "@/services/billingService";
-import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, Spinner } from "./shared";
+import {
+  AddSlotsModal,
+  BillingHeader,
+  ChildSidebar,
+  Empty,
+  Money,
+  PackageActions,
+  SlotAccordion,
+  SlotMeter,
+  Spinner,
+} from "./shared";
 
 // ============================================================
-// Billing 1: children on the left, tabs across the body.
+// Billing 4: Billing 1, with the sessions behind each plan.
 //
-// The premise is that a parent arrives with one of three separate questions,
-// and mixing them is what made the old page hard to read:
+// Same tabs, because separating the three questions still holds. What changes
+// is that a plan opens: the counts on the card are a summary of a list, and
+// the list was nowhere to be found. Expanding shows the actual sessions and
+// what happened to each.
 //
-//   Plans     what am I on and how much of it is left
-//   Payments  what have I been charged
-//   Methods   which card pays for it
-//
-// Tabs keep each answer whole. The cost is that nothing is visible until you
-// pick a tab, so the thing you most often want is one click away rather than
-// on screen. Plans leads because it is the only tab with anything to act on.
+// Add slots opens a modal rather than sending the parent back to the course
+// page. They are looking at the plan they want more of, and a redirect loses
+// their place.
 // ============================================================
 
 const TABS = [
@@ -30,10 +39,12 @@ const TABS = [
   { id: "methods", label: "Payment methods" },
 ] as const;
 
-export function Billing1() {
+export function Billing4() {
   const { user } = useAuth();
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
+  const [openPlan, setOpenPlan] = useState<string | null>(null);
+  const [adding, setAdding] = useState<CoursePackage | null>(null);
 
   const { data: children = [] } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -136,9 +147,34 @@ export function Billing1() {
 
                       <SlotMeter pkg={p} className="mt-4" />
 
-                      <div className="mt-4 border-t border-border pt-3">
-                        <PackageActions pkg={p} />
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                        <PackageActions pkg={p} onAddSlots={() => setAdding(p)} />
+                        <button
+                          onClick={() =>
+                            setOpenPlan((k) =>
+                              k === `${p.courseId}|${p.studentId}`
+                                ? null
+                                : `${p.courseId}|${p.studentId}`
+                            )
+                          }
+                          className="flex items-center gap-1 text-[13px] font-medium text-[#1099A1] hover:underline"
+                        >
+                          {openPlan === `${p.courseId}|${p.studentId}` ? "Hide" : "Show"} sessions
+                          <ChevronDown
+                            size={14}
+                            className={cn(
+                              "transition-transform",
+                              openPlan === `${p.courseId}|${p.studentId}` && "rotate-180"
+                            )}
+                          />
+                        </button>
                       </div>
+
+                      {openPlan === `${p.courseId}|${p.studentId}` && (
+                        <div className="mt-3 border-t border-border pt-2">
+                          <SlotAccordion pkg={p} />
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>
@@ -186,6 +222,7 @@ export function Billing1() {
           </div>
         </section>
       </div>
+      {adding && <AddSlotsModal pkg={adding} onClose={() => setAdding(null)} />}
     </PageWrapper>
   );
 }

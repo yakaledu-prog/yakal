@@ -8,23 +8,30 @@ import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
 import { getBilling } from "@/services/packageService";
 import { getPaymentMethods, money } from "@/services/billingService";
-import { BillingHeader, ChildSidebar, Empty, Money, PackageActions, SlotMeter, Spinner } from "./shared";
+import {
+  BillingHeader,
+  ChildSidebar,
+  CoverageHeatmap,
+  Empty,
+  Money,
+  PackageActions,
+  SlotMeter,
+  Spinner,
+} from "./shared";
 
 // ============================================================
-// Billing 2: no tabs. One page, ordered by how much it matters.
+// Billing 5: Billing 2, with every session drawn as a square.
 //
-// The premise is the opposite of Billing 1. Most parents have two or three
-// plans, not twenty, and tabs make you click to find out there was nothing
-// behind them. So everything is on one surface: a summary line, the plans,
-// then payment history folded away at the bottom because it is the thing you
-// look at least often.
+// Same single surface, because tabs cost a click to find nothing. What changes
+// is the meter: a progress bar says how far along a plan is, a grid of squares
+// says the same thing and also shows the shape of it. A solid run is a course
+// being attended; a gap is one that stalled.
 //
-// The cost is that this stops working if somebody has a lot of children or a
-// long history. It is the right answer for the size this actually is, and the
-// wrong answer if that changes.
+// Whether that earns its place is the open question. It reads well at twelve
+// sessions and says very little at three, which is what most plans are today.
 // ============================================================
 
-export function Billing2() {
+export function Billing5() {
   const { user } = useAuth();
   const [childId, setChildId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -143,6 +150,10 @@ export function Billing2() {
                         </div>
 
                         <SlotMeter pkg={p} className="mt-3" />
+
+                        <div className="mt-3">
+                          <CoverageHeatmap pkg={p} />
+                        </div>
                       </div>
                     </div>
 

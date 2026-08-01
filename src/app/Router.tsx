@@ -94,6 +94,8 @@ import { ParentBilling } from "../pages/parent/ParentBilling";
 import { Billing1 } from "../pages/parent/billing/Billing1";
 import { Billing2 } from "../pages/parent/billing/Billing2";
 import { Billing3 } from "../pages/parent/billing/Billing3";
+import { Billing4 } from "../pages/parent/billing/Billing4";
+import { Billing5 } from "../pages/parent/billing/Billing5";
 import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
 import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentChildChats } from "../pages/parent/ParentChildChats";
@@ -347,6 +349,8 @@ const router = createBrowserRouter([
           { path: "billing-1", element: <Billing1 /> },
           { path: "billing-2", element: <Billing2 /> },
           { path: "billing-3", element: <Billing3 /> },
+          { path: "billing-4", element: <Billing4 /> },
+          { path: "billing-5", element: <Billing5 /> },
           { path: "profile", element: <ParentProfile /> },
           { path: "notifications", element: <ParentNotifications /> },
           { path: "*", element: <NotFoundPage /> },
