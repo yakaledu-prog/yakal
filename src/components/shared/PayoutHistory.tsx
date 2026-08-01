@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Banknote, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 
@@ -10,6 +11,7 @@ import {
   getPayoutYearTotal,
   getTutorPayoutHistory,
   methodLabel,
+  refreshConnectStatus,
   startConnectOnboarding,
 } from "@/services/payoutService";
 
@@ -27,11 +29,33 @@ import {
 
 export function PayoutHistory({ tutorId }: { tutorId: string }) {
   const [busy, setBusy] = useState(false);
+  const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
 
   const { data: status } = useQuery({
     queryKey: ["connect-status", tutorId],
     queryFn: () => getConnectStatus(tutorId),
   });
+
+  // Coming back from Stripe's onboarding. The account.updated webhook says the
+  // same thing, but it needs the Stripe CLI forwarding locally and can be
+  // delayed or missed in production, and somebody who has just finished will
+  // not sit on a page that still tells them to connect a bank.
+  useEffect(() => {
+    if (params.get("connect") !== "done") return;
+    (async () => {
+      const res = await refreshConnectStatus();
+      await qc.invalidateQueries({ queryKey: ["connect-status", tutorId] });
+      if (res.payoutsEnabled) {
+        toast.success("Your bank is connected. Payments will come here from now on.");
+      } else if (res.needs?.length) {
+        toast("Stripe still needs a few details before payments can reach you.");
+      }
+      params.delete("connect");
+      setParams(params, { replace: true });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const { data: payouts = [], isLoading } = useQuery({
     queryKey: ["tutor-payouts", tutorId],
