@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Users, ExternalLink, Calendar, Star } from "lucide-react";
-import { getCourse, type AdminCourse } from "@/services/adminService";
+import { Users, ExternalLink, Calendar, Star, Search, BookOpen } from "lucide-react";
+import { getCourse, getCourses, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
@@ -14,6 +14,8 @@ export function AdminCourseDetail() {
   const [course, setCourse] = useState<AdminCourse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tutors"); // Default to tutors to show off the UI
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -24,6 +26,19 @@ export function AdminCourseDetail() {
     }
   }, [id]);
 
+  // The other courses, for the sidebar. Same shape as the tutor's My Courses:
+  // pick one on the left, work on it on the right, without going back to a
+  // list page in between.
+  useEffect(() => {
+    getCourses().then(setCourses);
+  }, []);
+
+  const filtered = courses.filter(
+    (c) =>
+      c.title.toLowerCase().includes(query.toLowerCase()) ||
+      c.subject.toLowerCase().includes(query.toLowerCase())
+  );
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-[#1099A1] border-t-transparent rounded-full" /></div>;
   }
@@ -33,7 +48,6 @@ export function AdminCourseDetail() {
   }
 
   const tabs = [
-    { id: "overview", label: "Overview" },
     { id: "students", label: "Students" },
     { id: "tutors", label: "Tutors" },
     { id: "sessions", label: "Sessions" },
@@ -41,20 +55,67 @@ export function AdminCourseDetail() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#111b21]">
+    <div className="course-page flex h-full min-h-0 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
+      {/* Left pane: search and the course list */}
+      <aside className="flex w-full shrink-0 flex-col border-b border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:h-full md:w-[300px] md:border-b-0 md:border-r">
+        <div className="border-b border-[#e9edef] px-3 pb-2 pt-5 dark:border-[#2a3942]">
+          <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition focus-within:border-[#1099A1]">
+            <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search courses..."
+              className="flex-1 bg-transparent text-[14px] text-[#111] outline-none placeholder:text-[#8696a0] dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[34vh] flex-1 overflow-y-auto md:max-h-none">
+          {filtered.map((c) => {
+            const active = c.id === course.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => navigate(`/admin/courses/${c.id}`)}
+                className={cn(
+                  "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
+                  active
+                    ? "border-l-[#1099A1] bg-[#1099A1]/5"
+                    : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                )}
+              >
+                {c.thumbnail_url ? (
+                  <img src={c.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#1099A1]/10 text-[#1099A1]">
+                    <BookOpen size={18} />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p
+                    className={cn(
+                      "truncate text-[14px] font-semibold",
+                      active ? "text-[#1099A1]" : "text-[#111] dark:text-white"
+                    )}
+                  >
+                    {c.title}
+                  </p>
+                  <p className="truncate text-[12px] text-muted-foreground">{c.subject}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* Right pane */}
+      <section className="min-w-0 flex-1 bg-[#fafafa] dark:bg-[#111b21] md:h-full md:overflow-y-auto">
       {/* Header Banner */}
-      <div className="w-full bg-[#1099A1] text-white pt-8 pb-12 px-6 md:px-10 relative overflow-hidden">
+      <div className="w-full bg-[#1099A1] text-white pt-8 px-6 md:px-10 relative overflow-hidden">
         {/* Subtle background decoration */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         
         <div className="max-w-[1440px] mx-auto relative z-10">
-          <button 
-            onClick={() => navigate("/admin/courses")}
-            className="flex items-center gap-1.5 text-white/90 hover:text-white mb-6 text-[14px] transition-colors"
-          >
-            <ChevronLeft size={16} /> Back to Courses
-          </button>
-
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div className="max-w-[800px]">
               <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
@@ -97,27 +158,25 @@ export function AdminCourseDetail() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Tabs Nav */}
-      <div className="w-full bg-white dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 z-20">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-10 flex overflow-x-auto no-scrollbar">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "py-4 px-6 text-[15px] font-medium whitespace-nowrap transition-colors relative",
-                activeTab === tab.id ? "text-[#1099A1]" : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
-              )}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#1099A1] rounded-t-full" />
-              )}
-            </button>
-          ))}
+          {/* Tabs, along the foot of the header rather than a strip below it */}
+          <div className="mt-8 flex overflow-x-auto no-scrollbar border-t border-white/20">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "relative whitespace-nowrap px-6 py-4 text-[15px] font-medium transition-colors",
+                  activeTab === tab.id ? "text-white" : "text-white/60 hover:text-white"
+                )}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 h-[3px] w-full rounded-t-full bg-white" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -192,6 +251,7 @@ export function AdminCourseDetail() {
         )}
 
       </div>
+      </section>
     </div>
   );
 }
