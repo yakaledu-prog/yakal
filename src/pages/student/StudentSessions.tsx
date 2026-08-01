@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Search, CalendarRange, Loader2 } from "lucide-react";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
+import { Search, CalendarRange, Loader2, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getStudentSessions } from "@/services/sessions";
@@ -45,6 +46,16 @@ export function StudentSessions() {
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
   const [rating, setRating] = useState<StudentSessionRow | null>(null);
   const [asked, setAsked] = useState(false);
+
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
+
+  // Picking a course on a phone replaces the list with its sessions, the way
+  // opening a conversation does.
+  const openCourse = (course: string | null) => {
+    setSelectedCourse(course);
+    openDetail();
+  };
 
   useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
@@ -136,7 +147,12 @@ export function StudentSessions() {
   return (
     <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden bg-background">
       {/* Left pane */}
-      <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+      <aside
+        className={cn(
+          "w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full",
+          listClass
+        )}
+      >
         {/* Search bar */}
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
           <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
@@ -156,7 +172,7 @@ export function StudentSessions() {
           ) : (
             <>
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={() => openCourse(null)}
                 className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                   selectedCourse === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                 <div className="min-w-0">
@@ -168,7 +184,7 @@ export function StudentSessions() {
                 const active = c === selectedCourse;
                 const cSessions = sessions.filter(s => s.subject === c);
                 return (
-                  <button key={c} onClick={() => setSelectedCourse(c)}
+                  <button key={c} onClick={() => openCourse(c)}
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <div className="min-w-0">
@@ -184,7 +200,12 @@ export function StudentSessions() {
       </aside>
 
       {/* Right pane */}
-      <section className="flex-1 min-w-0 md:h-full md:overflow-y-auto flex flex-col">
+      <section
+        className={cn(
+          "flex-1 min-w-0 min-h-0 md:h-full overflow-y-auto flex-col",
+          detailClass
+        )}
+      >
         {/* Integrated Header */}
         <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
@@ -196,7 +217,17 @@ export function StudentSessions() {
           </svg>
 
           <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Only the phone needs this: on desktop the course list is
+                  still beside the sessions, so there is nothing to go back to. */}
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label="Back to courses"
+                className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+              >
+                <ChevronLeft size={22} />
+              </button>
               <div className="min-w-0">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Search, Loader2, Users, UserPlus, X } from "lucide-react";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
+import { Search, Loader2, Users, UserPlus, X, ChevronLeft } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +15,8 @@ import {
 } from "@/services/parentService";
 
 export function ParentChildren() {
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -71,7 +74,12 @@ export function ParentChildren() {
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
 
         {/* Left pane */}
-        <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full bg-white dark:bg-[#111b21]">
+      <aside
+        className={cn(
+          "w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full bg-white dark:bg-[#111b21]",
+          listClass
+        )}
+      >
           <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
             <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
               <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
@@ -84,7 +92,7 @@ export function ParentChildren() {
             </div>
           </div>
 
-          <div className="flex-1 md:overflow-y-auto max-h-[34vh] md:max-h-none overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="animate-spin text-[#1099A1]" size={22} />
@@ -105,7 +113,7 @@ export function ParentChildren() {
               filtered.map((c) => {
                 const active = c.id === activeId;
                 return (
-                  <button key={c.id} onClick={() => navigate(`/parent/children/${c.id}`)}
+                  <button key={c.id} onClick={() => { openDetail(); navigate(`/parent/children/${c.id}`); }}
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <img src={c.avatar || dicebearUrl(c.name)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
@@ -135,14 +143,19 @@ export function ParentChildren() {
         </aside>
 
         {/* Right pane */}
-        <section className="flex-1 min-w-0 md:h-full md:overflow-hidden bg-white dark:bg-[#111b21]">
+      <section
+        className={cn(
+          "flex-1 min-w-0 md:h-full overflow-y-auto md:overflow-hidden bg-white dark:bg-[#111b21] flex-col min-h-0",
+          detailClass
+        )}
+      >
           {!activeChild ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
               <Users size={48} className="text-[#aebac1] mb-4" />
               <p className="text-[16px] font-medium text-[#54656f] dark:text-[#aebac1] mb-2">No child selected</p>
             </div>
           ) : (
-            <ChildDetailView child={activeChild} />
+            <ChildDetailView child={activeChild} onBack={closeDetail} />
           )}
         </section>
       </div>
@@ -176,7 +189,7 @@ import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
-function ChildDetailView({ child }: { child: any }) {
+function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "messages" | "applications">("overview");
 
   const hasAdmissions = child.active_services?.includes('admissions');
@@ -186,7 +199,17 @@ function ChildDetailView({ child }: { child: any }) {
       {/* Massive Integrated Header with Inline Stats */}
       <div className={cn("bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0", activeTab !== 'messages' ? "mb-8" : "mb-0")}>
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Only the phone needs this: on desktop the list is still beside
+                the record, so there is nothing to go back to. */}
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back"
+              className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <ChevronLeft size={22} />
+            </button>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{child.name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">

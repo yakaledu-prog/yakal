@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
-import { Search, Users, Loader2, Mail, GraduationCap } from "lucide-react";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
+import { Search, Users, Loader2, Mail, GraduationCap, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCounselorStudents, getStudentProfile } from "@/services/counselorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
@@ -14,6 +15,8 @@ import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
 
 
 export function CounselorStudents() {
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -48,7 +51,12 @@ export function CounselorStudents() {
   return (
     <div className="students-page flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
       {/* Left pane */}
-      <aside className="students-list w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+      <aside
+        className={cn(
+          "students-list w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full",
+          listClass
+        )}
+      >
         
         <div className="students-list__search px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
           <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
@@ -77,7 +85,7 @@ export function CounselorStudents() {
               {filtered.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => navigate(`/counselor/students/${s.id}`)}
+                  onClick={() => { openDetail(); navigate(`/counselor/students/${s.id}`); }}
                   className={cn(
                     "w-full text-left p-4 flex items-start gap-3 hover:bg-[#f5f6f6] dark:hover:bg-[#202c33] transition-colors",
                     activeId === s.id && "bg-[#f0f2f5] dark:bg-[#2a3942]"
@@ -105,7 +113,12 @@ export function CounselorStudents() {
       </aside>
 
       {/* Right pane */}
-      <main className="students-detail flex-1 flex flex-col min-w-0 bg-[#efeae2] dark:bg-[#0b141a]">
+      <main
+        className={cn(
+          "students-detail flex-1 min-w-0 min-h-0 flex-col bg-[#efeae2] dark:bg-[#0b141a]",
+          detailClass
+        )}
+      >
         {activeId ? (
           detailLoading ? (
             <div className="flex-1 flex items-center justify-center">
@@ -113,7 +126,7 @@ export function CounselorStudents() {
             </div>
           ) : profile ? (
             <div className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 md:pt-8 custom-scrollbar">
-              <StudentDetailView profile={profile} studentId={activeId} />
+              <StudentDetailView profile={profile} studentId={activeId} onBack={closeDetail} />
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
@@ -146,7 +159,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
   );
 }
 
-function StudentDetailView({ profile, studentId }: { profile: any, studentId: string }) {
+function StudentDetailView({ profile, studentId, onBack }: { profile: any, studentId: string, onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<"requirements" | "essays" | "documents" | "recommendations" | "colleges">("requirements");
 
   return (
@@ -158,7 +171,17 @@ function StudentDetailView({ profile, studentId }: { profile: any, studentId: st
         </svg>
 
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Only the phone needs this: on desktop the list is still beside
+                the record, so there is nothing to go back to. */}
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back"
+              className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <ChevronLeft size={22} />
+            </button>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{profile.full_name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">

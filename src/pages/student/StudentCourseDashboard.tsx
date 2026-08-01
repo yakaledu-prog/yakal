@@ -1,8 +1,9 @@
 
 import { useParams, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { CheckSquare, History, Search, MessagesSquareIcon, Loader2 } from "lucide-react";
+import { CheckSquare, History, Search, MessagesSquareIcon, Loader2, ChevronLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentCourses } from "@/services/studentService";
@@ -13,6 +14,8 @@ import { getStudentCourses } from "@/services/studentService";
 // through a catalog page that showed the same list again.
 
 export function StudentCourseDashboard() {
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { courseId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,7 +90,12 @@ export function StudentCourseDashboard() {
     <div className="h-full flex flex-col md:flex-row min-h-0 bg-background overflow-hidden">
       
       {/* Left Pane - Sidebar */}
-      <aside className="w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] md:h-full z-20 relative">
+      <aside
+        className={cn(
+          "w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] md:h-full z-20 relative",
+          listClass
+        )}
+      >
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
             <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
@@ -107,6 +115,7 @@ export function StudentCourseDashboard() {
               <Link
                 key={c.id}
                 to={`/student/my-learning/${c.id}/tasks`}
+                onClick={openDetail}
                 className={cn(
                   "w-full flex flex-col p-4 text-left border-l-2 transition-colors",
                   isActive ? "bg-[#1099A1]/5 border-l-[#1099A1]" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
@@ -121,7 +130,12 @@ export function StudentCourseDashboard() {
       </aside>
 
       {/* Main Right Side Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div
+        className={cn(
+          "flex-1 min-w-0 min-h-0 h-full flex-col",
+          detailClass
+        )}
+      >
         {/* Massive Teal Header */}
         <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
@@ -133,11 +147,23 @@ export function StudentCourseDashboard() {
           </svg>
 
           <div className="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-            <div className="flex-1 min-w-0">
+            <div className="flex flex-1 items-start gap-3 min-w-0">
+              {/* Only the phone needs this: on desktop the list is still
+                  beside the course. */}
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label="Back"
+                className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <div className="min-w-0">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">{activeCourse.title}</h1>
               <p className="text-white/80 text-[14px] pt-1">
                 {activeCourse.subject}
               </p>
+              </div>
             </div>
             
             <div className="flex items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 shrink-0">

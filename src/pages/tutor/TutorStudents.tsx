@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import {
   Search, Users, Loader2, Mail, GraduationCap, Clock,
   ExternalLink, ChevronLeft
@@ -40,9 +41,8 @@ export function TutorStudents() {
   const { user, profile, refreshProfile } = useAuth();
   
   const [query, setQuery] = useState("");
-  // Which column the phone shows. Desktop shows both, so this is only ever
-  // consulted below md.
-  const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const [accepting, setAccepting] = useState(profile?.accepting_students !== false);
 
   useEffect(() => setAccepting(profile?.accepting_students !== false), [profile?.accepting_students]);
@@ -88,7 +88,7 @@ export function TutorStudents() {
       <aside
         className={cn(
           "students-list w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full",
-          showDetailOnMobile ? "hidden md:flex" : "flex"
+          listClass
         )}
       >
         {/* Accepting-students toggle */}
@@ -132,7 +132,7 @@ export function TutorStudents() {
                   key={s.id}
                   onClick={() => {
                     navigate(`/tutor/students/${s.id}`);
-                    setShowDetailOnMobile(true);
+                    openDetail();
                   }}
                   className={cn("students-list__item w-full flex items-center gap-3 p-3 text-left border-l-2 transition-colors",
                     active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
@@ -151,8 +151,8 @@ export function TutorStudents() {
       {/* Right pane: student detail */}
       <section
         className={cn(
-          "student-detail flex-1 min-w-0 min-h-0 md:h-full overflow-y-auto p-4 md:p-8",
-          showDetailOnMobile ? "block" : "hidden md:block"
+          "student-detail flex-1 min-w-0 min-h-0 flex-col md:h-full overflow-y-auto p-4 md:p-8",
+          detailClass
         )}
       >
         {students.length === 0 && !loading ? (
@@ -166,7 +166,7 @@ export function TutorStudents() {
         ) : !detail ? (
           <div className="p-8 text-center text-muted-foreground">Student not found.</div>
         ) : (
-          <StudentDetailView detail={detail} onBack={() => setShowDetailOnMobile(false)} />
+          <StudentDetailView detail={detail} onBack={closeDetail} />
         )}
       </section>
     </div>

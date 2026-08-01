@@ -4,11 +4,14 @@ import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } fr
 import { getCourse, getCourses, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
 
 // Mock Tutors
 
 export function AdminCourseDetail() {
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<AdminCourse | null>(null);
@@ -63,7 +66,12 @@ export function AdminCourseDetail() {
   return (
     <div className="course-page flex h-full min-h-0 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
       {/* Left pane: search and the course list */}
-      <aside className="flex w-full shrink-0 flex-col border-b border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:h-full md:w-[300px] md:border-b-0 md:border-r">
+      <aside
+        className={cn(
+          "w-full md:shrink-0 flex-col border-b border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:h-full md:w-[300px] md:border-b-0 md:border-r",
+          listClass
+        )}
+      >
         <div className="border-b border-[#e9edef] px-3 pb-2 pt-4 dark:border-[#2a3942]">
           {/* Above the search rather than over the banner: the sidebar is
               where you move between courses, so leaving them belongs here. */}
@@ -85,13 +93,13 @@ export function AdminCourseDetail() {
           </div>
         </div>
 
-        <div className="max-h-[34vh] flex-1 overflow-y-auto md:max-h-none">
+        <div className="flex-1 overflow-y-auto">
           {filtered.map((c) => {
             const active = c.id === course.id;
             return (
               <button
                 key={c.id}
-                onClick={() => navigate(`/admin/courses/${c.id}`)}
+                onClick={() => { openDetail(); navigate(`/admin/courses/${c.id}`); }}
                 className={cn(
                   "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
                   active
@@ -131,7 +139,12 @@ export function AdminCourseDetail() {
       </aside>
 
       {/* Right pane */}
-      <section className="min-w-0 flex-1 bg-[#fafafa] dark:bg-[#111b21] md:h-full md:overflow-y-auto">
+      <section
+        className={cn(
+          "min-w-0 min-h-0 flex-1 flex-col overflow-y-auto bg-[#fafafa] dark:bg-[#111b21] md:h-full",
+          detailClass
+        )}
+      >
       {/* Header Banner */}
       <div className="w-full bg-[#1099A1] text-white pt-8 px-6 md:px-10 relative overflow-hidden">
         {/* Subtle background decoration */}
@@ -140,6 +153,16 @@ export function AdminCourseDetail() {
         <div className="max-w-[1440px] mx-auto relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div className="max-w-[800px]">
+              {/* Only the phone needs this: on desktop the catalogue is still
+                  beside the course. */}
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label="Back"
+                className="-ml-2 mb-2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+              >
+                <ChevronLeft size={22} />
+              </button>
               <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
               {course.description ? (
                 <div 

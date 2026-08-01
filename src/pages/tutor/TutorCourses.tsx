@@ -2,8 +2,9 @@ import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import {
-  BookOpen, Users, Clock, Loader2, CalendarClock, Search, Calendar,
+  BookOpen, Users, Clock, Loader2, CalendarClock, Search, Calendar, ChevronLeft,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,8 @@ function fmtTime(t?: string) {
 }
 
 export function TutorCourses() {
+  // One column at a time on a phone, both on a desktop.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -65,7 +68,12 @@ export function TutorCourses() {
   return (
     <div className="course-page flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
       {/* Left pane: search + course list */}
-      <aside className="course-list w-full md:w-[300px] shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full">
+      <aside
+        className={cn(
+          "course-list w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full",
+          listClass
+        )}
+      >
         {/* Search bar */}
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
           <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
@@ -78,7 +86,7 @@ export function TutorCourses() {
             />
           </div>
         </div>
-        <div className="course-list__items flex-1 md:overflow-y-auto max-h-[38vh] md:max-h-none overflow-y-auto">
+        <div className="course-list__items flex-1 overflow-y-auto">
           {loadingCourses ? (
             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
           ) : filtered.length === 0 ? (
@@ -89,7 +97,7 @@ export function TutorCourses() {
               return (
                 <button
                   key={c.id}
-                  onClick={() => navigate(`/tutor/courses/${c.id}`)}
+                  onClick={() => { openDetail(); navigate(`/tutor/courses/${c.id}`); }}
                   className={cn(
                     "course-list__item w-full flex items-center gap-3 p-3 text-left border-l-2 transition-colors",
                     active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
@@ -110,7 +118,12 @@ export function TutorCourses() {
       </aside>
 
       {/* Right pane: course detail */}
-      <section className="course-detail flex-1 min-w-0 md:h-full md:overflow-y-auto p-4 md:p-8">
+      <section
+        className={cn(
+          "course-detail flex-1 min-w-0 md:h-full overflow-y-auto p-4 md:p-8 flex-col min-h-0",
+          detailClass
+        )}
+      >
         {courses.length === 0 && !loadingCourses ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-20">
             <BookOpen size={48} className="text-[#aebac1] mb-4" />
@@ -122,14 +135,14 @@ export function TutorCourses() {
         ) : !ws || !ws.course ? (
           <div className="p-8 text-center text-muted-foreground">Course not found.</div>
         ) : (
-          <CourseDetail ws={ws} navigate={navigate} />
+          <CourseDetail ws={ws} navigate={navigate} onBack={closeDetail} />
         )}
       </section>
     </div>
   );
 }
 
-function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: string) => void }) {
+function CourseDetail({ ws, navigate, onBack }: { ws: CourseWorkspace; navigate: (p: string) => void; onBack: () => void }) {
   const { course, students, sessions, assignments } = ws;
   const [activeTab, setActiveTab] = useState<"overview" | "sessions" | "assignments" | "students">("overview");
 
@@ -146,7 +159,17 @@ function CourseDetail({ ws, navigate }: { ws: CourseWorkspace; navigate: (p: str
         </svg>
 
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Only the phone needs this: on desktop the list is still beside
+                the record, so there is nothing to go back to. */}
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back"
+              className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <ChevronLeft size={22} />
+            </button>
             <div className="min-w-0">
               <h1 className="text-xl md:text-2xl tracking-tight truncate mt-1">{course.title}</h1>
             </div>
