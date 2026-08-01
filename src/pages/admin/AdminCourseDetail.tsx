@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Users, ExternalLink, Calendar, Star, Search, BookOpen } from "lucide-react";
+import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
 import { getCourse, getCourses, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
@@ -48,8 +48,8 @@ export function AdminCourseDetail() {
   }
 
   const tabs = [
-    { id: "students", label: "Students" },
     { id: "tutors", label: "Tutors" },
+    { id: "students", label: "Students" },
     { id: "sessions", label: "Sessions" },
     { id: "reviews", label: "Reviews" },
   ];
@@ -58,7 +58,16 @@ export function AdminCourseDetail() {
     <div className="course-page flex h-full min-h-0 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
       {/* Left pane: search and the course list */}
       <aside className="flex w-full shrink-0 flex-col border-b border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:h-full md:w-[300px] md:border-b-0 md:border-r">
-        <div className="border-b border-[#e9edef] px-3 pb-2 pt-5 dark:border-[#2a3942]">
+        <div className="border-b border-[#e9edef] px-3 pb-2 pt-4 dark:border-[#2a3942]">
+          {/* Above the search rather than over the banner: the sidebar is
+              where you move between courses, so leaving them belongs here. */}
+          <button
+            onClick={() => navigate("/admin/courses")}
+            className="mb-2 flex items-center gap-1 px-2 text-[13px] font-medium text-[#1099A1] transition-colors hover:underline"
+          >
+            <ChevronLeft size={15} /> Back to Courses
+          </button>
+
           <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition focus-within:border-[#1099A1]">
             <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
             <input
@@ -193,25 +202,9 @@ export function AdminCourseDetail() {
           />
         )}
 
-        {/* OVERVIEW TAB */}
-        {activeTab === "overview" && (
-          <div className="animate-in fade-in duration-300 max-w-3xl bg-white dark:bg-[#182329] p-8 rounded-[24px] border border-[#e9edef] dark:border-[#2a3942]">
-            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Course Description</h2>
-            {course.description ? (
-              <div 
-                className="prose prose-sm dark:prose-invert max-w-none text-[#555] dark:text-gray-300"
-                dangerouslySetInnerHTML={{ __html: course.description }}
-              />
-            ) : (
-              <p className="text-[#555] dark:text-gray-300">No detailed description provided for this course.</p>
-            )}
-          </div>
-        )}
-
         {/* STUDENTS TAB */}
         {activeTab === "students" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Enrolled Students</h2>
             <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
               <Users className="w-12 h-12 text-muted-foreground/30 mb-4" />
               <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">Manage Students</h3>
@@ -225,7 +218,6 @@ export function AdminCourseDetail() {
         {/* SESSIONS TAB */}
         {activeTab === "sessions" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Upcoming Sessions</h2>
             <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
               <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
               <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No upcoming sessions</h3>
@@ -239,7 +231,6 @@ export function AdminCourseDetail() {
         {/* REVIEWS TAB */}
         {activeTab === "reviews" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Student Reviews</h2>
             <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
               <Star className="w-12 h-12 text-muted-foreground/30 mb-4" />
               <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">4.8 Average Rating</h3>

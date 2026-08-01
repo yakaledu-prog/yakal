@@ -28,10 +28,10 @@ import {
 // ============================================================
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Waiting", className: "bg-[#CAA25F]/15 text-[#8a6a2a] dark:text-[#CAA25F]" },
-  accepted: { label: "Teaching this course", className: "bg-[#1099A1]/12 text-[#1099A1]" },
-  rejected: { label: "Not accepted", className: "bg-muted text-muted-foreground" },
-  withdrawn: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+  pending: { label: "Waiting", className: "text-[#8a6a2a] dark:text-[#CAA25F]" },
+  accepted: { label: "Teaching this course", className: "text-[#1099A1]" },
+  rejected: { label: "Not accepted", className: "text-muted-foreground" },
+  withdrawn: { label: "Withdrawn", className: "text-muted-foreground" },
 };
 
 export function CourseApplicants({
@@ -104,19 +104,14 @@ export function CourseApplicants({
 
   return (
     <div className="animate-in fade-in duration-300">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[22px] font-bold text-[#111] dark:text-white">
-          {assignedTutorId ? "Tutor and applicants" : "Applicants"}
-        </h2>
-        {!assignedTutorId && (
-          <span className="rounded-full bg-[#CAA25F]/15 px-3 py-1 text-[12.5px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
-            No tutor assigned yet
-          </span>
-        )}
-      </div>
+      {!assignedTutorId && (
+        <p className="mb-6 text-[13px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+          No tutor assigned yet
+        </p>
+      )}
 
       {applicants.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
+        <div className="py-16 text-center">
           <UserCheck size={32} className="mx-auto mb-3 text-[#aebac1]" />
           <p className="text-[15px] font-medium text-[#111] dark:text-white">No applications yet</p>
           <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">
@@ -156,11 +151,9 @@ export function CourseApplicants({
                           {money(a.tutor.hourlyRate * 100)}/hr
                         </span>
                       )}
-                      {(a.tutor.subjects ?? []).slice(0, 3).map((s) => (
-                        <span key={s} className="rounded-full bg-muted px-2 py-0.5">
-                          {s}
-                        </span>
-                      ))}
+                      {(a.tutor.subjects ?? []).length > 0 && (
+                        <span>{(a.tutor.subjects ?? []).slice(0, 3).join(", ")}</span>
+                      )}
                       <span className="flex items-center gap-1">
                         <Clock size={11} />
                         applied{" "}
@@ -173,12 +166,7 @@ export function CourseApplicants({
                   </div>
                 </div>
 
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-3 py-1 text-[12.5px] font-medium",
-                    STATUS[a.status].className
-                  )}
-                >
+                <span className={cn("shrink-0 text-[12.5px] font-medium", STATUS[a.status].className)}>
                   {STATUS[a.status].label}
                 </span>
               </div>
