@@ -134,70 +134,43 @@ export function TutorEarnings() {
         </header>
 
         <div className="mx-auto max-w-[1440px] space-y-12 p-6 md:p-10">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16">
-            <section className="space-y-4 lg:col-span-2">
-              <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
-                By month
-              </h2>
-              {months.length === 0 ? (
-                <p className="py-10 text-[14px] text-muted-foreground">
-                  Nothing yet. A month appears here once you have completed a session in it.
-                </p>
-              ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Month
-                      </th>
-                      <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Sessions
-                      </th>
-                      <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Earned
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {months.map((m) => (
-                      <MonthRow
-                        key={m.key}
-                        label={m.label}
-                        count={m.count}
-                        amount={m.amount}
-                        isCurrent={m.key === thisKey}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
-                By subject
-              </h2>
-              {summary.bySubject.length === 0 ? (
-                <p className="py-10 text-[14px] text-muted-foreground">Nothing yet.</p>
-              ) : (
-                <table className="w-full">
-                  <tbody>
-                    {summary.bySubject.map((s) => (
-                      <tr key={s.subject} className="border-b border-border last:border-0">
-                        <td className="py-3 pr-4 text-[14px] text-foreground">{s.subject}</td>
-                        <td className="py-3 pr-4 text-right text-[13.5px] tabular-nums text-muted-foreground">
-                          {s.count}
-                        </td>
-                        <td className="py-3 text-right text-[14px] font-medium tabular-nums text-foreground">
-                          {usd(s.amount * 100)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
-          </div>
+          <section className="space-y-4">
+            <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
+              By month
+            </h2>
+            {months.length === 0 ? (
+              <p className="py-10 text-[14px] text-muted-foreground">
+                Nothing yet. A month appears here once you have completed a session in it.
+              </p>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Month
+                    </th>
+                    <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Sessions
+                    </th>
+                    <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Earned
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {months.map((m) => (
+                    <MonthRow
+                      key={m.key}
+                      label={m.label}
+                      count={m.count}
+                      amount={m.amount}
+                      isCurrent={m.key === thisKey}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
 
           {/* What the sessions came to is one question. What has reached a bank
               account is another, and it was previously unanswerable here. */}
