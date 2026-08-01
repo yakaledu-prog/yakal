@@ -1,37 +1,60 @@
 import { useEffect, useState } from "react";
+import { Info, TrendingDown, TrendingUp } from "lucide-react";
+
 import { PayoutHistory } from "@/components/shared/PayoutHistory";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
-import { Info, TrendingUp, TrendingDown, Database } from "lucide-react";
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, PieChart, Pie,
-} from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTutorSessionsFull, computeEarnings, EarningsSummary } from "@/services/tutorService";
+import { money as usd } from "@/services/billingService";
+import { computeEarnings, getTutorSessionsFull, type EarningsSummary } from "@/services/tutorService";
 
-// Brand-only palette (teal + gold + supporting warm/greens, no blue/purple).
-const PALETTE = ["#1099A1", "#CAA25F", "#97CE9D", "#0d848b", "#d98f5a", "#7d8f69", "#b06f9a", "#c98a2b"];
+// ============================================================
+// What a tutor has earned, and what has actually been paid.
+//
+// The charts are gone. A bar chart of eight months is empty for most of a
+// tutor's first year here, and the version before this one filled the gaps
+// with invented figures to keep it looking full, which is worse than an empty
+// chart: it showed people money they had never earned. A table of months is
+// honest when there is one row and still readable when there are thirty.
+//
+// Earnings and payments are deliberately two sections. What the sessions came
+// to and what has reached a bank account are different questions, and running
+// them together is how a tutor ends up unsure whether they have been paid.
+// ============================================================
 
-// Custom tooltip, recharts' default uses inline styles that ignore CSS vars and
-// break in dark mode; a component with our classes renders correctly in both.
-function ChartTooltip({ active, payload, label, money }: any) {
-  if (!active || !payload?.length) return null;
+function MonthRow({
+  label,
+  count,
+  amount,
+  isCurrent,
+}: {
+  label: string;
+  count: number;
+  amount: number;
+  isCurrent: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#202c33] shadow-md px-3 py-2 text-[13px]">
-      <p className="font-semibold text-[#111] dark:text-white mb-0.5">{label}</p>
-      <p className="text-muted-foreground">
-        Earned: <span className="font-semibold text-[#111] dark:text-white">{money(Number(payload[0].value))}</span>
-      </p>
-    </div>
+    <tr className="border-b border-border last:border-0">
+      <td className="py-3 pr-4">
+        <span className={cn("text-[14px]", isCurrent ? "font-semibold text-[#1099A1]" : "text-foreground")}>
+          {label}
+        </span>
+        {isCurrent && <span className="ml-2 text-[12px] text-muted-foreground">so far</span>}
+      </td>
+      <td className="py-3 pr-4 text-right text-[13.5px] tabular-nums text-muted-foreground">
+        {count === 0 ? "-" : count}
+      </td>
+      <td className="py-3 text-right text-[14px] font-medium tabular-nums text-foreground">
+        {usd(amount * 100)}
+      </td>
+    </tr>
   );
 }
 
 export function TutorEarnings() {
   const { user, profile } = useAuth();
   const [summary, setSummary] = useState<EarningsSummary | null>(null);
-  const currency = profile?.rate_currency || "ETB";
   const rate = profile?.hourly_rate ?? 0;
-  const money = (n: number) => `${n.toLocaleString()} ${currency}`;
 
   useEffect(() => {
     if (!user) return;
@@ -39,175 +62,154 @@ export function TutorEarnings() {
   }, [user, rate]);
 
   if (!summary) {
-    return <PageWrapper><div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div></PageWrapper>;
+    return (
+      <PageWrapper>
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+        </div>
+      </PageWrapper>
+    );
   }
 
   const now = new Date();
-  const thisYear = now.getFullYear();
-  const thisMonthStr = String(now.getMonth() + 1).padStart(2, "0");
-  const thisKey = `${thisYear}-${thisMonthStr}`;
+  const thisKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const up = (summary.momChangePct ?? 0) >= 0;
 
-  const barData = [...summary.months].reverse().slice(-8).map((m, i) => {
-    // Inject realistic-looking dummy data for empty historical months to make the chart look great
-    if (m.amount === 0 && m.key !== thisKey) {
-      const dummyAmounts = [2500, 4200, 3100, 5800, 4600, 6200, 3800, 5100];
-      return { ...m, amount: dummyAmounts[i % dummyAmounts.length] };
-    }
-    return m;
-  });
+  // Only months that actually happened. No padding, and nothing invented for
+  // the ones that did not.
+  const months = summary.months.filter((m) => m.count > 0 || m.key === thisKey);
 
   return (
     <PageWrapper>
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
-          {/* Subtle Background Texture/Graph */}
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
+      <div className="min-h-screen flex-1 bg-background pb-12 dark:bg-[#111b21]">
+        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+          <svg
+            className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
+            viewBox="0 0 400 200"
+            preserveAspectRatio="none"
+            fill="none"
+            aria-hidden="true"
+          >
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
+          <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col justify-between gap-6 border-b border-white/20 pb-8 md:flex-row md:items-end">
             <div className="space-y-1">
-              <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Total Earnings</h1>
+              <h1 className="mb-2 text-[14px] font-medium uppercase tracking-wider text-white/80">
+                Total earned
+              </h1>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-4xl md:text-5xl font-bold tracking-tight">{money(summary.total)}</span>
+                <span className="text-4xl font-bold tracking-tight md:text-5xl">
+                  {usd(summary.total * 100)}
+                </span>
                 {summary.momChangePct !== null && (
-                  <span className={cn("inline-flex items-center gap-1 text-[13px] font-semibold px-2.5 py-1 rounded-full",
-                    up ? "bg-white/20 text-white" : "bg-red-500/20 text-white")}>
-                    {up ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {Math.abs(summary.momChangePct)}%
+                  <span className="inline-flex items-center gap-1 text-[13px] font-medium text-white/80">
+                    {up ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    {Math.abs(summary.momChangePct)}% on last month
                   </span>
                 )}
               </div>
-              <p className="text-white/70 text-[14px] pt-1">
-                {money(summary.thisMonth)} this month · {summary.completedCount} sessions at {money(rate)}
+              <p className="pt-1 text-[14px] text-white/70">
+                {summary.completedCount} completed{" "}
+                {summary.completedCount === 1 ? "session" : "sessions"}
+                {rate > 0 && ` at ${usd(rate * 100)} an hour`}
               </p>
             </div>
 
-            <div className="flex items-center gap-8 md:gap-12 pb-2">
+            <div className="flex items-center gap-8 pb-2 md:gap-12">
               <div className="text-left md:text-right">
-                <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-0.5">This Month</p>
-                <p className="text-2xl font-bold">{money(summary.thisMonth)}</p>
+                <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
+                  This month
+                </p>
+                <p className="text-2xl font-bold">{usd(summary.thisMonth * 100)}</p>
               </div>
               <div className="text-left md:text-right">
-                <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-0.5">Last Month</p>
-                <p className="text-2xl font-bold opacity-80">{money(summary.lastMonth)}</p>
+                <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
+                  Last month
+                </p>
+                <p className="text-2xl font-bold opacity-80">{usd(summary.lastMonth * 100)}</p>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Content Below Banner */}
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-12">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
-            {/* Bar Chart */}
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-[18px] font-semibold text-foreground border-b border-border/50 pb-3">Monthly Trends</h3>
-              <div className="h-[280px] w-full pt-4">
-                {barData.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-[14px] text-muted-foreground">No earnings to chart yet.</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} margin={{ top: 10, right: 8, left: -12, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} vertical={false} />
-                      <XAxis dataKey="shortLabel" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
-                      <Tooltip cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.4 }} content={<ChartTooltip money={money} />} />
-                      <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                        {barData.map((m) => <Cell key={m.key} fill={m.key === thisKey ? "#CAA25F" : "#1099A1"} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            {/* Pie Chart */}
-            <div className="space-y-4">
-              <h3 className="text-[18px] font-semibold text-foreground border-b border-border/50 pb-3">By Subject</h3>
-              {summary.bySubject.length === 0 ? (
-                <div className="h-[180px] flex items-center justify-center text-[14px] text-muted-foreground">No data yet.</div>
+        <div className="mx-auto max-w-[1440px] space-y-12 p-6 md:p-10">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16">
+            <section className="space-y-4 lg:col-span-2">
+              <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
+                By month
+              </h2>
+              {months.length === 0 ? (
+                <p className="py-10 text-[14px] text-muted-foreground">
+                  Nothing yet. A month appears here once you have completed a session in it.
+                </p>
               ) : (
-                <div className="pt-2">
-                  <div className="relative h-[220px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={summary.bySubject} dataKey="amount" nameKey="subject" cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={2} stroke="none">
-                          {summary.bySubject.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-[13px] text-muted-foreground uppercase tracking-widest font-medium">Total</span>
-                      <span className="text-xl font-bold text-foreground">{money(summary.total)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3 mt-6">
-                    {summary.bySubject.map((s, i) => (
-                      <div key={s.subject} className="flex items-center justify-between text-[14px]">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
-                          <span className="truncate font-medium text-foreground">{s.subject}</span>
-                        </span>
-                        <span className="font-semibold shrink-0 text-muted-foreground">{money(s.amount)}</span>
-                      </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Month
+                      </th>
+                      <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Sessions
+                      </th>
+                      <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Earned
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {months.map((m) => (
+                      <MonthRow
+                        key={m.key}
+                        label={m.label}
+                        count={m.count}
+                        amount={m.amount}
+                        isCurrent={m.key === thisKey}
+                      />
                     ))}
-                  </div>
-                </div>
+                  </tbody>
+                </table>
               )}
-            </div>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="border-b border-border/50 pb-3 text-[18px] font-semibold text-foreground">
+                By subject
+              </h2>
+              {summary.bySubject.length === 0 ? (
+                <p className="py-10 text-[14px] text-muted-foreground">Nothing yet.</p>
+              ) : (
+                <table className="w-full">
+                  <tbody>
+                    {summary.bySubject.map((s) => (
+                      <tr key={s.subject} className="border-b border-border last:border-0">
+                        <td className="py-3 pr-4 text-[14px] text-foreground">{s.subject}</td>
+                        <td className="py-3 pr-4 text-right text-[13.5px] tabular-nums text-muted-foreground">
+                          {s.count}
+                        </td>
+                        <td className="py-3 text-right text-[14px] font-medium tabular-nums text-foreground">
+                          {usd(s.amount * 100)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
           </div>
 
-          {/* Recent earnings list */}
-          <div className="pt-8 space-y-4">
-            <div className="flex items-center justify-between border-b border-border/50 pb-3">
-              <h3 className="text-[18px] font-semibold text-foreground">Recent Activity</h3>
-              <span className="text-[13px] text-muted-foreground">{summary.activity.length} entries</span>
-            </div>
-            
-            {summary.activity.length === 0 ? (
-              <p className="text-center text-[14px] text-muted-foreground py-12">No completed sessions yet.</p>
-            ) : (
-              <div className="space-y-0">
-                {summary.activity.slice(0, 20).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-                    <div className="flex items-center gap-6 min-w-0">
-                      <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
-                        <Database size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[15px] text-foreground truncate">{a.subject}</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">
-                          {new Date(a.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · {a.student}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[15px] font-bold text-[#1099A1] whitespace-nowrap">+{money(a.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* What the sessions came to is one question. What has reached a bank
+              account is another, and it was previously unanswerable here. */}
+          {user && <PayoutHistory tutorId={user.id} />}
 
-          {/* Earnings above are what the sessions came to. This is what has
-              actually been paid, which is a different question and was
-              previously unanswerable from here. */}
-          {user && (
-            <div className="mt-10">
-              <PayoutHistory tutorId={user.id} />
-            </div>
-          )}
-
-          <div className="mt-8 flex items-start gap-2.5 bg-muted/30 px-4 py-3 rounded-lg text-[13px] text-muted-foreground">
+          <div className="flex items-start gap-2.5 rounded-lg bg-muted/30 px-4 py-3 text-[13px] text-muted-foreground">
             <Info size={16} className="mt-0.5 shrink-0 text-[#1099A1]" />
-            <span>Earnings are estimated from your completed sessions at your current rate of {money(rate)}. What has actually been paid is listed above.</span>
+            <span>
+              Earnings are worked out from your completed sessions at your current rate. What has
+              actually been paid, and how, is listed above.
+            </span>
           </div>
-
         </div>
       </div>
     </PageWrapper>

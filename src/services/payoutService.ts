@@ -284,6 +284,19 @@ export async function startConnectOnboarding(): Promise<{ error?: string }> {
   return {};
 }
 
+/**
+ * Ask Stripe whether onboarding is finished, and store the answer.
+ *
+ * The account.updated webhook does this too. This is the pull for when that
+ * has not arrived: locally it needs the Stripe CLI running, and a tutor who
+ * has just finished will not sit waiting for a retry.
+ */
+export async function refreshConnectStatus(
+  profileId?: string
+): Promise<{ payoutsEnabled?: boolean; needs?: string[]; error?: string }> {
+  return authedPost("/api/connect-status", profileId ? { profileId } : {});
+}
+
 /** Pay one tutor for one or more settled invoices, out of the Stripe balance. */
 export async function payViaConnect(
   invoiceIds: string[]
