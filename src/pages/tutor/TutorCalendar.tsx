@@ -352,9 +352,9 @@ export function TutorCalendar() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-3xl md:text-4xl font-bold tracking-tight">Calendar</span>
                 </div>
-                {/* <p className="text-white/70 text-[14px] pt-1">
+                <p className="text-white/70 text-[14px] pt-1">
                   Manage your availability and upcoming sessions
-                </p> */}
+                </p>
               </div>
             </div>
 

@@ -13,6 +13,7 @@ import {
   requestSessionPayment,
   type EarningRow,
 } from "@/services/payoutService";
+import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -36,7 +37,29 @@ const FILTERS = [
   { value: "paid", label: "Paid" },
 ];
 
-function StatusCell({ row }: { row: EarningRow }) {
+function StatusCell({
+  row,
+  busy,
+  onRequest,
+}: {
+  row: EarningRow;
+  busy: string | null;
+  onRequest: () => void;
+}) {
+  // Nothing has been asked for yet, so what belongs here is the asking.
+  if (row.payoutStatus === "none") {
+    return (
+      <button
+        type="button"
+        disabled={busy !== null}
+        onClick={onRequest}
+        className="h-9 rounded-md border border-[#1099A1] px-4 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-60"
+      >
+        {busy === row.sessionId ? "Requesting..." : "Request payment"}
+      </button>
+    );
+  }
+
   if (row.payoutStatus === "paid") {
     return (
       <div className="text-right">
@@ -49,20 +72,16 @@ function StatusCell({ row }: { row: EarningRow }) {
     );
   }
 
-  if (row.payoutStatus === "requested") {
-    return (
-      <div className="text-right">
-        <p className="text-[13.5px] font-medium text-[#CAA25F]">Awaiting payment</p>
-        <p className="text-[12px] text-muted-foreground">
-          {row.requestedAt
-            ? `Asked ${new Date(row.requestedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
-            : ""}
-        </p>
-      </div>
-    );
-  }
-
-  return <p className="text-right text-[13.5px] text-muted-foreground">Not requested</p>;
+  return (
+    <div className="text-right">
+      <p className="text-[13.5px] font-medium text-[#CAA25F]">Awaiting payment</p>
+      <p className="text-[12px] text-muted-foreground">
+        {row.requestedAt
+          ? `Asked ${new Date(row.requestedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+          : ""}
+      </p>
+    </div>
+  );
 }
 
 export function TutorEarnings() {
@@ -178,7 +197,7 @@ export function TutorEarnings() {
         </header>
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
-          <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="mb-12 flex flex-wrap items-center gap-6 md:gap-8">
             <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-[#1099A1]">
               <Search size={16} className="shrink-0 text-muted-foreground" />
               <input
@@ -239,7 +258,6 @@ export function TutorEarnings() {
                   <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     Status
                   </th>
-                  <th className="pb-2" />
                 </tr>
               </thead>
               <tbody>
@@ -255,10 +273,21 @@ export function TutorEarnings() {
                       </p>
                     </td>
                     <td className="py-4 pr-4 align-top">
-                      <p className="text-[14px] font-medium text-foreground">{r.subject}</p>
-                      <p className="text-[12.5px] text-muted-foreground">
-                        {r.studentName ?? "Student"}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={r.studentAvatarUrl || dicebearUrl(r.studentName ?? "Yakal")}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-medium text-foreground">
+                            {r.subject}
+                          </p>
+                          <p className="truncate text-[12.5px] text-muted-foreground">
+                            {r.studentName ?? "Student"}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 pr-4 text-right align-top text-[13.5px] tabular-nums text-muted-foreground">
                       {r.durationMinutes} min
@@ -271,20 +300,12 @@ export function TutorEarnings() {
                     >
                       {r.amountCents === 0 ? "-" : usd(r.amountCents)}
                     </td>
-                    <td className="py-4 pr-4 align-top">
-                      <StatusCell row={r} />
-                    </td>
-                    <td className="py-4 text-right align-top">
-                      {r.payoutStatus === "none" && (
-                        <button
-                          type="button"
-                          disabled={busy !== null}
-                          onClick={() => request([r.sessionId])}
-                          className="h-9 rounded-md border border-[#1099A1] px-4 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-60"
-                        >
-                          {busy === r.sessionId ? "Requesting..." : "Request payment"}
-                        </button>
-                      )}
+                    <td className="py-4 text-right align-middle">
+                      <StatusCell
+                        row={r}
+                        busy={busy}
+                        onRequest={() => request([r.sessionId])}
+                      />
                     </td>
                   </tr>
                 ))}

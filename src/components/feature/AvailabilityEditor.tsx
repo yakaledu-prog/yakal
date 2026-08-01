@@ -106,7 +106,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
 
   const getSlotColor = (mode: SlotMode) => {
     switch (mode) {
-      case 1: return 'bg-sky-100 dark:bg-sky-900/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400';
+      case 1: return 'bg-cyan-100 dark:bg-cyan-900/40 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400';
       case 2: return 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400';
       case 3: return 'bg-orange-100 dark:bg-orange-900/40 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400';
       default: return 'bg-neutral-50 dark:bg-[#202c33]/20 border-[#e9edef] dark:border-[#2a3942]';

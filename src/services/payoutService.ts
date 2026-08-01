@@ -320,6 +320,7 @@ export interface EarningRow {
   durationMinutes: number;
   subject: string;
   studentName: string | null;
+  studentAvatarUrl: string | null;
   amountCents: number;
   /** none = not asked for yet, requested = waiting on an admin, paid = settled. */
   payoutStatus: "none" | "requested" | "paid";
@@ -334,7 +335,7 @@ export async function getTutorEarnings(tutorId: string): Promise<EarningRow[]> {
   const { data: sessions, error } = await supabase
     .from("sessions")
     .select(
-      "id, date, start_time, duration_minutes, subject, status, payout_cents, payout_status, payout_requested_at, student:profiles!sessions_student_id_fkey (full_name)"
+      "id, date, start_time, duration_minutes, subject, status, payout_cents, payout_status, payout_requested_at, student:profiles!sessions_student_id_fkey (full_name, avatar_url)"
     )
     .eq("tutor_id", tutorId)
     .order("date", { ascending: false })
@@ -379,6 +380,7 @@ export async function getTutorEarnings(tutorId: string): Promise<EarningRow[]> {
         durationMinutes: r.duration_minutes ?? 60,
         subject: r.subject,
         studentName: r.student?.full_name ?? null,
+        studentAvatarUrl: r.student?.avatar_url ?? null,
         amountCents: r.payout_cents ?? 0,
         payoutStatus: (paid ? "paid" : r.payout_status) as EarningRow["payoutStatus"],
         requestedAt: r.payout_requested_at,
