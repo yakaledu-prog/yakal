@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, Loader2, RotateCcw, Search, X } from "lucide-react";
 
+import { Dropdown } from "@/components/ui/Dropdown";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,7 +100,7 @@ export function AdminReports() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<AdminFlag | null>(null);
 
-  const { data: flags = [], isLoading, isFetching } = useQuery({
+  const { data: flags = [], isLoading } = useQuery({
     queryKey: ["admin-flags", status],
     queryFn: () => getFlags(status),
   });
@@ -156,8 +157,7 @@ export function AdminReports() {
         />
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-8">
-          {/* Search, then the filter, then sort. Refresh sits hard right,
-              away from anything that changes what you are looking at. */}
+          {/* Search, then the filter, then the sort order. */}
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <div className="relative min-w-[220px] flex-1 md:max-w-sm">
               <Search
@@ -175,39 +175,25 @@ export function AdminReports() {
               />
             </div>
 
-            <select
+            <Dropdown
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value as FlagStatus | "all");
+              onChange={(v) => {
+                setStatus(v);
                 setPage(1);
               }}
-              aria-label="Filter by status"
-              className="h-10 rounded-xl border border-border bg-card px-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
-            >
-              {STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  Status: {s.label}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Filter by status"
+              options={STATUSES.map((s) => ({ value: s.value, label: `Status: ${s.label}` }))}
+            />
 
-            <select
+            <Dropdown
               value={newestFirst ? "new" : "old"}
-              onChange={(e) => setNewestFirst(e.target.value === "new")}
-              aria-label="Sort order"
-              className="h-10 rounded-xl border border-border bg-card px-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
-            >
-              <option value="new">Newest first</option>
-              <option value="old">Oldest first</option>
-            </select>
-
-            <button
-              onClick={() => qc.invalidateQueries({ queryKey: ["admin-flags"] })}
-              aria-label="Refresh"
-              className="ml-auto grid h-10 w-10 place-items-center rounded-xl border border-border transition-colors hover:bg-muted/60"
-            >
-              <RotateCcw size={15} className={cn(isFetching && "animate-spin")} />
-            </button>
+              onChange={(v) => setNewestFirst(v === "new")}
+              ariaLabel="Sort order"
+              options={[
+                { value: "new", label: "Newest first" },
+                { value: "old", label: "Oldest first" },
+              ]}
+            />
           </div>
 
           {isLoading ? (

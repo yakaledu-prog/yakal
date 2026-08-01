@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
 
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { money } from "@/services/billingService";
 import type { TutorPayout } from "@/services/adminService";
@@ -91,20 +92,17 @@ export function RecordPayoutModal({
           against their own bank.
         </p>
 
-        <label className="mt-5 block text-[12.5px] font-medium text-foreground">
+        <div className="mt-5 block text-[12.5px] font-medium text-foreground">
           How did you pay them
-          <select
+          <Dropdown
             value={method}
-            onChange={(e) => setMethod(e.target.value as PayoutMethod)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-[14px] outline-none focus:border-[#1099A1]"
-          >
-            {METHODS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(v) => setMethod(v as PayoutMethod)}
+            ariaLabel="How you paid them"
+            className="mt-1.5"
+            buttonClassName="w-full"
+            options={METHODS.map((m) => ({ value: m.id, label: m.label }))}
+          />
+        </div>
 
         <label className="mt-4 block text-[12.5px] font-medium text-foreground">
           {referenceLabel(method)}

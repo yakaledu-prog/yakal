@@ -90,7 +90,8 @@ pass('marking actioned is recorded', psql("select status from conversation_flags
 pass('who reviewed it is recorded', psql("select reviewed_by is not null from conversation_flags limit 1;") === 't');
 pass('the open queue empties', (await admin.getByText(/Nothing waiting/i).isVisible().catch(() => false)));
 
-await admin.getByLabel('Filter by status').selectOption('reviewed');
+await admin.getByLabel('Filter by status').click();
+await admin.getByRole('option', { name: 'Status: Actioned' }).click();
 await admin.waitForTimeout(2000);
 await admin.getByRole('button', { name: 'Review' }).first().click();
 await admin.waitForTimeout(2000);
