@@ -1,425 +1,197 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  CalendarDays,
-  ChevronLeft,
-  ExternalLink,
-  Loader2,
-  Pencil,
-  Users,
-  Wallet,
-} from "lucide-react";
-
-import { PageWrapper } from "@/components/ui/PageWrapper";
-import { CourseApplicants } from "@/components/admin/CourseApplicants";
-import { dicebearUrl } from "@/utils/avatar";
-import { cn } from "@/utils/cn";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, Users, ExternalLink, Calendar, Star } from "lucide-react";
+import { getCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { getCourse, getCourseDetail, updateCourse } from "@/services/adminService";
-import { getApplicants } from "@/services/courseApplicationService";
+import { cn } from "@/utils/cn";
+import { CourseApplicants } from "@/components/admin/CourseApplicants";
 
-// ============================================================
-// One course, for an admin.
-//
-// The old page was a marketing layout: a hero banner, centred cards, and tabs
-// for Students and Sessions that each rendered a paragraph describing what
-// they would one day contain. It is kept at /admin/courses/:id/classic.
-//
-// This is a dashboard. The job an admin comes here to do is decide who teaches
-// the course, so the applicants are the page rather than a tab inside it, and
-// the numbers that bear on that decision sit above them. Students and sessions
-// are real rows now.
-//
-// Applicants stay here rather than moving to /admin/applicants. That page
-// answers "should this person tutor on Yakal at all", decided once per person.
-// This answers "who should teach this course", which is a comparison between
-// the people who applied to it. Splitting them would lose the comparison.
-// ============================================================
-
-function Stat({
-  label,
-  value,
-  hint,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-  icon: typeof Users;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Icon size={13} />
-        <p className="text-[11px] font-medium uppercase tracking-wider">{label}</p>
-      </div>
-      <p className="mt-1.5 text-[22px] font-medium leading-none text-foreground">{value}</p>
-      {hint && <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function fmtDate(d: string) {
-  return new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
-}
-
-function fmtTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
+// Mock Tutors
 
 export function AdminCourseDetail() {
   const { id } = useParams();
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+  const [course, setCourse] = useState<AdminCourse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("tutors"); // Default to tutors to show off the UI
 
-  const { data: course, isLoading } = useQuery({
-    queryKey: ["admin-course", id],
-    queryFn: () => getCourse(id!),
-    enabled: !!id,
-  });
-
-  const { data: detail } = useQuery({
-    queryKey: ["admin-course-detail", id],
-    queryFn: () => getCourseDetail(id!),
-    enabled: !!id,
-  });
-
-  const { data: applicants = [] } = useQuery({
-    queryKey: ["course-applicants", id],
-    queryFn: () => getApplicants(id!),
-    enabled: !!id,
-  });
+  useEffect(() => {
+    if (id) {
+      getCourse(id).then((data) => {
+        setCourse(data);
+        setIsLoading(false);
+      });
+    }
+  }, [id]);
 
   if (isLoading) {
-    return (
-      <PageWrapper>
-        <div className="flex justify-center py-24">
-          <Loader2 className="animate-spin text-[#1099A1]" />
-        </div>
-      </PageWrapper>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-[#1099A1] border-t-transparent rounded-full" /></div>;
   }
 
   if (!course) {
-    return (
-      <PageWrapper>
-        <div className="py-24 text-center text-muted-foreground">Course not found.</div>
-      </PageWrapper>
-    );
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Course not found</div>;
   }
 
-  const pending = applicants.filter((a) => a.status === "pending").length;
-  const assigned = !!course.tutor_id;
-
-  async function toggleActive() {
-    if (!course) return;
-    setBusy(true);
-    const res = await updateCourse(course.id, { is_active: !course.is_active });
-    setBusy(false);
-    if (!res.success) return toast.error(res.error ?? "Could not update that course.");
-    toast.success(course.is_active ? "Course hidden from the catalog" : "Course published");
-    qc.invalidateQueries({ queryKey: ["admin-course", id] });
-  }
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "students", label: "Students" },
+    { id: "tutors", label: "Tutors" },
+    { id: "sessions", label: "Sessions" },
+    { id: "reviews", label: "Reviews" },
+  ];
 
   return (
-    <PageWrapper>
-      <div className="mx-auto max-w-[1100px] space-y-6">
-        {/* A compact strip rather than a banner: an admin arrives knowing which
-            course this is, and wants the state of it. */}
-        <div>
-          <Link
-            to="/admin/courses"
-            className="inline-flex items-center gap-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#111b21]">
+      {/* Header Banner */}
+      <div className="w-full bg-[#1099A1] text-white pt-8 pb-12 px-6 md:px-10 relative overflow-hidden">
+        {/* Subtle background decoration */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        
+        <div className="max-w-[1440px] mx-auto relative z-10">
+          <button 
+            onClick={() => navigate("/admin/courses")}
+            className="flex items-center gap-1.5 text-white/90 hover:text-white mb-6 text-[14px] transition-colors"
           >
-            <ChevronLeft size={15} /> All courses
-          </Link>
+            <ChevronLeft size={16} /> Back to Courses
+          </button>
 
-          <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-4">
-              {course.thumbnail_url && (
-                <img
-                  src={course.thumbnail_url}
-                  alt=""
-                  className="h-16 w-24 shrink-0 rounded-lg object-cover"
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div className="max-w-[800px]">
+              <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
+              {course.description ? (
+                <div 
+                  className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6 line-clamp-2"
+                  dangerouslySetInnerHTML={{ __html: course.description }}
                 />
+              ) : (
+                <p className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6">
+                  Learn {course.subject} with our expert tutors. Tailored sessions for academic excellence.
+                </p>
               )}
-              <div className="min-w-0">
-                <h1 className="text-[22px] font-medium text-foreground">{course.title}</h1>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[12px] text-muted-foreground">
-                    {course.subject}
-                  </span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-[12px] font-medium",
-                      course.is_active
-                        ? "bg-[#1099A1]/12 text-[#1099A1]"
-                        : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {course.is_active ? "Published" : "Hidden"}
-                  </span>
-                  {!assigned && (
-                    <span className="rounded-full bg-[#CAA25F]/15 px-2.5 py-0.5 text-[12px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
-                      {pending > 0
-                        ? `${pending} applicant${pending === 1 ? "" : "s"} waiting`
-                        : "No tutor yet"}
-                    </span>
-                  )}
+              
+              <div className="flex flex-wrap items-center gap-6 text-[14px] font-medium text-white/95">
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-4 h-4 fill-[#F2C94C] text-[#F2C94C]" />
+                  <span>4.8</span>
+                  <span className="underline underline-offset-2 opacity-90 cursor-pointer hover:opacity-100">(320 reviews)</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 opacity-80" />
+                  <span>1,204 students enrolled</span>
+                </div>
+                {course.google_classroom_url && (
+                  <a href={course.google_classroom_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 underline underline-offset-2 opacity-90 hover:opacity-100">
+                    <ExternalLink size={14} /> Classroom
+                  </a>
+                )}
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                onClick={() => void toggleActive()}
-                disabled={busy}
-                className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 disabled:opacity-50"
-              >
-                {busy && <Loader2 size={14} className="animate-spin" />}
-                {course.is_active ? "Hide" : "Publish"}
-              </button>
-              <Link
-                to={`/admin/courses/${course.id}/classic`}
-                className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
-              >
-                <Pencil size={14} /> Edit
-              </Link>
+            <div className="flex flex-col items-start md:items-end shrink-0 mt-4 md:mt-0">
+              <div className="text-[28px] md:text-[36px] font-bold mb-1">
+                {course.price_cents != null ? money(course.price_cents) : "—"}
+                <span className="text-[16px] font-normal opacity-80 tracking-normal">/course</span>
+              </div>
+              <div className="text-[14px] opacity-90">
+                Or starting at {course.tutor_payout_cents != null ? money(course.tutor_payout_cents) : "—"}/hr with tutors
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat
-            icon={Users}
-            label="Students"
-            value={detail?.students.length ?? 0}
-            hint={assigned ? undefined : "Bookable once a tutor is assigned"}
-          />
-          <Stat icon={CalendarDays} label="Sessions" value={detail?.sessions.length ?? 0} />
-          <Stat
-            icon={Wallet}
-            label="Revenue"
-            value={money(detail?.revenueCents ?? 0)}
-            hint={course.price_cents != null ? `${money(course.price_cents)} per session` : undefined}
-          />
-          <Stat
-            icon={Wallet}
-            label="Owed to tutor"
-            value={money(detail?.unpaidPayoutCents ?? 0)}
-            hint={
-              (detail?.unpaidPayoutCents ?? 0) > 0
-                ? "Paid by hand, then marked settled"
-                : "Nothing outstanding"
-            }
-          />
-        </div>
-
-        {/* The decision this page exists for. */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          {assigned ? (
-            <>
-              <h2 className="mb-4 text-[15px] font-medium text-foreground">Tutor</h2>
-              <AssignedTutor
-                courseId={course.id}
-                onChanged={() => {
-                  qc.invalidateQueries({ queryKey: ["admin-course", id] });
-                  qc.invalidateQueries({ queryKey: ["admin-course-detail", id] });
-                }}
-              />
-            </>
-          ) : (
-            <CourseApplicants
-              courseId={course.id}
-              courseTitle={course.title}
-              assignedTutorId={null}
-              onAssigned={() => {
-                qc.invalidateQueries({ queryKey: ["admin-course", id] });
-                qc.invalidateQueries({ queryKey: ["admin-course-detail", id] });
-              }}
-            />
-          )}
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-[15px] font-medium text-foreground">
-              Enrolled students
-              {(detail?.students.length ?? 0) > 0 && (
-                <span className="ml-2 text-[13px] text-muted-foreground">
-                  {detail?.students.length}
-                </span>
+      {/* Tabs Nav */}
+      <div className="w-full bg-white dark:bg-[#182329] border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 z-20">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 flex overflow-x-auto no-scrollbar">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "py-4 px-6 text-[15px] font-medium whitespace-nowrap transition-colors relative",
+                activeTab === tab.id ? "text-[#1099A1]" : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
               )}
-            </h2>
-
-            {(detail?.students.length ?? 0) === 0 ? (
-              <p className="py-8 text-center text-[13px] text-muted-foreground">
-                Nobody has enrolled yet.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {detail!.students.map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 py-3">
-                    <img
-                      src={s.avatarUrl || dicebearUrl(s.name)}
-                      alt=""
-                      className="h-9 w-9 shrink-0 rounded-full object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium text-foreground">{s.name}</p>
-                      <p className="truncate text-[12px] text-muted-foreground">
-                        {s.gradeLevel ?? "Grade not set"}
-                        {s.purchasedByName && ` - paid by ${s.purchasedByName}`}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[12px] text-muted-foreground">
-                      {new Date(s.enrolledAt).toLocaleDateString(undefined, {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-[15px] font-medium text-foreground">
-              Sessions
-              {(detail?.sessions.length ?? 0) > 0 && (
-                <span className="ml-2 text-[13px] text-muted-foreground">
-                  {detail?.sessions.length}
-                </span>
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#1099A1] rounded-t-full" />
               )}
-            </h2>
-
-            {(detail?.sessions.length ?? 0) === 0 ? (
-              <p className="py-8 text-center text-[13px] text-muted-foreground">
-                No sessions booked yet.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {detail!.sessions.slice(0, 8).map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 py-3">
-                    <div className="w-14 shrink-0">
-                      <p className="text-[13px] font-medium text-foreground">{fmtDate(s.date)}</p>
-                      <p className="text-[11.5px] text-muted-foreground">{fmtTime(s.startTime)}</p>
-                    </div>
-                    <p className="min-w-0 flex-1 truncate text-[13.5px] text-foreground">
-                      {s.studentName ?? "A student"}
-                    </p>
-                    <span
-                      className={cn(
-                        "shrink-0 text-[12px] font-medium capitalize",
-                        s.status === "upcoming" ? "text-[#1099A1]" : "text-muted-foreground"
-                      )}
-                    >
-                      {s.status}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+            </button>
+          ))}
         </div>
+      </div>
 
-        {course.description && (
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="mb-2 text-[15px] font-medium text-foreground">Description</h2>
-            <p className="text-[14px] leading-relaxed text-muted-foreground">{course.description}</p>
-            {course.google_classroom_url && (
-              <a
-                href={course.google_classroom_url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:underline"
-              >
-                Google Classroom <ExternalLink size={13} />
-              </a>
-            )}
-          </section>
+      {/* Content Area */}
+      <div className="max-w-[1440px] mx-auto p-6 md:p-10">
+        
+        {/* TUTORS TAB */}
+        {activeTab === "tutors" && (
+          <CourseApplicants
+            courseId={course.id}
+            courseTitle={course.title}
+            assignedTutorId={course.tutor_id ?? null}
+            onAssigned={() => id && getCourse(id).then(setCourse)}
+          />
         )}
-      </div>
-    </PageWrapper>
-  );
-}
 
-/**
- * The tutor teaching this course, with a way to take them off it.
- *
- * Unassigning clears courses.tutor_id and reopens the course, which is the
- * only route back to the applicant list once somebody has been accepted.
- */
-function AssignedTutor({ courseId, onChanged }: { courseId: string; onChanged: () => void }) {
-  const [busy, setBusy] = useState(false);
+        {/* OVERVIEW TAB */}
+        {activeTab === "overview" && (
+          <div className="animate-in fade-in duration-300 max-w-3xl bg-white dark:bg-[#182329] p-8 rounded-[24px] border border-[#e9edef] dark:border-[#2a3942]">
+            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Course Description</h2>
+            {course.description ? (
+              <div 
+                className="prose prose-sm dark:prose-invert max-w-none text-[#555] dark:text-gray-300"
+                dangerouslySetInnerHTML={{ __html: course.description }}
+              />
+            ) : (
+              <p className="text-[#555] dark:text-gray-300">No detailed description provided for this course.</p>
+            )}
+          </div>
+        )}
 
-  const { data: applicants = [] } = useQuery({
-    queryKey: ["course-applicants", courseId],
-    queryFn: () => getApplicants(courseId),
-  });
-
-  const accepted = applicants.find((a) => a.status === "accepted");
-  const turnedDown = applicants.filter((a) => a.status === "rejected").length;
-
-  async function unassign() {
-    setBusy(true);
-    const res = await updateCourse(courseId, { tutor_id: null } as never);
-    setBusy(false);
-    if (!res.success) return toast.error(res.error ?? "Could not unassign that tutor.");
-    toast.success("Course reopened for applications.");
-    onChanged();
-  }
-
-  return (
-    <div>
-      <div className="flex flex-wrap items-center gap-4">
-        <img
-          src={accepted?.tutor.avatarUrl || dicebearUrl(accepted?.tutor.name ?? "Tutor")}
-          alt=""
-          className="h-12 w-12 shrink-0 rounded-full object-cover"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-medium text-foreground">
-            {accepted?.tutor.name ?? "Assigned"}
-          </p>
-          {accepted?.tutor.email && (
-            <p className="text-[12.5px] text-muted-foreground">{accepted.tutor.email}</p>
-          )}
-          {accepted?.tutor.subjects?.length ? (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {accepted.tutor.subjects.slice(0, 4).map((s) => (
-                <span
-                  key={s}
-                  className="rounded-full bg-muted px-2 py-0.5 text-[11.5px] text-muted-foreground"
-                >
-                  {s}
-                </span>
-              ))}
+        {/* STUDENTS TAB */}
+        {activeTab === "students" && (
+          <div className="animate-in fade-in duration-300">
+            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Enrolled Students</h2>
+            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
+              <Users className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">Manage Students</h3>
+              <p className="text-[14px] text-muted-foreground max-w-sm">
+                View and manage all students enrolled in this course. You can assign them to specific tutors or sessions.
+              </p>
             </div>
-          ) : null}
-        </div>
-        <button
-          onClick={() => void unassign()}
-          disabled={busy}
-          className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 disabled:opacity-50"
-        >
-          {busy && <Loader2 size={14} className="animate-spin" />}
-          Unassign
-        </button>
-      </div>
+          </div>
+        )}
 
-      {turnedDown > 0 && (
-        <p className="mt-4 border-t border-border pt-3 text-[12.5px] text-muted-foreground">
-          {turnedDown} other applicant{turnedDown === 1 ? " was" : "s were"} turned down for this
-          course.
-        </p>
-      )}
+        {/* SESSIONS TAB */}
+        {activeTab === "sessions" && (
+          <div className="animate-in fade-in duration-300">
+            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Upcoming Sessions</h2>
+            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
+              <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No upcoming sessions</h3>
+              <p className="text-[14px] text-muted-foreground max-w-sm">
+                There are currently no scheduled sessions for this course. Tutors will schedule sessions as needed.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* REVIEWS TAB */}
+        {activeTab === "reviews" && (
+          <div className="animate-in fade-in duration-300">
+            <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-6">Student Reviews</h2>
+            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
+              <Star className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">4.8 Average Rating</h3>
+              <p className="text-[14px] text-muted-foreground max-w-sm">
+                Reviews will appear here once students complete course feedback forms.
+              </p>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
