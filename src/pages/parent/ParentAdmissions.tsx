@@ -12,6 +12,7 @@ import {
   buyTier,
   getAdmissionsPlans,
   getTiers,
+  monthlyCents,
   type AdmissionsTier,
 } from "@/services/admissionsService";
 import { ChildSidebar } from "./billing/shared";
@@ -174,14 +175,27 @@ function TierCard({
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{tier.blurb}</p>
       )}
 
-      {/* The cadence used to sit directly under the price, which made a
-          one-off price read as a monthly rate. How often you meet is a feature
-          and it is already in the list below; what belongs here is what the
-          number actually is. */}
-      <p className="mt-4 text-[26px] font-bold text-foreground">{money(tier.priceCents)}</p>
-      <p className="text-[12.5px] text-muted-foreground">
-        One payment, not a subscription
-      </p>
+      {/* The monthly figure leads because it is what a family is deciding to
+          pay, but the total is right underneath it: the commitment is the
+          whole engagement, and burying that would be a trick. How often you
+          meet is a feature and lives in the list below, not here, or a total
+          reads as a rate. */}
+      {tier.instalmentMonths > 1 ? (
+        <>
+          <p className="mt-4 text-[26px] font-bold text-foreground">
+            {money(monthlyCents(tier))}
+            <span className="text-[14px] font-normal text-muted-foreground"> /month</span>
+          </p>
+          <p className="text-[12.5px] text-muted-foreground">
+            {tier.instalmentMonths} monthly payments, {money(tier.priceCents)} in total
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-4 text-[26px] font-bold text-foreground">{money(tier.priceCents)}</p>
+          <p className="text-[12.5px] text-muted-foreground">One payment</p>
+        </>
+      )}
 
       <ul className="mt-5 flex-1 space-y-2.5">
         {tier.features.map((f, i) => (

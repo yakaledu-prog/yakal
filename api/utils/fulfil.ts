@@ -180,7 +180,7 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
 async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   const { data: tier } = await db
     .from("admissions_tiers")
-    .select("id, name")
+    .select("id, name, price_cents, instalment_months")
     .eq("id", invoice.admissions_tier_id)
     .single();
   if (!tier) {
@@ -207,11 +207,15 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
       .eq("id", existing.id);
   }
 
+  // Granted on the first payment, not the last. The instalments are how the
+  // money is collected; the family gets the whole engagement straight away.
   const { error: planErr } = await db.from("admissions_plans").insert({
     student_id: invoice.student_id,
     purchased_by: invoice.parent_id,
     tier_id: tier.id,
     invoice_id: invoice.id,
+    payments_made: 1,
+    payments_due: tier.instalment_months ?? 1,
   });
   if (planErr) {
     // The unique index refuses a second active plan, which is a duplicate

@@ -31,6 +31,14 @@ function lineDescription(inv: any): string {
   const parts: string[] = [];
   if (inv.student?.full_name) parts.push(`For ${inv.student.full_name}`);
 
+  // On instalments the headline is the monthly figure, so the total has to be
+  // somewhere the payer can see it before they commit.
+  if (inv.tier && inv.tier.instalment_months > 1) {
+    const total = (inv.tier.price_cents / 100).toFixed(2);
+    parts.push(`${inv.tier.instalment_months} monthly payments, ${total} in total`);
+    return parts.join('. ');
+  }
+
   const slots = Array.isArray(inv.booking) ? inv.booking : [];
   if (slots.length > 0) {
     const shown = slots.slice(0, 4).map(slotLabel);
@@ -40,6 +48,18 @@ function lineDescription(inv: any): string {
 
   // Never empty: Stripe rejects a blank description.
   return parts.join('. ') || inv.description;
+}
+
+/**
+ * One instalment.
+ *
+ * Rounded down, so N instalments come to at most N-1 cents under the total.
+ * Charging a family slightly less than the list price is the safer direction
+ * to be wrong in than slightly more.
+ */
+export function monthlyCents(tier: { price_cents: number; instalment_months: number }): number {
+  const months = Math.max(1, tier.instalment_months);
+  return Math.floor(tier.price_cents / months);
 }
 
 /** Stripe fetches images from its own servers, so localhost is never reachable. */
@@ -68,7 +88,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('invoices')
       .select(`id, description, amount_cents, currency, status, parent_id, booking,
                student:profiles!invoices_student_id_fkey (full_name),
-               course:courses (title, thumbnail_url)`)
+               course:courses (title, thumbnail_url),
+               tier:admissions_tiers (id, name, price_cents, instalment_months)`)
       .in('id', invoiceIds)
       .eq('parent_id', user.id)
       .eq('status', 'open');
@@ -100,8 +121,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Note: `managed_payments` (on by default on newer accounts) requires a tax
     // code per line item. We disable it for these ad-hoc invoices. Cast to any
     // because the field isn't in the SDK's typed params yet.
+    // Counselling is a fixed-length engagement collected monthly, so it is a
+    // subscription with an end rather than an open one. Only ever one tier per
+    // checkout: mixing a recurring line with one-off invoices is not a thing
+    // Stripe allows, and is not a basket anyone would build on purpose.
+    const tierInvoice = invoices.find((i: any) => i.tier);
+    const tier = (tierInvoice as any)?.tier;
+    const months: number = tier?.instalment_months ?? 1;
+    const isInstalments = !!tier && months > 1;
+
+    if (tier && invoices.length > 1) {
+      return res.status(400).json({ error: 'Pay for a counselling plan on its own' });
+    }
+
     const params: any = {
-      mode: 'payment',
+      mode: isInstalments ? 'subscription' : 'payment',
       // Card only. Checkout otherwise leads with Apple Pay, Link and Amazon
       // Pay and files Card into an accordion, so paying by card takes an extra
       // click to find. None of the wallets are set up for this account anyway.
@@ -111,7 +145,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         quantity: 1,
         price_data: {
           currency: inv.currency || 'usd',
-          unit_amount: inv.amount_cents,
+          // An instalment charges the monthly figure, not the total. It is
+          // worked out here rather than stored, so a total and a number of
+          // months can never disagree with a third number.
+          unit_amount: isInstalments ? monthlyCents(tier) : inv.amount_cents,
+          ...(isInstalments ? { recurring: { interval: 'month' } } : {}),
           product_data: {
             name: inv.course?.title || inv.description,
             description: lineDescription(inv),
@@ -123,19 +161,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // money moves, which is the question somebody has with a card in hand.
       custom_text: {
         submit: {
-          message: 'The times you chose are confirmed as soon as this goes through.',
+          message: isInstalments
+            ? `${months} monthly payments. Counselling starts as soon as the first one goes through.`
+            : 'The times you chose are confirmed as soon as this goes through.',
         },
       },
-      // Save the card on the customer so we can show it later ("connected card").
-      payment_intent_data: { setup_future_usage: 'off_session' },
       managed_payments: { enabled: false },
       metadata: {
-        invoice_ids: invoices.map((i) => i.id).join(','),
+        invoice_ids: invoices.map((i: any) => i.id).join(','),
         parent_id: user.id,
       },
       success_url: `${appBaseUrl()}/parent/billing?paid=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appBaseUrl()}/parent/billing?canceled=1`,
     };
+
+    if (isInstalments) {
+      // The engagement is a fixed length, so the subscription has to stop on
+      // its own: relying on a family to cancel means charging the ones who
+      // forget for a service that finished months ago.
+      //
+      // cancel_at cannot be set here. It is a field on a subscription, and at
+      // this point the subscription does not exist yet, so Checkout rejects
+      // it. It is set on the way back, in stripe-confirm, once there is a
+      // subscription to set it on. The months travel in metadata so that step
+      // does not have to look them up again.
+      params.subscription_data = {
+        metadata: {
+          invoice_ids: invoices.map((i: any) => i.id).join(','),
+          parent_id: user.id,
+          tier_id: tier.id,
+          months: String(months),
+        },
+      };
+    } else {
+      // Keep the card for next time. Subscriptions already save it, and
+      // setting this alongside one is rejected.
+      params.payment_intent_data = { setup_future_usage: 'off_session' };
+    }
     const session = await stripe.checkout.sessions.create(params);
 
     // Record the session id so we can reconcile if needed.

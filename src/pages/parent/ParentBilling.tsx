@@ -126,6 +126,11 @@ export function ParentBilling() {
         toast.success("Payment received, thank you.");
         qc.invalidateQueries({ queryKey: ["billing", user?.id] });
         qc.invalidateQueries({ queryKey: ["payment-methods", user?.id] });
+        // Counselling is a separate query from the course packages, so it was
+        // left holding the answer from before the payment: a parent came back
+        // from Stripe and their new plan was not there until they reloaded.
+        qc.invalidateQueries({ queryKey: ["admissions-plans"] });
+        qc.invalidateQueries({ queryKey: ["admissions-usage"] });
       })();
       searchParams.delete("paid");
       searchParams.delete("session_id");

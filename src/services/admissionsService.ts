@@ -25,6 +25,8 @@ export interface AdmissionsTier {
   psRoundsLimit: number | null;
   suppEssaysLimit: number | null;
   sessionsPerMonth: number | null;
+  /** Monthly instalments the total is collected over. 1 is a single payment. */
+  instalmentMonths: number;
   features: string[];
   fits: string | null;
   isRecommended: boolean;
@@ -50,6 +52,7 @@ function toTier(row: any): AdmissionsTier {
     psRoundsLimit: row.ps_rounds_limit,
     suppEssaysLimit: row.supp_essays_limit,
     sessionsPerMonth: row.sessions_per_month,
+    instalmentMonths: row.instalment_months ?? 1,
     features: Array.isArray(row.features) ? row.features : [],
     fits: row.fits,
     isRecommended: row.is_recommended,
@@ -58,7 +61,16 @@ function toTier(row: any): AdmissionsTier {
 }
 
 const TIER_FIELDS =
-  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, sessions_per_month, features, fits, is_recommended, sort_order";
+  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, sessions_per_month, instalment_months, features, fits, is_recommended, sort_order";
+
+/**
+ * One instalment. Derived, never stored: a total and a number of months are
+ * the two facts, and a third number that has to agree with them is a bug
+ * waiting to happen. Matches monthlyCents in api/stripe-checkout.
+ */
+export function monthlyCents(tier: AdmissionsTier): number {
+  return Math.floor(tier.priceCents / Math.max(1, tier.instalmentMonths));
+}
 
 /** What is on offer, in the order it should be shown. */
 export async function getTiers(): Promise<AdmissionsTier[]> {
