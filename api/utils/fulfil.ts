@@ -1,4 +1,5 @@
 import { sendEmail, layout, appUrl } from "./email";
+import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom";
 
 // ============================================================
 // What happens after a course is paid for.
@@ -151,6 +152,15 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
         console.error("fulfil: session insert failed:", sessionErr.message);
       }
     }
+
+    // A booked session without a meeting is a session nobody can attend, so
+    // this runs whether or not anything was inserted just now: a delivery that
+    // found the rows already there still repairs one Zoom failed on last time.
+    await attachZoomMeetings(db, {
+      studentId: invoice.student_id!,
+      courseId: course.id,
+      topic: course.title,
+    });
   }
 
   // Everything past this point is telling people. If the enrolment already
@@ -164,6 +174,69 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     tutorId,
     sessionCount: created,
   });
+}
+
+/**
+ * Give every meetingless session on this course a Zoom meeting.
+ *
+ * Sessions were being written with a null zoom_meeting_id and nothing ever
+ * filled it in, so every booked lesson had a time and no room.
+ *
+ * The webhook and the confirm redirect can both be here at once, which would
+ * book two meetings for one session. The update is guarded on the column still
+ * being null, so exactly one of them wins and the loser tidies its meeting
+ * away rather than leaving it on the calendar.
+ */
+async function attachZoomMeetings(
+  db: any,
+  input: { studentId: string; courseId: string; topic: string }
+): Promise<void> {
+  if (!zoomConfigured()) return;
+
+  const { data: pending, error } = await db
+    .from("sessions")
+    .select("id, date, start_time, duration_minutes")
+    .eq("student_id", input.studentId)
+    .eq("course_id", input.courseId)
+    .eq("status", "upcoming")
+    .is("zoom_meeting_id", null);
+
+  if (error) {
+    console.error("fulfil: could not list sessions needing a meeting:", error.message);
+    return;
+  }
+
+  for (const session of pending ?? []) {
+    try {
+      const meeting = await createMeeting({
+        topic: input.topic,
+        date: session.date,
+        startTime: String(session.start_time),
+        durationMinutes: session.duration_minutes ?? 60,
+      });
+
+      const { data: claimed } = await db
+        .from("sessions")
+        .update({
+          zoom_meeting_id: meeting.meetingId,
+          zoom_password: meeting.password,
+          zoom_link: meeting.joinUrl,
+        })
+        .eq("id", session.id)
+        .is("zoom_meeting_id", null)
+        .select("id");
+
+      // Someone else got there first. Two meetings for one session would leave
+      // half the people in an empty room.
+      if (!claimed?.length) {
+        await deleteMeeting(meeting.meetingId).catch(() => {});
+      }
+    } catch (err: any) {
+      // The session keeps its time and loses only its room, which the next
+      // delivery, or a rebooking, can still put right.
+      console.error(`fulfil: no Zoom meeting for session ${session.id}:`, err?.message ?? err);
+    }
+  }
 }
 
 /**
