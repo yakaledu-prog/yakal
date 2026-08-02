@@ -5,15 +5,16 @@ import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import {
   Search, Users, Loader2, Mail, GraduationCap,
-  ExternalLink, ChevronLeft
+  ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import {
-  getTutorStudents, getStudentDetail, StudentDetail,
+  getTutorStudents, getStudentDetail, getStudentAssignments, StudentDetail,
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
+import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
 import {
   PastSessions,
   UpcomingSessions,
@@ -27,12 +28,6 @@ import {
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatBody, useDirectConversation } from "@/components/messaging";
 import { TutorStudentDiagnosticsTab } from "@/components/tutor/TutorStudentDiagnosticsTab";
-
-function fmtDate(d?: string | null) {
-  if (!d) return "-";
-  const s = d.length > 10 ? d : d + "T00:00:00";
-  return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
 
 export function TutorStudents() {
   const { id } = useParams();
@@ -186,6 +181,26 @@ function StudentDetailView({
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
   const { data: extras } = useSessionExtras(sessions);
 
+  // The work set on this student's courses, with their own grade against it.
+  const { data: assignmentRows = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["student-course-assignments", p?.id],
+    queryFn: () => getStudentAssignments(p!.id),
+    enabled: !!p?.id,
+  });
+
+  const studentAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
+    id: a.id,
+    index: i + 1,
+    title: a.title,
+    description: a.description,
+    materials: a.materials,
+    dueDate: a.dueDate,
+    maxPoints: a.maxPoints,
+    link: a.link,
+    grade: a.grade,
+    isSubmitted: a.isSubmitted,
+  }));
+
   const join = (id: string) => {
     const s = sessions.find((row) => row.id === id);
     if (!s) return;
@@ -323,29 +338,14 @@ function StudentDetailView({
 
         {activeTab === "assignments" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-2">
-              <h3 className="text-[16px] font-semibold text-foreground">Submissions</h3>
-            </div>
-            {submissions.length === 0 ? <p className="text-[14px] text-muted-foreground py-4">No submissions yet.</p> : (
-              <div className="space-y-0">
-                {submissions.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-                    <div className="min-w-0">
-                      <p className="font-medium text-[15px] text-foreground truncate">{s.assignment_title}</p>
-                      <p className="text-[13px] text-muted-foreground flex items-center gap-3 mt-0.5">
-                        <span>{fmtDate(s.submitted_at)}</span>
-                        {s.drive_url && <a href={s.drive_url} target="_blank" rel="noreferrer" className="text-[#1099A1] flex items-center gap-1 hover:underline"><ExternalLink size={11} /> Open</a>}
-                      </p>
-                    </div>
-                    <span className={cn("text-[11px] font-bold px-2 py-1 rounded-full capitalize shrink-0",
-                      s.status === "reviewed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                        s.status === "revision_needed" ? "bg-red-100 text-red-600 dark:bg-red-900/20" : "bg-[#1099A1]/10 text-[#1099A1]")}>
-                      {s.status.replace("_", " ")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* The same cards the student sees, with their result in the
+                footer. A tutor reading a student's record wants the work and
+                the mark together, not a list of bare submission rows. */}
+            <AssignmentList
+              assignments={studentAssignments}
+              isLoading={assignmentsLoading}
+              emptyText="Nothing has been set on this student's courses yet."
+            />
           </div>
         )}
 

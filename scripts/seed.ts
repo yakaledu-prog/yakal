@@ -292,6 +292,7 @@ async function seedCourses() {
       is_active: c.isActive ?? true,
     };
     if (c.tutor) row.tutor_id = idFor(c.tutor);
+    if (c.classroomUrl) row.google_classroom_url = c.classroomUrl;
 
     const { data: existing, error: findErr } = await db
       .from("courses")

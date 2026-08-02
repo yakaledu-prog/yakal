@@ -522,3 +522,65 @@ export async function getPendingSubmissions(
     status: s.status,
   }));
 }
+
+// ============================================================
+// One student's coursework, as their tutor sees it.
+//
+// Same rows the student reads, same shape, plus the grade already recorded
+// against them. Read only: assignments are written on the admin side and this
+// is a record, not a marking screen.
+// ============================================================
+
+export interface StudentAssignmentRow {
+  id: string;
+  title: string;
+  description: string | null;
+  materials: { title: string; link: string | null }[];
+  dueDate: string | null;
+  maxPoints: number | null;
+  grade: number | null;
+  isSubmitted: boolean;
+  link: string | null;
+}
+
+export async function getStudentAssignments(studentId: string): Promise<StudentAssignmentRow[]> {
+  // Only the courses this student is actually on. Everything a tutor teaches
+  // would list work belonging to other people's children.
+  const { data: enrolments } = await supabase
+    .from("enrolments")
+    .select("course_id")
+    .eq("student_id", studentId);
+
+  const courseIds = [...new Set((enrolments ?? []).map((e: any) => e.course_id).filter(Boolean))];
+  if (courseIds.length === 0) return [];
+
+  const [{ data: rows }, { data: courses }, { data: submissions }] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("id, course_id, title, description, materials, due_date, max_points, template_url")
+      .in("course_id", courseIds)
+      .order("due_date", { ascending: true }),
+    supabase.from("courses").select("id, google_classroom_url").in("id", courseIds),
+    supabase.from("submissions").select("assignment_id, grade").eq("student_id", studentId),
+  ]);
+
+  const classroomByCourse = new Map(
+    (courses ?? []).map((c: any) => [c.id, c.google_classroom_url])
+  );
+  const byAssignment = new Map((submissions ?? []).map((s: any) => [s.assignment_id, s]));
+
+  return (rows ?? []).map((r: any) => {
+    const submission = byAssignment.get(r.id);
+    return {
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      materials: Array.isArray(r.materials) ? r.materials : [],
+      dueDate: r.due_date ? String(r.due_date).slice(0, 10) : null,
+      maxPoints: r.max_points ?? null,
+      grade: submission?.grade != null ? Number(submission.grade) : null,
+      isSubmitted: !!submission,
+      link: r.template_url || classroomByCourse.get(r.course_id) || null,
+    };
+  });
+}

@@ -30,7 +30,16 @@ const REDIRECT = `http://localhost:${PORT}/callback`;
  * published without a Google verification review. That matters: while an app
  * is in Testing, refresh tokens expire after seven days.
  */
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  // Classroom, so the server can read a class and write the coursework a
+  // course ships with. The account signing in has to be a teacher on the
+  // class; Google refuses coursework.students to anyone else.
+  'https://www.googleapis.com/auth/classroom.courses',
+  'https://www.googleapis.com/auth/classroom.coursework.students',
+  'https://www.googleapis.com/auth/classroom.rosters.readonly',
+  'https://www.googleapis.com/auth/classroom.student-submissions.students.readonly',
+];
 
 // Minimal .env reader so this runs without pulling in a dependency.
 if (existsSync('.env')) {

@@ -55,7 +55,7 @@ function DescriptionText({ text }: { text: string }) {
   const blocks = text.split(/\n{2,}/).filter((b) => b.trim());
 
   return (
-    <div className="space-y-3 text-[14px] leading-relaxed">
+    <div className="space-y-2 text-[14px] leading-relaxed">
       {blocks.map((block, i) => {
         const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
         const bulleted = lines.length > 0 && lines.every((l) => /^[-*•]\s/.test(l));
@@ -130,7 +130,7 @@ export function AssignmentList({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-4", className)}>
       {assignments.map((a) => {
         // Done is the exception worth colouring. Everything else is simply
         // outstanding, and tinting most of a list tells nobody anything.
@@ -141,13 +141,13 @@ export function AssignmentList({
           <article
             key={a.id}
             className={cn(
-              "overflow-hidden rounded-xl border",
+              "overflow-hidden rounded border",
               done ? "border-[#1099A1]/30" : "border-border"
             )}
           >
             <header
               className={cn(
-                "flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4",
+                "flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3",
                 done
                   ? "border-[#1099A1]/30 bg-[#1099A1]/10"
                   : "border-border bg-muted/40"
@@ -169,7 +169,7 @@ export function AssignmentList({
               )}
             </header>
 
-            <div className="flex flex-col gap-6 p-5">
+            <div className="flex flex-col gap-4 px-4 py-4">
               <div className="text-foreground">
                 {a.description ? (
                   <DescriptionText text={a.description} />
@@ -178,7 +178,7 @@ export function AssignmentList({
                 )}
 
                 {a.materials.length > 0 && (
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <h4 className="mb-2 text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
                       Materials
                     </h4>
@@ -200,7 +200,7 @@ export function AssignmentList({
                 )}
 
                 {a.dueDate && (
-                  <div className="mt-6 flex items-center text-[13px] text-muted-foreground">
+                  <div className="mt-4 flex items-center text-[13px] text-muted-foreground">
                     <CalendarDays size={16} className="mr-2" />
                     Due Date:{" "}
                     <span className="ml-1 text-foreground">
@@ -217,7 +217,7 @@ export function AssignmentList({
               {/* A student's grade and a tutor's roster of submitters are the
                   same slot: what happened to this assignment. */}
               {a.grade != null && (
-                <div className="flex items-center justify-between border-t border-[#1099A1]/30 px-2 pt-3">
+                <div className="flex items-center justify-between border-t border-[#1099A1]/30 pt-3">
                   <span className="text-[13px] uppercase tracking-wider text-muted-foreground">
                     Grade
                   </span>
@@ -229,7 +229,7 @@ export function AssignmentList({
               )}
 
               {submittersById && (
-                <div className="flex items-center justify-between border-t border-border px-2 pt-3">
+                <div className="flex items-center justify-between border-t border-border pt-3">
                   {submitters.length === 0 ? (
                     <span className="text-[13px] text-muted-foreground">Nobody has turned this in yet</span>
                   ) : (

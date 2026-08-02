@@ -24,6 +24,7 @@
     "db:seed:remote": "tsx scripts/seed.ts --target=remote",
     "db:push:remote": "supabase db push --db-url \"$SUPABASE_DB_URL\"",
     "demo": "tsx scripts/demo.ts",
+    "classroom:sync": "tsx scripts/classroom-sync.ts",
     "verify": "tsx scripts/verify/run-all.mjs",
     "db:snapshot": "tsx scripts/snapshot.ts save",
     "db:restore": "tsx scripts/snapshot.ts restore",
