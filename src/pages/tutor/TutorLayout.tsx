@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Calendar, Bell, Users, Library, ClipboardList, History, MessagesSquare, Wallet , Search } from "lucide-react";
+import { Home, Calendar, Bell, Users, Library, History, MessagesSquare, Wallet , Search } from "lucide-react";
 
 export function TutorLayout() {
   const navItems = [
