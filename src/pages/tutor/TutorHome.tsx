@@ -102,7 +102,6 @@ export function TutorHome() {
 
               {/* Toolbar Quick Actions (No cards, just sleek icon buttons) */}
               <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
-                <TooltipButton icon={<CalendarDays size={18} />} label="New Assignment" onClick={() => navigate("/tutor/assignments/new")} />
                 <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/tutor/messages")} />
                 <TooltipButton icon={<Settings size={18} />} label="Availability" onClick={() => navigate("/tutor/profile")} />
                 <div className="w-px h-6 bg-white/20 mx-2" />

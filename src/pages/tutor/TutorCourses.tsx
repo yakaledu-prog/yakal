@@ -230,7 +230,7 @@ function CourseDetail({ ws, navigate, onBack }: { ws: CourseWorkspace; navigate:
                 {assignments.map((a) => {
                   const pending = (a.submissionCount ?? 0) - (a.reviewedCount ?? 0);
                   return (
-                    <button key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`)}
+                    <div key={a.id}
                       className="text-left bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-none p-5 hover:border-[#1099A1] transition-colors group">
                       <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2 group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
                       {a.description && <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] line-clamp-2 mb-4">{stripHtml(a.description)}</p>}
@@ -241,7 +241,7 @@ function CourseDetail({ ws, navigate, onBack }: { ws: CourseWorkspace; navigate:
                           {pending > 0 && <span className="text-[#CAA25F] font-medium uppercase tracking-wider">{pending} to review</span>}
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

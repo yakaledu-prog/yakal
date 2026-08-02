@@ -18,6 +18,7 @@ import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import {
+  ASSIGNMENTS,
   AVAILABILITY,
   BLOG_POSTS,
   COLLEGE_PROFILES,
@@ -90,6 +91,7 @@ const db: SupabaseClient = createClient(url, serviceKey, {
 let stepNo = 0;
 const step = (label: string) => console.log(`\n[${++stepNo}] ${label}`);
 const ok = (msg: string) => console.log(`    ${msg}`);
+const warn = (msg: string) => console.log(`    ! ${msg}`);
 
 function fail(context: string, error: unknown): never {
   console.error(`\nFailed while ${context}:`);
@@ -277,16 +279,19 @@ async function seedAvailability() {
 async function seedCourses() {
   step("Courses");
   for (const c of COURSES) {
-    const row = {
+    // A course the seed has no tutor for keeps whoever is on it. Writing null
+    // here meant every re-seed un-assigned the tutors set by hand, which is
+    // one of the ways an afternoon of demo data quietly disappeared.
+    const row: Record<string, unknown> = {
       title: c.title,
       subject: c.subject,
       description: c.description,
-      tutor_id: c.tutor ? idFor(c.tutor) : null,
       thumbnail_url: c.thumbnailUrl ?? null,
       price_cents: c.priceCents ?? null,
       tutor_payout_cents: c.tutorPayoutCents ?? null,
       is_active: c.isActive ?? true,
     };
+    if (c.tutor) row.tutor_id = idFor(c.tutor);
 
     const { data: existing, error: findErr } = await db
       .from("courses")
@@ -300,6 +305,99 @@ async function seedCourses() {
       : await db.from("courses").insert(row);
     if (error) fail(`writing course "${c.title}"`, error);
     ok(`${existing ? "updated" : "created"} ${c.title}`);
+  }
+}
+
+// ---------- 5b. coursework ----------
+
+/**
+ * The work set on each course, and the one submission that has been marked.
+ *
+ * Matched on (course, title) so running the seed twice updates rather than
+ * duplicates, the same rule the rest of this file follows.
+ *
+ * The submission is written for whoever is actually enrolled, because a grade
+ * against a student who is not on the course is a row nothing will ever show.
+ */
+async function seedAssignments() {
+  step("Assignments");
+
+  for (const a of ASSIGNMENTS) {
+    const { data: course } = await db
+      .from("courses")
+      .select("id, tutor_id")
+      .eq("title", a.course)
+      .maybeSingle();
+
+    if (!course) {
+      warn(`skipped "${a.title}": no course called ${a.course}`);
+      continue;
+    }
+
+    // Work has to belong to somebody. A course nobody teaches yet still gets
+    // its assignments, under the demo tutor, so the page has something to show.
+    const owner = course.tutor_id ?? idFor("tutor@yakal.com");
+
+    const row = {
+      course_id: course.id,
+      tutor_id: owner,
+      title: a.title,
+      description: a.description,
+      materials: a.materials,
+      max_points: a.maxPoints,
+      due_date: dateIn(a.dueInDays),
+    };
+
+    const { data: existing } = await db
+      .from("assignments")
+      .select("id")
+      .eq("course_id", course.id)
+      .eq("title", a.title)
+      .maybeSingle();
+
+    const { data: written, error } = existing
+      ? await db.from("assignments").update(row).eq("id", existing.id).select("id").single()
+      : await db.from("assignments").insert(row).select("id").single();
+    if (error) fail(`writing assignment "${a.title}"`, error);
+
+    ok(`${existing ? "updated" : "created"} ${a.title}`);
+
+    if (a.grade == null) continue;
+
+    const { data: enrolled } = await db
+      .from("enrolments")
+      .select("student_id")
+      .eq("course_id", course.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (!enrolled?.student_id) {
+      warn(`no one is enrolled on ${a.course}, so "${a.title}" has no submission`);
+      continue;
+    }
+
+    const submission = {
+      assignment_id: written!.id,
+      student_id: enrolled.student_id,
+      status: "reviewed",
+      grade: a.grade,
+      submitted_at: timestamp(3, "16:00"),
+      reviewed_at: timestamp(1, "09:30"),
+    };
+
+    const { data: had } = await db
+      .from("submissions")
+      .select("id")
+      .eq("assignment_id", written!.id)
+      .eq("student_id", enrolled.student_id)
+      .maybeSingle();
+
+    const { error: subErr } = had
+      ? await db.from("submissions").update(submission).eq("id", had.id)
+      : await db.from("submissions").insert(submission);
+    if (subErr) fail(`writing a submission for "${a.title}"`, subErr);
+
+    ok(`  marked ${a.grade}/${a.maxPoints}`);
   }
 }
 
@@ -651,6 +749,7 @@ async function main() {
   await seedParentLinks();
   await seedAvailability();
   await seedCourses();
+  await seedAssignments();
   await seedConversations();
   await seedCollegeProfiles();
   await seedBlogPosts();

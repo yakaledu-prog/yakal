@@ -749,3 +749,83 @@ export const COLLEGE_PROFILES: SeedCollegeProfile[] = [
     ],
   },
 ];
+
+// ============================================================
+// Coursework.
+//
+// Assignments used to be three objects hardcoded inside the student's tasks
+// page, so they were only ever visible to whoever was reading that file and
+// vanished the moment the page was rewritten. They live here now, which means
+// they come back with every `npm run db:seed` and survive a reset.
+//
+// Written as real work on a real course rather than lorem: a demo where the
+// worksheet is called "Assignment 1" tells nobody what the page is for.
+// ============================================================
+
+export interface SeedAssignment {
+  /** Matched to a course by title, the same way everything else here is. */
+  course: string;
+  title: string;
+  description: string;
+  materials: { title: string; link: string }[];
+  /** Days from the seed run, so the demo never goes stale. */
+  dueInDays: number;
+  maxPoints: number;
+  /** Given, the enrolled student has turned it in and been marked. */
+  grade?: number;
+}
+
+export const ASSIGNMENTS: SeedAssignment[] = [
+  {
+    course: "K-12 Mathematics",
+    title: "Limits and Continuity Review",
+    description:
+      "Review the provided worksheet on limits and continuity. Your submission must include:\n\n" +
+      "- Completed exercises 1 through 15.\n" +
+      "- A brief explanation of how you approached the indeterminate forms.",
+    materials: [
+      { title: "limits_review_worksheet.pdf", link: "https://drive.google.com/file/d/demo-limits" },
+      { title: "lecture_notes_ch2.pdf", link: "https://drive.google.com/file/d/demo-notes-ch2" },
+    ],
+    dueInDays: -1,
+    maxPoints: 100,
+    grade: 95,
+  },
+  {
+    course: "K-12 Mathematics",
+    title: "Derivatives Practice Set 1",
+    description:
+      "Complete the first practice set on derivatives. You must use the power rule, product rule, and quotient rule.\n\n" +
+      "Show all your work step-by-step for full credit.",
+    materials: [
+      { title: "derivatives_practice.pdf", link: "https://drive.google.com/file/d/demo-derivatives" },
+    ],
+    dueInDays: 8,
+    maxPoints: 100,
+  },
+  {
+    course: "K-12 Mathematics",
+    title: "Chain Rule Word Problems",
+    description:
+      "Apply the chain rule to solve the advanced word problems provided in the appendix.\n\n" +
+      "This task is optional but highly recommended for those aiming to master the subject.",
+    materials: [
+      { title: "chain_rule_advanced.pdf", link: "https://drive.google.com/file/d/demo-chain-rule" },
+    ],
+    dueInDays: 13,
+    maxPoints: 50,
+  },
+  {
+    course: "Chemistry, Grade 11 Foundations",
+    title: "Stoichiometry Problem Set",
+    description:
+      "Balance each equation, then work out the limiting reagent and the theoretical yield.\n\n" +
+      "- Questions 1 to 12 are required.\n" +
+      "- Question 13 is a stretch problem and is not marked.",
+    materials: [
+      { title: "stoichiometry_set.pdf", link: "https://drive.google.com/file/d/demo-stoich" },
+    ],
+    dueInDays: 4,
+    maxPoints: 100,
+  },
+];

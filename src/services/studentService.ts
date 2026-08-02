@@ -166,3 +166,71 @@ export async function getCourseSessions(
     tutor_avatar: r.tutor?.avatar_url ?? null,
   }));
 }
+
+// ============================================================
+// Coursework, as this platform holds it.
+//
+// Assignments are written on the admin side and read everywhere else, which is
+// why there is nothing here that creates or marks one. A course linked to a
+// Google Classroom carries the link on each row, so the same card can offer a
+// way out to where the work is actually turned in.
+// ============================================================
+
+export interface CourseAssignmentRow {
+  id: string;
+  title: string;
+  description: string | null;
+  materials: { title: string; link: string | null }[];
+  dueDate: string | null;
+  maxPoints: number | null;
+  /** This student's own result. Null means turned in and not yet marked. */
+  grade: number | null;
+  isSubmitted: boolean;
+  link: string | null;
+}
+
+export async function getCourseAssignments(
+  studentId: string,
+  courseId: string
+): Promise<CourseAssignmentRow[]> {
+  const [{ data: rows, error }, { data: course }] = await Promise.all([
+    supabase
+      .from("assignments")
+      .select("id, title, description, materials, due_date, max_points, template_url")
+      .eq("course_id", courseId)
+      .order("due_date", { ascending: true }),
+    supabase.from("courses").select("google_classroom_url").eq("id", courseId).maybeSingle(),
+  ]);
+
+  if (error) {
+    console.error("getCourseAssignments failed:", error);
+    return [];
+  }
+
+  const ids = (rows ?? []).map((r) => r.id);
+  const { data: mine } = ids.length
+    ? await supabase
+        .from("submissions")
+        .select("assignment_id, status, grade")
+        .eq("student_id", studentId)
+        .in("assignment_id", ids)
+    : { data: [] as any[] };
+
+  const byAssignment = new Map((mine ?? []).map((s: any) => [s.assignment_id, s]));
+
+  return (rows ?? []).map((r: any) => {
+    const submission = byAssignment.get(r.id);
+    return {
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      materials: Array.isArray(r.materials) ? r.materials : [],
+      dueDate: r.due_date ? String(r.due_date).slice(0, 10) : null,
+      maxPoints: r.max_points ?? null,
+      grade: submission?.grade != null ? Number(submission.grade) : null,
+      isSubmitted: !!submission,
+      // The assignment's own template first, then the class it belongs to.
+      link: r.template_url || course?.google_classroom_url || null,
+    };
+  });
+}
