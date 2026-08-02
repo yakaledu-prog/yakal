@@ -122,16 +122,16 @@ export function AssignmentList({
   onOpenSubmissions?: (assignment: AssignmentItem) => void;
   className?: string;
 }) {
-  // Nothing open to begin with, and one at a time is deliberate: reading two
-  // assignments side by side is not a thing anyone does.
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const toggle = (id: string) =>
-    setExpanded((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // The first one is open and the rest are closed, so the page opens on
+  // something to read rather than on a list of titles.
+  //
+  // Only what has been clicked is stored, and the default is worked out per
+  // row. Seeding a set with the first id would need the assignments to have
+  // arrived before the state existed, which on a slow query they have not.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  const isOpen = (id: string, index: number) => toggled[id] ?? index === 0;
+  const toggle = (id: string, index: number) =>
+    setToggled((current) => ({ ...current, [id]: !isOpen(id, index) }));
 
   if (isLoading) {
     return (
@@ -146,13 +146,13 @@ export function AssignmentList({
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {assignments.map((a) => {
+    <div className={cn("space-y-3 pb-8", className)}>
+      {assignments.map((a, index) => {
         // Done is the exception worth colouring. Everything else is simply
         // outstanding, and tinting most of a list tells nobody anything.
         const done = a.isSubmitted === true || a.grade != null;
         const submitters = submittersById?.[a.id] ?? [];
-        const open = expanded.has(a.id);
+        const open = isOpen(a.id, index);
 
         return (
           <article
@@ -173,7 +173,7 @@ export function AssignmentList({
             >
               <button
                 type="button"
-                onClick={() => toggle(a.id)}
+                onClick={() => toggle(a.id, index)}
                 aria-expanded={open}
                 className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
               >
@@ -223,85 +223,85 @@ export function AssignmentList({
             </header>
 
             {open && (
-            <div className="flex flex-col gap-4 px-4 py-4">
-              <div className="text-foreground">
-                {a.description ? (
-                  <DescriptionText text={a.description} />
-                ) : (
-                  <p className="text-[14px] text-muted-foreground">No description.</p>
-                )}
+              <div className="flex flex-col gap-4 px-4 py-4">
+                <div className="text-foreground">
+                  {a.description ? (
+                    <DescriptionText text={a.description} />
+                  ) : (
+                    <p className="text-[14px] text-muted-foreground">No description.</p>
+                  )}
 
-                {a.materials.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="mb-2 text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Materials
-                    </h4>
-                    <div className="space-y-2">
-                      {a.materials.map((m, i) => (
-                        <a
-                          key={i}
-                          href={m.link ?? "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center text-[14px] font-medium text-[#1099A1] hover:underline"
-                        >
-                          <Paperclip size={15} className="mr-2 text-muted-foreground" />
-                          {m.title}
-                        </a>
-                      ))}
+                  {a.materials.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="mb-2 text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Materials
+                      </h4>
+                      <div className="space-y-2">
+                        {a.materials.map((m, i) => (
+                          <a
+                            key={i}
+                            href={m.link ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center text-[14px] font-medium text-[#1099A1] hover:underline"
+                          >
+                            <Paperclip size={15} className="mr-2 text-muted-foreground" />
+                            {m.title}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {a.dueDate && (
-                  <div className="mt-4 flex items-center text-[13px] text-muted-foreground">
-                    <CalendarDays size={16} className="mr-2" />
-                    Due Date:{" "}
-                    <span className="ml-1 text-foreground">
-                      {new Date(`${a.dueDate}T00:00:00`).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                  {a.dueDate && (
+                    <div className="mt-4 flex items-center text-[13px] text-muted-foreground">
+                      <CalendarDays size={16} className="mr-2" />
+                      Due Date:{" "}
+                      <span className="ml-1 text-foreground">
+                        {new Date(`${a.dueDate}T00:00:00`).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* A student's grade and a tutor's roster of submitters are the
+                  same slot: what happened to this assignment. */}
+                {a.grade != null && (
+                  <div className="flex items-center justify-between border-t border-[#1099A1]/30 pt-3">
+                    <span className="text-[13px] uppercase tracking-wider text-muted-foreground">
+                      Grade
+                    </span>
+                    <span className="text-[15px] text-[#1099A1]">
+                      {a.grade}
+                      {a.maxPoints != null && ` / ${a.maxPoints}`}
                     </span>
                   </div>
                 )}
+
+                {submittersById && (
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    {submitters.length === 0 ? (
+                      <span className="text-[13px] text-muted-foreground">Nobody has turned this in yet</span>
+                    ) : (
+                      <SubmitterStack people={submitters} />
+                    )}
+
+                    {onOpenSubmissions && submitters.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenSubmissions(a)}
+                        className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                      >
+                        View submissions
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* A student's grade and a tutor's roster of submitters are the
-                  same slot: what happened to this assignment. */}
-              {a.grade != null && (
-                <div className="flex items-center justify-between border-t border-[#1099A1]/30 pt-3">
-                  <span className="text-[13px] uppercase tracking-wider text-muted-foreground">
-                    Grade
-                  </span>
-                  <span className="text-[15px] text-[#1099A1]">
-                    {a.grade}
-                    {a.maxPoints != null && ` / ${a.maxPoints}`}
-                  </span>
-                </div>
-              )}
-
-              {submittersById && (
-                <div className="flex items-center justify-between border-t border-border pt-3">
-                  {submitters.length === 0 ? (
-                    <span className="text-[13px] text-muted-foreground">Nobody has turned this in yet</span>
-                  ) : (
-                    <SubmitterStack people={submitters} />
-                  )}
-
-                  {onOpenSubmissions && submitters.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => onOpenSubmissions(a)}
-                      className="text-[13px] font-medium text-[#1099A1] hover:underline"
-                    >
-                      View submissions
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
             )}
           </article>
         );
