@@ -1,242 +1,305 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Button } from "@/components/ui/Button";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, BookOpen, ExternalLink, CalendarClock, School } from "lucide-react";
-import { toast } from "sonner";
-import { useGoogleLogin } from "@react-oauth/google";
-import { exchangeGoogleToken, fetchCourses, fetchCourseWork } from "@/services/classroomService";
-import { GoogleClassroom } from "@/components/icons/GoogleClassroom";
+import { ExternalLink, Loader2, X } from "lucide-react";
 
-function formatDue(dueDate: any, dueTime: any) {
-  if (!dueDate) return "No due date";
-  const { year, month, day } = dueDate;
-  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  
-  if (dueTime) {
-    const { hours = 0, minutes = 0 } = dueTime;
-    return new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`).toLocaleString(undefined, {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-    });
-  }
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+import {
+  AssignmentList,
+  type AssignmentItem,
+  type AssignmentSubmitter,
+} from "@/components/shared/AssignmentList";
+import { GoogleClassroom } from "@/components/icons/GoogleClassroom";
+import { PageWrapper } from "@/components/ui/PageWrapper";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { useAuth } from "@/contexts/AuthContext";
+import { useClassroomToken } from "@/hooks/useClassroomToken";
+import { supabase } from "@/lib/supabase";
+import {
+  courseIdFromUrl,
+  getCourseAssignments,
+  getRoster,
+  getSubmissions,
+  type ClassroomStudent,
+  type ClassroomSubmission,
+} from "@/services/classroomService";
+import { dicebearUrl } from "@/utils/avatar";
+
+// ============================================================
+// What a tutor's students have been set, and who has handed it in.
+//
+// Tutors do not write assignments here. They are created with the course, in
+// Classroom, so this page reads: the same cards the student sees, plus the
+// faces of everyone who has turned each one in and a way to look closer.
+//
+// Marking happens in Classroom too, so every route out of this page ends
+// there rather than in a grade box of our own.
+// ============================================================
+
+function SubmissionsDialog({
+  assignment,
+  submissions,
+  roster,
+  onClose,
+}: {
+  assignment: AssignmentItem;
+  submissions: ClassroomSubmission[];
+  roster: Map<string, ClassroomStudent>;
+  onClose: () => void;
+}) {
+  const turnedIn = submissions.filter((s) => s.isTurnedIn);
+  const outstanding = submissions.filter((s) => !s.isTurnedIn);
+
+  const Row = ({ s }: { s: ClassroomSubmission }) => {
+    const person = roster.get(s.userId);
+    const name = person?.name ?? "Student";
+    return (
+      <div className="flex items-center gap-3 border-b border-border py-3 last:border-0">
+        <img
+          src={person?.photoUrl || dicebearUrl(name)}
+          alt=""
+          className="h-9 w-9 shrink-0 rounded-full object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-medium text-foreground">{name}</p>
+          <p className="truncate text-[12.5px] text-muted-foreground">
+            {s.isTurnedIn
+              ? s.updatedAt
+                ? `Turned in ${new Date(s.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                : "Turned in"
+              : "Not turned in"}
+            {s.late && " · Late"}
+          </p>
+        </div>
+        {s.grade != null ? (
+          <span className="shrink-0 text-[14px] text-[#1099A1]">
+            {s.grade}
+            {assignment.maxPoints != null && ` / ${assignment.maxPoints}`}
+          </span>
+        ) : (
+          <span className="shrink-0 text-[12.5px] text-muted-foreground">Not marked</span>
+        )}
+        {s.link && (
+          <a
+            href={s.link}
+            target="_blank"
+            rel="noreferrer"
+            title="Open in Classroom"
+            className="shrink-0 text-muted-foreground transition-colors hover:text-[#1099A1]"
+          >
+            <ExternalLink size={15} />
+          </a>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-popover shadow-xl">
+        <div className="flex items-start justify-between border-b border-border p-5">
+          <div className="min-w-0">
+            <h3 className="truncate text-[17px] font-semibold text-foreground">
+              {assignment.title}
+            </h3>
+            <p className="text-[13px] text-muted-foreground">
+              {turnedIn.length} of {submissions.length} turned in
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="-mr-2 rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5">
+          {turnedIn.map((s) => (
+            <Row key={s.id} s={s} />
+          ))}
+          {outstanding.length > 0 && (
+            <>
+              <p className="pb-1 pt-5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Still waiting
+              </p>
+              {outstanding.map((s) => (
+                <Row key={s.id} s={s} />
+              ))}
+            </>
+          )}
+        </div>
+
+        {assignment.link && (
+          <a
+            href={assignment.link}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 border-t border-border py-3.5 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:bg-muted/40"
+          >
+            <ExternalLink size={15} /> Mark this in Google Classroom
+          </a>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function TutorAssignments() {
-  const navigate = useNavigate();
-  const [token, setToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+  const { user } = useAuth();
+  const { token, connect } = useClassroomToken();
+  const [courseId, setCourseId] = useState<string>("");
+  const [openFor, setOpenFor] = useState<AssignmentItem | null>(null);
 
-  // Authenticate with Google (Auth Code Flow for Refresh Token)
-  const login = useGoogleLogin({
-    flow: 'auth-code',
-    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/classroom.rosters.readonly',
-    onSuccess: async ({ code }) => {
-      try {
-        const data = await exchangeGoogleToken(code);
-        setToken(data.access_token);
-        localStorage.setItem('google_classroom_token', data.access_token);
-        toast.success("Successfully connected to Google Classroom");
-      } catch (err: any) {
-        toast.error(err.message || "Failed to connect to Google");
-      }
-    },
-    onError: () => toast.error('Google login failed'),
-  });
-
-  const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ['classroom-courses', token],
+  // Only the tutor's own courses, and only the ones actually linked to a class.
+  const { data: courses = [] } = useQuery({
+    queryKey: ["tutor-classroom-courses", user?.id],
     queryFn: async () => {
-      try {
-        return await fetchCourses(token!);
-      } catch (err) {
-        toast.error("Failed to load courses. Please reconnect.");
-        setToken(null);
-        localStorage.removeItem('google_classroom_token');
-        throw err;
-      }
+      const { data } = await supabase
+        .from("courses")
+        .select("id, title, google_classroom_url")
+        .eq("tutor_id", user!.id)
+        .not("google_classroom_url", "is", null);
+      return (data ?? []).filter((c) => !!courseIdFromUrl(c.google_classroom_url ?? ""));
     },
-    enabled: !!token,
-    retry: false,
+    enabled: !!user?.id,
   });
 
-  const courses = coursesData?.courses || [];
+  const selected = courses.find((c) => c.id === courseId) ?? courses[0];
+  const classroomId = selected ? courseIdFromUrl(selected.google_classroom_url ?? "") : null;
 
-  useEffect(() => {
-    if (courses.length > 0 && !selectedCourse) {
-      setSelectedCourse(courses[0]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["tutor-classroom-work", classroomId],
+    queryFn: async () => {
+      const [assignments, students] = await Promise.all([
+        getCourseAssignments(token!, classroomId!),
+        // A missing roster costs faces, not the page.
+        getRoster(token!, classroomId!).catch(() => [] as ClassroomStudent[]),
+      ]);
+
+      const submissions = await Promise.all(
+        assignments.map(async (a) => {
+          try {
+            return { id: a.id, rows: await getSubmissions(token!, classroomId!, a.id) };
+          } catch {
+            return { id: a.id, rows: [] as ClassroomSubmission[] };
+          }
+        })
+      );
+
+      return {
+        assignments,
+        roster: new Map(students.map((s) => [s.userId, s])),
+        submissions: new Map(submissions.map((s) => [s.id, s.rows])),
+      };
+    },
+    enabled: !!token && !!classroomId,
+  });
+
+  const submittersById = useMemo(() => {
+    const out: Record<string, AssignmentSubmitter[]> = {};
+    if (!data) return out;
+    for (const [assignmentId, rows] of data.submissions) {
+      out[assignmentId] = rows
+        .filter((r) => r.isTurnedIn)
+        .map((r) => ({
+          id: r.id,
+          name: data.roster.get(r.userId)?.name ?? "Student",
+          avatarUrl: data.roster.get(r.userId)?.photoUrl ?? null,
+        }));
     }
-  }, [courses, selectedCourse]);
-
-  const { data: assignmentsData, isLoading: isLoadingCourseWork } = useQuery({
-    queryKey: ['classroom-coursework', token, selectedCourse?.id],
-    queryFn: () => fetchCourseWork(token!, selectedCourse!.id),
-    enabled: !!token && !!selectedCourse?.id,
-    retry: false,
-  });
-
-  const assignments = assignmentsData?.courseWork || [];
-  const loading = isLoadingCourses || isLoadingCourseWork;
+    return out;
+  }, [data]);
 
   if (!token) {
     return (
       <PageWrapper>
-        <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
-          {/* Massive Integrated Header */}
-          <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
-            <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-              <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-              <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-              <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-              <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-              <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-            </svg>
-
-            <div className="max-w-[1440px] mx-auto relative z-10">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight mb-2">Assignments</h1>
-                  <p className="text-white/80 text-[15px]">Powered by Google Classroom</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Connect Content */}
-          <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <GoogleClassroom className="w-16 h-16 mb-6" />
-            <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Connect Google Classroom</h2>
-            <p className="text-muted-foreground text-center max-w-md mb-8">
-              Manage your assignments, grades, and student submissions directly through Google Classroom without leaving Yakal.
-            </p>
-            <Button onClick={() => login()} size="lg" className="bg-[#1099A1] hover:bg-[#0d848b] text-white">
-              Connect Classroom
-            </Button>
-          </div>
+        <div className="flex flex-col items-center gap-4 px-4 py-24 text-center">
+          <GoogleClassroom className="h-10 w-10" />
+          <p className="max-w-sm text-[14px] text-muted-foreground">
+            Assignments are set in Google Classroom when a course is created. Connect your Google
+            account to see them and who has turned them in.
+          </p>
+          <button
+            type="button"
+            onClick={() => connect()}
+            className="h-11 rounded-md bg-[#1099A1] px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            Connect Google Classroom
+          </button>
         </div>
+      </PageWrapper>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <PageWrapper>
+        <p className="px-4 py-24 text-center text-[14px] text-muted-foreground">
+          None of your courses is linked to a Google Classroom yet. An admin adds the link when the
+          course is set up.
+        </p>
       </PageWrapper>
     );
   }
 
   return (
     <PageWrapper>
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
-          {/* Subtle Background Texture/Graph */}
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
+      <div className="mx-auto w-full max-w-4xl p-4 md:p-8">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <Dropdown
+            value={selected?.id ?? ""}
+            onChange={setCourseId}
+            options={courses.map((c) => ({ value: c.id, label: c.title }))}
+            className="w-[260px]"
+          />
 
-          <div className="max-w-[1440px] mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2">Assignments</h1>
-                <p className="text-white/80 text-[15px]">Powered by Google Classroom</p>
-              </div>
-            </div>
-
-            {/* Course Tabs */}
-            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar border-b border-white/20">
-              {courses.map((course: any) => (
-                <button
-                  key={course.id}
-                  onClick={() => setSelectedCourse(course)}
-                  className={`pb-4 px-1 text-[15px] font-medium whitespace-nowrap transition-colors relative ${selectedCourse?.id === course.id ? "text-white" : "text-white/60 hover:text-white/80"
-                    }`}
-                >
-                  {course.name}
-                  {selectedCourse?.id === course.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-t-full" />
-                  )}
-                </button>
-              ))}
-              {courses.length > 0 && (
-                <a href="https://classroom.google.com/h" target="_blank" rel="noreferrer" className="pb-4 px-2 text-white/60 hover:text-white transition-colors flex items-center" title="Create new course in Google Classroom">
-                  <Plus size={18} />
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Content Below Banner */}
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-
-          {courses.length === 0 ? (
-            <div className="text-center py-16 bg-[#f8f9fa] dark:bg-[#182329] rounded-2xl border border-transparent dark:border-border/20">
-              <School size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Google Classroom Courses Found</h3>
-              <p className="text-[14px] text-muted-foreground mb-6 max-w-md mx-auto">
-                You need to have at least one active course in Google Classroom to manage assignments here.
-              </p>
-              <a href="https://classroom.google.com" target="_blank" rel="noreferrer" className="inline-flex h-10 items-center justify-center rounded-md bg-[#1099A1] px-6 text-sm font-medium text-primary-foreground hover:bg-[#0d848b] transition-colors">
-                Go to Google Classroom to Create a Course <ExternalLink size={14} className="ml-2" />
-              </a>
-            </div>
-          ) : (
-            <>
-              {loading ? (
-                <div className="space-y-4 py-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[88px] w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : assignments.length === 0 ? (
-                <p className="text-center text-[14px] text-muted-foreground py-12">No assignments found for this class.</p>
-              ) : (
-                <div className="space-y-0">
-                  {assignments.map((a: any) => (
-                    <div key={a.id} onClick={() => navigate(`/tutor/assignments/${a.id}`, { state: { courseId: selectedCourse?.id } })} className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-pointer group">
-                      <div className="flex items-start sm:items-center gap-6 min-w-0">
-                        <div className="hidden sm:flex shrink-0 w-12 h-12 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
-                          <BookOpen size={20} />
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-[16px] text-foreground truncate group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
-                          <div className="flex items-center gap-4 text-[13px] text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1.5"><CalendarClock size={14} /> Due: {formatDue(a.dueDate, a.dueTime)}</span>
-                            <span>{a.maxPoints ? `${a.maxPoints} Points` : 'Ungraded'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 sm:mt-0 flex items-center gap-3 shrink-0">
-                        <a href={a.alternateLink} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[13px] font-semibold text-[#1099A1] hover:underline px-3 py-1.5 bg-[#1099A1]/10 rounded-md">
-                          Classroom <ExternalLink size={14} />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Create Assignment Link */}
-                  {selectedCourse && (
-                    <a
-                      href={selectedCourse.alternateLink || "https://classroom.google.com/h"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-6 flex items-center gap-4 rounded-xl border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] p-5 text-left hover:border-[#1099A1]/50 hover:bg-[#1099A1]/[0.02] transition-colors group"
-                    >
-                      <div className="h-11 w-11 rounded-xl bg-[#f0f1f2] group-hover:bg-[#1099A1]/10 text-[#2a3942]/70  group-hover:text-[#1099A1] flex items-center justify-center shrink-0 transition-colors">
-                        <ExternalLink size={22} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-[15px] text-foreground group-hover:text-[#1099A1] transition-colors">Create New Assignment</p>
-                        <p className="text-[13px] text-muted-foreground">Go to Google Classroom to publish a new assignment for {selectedCourse.name}.</p>
-                      </div>
-                    </a>
-                  )}
-                </div>
-              )}
-            </>
+          {selected?.google_classroom_url && (
+            <a
+              href={selected.google_classroom_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:underline"
+            >
+              <ExternalLink size={15} /> Open the class
+            </a>
           )}
         </div>
+
+        {error ? (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <p className="max-w-md text-[14px] text-muted-foreground">
+              Google would not hand over this class: {(error as Error).message}
+            </p>
+            <button
+              type="button"
+              onClick={() => connect()}
+              className="h-11 rounded-md border border-[#1099A1] px-6 text-[14px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+            >
+              Connect again
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-[#1099A1]" />
+          </div>
+        ) : (
+          <AssignmentList
+            assignments={data?.assignments ?? []}
+            submittersById={submittersById}
+            onOpenSubmissions={setOpenFor}
+            emptyText="Nothing has been set for this course yet."
+          />
+        )}
       </div>
+
+      {openFor && data && (
+        <SubmissionsDialog
+          assignment={openFor}
+          submissions={data.submissions.get(openFor.id) ?? []}
+          roster={data.roster}
+          onClose={() => setOpenFor(null)}
+        />
+      )}
     </PageWrapper>
   );
 }
