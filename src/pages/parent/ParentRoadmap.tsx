@@ -55,6 +55,7 @@ export function ParentRoadmap() {
 
   return (
     <ChildViewFrame
+      onChildChange={setChildId}
       title="College roadmap"
       subtitle="Where your child is up to, and what comes next."
       requiresService="admissions"
@@ -90,10 +91,6 @@ export function ParentRoadmap() {
       }
     >
       {(child) => {
-        // The frame owns which child is shown, and the header needs to know
-        // too. Setting during render would loop, so it is nudged only when it
-        // actually changes.
-        if (child.id !== childId) queueMicrotask(() => setChildId(child.id));
         return (
           <StudentRoadmap
             studentId={child.id}

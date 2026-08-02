@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 
 export interface Invoice {
   id: string;
@@ -55,28 +56,6 @@ export async function getPaymentMethods(): Promise<SavedCard[]> {
   return (res as any).methods || [];
 }
 
-async function authedPost(path: string, body: unknown): Promise<{ url?: string; error?: string; methods?: unknown }> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return { error: "You must be signed in." };
-
-  const res = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  let payload: any = {};
-  try {
-    payload = await res.json();
-  } catch {
-    /* non-JSON error */
-  }
-  if (!res.ok) return { error: payload.error || `Request failed (${res.status})` };
-  return payload;
-}
 
 // Redirect the browser to a hosted Stripe Checkout page for these invoices.
 export async function startCheckout(invoiceIds: string[]): Promise<{ error?: string }> {

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 import { sendNotification } from "./notificationService";
 
 // ============================================================
@@ -253,22 +254,6 @@ export async function getConnectStatus(profileId: string): Promise<ConnectStatus
   };
 }
 
-async function authedPost(path: string, body: unknown): Promise<any> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) return { error: "You must be signed in." };
-
-  const res = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-}
 
 /**
  * Start or resume connecting a bank.
@@ -408,18 +393,12 @@ export async function requestSessionPayment(sessionId: string): Promise<{
   message?: string;
   error?: string;
 }> {
-  const { data: session } = await supabase.auth.getSession();
-  const token = session.session?.access_token;
-  if (!token) return { success: false, error: "You need to be signed in." };
+  const payload = await authedPost<{
+    success?: boolean;
+    paid?: boolean;
+    message?: string;
+  }>("/api/session-payout", { sessionId });
 
-  const res = await fetch("/api/session-payout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ sessionId }),
-  });
-
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) return { success: false, error: body.error || "Could not request that payment." };
-
-  return { success: true, paid: !!body.paid, message: body.message };
+  if (payload.error) return { success: false, error: payload.error };
+  return { success: true, paid: !!payload.paid, message: payload.message };
 }

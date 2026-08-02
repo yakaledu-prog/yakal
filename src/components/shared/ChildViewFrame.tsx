@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Loader2, Lock, Users } from "lucide-react";
@@ -36,6 +36,7 @@ export function ChildViewFrame({
   title,
   subtitle,
   chrome = true,
+  onChildChange,
   headerRight,
   headerBottom,
   /** The service the child must be opted into. Omit to always allow. */
@@ -50,6 +51,12 @@ export function ChildViewFrame({
    * above it saying the same thing.
    */
   chrome?: boolean;
+  /**
+   * Fired when the shown child changes. The frame owns that choice, so a page
+   * that also needs the id had no way to learn it except by reaching into the
+   * render callback, which meant setting state during render.
+   */
+  onChildChange?: (childId: string) => void;
   /** Facts that belong beside the title, e.g. stage and graduation year. */
   headerRight?: ReactNode;
   /** Tabs or anything else that sits along the bottom edge of the banner. */
@@ -74,6 +81,11 @@ export function ChildViewFrame({
   });
 
   const active = linked.find((c) => c.id === selectedId) ?? linked[0] ?? null;
+
+  const activeId = active?.id;
+  useEffect(() => {
+    if (activeId) onChildChange?.(activeId);
+  }, [activeId, onChildChange]);
 
   const child: FramedChild | null = active
     ? {
