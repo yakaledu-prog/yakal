@@ -23,6 +23,7 @@ import {
   BLOG_POSTS,
   COLLEGE_PROFILES,
   CONVERSATIONS,
+  REVIEWS,
   COURSES,
   DEMO_PASSWORD,
   PARENT_LINKS,
@@ -677,6 +678,74 @@ async function seedCollegeProfiles() {
 
 // ---------- 8. blog posts ----------
 
+// ---------- reviews ----------
+
+/**
+ * Written reviews on whatever past sessions the demo has.
+ *
+ * Sessions are created by the booking flow rather than here, so this attaches
+ * to what it finds instead of naming ids that may not exist. Sessions already
+ * rated are left alone: a rerun should not overwrite a rating somebody left by
+ * hand while demonstrating the feature.
+ */
+async function seedReviews() {
+  step("Reviews");
+
+  const { data: sessions, error } = await db
+    .from("sessions")
+    .select("id, student_id, tutor_id, date")
+    .not("tutor_id", "is", null)
+    .lt("date", new Date().toISOString().slice(0, 10))
+    .order("date", { ascending: false })
+    .limit(REVIEWS.length);
+  if (error) fail("reading sessions to review", error);
+
+  if (!sessions || sessions.length === 0) {
+    ok("skipped, no past sessions to review yet");
+    return;
+  }
+
+  // A rating that has stars but no note is half a review, and on a demo
+  // database it is usually seed noise rather than something a person meant.
+  // Those get the sentence filled in; a rating that already carries a note is
+  // somebody's words and is left exactly as it is.
+  const { data: existing } = await db
+    .from("session_ratings")
+    .select("session_id, comment")
+    .in("session_id", sessions.map((s) => s.id));
+  const written_already = new Map(
+    (existing ?? []).map((r: any) => [r.session_id, r.comment])
+  );
+
+  let written = 0;
+  for (const [i, session] of sessions.entries()) {
+    const current = written_already.get(session.id);
+    if (typeof current === "string" && current.trim()) continue;
+    const review = REVIEWS[i % REVIEWS.length];
+
+    if (written_already.has(session.id)) {
+      const { error: patchErr } = await db
+        .from("session_ratings")
+        .update({ comment: review.comment })
+        .eq("session_id", session.id);
+      if (patchErr) fail("adding a note to a rating", patchErr);
+      written += 1;
+      continue;
+    }
+    const { error: insertErr } = await db.from("session_ratings").insert({
+      session_id: session.id,
+      rated_by: session.student_id,
+      ratee_id: session.tutor_id,
+      stars: review.stars,
+      comment: review.comment,
+    });
+    if (insertErr) fail("inserting a review", insertErr);
+    written += 1;
+  }
+
+  ok(written > 0 ? `seeded  ${written} reviews` : "skipped, already rated");
+}
+
 async function seedBlogPosts() {
   step("Blog posts");
   for (const post of BLOG_POSTS) {
@@ -758,6 +827,7 @@ async function main() {
   await seedConversations();
   await seedCollegeProfiles();
   await seedBlogPosts();
+  await seedReviews();
 
   console.log(`\nDone. ${USERS.length} accounts, all with the password "${DEMO_PASSWORD}".\n`);
 }

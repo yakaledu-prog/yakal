@@ -892,3 +892,46 @@ export const ASSIGNMENTS: SeedAssignment[] = [
     maxPoints: 100,
   },
 ];
+
+// ------------------------------------------------------------
+// Reviews
+//
+// The notes students leave after a lesson, which are what a family reads when
+// they are choosing between tutors. Attached to whichever past sessions exist
+// rather than to named ones: sessions come from the booking flow, not from
+// here, so there is no fixed id to point at.
+//
+// Written as a real student would: specific about what happened, not a
+// testimonial. A page of "Great tutor!" tells a parent nothing and reads as
+// invented, which it would be.
+// ------------------------------------------------------------
+
+export interface SeedReview {
+  stars: number;
+  comment: string;
+}
+
+export const REVIEWS: SeedReview[] = [
+  {
+    stars: 5,
+    comment:
+      "Explains the working step by step and never makes you feel slow for asking twice. " +
+      "I went from guessing at stoichiometry to actually knowing why the answer is the answer.",
+  },
+  {
+    stars: 4,
+    comment:
+      "Really good at spotting where I go wrong rather than just giving the method again. " +
+      "Sessions run slightly over sometimes, which I do not mind but worth knowing.",
+  },
+  {
+    stars: 5,
+    comment:
+      "Turned up early, had the past paper already marked up, and we used the full hour. " +
+      "My exam timing has improved more from these than from a term of revision on my own.",
+  },
+  {
+    stars: 4,
+    comment: "Patient and well prepared. Sends a summary afterwards, which I use more than I expected.",
+  },
+];
