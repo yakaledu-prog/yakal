@@ -132,6 +132,43 @@ export const recordAttendance = async (sessionId: string): Promise<number> => {
   return data ?? 0;
 };
 
+/**
+ * A precise edge reported by the Zoom SDK.
+ *
+ * The heartbeat is coarse by design: it can only place a start or an end
+ * within one interval. The SDK knows the moment, so the moment is recorded
+ * when it is offered and the beat carries on regardless, because the SDK
+ * never gets to speak when a browser is killed.
+ */
+export const recordAttendanceEvent = async (
+  sessionId: string,
+  event: 'join' | 'leave'
+): Promise<number> => {
+  const { data, error } = await supabase.rpc('record_attendance_event', {
+    p_session_id: sessionId,
+    p_event: event,
+  });
+  if (error) {
+    console.error(`Failed to record attendance ${event}`, error);
+    return 0;
+  }
+  return data ?? 0;
+};
+
+/** Whether both sides turned up, and for how long they overlapped. */
+export const getAttendanceSummary = async (sessionId: string) => {
+  const { data, error } = await supabase
+    .from('v_session_attendance_summary')
+    .select('*')
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  if (error) {
+    console.error('Failed to read attendance summary', error);
+    return null;
+  }
+  return data;
+};
+
 /** Who was in a session, and for how long. */
 export const getSessionAttendance = async (sessionId: string) => {
   const { data, error } = await supabase

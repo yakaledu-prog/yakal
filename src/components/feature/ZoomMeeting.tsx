@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { generateZoomSignature } from '@/services/zoom';
-import { recordAttendance } from '@/services/sessions';
+import { recordAttendance, recordAttendanceEvent } from '@/services/sessions';
 import { Video, RefreshCw } from 'lucide-react';
 
 // Uses the Meeting SDK "client view" (full-page Zoom UI) loaded from Zoom's
@@ -31,6 +31,20 @@ function loadScript(src: string) {
 }
 
 let zoomMtgPromise: Promise<any> | null = null;
+/**
+ * Whether a participant payload is the person sitting here.
+ *
+ * The SDK reports leaves for everyone in the room, and only our own decides
+ * how long we were in it. Matched on the name we joined with, because that is
+ * the only identifier both sides of this share.
+ */
+function isSelf(payload: any, userName: string): boolean {
+  const list = payload?.userList ?? payload?.users ?? (payload ? [payload] : []);
+  return (Array.isArray(list) ? list : [list]).some(
+    (u: any) => u?.userName === userName || u?.displayName === userName
+  );
+}
+
 function loadZoomMtg(): Promise<any> {
   if (!zoomMtgPromise) {
     zoomMtgPromise = (async () => {
@@ -71,7 +85,11 @@ interface ZoomMeetingProps {
 
 // Often enough that a dropped tab loses less than a minute, rarely enough that
 // an hour of tutoring is sixty writes rather than six hundred.
-const HEARTBEAT_MS = 60_000;
+// Three minutes, not one. The SDK now reports the exact join and leave, so the
+// beat is no longer carrying the precision - only the robustness, for the case
+// where a browser is killed and no event ever fires. A slower beat is a third
+// of the writes and, with the edges recorded properly, better data.
+const HEARTBEAT_MS = 180_000;
 
 type Status =
   | { phase: 'loading-sdk' }
@@ -137,7 +155,8 @@ export function ZoomMeeting({
   useEffect(() => {
     if (!sessionId || status.phase !== 'in-meeting') return;
 
-    void recordAttendance(sessionId);
+    // The precise edge first, then the beat takes over.
+    void recordAttendanceEvent(sessionId, 'join');
     const timer = setInterval(() => void recordAttendance(sessionId), HEARTBEAT_MS);
 
     // A tab that is closed or backgrounded to sleep never runs the interval
@@ -148,7 +167,9 @@ export function ZoomMeeting({
     return () => {
       clearInterval(timer);
       window.removeEventListener('pagehide', bank);
-      bank();
+      // Leaving the page is a leave, and it is the one edge the SDK often does
+      // not get to report: closing the tab kills it before onUserLeave fires.
+      void recordAttendanceEvent(sessionId, 'leave');
     };
   }, [sessionId, status.phase]);
 
@@ -191,6 +212,28 @@ export function ZoomMeeting({
               userEmail,
               success: () => {
                 if (!cancelled) setStatus({ phase: 'in-meeting' });
+
+                // Client-side SDK events: no REST call, so nothing here needs
+                // a paid Zoom plan. onMeetingStatus 3 is the meeting ending,
+                // which is the end of the lesson whoever clicked it.
+                try {
+                  ZoomMtg.inMeetingServiceListener('onMeetingStatus', (payload: any) => {
+                    if (payload?.meetingStatus === 3 && sessionId) {
+                      void recordAttendanceEvent(sessionId, 'leave');
+                    }
+                  });
+                  ZoomMtg.inMeetingServiceListener('onUserLeave', (payload: any) => {
+                    // Only our own leaving. Somebody else dropping out says
+                    // nothing about how long this person was here.
+                    if (sessionId && isSelf(payload, userName)) {
+                      void recordAttendanceEvent(sessionId, 'leave');
+                    }
+                  });
+                } catch (listenerError) {
+                  // An SDK without these listeners is not a broken meeting.
+                  // The heartbeat is still running, which is the point of it.
+                  console.warn('Zoom in-meeting listeners unavailable', listenerError);
+                }
               },
               error: (error: any) => {
                 console.error('Zoom join failed:', error);
