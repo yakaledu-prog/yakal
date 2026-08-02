@@ -181,6 +181,10 @@ export async function getUsers(role?: string): Promise<AdminUser[]> {
   let q = supabase
     .from("profiles")
     .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, subjects")
+    // Deleting is soft, so the row survives for sessions and invoices to point
+    // at. It should still leave this list, or a delete looks like it did
+    // nothing at all.
+    .neq("status", "deleted")
     .order("created_at", { ascending: false });
   if (role && role !== "all") q = q.eq("role", role);
   const { data, error } = await q;
@@ -375,17 +379,34 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
       }
     } else if (role === "student") {
       const [{ data: sessions }, { data: apps }, { data: services }] = await Promise.all([
-        supabase.from("sessions").select("*").eq("student_id", id).order("start_time", { ascending: false }),
-        supabase.from("college_applications").select("*").eq("student_id", id),
+        supabase.from("sessions").select("*").eq("student_id", id).order("date", { ascending: false }).order("start_time", { ascending: false }),
+        // college_applications has never existed. The table is
+        // college_guide_applications, so this silently returned nothing and
+        // the Admissions tab always read "No applications found".
+        supabase.from("college_guide_applications").select("*").eq("student_id", id),
         supabase.from("child_services").select("*").eq("student_id", id)
       ]);
       details.sessions = sessions || [];
-      details.applications = apps || [];
       details.child_services = services || [];
+
+      // Who is advising them. The application stores a counselor id, which is
+      // no use to somebody reading the page, so it is resolved to a name here
+      // rather than left as a uuid nobody can act on.
+      const counselorIds = [
+        ...new Set((apps || []).map((a: any) => a.counselor_id).filter(Boolean)),
+      ];
+      const { data: counselors } = counselorIds.length
+        ? await supabase.from("profiles").select("id, full_name").in("id", counselorIds)
+        : { data: [] as any[] };
+      const counselorName = new Map((counselors ?? []).map((c: any) => [c.id, c.full_name]));
+      details.applications = (apps || []).map((a: any) => ({
+        ...a,
+        counselor_name: a.counselor_id ? (counselorName.get(a.counselor_id) ?? null) : null,
+      }));
     } else if (role === "tutor") {
       const [{ data: sessions }, { data: courses }, { data: invoices }] = await Promise.all([
-        supabase.from("sessions").select("*").eq("tutor_id", id).order("start_time", { ascending: false }),
-        supabase.from("courses").select("*").contains("tutor_ids", [id]),
+        supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false }),
+        supabase.from("courses").select("*").eq("tutor_id", id),
         supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })
       ]);
       details.sessions = sessions || [];
