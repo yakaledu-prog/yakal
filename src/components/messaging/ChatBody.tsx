@@ -63,7 +63,7 @@ function TypingBubble() {
 }
 
 /** Tracks the app's light/dark class so the canvas and emoji picker follow it. */
-function useIsDark(): boolean {
+export function useIsDark(): boolean {
   const [isDark, setIsDark] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("dark")
   );
@@ -75,6 +75,21 @@ function useIsDark(): boolean {
     return () => observer.disconnect();
   }, []);
   return isDark;
+}
+
+/**
+ * The chat surface: mint and dotted, following the theme.
+ *
+ * Exported because the report dialog draws a transcript too, and a transcript
+ * that does not look like the one it was lifted out of reads as a different
+ * kind of thing.
+ */
+export function useChatSurface(): React.CSSProperties {
+  const isDark = useIsDark();
+  return {
+    backgroundColor: isDark ? CHAT_BG_DARK : CHAT_BG_LIGHT,
+    backgroundImage: isDark ? dotPatternDark : dotPatternLight,
+  };
 }
 
 export function ChatBody({

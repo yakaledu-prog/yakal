@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Flag, Loader2, X } from "lucide-react";
+import { Check, Flag, Loader2, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/utils/cn";
+import { dicebearUrl } from "@/utils/avatar";
 import type { ChatMessage } from "@/services/messageService";
+import { useChatSurface } from "./ChatBody";
 import {
   FLAG_REASONS,
   flagConversation,
@@ -51,6 +53,8 @@ export function FlagConversationDialog({
   userId,
   subjectId,
   subjectName = "You",
+  subjectAvatarUrl,
+  contactAvatarUrl,
   messages,
   existing,
   reports,
@@ -71,6 +75,9 @@ export function FlagConversationDialog({
   subjectId?: string;
   /** What to call that side. "You" reads wrong when it is somebody's child. */
   subjectName?: string;
+  /** Faces for the two sides. Falls back to the generated avatar by name. */
+  subjectAvatarUrl?: string | null;
+  contactAvatarUrl?: string | null;
   /** The conversation history, for choosing which messages to report. */
   messages: ChatMessage[];
   /** This reporter's own open reports on this conversation. */
@@ -92,6 +99,9 @@ export function FlagConversationDialog({
   const [step, setStep] = useState<Step>(1);
 
   const rightHandId = subjectId ?? userId;
+  // The same mint and dots as the conversation this was opened from, so the
+  // messages read as the transcript they are rather than as form controls.
+  const chatSurface = useChatSurface();
 
   const recent = useMemo(
     () => messages.filter((m) => !m.pending && m.text).slice(-PICKABLE).reverse(),
@@ -240,20 +250,15 @@ export function FlagConversationDialog({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-1 md:px-6">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto px-5 pb-1 md:px-6"
+          style={step === 1 ? chatSurface : undefined}
+        >
           {step === 1 && (
-            <div className="space-y-2 pb-2">
+            <div className="space-y-2 py-3">
               {recent.length === 0 && (
-                <p className="py-2 text-[13px] text-muted-foreground">
+                <p className="py-2 text-[13px] text-[#667781] dark:text-[#8696a0]">
                   There are no messages in this conversation yet.
-                </p>
-              )}
-
-              {scanned.length > 0 && (
-                <p className="pb-1 text-[13px] text-muted-foreground">
-                  We picked out{" "}
-                  {scanned.length === 1 ? "a message" : `${scanned.length} messages`}. Add or
-                  remove any before you send.
                 </p>
               )}
 
@@ -270,76 +275,106 @@ export function FlagConversationDialog({
                 const onRight = m.senderId === rightHandId;
                 const caught = reports?.get(m.id);
 
+                const bubble = (
+                  <span
+                    className={cn(
+                      "relative block max-w-full rounded-xl px-3 pb-5 pt-2 text-[13.5px] leading-snug shadow-sm",
+                      onRight
+                        ? "rounded-br-sm bg-[#1099A1] text-white"
+                        : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
+                      // Gold marks what the scan found, teal marks what is
+                      // going in the report. A caught message keeps the gold:
+                      // it is the reason the dialog is open, and the tint
+                      // behind it already says it is picked.
+                      caught
+                        ? "ring-2 ring-[#CAA25F]"
+                        : on && "ring-2 ring-[#1099A1] ring-offset-1 ring-offset-background"
+                    )}
+                  >
+                    {caught && !done && (
+                      // Why the system picked this one, said plainly: somebody
+                      // about to put their name to a report is entitled to know
+                      // what they are agreeing with.
+                      <span className="mb-1 flex items-center gap-1.5 text-[11px] text-[#CAA25F]">
+                        <Flag size={10} fill="currentColor" />
+                        {describeReport(caught)}
+                      </span>
+                    )}
+
+                    {m.text}
+
+                    <span
+                      className={cn(
+                        "absolute bottom-1 right-2.5 text-[10px]",
+                        onRight ? "text-white/70" : "text-[#667781] dark:text-[#8696a0]"
+                      )}
+                    >
+                      {done ? "Reported" : m.createdAt.toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </span>
+                );
+
+                const avatar = (
+                  <img
+                    src={
+                      (onRight ? subjectAvatarUrl : contactAvatarUrl) ??
+                      dicebearUrl(onRight ? subjectName : contactName)
+                    }
+                    alt=""
+                    className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  />
+                );
+
                 return (
                   <div
                     key={m.id}
-                    className={cn("flex flex-col gap-1", onRight ? "items-end" : "items-start")}
+                    className={cn(
+                      "flex items-end gap-2",
+                      onRight ? "flex-row-reverse" : "flex-row"
+                    )}
                   >
-                    <button
-                      type="button"
-                      disabled={!!done}
-                      onClick={() => toggleMessage(m.id)}
-                      aria-pressed={on}
-                      className={cn(
-                        "flex w-full flex-col gap-1 rounded-xl p-1.5 text-left transition-colors",
-                        on
-                          ? "bg-[#1099A1]/10"
-                          : done
-                            ? "cursor-default opacity-45"
-                            : "hover:bg-muted/40",
-                        onRight ? "items-end" : "items-start"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "max-w-[85%] rounded-xl px-3 py-2 text-[13.5px] leading-snug shadow-sm",
-                          onRight
-                            ? "rounded-br-sm bg-[#1099A1] text-white"
-                            : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
-                          on && "ring-2 ring-[#1099A1] ring-offset-1 ring-offset-background"
-                        )}
-                      >
-                        {m.text}
-                      </span>
+                    {avatar}
 
-                      <span className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
-                        {on && <Check size={11} strokeWidth={3} className="text-[#1099A1]" />}
-                        {onRight ? subjectName : contactName}
-                        {" - "}
-                        {m.createdAt.toLocaleString(undefined, {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-
-                      {/* Why the system picked this one. Said plainly, because
-                          somebody about to put their name to a report is
-                          entitled to know what they are agreeing with. */}
-                      {caught && !done && (
-                        <span className="flex items-center gap-1.5 px-1 text-[11px] font-semibold text-[#CAA25F]">
-                          <Flag size={10} fill="currentColor" />
-                          {describeReport(caught)}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Taking a report back belongs on the message it was
-                        about, not in a step of its own. */}
-                    {done && (
-                      <span className="flex items-center gap-2 px-2.5 text-[11px] text-muted-foreground">
-                        Already reported
+                    {/* A reported message is not a button. It cannot be picked
+                        again, and it has to hold a Withdraw control, which
+                        cannot be nested inside another button. */}
+                    {done ? (
+                      <span className="flex min-w-0 max-w-[78%] items-end gap-1 opacity-60">
+                        {bubble}
                         <button
                           type="button"
                           onClick={() => void withdraw(done)}
                           disabled={busy}
-                          className="font-medium text-[#CAA25F] transition-opacity hover:underline disabled:opacity-50"
+                          title="Withdraw this report"
+                          aria-label="Withdraw this report"
+                          className="shrink-0 rounded-full p-1.5 text-[#CAA25F] transition-colors hover:bg-[#CAA25F]/15 disabled:opacity-50"
                         >
-                          Withdraw
+                          <Undo2 size={14} />
                         </button>
                       </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleMessage(m.id)}
+                        aria-pressed={on}
+                        aria-label={`${m.text.slice(0, 60)} - from ${onRight ? subjectName : contactName}`}
+                        className={cn(
+                          "flex min-w-0 max-w-[78%] rounded-xl text-left transition-transform",
+                          on ? "scale-[1.01]" : "hover:scale-[1.01]"
+                        )}
+                      >
+                        {bubble}
+                      </button>
                     )}
+
+                    {/* Ticked rather than outlined a second time, so the gold
+                        outline can mean one thing only. */}
+                    <span className="w-4 shrink-0">
+                      {on && <Check size={14} strokeWidth={3} className="text-[#1099A1]" />}
+                    </span>
                   </div>
                 );
               })}

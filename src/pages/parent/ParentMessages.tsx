@@ -37,7 +37,13 @@ export function ParentMessages({
   embedded = false,
   childId,
   childName,
-}: { embedded?: boolean; childId?: string; childName?: string } = {}) {
+  childAvatarUrl,
+}: {
+  embedded?: boolean;
+  childId?: string;
+  childName?: string;
+  childAvatarUrl?: string | null;
+} = {}) {
   const { user } = useAuth();
   const location = useLocation();
   const nav = location.state as
@@ -196,6 +202,8 @@ export function ParentMessages({
             messages={activeConversation.messages}
             subjectId={childId ?? user.id}
             subjectName={childId ? (childName ?? "Your child") : "You"}
+            subjectAvatarUrl={childId ? childAvatarUrl : undefined}
+            contactAvatarUrl={activeConversation.contact.avatarUrl}
             existing={myFlags}
             reports={reports}
             onClose={() => setFlagging(false)}

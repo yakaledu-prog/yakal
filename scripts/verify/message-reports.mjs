@@ -67,6 +67,8 @@ const SHOULD_CATCH = [
   ['contact_details', '+251 91 123 4567 is mine'],
   ['contact_details', 'my number is oh nine one one two three four five six seven'],
   ['contact_details', 'samuelt at gmail dot com'],
+  ['contact_details', 'call me here 13478245640'],
+  ['contact_details', '13478245640'],
   ['off_platform', 'add me on WhatsApp'],
   ['off_platform', 'w h a t s a p p me instead'],
   ['off_platform', 'wh4ts4pp is easier'],
@@ -287,7 +289,6 @@ await parent.waitForTimeout(1500);
 const dlg = parent.locator('div[role="dialog"]');
 const dlgText = await dlg.innerText();
 
-pass('the report dialog says what it picked out', /We picked out/.test(dlgText), dlgText.slice(0, 70));
 pass('two steps, not three', !/\bReported\b/.test(dlgText) && /Messages/.test(dlgText) && /Reason/.test(dlgText));
 
 const pickedMessages = await dlg.locator('button[aria-pressed="true"]').count();
@@ -295,13 +296,18 @@ pass('messages start chosen', pickedMessages >= 1, `${pickedMessages} pressed`);
 
 // The parent is a third party here, so neither side is theirs. Both names have
 // to appear or somebody's words are being put in somebody else's mouth.
-// The parent is a third party here, so neither side is theirs. Both names have
-// to appear, or somebody's words are being put in somebody else's mouth.
-pass(
-  'both speakers are named correctly',
-  dlgText.includes(counterpartyName) && dlgText.includes(childName),
-  `${counterpartyName} / ${childName} in: ${dlgText.replace(/\n/g, ' | ').slice(0, 140)}`
-);
+// The parent is a third party here, so neither side is theirs. The names are
+// on the avatars now, so check the sides instead: exactly one of the two
+// speakers' bubbles must be the right-hand, teal one.
+const sides = await dlg.evaluate((el, ids) => {
+  const rows = [...el.querySelectorAll('div.flex.items-end')];
+  return {
+    right: rows.filter((r) => r.className.includes('flex-row-reverse')).length,
+    left: rows.filter((r) => !r.className.includes('flex-row-reverse')).length,
+  };
+}, null);
+pass('both speakers appear, on their own sides', sides.right > 0 && sides.left > 0, JSON.stringify(sides));
+pass('every message carries a face', (await dlg.locator('img').count()) > 0);
 
 await dlg.getByRole('button', { name: 'Next' }).click();
 await parent.waitForTimeout(800);

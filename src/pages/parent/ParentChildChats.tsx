@@ -150,6 +150,7 @@ export function ParentChildChats() {
             messages={active.messages}
             subjectId={activeChildId}
             subjectName={views.find((v) => v.id === activeId)?.childName ?? "Your child"}
+            contactAvatarUrl={active.contact.avatarUrl}
             existing={myFlags}
             reports={reports}
             onClose={() => setFlagging(false)}

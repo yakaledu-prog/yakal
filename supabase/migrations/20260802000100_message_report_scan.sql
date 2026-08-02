@@ -177,12 +177,24 @@ BEGIN
     -- or a plus. The grouping is what separates a phone number from an answer:
     -- a full stop is not a separator here, or every decimal in a maths lesson
     -- would be reported.
+    -- Decimals are taken out first. A full stop is not a phone separator, so
+    -- the digits either side of one would otherwise be read as two numbers,
+    -- and the tail of pi is a fourteen digit run.
     FOR v_match IN
-      SELECT m[1] FROM regexp_matches(v_dig, '(\+?[0-9][0-9 ()+-]{7,}[0-9])', 'g') m
+      SELECT m[1]
+      FROM regexp_matches(
+        regexp_replace(v_dig, '[0-9]+\.[0-9]+', ' ', 'g'),
+        '(\+?[0-9][0-9 ()+-]{7,}[0-9])', 'g'
+      ) m
     LOOP
       v_digits := length(regexp_replace(v_match, '[^0-9]', '', 'g'));
+      -- Grouped, or starting like a dialling code, or simply too long to be
+      -- anything else. Ten unbroken digits is a phone number: nine is where
+      -- the answers still live ("the answer is 123456789"), and a maths
+      -- lesson writes anything longer with a decimal point or a comma, both
+      -- of which split the run before it gets here.
       IF v_digits BETWEEN 9 AND 15
-         AND (v_match ~ '[ ()+-]' OR v_match ~ '^\+' OR v_match ~ '^0')
+         AND (v_match ~ '[ ()+-]' OR v_match ~ '^\+' OR v_match ~ '^0' OR v_digits >= 10)
       THEN
         v_cats := v_cats || 'contact_details'::text;
         EXIT;
@@ -465,3 +477,22 @@ GROUP BY r.sender_id;
 
 GRANT SELECT ON public.v_sender_report_summary TO authenticated;
 GRANT EXECUTE ON FUNCTION public.scan_message_content(text) TO authenticated;
+
+-- ------------------------------------------------------------
+-- Everything already said
+--
+-- The trigger only sees inserts, so the history is invisible to it and a rule
+-- written or tightened later would only ever apply going forward. That is the
+-- wrong way round: if a phrasing is worth catching, it is worth catching in
+-- the message that has already been sent.
+--
+-- Written straight into the table rather than through the trigger, so nobody
+-- is notified about a conversation from last month. ON CONFLICT makes it safe
+-- to run again, which it will be every time this file is applied.
+-- ------------------------------------------------------------
+INSERT INTO public.message_reports (message_id, conversation_id, sender_id, category, severity)
+SELECT m.id, m.conversation_id, m.sender_id, h ->> 'category', h ->> 'severity'
+FROM public.messages m
+CROSS JOIN LATERAL jsonb_array_elements(public.scan_message_content(m.content)) h
+WHERE m.type = 'text' AND coalesce(m.content, '') <> ''
+ON CONFLICT (message_id, category) DO NOTHING;

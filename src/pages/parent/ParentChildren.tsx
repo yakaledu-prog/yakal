@@ -9,7 +9,7 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
-import { Search, Loader2, MessageCircleWarning, Users, UserPlus, X, ChevronLeft } from "lucide-react";
+import { Search, Loader2, Users, UserPlus, X, ChevronLeft, ShieldAlertIcon } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
 import { useQuery } from "@tanstack/react-query";
@@ -78,15 +78,19 @@ export function ParentChildren() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
+      {/* No min-h-screen. This sits below the top bar, so a full viewport
+          height ran exactly the bar's height past the bottom of the screen and
+          pushed the chat footer out of view. h-full is the space there
+          actually is, and min-h-0 lets the chat shrink into it. */}
+      <div className="flex-1 bg-background dark:bg-[#111b21] flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
 
         {/* Left pane */}
-      <aside
-        className={cn(
-          "w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full bg-white dark:bg-[#111b21]",
-          listClass
-        )}
-      >
+        <aside
+          className={cn(
+            "w-full md:w-[300px] md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-[#e9edef] dark:border-[#2a3942] md:h-full bg-white dark:bg-[#111b21]",
+            listClass
+          )}
+        >
           <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
             <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
               <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
@@ -150,12 +154,12 @@ export function ParentChildren() {
         </aside>
 
         {/* Right pane */}
-      <section
-        className={cn(
-          "flex-1 min-w-0 md:h-full overflow-y-auto md:overflow-hidden bg-white dark:bg-[#111b21] flex-col min-h-0",
-          detailClass
-        )}
-      >
+        <section
+          className={cn(
+            "flex-1 min-w-0 md:h-full overflow-y-auto md:overflow-hidden bg-white dark:bg-[#111b21] flex-col min-h-0",
+            detailClass
+          )}
+        >
           {!activeChild ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 p-4 md:p-8">
               <Users size={48} className="text-[#aebac1] mb-4" />
@@ -348,7 +352,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           </div>
         )}
         {activeTab === 'messages' && (
-          <ParentMessages embedded childId={child.id} childName={child.name} />
+          <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
           // <div className="flex-1 flex flex-col min-h-[500px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-background relative mt-6">
           //   <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
           //   <div className="relative z-10 flex-1 flex items-center justify-center p-6 text-center">
@@ -405,10 +409,10 @@ function TabButton({
           many messages were picked out is not the point, and a number invites
           reading it as unread mail. */}
       {alert && (
-        <MessageCircleWarning
+        <ShieldAlertIcon
           size={15}
           aria-label="Needs a look"
-          className="concern-pulse shrink-0 text-[#CAA25F]"
+          className="shrink-0 animate-pulse"
         />
       )}
     </button>
