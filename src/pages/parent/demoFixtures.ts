@@ -226,6 +226,27 @@ export const DEMO_COURSE: CourseWithTutor = {
     bio: "Senior Chemistry and Physics tutor with 8 years of experience.",
     subjects: ["Chemistry", "Physics"],
     hourlyRate: 55,
+    education: [
+      {
+        from: "2014",
+        to: "2018",
+        qualification: "B.Sc. in Chemistry",
+        institution: "Addis Ababa University",
+      },
+    ],
+    work_experience: [
+      {
+        from: "2018",
+        role: "Chemistry Tutor",
+        organisation: "Yakal Education Services",
+        summary: "Eight years of one to one chemistry and physics, mostly exam preparation.",
+      },
+    ],
+    certifications: [],
+    languages: [
+      { name: "Amharic", level: "Native" },
+      { name: "English", level: "Fluent" },
+    ],
   },
 };
 
