@@ -88,6 +88,7 @@ import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
 import { ParentExplore } from "../pages/parent/ParentExplore";
+import { CounselorExplore } from "../pages/counselor/CounselorExplore";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
 // Three billing designs to compare. Keep one, delete the rest.
@@ -301,7 +302,7 @@ const router = createBrowserRouter([
           { path: "earnings", element: <CounselorEarnings /> },
           { path: "profile", element: <CounselorProfile /> },
           { path: "roadmap", element: <StudentRoadmap /> },
-          { path: "explore", element: <StudentExploreUniversities /> },
+          { path: "explore", element: <CounselorExplore /> },
           { path: "meeting/:id", element: <CounselorSessionDetail /> },
           { path: "session/:id", element: <CounselorSessionDetail /> },
           { path: "settings", element: <SettingsPage /> },
