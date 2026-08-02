@@ -98,6 +98,7 @@ export function ParentRoadmap() {
           <StudentRoadmap
             studentId={child.id}
             gradeLevel={child.gradeLevel}
+            subjectName={child.name.split(" ")[0]}
             embedded
             hideChrome
             canEdit={false}

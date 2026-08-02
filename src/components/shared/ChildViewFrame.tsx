@@ -5,8 +5,7 @@ import { Loader2, Lock, Users } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { dicebearUrl } from "@/utils/avatar";
-import { cn } from "@/utils/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 import {
   getChildServices,
   getLinkedChildren,
@@ -36,14 +35,21 @@ export interface FramedChild {
 export function ChildViewFrame({
   title,
   subtitle,
+  chrome = true,
   headerRight,
   headerBottom,
   /** The service the child must be opted into. Omit to always allow. */
   requiresService,
   children,
 }: {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
+  /**
+   * False where the wrapped page already has a header of its own. Explore
+   * opens with its own banner, and the frame's made a second one directly
+   * above it saying the same thing.
+   */
+  chrome?: boolean;
   /** Facts that belong beside the title, e.g. stage and graduation year. */
   headerRight?: ReactNode;
   /** Tabs or anything else that sits along the bottom edge of the banner. */
@@ -88,6 +94,7 @@ export function ChildViewFrame({
   return (
     <PageWrapper className="!p-0">
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
+        {chrome ? (
         <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -118,33 +125,20 @@ export function ChildViewFrame({
               {headerRight}
             </div>
 
-            {/* One child needs no picker, and a row of one tab looks broken. */}
+            {/* One child needs no picker at all. More than one gets a
+                dropdown rather than a row of tabs: these pages carry their own
+                tabs, and a second row of them across the top read as another
+                level of navigation rather than a choice of person. */}
             {linked.length > 1 ? (
-              <nav className="mt-6 flex gap-1 overflow-x-auto">
-                {linked.map((c) => {
-                  const on = c.id === (child?.id ?? "");
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setSelectedId(c.id)}
-                      className={cn(
-                        "flex items-center gap-2 whitespace-nowrap border-b-[3px] px-3 py-3 text-[14px] transition-colors",
-                        on
-                          ? "border-white font-semibold text-white"
-                          : "border-transparent text-white/60 hover:text-white"
-                      )}
-                    >
-                      <img
-                        src={c.avatar_url || dicebearUrl(c.full_name)}
-                        alt=""
-                        className="h-6 w-6 rounded-full object-cover"
-                      />
-                      {c.full_name}
-                    </button>
-                  );
-                })}
-              </nav>
+              <div className="mt-5 w-56">
+                <Dropdown
+                  tone="onDark"
+                  ariaLabel="Which child"
+                  value={child?.id ?? ""}
+                  onChange={(id) => setSelectedId(id)}
+                  options={linked.map((c) => ({ value: c.id, label: c.full_name }))}
+                />
+              </div>
             ) : (
               !headerBottom && <div className="h-6" />
             )}
@@ -152,6 +146,20 @@ export function ChildViewFrame({
             {headerBottom}
           </div>
         </header>
+        ) : (
+          // No banner, so the picker stands alone above whatever the page
+          // renders for itself.
+          linked.length > 1 && (
+            <div className="w-56 px-4 pt-4 md:px-8">
+              <Dropdown
+                ariaLabel="Which child"
+                value={child?.id ?? ""}
+                onChange={(id) => setSelectedId(id)}
+                options={linked.map((c) => ({ value: c.id, label: c.full_name }))}
+              />
+            </div>
+          )
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-20">

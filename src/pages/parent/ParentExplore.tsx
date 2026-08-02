@@ -11,16 +11,13 @@ import { StudentExploreUniversities } from "@/pages/student/StudentExploreUniver
 //
 // A page of its own rather than a tab on the child's record: it carries its
 // own filter rail and header, and nesting that under two rows of tabs made
-// the thing you came to read the third row down.
+// the thing you came to read the third row down. The frame's banner is off
+// for the same reason - the page already opens with one.
 // ============================================================
 
 export function ParentExplore() {
   return (
-    <ChildViewFrame
-      title="Explore universities"
-      subtitle="Find colleges worth putting in front of your child."
-      requiresService="admissions"
-    >
+    <ChildViewFrame chrome={false} requiresService="admissions">
       {(child) => (
         <StudentExploreUniversities
           studentId={child.id}

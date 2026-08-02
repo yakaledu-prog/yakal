@@ -87,7 +87,6 @@ import { ParentCourseCatalogDetail } from "../pages/parent/ParentCourseCatalogDe
 import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
 import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
-import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentExplore } from "../pages/parent/ParentExplore";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
@@ -342,7 +341,7 @@ const router = createBrowserRouter([
           { path: "children/:id", element: <ParentChildren /> },
           { path: "messages", element: <ParentMessages /> },
           { path: "roadmap", element: <ParentRoadmap /> },
-          { path: "college-list", element: <ParentCollegeList /> },
+          { path: "college-list", element: <Navigate to="/parent/children" replace /> },
           { path: "explore", element: <ParentExplore /> },
           { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },

@@ -199,6 +199,7 @@ export function ParentChildren() {
 import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
 import { getAllAssignments } from "@/services/studentService";
 import { getFlaggedStudentIds } from "@/services/reports";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
@@ -262,7 +263,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
   // ask. Overview was a feed of invented activity, naming tutors and homework
   // that do not exist, so it is gone rather than moved.
   const [activeTab, setActiveTab] = useState<
-    "sessions" | "assignments" | "applications" | "messages"
+    "sessions" | "assignments" | "applications" | "colleges" | "messages"
   >("sessions");
 
   const hasAdmissions = child.active_services?.includes('admissions');
@@ -305,6 +306,12 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
           <TabButton active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} label="Application Tracking" />
+          {/* The college list is a plain list, so it sits here where the child
+              is already chosen. The roadmap and the catalogue carry tabs and
+              filter rails of their own, which is why those two are pages. */}
+          {hasAdmissions && (
+            <TabButton active={activeTab === 'colleges'} onClick={() => setActiveTab('colleges')} label="College List" />
+          )}
           <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" alert={hasFlaggedChat} />
         </div>
       </div>
@@ -374,6 +381,10 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
               </div>
             )}
           </div>
+        )}
+        {activeTab === 'colleges' && (
+          // Read only here. A parent adds from Explore, where the catalogue is.
+          <StudentCollegeList studentId={child.id} embedded canEdit={false} />
         )}
         {activeTab === 'messages' && (
           <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
