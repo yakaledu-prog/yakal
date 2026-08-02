@@ -305,7 +305,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </div>
 
         {searchOpen && (
-          <CommandPalette navItems={navItems} onClose={() => setSearchOpen(false)} />
+          <CommandPalette
+            navItems={navItems}
+            onToggleSidebar={() => setSidebarOpen((o) => !o)}
+            onClose={() => setSearchOpen(false)}
+          />
         )}
       </main>
     </div>
