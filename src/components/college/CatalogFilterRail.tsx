@@ -110,18 +110,30 @@ export function CatalogFilterRail({
           <button
             type="button"
             role="switch"
-            aria-checked={fitEnabled}
+            // Off is the honest answer with no scores on file, and it has to
+            // match what is drawn or a screen reader is told the opposite.
+            aria-checked={fitEnabled && hasProfile}
             disabled={!hasProfile}
             onClick={() => onToggleFit(!fitEnabled)}
+            title={hasProfile ? undefined : "Add a GPA and test scores first"}
             className={cn(
-              "relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40",
-              fitEnabled ? "bg-[#1099A1]" : "bg-[#cbced4] dark:bg-[#2a3942]"
+              "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+              // Off, not merely faded, when there is nothing to rank against.
+              // Painted on while it could not be switched, it read as a solid
+              // blob with no moving part: a control that looked broken rather
+              // than unavailable.
+              fitEnabled && hasProfile
+                ? "bg-[#1099A1]"
+                : "bg-[#cbced4] dark:bg-[#2a3942]",
+              hasProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60"
             )}
           >
             <span
               className={cn(
-                "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                fitEnabled ? "translate-x-[18px]" : "translate-x-0.5"
+                // A shadow so the knob reads as a knob against the track
+                // rather than dissolving into it.
+                "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform",
+                fitEnabled && hasProfile ? "translate-x-[18px]" : "translate-x-0.5"
               )}
             />
           </button>

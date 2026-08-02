@@ -386,9 +386,6 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           // Read only here. A parent adds from Explore, where the catalogue is.
           <StudentCollegeList studentId={child.id} embedded canEdit={false} />
         )}
-        {activeTab === 'messages' && (
-          <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
-        )}
 
         {activeTab === 'applications' && (
           <div className="space-y-6">

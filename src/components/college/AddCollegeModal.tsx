@@ -372,42 +372,6 @@ export function AddCollegeModal({
 
           {step === 2 && (
             <div className="space-y-5">
-              {/* Asked here rather than on the page, so browsing is not gated
-                  behind choosing a child first. More than one can be picked:
-                  a college worth a look for one sibling is often worth a look
-                  for the other. */}
-              {targets && targets.length > 0 && (
-                <div>
-                  <FieldLabel hint="Pick everyone this should go to.">Add to</FieldLabel>
-                  <div className="flex flex-wrap gap-2">
-                    {targets.map((t) => {
-                      const on = (selectedTargets ?? []).includes(t.id);
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          aria-pressed={on}
-                          onClick={() =>
-                            onTargetsChange?.(
-                              on
-                                ? (selectedTargets ?? []).filter((x) => x !== t.id)
-                                : [...(selectedTargets ?? []), t.id]
-                            )
-                          }
-                          className={cn(
-                            "rounded-xl border px-3.5 py-2 text-[13.5px] transition-colors",
-                            on
-                              ? "border-[#1099A1] bg-[#1099A1]/10 font-semibold text-[#1099A1]"
-                              : "border-[#e9edef] text-[#54656f] hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1]"
-                          )}
-                        >
-                          {t.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
               <div>
                 <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
                 <Segmented
@@ -433,6 +397,40 @@ export function AddCollegeModal({
         </div>
 
         <footer className="flex items-center gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
+          {/* Beside the navigation rather than inside a step: it is the one
+              answer that is not about the college, and it stays visible while
+              the rest is being filled in. */}
+          {targets && targets.length > 0 && (
+            <div className="mr-auto flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px] text-[#717182]">For</span>
+              {targets.map((t) => {
+                const on = (selectedTargets ?? []).includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      onTargetsChange?.(
+                        on
+                          ? (selectedTargets ?? []).filter((x) => x !== t.id)
+                          : [...(selectedTargets ?? []), t.id]
+                      )
+                    }
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-[12.5px] transition-colors",
+                      on
+                        ? "border-[#1099A1] bg-[#1099A1]/10 font-semibold text-[#1099A1]"
+                        : "border-[#e9edef] text-[#54656f] hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1]"
+                    )}
+                  >
+                    {t.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {step > 0 && (
             <button
               type="button"

@@ -194,17 +194,17 @@ export function ParentCourseCatalogDetail() {
 
   const selectedTutor = realTutor
     ? {
-        id: realTutor.id,
-        name: realTutor.name,
-        avatar: realTutor.avatarUrl || dicebearUrl(realTutor.name),
-        headline: (realTutor.subjects ?? []).join(", ") || "Tutor",
-        bio: realTutor.bio ?? "",
-        price: realCourse?.priceCents != null ? money(realCourse.priceCents) : "",
-        students: undefined,
-        responseTime: "",
-        certifications: [] as any[],
-        reviews_data: [] as any[],
-      }
+      id: realTutor.id,
+      name: realTutor.name,
+      avatar: realTutor.avatarUrl || dicebearUrl(realTutor.name),
+      headline: (realTutor.subjects ?? []).join(", ") || "Tutor",
+      bio: realTutor.bio ?? "",
+      price: realCourse?.priceCents != null ? money(realCourse.priceCents) : "",
+      students: undefined,
+      responseTime: "",
+      certifications: [] as any[],
+      reviews_data: [] as any[],
+    }
     : undefined;
 
   const [activeTab, setActiveTab] = useState("Availability");
@@ -240,13 +240,13 @@ export function ParentCourseCatalogDetail() {
   // never renders half a course.
   const course = realCourse
     ? {
-        ...courseData,
-        id: realCourse.id,
-        title: realCourse.title,
-        description: realCourse.description ?? "",
-        thumbnail: realCourse.thumbnailUrl ?? courseData.thumbnail,
-        price: realCourse.priceCents != null ? money(realCourse.priceCents) : "",
-      }
+      ...courseData,
+      id: realCourse.id,
+      title: realCourse.title,
+      description: realCourse.description ?? "",
+      thumbnail: realCourse.thumbnailUrl ?? courseData.thumbnail,
+      price: realCourse.priceCents != null ? money(realCourse.priceCents) : "",
+    }
     : courseData;
 
   // The tutor assigned to this course. It used to load whichever tutor came
@@ -668,11 +668,11 @@ export function ParentCourseCatalogDetail() {
                                       ) : new Date(day).setHours(23, 59, 59, 999) < Date.now() ? (
                                         <div className="text-[12px] text-[#c2c7d0] py-4">-</div>
                                       ) : !hours.some((hour, hIndex) => {
-                                          if (!(grid.time_grid[hIndex]?.[dIndex] || 0)) return false;
-                                          const start = new Date(day);
-                                          start.setHours(hour, 0, 0, 0);
-                                          return start.getTime() > Date.now();
-                                        }) ? (
+                                        if (!(grid.time_grid[hIndex]?.[dIndex] || 0)) return false;
+                                        const start = new Date(day);
+                                        start.setHours(hour, 0, 0, 0);
+                                        return start.getTime() > Date.now();
+                                      }) ? (
                                         <div className="py-4 text-[12px] text-[#c2c7d0]">
                                           No slots
                                         </div>
@@ -738,7 +738,7 @@ export function ParentCourseCatalogDetail() {
                             <Button
                               onClick={handleBookSlot}
                               disabled={isBooking}
-                              className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8 h-12 text-[16px] font-bold rounded-xl transition-all"
+                              className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8 !h-12 py-4 text-[16px] font-bold rounded-xl transition-all"
                             >
                               {isBooking ? "Booking..." : "Checkout"}
                             </Button>
@@ -818,62 +818,62 @@ export function ParentCourseCatalogDetail() {
                         and a parent with several children would have the list
                         cut off at the bottom of the card. */}
                     <div className="sticky top-8 bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm flex flex-col">
-                    {/* Tutor Profile Header (in floating card) */}
-                    <div className="p-6 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
-                      <img 
-                        src={selectedTutor?.avatar} 
-                        alt={selectedTutor?.name} 
-                        className="w-24 h-24 rounded-full object-cover shadow-sm border-2 border-white dark:border-[#182329] mb-4" 
-                      />
-                      <h3 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">
-                        {selectedTutor?.name}
-                      </h3>
-                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-2">
-                        {selectedTutor?.bio}
-                      </p>
-                    </div>
+                      {/* Tutor Profile Header (in floating card) */}
+                      <div className="p-6 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
+                        <img
+                          src={selectedTutor?.avatar}
+                          alt={selectedTutor?.name}
+                          className="w-24 h-24 rounded-full object-cover shadow-sm border-2 border-white dark:border-[#182329] mb-4"
+                        />
+                        <h3 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">
+                          {selectedTutor?.name}
+                        </h3>
+                        <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-2">
+                          {selectedTutor?.bio}
+                        </p>
+                      </div>
 
-                    <div className="p-6">
-                      {/* The two halves of the purchase: what it costs, and
+                      <div className="p-6">
+                        {/* The two halves of the purchase: what it costs, and
                           who it is for. Side by side because they are read
                           together, and the child has to be answered before the
                           calendar means anything: the hours a child already has
                           booked are the ones they cannot have again. */}
-                      <div className="flex items-center justify-between gap-3 mb-4">
-                        <div className="min-w-0 flex-1">
-                          {children.length === 0 ? (
-                            <p className="text-[13px] font-medium text-[#CAA25F]">
-                              No children linked yet.
-                            </p>
-                          ) : (
-                            <ChildPicker
-                              options={children}
-                              value={bookingFor?.id ?? null}
-                              onChange={setChildId}
-                            />
-                          )}
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                          <div className="min-w-0 flex-1">
+                            {children.length === 0 ? (
+                              <p className="text-[13px] font-medium text-[#CAA25F]">
+                                No children linked yet.
+                              </p>
+                            ) : (
+                              <ChildPicker
+                                options={children}
+                                value={bookingFor?.id ?? null}
+                                onChange={setChildId}
+                              />
+                            )}
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <div className="text-[20px] font-bold leading-none text-[#111] dark:text-white">
+                              ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
+                            </div>
+                            <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1">
+                              {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min` : '60-min lesson'}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="shrink-0 text-right">
-                          <div className="text-[20px] font-bold leading-none text-[#111] dark:text-white">
-                            ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
-                          </div>
-                          <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1">
-                            {selectedSlots.length > 1 ? `${selectedSlots.length}x 60-min` : '60-min lesson'}
-                          </div>
-                        </div>
+                        <Button
+                          onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
+                          disabled={isBooking || children.length === 0}
+                          className="w-full !h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl transition-all"
+                        >
+                          {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
+                        </Button>
                       </div>
-
-                      <Button
-                        onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
-                        disabled={isBooking || children.length === 0}
-                        className="w-full h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl transition-all"
-                      >
-                        {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
-                      </Button>
                     </div>
                   </div>
-                </div>
                 )}
               </div>
             </div>

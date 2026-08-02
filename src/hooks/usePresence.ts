@@ -6,38 +6,84 @@ const TYPING_EXPIRY_MS = 3000;
 // Minimum gap between our own typing broadcasts.
 const TYPING_THROTTLE_MS = 1500;
 
+// ------------------------------------------------------------
+// Online presence, shared by every screen that asks for it.
+//
+// The channel topic is fixed, and the Supabase client caches channels by
+// topic, so a second `supabase.channel('presence:online')` hands back the one
+// that has already joined. Calling `.on('presence', ...)` on it throws
+// "cannot add `presence` callbacks", which took the whole page down through
+// the error boundary.
+//
+// That happened whenever two screens using this mounted together, and in
+// development on every mount, because StrictMode runs the effect twice and
+// removeChannel does not finish before the second run starts.
+//
+// So the channel lives here rather than inside the effect: one for the whole
+// app, counted in and out, with the callbacks registered exactly once.
+// ------------------------------------------------------------
+
+let channel: ReturnType<typeof supabase.channel> | null = null;
+let refCount = 0;
+let lastOnline = new Set<string>();
+const listeners = new Set<(ids: Set<string>) => void>();
+
+function join(userId: string) {
+  refCount += 1;
+  if (channel) {
+    // Somebody else already opened it; just take the current state.
+    return;
+  }
+
+  const ch = supabase.channel("presence:online", {
+    config: { presence: { key: userId } },
+  });
+  channel = ch;
+
+  const sync = () => {
+    lastOnline = new Set(Object.keys(ch.presenceState()));
+    for (const listener of listeners) listener(lastOnline);
+  };
+
+  ch.on("presence", { event: "sync" }, sync)
+    .on("presence", { event: "join" }, sync)
+    .on("presence", { event: "leave" }, sync)
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") void ch.track({ online_at: new Date().toISOString() });
+    });
+}
+
+function leave() {
+  refCount = Math.max(0, refCount - 1);
+  if (refCount > 0 || !channel) return;
+  const ch = channel;
+  channel = null;
+  lastOnline = new Set();
+  void supabase.removeChannel(ch);
+}
+
 /**
  * Tracks which users are currently online via a shared Supabase Presence
  * channel. Every signed-in client joins the same channel keyed by its user id,
  * so the returned set contains the ids of everyone with the app open.
+ *
+ * Safe to call from several components at once: they share one channel.
  */
 export function usePresence(userId?: string): Set<string> {
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(lastOnline);
 
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase.channel('presence:online', {
-      config: { presence: { key: userId } },
-    });
-
-    const sync = () => {
-      setOnlineIds(new Set(Object.keys(channel.presenceState())));
-    };
-
-    channel
-      .on('presence', { event: 'sync' }, sync)
-      .on('presence', { event: 'join' }, sync)
-      .on('presence', { event: 'leave' }, sync)
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-      });
+    listeners.add(setOnlineIds);
+    join(userId);
+    // Whatever is already known, so a late mount is not blank until the next
+    // sync event arrives.
+    setOnlineIds(lastOnline);
 
     return () => {
-      supabase.removeChannel(channel);
-      setOnlineIds(new Set());
+      listeners.delete(setOnlineIds);
+      leave();
     };
   }, [userId]);
 

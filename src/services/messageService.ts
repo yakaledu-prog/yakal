@@ -247,15 +247,53 @@ export async function getOrCreateConversation(peerId: string): Promise<string> {
  * Fires on any message change. The callback gets the raw payload; callers
  * generally just invalidate their conversation query.
  */
-export function subscribeToMessages(callback: (payload: any) => void) {
-  const channel = supabase
-    .channel("public:messages")
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, callback)
-    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, callback)
-    .subscribe();
+// One channel for the whole app, counted in and out.
+//
+// The topic is fixed and the Supabase client caches channels by topic, so a
+// second `supabase.channel("public:messages")` hands back the one that has
+// already subscribed. Calling `.on("postgres_changes", ...)` on it throws
+// "cannot add postgres_changes callbacks after subscribe()", which took the
+// page down through the error boundary.
+//
+// That happened whenever two screens subscribed at once - the parent's child
+// tab renders the messages view inside a page that has its own - and on every
+// mount in development, where StrictMode runs the effect twice and
+// removeChannel has not finished before the second run starts.
+let messageChannel: ReturnType<typeof supabase.channel> | null = null;
+let messageRefs = 0;
+const messageListeners = new Set<(payload: any) => void>();
 
+export function subscribeToMessages(callback: (payload: any) => void) {
+  messageListeners.add(callback);
+  messageRefs += 1;
+
+  if (!messageChannel) {
+    // Fan out here rather than registering a handler per subscriber, so the
+    // callbacks are attached exactly once, before subscribe.
+    const fanOut = (payload: any) => {
+      for (const listener of messageListeners) listener(payload);
+    };
+    messageChannel = supabase
+      .channel("public:messages")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, fanOut)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, fanOut)
+      .subscribe();
+  }
+
+  let released = false;
   return () => {
-    supabase.removeChannel(channel);
+    // Guard against a double unsubscribe dropping the count below the number
+    // of live subscribers and closing the channel out from under them.
+    if (released) return;
+    released = true;
+
+    messageListeners.delete(callback);
+    messageRefs = Math.max(0, messageRefs - 1);
+    if (messageRefs > 0 || !messageChannel) return;
+
+    const channel = messageChannel;
+    messageChannel = null;
+    void supabase.removeChannel(channel);
   };
 }
 
