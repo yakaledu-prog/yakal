@@ -215,9 +215,9 @@ export function FlagConversationDialog({
                     step === s.n
                       ? "text-[#1099A1]"
                       : cn(
-                          "text-muted-foreground",
-                          (s.n === 1 || picked) && "hover:text-[#1099A1]"
-                        )
+                        "text-muted-foreground",
+                        (s.n === 1 || picked) && "hover:text-[#1099A1]"
+                      )
                   )}
                 >
                   <span
@@ -332,8 +332,13 @@ export function FlagConversationDialog({
                   <div
                     key={m.id}
                     className={cn(
-                      "flex items-end gap-2",
-                      onRight ? "flex-row-reverse" : "flex-row"
+                      // Picked is the whole row lighting up rather than a tick
+                      // off to one side. What is going in the report should be
+                      // readable by glancing down the list, and a small mark
+                      // at the end of a line is not.
+                      "flex items-end gap-2 rounded-2xl p-1.5 transition-colors",
+                      onRight ? "flex-row-reverse" : "flex-row",
+                      on && "bg-[#1099A1]/15"
                     )}
                   >
                     {avatar}
@@ -361,20 +366,12 @@ export function FlagConversationDialog({
                         onClick={() => toggleMessage(m.id)}
                         aria-pressed={on}
                         aria-label={`${m.text.slice(0, 60)} - from ${onRight ? subjectName : contactName}`}
-                        className={cn(
-                          "flex min-w-0 max-w-[78%] rounded-xl text-left transition-transform",
-                          on ? "scale-[1.01]" : "hover:scale-[1.01]"
-                        )}
+                        className="flex min-w-0 max-w-[78%] rounded-xl text-left" 
                       >
                         {bubble}
                       </button>
                     )}
 
-                    {/* Ticked rather than outlined a second time, so the gold
-                        outline can mean one thing only. */}
-                    <span className="w-4 shrink-0">
-                      {on && <Check size={14} strokeWidth={3} className="text-[#1099A1]" />}
-                    </span>
                   </div>
                 );
               })}
@@ -383,7 +380,6 @@ export function FlagConversationDialog({
 
           {step === 2 && (
             <div className="pb-2">
-              <Label>Why? Pick as many as apply</Label>
               <div className="space-y-1.5">
                 {FLAG_REASONS.map((r) => (
                   <button
@@ -489,13 +485,5 @@ export function FlagConversationDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-      {children}
-    </p>
   );
 }
