@@ -58,7 +58,7 @@ export function StudentExploreUniversities({
    * students. Given, the college is chosen first and the recipients second,
    * inside the modal, so browsing is never gated behind picking a child.
    */
-  targets?: { id: string; name: string }[];
+  targets?: { id: string; name: string; avatarUrl?: string | null; subtitle?: string | null }[];
 } = {}) {
   const { user } = useAuth();
   const qc = useQueryClient();

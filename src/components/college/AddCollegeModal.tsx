@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Loader2, Search, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { dicebearUrl } from "@/utils/avatar";
 import {
   College,
   CONTROL_LABEL,
@@ -80,7 +81,7 @@ export function AddCollegeModal({
    * somebody's behalf. Absent for a student adding to their own list, who has
    * no choice to make and should not be asked to make one.
    */
-  targets?: { id: string; name: string }[];
+  targets?: { id: string; name: string; avatarUrl?: string | null; subtitle?: string | null }[];
   selectedTargets?: string[];
   onTargetsChange?: (ids: string[]) => void;
   open: boolean;
@@ -93,6 +94,8 @@ export function AddCollegeModal({
   preselected?: College | null;
 }) {
   const [step, setStep] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const chosenTargets = (targets ?? []).filter((t) => (selectedTargets ?? []).includes(t.id));
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<College | null>(null);
   const [manualName, setManualName] = useState("");
@@ -399,35 +402,92 @@ export function AddCollegeModal({
         <footer className="flex items-center gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
           {/* Beside the navigation rather than inside a step: it is the one
               answer that is not about the college, and it stays visible while
-              the rest is being filled in. */}
+              the rest is being filled in.
+
+              A dropdown rather than a row of names. Two fit on the line and
+              five do not, and a footer that reflows as a family grows is a
+              footer that breaks for exactly the people who need it most. */}
           {targets && targets.length > 0 && (
-            <div className="mr-auto flex flex-wrap items-center gap-1.5">
-              <span className="text-[12px] text-[#717182]">For</span>
-              {targets.map((t) => {
-                const on = (selectedTargets ?? []).includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() =>
-                      onTargetsChange?.(
-                        on
-                          ? (selectedTargets ?? []).filter((x) => x !== t.id)
-                          : [...(selectedTargets ?? []), t.id]
-                      )
-                    }
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-[12.5px] transition-colors",
-                      on
-                        ? "border-[#1099A1] bg-[#1099A1]/10 font-semibold text-[#1099A1]"
-                        : "border-[#e9edef] text-[#54656f] hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1]"
-                    )}
+            <div className="relative mr-auto">
+              <button
+                type="button"
+                onClick={() => setPickerOpen((v) => !v)}
+                aria-expanded={pickerOpen}
+                aria-haspopup="listbox"
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] transition-colors",
+                  chosenTargets.length
+                    ? "border-[#1099A1] text-[#1099A1]"
+                    : "border-[#e9edef] text-[#54656f] dark:border-[#2a3942] dark:text-[#aebac1]"
+                )}
+              >
+                <span className="flex -space-x-2">
+                  {chosenTargets.slice(0, 3).map((t) => (
+                    <img
+                      key={t.id}
+                      src={t.avatarUrl || dicebearUrl(t.name)}
+                      alt=""
+                      className="h-6 w-6 rounded-full object-cover ring-2 ring-white dark:ring-[#111b21]"
+                    />
+                  ))}
+                </span>
+                <span className="max-w-[140px] truncate font-medium">
+                  {chosenTargets.length === 0
+                    ? "Choose who for"
+                    : chosenTargets.length === 1
+                      ? chosenTargets[0].name
+                      : `${chosenTargets.length} selected`}
+                </span>
+                <ChevronDown size={15} className={cn("transition-transform", pickerOpen && "rotate-180")} />
+              </button>
+
+              {pickerOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
+                  <ul
+                    role="listbox"
+                    aria-multiselectable
+                    className="absolute bottom-full left-0 z-20 mb-2 max-h-64 w-64 overflow-y-auto rounded-xl border border-[#e9edef] bg-white p-1 shadow-lg dark:border-[#2a3942] dark:bg-[#182229]"
                   >
-                    {t.name}
-                  </button>
-                );
-              })}
+                    {targets.map((t) => {
+                      const on = (selectedTargets ?? []).includes(t.id);
+                      return (
+                        <li key={t.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={on}
+                            onClick={() =>
+                              onTargetsChange?.(
+                                on
+                                  ? (selectedTargets ?? []).filter((x) => x !== t.id)
+                                  : [...(selectedTargets ?? []), t.id]
+                              )
+                            }
+                            className={cn(
+                              "flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors",
+                              on ? "bg-[#1099A1]/10" : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+                            )}
+                          >
+                            <img
+                              src={t.avatarUrl || dicebearUrl(t.name)}
+                              alt=""
+                              className="h-8 w-8 shrink-0 rounded-full object-cover"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[13.5px] text-foreground">{t.name}</span>
+                              {t.subtitle && (
+                                <span className="block truncate text-[11.5px] text-[#717182]">{t.subtitle}</span>
+                              )}
+                            </span>
+                            {on && <Check size={15} className="shrink-0 text-[#1099A1]" />}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </div>
           )}
 

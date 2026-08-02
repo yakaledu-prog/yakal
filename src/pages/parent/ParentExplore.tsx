@@ -28,7 +28,12 @@ export function ParentExplore() {
 
   return (
     <StudentExploreUniversities
-      targets={children.map((c) => ({ id: c.id, name: c.full_name }))}
+      targets={children.map((c) => ({
+        id: c.id,
+        name: c.full_name,
+        avatarUrl: c.avatar_url,
+        subtitle: c.grade_level ?? "Grade not set",
+      }))}
     />
   );
 }
