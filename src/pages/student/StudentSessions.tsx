@@ -286,6 +286,10 @@ export function StudentSessions() {
             sessionId={rating.id}
             tutorId={rating.tutor_id}
             tutorName={rating.tutor_name}
+            tutorAvatarUrl={rating.tutor_avatar}
+            subject={rating.subject}
+            startsAt={new Date(`${rating.date}T${rating.start_time}`)}
+            durationMinutes={rating.duration_minutes}
             onClose={() => setRating(null)}
           />
         )}

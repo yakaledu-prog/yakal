@@ -277,7 +277,8 @@ export const getSessionExtras = async (sessionIds: string[]): Promise<SessionExt
 export const rateSession = async (
   sessionId: string,
   tutorId: string,
-  stars: number
+  stars: number,
+  comment?: string
 ): Promise<{ success: boolean; error?: string }> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return { success: false, error: 'You need to be signed in to rate a session.' };
@@ -285,20 +286,38 @@ export const rateSession = async (
   const { error } = await supabase
     .from('session_ratings')
     .upsert(
-      { session_id: sessionId, rated_by: user.user.id, ratee_id: tutorId, stars },
+      {
+        session_id: sessionId,
+        rated_by: user.user.id,
+        ratee_id: tutorId,
+        stars,
+        comment: comment?.trim() || null,
+      },
       { onConflict: 'session_id,rated_by' }
     );
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    // The policy refuses a session that has not happened. Saying so beats
+    // quoting a row-level security message at somebody holding five stars.
+    const refused = /row-level security/i.test(error.message);
+    return {
+      success: false,
+      error: refused
+        ? "This session cannot be rated yet. Ratings open once the lesson has taken place."
+        : error.message,
+    };
+  }
   return { success: true };
 };
 
 /** Has this student already had their say about this session? */
-export const getMyRating = async (sessionId: string): Promise<number | null> => {
+export const getMyRating = async (
+  sessionId: string
+): Promise<{ stars: number; comment: string } | null> => {
   const { data } = await supabase
     .from('session_ratings')
-    .select('stars')
+    .select('stars, comment')
     .eq('session_id', sessionId)
     .maybeSingle();
-  return data?.stars ?? null;
+  return data ? { stars: data.stars, comment: data.comment ?? '' } : null;
 };
