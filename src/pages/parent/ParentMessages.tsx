@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -10,7 +10,7 @@ import {
   MessagingLayout,
   useMessaging,
 } from "@/components/messaging";
-import { getMyFlags } from "@/services/flagService";
+import { describeReport, getConversationReports, getMyFlags } from "@/services/reports";
 
 /**
  * The parent's messages.
@@ -74,6 +74,24 @@ export function ParentMessages({
     queryFn: () => getMyFlags(activeConversation!.id, user!.id),
     enabled: !!activeConversation?.id && !!user?.id,
   });
+
+  // What the scan picked out of this conversation. Only a linked parent and an
+  // admin can read these rows at all, so for anyone else this comes back empty
+  // and nothing is marked.
+  const { data: reports } = useQuery({
+    queryKey: ["message-reports", activeConversation?.id],
+    queryFn: () => getConversationReports(activeConversation!.id),
+    enabled: !!activeConversation?.id,
+  });
+
+  // The bubbles need a label, not the categories behind it.
+  const reportLabels = useMemo(() => {
+    const labels = new Map<string, { severity: "high" | "medium"; label: string }>();
+    for (const [id, report] of reports ?? []) {
+      labels.set(id, { severity: report.severity, label: describeReport(report) });
+    }
+    return labels;
+  }, [reports]);
 
   // One wrapper for both modes: embedded fills its tab, standalone fills the page.
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -141,6 +159,7 @@ export function ParentMessages({
           }
           onFlag={() => setFlagging(true)}
           isFlagged={myFlags.length > 0}
+          messageReports={reportLabels}
           aside={
             showProfile && activeConversation ? (
               <ContactInfoPanel
@@ -158,6 +177,7 @@ export function ParentMessages({
             userId={user.id}
             messages={activeConversation.messages}
             existing={myFlags}
+            reports={reports}
             onClose={() => setFlagging(false)}
             onDone={() => void refetchFlag()}
           />

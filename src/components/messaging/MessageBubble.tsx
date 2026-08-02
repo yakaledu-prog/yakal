@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, CheckCheck, Clock, AlertCircle, Play, Pause, FileText } from "lucide-react";
+import { Check, CheckCheck, Clock, AlertCircle, Flag, Play, Pause, FileText } from "lucide-react";
 import WaveSurfer from "wavesurfer.js";
 import type { ChatContact, ChatMessage } from "@/services/messageService";
 import { cn } from "@/utils/cn";
@@ -84,12 +84,20 @@ export function MessageBubble({
   isConsecutive,
   currentUserId,
   attachment,
+  report,
 }: {
   msg: ChatMessage;
   contact?: ChatContact;
   isConsecutive?: boolean;
   currentUserId?: string;
   attachment?: LocalAttachment;
+  /**
+   * What the scan picked out of this message. Only ever passed on the parent's
+   * monitoring view: the people in the conversation are not told, because
+   * somebody who can see which message was caught can work out which word did
+   * it and write the next one differently.
+   */
+  report?: { severity: "high" | "medium"; label: string };
 }) {
   const isMe = msg.senderId === currentUserId;
   const isOnlyEmoji =
@@ -138,12 +146,24 @@ export function MessageBubble({
           isMe
             ? "bg-[#1099A1] text-white border-b-[3px] border-[#087b82] rounded-br-sm"
             : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] border-b-[3px] border-black/10 dark:border-black/30 rounded-bl-sm",
-          msg.failed && "opacity-70 ring-1 ring-[#CAA25F]"
+          msg.failed && "opacity-70 ring-1 ring-[#CAA25F]",
+          // Marked rather than hidden or redacted. A parent has to read the
+          // words to judge them, and the whole point is that they can.
+          report && "ring-2 ring-[#CAA25F]"
         )}
       >
         {!isMe && contact && !isConsecutive && (
           <div className="text-[13px] font-semibold text-[#1099A1] mb-0.5 leading-tight">
             {contact.name}
+          </div>
+        )}
+
+        {/* Why it was picked out, above the message itself: a parent scrolling
+            a long thread needs to know before they read, not after. */}
+        {report && (
+          <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-semibold text-[#CAA25F]">
+            <Flag size={11} fill="currentColor" />
+            {report.label}
           </div>
         )}
 

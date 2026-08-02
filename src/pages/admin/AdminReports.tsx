@@ -17,7 +17,8 @@ import {
   setFlagStatus,
   type AdminFlag,
   type FlagStatus,
-} from "@/services/flagService";
+  getReportedMessageIds,
+} from "@/services/reports";
 
 // ============================================================
 // Reported conversations.
@@ -335,6 +336,15 @@ function ReviewDialog({
     queryFn: () => getReportedConversation(flag.conversationId, flag.message?.id ?? null),
   });
 
+  // Which of these the scan had already caught on its own. A report the system
+  // agrees with is worth reading before one it did not see, and an admin
+  // cannot tell the two apart from the report alone.
+  const { data: autoCaught } = useQuery({
+    queryKey: ["auto-caught", flag.conversationId, messages.length],
+    queryFn: () => getReportedMessageIds(messages.map((m) => m.id)),
+    enabled: messages.length > 0,
+  });
+
   const settled = flag.status !== "open";
 
   return (
@@ -415,6 +425,7 @@ function ReviewDialog({
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {m.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                       {m.isFlagged && " - reported"}
+                      {autoCaught?.has(m.id) && " - picked up automatically"}
                     </p>
                   </div>
                 </div>

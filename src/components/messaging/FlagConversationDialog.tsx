@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Flag, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,7 +10,10 @@ import {
   withdrawFlag,
   type ConversationFlag,
   type FlagReason,
-} from "@/services/flagService";
+  type MessageReport,
+  describeReport,
+  reasonsFor,
+} from "@/services/reports";
 
 // ============================================================
 // Reporting messages to the Yakal team.
@@ -43,6 +46,7 @@ export function FlagConversationDialog({
   userId,
   messages,
   existing,
+  reports,
   onClose,
   onDone,
 }: {
@@ -54,6 +58,13 @@ export function FlagConversationDialog({
   messages: ChatMessage[];
   /** This reporter's own open reports on this conversation. */
   existing: ConversationFlag[];
+  /**
+   * What the scan picked out, keyed by message id. Given, those messages start
+   * picked and the reasons start filled in: a parent who has been told there
+   * is something to look at should not then have to find it in the transcript
+   * themselves.
+   */
+  reports?: Map<string, MessageReport>;
   onClose: () => void;
   onDone: () => void | Promise<void>;
 }) {
@@ -75,6 +86,25 @@ export function FlagConversationDialog({
     [existing]
   );
   const generalReport = existing.find((f) => !f.message_id) ?? null;
+
+  // What the scan caught, still unreported and still in the pickable window.
+  const scanned = useMemo(
+    () =>
+      reports
+        ? recent.filter((m) => reports.has(m.id) && !alreadyReported.has(m.id)).map((m) => m.id)
+        : [],
+    [reports, recent, alreadyReported]
+  );
+
+  // Opening the dialog fills the form in. The parent was sent here by a
+  // notification about specific messages, so starting them on an empty picker
+  // and asking them to find those messages again is asking them to do the work
+  // twice. They can still add to it or take things out before sending.
+  useEffect(() => {
+    if (!open || scanned.length === 0) return;
+    setSelected((current) => (current.length > 0 ? current : scanned));
+    setReasons((current) => (current.length > 0 ? current : reasonsFor(scanned, reports!)));
+  }, [open, scanned, reports]);
 
   if (!open) return null;
 
@@ -223,6 +253,7 @@ export function FlagConversationDialog({
                 // while the checkbox says otherwise.
                 const on = general || selected.includes(m.id);
                 const mine = m.senderId === userId;
+                const caught = reports?.get(m.id);
                 return (
                   <button
                     key={m.id}
@@ -263,6 +294,15 @@ export function FlagConversationDialog({
                       })}
                       {done && " - already reported"}
                     </span>
+                    {/* Why the system picked this one. Said plainly, because a
+                        parent about to put their name to a report is entitled
+                        to know what they are agreeing with. */}
+                    {caught && (
+                      <span className="flex items-center gap-1.5 px-1 text-[11px] font-semibold text-[#CAA25F]">
+                        <Flag size={10} fill="currentColor" />
+                        {describeReport(caught)}
+                      </span>
+                    )}
                   </button>
                 );
               })}

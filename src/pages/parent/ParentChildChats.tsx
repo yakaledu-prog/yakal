@@ -8,10 +8,12 @@ import {
   type ChatConversation,
 } from "@/services/messageService";
 import {
+  FlagConversationDialog,
   MessagesPageHeader,
   MessagingLayout,
   useMessaging,
 } from "@/components/messaging";
+import { describeReport, getConversationReports, getMyFlags } from "@/services/reports";
 
 // ============================================================
 // A parent watching a linked child's conversations. Read only by policy: there
@@ -20,12 +22,17 @@ import {
 //
 // The child's messages are the ones drawn on the right, so ChatBody is given
 // the child's id as the "current user".
+//
+// This is where the scan surfaces. A parent sent here by a notification lands
+// on the conversation, sees the message that caused it marked in place, and
+// reports it without having to find it again.
 // ============================================================
 
 export function ParentChildChats() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeId, setActiveId] = useState("");
+  const [flagging, setFlagging] = useState(false);
 
   const { data: views = [], isLoading } = useQuery({
     queryKey: ["parent-child-chats", user?.id],
@@ -61,6 +68,28 @@ export function ParentChildChats() {
   const active = conversations.find((c) => c.id === activeId);
   const activeChildId = views.find((v) => v.id === activeId)?.childId;
 
+  // What the scan picked out. Only a linked parent and an admin can read these
+  // rows, so for anybody else this comes back empty and nothing is marked.
+  const { data: reports } = useQuery({
+    queryKey: ["message-reports", activeId],
+    queryFn: () => getConversationReports(activeId),
+    enabled: !!activeId,
+  });
+
+  const reportLabels = useMemo(() => {
+    const labels = new Map<string, { severity: "high" | "medium"; label: string }>();
+    for (const [id, report] of reports ?? []) {
+      labels.set(id, { severity: report.severity, label: describeReport(report) });
+    }
+    return labels;
+  }, [reports]);
+
+  const { data: myFlags = [], refetch: refetchFlags } = useQuery({
+    queryKey: ["conversation-flags", activeId, user?.id],
+    queryFn: () => getMyFlags(activeId, user!.id),
+    enabled: !!activeId && !!user?.id,
+  });
+
   return (
     <PageWrapper className="!p-0 h-full overflow-hidden">
       <div className="flex flex-col h-full min-h-0 bg-background dark:bg-[#111b21]">
@@ -81,6 +110,9 @@ export function ParentChildChats() {
           onlineIds={onlineIds}
           readOnly
           readOnlyNotice="Read only - you can follow this conversation but not take part in it."
+          messageReports={reportLabels}
+          onFlag={() => setFlagging(true)}
+          isFlagged={myFlags.length > 0}
           emptyState={
             <>
               <MessagesSquare size={40} className="text-[#aebac1]" />
@@ -94,6 +126,20 @@ export function ParentChildChats() {
             </>
           }
         />
+
+        {active && user && (
+          <FlagConversationDialog
+            open={flagging}
+            contactName={active.contact.name}
+            conversationId={active.id}
+            userId={user.id}
+            messages={active.messages}
+            existing={myFlags}
+            reports={reports}
+            onClose={() => setFlagging(false)}
+            onDone={() => void refetchFlags()}
+          />
+        )}
       </div>
     </PageWrapper>
   );

@@ -86,6 +86,7 @@ export function ChatBody({
   onOpenContactInfo,
   onFlag,
   isFlagged = false,
+  messageReports,
   isPeerTyping = false,
   draft,
   readOnly = false,
@@ -108,6 +109,12 @@ export function ChatBody({
   onFlag?: () => void;
   /** Whether this person has already reported the conversation. */
   isFlagged?: boolean;
+  /**
+   * What the scan picked out, keyed by message id. Only the parent's
+   * monitoring view passes this; for everyone else it stays undefined and no
+   * bubble is marked.
+   */
+  messageReports?: Map<string, { severity: "high" | "medium"; label: string }>;
   isPeerTyping?: boolean;
   /** Pre-fills the composer, e.g. a message started from another page. */
   draft?: string;
@@ -315,6 +322,7 @@ export function ChatBody({
                 isConsecutive={idx > 0 && group.messages[idx - 1].senderId === msg.senderId}
                 currentUserId={currentUserId}
                 attachment={attachmentById.get(msg.id)}
+                report={messageReports?.get(msg.id)}
               />
             ))}
           </div>

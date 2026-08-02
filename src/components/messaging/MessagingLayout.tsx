@@ -38,6 +38,7 @@ export function MessagingLayout({
   hideChatHeader,
   onFlag,
   isFlagged,
+  messageReports,
   draft,
   aside,
   emptyState,
@@ -78,6 +79,8 @@ export function MessagingLayout({
   /** Opens the report dialog from the composer. Omit to hide the flag. */
   onFlag?: () => void;
   isFlagged?: boolean;
+  /** Scan results per message, for the parent's monitoring view. */
+  messageReports?: Map<string, { severity: "high" | "medium"; label: string }>;
   /** Pre-fills the composer, e.g. a message started from another page. */
   draft?: string;
   /** Optional panel beside the history, below the contact header. */
@@ -162,6 +165,7 @@ export function MessagingLayout({
                 onOpenContactInfo={hideChatHeader ? onProfileClick : undefined}
                 onFlag={onFlag}
                 isFlagged={isFlagged}
+                messageReports={messageReports}
               />
               {aside}
             </div>
