@@ -2,7 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { ResumePanel } from "@/components/shared/ResumePanel";
-import { TutorResume, resumeFromProfile } from "@/components/shared/TutorResume";
+import {
+  TutorResume,
+  resumeFromProfile,
+  type ResumeSection,
+} from "@/components/shared/TutorResume";
+import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { Calendar, Camera, Check, CheckCircle, Copy, Edit2, Loader2, LogOut, Mail, Phone, Users, X } from "lucide-react";
@@ -15,6 +20,50 @@ const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "
 
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
+  const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
+
+  /** The database column behind each section. */
+  const COLUMN: Record<ResumeSection, string> = {
+    certifications: "certifications",
+    education: "education",
+    workExperience: "work_experience",
+    languages: "languages",
+  };
+
+  /**
+   * Write one section back whole.
+   *
+   * jsonb has no append, and a read-modify-write is fine here: nobody edits
+   * their own CV from two tabs at once.
+   */
+  async function writeSection(section: ResumeSection, next: unknown[]) {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [COLUMN[section]]: next })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Could not save that.");
+      return;
+    }
+    await refreshProfile?.();
+  }
+
+  function addEntry(entry: Record<string, string>) {
+    if (!addingTo) return;
+    const current = resumeFromProfile(profile)[addingTo] as unknown[];
+    void writeSection(addingTo, [...current, entry]);
+    setAddingTo(null);
+  }
+
+  function removeEntry(section: ResumeSection, index: number) {
+    const current = resumeFromProfile(profile)[section] as unknown[];
+    void writeSection(
+      section,
+      current.filter((_, i) => i !== index)
+    );
+  }
   const [editOpen, setEditOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courseCount, setCourseCount] = useState(0);
@@ -164,7 +213,8 @@ export function TutorProfile() {
                   actually reads before booking is this. */}
               <TutorResume
                 resume={resumeFromProfile(profile)}
-                emptyText="Add your education and experience so families can see who they are booking."
+                onAdd={setAddingTo}
+                onRemove={removeEntry}
               />
             </div>
           </div>
@@ -172,6 +222,14 @@ export function TutorProfile() {
       </div>
 
       {editOpen && <EditModal onClose={() => setEditOpen(false)} />}
+
+      {addingTo && (
+        <ResumeEntryDialog
+          section={addingTo}
+          onSave={addEntry}
+          onClose={() => setAddingTo(null)}
+        />
+      )}
     </PageWrapper>
   );
 }
