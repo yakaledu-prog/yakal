@@ -176,6 +176,32 @@ export async function getConnectReadiness(tutorIds: string[]): Promise<Map<strin
   return out;
 }
 
+
+// ------------------------------------------------------------
+// Reading a table, loudly.
+//
+// Every query on this page used to drop its error and return an empty array,
+// so a wrong table name and a genuinely empty table looked identical. Four
+// bugs hid behind that for months: a join on courses.tutor_ids (no such
+// column), a read of college_applications (no such table), and two tables an
+// admin had no policy on. Each one showed "None found" and looked like
+// missing data.
+//
+// This keeps the empty-array behaviour, because half a page is better than a
+// blank one, but it can no longer happen quietly.
+// ------------------------------------------------------------
+async function rows<T = any>(
+  label: string,
+  query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const { data, error } = await query;
+  if (error) {
+    console.error(`[admin] ${label} failed: ${error.message}`);
+    return [];
+  }
+  return data ?? [];
+}
+
 // ---- Users / approvals ----
 export async function getUsers(role?: string): Promise<AdminUser[]> {
   let q = supabase
@@ -365,41 +391,39 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
 
     // Common query logic based on role
     if (role === "parent") {
-      const [{ data: invoices }, { data: links }] = await Promise.all([
-        supabase.from("invoices").select("*").eq("parent_id", id).order("created_at", { ascending: false }),
-        supabase.from("parent_student_links").select("student_id").eq("parent_id", id).eq("status", "active")
+      const [invoices, links] = await Promise.all([
+        rows("parent invoices", supabase.from("invoices").select("*").eq("parent_id", id).order("created_at", { ascending: false })),
+        rows("parent children", supabase.from("parent_student_links").select("student_id").eq("parent_id", id).eq("status", "active")),
       ]);
-      details.invoices = invoices || [];
-      const studentIds = (links || []).map((l: any) => l.student_id);
+      details.invoices = invoices;
+      const studentIds = links.map((l: any) => l.student_id);
       if (studentIds.length > 0) {
-        const { data: children } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
-        details.children = children || [];
+        details.children = await rows("children profiles",
+          supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds));
       } else {
         details.children = [];
       }
     } else if (role === "student") {
-      const [{ data: sessions }, { data: apps }, { data: services }] = await Promise.all([
-        supabase.from("sessions").select("*").eq("student_id", id).order("date", { ascending: false }).order("start_time", { ascending: false }),
+      const [sessions, apps, services] = await Promise.all([
+        rows("student sessions", supabase.from("sessions").select("*").eq("student_id", id).order("date", { ascending: false }).order("start_time", { ascending: false })),
         // college_applications has never existed. The table is
         // college_guide_applications, so this silently returned nothing and
         // the Admissions tab always read "No applications found".
-        supabase.from("college_guide_applications").select("*").eq("student_id", id),
-        supabase.from("child_services").select("*").eq("student_id", id)
+        rows("student applications", supabase.from("college_guide_applications").select("*").eq("student_id", id)),
+        rows("student services", supabase.from("child_services").select("*").eq("student_id", id)),
       ]);
-      details.sessions = sessions || [];
-      details.child_services = services || [];
+      details.sessions = sessions;
+      details.child_services = services;
 
       // Who is advising them. The application stores a counselor id, which is
       // no use to somebody reading the page, so it is resolved to a name here
       // rather than left as a uuid nobody can act on.
-      const counselorIds = [
-        ...new Set((apps || []).map((a: any) => a.counselor_id).filter(Boolean)),
-      ];
-      const { data: counselors } = counselorIds.length
-        ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", counselorIds)
-        : { data: [] as any[] };
-      const byId = new Map((counselors ?? []).map((c: any) => [c.id, c]));
-      details.applications = (apps || []).map((a: any) => {
+      const counselorIds = [...new Set(apps.map((a: any) => a.counselor_id).filter(Boolean))];
+      const counselors = counselorIds.length
+        ? await rows("counselor profiles", supabase.from("profiles").select("id, full_name, avatar_url").in("id", counselorIds))
+        : [];
+      const byId = new Map(counselors.map((c: any) => [c.id, c]));
+      details.applications = apps.map((a: any) => {
         const counselor = a.counselor_id ? byId.get(a.counselor_id) : null;
         return {
           ...a,
@@ -408,39 +432,48 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
         };
       });
     } else if (role === "tutor") {
-      const [{ data: sessions }, { data: courses }, { data: invoices }] = await Promise.all([
-        supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false }),
-        supabase.from("courses").select("*").eq("tutor_id", id),
-        supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })
+      const [sessions, courses, invoices] = await Promise.all([
+        rows("tutor sessions", supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false })),
+        rows("tutor courses", supabase.from("courses").select("*").eq("tutor_id", id)),
+        rows("tutor invoices", supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })),
       ]);
-      details.sessions = sessions || [];
-      details.courses = courses || [];
-      details.invoices = invoices || [];
+      details.sessions = sessions;
+      details.courses = courses;
+      details.invoices = invoices;
       
-      const studentIds = [...new Set((sessions || []).map((s: any) => s.student_id).filter(Boolean))];
+      const studentIds = [...new Set(sessions.map((s: any) => s.student_id).filter(Boolean))];
       if (studentIds.length > 0) {
-        const { data: students } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
-        details.students = students || [];
+        details.students = await rows("tutor students",
+          supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds));
       } else {
         details.students = [];
       }
     } else if (role === "counselor") {
-      const [{ data: apps }, { data: sessions }, { data: invoices }] = await Promise.all([
-        supabase.from("college_applications").select("*").eq("counselor_id", id),
-        supabase.from("sessions").select("*").eq("counselor_id", id).order("start_time", { ascending: false }),
-        supabase.from("invoices").select("*").eq("counselor_id", id).order("created_at", { ascending: false })
-      ]);
-      details.applications = apps || [];
-      details.sessions = sessions || [];
-      details.invoices = invoices || [];
-      
-      const studentIds = [...new Set((apps || []).map((a: any) => a.student_id).filter(Boolean))];
+      // All three of these used to query things that do not exist: the table
+      // college_applications, and a counselor_id column on sessions and on
+      // invoices. A counselor is tied to students through the application they
+      // advise on, and to sessions through those students, so that is what is
+      // read.
+      const apps = await rows("counselor applications",
+        supabase.from("college_guide_applications").select("*").eq("counselor_id", id));
+      details.applications = apps;
+
+      const studentIds = [...new Set(apps.map((a: any) => a.student_id).filter(Boolean))];
       if (studentIds.length > 0) {
-        const { data: students } = await supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds);
-        details.students = students || [];
+        const [students, sessions] = await Promise.all([
+          rows("counselor students",
+            supabase.from("profiles").select("id, full_name, avatar_url, grade_level").in("id", studentIds)),
+          rows("counselor sessions",
+            supabase.from("sessions").select("*").in("student_id", studentIds)
+              .order("date", { ascending: false }).order("start_time", { ascending: false })),
+        ]);
+        details.students = students;
+        details.sessions = sessions;
       } else {
         details.students = [];
+        details.sessions = [];
       }
+      details.invoices = [];
     }
 
     if (details.sessions && details.sessions.length > 0) {
