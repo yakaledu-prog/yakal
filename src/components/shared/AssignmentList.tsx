@@ -1,4 +1,5 @@
-import { CalendarDays, ExternalLink, Loader2, Paperclip } from "lucide-react";
+import { useState } from "react";
+import { CalendarDays, ChevronDown, ExternalLink, Loader2, Paperclip } from "lucide-react";
 
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
@@ -14,6 +15,10 @@ import { cn } from "@/utils/cn";
 // Shared by the student's course tasks and the tutor's assignment list. What
 // differs between them is only the footer: a student sees their own grade, a
 // tutor sees who has turned it in.
+//
+// Collapsed by default. A course with a term of work behind it was a page you
+// scrolled for a minute to find the thing due on Friday; closed, the whole
+// term fits on one screen and opens where you need it.
 // ============================================================
 
 export interface AssignmentMaterial {
@@ -117,6 +122,17 @@ export function AssignmentList({
   onOpenSubmissions?: (assignment: AssignmentItem) => void;
   className?: string;
 }) {
+  // Nothing open to begin with, and one at a time is deliberate: reading two
+  // assignments side by side is not a thing anyone does.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
@@ -130,12 +146,13 @@ export function AssignmentList({
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-3", className)}>
       {assignments.map((a) => {
         // Done is the exception worth colouring. Everything else is simply
         // outstanding, and tinting most of a list tells nobody anything.
         const done = a.isSubmitted === true || a.grade != null;
         const submitters = submittersById?.[a.id] ?? [];
+        const open = expanded.has(a.id);
 
         return (
           <article
@@ -147,17 +164,53 @@ export function AssignmentList({
           >
             <header
               className={cn(
-                "flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3",
+                "flex flex-wrap items-center gap-3 px-4 py-3",
+                open && "border-b",
                 done
                   ? "border-[#1099A1]/30 bg-[#1099A1]/10"
                   : "border-border bg-muted/40"
               )}
             >
-              <h2 className="min-w-0 text-[16px] text-foreground">
-                {a.index}. {a.title}
-              </h2>
+              <button
+                type="button"
+                onClick={() => toggle(a.id)}
+                aria-expanded={open}
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+              >
+                <ChevronDown
+                  size={17}
+                  className={cn(
+                    "shrink-0 text-muted-foreground transition-transform",
+                    open && "rotate-180"
+                  )}
+                />
+                <span className="min-w-0 truncate text-[16px] text-foreground">
+                  {a.index}. {a.title}
+                </span>
+                {/* Closed, the row still has to answer when it is due and how
+                    it went, or it is only a title to click hopefully. */}
+                {!open && (
+                  <span className="ml-auto hidden shrink-0 items-center gap-4 pl-3 text-[13px] text-muted-foreground sm:flex">
+                    {a.dueDate && (
+                      <span>
+                        Due{" "}
+                        {new Date(`${a.dueDate}T00:00:00`).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    )}
+                    {a.grade != null && (
+                      <span className="text-[#1099A1]">
+                        {a.grade}
+                        {a.maxPoints != null && ` / ${a.maxPoints}`}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </button>
 
-              {a.link && (
+              {a.link && open && (
                 <a
                   href={a.link}
                   target="_blank"
@@ -169,6 +222,7 @@ export function AssignmentList({
               )}
             </header>
 
+            {open && (
             <div className="flex flex-col gap-4 px-4 py-4">
               <div className="text-foreground">
                 {a.description ? (
@@ -248,6 +302,7 @@ export function AssignmentList({
                 </div>
               )}
             </div>
+            )}
           </article>
         );
       })}
