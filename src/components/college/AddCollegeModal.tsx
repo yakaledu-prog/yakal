@@ -61,6 +61,9 @@ const input =
 
 export function AddCollegeModal({
   addLabel = "Add to my list",
+  targets,
+  selectedTargets,
+  onTargetsChange,
   open,
   onClose,
   onSubmit,
@@ -72,6 +75,14 @@ export function AddCollegeModal({
 }: {
   /** Whose list this goes on. "my" is wrong when a parent adds for a child. */
   addLabel?: string;
+  /**
+   * The people this college could go to, for a parent or counselor adding on
+   * somebody's behalf. Absent for a student adding to their own list, who has
+   * no choice to make and should not be asked to make one.
+   */
+  targets?: { id: string; name: string }[];
+  selectedTargets?: string[];
+  onTargetsChange?: (ids: string[]) => void;
   open: boolean;
   onClose: () => void;
   onSubmit: (input: AddCollegeInput) => void;
@@ -361,6 +372,42 @@ export function AddCollegeModal({
 
           {step === 2 && (
             <div className="space-y-5">
+              {/* Asked here rather than on the page, so browsing is not gated
+                  behind choosing a child first. More than one can be picked:
+                  a college worth a look for one sibling is often worth a look
+                  for the other. */}
+              {targets && targets.length > 0 && (
+                <div>
+                  <FieldLabel hint="Pick everyone this should go to.">Add to</FieldLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {targets.map((t) => {
+                      const on = (selectedTargets ?? []).includes(t.id);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() =>
+                            onTargetsChange?.(
+                              on
+                                ? (selectedTargets ?? []).filter((x) => x !== t.id)
+                                : [...(selectedTargets ?? []), t.id]
+                            )
+                          }
+                          className={cn(
+                            "rounded-xl border px-3.5 py-2 text-[13.5px] transition-colors",
+                            on
+                              ? "border-[#1099A1] bg-[#1099A1]/10 font-semibold text-[#1099A1]"
+                              : "border-[#e9edef] text-[#54656f] hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1]"
+                          )}
+                        >
+                          {t.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div>
                 <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
                 <Segmented
@@ -419,7 +466,7 @@ export function AddCollegeModal({
             <button
               type="button"
               onClick={submit}
-              disabled={saving || !name}
+              disabled={saving || !name || (!!targets?.length && !selectedTargets?.length)}
               className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}

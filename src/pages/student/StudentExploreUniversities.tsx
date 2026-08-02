@@ -42,6 +42,7 @@ const PAGE_SIZE = 24;
 export function StudentExploreUniversities({
   studentId,
   studentName,
+  targets,
 }: {
   /**
    * Whose list an added college goes on. The signed-in student by default; a
@@ -52,6 +53,12 @@ export function StudentExploreUniversities({
   studentId?: string;
   /** Named in the confirmation, so "added to your list" does not mislead. */
   studentName?: string;
+  /**
+   * Everyone this person could add for: a parent's children, a counselor's
+   * students. Given, the college is chosen first and the recipients second,
+   * inside the modal, so browsing is never gated behind picking a child.
+   */
+  targets?: { id: string; name: string }[];
 } = {}) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -122,25 +129,44 @@ export function StudentExploreUniversities({
   // fields we cannot look up (deadline, round, essay count) are cheapest to
   // capture at the moment the student is already looking at the college.
   const [pendingAdd, setPendingAdd] = useState<College | null>(null);
+  // Everyone the next add goes to. Starts as the only child when there is one,
+  // because a list of one to choose from is not a choice.
+  const [chosen, setChosen] = useState<string[]>(targets?.length === 1 ? [targets[0].id] : []);
 
   const submitAdd = async (input: AddCollegeInput) => {
-    if (!user || !targetId) return;
+    if (!user) return;
+    // Whoever was ticked in the modal, or the one list there is.
+    const recipients = targets?.length ? chosen : targetId ? [targetId] : [];
+    if (recipients.length === 0) return;
+
     setAdding(input.unitid);
     // entered_by is the person clicking, not the person whose list it is, so
     // the row can say where it came from.
-    const res = await addSchoolFromCatalog(targetId, input, user.id);
+    const results = await Promise.all(
+      recipients.map((id) => addSchoolFromCatalog(id, input, user.id))
+    );
     setAdding(null);
-    if (!res.success) {
-      toast.error(res.error || "Could not add that college.");
+
+    const failed = results.filter((r) => !r.success);
+    if (failed.length === results.length) {
+      toast.error(failed[0].error || "Could not add that college.");
       return;
     }
+
     setPendingAdd(null);
+    const names = recipients
+      .map((id) => targets?.find((t) => t.id === id)?.name)
+      .filter(Boolean);
     toast.success(
-      onBehalf
-        ? `${input.school_name} added to ${possessive} list.`
-        : `${input.school_name} added to your list.`
+      names.length
+        ? `${input.school_name} added to ${names.join(" and ")}.`
+        : onBehalf
+          ? `${input.school_name} added to ${possessive} list.`
+          : `${input.school_name} added to your list.`
     );
-    qc.invalidateQueries({ queryKey: ["college-profile", targetId] });
+    // Anything that did fail should say so rather than be quietly dropped.
+    if (failed.length) toast.error(`${failed.length} of those could not be added.`);
+    for (const id of recipients) qc.invalidateQueries({ queryKey: ["college-profile", id] });
   };
 
   if (isLoading) {
@@ -334,7 +360,10 @@ export function StudentExploreUniversities({
       </PageWrapper>
 
       <AddCollegeModal
-        addLabel={onBehalf ? `Add to ${possessive} list` : "Add to my list"}
+        addLabel={targets?.length ? "Add to list" : onBehalf ? `Add to ${possessive} list` : "Add to my list"}
+        targets={targets}
+        selectedTargets={chosen}
+        onTargetsChange={setChosen}
         open={!!pendingAdd}
         onClose={() => setPendingAdd(null)}
         onSubmit={submitAdd}

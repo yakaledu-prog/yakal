@@ -1,29 +1,34 @@
-import { ChildViewFrame } from "@/components/shared/ChildViewFrame";
+import { useQuery } from "@tanstack/react-query";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { getLinkedChildren } from "@/services/parentService";
 import { StudentExploreUniversities } from "@/pages/student/StudentExploreUniversities";
 
 // ============================================================
 // Browsing universities on behalf of a child.
 //
-// The same catalogue the student sees, pointed at their list rather than the
-// parent's. Anything added records the parent as the one who added it, so a
-// student opening their list to find a college they have not heard of can see
-// where it came from.
+// The same catalogue the student sees. Which child a college goes to is asked
+// in the add dialog rather than at the top of the page: a parent comparing
+// schools has not decided who it is for yet, and making them say so before
+// they can look put the question in the wrong order. It also means one look
+// through the catalogue can serve two children.
 //
-// A page of its own rather than a tab on the child's record: it carries its
-// own filter rail and header, and nesting that under two rows of tabs made
-// the thing you came to read the third row down. The frame's banner is off
-// for the same reason - the page already opens with one.
+// No frame around it. The page brings its own header and filter rail, and
+// wrapping it in another banner with another child picker gave it two of both.
 // ============================================================
 
 export function ParentExplore() {
+  const { user } = useAuth();
+
+  const { data: children = [] } = useQuery({
+    queryKey: ["linked-children", user?.id],
+    queryFn: () => getLinkedChildren(user!.id),
+    enabled: !!user?.id,
+  });
+
   return (
-    <ChildViewFrame chrome={false} requiresService="admissions">
-      {(child) => (
-        <StudentExploreUniversities
-          studentId={child.id}
-          studentName={child.name.split(" ")[0]}
-        />
-      )}
-    </ChildViewFrame>
+    <StudentExploreUniversities
+      targets={children.map((c) => ({ id: c.id, name: c.full_name }))}
+    />
   );
 }
