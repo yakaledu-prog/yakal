@@ -396,13 +396,17 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
         ...new Set((apps || []).map((a: any) => a.counselor_id).filter(Boolean)),
       ];
       const { data: counselors } = counselorIds.length
-        ? await supabase.from("profiles").select("id, full_name").in("id", counselorIds)
+        ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", counselorIds)
         : { data: [] as any[] };
-      const counselorName = new Map((counselors ?? []).map((c: any) => [c.id, c.full_name]));
-      details.applications = (apps || []).map((a: any) => ({
-        ...a,
-        counselor_name: a.counselor_id ? (counselorName.get(a.counselor_id) ?? null) : null,
-      }));
+      const byId = new Map((counselors ?? []).map((c: any) => [c.id, c]));
+      details.applications = (apps || []).map((a: any) => {
+        const counselor = a.counselor_id ? byId.get(a.counselor_id) : null;
+        return {
+          ...a,
+          counselor_name: counselor?.full_name ?? null,
+          counselor_avatar_url: counselor?.avatar_url ?? null,
+        };
+      });
     } else if (role === "tutor") {
       const [{ data: sessions }, { data: courses }, { data: invoices }] = await Promise.all([
         supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false }),

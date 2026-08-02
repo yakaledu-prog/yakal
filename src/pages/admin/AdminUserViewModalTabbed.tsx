@@ -225,14 +225,24 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                   <div>
                     <p className="text-[13px] font-semibold text-[#111] dark:text-white">Program: {a.program_interest || "Undecided"}</p>
                     <p className="text-[12px] text-muted-foreground mt-1">Stage: <span className="font-medium capitalize">{a.stage}</span></p>
-                    {/* Who to go to about this student, named rather than left
-                        as the id the row actually stores. */}
-                    <p className="text-[12px] text-muted-foreground mt-0.5">
-                      Counselor:{" "}
-                      <span className="font-medium text-[#111] dark:text-white">
-                        {a.counselor_name || "Not assigned"}
-                      </span>
-                    </p>
+                    {/* Who to go to about this student. A face rather than a
+                        name: the row stores an id, and an admin recognises the
+                        handful of counselors on sight faster than they read
+                        them. The name stays on the image for anyone hovering,
+                        and for a screen reader. */}
+                    <div className="mt-1 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                      Counselor:
+                      {a.counselor_name ? (
+                        <img
+                          src={a.counselor_avatar_url || dicebearUrl(a.counselor_name)}
+                          alt={a.counselor_name}
+                          title={a.counselor_name}
+                          className="h-6 w-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="font-medium text-[#111] dark:text-white">Not assigned</span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">{a.status}</p>
