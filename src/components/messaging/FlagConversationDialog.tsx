@@ -366,7 +366,7 @@ export function FlagConversationDialog({
                         onClick={() => toggleMessage(m.id)}
                         aria-pressed={on}
                         aria-label={`${m.text.slice(0, 60)} - from ${onRight ? subjectName : contactName}`}
-                        className="flex min-w-0 max-w-[78%] rounded-xl text-left" 
+                        className="flex min-w-0 max-w-[78%] rounded-xl text-left"
                       >
                         {bubble}
                       </button>

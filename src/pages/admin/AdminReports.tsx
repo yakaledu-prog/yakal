@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight, Loader2, RotateCcw, Search, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Flag, Loader2, RotateCcw, Search, X } from "lucide-react";
 
+import { useChatSurface } from "@/components/messaging";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
@@ -331,6 +332,10 @@ function ReviewDialog({
   onDecide: (flag: AdminFlag, next: "reviewed" | "dismissed") => void;
   onReopen: (flag: AdminFlag) => void;
 }) {
+  // The same surface the conversation was read on, so the quoted exchange
+  // looks like the thing it was quoted from.
+  const chatSurface = useChatSurface();
+
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["reported-conversation", flag.conversationId],
     queryFn: () => getReportedConversation(flag.conversationId, flag.message?.id ?? null),
@@ -381,52 +386,80 @@ function ReviewDialog({
           </button>
         </div>
 
-        {/* The conversation, with the reported message picked out. Context is
-            the point: one quoted line is rarely enough to judge. */}
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/20 p-5">
+        {/* The conversation, with the reported message picked out. Drawn as the
+            chat it came from, sides and colours and all: an admin reading a
+            complaint is reading an exchange, and a stack of grey cards makes
+            "who said this" a thing to work out rather than see.
+
+            The person reported about sits on the left, the reporter on the
+            right, so the side an admin is judging is always the same side. */}
+        <div
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5"
+          style={chatSurface}
+        >
           {isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="animate-spin text-[#1099A1]" />
             </div>
           ) : messages.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-muted-foreground">
+            <p className="py-6 text-center text-[13px] text-[#667781] dark:text-[#8696a0]">
               {flag.message
-                ? "Only the reported message is readable."
-                : "This is a concern about the conversation rather than one message."}
+                ? "That message is no longer readable."
+                : "This is a concern about the conversation rather than any one message, so there is nothing quoted to show."}
             </p>
           ) : (
             messages.map((m) => {
-              const mine = m.senderId === flag.reporter.id;
+              const onRight = m.senderId === flag.reporter.id;
               return (
                 <div
                   key={m.id}
-                  className={cn("flex items-end gap-2", mine ? "justify-end" : "justify-start")}
-                >
-                  {!mine && (
-                    <img
-                      src={m.senderAvatarUrl || dicebearUrl(m.senderName)}
-                      alt=""
-                      className="h-6 w-6 shrink-0 rounded-full object-cover"
-                    />
+                  className={cn(
+                    "flex items-end gap-2",
+                    onRight ? "flex-row-reverse" : "flex-row"
                   )}
+                >
+                  <img
+                    src={m.senderAvatarUrl || dicebearUrl(m.senderName)}
+                    alt=""
+                    title={m.senderName}
+                    className="h-7 w-7 shrink-0 rounded-full object-cover"
+                  />
                   <div
                     className={cn(
-                      "max-w-[78%] rounded-2xl px-3.5 py-2.5",
-                      m.isFlagged
-                        ? "border border-[#CAA25F] bg-[#CAA25F]/10"
-                        : mine
-                          ? "bg-[#1099A1]/10"
-                          : "bg-card border border-border"
+                      "relative max-w-[78%] rounded-xl px-3 pb-5 pt-2 shadow-sm",
+                      onRight
+                        ? "rounded-br-sm bg-[#1099A1] text-white"
+                        : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
+                      // The message the complaint is actually about. Gold means
+                      // the same thing here as it does in the parent's view.
+                      (m.isFlagged || autoCaught?.has(m.id)) && "ring-2 ring-[#CAA25F]"
                     )}
                   >
-                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-foreground">
-                      {m.text}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
+                    {!onRight && (
+                      <p className="mb-0.5 text-[12.5px] font-semibold leading-tight text-[#1099A1]">
+                        {m.senderName}
+                      </p>
+                    )}
+                    {(m.isFlagged || autoCaught?.has(m.id)) && (
+                      // Whether the scan had already caught this on its own. A
+                      // complaint the system agrees with is worth reading
+                      // before one it never saw, and the report alone does not
+                      // say which this is.
+                      <p className="mb-1 flex items-center gap-1.5 text-[11px] text-[#CAA25F]">
+                        <Flag size={10} fill="currentColor" />
+                        {m.isFlagged ? "Reported" : "Picked up automatically"}
+                        {m.isFlagged && autoCaught?.has(m.id) && " - picked up automatically"}
+                      </p>
+                    )}
+                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed">{m.text}</p>
+                    <span
+                      className={cn(
+                        "absolute bottom-1 right-2.5 text-[10px]",
+                        onRight ? "text-white/70" : "text-[#667781] dark:text-[#8696a0]"
+                      )}
+                    >
                       {m.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                      {m.isFlagged && " - reported"}
-                      {autoCaught?.has(m.id) && " - picked up automatically"}
-                    </p>
+                    </span>
                   </div>
                 </div>
               );
