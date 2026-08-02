@@ -2,21 +2,16 @@ import { useEffect, useState, useRef } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { ResumePanel } from "@/components/shared/ResumePanel";
+import { TutorResume, resumeFromProfile } from "@/components/shared/TutorResume";
 import { Button } from "@/components/ui/Button";
-import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Calendar, CalendarDays, Camera, Check, CheckCircle, CheckCircle2, ChevronRight, Copy, Edit2, Loader2, LogOut, Mail, Phone, Users, X, XCircle } from "lucide-react";
+import { Calendar, Camera, Check, CheckCircle, Copy, Edit2, Loader2, LogOut, Mail, Phone, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
 
 const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "SAT Prep", "College Advising", "Other"];
-
-function formatDate(d?: string) {
-  if (!d) return "";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
 
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -31,8 +26,6 @@ export function TutorProfile() {
     getTutorSessionsFull(user.id).then(setSessions);
     getTutorCourses(user.id).then((c) => setCourseCount(c.length));
   }, [user]);
-
-  const recent = sessions.slice(0, 6);
 
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -165,86 +158,14 @@ export function TutorProfile() {
 
             {/* Right column */}
             <div className="flex-1 w-full space-y-6">
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h3 className="text-[16px] font-bold text-foreground">Recent Sessions</h3>
-                <Link
-                  to="/tutor/sessions"
-                  className="flex items-center gap-1 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:underline"
-                >
-                  View all sessions <ChevronRight size={15} />
-                </Link>
-              </div>
-
-              <div>
-                {recent.length === 0 ? (
-                  <p className="py-10 text-center text-[14px] text-muted-foreground">
-                    No sessions yet.
-                  </p>
-                ) : (
-                  recent.map((item) => {
-                    const upcoming = item.status === "upcoming";
-                    const completed = item.status === "completed";
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-5 border-b border-border/40 py-4 last:border-0"
-                      >
-                        <div className="w-11 shrink-0 text-center">
-                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
-                            {formatDate(item.date).split(" ")[0]}
-                          </p>
-                          <p className="text-[22px] font-medium leading-none text-foreground">
-                            {formatDate(item.date).split(" ")[1]}
-                          </p>
-                        </div>
-
-                        <img
-                          src={item.student_avatar || dicebearUrl(item.student_name || "Student")}
-                          alt=""
-                          className="h-11 w-11 shrink-0 rounded-full object-cover"
-                        />
-
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[15px] font-medium text-foreground">
-                            {item.subject}
-                          </p>
-                          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                            {item.student_name}
-                          </p>
-                        </div>
-
-                        <div className="shrink-0 text-right">
-                          {/* Upcoming is the one worth picking out. Completed
-                              is the resting state and does not need a colour
-                              competing with it. */}
-                          <p
-                            className={cn(
-                              "flex items-center justify-end gap-1.5 text-[13.5px] font-medium capitalize",
-                              upcoming
-                                ? "text-[#1099A1]"
-                                : completed
-                                  ? "text-muted-foreground"
-                                  : "text-[#8a6a2a] dark:text-[#CAA25F]"
-                            )}
-                          >
-                            {upcoming ? (
-                              <CalendarDays size={14} />
-                            ) : completed ? (
-                              <CheckCircle2 size={14} />
-                            ) : (
-                              <XCircle size={14} />
-                            )}
-                            {item.status}
-                          </p>
-                          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                            {timeRange(item.start_time, item.duration_minutes)}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+              {/* A tutor's background, not their diary. Sessions already have
+                  a page of their own, and repeating five of them here answered
+                  a question nobody opens a profile to ask. What a family
+                  actually reads before booking is this. */}
+              <TutorResume
+                resume={resumeFromProfile(profile)}
+                emptyText="Add your education and experience so families can see who they are booking."
+              />
             </div>
           </div>
         </div>
@@ -299,15 +220,6 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /** "10:00 AM - 11:00 AM" from a start time and a length. */
-function timeRange(start: string, minutes: number): string {
-  const [h, m] = start.split(":").map(Number);
-  const from = new Date();
-  from.setHours(h, m, 0, 0);
-  const to = new Date(from.getTime() + (minutes || 60) * 60_000);
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return `${fmt(from)} - ${fmt(to)}`;
-}
 
 function DetailRow({
   icon,

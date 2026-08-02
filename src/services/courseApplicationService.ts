@@ -352,6 +352,11 @@ export interface CourseWithTutor extends CourseSummary {
     bio: string | null;
     subjects: string[] | null;
     hourlyRate: number | null;
+    /** Kept in the database's own shape, which is what TutorResume reads. */
+    education: unknown[];
+    work_experience: unknown[];
+    certifications: unknown[];
+    languages: unknown[];
   } | null;
 }
 
@@ -367,7 +372,7 @@ export async function getCourseForBooking(courseId: string): Promise<CourseWithT
   const { data, error } = await supabase
     .from("courses")
     .select(`${COURSE_FIELDS},
-             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate)`)
+             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate, education, work_experience, certifications, languages)`)
     .eq("id", courseId)
     .maybeSingle();
 
@@ -384,6 +389,10 @@ export async function getCourseForBooking(courseId: string): Promise<CourseWithT
       ? {
           id: t.id,
           name: t.full_name,
+          education: t.education ?? [],
+          work_experience: t.work_experience ?? [],
+          certifications: t.certifications ?? [],
+          languages: t.languages ?? [],
           avatarUrl: t.avatar_url ?? null,
           bio: t.bio ?? null,
           subjects: t.subjects ?? null,
@@ -408,7 +417,7 @@ export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
   const { data, error } = await supabase
     .from("courses")
     .select(`${COURSE_FIELDS},
-             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate)`)
+             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate, education, work_experience, certifications, languages)`)
     .eq("is_active", true)
     .not("tutor_id", "is", null)
     .order("title");
@@ -426,6 +435,10 @@ export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
         ? {
             id: t.id,
             name: t.full_name,
+          education: t.education ?? [],
+          work_experience: t.work_experience ?? [],
+          certifications: t.certifications ?? [],
+          languages: t.languages ?? [],
             avatarUrl: t.avatar_url ?? null,
             bio: t.bio ?? null,
             subjects: t.subjects ?? null,

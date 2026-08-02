@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Star, Users, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Download, GraduationCap, Briefcase, Languages, Award } from "lucide-react";
+import { Star, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
@@ -12,6 +12,7 @@ import { bookAndPay, money } from "@/services/billingService";
 import { getCourseForBooking } from "@/services/courseApplicationService";
 import { getLinkedChildren, type LinkedChild } from "@/services/parentService";
 import { getSlotConflicts, slotKey } from "@/services/slotService";
+import { TutorResume, resumeFromProfile } from "@/components/shared/TutorResume";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
 import 'react-flagpack/dist/style.css';
@@ -749,99 +750,14 @@ export function ParentCourseCatalogDetail() {
 
                     {/* RESUME TAB */}
                     {activeTab === "Resume" && (
-                      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
-                        <div>
-                          <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 inline-flex items-center gap-2"><Award size={18} /> Certifications</span>
-                          </div>
-                          <div className="space-y-6">
-                            {selectedTutor?.certifications.map((cert: any) => (
-                              <div key={cert.id} className="flex flex-col sm:flex-row sm:items-start gap-4">
-                                <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                                  {cert.year}
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                  <h4 className="text-[16px] font-bold text-[#111] dark:text-white">{cert.title}</h4>
-                                  <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">{cert.issuer}</p>
-                                  {cert.verified && (
-                                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[13px] font-bold mt-1">
-                                      <CheckCircle2 size={14} />
-                                      Certificate verified
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><GraduationCap size={18} /> Education</span>
-                          </div>
-                          <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                              <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                                2016 - 2020
-                              </div>
-                              <div className="flex-1 space-y-1">
-                                <h4 className="text-[16px] font-bold text-[#111] dark:text-white">B.S. in Mathematics</h4>
-                                <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">University of California, Berkeley</p>
-                              </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                              <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                                2020 - 2022
-                              </div>
-                              <div className="flex-1 space-y-1">
-                                <h4 className="text-[16px] font-bold text-[#111] dark:text-white">M.Ed. in Mathematics Education</h4>
-                                <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Stanford University</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><Briefcase size={18} /> Work Experience</span>
-                          </div>
-                          <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                              <div className="w-32 text-[14px] text-[#54656f] dark:text-[#aebac1] shrink-0 font-medium pt-1">
-                                2022 - Present
-                              </div>
-                              <div className="flex-1 space-y-2">
-                                <h4 className="text-[16px] font-bold text-[#111] dark:text-white">Senior Mathematics Instructor</h4>
-                                <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">Yakal Learning</p>
-                                <p className="text-[14px] text-[#54656f] dark:text-[#aebac1] leading-relaxed">
-                                  Conducted over 1,200 hours of 1-on-1 tutoring sessions, specializing in Algebra and Calculus. Developed custom learning plans for students with math anxiety, improving average test scores by 25%.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="border-b border-[#e9edef] dark:border-[#2a3942] pb-2 mb-6">
-                            <span className="text-[16px] font-bold text-[#111] dark:text-white border-b-2 border-[#1099A1] pb-2 flex items-center gap-2"><Languages size={18} /> Languages</span>
-                          </div>
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#111] dark:text-white">English</span>
-                              <span className="text-[#54656f] dark:text-[#aebac1] text-[14px]">- Native</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#111] dark:text-white">Spanish</span>
-                              <span className="text-[#54656f] dark:text-[#aebac1] text-[14px]">- Conversational</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 flex justify-center">
-                          <Button className="gap-2 h-12 px-8 bg-[#f0f2f5] hover:bg-[#e4e7eb] dark:bg-[#202c33] dark:hover:bg-[#2a3942] text-[#111] dark:text-white border-0 font-semibold transition-colors">
-                            <Download size={18} /> Download Resume (PDF)
-                          </Button>
-                        </div>
+                      // The tutor's own background, from their profile. What
+                      // was here was hardcoded, so every tutor in the catalogue
+                      // held the same degree from the same university.
+                      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <TutorResume
+                          resume={resumeFromProfile(realTutor)}
+                          emptyText="This tutor has not added their background yet."
+                        />
                       </div>
                     )}
 

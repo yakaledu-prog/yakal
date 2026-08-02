@@ -97,6 +97,10 @@ const generated = generatedData as {
     fullName: string;
     role: Role;
     bio: string | null;
+    education?: unknown[];
+    workExperience?: unknown[];
+    certifications?: unknown[];
+    languages?: unknown[];
     subjects: string[] | null;
     gradeLevel: string | null;
   }[];
@@ -136,6 +140,48 @@ export const USERS: SeedUser[] = [
     hourlyRate: 450,
     rateCurrency: "ETB",
     acceptingStudents: true,
+    // The Resume tab on the booking page was hardcoded, so every tutor in the
+    // catalogue held the same degree. One tutor with a real background is
+    // enough to show what the page does with it.
+    education: [
+      {
+        from: "2016",
+        to: "2020",
+        qualification: "B.S. in Mathematics",
+        institution: "Addis Ababa University",
+      },
+      {
+        from: "2020",
+        to: "2022",
+        qualification: "M.Ed. in Mathematics Education",
+        institution: "University of Cape Town",
+      },
+    ],
+    workExperience: [
+      {
+        from: "2022",
+        role: "Senior Mathematics Instructor",
+        organisation: "Yakal Education Services",
+        summary:
+          "Over 1,200 hours of one to one tutoring, mostly Algebra and Calculus. Builds plans around students who have decided they are bad at maths, which is usually the real problem.",
+      },
+      {
+        from: "2019",
+        to: "2022",
+        role: "Physics Teaching Assistant",
+        organisation: "Addis Ababa University",
+        summary: "Ran weekly problem classes for first year mechanics and marked coursework.",
+      },
+    ],
+    certifications: [
+      { year: "2023", title: "College Board SAT Instructor", issuer: "College Board" },
+      { year: "2021", title: "Advanced Placement Calculus AB", issuer: "College Board" },
+    ],
+    languages: [
+      { name: "Amharic", level: "Native" },
+      { name: "English", level: "Fluent" },
+      { name: "French", level: "Conversational" },
+    ],
   },
   {
     id: "861ab9d4-186c-46c9-bbcf-ed392fe34343",
