@@ -48,6 +48,7 @@ export function StudentRoadmap({
   hideChrome,
   canEdit = true,
   gradeLevel,
+  subjectName,
 }: {
   studentId?: string;
   embedded?: boolean;
@@ -58,6 +59,8 @@ export function StudentRoadmap({
    * profile would anchor a parent's view to the parent.
    */
   gradeLevel?: string | null;
+  /** Whose roadmap this is, when the reader is not that person. */
+  subjectName?: string;
   /**
    * Lifted out when the page around this one owns the banner, so the tabs can
    * sit on the teal header instead of in a strip below it. Uncontrolled
@@ -279,6 +282,7 @@ export function StudentRoadmap({
                 <RoadmapTimeline
                   gradYear={gradYear ? Number(gradYear) : app?.grad_year}
                   gradeLevel={studentId ? gradeLevel : profile?.grade_level}
+                  subjectName={subjectName}
                 />
               </div>
             )}

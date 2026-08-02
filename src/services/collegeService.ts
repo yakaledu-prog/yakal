@@ -246,7 +246,14 @@ const MIGRATION_COLUMNS = [
  */
 export async function addSchoolFromCatalog(
   studentId: string,
-  input: AddCollegeInput
+  input: AddCollegeInput,
+  /**
+   * Who is doing the adding. A counselor or a linked parent can put a college
+   * on a student's list, and the row has to say which: a student finding a
+   * college they have never heard of should be able to see where it came from
+   * without having to ask. Defaults to the student adding their own.
+   */
+  enteredBy?: string
 ): Promise<Result<CollegeListItem>> {
   const full: Record<string, unknown> = {
     student_id: studentId,
@@ -258,7 +265,7 @@ export async function addSchoolFromCatalog(
     application_url: input.application_url ?? null,
     supp_essay_count: input.supp_essay_count ?? null,
     why_school: input.why_school ?? null,
-    entered_by: studentId,
+    entered_by: enteredBy ?? studentId,
   };
 
   const attempt = await write<CollegeListItem>(

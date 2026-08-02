@@ -198,6 +198,8 @@ export function ParentChildren() {
 
 import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
+import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { getAllAssignments } from "@/services/studentService";
 import { getFlaggedStudentIds } from "@/services/reports";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
@@ -210,6 +212,25 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
     enabled: !!child.id,
   });
   const hasFlaggedChat = !!flaggedStudents?.has(child.id);
+
+  const { data: assignmentRows = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ["child-assignments", child.id],
+    queryFn: () => getAllAssignments(child.id),
+    enabled: !!child.id,
+  });
+
+  const childAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
+    id: a.id,
+    index: i + 1,
+    title: a.title,
+    description: a.description,
+    materials: a.materials,
+    dueDate: a.dueDate,
+    maxPoints: a.maxPoints,
+    link: a.link,
+    grade: a.grade,
+    isSubmitted: a.isSubmitted,
+  }));
 
   // A parent watches rather than attends, so no join and no reschedule here:
   // the rows are there to be read.
@@ -240,7 +261,9 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
   // Sessions first: what is coming up is the question a parent opens this to
   // ask. Overview was a feed of invented activity, naming tutors and homework
   // that do not exist, so it is gone rather than moved.
-  const [activeTab, setActiveTab] = useState<"sessions" | "assignments" | "applications" | "messages">("sessions");
+  const [activeTab, setActiveTab] = useState<
+    "sessions" | "assignments" | "applications" | "messages"
+  >("sessions");
 
   const hasAdmissions = child.active_services?.includes('admissions');
 
@@ -310,13 +333,14 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           )
         )}
         {activeTab === 'assignments' && (
-          <div className="space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Assignments & Homework</h3>
-            <div className="space-y-0">
-              <FeedItem text="Chapter 4 Physics Problems (Due: Tomorrow)" time="In Progress" />
-              <FeedItem text="Read 'The Great Gatsby' Chapters 1-3" time="Not Started" />
-            </div>
-          </div>
+          // The child's real coursework, on the same cards the student and the
+          // tutor read. What was here was two invented lines about Gatsby and
+          // a physics chapter that nobody had set.
+          <AssignmentList
+            assignments={childAssignments}
+            isLoading={assignmentsLoading}
+            emptyText={`Nothing has been set for ${child.name} yet.`}
+          />
         )}
         {activeTab === 'applications' && (
           <div className="space-y-6">
@@ -353,25 +377,46 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
         )}
         {activeTab === 'messages' && (
           <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
-          // <div className="flex-1 flex flex-col min-h-[500px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-background relative mt-6">
-          //   <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
-          //   <div className="relative z-10 flex-1 flex items-center justify-center p-6 text-center">
-          //   </div>
-          // </div>
         )}
-      </div>
-    </div>
-  );
-}
 
-function FeedItem({ text, time }: { text: string; time: string }) {
-  return (
-    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-      <div className="flex items-center gap-4">
-        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-[#1099A1] transition-colors" />
-        <p className="text-[14px] md:text-[15px] font-medium text-foreground">{text}</p>
+        {activeTab === 'applications' && (
+          <div className="space-y-6">
+            {!hasAdmissions ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-xl dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-muted/10 animate-in fade-in zoom-in-95">
+                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
+                  <Lock size={32} />
+                </div>
+                <h3 className="text-xl font-bold mb-2">College Admissions Locked</h3>
+                <p className="text-muted-foreground mb-6 max-w-sm">
+                  Upgrade to our College Admissions service to track {child.name}'s application progress, essays, and college list.
+                </p>
+                <Link to={'/parent/billing'} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-2.5 rounded-xl font-bold transition-all">
+                  Manage Services
+                </Link>
+              </div>
+            ) : (
+              /* The student's own requirements view, read only.
+                 What was here before derived the ticks from the school's name:
+                 anything containing "Hopkins" got six requirements, anything
+                 containing "Maryland" got none. So it agreed with the student's
+                 own tracker only by accident. Sharing the component means a
+                 parent sees exactly what their child sees. */
+              <div className="-mx-4 md:-mx-8">
+                <StudentApplicationTracker
+                  studentId={child.id}
+                  embedded
+                  canEdit={false}
+                  forcedTab="requirements"
+                />
+              </div>
+            )}
+          </div>
+        )}
+        {activeTab === 'messages' && (
+          <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
+        )}
+
       </div>
-      <span className="text-[12px] md:text-[13px] text-muted-foreground mt-2 sm:mt-0">{time}</span>
     </div>
   );
 }

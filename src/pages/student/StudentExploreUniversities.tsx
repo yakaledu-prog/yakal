@@ -39,9 +39,29 @@ const SORTS: DropdownOption<SortKey>[] = [
 
 const PAGE_SIZE = 24;
 
-export function StudentExploreUniversities() {
+export function StudentExploreUniversities({
+  studentId,
+  studentName,
+}: {
+  /**
+   * Whose list an added college goes on. The signed-in student by default; a
+   * parent browsing on behalf of a child passes the child. Without this the
+   * page added to whoever was signed in, which for anyone who is not the
+   * student put the college on a list nobody looks at.
+   */
+  studentId?: string;
+  /** Named in the confirmation, so "added to your list" does not mislead. */
+  studentName?: string;
+} = {}) {
   const { user } = useAuth();
   const qc = useQueryClient();
+
+  const targetId = studentId ?? user?.id;
+  const onBehalf = !!studentId && studentId !== user?.id;
+  // "Amen's", and "Amens" for a name already ending in s.
+  const possessive = studentName
+    ? `${studentName}${studentName.endsWith("s") ? "'" : "'s"}`
+    : "their";
 
   const { data: catalog, isLoading, isError } = useQuery({
     queryKey: ["college-catalog"],
@@ -104,17 +124,23 @@ export function StudentExploreUniversities() {
   const [pendingAdd, setPendingAdd] = useState<College | null>(null);
 
   const submitAdd = async (input: AddCollegeInput) => {
-    if (!user) return;
+    if (!user || !targetId) return;
     setAdding(input.unitid);
-    const res = await addSchoolFromCatalog(user.id, input);
+    // entered_by is the person clicking, not the person whose list it is, so
+    // the row can say where it came from.
+    const res = await addSchoolFromCatalog(targetId, input, user.id);
     setAdding(null);
     if (!res.success) {
       toast.error(res.error || "Could not add that college.");
       return;
     }
     setPendingAdd(null);
-    toast.success(`${input.school_name} added to your list.`);
-    qc.invalidateQueries({ queryKey: ["college-profile", user.id] });
+    toast.success(
+      onBehalf
+        ? `${input.school_name} added to ${possessive} list.`
+        : `${input.school_name} added to your list.`
+    );
+    qc.invalidateQueries({ queryKey: ["college-profile", targetId] });
   };
 
   if (isLoading) {
@@ -308,6 +334,7 @@ export function StudentExploreUniversities() {
       </PageWrapper>
 
       <AddCollegeModal
+        addLabel={onBehalf ? `Add to ${possessive} list` : "Add to my list"}
         open={!!pendingAdd}
         onClose={() => setPendingAdd(null)}
         onSubmit={submitAdd}

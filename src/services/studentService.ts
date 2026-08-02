@@ -234,3 +234,27 @@ export async function getCourseAssignments(
     };
   });
 }
+
+/**
+ * Every assignment across every course a student is taking.
+ *
+ * The per-course version answers "what is set for this class". A parent, or a
+ * student's own overview, is asking a different question: what is outstanding
+ * at all, and when. So this gathers the courses first and orders the whole lot
+ * by deadline, because the next thing due is the point of the list.
+ */
+export async function getAllAssignments(studentId: string): Promise<CourseAssignmentRow[]> {
+  const courses = await getStudentCourses(studentId);
+  if (courses.length === 0) return [];
+
+  const perCourse = await Promise.all(
+    courses.map((c) => getCourseAssignments(studentId, c.id))
+  );
+
+  return perCourse.flat().sort((a, b) => {
+    // No deadline sinks to the bottom rather than sorting as the epoch.
+    if (!a.dueDate) return b.dueDate ? 1 : 0;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+}

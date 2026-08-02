@@ -25,7 +25,8 @@ import logoImg from "@/assets/images/logo.webp";
 
 interface NavItem {
   name: string;
-  href: string;
+  /** Absent on a group: a group is a container for links, not a link itself. */
+  href?: string;
   icon: React.ReactNode;
   badge?: number;
   isLocked?: boolean;
@@ -76,6 +77,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   // list that a 500ms timer wrote to, so anything "unlocked" itself moments
   // after the request and nothing was ever really gated.
   const lockedItem = flattenNav(navItems).find(item => {
+    if (!item.href) return false;
     if (item.href === basePath) return location.pathname === item.href && item.isLocked;
     return location.pathname.startsWith(item.href) && item.isLocked;
   });
@@ -306,7 +308,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
         {searchOpen && (
           <CommandPalette
-            navItems={navItems}
+            // Groups are not destinations, so the palette searches the leaves.
+            navItems={flattenNav(navItems).filter((i) => i.href) as { name: string; href: string; icon: React.ReactNode }[]}
             onToggleSidebar={() => setSidebarOpen((o) => !o)}
             onClose={() => setSearchOpen(false)}
           />
@@ -334,12 +337,12 @@ function matches(href: string, basePath: string, pathname: string) {
 function NavLeaf({
   item, sidebarOpen, basePath, pathname, nested = false,
 }: NavNodeProps) {
-  const isActive = matches(item.href, basePath, pathname);
+  const isActive = matches(item.href ?? "", basePath, pathname);
   const isLocked = !!item.isLocked;
 
   return (
     <Link
-      to={item.href}
+      to={item.href ?? "#"}
       title={!sidebarOpen ? item.name : undefined}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
@@ -381,7 +384,7 @@ function NavGroup({
   item, sidebarOpen, basePath, pathname,
 }: NavNodeProps) {
   const children = item.children ?? [];
-  const hasActiveChild = children.some((c) => matches(c.href, basePath, pathname));
+  const hasActiveChild = children.some((c) => matches(c.href ?? "", basePath, pathname));
 
   // Open when a child route is active, and stay open once opened by hand.
   const [open, setOpen] = useState(hasActiveChild);

@@ -31,6 +31,7 @@ export function CollegeListRow({
   item,
   college,
   student,
+  addedByName,
   onStatusChange,
   onRemove,
   canEdit = true,
@@ -39,6 +40,8 @@ export function CollegeListRow({
   /** Catalog match, absent for manually added colleges. */
   college: College | null;
   student: StudentProfile;
+  /** Who put this on the list, when it was not the student themselves. */
+  addedByName?: string | null;
   onStatusChange: (id: string, status: SchoolStatus) => void;
   onRemove: (item: CollegeListItem) => void;
   /**
@@ -104,6 +107,12 @@ export function CollegeListRow({
             <span className="text-[#8a6a2f] dark:text-[#e0c48a]">
               {" - "}looks like a {mismatch} for you
             </span>
+          )}
+          {/* Only when somebody else put it here. A college appearing on a
+              student's list with no explanation is a support question; saying
+              who added it answers it before it is asked. */}
+          {addedByName && (
+            <span className="text-[#717182]">{" - "}added by {addedByName}</span>
           )}
         </p>
       </div>

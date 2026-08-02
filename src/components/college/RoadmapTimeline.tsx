@@ -128,10 +128,17 @@ export function currentTerm(): Term {
 export function RoadmapTimeline({
   gradYear,
   gradeLevel,
+  subjectName,
 }: {
   gradYear?: number | null;
   /** Fallback when no graduation year is on file, e.g. "11" or "Grade 11". */
   gradeLevel?: string | null;
+  /**
+   * Whose timeline this is, when it is not the reader's own. A parent reading
+   * their child's roadmap is not the one in Grade 12, and "you are here" told
+   * them so.
+   */
+  subjectName?: string;
 }) {
   const derived =
     currentGrade(gradYear) ??
@@ -168,7 +175,7 @@ export function RoadmapTimeline({
             Grade {g}
             {g === derived && (
               <span className={cn("ml-1.5", g === grade ? "text-white/70" : "text-[#1099A1]")}>
-                you
+                {subjectName ?? "you"}
               </span>
             )}
           </button>
@@ -220,7 +227,7 @@ export function RoadmapTimeline({
                 </h4>
                 {here && (
                   <span className="rounded-full bg-[#1099A1]/10 px-2 py-0.5 text-[11px] font-medium text-[#0d757b] dark:text-[#5fc9cf]">
-                    you are here
+                    {subjectName ? `${subjectName} is here` : "you are here"}
                   </span>
                 )}
               </div>

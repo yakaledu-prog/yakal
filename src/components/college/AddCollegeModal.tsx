@@ -60,6 +60,7 @@ const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 export function AddCollegeModal({
+  addLabel = "Add to my list",
   open,
   onClose,
   onSubmit,
@@ -69,6 +70,8 @@ export function AddCollegeModal({
   saving,
   preselected = null,
 }: {
+  /** Whose list this goes on. "my" is wrong when a parent adds for a child. */
+  addLabel?: string;
   open: boolean;
   onClose: () => void;
   onSubmit: (input: AddCollegeInput) => void;
@@ -420,7 +423,7 @@ export function AddCollegeModal({
               className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-              Add to my list
+              {addLabel}
             </button>
           )}
         </footer>

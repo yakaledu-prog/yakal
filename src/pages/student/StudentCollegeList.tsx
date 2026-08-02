@@ -9,6 +9,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
 import { ListBalance } from "@/components/college/ListBalance";
 import { CollegeListRow } from "@/components/college/CollegeListRow";
+import { supabase } from "@/lib/supabase";
 import { AddCollegeModal, AddCollegeInput } from "@/components/college/AddCollegeModal";
 import { CompareDialog } from "@/components/college/CompareDialog";
 import { downloadCsv, toCsv } from "@/services/collegeExport";
@@ -73,6 +74,37 @@ export function StudentCollegeList({
     queryFn: () => getCollegeProfile(targetId!),
     enabled: !!targetId,
   });
+
+  // Names for anyone who added a college who is not the student: a counselor,
+  // or a linked parent. One query for the whole list, and skipped entirely
+  // when the student added everything themselves, which is the usual case.
+  const outsiderIds = useMemo(
+    () => [
+      ...new Set(
+        (data?.schools ?? [])
+          .map((c: any) => c.entered_by)
+          .filter((id: string | null) => id && id !== targetId)
+      ),
+    ] as string[],
+    [data?.schools, targetId]
+  );
+
+  const { data: addedBy } = useQuery({
+    queryKey: ["college-list-adders", outsiderIds.join(",")],
+    queryFn: async () => {
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, full_name, role")
+        .in("id", outsiderIds);
+      return new Map<string, string>(
+        (people ?? []).map((p: any) => [p.id, `${p.full_name} (${p.role})`])
+      );
+    },
+    enabled: outsiderIds.length > 0,
+  });
+
+  const addedByName = (id?: string | null) =>
+    id && id !== targetId ? (addedBy?.get(id) ?? null) : null;
 
   const { data: catalog } = useQuery({
     queryKey: ["college-catalog"],
@@ -358,6 +390,7 @@ export function StudentCollegeList({
                     <div className="space-y-2">
                       {rows.map((s) => (
                         <CollegeListRow
+                          addedByName={addedByName(s.entered_by)}
                           key={s.id}
                           item={s}
                           college={matchCollege(s)}

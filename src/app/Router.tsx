@@ -86,6 +86,9 @@ import { ParentCourses } from "../pages/parent/ParentCourses";
 import { ParentCourseCatalogDetail } from "../pages/parent/ParentCourseCatalogDetail";
 import { ParentChildren } from "../pages/parent/ParentChildren";
 import { ParentMessages } from "../pages/parent/ParentMessages";
+import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
+import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
+import { ParentExplore } from "../pages/parent/ParentExplore";
 import { ParentProfile } from "../pages/parent/ParentProfile";
 import { ParentBilling } from "../pages/parent/ParentBilling";
 // Three billing designs to compare. Keep one, delete the rest.
@@ -96,8 +99,6 @@ import { Billing4 } from "../pages/parent/billing/Billing4";
 // Two ways to buy a month of lessons, to compare. Keep one.
 import { BookingV1 } from "../pages/parent/booking/BookingV1";
 import { BookingV2 } from "../pages/parent/booking/BookingV2";
-import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
-import { ParentCollegeList } from "../pages/parent/ParentCollegeList";
 import { ParentChildChats } from "../pages/parent/ParentChildChats";
 import { ParentNotifications } from "../pages/parent/ParentNotifications";
 
@@ -342,6 +343,7 @@ const router = createBrowserRouter([
           { path: "messages", element: <ParentMessages /> },
           { path: "roadmap", element: <ParentRoadmap /> },
           { path: "college-list", element: <ParentCollegeList /> },
+          { path: "explore", element: <ParentExplore /> },
           { path: "child-chats", element: <ParentChildChats /> },
           { path: "billing", element: <ParentBilling /> },
           { path: "admissions", element: <ParentAdmissions /> },
