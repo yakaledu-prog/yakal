@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, CheckCircle2, Loader2, Star, XCircle } from "lucide-react";
+import { CalendarDays, Check, Loader2, Star, XCircle } from "lucide-react";
 
 import { getSessionExtras } from "@/services/sessions";
 import { dicebearUrl } from "@/utils/avatar";
@@ -124,7 +124,7 @@ function StatusIcon({ item }: { item: SessionListItem }) {
   // Waiting on somebody carries no icon. The words say it, and the colour
   // already sets it apart from the rows that are settled.
   if (isAwaitingConfirmation(item)) return null;
-  if (item.status === "completed") return <CheckCircle2 size={15} />;
+  if (item.status === "completed") return <Check size={15} />;
   if (item.status === "cancelled" || item.status === "no-show") return <XCircle size={15} />;
   return <CalendarDays size={15} />;
 }

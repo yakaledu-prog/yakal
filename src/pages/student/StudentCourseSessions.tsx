@@ -8,6 +8,7 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
+import { RateSessionDialog } from "@/components/shared/RateSessionDialog";
 import {
   RescheduleDialog,
   type ReschedulableSession,
@@ -25,6 +26,9 @@ export function StudentCourseSessions() {
   const navigate = useNavigate();
 
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
+  // Rating belongs to the student, so it is offered here and nowhere a tutor
+  // or a parent is looking: they are not the ones with an opinion to give.
+  const [rating, setRating] = useState<SessionListItem | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["course-sessions", user?.id, courseId],
@@ -74,11 +78,24 @@ export function StudentCourseSessions() {
             onJoin={(s) => navigate(`/student/meeting/${s.id}`)}
             onReschedule={(s) => setMoving(toReschedulable(s))}
           />
-          <PastSessions sessions={sessions} hideIfEmpty />
+          <PastSessions sessions={sessions} hideIfEmpty onRate={setRating} />
         </>
       )}
 
       {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
+
+      {rating && (
+        <RateSessionDialog
+          sessionId={rating.id}
+          tutorId={rows.find((r) => r.id === rating.id)?.tutor_id ?? ""}
+          tutorName={rating.personName ?? "Your tutor"}
+          tutorAvatarUrl={rating.personAvatarUrl}
+          subject={rating.title}
+          startsAt={new Date(`${rating.date}T${rating.startTime}`)}
+          durationMinutes={rating.durationMinutes}
+          onClose={() => setRating(null)}
+        />
+      )}
     </div>
   );
 }

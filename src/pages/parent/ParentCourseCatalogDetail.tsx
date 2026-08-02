@@ -5,6 +5,7 @@ import { Star, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-reac
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import 'react-flagpack/dist/style.css';
+import { getTutorReviews } from "@/services/sessions";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorAvailability, TutorAvailability } from "@/services/availability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -191,6 +192,13 @@ export function ParentCourseCatalogDetail() {
   useEffect(() => {
     if (realTutor && !selectedTutorId) setSelectedTutorId(realTutor.id);
   }, [realTutor, selectedTutorId]);
+
+  // What students actually wrote, for a family deciding whether to book.
+  const { data: tutorReviews = [] } = useQuery({
+    queryKey: ["tutor-reviews", realTutor?.id],
+    queryFn: () => getTutorReviews(realTutor!.id),
+    enabled: !!realTutor?.id,
+  });
 
   const selectedTutor = realTutor
     ? {
@@ -763,32 +771,58 @@ export function ParentCourseCatalogDetail() {
 
                     {/* REVIEWS TAB */}
                     {activeTab === "Reviews" && (
-                      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">
-                          No reviews yet. Ratings appear here once students have left them.
-                        </p>
-
-                        <div className="space-y-4">
-                          {selectedTutor?.reviews_data.map((review: any) => (
-                            <div key={review.id} className="border-b border-[#e9edef] dark:border-[#2a3942] pb-6 mb-6 last:border-0">
-                              <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-full bg-[#1099A1] text-white flex items-center justify-center font-bold text-[16px]">
-                                  {review.name.charAt(0)}
-                                </div>
+                      // Real notes students left after a lesson, not sample
+                      // text. Only the ones that carry a note: a bare score
+                      // belongs in the average above, and a review is the
+                      // sentence that explains it.
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {tutorReviews.length === 0 ? (
+                          <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">
+                            No reviews yet. They appear here once students have left them.
+                          </p>
+                        ) : (
+                          tutorReviews.map((review) => (
+                            <div
+                              key={review.id}
+                              className="border-b border-[#e9edef] pb-6 last:border-0 dark:border-[#2a3942]"
+                            >
+                              <div className="mb-3 flex items-center gap-3">
+                                <img
+                                  src={review.reviewerAvatarUrl || dicebearUrl(review.reviewerName)}
+                                  alt=""
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
                                 <div>
-                                  <h4 className="font-bold text-[#111] dark:text-white text-[15px]">{review.name}</h4>
-                                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">{review.date}</p>
+                                  <h4 className="text-[15px] font-bold text-[#111] dark:text-white">
+                                    {review.reviewerName}
+                                  </h4>
+                                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                                    {review.createdAt.toLocaleDateString(undefined, {
+                                      month: "long",
+                                      year: "numeric",
+                                    })}
+                                  </p>
                                 </div>
                               </div>
-                              <div className="flex text-yellow-500 mb-3">
-                                {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                              <div className="mb-3 flex">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                  <Star
+                                    key={i}
+                                    size={14}
+                                    className={
+                                      i <= review.stars
+                                        ? "fill-[#CAA25F] text-[#CAA25F]"
+                                        : "fill-transparent text-[#CAA25F]/40"
+                                    }
+                                  />
+                                ))}
                               </div>
-                              <p className="text-[14px] text-[#111] dark:text-[#e9edef] leading-relaxed">
-                                {review.text}
+                              <p className="text-[14px] leading-relaxed text-[#111] dark:text-[#e9edef]">
+                                {review.comment}
                               </p>
                             </div>
-                          ))}
-                        </div>
+                          ))
+                        )}
                       </div>
                     )}
 

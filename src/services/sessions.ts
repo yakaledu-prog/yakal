@@ -321,3 +321,40 @@ export const getMyRating = async (
     .maybeSingle();
   return data ? { stars: data.stars, comment: data.comment ?? '' } : null;
 };
+
+export interface TutorReview {
+  id: string;
+  stars: number;
+  comment: string;
+  createdAt: Date;
+  reviewerName: string;
+  reviewerAvatarUrl: string | null;
+}
+
+/**
+ * What students wrote about a tutor, for somebody deciding whether to book
+ * them.
+ *
+ * Only ratings that carry a note. A bare score belongs in the average; a
+ * review is the sentence that explains it.
+ */
+export const getTutorReviews = async (tutorId: string): Promise<TutorReview[]> => {
+  const { data, error } = await supabase
+    .from('v_tutor_reviews')
+    .select('*')
+    .eq('tutor_id', tutorId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to load tutor reviews', error);
+    return [];
+  }
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    stars: r.stars,
+    comment: r.comment,
+    createdAt: new Date(r.created_at),
+    reviewerName: r.reviewer_name || 'A student',
+    reviewerAvatarUrl: r.reviewer_avatar_url ?? null,
+  }));
+};
