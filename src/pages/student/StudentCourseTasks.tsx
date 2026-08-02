@@ -1,159 +1,139 @@
-import React from "react";
-import { ExternalLink, CalendarDays } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ExternalLink } from "lucide-react";
 
-interface Task {
-  id: string;
-  index: number;
-  title: string;
-  type: "Mandatory" | "Optional Practice";
-  description: React.ReactNode;
-  materials: { title: string; link: string }[];
-  actionLabel: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  dueDate: string;
-  grade?: string;
-}
+import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { useClassroomToken } from "@/hooks/useClassroomToken";
+import { supabase } from "@/lib/supabase";
+import {
+  courseIdFromUrl,
+  getCourseAssignments,
+  getSubmissions,
+} from "@/services/classroomService";
+import { GoogleClassroom } from "@/components/icons/GoogleClassroom";
 
-const mockTasks: Task[] = [
-  {
-    id: "T-00",
-    index: 1,
-    title: "Limits and Continuity Review",
-    type: "Mandatory",
-    description: (
-      <div className="space-y-4 text-[14px]">
-        <p>Review the provided worksheet on limits and continuity. Your submission must include:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Completed exercises 1 through 15.</li>
-          <li>A brief explanation of how you approached the indeterminate forms.</li>
-        </ul>
-      </div>
-    ),
-    materials: [
-      { title: "limits_review_worksheet.pdf", link: "#" },
-      { title: "lecture_notes_ch2.pdf", link: "#" }
-    ],
-    actionLabel: "Submit Worksheet",
-    status: "Completed",
-    dueDate: "2026-08-01",
-    grade: "95/100"
-  },
-  {
-    id: "T-01",
-    index: 2,
-    title: "Derivatives Practice Set 1",
-    type: "Mandatory",
-    description: (
-      <div className="space-y-4 text-[14px]">
-        <p>Complete the first practice set on derivatives. You must use the power rule, product rule, and quotient rule.</p>
-        <p>Show all your work step-by-step for full credit.</p>
-      </div>
-    ),
-    materials: [
-      { title: "derivatives_practice.pdf", link: "#" }
-    ],
-    actionLabel: "Submit Practice Set",
-    status: "Pending",
-    dueDate: "2026-08-10"
-  },
-  {
-    id: "T-02",
-    index: 3,
-    title: "Chain Rule Word Problems",
-    type: "Optional Practice",
-    description: (
-      <div className="space-y-4 text-[14px]">
-        <p>Apply the chain rule to solve the advanced word problems provided in the appendix.</p>
-        <p>This task is optional but highly recommended for those aiming to master the subject.</p>
-      </div>
-    ),
-    materials: [
-      { title: "chain_rule_advanced.pdf", link: "#" }
-    ],
-    actionLabel: "Mark as Complete",
-    status: "Pending",
-    dueDate: "2026-08-15"
-  }
-];
+// ============================================================
+// A student's work on one course.
+//
+// This page used to render six invented assignments about limits and
+// derivatives, complete with grades nobody had given. Classroom is where the
+// work actually lives, so it reads from there and shows nothing when there is
+// nothing rather than filling the space.
+//
+// Read only: turning work in and marking it both happen in Classroom, and
+// every card links out to exactly that.
+// ============================================================
 
 export function StudentCourseTasks() {
-  return (
-    <div className="space-y-8">
-      {mockTasks.map((task) => (
-        <div
-          key={task.id}
-          className={cn(
-            " dark:bg-[#111b21] border rounded-md overflow-hidden transition-all",
-            task.status === 'Completed'
-              ? "bg-[#1099A1]/5 border-[#1099A1]/50 dark:border-[#2a3942]"
-              : "border-[#e9edef] dark:border-[#2a3942]"
-          )}
+  const { courseId } = useParams();
+  const { token, connect } = useClassroomToken();
+
+  const { data: course } = useQuery({
+    queryKey: ["course-classroom-url", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("title, google_classroom_url")
+        .eq("id", courseId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!courseId,
+  });
+
+  const classroomId = course?.google_classroom_url
+    ? courseIdFromUrl(course.google_classroom_url)
+    : null;
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["classroom-assignments", classroomId],
+    queryFn: async () => {
+      const assignments = await getCourseAssignments(token!, classroomId!);
+
+      // One call per assignment, but scoped to this student by Classroom
+      // itself: coursework.me only ever returns their own submission.
+      const mine = await Promise.all(
+        assignments.map(async (a) => {
+          try {
+            const subs = await getSubmissions(token!, classroomId!, a.id);
+            return { id: a.id, submission: subs[0] ?? null };
+          } catch {
+            return { id: a.id, submission: null };
+          }
+        })
+      );
+
+      const byId = new Map(mine.map((m) => [m.id, m.submission]));
+      return assignments.map<AssignmentItem>((a) => ({
+        ...a,
+        grade: byId.get(a.id)?.grade ?? null,
+        isSubmitted: byId.get(a.id)?.isTurnedIn ?? false,
+      }));
+    },
+    enabled: !!token && !!classroomId,
+  });
+
+  if (!course?.google_classroom_url) {
+    return (
+      <div className="p-4 md:p-8">
+        <p className="py-16 text-center text-[14px] text-muted-foreground">
+          This course is not linked to a Google Classroom yet, so there is no work to show.
+        </p>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-4 py-20 text-center">
+        <GoogleClassroom className="h-10 w-10" />
+        <p className="max-w-sm text-[14px] text-muted-foreground">
+          Your assignments live in Google Classroom. Connect your Google account once and they
+          will show here.
+        </p>
+        <button
+          type="button"
+          onClick={() => connect()}
+          className="h-11 rounded-md bg-[#1099A1] px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
         >
-          <div className={cn(
-            "border-b px-5 py-3 flex items-center justify-between",
-            task.status === 'Completed'
-              ? "bg-[#1099A1]/10 border-[#1099A1]/30"
-              : "bg-[#f8f9fa] dark:bg-[#182329] border-[#e9edef] dark:border-[#2a3942]"
-          )}>
-            <div className="flex items-center gap-3">
-              <h2 className="text-[16px] font-normal text-[#111] dark:text-white">
-                {task.index}. {task.title}
-              </h2>
-            </div>
+          Connect Google Classroom
+        </button>
+        <a
+          href={course.google_classroom_url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:underline"
+        >
+          <ExternalLink size={15} /> Or open the class directly
+        </a>
+      </div>
+    );
+  }
 
-            <a href="#" className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] hover:text-[#0d848b] transition-colors">
-              <ExternalLink size={16} /> Open in Google Classroom
-            </a>
-          </div>
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-4 py-20 text-center">
+        <p className="max-w-md text-[14px] text-muted-foreground">
+          Google would not hand over this class: {(error as Error).message}
+        </p>
+        <button
+          type="button"
+          onClick={() => connect()}
+          className="h-11 rounded-md border border-[#1099A1] px-6 text-[14px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+        >
+          Connect again
+        </button>
+      </div>
+    );
+  }
 
-          {/* Task Body */}
-          <div className="p-5 flex flex-col gap-6">
-            <div className="text-[#111] dark:text-[#e9edef]">
-              {task.description}
-
-              {/* Materials */}
-              <div className="mt-5">
-                <h4 className="text-[12px] font-bold uppercase tracking-wider text-[#54656f] dark:text-[#aebac1] mb-2">Materials</h4>
-                <div className="space-y-2">
-                  {task.materials.map((mat, i) => (
-                    <a
-                      key={i}
-                      href={mat.link}
-                      className="flex items-center text-[14px] text-[#1099A1] hover:underline font-medium"
-                    >
-                      <svg className="w-4 h-4 mr-2 text-[#54656f] dark:text-[#aebac1]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                      {mat.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              {/* Due Date & Grade */}
-              <div className="mt-6 pt-4 flex flex-col gap-3">
-                <div className="flex items-center text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                  <CalendarDays size={16} className="mr-2" />
-                  <span>Due Date: <span className="font-normal text-[#111] dark:text-white">{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></span>
-                </div>
-              </div>
-            </div>
-            {/* Graded Row */}
-            {task.status === 'Completed' && task.grade && (
-              <div className="px-2 pt-3 border-t border-[#1099A1]/30 flex items-center justify-between">
-                <span className="text-[13px] font-normal text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider">Grade</span>
-                <span className="text-[15px] font-normal text-primary">
-                  {task.grade.split('/')[0]}
-                  {task.grade.includes('/') && (
-                    <span className=""> / {task.grade.split('/')[1]}</span>
-                    // <span className="text-[#555] dark:text-[#8696a0]"> / {task.grade.split('/')[1]}</span>
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
-
-        </div>
-      ))}
+  return (
+    <div className="p-4 md:p-8">
+      <AssignmentList
+        assignments={data ?? []}
+        isLoading={isLoading}
+        emptyText="Nothing has been set for this course yet."
+      />
     </div>
   );
 }

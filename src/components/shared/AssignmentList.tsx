@@ -1,0 +1,256 @@
+import { CalendarDays, ExternalLink, Loader2, Paperclip } from "lucide-react";
+
+import { dicebearUrl } from "@/utils/avatar";
+import { cn } from "@/utils/cn";
+
+// ============================================================
+// Assignments, read only.
+//
+// Google Classroom owns this work: it is where the assignment was written,
+// where the student turns it in, and where the tutor marks it. This shows what
+// is there and links out for anything that changes it, which is why there is
+// no edit, no submit and no grade box anywhere in here.
+//
+// Shared by the student's course tasks and the tutor's assignment list. What
+// differs between them is only the footer: a student sees their own grade, a
+// tutor sees who has turned it in.
+// ============================================================
+
+export interface AssignmentMaterial {
+  title: string;
+  link: string | null;
+}
+
+export interface AssignmentSubmitter {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+}
+
+export interface AssignmentItem {
+  id: string;
+  /** Position in the course, as Classroom orders it. */
+  index: number;
+  title: string;
+  /** Classroom stores this as plain text. Newlines are all the structure there is. */
+  description: string | null;
+  materials: AssignmentMaterial[];
+  /** ISO date, or null for an assignment with no deadline. */
+  dueDate: string | null;
+  maxPoints: number | null;
+  /** The Classroom page for this assignment. */
+  link: string | null;
+  /** The student's own grade, on a student's list. */
+  grade?: number | null;
+  /** Whether this student has turned it in. Undefined on a tutor's list. */
+  isSubmitted?: boolean;
+}
+
+/**
+ * Classroom descriptions are plain text with newlines, so a blank line is a
+ * paragraph and a leading dash is a bullet. Anything cleverer would be
+ * inventing structure the source does not have.
+ */
+function DescriptionText({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/).filter((b) => b.trim());
+
+  return (
+    <div className="space-y-3 text-[14px] leading-relaxed">
+      {blocks.map((block, i) => {
+        const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+        const bulleted = lines.length > 0 && lines.every((l) => /^[-*•]\s/.test(l));
+
+        if (bulleted) {
+          return (
+            <ul key={i} className="list-disc space-y-1 pl-5">
+              {lines.map((line, j) => (
+                <li key={j}>{line.replace(/^[-*•]\s/, "")}</li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={i}>{block}</p>;
+      })}
+    </div>
+  );
+}
+
+/** Up to four faces and a count, so a busy assignment stays one line. */
+function SubmitterStack({ people }: { people: AssignmentSubmitter[] }) {
+  const shown = people.slice(0, 4);
+  const rest = people.length - shown.length;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex -space-x-2">
+        {shown.map((p) => (
+          <img
+            key={p.id}
+            src={p.avatarUrl || dicebearUrl(p.name)}
+            alt={p.name}
+            title={p.name}
+            className="h-7 w-7 rounded-full object-cover ring-2 ring-card"
+          />
+        ))}
+      </div>
+      <span className="text-[13px] text-muted-foreground">
+        {people.length} turned in{rest > 0 ? ` (+${rest} more)` : ""}
+      </span>
+    </div>
+  );
+}
+
+export function AssignmentList({
+  assignments,
+  isLoading = false,
+  emptyText = "No assignments yet.",
+  /** Everyone who has turned each one in, keyed by assignment id. */
+  submittersById,
+  /** Given, the submitter row becomes a way into the detail. */
+  onOpenSubmissions,
+  className,
+}: {
+  assignments: AssignmentItem[];
+  isLoading?: boolean;
+  emptyText?: string;
+  submittersById?: Record<string, AssignmentSubmitter[]>;
+  onOpenSubmissions?: (assignment: AssignmentItem) => void;
+  className?: string;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="animate-spin text-[#1099A1]" />
+      </div>
+    );
+  }
+
+  if (assignments.length === 0) {
+    return <p className="py-16 text-center text-[14px] text-muted-foreground">{emptyText}</p>;
+  }
+
+  return (
+    <div className={cn("space-y-6", className)}>
+      {assignments.map((a) => {
+        // Done is the exception worth colouring. Everything else is simply
+        // outstanding, and tinting most of a list tells nobody anything.
+        const done = a.isSubmitted === true || a.grade != null;
+        const submitters = submittersById?.[a.id] ?? [];
+
+        return (
+          <article
+            key={a.id}
+            className={cn(
+              "overflow-hidden rounded-xl border",
+              done ? "border-[#1099A1]/30" : "border-border"
+            )}
+          >
+            <header
+              className={cn(
+                "flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4",
+                done
+                  ? "border-[#1099A1]/30 bg-[#1099A1]/10"
+                  : "border-border bg-muted/40"
+              )}
+            >
+              <h2 className="min-w-0 text-[16px] text-foreground">
+                {a.index}. {a.title}
+              </h2>
+
+              {a.link && (
+                <a
+                  href={a.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#1099A1] transition-colors hover:text-[#0d848b]"
+                >
+                  <ExternalLink size={16} /> Open in Google Classroom
+                </a>
+              )}
+            </header>
+
+            <div className="flex flex-col gap-6 p-5">
+              <div className="text-foreground">
+                {a.description ? (
+                  <DescriptionText text={a.description} />
+                ) : (
+                  <p className="text-[14px] text-muted-foreground">No description.</p>
+                )}
+
+                {a.materials.length > 0 && (
+                  <div className="mt-5">
+                    <h4 className="mb-2 text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Materials
+                    </h4>
+                    <div className="space-y-2">
+                      {a.materials.map((m, i) => (
+                        <a
+                          key={i}
+                          href={m.link ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center text-[14px] font-medium text-[#1099A1] hover:underline"
+                        >
+                          <Paperclip size={15} className="mr-2 text-muted-foreground" />
+                          {m.title}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {a.dueDate && (
+                  <div className="mt-6 flex items-center text-[13px] text-muted-foreground">
+                    <CalendarDays size={16} className="mr-2" />
+                    Due Date:{" "}
+                    <span className="ml-1 text-foreground">
+                      {new Date(`${a.dueDate}T00:00:00`).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* A student's grade and a tutor's roster of submitters are the
+                  same slot: what happened to this assignment. */}
+              {a.grade != null && (
+                <div className="flex items-center justify-between border-t border-[#1099A1]/30 px-2 pt-3">
+                  <span className="text-[13px] uppercase tracking-wider text-muted-foreground">
+                    Grade
+                  </span>
+                  <span className="text-[15px] text-[#1099A1]">
+                    {a.grade}
+                    {a.maxPoints != null && ` / ${a.maxPoints}`}
+                  </span>
+                </div>
+              )}
+
+              {submittersById && (
+                <div className="flex items-center justify-between border-t border-border px-2 pt-3">
+                  {submitters.length === 0 ? (
+                    <span className="text-[13px] text-muted-foreground">Nobody has turned this in yet</span>
+                  ) : (
+                    <SubmitterStack people={submitters} />
+                  )}
+
+                  {onOpenSubmissions && submitters.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenSubmissions(a)}
+                      className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                    >
+                      View submissions
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
