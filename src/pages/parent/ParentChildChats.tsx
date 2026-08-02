@@ -13,7 +13,12 @@ import {
   MessagingLayout,
   useMessaging,
 } from "@/components/messaging";
-import { describeReport, getConversationReports, getMyFlags } from "@/services/reports";
+import {
+  describeReport,
+  getConversationReports,
+  getFlaggedConversationIds,
+  getMyFlags,
+} from "@/services/reports";
 
 // ============================================================
 // A parent watching a linked child's conversations. Read only by policy: there
@@ -84,6 +89,14 @@ export function ParentChildChats() {
     return labels;
   }, [reports]);
 
+  // Which conversations have something in them, so the list can say so before
+  // one is opened. Opening each of them to find out defeats the point.
+  const { data: flaggedIds } = useQuery({
+    queryKey: ["flagged-conversations", user?.id],
+    queryFn: getFlaggedConversationIds,
+    enabled: !!user?.id,
+  });
+
   const { data: myFlags = [], refetch: refetchFlags } = useQuery({
     queryKey: ["conversation-flags", activeId, user?.id],
     queryFn: () => getMyFlags(activeId, user!.id),
@@ -111,6 +124,7 @@ export function ParentChildChats() {
           readOnly
           readOnlyNotice="Read only - you can follow this conversation but not take part in it."
           messageReports={reportLabels}
+          flaggedConversationIds={flaggedIds}
           onFlag={() => setFlagging(true)}
           isFlagged={myFlags.length > 0}
           emptyState={
@@ -134,6 +148,8 @@ export function ParentChildChats() {
             conversationId={active.id}
             userId={user.id}
             messages={active.messages}
+            subjectId={activeChildId}
+            subjectName={views.find((v) => v.id === activeId)?.childName ?? "Your child"}
             existing={myFlags}
             reports={reports}
             onClose={() => setFlagging(false)}

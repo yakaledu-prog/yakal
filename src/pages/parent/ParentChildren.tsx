@@ -9,7 +9,7 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
-import { Search, Loader2, Users, UserPlus, X, ChevronLeft } from "lucide-react";
+import { Search, Loader2, MessageCircleWarning, Users, UserPlus, X, ChevronLeft } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
 import { useQuery } from "@tanstack/react-query";
@@ -194,9 +194,19 @@ export function ParentChildren() {
 
 import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
+import { getFlaggedStudentIds } from "@/services/reports";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
 function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
+  // Whether the scan has picked anything out of this child's conversations, so
+  // the Messages tab can say so without being opened first.
+  const { data: flaggedStudents } = useQuery({
+    queryKey: ["flagged-students", child.id],
+    queryFn: () => getFlaggedStudentIds([child.id]),
+    enabled: !!child.id,
+  });
+  const hasFlaggedChat = !!flaggedStudents?.has(child.id);
+
   // A parent watches rather than attends, so no join and no reschedule here:
   // the rows are there to be read.
   const { data: sessionRows = [], isLoading: sessionsLoading } = useQuery({
@@ -268,7 +278,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           <TabButton active={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} label="Sessions" />
           <TabButton active={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')} label="Assignments" />
           <TabButton active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} label="Application Tracking" />
-          <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" />
+          <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" alert={hasFlaggedChat} />
         </div>
       </div>
 
@@ -338,7 +348,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           </div>
         )}
         {activeTab === 'messages' && (
-          <ParentMessages embedded childId={child.id} />
+          <ParentMessages embedded childId={child.id} childName={child.name} />
           // <div className="flex-1 flex flex-col min-h-[500px] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden bg-background relative mt-6">
           //   <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png")' }} />
           //   <div className="relative z-10 flex-1 flex items-center justify-center p-6 text-center">
@@ -371,14 +381,36 @@ function MinimalStat({ label, value }: { label: string; value: string | number }
   );
 }
 
-function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function TabButton({
+  active,
+  onClick,
+  label,
+  alert,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  /** Something in this tab needs looking at. */
+  alert?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className={cn("pb-3 text-[14px] font-bold capitalize border-b-2 transition-colors whitespace-nowrap",
+      className={cn("flex items-center gap-1.5 pb-3 text-[14px] font-normal capitalize border-b-2 transition-colors whitespace-nowrap",
         active ? "border-white text-white" : "border-transparent text-white/60 hover:text-white hover:border-white/40")}
     >
       {label}
+      {/* The same icon as the conversation it points at, so the tab and the
+          row it leads to are recognisably the same warning. Not a count: how
+          many messages were picked out is not the point, and a number invites
+          reading it as unread mail. */}
+      {alert && (
+        <MessageCircleWarning
+          size={15}
+          aria-label="Needs a look"
+          className="concern-pulse shrink-0 text-[#CAA25F]"
+        />
+      )}
     </button>
   );
 }

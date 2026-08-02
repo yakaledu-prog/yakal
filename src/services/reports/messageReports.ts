@@ -111,6 +111,50 @@ export async function getConversationReports(
   return byMessage;
 }
 
+/**
+ * Every conversation the scan has caught something in.
+ *
+ * One query for the whole list rather than one per row: the sidebar needs to
+ * mark a conversation before it has been opened, and opening each of them to
+ * find out defeats the point of marking them.
+ */
+export async function getFlaggedConversationIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.from("message_reports").select("conversation_id");
+  if (error) {
+    console.error("getFlaggedConversationIds failed:", error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r: any) => r.conversation_id));
+}
+
+/**
+ * Which of these children have something waiting in one of their
+ * conversations, so a tab can say so before it is opened.
+ *
+ * Two queries rather than a join, because the join would have to run through
+ * conversation_participants and message_reports at once and PostgREST has no
+ * way to express that without a view. The first is already scoped by row level
+ * security to conversations this parent may see.
+ */
+export async function getFlaggedStudentIds(studentIds: string[]): Promise<Set<string>> {
+  if (studentIds.length === 0) return new Set();
+
+  const flagged = await getFlaggedConversationIds();
+  if (flagged.size === 0) return new Set();
+
+  const { data, error } = await supabase
+    .from("conversation_participants")
+    .select("user_id")
+    .in("user_id", studentIds)
+    .in("conversation_id", [...flagged]);
+
+  if (error) {
+    console.error("getFlaggedStudentIds failed:", error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r: any) => r.user_id));
+}
+
 /** The reasons a report should open with, given the messages being reported. */
 export function reasonsFor(
   messageIds: string[],

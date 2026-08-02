@@ -53,6 +53,36 @@
   animation: skeleton-pulse 1.4s ease infinite;
 }
 
+/* ── Unreported concern ──
+   A conversation the message scan picked out but nobody has reported yet. The
+   glow rather than a colour change on its own: a flag that is merely gold is a
+   flag you stop seeing by the third visit, and this one has to survive being
+   walked past.
+
+   Slow and soft on purpose. Anything sharper reads as an error the reader has
+   caused, and this is a prompt to go and read something, not an alarm. */
+@keyframes concern-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 rgba(202, 162, 95, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 5px rgba(202, 162, 95, 0.9));
+  }
+}
+
+.concern-pulse {
+  animation: concern-pulse 1.8s ease-in-out infinite;
+}
+
+/* Respect a reader who has asked the operating system for less movement: the
+   colour still carries the meaning without anything moving. */
+@media (prefers-reduced-motion: reduce) {
+  .concern-pulse {
+    animation: none;
+  }
+}
+
 /* ── Custom Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;

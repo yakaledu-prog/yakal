@@ -381,15 +381,32 @@ BEGIN
       AND psl.parent_id <> NEW.sender_id
   LOOP
     -- One notification per conversation per six hours. An exchange that trips
-    -- the scan usually trips it several times over, and six notifications
-    -- saying the same thing get dismissed as a batch.
-    CONTINUE WHEN EXISTS (
-      SELECT 1 FROM public.notifications n
-      WHERE n.user_id = v_parent
-        AND n.type = 'message_report'
-        AND n.link = v_link
-        AND n.created_at > now() - interval '6 hours'
-    );
+    -- the scan usually trips it several times over, and six alerts saying the
+    -- same thing get dismissed as a batch.
+    --
+    -- Except when it escalates. A conversation that drifts from a phone number
+    -- to "keep this between us" is the whole shape this is looking for, and
+    -- letting the first, milder alert silence the one that matters would get
+    -- it exactly backwards. So a high-severity message breaks through a quiet
+    -- period that only medium ones have earned, once.
+    CONTINUE WHEN
+      EXISTS (
+        SELECT 1 FROM public.notifications n
+        WHERE n.user_id = v_parent
+          AND n.type = 'message_report'
+          AND n.link = v_link
+          AND n.created_at > now() - interval '6 hours'
+      )
+      AND (
+        NOT v_high
+        OR EXISTS (
+          SELECT 1 FROM public.message_reports r
+          WHERE r.conversation_id = NEW.conversation_id
+            AND r.severity = 'high'
+            AND r.message_id <> NEW.id
+            AND r.created_at > now() - interval '6 hours'
+        )
+      );
 
     INSERT INTO public.notifications (user_id, type, title, message, link)
     VALUES (

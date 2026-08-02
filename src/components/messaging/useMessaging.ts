@@ -131,9 +131,13 @@ export function useMessaging({
   useEffect(() => {
     if (!userId) return;
     return subscribeToMessages(() => {
-      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      // conversationsKey, not a literal: watching a child stores the list under
+      // ["child-conversations", ...], so invalidating ["conversations", ...]
+      // refreshed a list this hook was not showing and left the monitoring view
+      // frozen on whatever it loaded with.
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
     });
-  }, [userId, queryClient]);
+  }, [userId, queryClient, conversationsKey]);
 
   const patchConversation = useCallback(
     (conversationId: string, update: (c: ChatConversation) => ChatConversation) => {

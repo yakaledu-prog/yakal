@@ -18,25 +18,30 @@ import {
 // ============================================================
 // Reporting messages to the Yakal team.
 //
-// The messages are chosen here rather than from a flag icon on each bubble. A
-// transcript is read far more often than it is reported, so the reading view
-// stays clean and the picking happens once, inside the report.
+// Two steps: which messages, then why. There used to be a third listing what
+// you had already sent, which was a page of its own for something better said
+// on the message it was about, so withdrawing now lives there instead.
 //
-// Three steps: which messages, why, and what has already been reported. The
-// last is a list rather than a form, but it belongs in the same stepper
-// because it answers the question people open this dialog a second time to
-// ask.
+// The scan fills both steps in before the dialog opens. What is left is
+// reading it and agreeing, and the stepper is what keeps that from arriving as
+// one long wall.
+//
+// The transcript is drawn as a transcript: sides and colours as in the chat
+// itself, because a parent picking messages out of an exchange has to be able
+// to see at a glance who said what. Whose messages sit on the right is given
+// rather than assumed - a parent watching their child is a third party to the
+// conversation, and "mine against theirs" puts every message on one side and
+// labels the child's own words with the tutor's name.
 // ============================================================
 
 /** The most recent messages, newest first. Older ones are rarely the subject. */
 const PICKABLE = 20;
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 
 const STEPS: { n: Step; label: string }[] = [
   { n: 1, label: "Messages" },
   { n: 2, label: "Reason" },
-  { n: 3, label: "Reported" },
 ];
 
 export function FlagConversationDialog({
@@ -44,6 +49,8 @@ export function FlagConversationDialog({
   contactName,
   conversationId,
   userId,
+  subjectId,
+  subjectName = "You",
   messages,
   existing,
   reports,
@@ -51,18 +58,27 @@ export function FlagConversationDialog({
   onDone,
 }: {
   open: boolean;
+  /** The other party in the conversation. */
   contactName: string;
   conversationId: string;
+  /** Who is filing this report. */
   userId: string;
+  /**
+   * Whose messages sit on the right. The reporter's own id in a conversation
+   * they are part of; the child's id when a parent is watching one they are
+   * not. Defaults to the reporter.
+   */
+  subjectId?: string;
+  /** What to call that side. "You" reads wrong when it is somebody's child. */
+  subjectName?: string;
   /** The conversation history, for choosing which messages to report. */
   messages: ChatMessage[];
   /** This reporter's own open reports on this conversation. */
   existing: ConversationFlag[];
   /**
    * What the scan picked out, keyed by message id. Given, those messages start
-   * picked and the reasons start filled in: a parent who has been told there
-   * is something to look at should not then have to find it in the transcript
-   * themselves.
+   * picked and the reasons start filled in: somebody who has been told there
+   * is something to look at should not then have to find it themselves.
    */
   reports?: Map<string, MessageReport>;
   onClose: () => void;
@@ -74,15 +90,16 @@ export function FlagConversationDialog({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<Step>(1);
-  const [reviewing, setReviewing] = useState<ConversationFlag | null>(null);
+
+  const rightHandId = subjectId ?? userId;
 
   const recent = useMemo(
     () => messages.filter((m) => !m.pending && m.text).slice(-PICKABLE).reverse(),
     [messages]
   );
 
-  const alreadyReported = useMemo(
-    () => new Set(existing.map((f) => f.message_id).filter(Boolean) as string[]),
+  const flagByMessage = useMemo(
+    () => new Map(existing.filter((f) => f.message_id).map((f) => [f.message_id!, f])),
     [existing]
   );
   const generalReport = existing.find((f) => !f.message_id) ?? null;
@@ -91,15 +108,13 @@ export function FlagConversationDialog({
   const scanned = useMemo(
     () =>
       reports
-        ? recent.filter((m) => reports.has(m.id) && !alreadyReported.has(m.id)).map((m) => m.id)
+        ? recent.filter((m) => reports.has(m.id) && !flagByMessage.has(m.id)).map((m) => m.id)
         : [],
-    [reports, recent, alreadyReported]
+    [reports, recent, flagByMessage]
   );
 
-  // Opening the dialog fills the form in. The parent was sent here by a
-  // notification about specific messages, so starting them on an empty picker
-  // and asking them to find those messages again is asking them to do the work
-  // twice. They can still add to it or take things out before sending.
+  // Opening the dialog fills the form in. It can still be added to or taken
+  // apart before sending; it just does not start from nothing.
   useEffect(() => {
     if (!open || scanned.length === 0) return;
     setSelected((current) => (current.length > 0 ? current : scanned));
@@ -114,7 +129,6 @@ export function FlagConversationDialog({
     setReasons([]);
     setNote("");
     setStep(1);
-    setReviewing(null);
   }
 
   function close() {
@@ -157,16 +171,7 @@ export function FlagConversationDialog({
     if (!res.success) return toast.error(res.error ?? "Could not withdraw that.");
     toast.success("Report withdrawn.");
     await onDone();
-    setReviewing(null);
   }
-
-  const textOf = (flag: ConversationFlag) =>
-    flag.message_id
-      ? (messages.find((m) => m.id === flag.message_id)?.text ?? "That message")
-      : "The conversation overall";
-
-  // Step 2 needs something picked. Step 3 is a list, always reachable.
-  const canGo = (n: Step) => (n === 2 ? picked : true);
 
   return (
     <div
@@ -190,17 +195,19 @@ export function FlagConversationDialog({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!canGo(s.n)) return;
-                    setReviewing(null);
+                    if (s.n === 2 && !picked) return;
                     setStep(s.n);
                   }}
-                  disabled={!canGo(s.n)}
+                  disabled={s.n === 2 && !picked}
                   aria-current={step === s.n ? "step" : undefined}
                   className={cn(
                     "flex items-center gap-1.5 rounded-lg text-[13px] font-normal transition-colors",
                     step === s.n
                       ? "text-[#1099A1]"
-                      : cn("text-muted-foreground", canGo(s.n) && "hover:text-[#1099A1]")
+                      : cn(
+                          "text-muted-foreground",
+                          (s.n === 1 || picked) && "hover:text-[#1099A1]"
+                        )
                   )}
                 >
                   <span
@@ -208,12 +215,12 @@ export function FlagConversationDialog({
                       "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-normal transition-colors",
                       step === s.n
                         ? "bg-[#1099A1] text-white"
-                        : step > s.n && s.n !== 3
+                        : step > s.n
                           ? "bg-[#1099A1]/15 text-[#1099A1]"
                           : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {step > s.n && s.n !== 3 ? <Check size={11} strokeWidth={3} /> : s.n}
+                    {step > s.n ? <Check size={11} strokeWidth={3} /> : s.n}
                   </span>
                   {s.label}
                 </button>
@@ -242,71 +249,100 @@ export function FlagConversationDialog({
                 </p>
               )}
 
+              {scanned.length > 0 && (
+                <p className="pb-1 text-[13px] text-muted-foreground">
+                  We picked out{" "}
+                  {scanned.length === 1 ? "a message" : `${scanned.length} messages`}. Add or
+                  remove any before you send.
+                </p>
+              )}
+
               {/* The options are the bubbles themselves, and more than one can
-                  be picked: a problem is usually a short exchange rather than
-                  a single line, and filing those separately would split one
+                  be picked: a problem is usually a short exchange rather than a
+                  single line, and filing those separately would split one
                   complaint across several rows in the admin queue. */}
               {recent.map((m) => {
-                const done = alreadyReported.has(m.id);
+                const done = flagByMessage.get(m.id);
                 // Reporting the whole conversation covers every message, so
                 // they all show as picked rather than the list looking empty
                 // while the checkbox says otherwise.
                 const on = general || selected.includes(m.id);
-                const mine = m.senderId === userId;
+                const onRight = m.senderId === rightHandId;
                 const caught = reports?.get(m.id);
+
                 return (
-                  <button
+                  <div
                     key={m.id}
-                    type="button"
-                    disabled={done}
-                    onClick={() => toggleMessage(m.id)}
-                    aria-pressed={on}
-                    className={cn(
-                      "flex w-full flex-col gap-1 rounded-xl p-1.5 text-left transition-colors",
-                      on
-                        ? "bg-[#1099A1]/10"
-                        : done
-                          ? "cursor-default opacity-45"
-                          : "hover:bg-muted/40",
-                      mine ? "items-end" : "items-start"
-                    )}
+                    className={cn("flex flex-col gap-1", onRight ? "items-end" : "items-start")}
                   >
-                    <span
+                    <button
+                      type="button"
+                      disabled={!!done}
+                      onClick={() => toggleMessage(m.id)}
+                      aria-pressed={on}
                       className={cn(
-                        "max-w-[85%] rounded-xl px-3 py-2 text-[13.5px] leading-snug shadow-sm",
-                        mine
-                          ? "rounded-br-sm bg-[#1099A1] text-white"
-                          : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
-                        on && "ring-2 ring-[#1099A1] ring-offset-1 ring-offset-background"
+                        "flex w-full flex-col gap-1 rounded-xl p-1.5 text-left transition-colors",
+                        on
+                          ? "bg-[#1099A1]/10"
+                          : done
+                            ? "cursor-default opacity-45"
+                            : "hover:bg-muted/40",
+                        onRight ? "items-end" : "items-start"
                       )}
                     >
-                      {m.text}
-                    </span>
-                    <span className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
-                      {on && <Check size={11} strokeWidth={3} className="text-[#1099A1]" />}
-                      {mine ? "You" : contactName}
-                      {" - "}
-                      {m.createdAt.toLocaleString(undefined, {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {done && " - already reported"}
-                    </span>
-                    {/* Why the system picked this one. Said plainly, because a
-                        parent about to put their name to a report is entitled
-                        to know what they are agreeing with. */}
-                    {caught && (
-                      <span className="flex items-center gap-1.5 px-1 text-[11px] font-semibold text-[#CAA25F]">
-                        <Flag size={10} fill="currentColor" />
-                        {describeReport(caught)}
+                      <span
+                        className={cn(
+                          "max-w-[85%] rounded-xl px-3 py-2 text-[13.5px] leading-snug shadow-sm",
+                          onRight
+                            ? "rounded-br-sm bg-[#1099A1] text-white"
+                            : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
+                          on && "ring-2 ring-[#1099A1] ring-offset-1 ring-offset-background"
+                        )}
+                      >
+                        {m.text}
+                      </span>
+
+                      <span className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
+                        {on && <Check size={11} strokeWidth={3} className="text-[#1099A1]" />}
+                        {onRight ? subjectName : contactName}
+                        {" - "}
+                        {m.createdAt.toLocaleString(undefined, {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+
+                      {/* Why the system picked this one. Said plainly, because
+                          somebody about to put their name to a report is
+                          entitled to know what they are agreeing with. */}
+                      {caught && !done && (
+                        <span className="flex items-center gap-1.5 px-1 text-[11px] font-semibold text-[#CAA25F]">
+                          <Flag size={10} fill="currentColor" />
+                          {describeReport(caught)}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Taking a report back belongs on the message it was
+                        about, not in a step of its own. */}
+                    {done && (
+                      <span className="flex items-center gap-2 px-2.5 text-[11px] text-muted-foreground">
+                        Already reported
+                        <button
+                          type="button"
+                          onClick={() => void withdraw(done)}
+                          disabled={busy}
+                          className="font-medium text-[#CAA25F] transition-opacity hover:underline disabled:opacity-50"
+                        >
+                          Withdraw
+                        </button>
                       </span>
                     )}
-                  </button>
+                  </div>
                 );
               })}
-
             </div>
           )}
 
@@ -356,50 +392,6 @@ export function FlagConversationDialog({
               />
             </div>
           )}
-
-          {step === 3 &&
-            (reviewing ? (
-              <div className="space-y-3 pb-2">
-                <Field label="Reported">
-                  <p className="text-[13.5px] text-foreground">{textOf(reviewing)}</p>
-                </Field>
-                <Field label="Reason">
-                  <p className="text-[13.5px] font-semibold text-foreground">
-                    {(reviewing.reasons?.length ? reviewing.reasons : [reviewing.reason])
-                      .map((r) => FLAG_REASONS.find((x) => x.value === r)?.label ?? r)
-                      .join(", ")}
-                  </p>
-                  {reviewing.note && (
-                    <p className="mt-1 text-[13px] text-muted-foreground">{reviewing.note}</p>
-                  )}
-                </Field>
-              </div>
-            ) : existing.length === 0 ? (
-              <p className="py-6 text-center text-[13px] text-muted-foreground">
-                You have not reported anything in this conversation.
-              </p>
-            ) : (
-              <div className="space-y-1.5 pb-2">
-                {existing.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setReviewing(f)}
-                    className="flex w-full items-center gap-2 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/5 px-3.5 py-2.5 text-left transition-colors hover:bg-[#CAA25F]/10"
-                  >
-                    <Flag size={13} className="shrink-0 text-[#CAA25F]" fill="currentColor" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-foreground">{textOf(f)}</span>
-                      <span className="block text-[11.5px] text-muted-foreground">
-                        {(f.reasons?.length ? f.reasons : [f.reason])
-                          .map((r) => FLAG_REASONS.find((x) => x.value === r)?.label ?? r)
-                          .join(", ")}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ))}
         </div>
 
         <div className="flex items-center gap-2 p-5 pt-4 md:p-6 md:pt-4">
@@ -435,19 +427,13 @@ export function FlagConversationDialog({
           <div className="flex-1" />
 
           <button
-            onClick={
-              reviewing
-                ? () => setReviewing(null)
-                : step === 1
-                  ? close
-                  : () => setStep((step - 1) as Step)
-            }
+            onClick={step === 1 ? close : () => setStep(1)}
             className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium transition-colors hover:bg-muted/60"
           >
-            {reviewing || step > 1 ? "Back" : "Cancel"}
+            {step === 1 ? "Cancel" : "Back"}
           </button>
 
-          {step === 1 && (
+          {step === 1 ? (
             <button
               onClick={() => setStep(2)}
               disabled={!picked}
@@ -455,9 +441,7 @@ export function FlagConversationDialog({
             >
               Next
             </button>
-          )}
-
-          {step === 2 && (
+          ) : (
             <button
               onClick={() => void submit()}
               disabled={busy || reasons.length === 0 || !picked}
@@ -465,17 +449,6 @@ export function FlagConversationDialog({
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
               Send report
-            </button>
-          )}
-
-          {step === 3 && reviewing && (
-            <button
-              onClick={() => void withdraw(reviewing)}
-              disabled={busy}
-              className="flex items-center gap-1.5 rounded-xl bg-[#CAA25F] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
-            >
-              {busy && <Loader2 size={14} className="animate-spin" />}
-              Withdraw report
             </button>
           )}
         </div>
@@ -489,14 +462,5 @@ function Label({ children }: { children: React.ReactNode }) {
     <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
       {children}
     </p>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4">
-      <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      {children}
-    </div>
   );
 }

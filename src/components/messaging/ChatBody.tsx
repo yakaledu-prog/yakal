@@ -167,6 +167,15 @@ export function ChatBody({
     };
   }, []);
 
+  // Something the scan caught that this reader has not reported yet. Once they
+  // have, the flag settles to solid gold and stops moving: it has done its job.
+  const unreportedConcern = !!messageReports?.size && !isFlagged;
+  const flagTitle = isFlagged
+    ? "You reported this conversation"
+    : unreportedConcern
+      ? "We picked something out here. Have a look and report it."
+      : "Report this conversation";
+
   const attachmentById = useMemo(
     () => new Map(localAttachments.map((l) => [l.msg.id, l.attachment])),
     [localAttachments]
@@ -346,11 +355,14 @@ export function ChatBody({
           {onFlag && (
             <button
               onClick={onFlag}
-              title={isFlagged ? "You reported this conversation" : "Report this conversation"}
-              aria-label={isFlagged ? "You reported this conversation" : "Report this conversation"}
+              title={flagTitle}
+              aria-label={flagTitle}
               className={cn(
                 "p-2 transition-colors shrink-0",
-                isFlagged ? "text-[#CAA25F]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]"
+                isFlagged || unreportedConcern
+                  ? "text-[#CAA25F]"
+                  : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]",
+                unreportedConcern && "concern-pulse"
               )}
             >
               <Flag size={20} fill={isFlagged ? "currentColor" : "none"} />
@@ -408,13 +420,14 @@ export function ChatBody({
               {onFlag && (
                 <button
                   onClick={onFlag}
-                  title={isFlagged ? "You reported this conversation" : "Report this conversation"}
-                  aria-label={isFlagged ? "You reported this conversation" : "Report this conversation"}
+                  title={flagTitle}
+                  aria-label={flagTitle}
                   className={cn(
                     "p-2 transition-colors shrink-0",
-                    isFlagged
+                    isFlagged || unreportedConcern
                       ? "text-[#CAA25F]"
-                      : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]"
+                      : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]",
+                    unreportedConcern && "concern-pulse"
                   )}
                 >
                   <Flag size={22} fill={isFlagged ? "currentColor" : "none"} />

@@ -27,6 +27,8 @@ export {
   REPORT_CATEGORIES,
   describeReport,
   getConversationReports,
+  getFlaggedConversationIds,
+  getFlaggedStudentIds,
   getReportedMessageIds,
   getSenderReportSummaries,
   reasonsFor,

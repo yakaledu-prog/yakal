@@ -39,6 +39,7 @@ export function MessagingLayout({
   onFlag,
   isFlagged,
   messageReports,
+  flaggedConversationIds,
   draft,
   aside,
   emptyState,
@@ -81,6 +82,8 @@ export function MessagingLayout({
   isFlagged?: boolean;
   /** Scan results per message, for the parent's monitoring view. */
   messageReports?: Map<string, { severity: "high" | "medium"; label: string }>;
+  /** Conversations the scan has picked something out of, marked in the list. */
+  flaggedConversationIds?: Set<string>;
   /** Pre-fills the composer, e.g. a message started from another page. */
   draft?: string;
   /** Optional panel beside the history, below the contact header. */
@@ -127,6 +130,7 @@ export function MessagingLayout({
         startingContactId={startingContactId}
         onlineIds={onlineIds}
         typingConversationIds={typingConversationIds}
+        flaggedConversationIds={flaggedConversationIds}
         className={cn(
           "w-full md:w-[340px] md:shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]",
           showChatOnMobile ? "hidden md:flex" : "flex"

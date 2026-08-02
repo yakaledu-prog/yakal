@@ -1,4 +1,4 @@
-import { Loader2, Search } from "lucide-react";
+import { Loader2, MessageCircleWarning, Search } from "lucide-react";
 import type { ChatConversation, ContactProfile } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 import { formatListDate, lastMessage, previewText } from "./format";
@@ -26,6 +26,7 @@ function Row({
   previewUnread,
   previewIsPrompt,
   isTyping,
+  isFlagged,
   unreadCount,
   busy,
   disabled,
@@ -42,6 +43,8 @@ function Row({
   previewUnread?: boolean;
   previewIsPrompt?: boolean;
   isTyping?: boolean;
+  /** The scan found something in this conversation and nobody has looked. */
+  isFlagged?: boolean;
   unreadCount?: number;
   busy?: boolean;
   disabled?: boolean;
@@ -54,9 +57,17 @@ function Row({
       aria-current={isActive ? "true" : undefined}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
-        isActive
-          ? "bg-[#f0f2f5] dark:bg-[#2a3942]"
-          : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+        // One background, chosen here rather than layered: cn is a plain join,
+        // so two bg classes would race on stylesheet order instead of the
+        // order they are written in. A flagged row keeps its tint when
+        // selected, only deeper, because it is still the row worth reading.
+        isFlagged
+          ? isActive
+            ? "bg-[#CAA25F]/20"
+            : "bg-[#CAA25F]/10 hover:bg-[#CAA25F]/15"
+          : isActive
+            ? "bg-[#f0f2f5] dark:bg-[#2a3942]"
+            : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
         disabled && "opacity-60 pointer-events-none"
       )}
     >
@@ -80,7 +91,17 @@ function Row({
               {name}
             </span>
           </div>
-          <span className="flex items-center gap-1 shrink-0">
+          <span className="flex items-center gap-1.5 shrink-0">
+            {/* Beside the timestamp rather than under the preview: a row is
+                scanned down its right edge, and this has to be found without
+                reading the message it is about. */}
+            {isFlagged && (
+              <MessageCircleWarning
+                size={15}
+                className="concern-pulse text-[#CAA25F]"
+                aria-label="Something here needs a look"
+              />
+            )}
             {busy && <Loader2 size={13} className="animate-spin text-[#1099A1]" />}
             {timestamp && (
               <span
@@ -152,6 +173,7 @@ export function ConversationList({
   startingContactId,
   onlineIds,
   typingConversationIds,
+  flaggedConversationIds,
   className,
 }: {
   conversations: ChatConversation[];
@@ -167,6 +189,8 @@ export function ConversationList({
   onlineIds?: Set<string>;
   /** Conversations someone is typing in right now. */
   typingConversationIds?: Set<string>;
+  /** Conversations the message scan has picked something out of. */
+  flaggedConversationIds?: Set<string>;
   className?: string;
 }) {
   const query = searchQuery.trim().toLowerCase();
@@ -227,6 +251,7 @@ export function ConversationList({
               previewUnread={conv.unreadCount > 0}
               unreadCount={conv.unreadCount}
               isTyping={typingConversationIds?.has(conv.id)}
+              isFlagged={flaggedConversationIds?.has(conv.id)}
             />
           );
         })}

@@ -10,7 +10,12 @@ import {
   MessagingLayout,
   useMessaging,
 } from "@/components/messaging";
-import { describeReport, getConversationReports, getMyFlags } from "@/services/reports";
+import {
+  describeReport,
+  getConversationReports,
+  getFlaggedConversationIds,
+  getMyFlags,
+} from "@/services/reports";
 
 /**
  * The parent's messages.
@@ -22,11 +27,17 @@ import { describeReport, getConversationReports, getMyFlags } from "@/services/r
  * `childId` switches this from the parent's own threads to that child's. The
  * child tab used to show the parent's conversations under a heading with the
  * child's name, which was simply the wrong list.
+ *
+ * It also decides whose messages sit on the right. Watching a child, the
+ * parent is a third party to the conversation: passing their own id put every
+ * message on the left and labelled the child's own words with the tutor's
+ * name, because the bubble names anything that is not yours after the contact.
  */
 export function ParentMessages({
   embedded = false,
   childId,
-}: { embedded?: boolean; childId?: string } = {}) {
+  childName,
+}: { embedded?: boolean; childId?: string; childName?: string } = {}) {
   const { user } = useAuth();
   const location = useLocation();
   const nav = location.state as
@@ -84,6 +95,12 @@ export function ParentMessages({
     enabled: !!activeConversation?.id,
   });
 
+  const { data: flaggedIds } = useQuery({
+    queryKey: ["flagged-conversations", user?.id],
+    queryFn: getFlaggedConversationIds,
+    enabled: !!user?.id,
+  });
+
   // The bubbles need a label, not the categories behind it.
   const reportLabels = useMemo(() => {
     const labels = new Map<string, { severity: "high" | "medium"; label: string }>();
@@ -125,7 +142,7 @@ export function ParentMessages({
           onStartConversation={childId ? undefined : startConversation}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          currentUserId={user?.id}
+          currentUserId={childId ?? user?.id}
           isLoading={isLoading}
           startingContactId={startingContactId}
           onlineIds={onlineIds}
@@ -160,6 +177,7 @@ export function ParentMessages({
           onFlag={() => setFlagging(true)}
           isFlagged={myFlags.length > 0}
           messageReports={reportLabels}
+          flaggedConversationIds={flaggedIds}
           aside={
             showProfile && activeConversation ? (
               <ContactInfoPanel
@@ -176,6 +194,8 @@ export function ParentMessages({
             conversationId={activeConversation.id}
             userId={user.id}
             messages={activeConversation.messages}
+            subjectId={childId ?? user.id}
+            subjectName={childId ? (childName ?? "Your child") : "You"}
             existing={myFlags}
             reports={reports}
             onClose={() => setFlagging(false)}

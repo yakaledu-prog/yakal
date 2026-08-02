@@ -115,6 +115,10 @@ pass(
 
 // ---------- the trigger ----------
 
+// Reports filed by an earlier run change the flag's label to "You reported
+// this conversation", which is how this suite spent a run unable to find its
+// own button.
+psql('delete from conversation_flags;');
 psql('delete from message_reports;');
 psql("delete from notifications where type = 'message_report';");
 
@@ -143,11 +147,17 @@ if (!convo) {
   process.exit(1);
 }
 
+// Everything this suite writes into a real conversation, so it can take it all
+// back out. It plants into whichever conversation fits, and that is a seeded
+// demo thread somebody is about to look at.
+const planted = [];
+
 const msgId = psql(`
   insert into messages (conversation_id, sender_id, content)
   values ('${convo}', '${tutor}',
           'You are doing really well. Add me on WhatsApp, my number is 0911234567, but dont tell your parents')
   returning id`);
+planted.push(msgId);
 
 pass(
   'one message, three categories',
@@ -162,6 +172,7 @@ const cleanId = psql(`
   insert into messages (conversation_id, sender_id, content)
   values ('${convo}', '${tutor}', 'Great progress today, see you Thursday at 4pm')
   returning id`);
+planted.push(cleanId);
 pass(
   'a clean message is not reported',
   psql(`select count(*) from message_reports where message_id = '${cleanId}'`) === '0'
@@ -172,10 +183,20 @@ pass(
 // rather than against 1: a student can have more than one parent linked, and
 // each of them is told once.
 const before = psql("select count(*) from notifications where type = 'message_report'");
-psql(`
+planted.push(psql(`
   insert into messages (conversation_id, sender_id, content)
-  values ('${convo}', '${tutor}', 'seriously, dont tell anyone about this')`);
+  values ('${convo}', '${tutor}', 'seriously, dont tell anyone about this')
+  returning id`));
 const after = psql("select count(*) from notifications where type = 'message_report'");
+
+// A reply from the child, so the conversation has two speakers to tell apart.
+planted.push(psql(`
+  insert into messages (conversation_id, sender_id, content)
+  values ('${convo}', '${student}', 'ok I will not say anything')
+  returning id`));
+
+const counterpartyName = psql(`select full_name from profiles where id = '${tutor}'`);
+const childName = psql(`select full_name from profiles where id = '${student}'`);
 pass('the parent is told at all', Number(before) >= 1, `before: ${before}`);
 pass('repeat messages do not repeat the notification', before === after, `${before} -> ${after}`);
 
@@ -249,25 +270,64 @@ pass(
 await parent.goto(`${BASE}/parent/child-chats`, { waitUntil: 'domcontentloaded' });
 await parent.waitForTimeout(4000);
 
+// Open the planted conversation rather than whichever sorted first: the list
+// reorders by last activity, and asserting on the top row made this suite pass
+// or fail on which test ran last.
+await parent.locator('button').filter({ hasText: counterpartyName }).first().click();
+await parent.waitForTimeout(2000);
+
 pass(
   'the flagged message is marked in the transcript',
   (await parent.getByText(/Asking to keep it secret|Another app|Contact details/).count()) > 0
 );
 
-await parent.getByRole('button', { name: /Report this conversation/i }).click();
+// The tooltip changes once the scan has caught something here, so match both.
+await parent.getByRole('button', { name: /Report this conversation|picked something out|You reported/i }).first().click();
 await parent.waitForTimeout(1500);
 const dlg = parent.locator('div[role="dialog"]');
-pass('the report dialog opens with the messages already picked', /selected/.test(await dlg.innerText()));
+const dlgText = await dlg.innerText();
+
+pass('the report dialog says what it picked out', /We picked out/.test(dlgText), dlgText.slice(0, 70));
+pass('two steps, not three', !/\bReported\b/.test(dlgText) && /Messages/.test(dlgText) && /Reason/.test(dlgText));
+
+const pickedMessages = await dlg.locator('button[aria-pressed="true"]').count();
+pass('messages start chosen', pickedMessages >= 1, `${pickedMessages} pressed`);
+
+// The parent is a third party here, so neither side is theirs. Both names have
+// to appear or somebody's words are being put in somebody else's mouth.
+// The parent is a third party here, so neither side is theirs. Both names have
+// to appear, or somebody's words are being put in somebody else's mouth.
+pass(
+  'both speakers are named correctly',
+  dlgText.includes(counterpartyName) && dlgText.includes(childName),
+  `${counterpartyName} / ${childName} in: ${dlgText.replace(/\n/g, ' | ').slice(0, 140)}`
+);
 
 await dlg.getByRole('button', { name: 'Next' }).click();
 await parent.waitForTimeout(800);
+const step2 = await dlg.innerText();
+pass('the reason carries over already chosen', /Moving off the platform|Inappropriate content/.test(step2));
 pass(
-  'and with a reason already chosen',
+  'a reason is pre-selected',
   (await dlg.locator('button[aria-pressed="true"]').count()) > 0
 );
 
+const flagsBefore = psql("select count(*) from conversation_flags");
+await dlg.getByRole('button', { name: 'Send report' }).click();
+await parent.waitForTimeout(2500);
+const flagsAfter = psql("select count(*) from conversation_flags");
+pass('sending files the report', Number(flagsAfter) > Number(flagsBefore), `${flagsBefore} -> ${flagsAfter}`);
+
 pass('no page errors', errs.length === 0, errs.join(' | '));
 await b.close();
+
+// Reports first: the protection trigger refuses to delete a reported message,
+// which is the feature working and not something to route around in the app.
+const ids = planted.map((id) => `'${id}'`).join(', ');
+psql(`delete from conversation_flags where conversation_id = '${convo}';`);
+psql(`delete from message_reports where message_id in (${ids});`);
+psql(`delete from messages where id in (${ids});`);
+psql("delete from notifications where type = 'message_report';");
 
 console.log(failures === 0 ? '\nall good' : `\n${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);

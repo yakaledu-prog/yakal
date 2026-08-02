@@ -455,7 +455,21 @@ export const CONVERSATIONS: SeedConversation[] = [
       { from: "student@yakal.com", text: "Better than last time. I got stuck on question 7 though.", daysAgo: 3, at: "09:40", read: true },
       { from: "tutor@yakal.com", text: "That one catches everyone. Bring it on Thursday and we will work through it together.", daysAgo: 3, at: "09:44", read: true },
       { from: "student@yakal.com", text: "Sounds good, thank you", daysAgo: 2, at: "18:05", read: true },
-      { from: "tutor@yakal.com", text: "Reminder: our session is at 4 PM tomorrow.", daysAgo: 0, at: "11:30" },
+      { from: "tutor@yakal.com", text: "Reminder: our session is at 4 PM tomorrow.", daysAgo: 1, at: "11:30", read: true },
+
+      // An exchange that starts normally and drifts, so the message scan has
+      // something real to be seen working on. The two picture messages are the
+      // point of it: one is a tutor marking homework and one is not, and a
+      // scan that cannot tell them apart is a scan nobody will keep reading.
+      { from: "tutor@yakal.com", text: "You scored 18 out of 20 on the quadratics set. Really strong work.", daysAgo: 0, at: "09:05", read: true },
+      { from: "student@yakal.com", text: "thank you! q19 was tricky", daysAgo: 0, at: "09:11", read: true },
+      { from: "tutor@yakal.com", text: "Send me a picture of your working for question 19 and I will look at where it went wrong.", daysAgo: 0, at: "09:13", read: true },
+      { from: "student@yakal.com", text: "ok sending it now", daysAgo: 0, at: "09:20", read: true },
+      { from: "tutor@yakal.com", text: "Got it. Your method is fine, you just dropped a minus sign on line three.", daysAgo: 0, at: "09:34", read: true },
+      { from: "tutor@yakal.com", text: "By the way it is much easier to reach me on WhatsApp, my number is 0911234567", daysAgo: 0, at: "09:36" },
+      { from: "tutor@yakal.com", text: "And you can pay me directly in cash for the extra sessions, it works out cheaper if you book directly.", daysAgo: 0, at: "09:37" },
+      { from: "student@yakal.com", text: "should I ask my mum first?", daysAgo: 0, at: "09:41" },
+      { from: "tutor@yakal.com", text: "No need, lets keep this between us for now.", daysAgo: 0, at: "09:42" },
     ],
   },
   {
