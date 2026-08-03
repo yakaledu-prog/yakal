@@ -530,7 +530,7 @@ export interface SeedBlogPost {
 export const BLOG_POSTS: SeedBlogPost[] = [
   {
     title: "5 Tips to Improve Math Grades",
-    thumbnailUrl: "https://images.unsplash.com/photo-1518133835878-5a93ac3f0c0f?w=800&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?w=800&q=80",
     readTimeMinutes: 3,
     status: "published",
     sections: [
@@ -562,7 +562,7 @@ export const BLOG_POSTS: SeedBlogPost[] = [
   },
   {
     title: "How to Build a Balanced College List",
-    thumbnailUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=800&q=80",
     readTimeMinutes: 4,
     status: "published",
     sections: [
