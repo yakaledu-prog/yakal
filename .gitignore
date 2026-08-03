@@ -41,3 +41,4 @@ Thumbs.db
 
 # Local database snapshots taken around a db reset.
 .snapshots/
+dev-dist/
