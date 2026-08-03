@@ -10,7 +10,7 @@ Moving off personal credentials onto the Yakal account. Do these in order.
 | --- | --- | --- |
 | Organization | `Yakal` | The company, not the project. You will add more projects under it later. |
 | Project | `yakal` | Matches `project_id` in `supabase/config.toml`, so the CLI and the dashboard agree. |
-| Region | Central EU (Frankfurt), `eu-central-1` | Supabase has no African or Middle Eastern region. Ethiopian traffic reaches Europe over the Djibouti cables, so Frankfurt is the shortest path. Mumbai (`ap-south-1`) is the alternative if you ever measure it faster. |
+| Region | East US (North Virginia), `us-east-1` | Where the families are. It is also Vercel's default region, so the serverless functions in `api/` sit in the same datacenter as the database they call on every request. |
 | Plan | Free to start | Pro when you need daily backups or the project outgrows a week of inactivity pausing it. |
 
 Do not use a dash or a suffix like `prod`. If a staging project follows, name
@@ -22,7 +22,11 @@ which invalidates the connection string in GitHub and Vercel.
 
 ### The region cannot be changed later
 
-Moving regions means a new project and a migration. Decide now.
+Moving regions means a new project. Before there is real data that costs
+nothing: delete it and create another. After launch it is a migration.
+
+Note the seed data is Ethiopian, down to the `+251` numbers and ETB pricing.
+That is fixture data and says nothing about where the families are.
 
 ## 2. Credentials to collect
 
