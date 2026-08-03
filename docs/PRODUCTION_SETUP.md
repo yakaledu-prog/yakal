@@ -33,8 +33,35 @@ data, deleting the project and making another costs nothing.
 Copy the whole string. Replace `[YOUR-PASSWORD]` with the database password.
 This is `SUPABASE_DB_URL`, used only by GitHub Actions.
 
-Use the pooler, not `db.<ref>.supabase.co`. The direct host is IPv6 only and
-GitHub runners have no IPv6 route to it.
+### Why there are two URLs
+
+They are not alternatives. They speak different protocols and do different
+jobs, which is why only one of them is in `.env`.
+
+| | `SUPABASE_URL` | `SUPABASE_DB_URL` |
+| --- | --- | --- |
+| Shape | `https://<ref>.supabase.co` | `postgresql://postgres.<ref>:<pw>@<pooler>:5432/postgres` |
+| Protocol | HTTPS | Postgres wire protocol |
+| Talks to | PostgREST and Auth | the database itself |
+| Used by | the app, through supabase-js | the Supabase CLI |
+
+`SUPABASE_URL` is the API. It reads and writes rows and it cannot create a
+table or alter a policy, because PostgREST does not expose DDL. The app never
+needs anything more, so that is the only one in `.env`.
+
+`SUPABASE_DB_URL` is a real database connection. `supabase db push` runs
+CREATE TABLE, CREATE POLICY and ALTER, none of which travel over REST. It
+carries the database password, nothing at runtime uses it, and it belongs
+only in CI.
+
+### Two things that catch people
+
+Session pooler, not Transaction pooler. `db push` takes advisory locks and
+relies on session state; transaction mode on port 6543 does not support that.
+
+Not `db.<ref>.supabase.co`. The direct host is IPv6 only and GitHub runners
+have no IPv6 route to it, so the job hangs and then fails with a timeout that
+points nowhere useful.
 
 If the password contains anything outside `A-Za-z0-9`, percent-encode it in
 that string: `@` becomes `%40`, `#` becomes `%23`, `/` becomes `%2F`.
