@@ -381,13 +381,23 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
   try {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason")
+      .select(
+        // bio and resume_url were missing, so the modal's View Resume button
+        // was reading an undefined cv_url and never rendered for anybody.
+        "id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, subjects, resume_url"
+      )
       .eq("id", id)
       .single();
 
     if (profileError) throw profileError;
 
-    const details: UserDetails = { profile: profileData as AdminUser };
+    const details: UserDetails = {
+      profile: {
+        ...(profileData as AdminUser),
+        // The column is a storage path; the reader signs it on click.
+        cv_url: (profileData as any).resume_url ?? null,
+      },
+    };
 
     // Common query logic based on role
     if (role === "parent") {

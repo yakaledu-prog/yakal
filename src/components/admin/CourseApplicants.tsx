@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Clock, FileText, Loader2, UserCheck, X } from "lucide-react";
+import { Check, Clock, Loader2, UserCheck, X } from "lucide-react";
+import { ViewCvButton } from "@/components/shared/ViewCvButton";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { dicebearUrl } from "@/utils/avatar";
@@ -197,16 +198,7 @@ export function CourseApplicants({
               )}
 
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
-                {a.tutor.resumeUrl && (
-                  <a
-                    href={a.tutor.resumeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#e9edef] px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 dark:border-[#2a3942]"
-                  >
-                    <FileText size={14} /> View CV
-                  </a>
-                )}
+                <ViewCvButton path={a.tutor.resumeUrl} />
                 <div className="flex-1" />
 
                 {a.status === "pending" && (

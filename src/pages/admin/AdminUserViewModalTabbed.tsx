@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminUser, getAdminUserDetails } from "@/services/adminService";
-import { X, Loader2, Calendar, FileText, Users, DollarSign, BookOpen, GraduationCap, Mail, User, Inbox } from "lucide-react";
+import { X, Loader2, Calendar, Users, DollarSign, BookOpen, GraduationCap, Mail, User, Inbox } from "lucide-react";
+import { ViewCvButton } from "@/components/shared/ViewCvButton";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
 import { format } from "date-fns";
@@ -360,14 +361,11 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                   ) : null}
 
                   {!isLoading && details?.profile?.cv_url && (
-                    <a
-                      href={details.profile.cv_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-md text-[11px] font-semibold transition-colors text-white"
-                    >
-                      <FileText size={12} /> View Resume
-                    </a>
+                    <ViewCvButton
+                      path={details.profile.cv_url}
+                      label="View Resume"
+                      className="mt-2 !rounded-md !border-white/20 bg-white/10 !px-2.5 !py-1 !text-[11px] font-semibold text-white hover:!bg-white/20"
+                    />
                   )}
                 </div>
               )}
