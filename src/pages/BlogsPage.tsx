@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRightIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { getPosts, BlogPost } from "@/services/cmsService";
 import { useNavigate } from "react-router-dom";
+import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 
 export default function BlogsPage() {
   const navigate = useNavigate();
@@ -24,12 +25,34 @@ export default function BlogsPage() {
     // Text colour pinned rather than inherited. The page hardcodes a white
     // background, so in dark mode the inherited near-white heading colour left
     // every post title invisible.
-    <div className="min-h-screen flex flex-col font-sans bg-white text-[#111827]">
-      {/* No photograph at any width. The stock cover was decoration standing
-          between the reader and the posts, and it was the only thing that
-          differed between the phone and the desktop layouts. */}
-      <div className="w-full border-b border-[#eaecf0]">
-        <div className="max-w-[1200px] mx-auto px-6 pt-8 pb-8 lg:px-12 lg:pt-10 lg:pb-10">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans bg-white text-[#111827]">
+      {/* Desktop only. It gives the page its cover without costing a phone a
+          screen of scrolling before the first post. */}
+      <div className="hidden md:block md:w-[38%] lg:w-[40%] sticky top-0 h-screen overflow-hidden shrink-0">
+        <img src={imgCover} alt="Yakal Education" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+        <div className="absolute top-8 left-8">
+          <button
+            onClick={() => navigate("/#blog")}
+            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors text-[14px] font-medium"
+          >
+            <ArrowLeft size={16} strokeWidth={2.5} />
+            <span>Back to Home</span>
+          </button>
+        </div>
+
+        <div className="absolute bottom-16 left-10 right-10">
+          <h1 className="text-[36px] lg:text-[42px] font-bold text-white leading-tight mb-4">Blogs</h1>
+          <p className="text-[17px] text-white/90 leading-[28px]">
+            Discover tips, news, and strategies from our expert educators to help you succeed.
+          </p>
+        </div>
+      </div>
+
+      {/* Mobile: the same words with no photograph above them. */}
+      <div className="md:hidden w-full">
+        <div className="px-6 pt-8 pb-8 border-b border-[#eaecf0]">
           <button
             onClick={() => navigate("/#blog")}
             className="flex items-center gap-2 text-[#54656f] hover:text-[#1099a1] transition-colors text-[13px] font-medium mb-6"
@@ -38,15 +61,15 @@ export default function BlogsPage() {
             <span>Back</span>
           </button>
 
-          <h1 className="text-[32px] md:text-[42px] font-bold leading-tight mb-3">Blogs</h1>
-          <p className="text-[#4a4a4a] text-[15px] md:text-[17px] leading-[26px] max-w-[600px]">
+          <h1 className="text-[32px] font-bold leading-tight mb-3">Blogs</h1>
+          <p className="text-[#4a4a4a] text-[15px] leading-[26px]">
             Discover tips, news, and strategies from our expert educators to help you succeed.
           </p>
         </div>
       </div>
 
-      <div className="w-full">
-        <div className="max-w-[1200px] mx-auto px-6 py-10 lg:px-12 lg:py-14">
+      <div className="w-full md:w-[62%] lg:w-[60%]">
+        <div className="max-w-[900px] mx-auto px-6 py-10 lg:px-12 lg:py-14">
 
           {loading ? (
             <div className="flex justify-center py-20">
@@ -55,7 +78,7 @@ export default function BlogsPage() {
           ) : blogs.length === 0 ? (
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px]">No published blogs yet.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {blogs.map((blog) => (
                 <div key={blog.id} className="group cursor-pointer flex flex-col h-full" onClick={() => navigate(`/post/${blog.id}`, { state: { from: '/posts' } })}>
                   <div className="aspect-[4/3] w-full rounded-[20px] overflow-hidden mb-5 bg-gray-100">

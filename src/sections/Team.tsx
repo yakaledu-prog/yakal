@@ -47,73 +47,8 @@ const founders: Member[] = [
 const DRIFT_SPEED = 22;
 /** How long the row rests at each end before turning back. */
 const DRIFT_DWELL_MS = 1400;
-
-/**
- * Drifts a horizontal row back and forth on its own.
- *
- * Only while there is something off screen to reveal, only while the row is
- * in view, and never while a pointer is over it: somebody reading a card or
- * reaching for Read Full Bio should not have it slide away from them.
- */
-function useAutoScroll(ref: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
-  const paused = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Somebody who has asked the system for less movement has asked for this
-    // too. The row stays put and scrolls by hand.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    let visible = true;
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
-    io.observe(el);
-
-    const pause = () => { paused.current = true; };
-    const resume = () => { paused.current = false; };
-    el.addEventListener("pointerenter", pause);
-    el.addEventListener("pointerleave", resume);
-    el.addEventListener("focusin", pause);
-    el.addEventListener("focusout", resume);
-
-    let direction = 1;
-    let restUntil = 0;
-    let last = performance.now();
-    let frame = requestAnimationFrame(function step(now) {
-      frame = requestAnimationFrame(step);
-      const elapsed = (now - last) / 1000;
-      last = now;
-
-      if (paused.current || !visible || document.hidden || now < restUntil) return;
-
-      const furthest = el.scrollWidth - el.clientWidth;
-      if (furthest <= 1) return; // everything already fits
-
-      const next = el.scrollLeft + direction * DRIFT_SPEED * elapsed;
-      if (next >= furthest) {
-        el.scrollLeft = furthest;
-        direction = -1;
-        restUntil = now + DRIFT_DWELL_MS;
-      } else if (next <= 0) {
-        el.scrollLeft = 0;
-        direction = 1;
-        restUntil = now + DRIFT_DWELL_MS;
-      } else {
-        el.scrollLeft = next;
-      }
-    });
-
-    return () => {
-      cancelAnimationFrame(frame);
-      io.disconnect();
-      el.removeEventListener("pointerenter", pause);
-      el.removeEventListener("pointerleave", resume);
-      el.removeEventListener("focusin", pause);
-      el.removeEventListener("focusout", resume);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-}
+/** Matches the gap-[30px] between cards, needed to work out card offsets. */
+const CARD_GAP = 30;
 
 function TeamCard({
   member,
@@ -164,6 +99,164 @@ function TeamCard({
   );
 }
 
+/**
+ * The desktop row: four cards across, the rest scrolled to.
+ *
+ * It drifts on its own and carries the same pill indicators as the phone
+ * carousel, because with the scrollbar hidden there was otherwise nothing at
+ * all to say that a fifth tutor existed.
+ */
+function TeamRow({ members }: { members: Member[] }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const paused = useRef(false);
+  const [active, setActive] = useState(0);
+  const [scrollable, setScrollable] = useState(false);
+
+  /** Width of one card plus its gap, measured rather than assumed. */
+  const stride = () => {
+    const el = rowRef.current;
+    if (!el) return 0;
+    const first = el.firstElementChild as HTMLElement | null;
+    return first ? first.getBoundingClientRect().width + CARD_GAP : 0;
+  };
+
+  const syncIndicator = () => {
+    const el = rowRef.current;
+    if (!el) return;
+    setScrollable(el.scrollWidth - el.clientWidth > 1);
+    const step = stride();
+    if (step > 0) setActive(Math.round(el.scrollLeft / step));
+  };
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+
+    syncIndicator();
+    const onResize = () => syncIndicator();
+    window.addEventListener("resize", onResize);
+
+    // Somebody who has asked the system for less movement has asked for this
+    // too. The row stays put, and the indicators still say it scrolls.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return () => window.removeEventListener("resize", onResize);
+    }
+
+    let visible = true;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
+    io.observe(el);
+
+    const pause = () => { paused.current = true; };
+    const resume = () => { paused.current = false; };
+    el.addEventListener("pointerenter", pause);
+    el.addEventListener("pointerleave", resume);
+    el.addEventListener("focusin", pause);
+    el.addEventListener("focusout", resume);
+
+    // Position is tracked here rather than read back from scrollLeft each
+    // frame. At this speed a frame moves about a third of a pixel, and a
+    // browser that rounds scrollLeft to whole pixels would hand back the same
+    // value every time, leaving the row apparently motionless.
+    let position = el.scrollLeft;
+    let direction = 1;
+    let restUntil = 0;
+    let last = performance.now();
+
+    let frame = requestAnimationFrame(function step(now) {
+      frame = requestAnimationFrame(step);
+      const elapsed = (now - last) / 1000;
+      last = now;
+
+      if (paused.current || !visible || document.hidden || now < restUntil) {
+        // Keep up with a scroll the reader did by hand.
+        position = el.scrollLeft;
+        return;
+      }
+
+      const furthest = el.scrollWidth - el.clientWidth;
+      if (furthest <= 1) return; // everything already fits
+
+      position += direction * DRIFT_SPEED * elapsed;
+      if (position >= furthest) {
+        position = furthest;
+        direction = -1;
+        restUntil = now + DRIFT_DWELL_MS;
+      } else if (position <= 0) {
+        position = 0;
+        direction = 1;
+        restUntil = now + DRIFT_DWELL_MS;
+      }
+      el.scrollLeft = position;
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      io.disconnect();
+      window.removeEventListener("resize", onResize);
+      el.removeEventListener("pointerenter", pause);
+      el.removeEventListener("pointerleave", resume);
+      el.removeEventListener("focusin", pause);
+      el.removeEventListener("focusout", resume);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members.length]);
+
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
+
+  const goTo = (i: number) => {
+    const el = rowRef.current;
+    if (!el) return;
+    // Held while the smooth scroll runs. The drift writes scrollLeft on every
+    // frame, so without this it would overwrite the jump before it had moved
+    // a pixel and the indicator would look dead.
+    paused.current = true;
+    el.scrollTo({ left: i * stride(), behavior: "smooth" });
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { paused.current = false; }, 900);
+  };
+
+  return (
+    <div className="hidden md:block">
+      <div
+        ref={rowRef}
+        onScroll={syncIndicator}
+        // overflow-y pinned shut on purpose. Setting only overflow-x makes the
+        // other axis scrollable too under CSS rules, and the reveal animation
+        // starts each card 22px low, which was enough to give the row its own
+        // vertical scroll and let cards disappear up out of it.
+        className="flex gap-[30px] px-[10px] py-[10px] items-start overflow-x-auto overflow-y-hidden hide-scrollbar"
+      >
+        {members.map((member, idx) => (
+          // Four across, with the next card's edge just showing. A row that
+          // ends exactly on a card boundary looks like the whole list.
+          <Reveal key={idx} delay={idx * 80} className="shrink-0 w-[calc((100%-110px)/4)]">
+            <TeamCard member={member} />
+          </Reveal>
+        ))}
+      </div>
+
+      {scrollable && (
+        <div className="flex justify-center items-center gap-[6px] mt-[22px]">
+          {members.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Show tutor ${i + 1}`}
+              className="border-none cursor-pointer rounded-full transition-all duration-300 p-0"
+              style={{
+                height: "4px",
+                width: i === active ? "28px" : "8px",
+                backgroundColor: i === active ? "#1099a1" : "rgba(0,0,0,0.2)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Team() {
   const { data: tutors = [] } = useQuery({
     queryKey: ["public-tutors"],
@@ -176,8 +269,6 @@ export default function Team() {
   // that said Read Full Bio.
   const [openAll, setOpenAll] = useState(false);
 
-  const rowRef = useRef<HTMLDivElement>(null);
-
   const members: Member[] = [
     ...founders,
     ...tutors.map((t) => ({
@@ -189,10 +280,6 @@ export default function Team() {
       details: t.bio ?? "",
     })),
   ];
-
-  // Re-measured when the tutor list arrives, since the row is not scrollable
-  // until there are more cards than fit.
-  useAutoScroll(rowRef, [members.length]);
 
   return (
     <div className="w-full max-w-[1440px] py-[50px]">
@@ -215,20 +302,7 @@ export default function Team() {
         />
       </div>
 
-      {/* Desktop: four across, the rest scrolled to, drifting on its own so
-          the fifth tutor is discoverable without a scrollbar to hint at them.
-          A grid wrapped that fifth card onto a second row that sat mostly
-          empty, and grew another gap with every signup. */}
-      <div
-        ref={rowRef}
-        className="hidden md:flex gap-[30px] px-[10px] items-start overflow-x-auto hide-scrollbar"
-      >
-        {members.map((member, idx) => (
-          <Reveal key={idx} delay={idx * 80} className="shrink-0 w-[calc((100%-90px)/4)]">
-            <TeamCard member={member} />
-          </Reveal>
-        ))}
-      </div>
+      <TeamRow members={members} />
     </div>
   );
 }

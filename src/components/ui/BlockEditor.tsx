@@ -36,13 +36,21 @@ interface BlockEditorProps {
   placeholder?: string;
   /** If false, the editor is read-only (preview mode). Defaults to true. */
   editable?: boolean;
+  /**
+   * Pin the editor's theme instead of following the app's dark class.
+   *
+   * The public pages are committed to a light design with a hardcoded white
+   * background. Left to follow the class, a signed-in reader with dark mode on
+   * got a black article body sitting on a white page.
+   */
+  theme?: "light" | "dark";
 }
 
 /**
  * Notion-style block editor (BlockNote). Uncontrolled internally; loads the
  * initial HTML once and emits clean HTML on every change for storage/preview.
  */
-export function BlockEditor({ value, onChange, fullHeight, placeholder, editable = true }: BlockEditorProps) {
+export function BlockEditor({ value, onChange, fullHeight, placeholder, editable = true, theme }: BlockEditorProps) {
   const editor = useCreateBlockNote(
     placeholder
       ? { dictionary: { ...en, placeholders: { ...en.placeholders, default: placeholder } } }
@@ -83,7 +91,7 @@ export function BlockEditor({ value, onChange, fullHeight, placeholder, editable
         editor={editor}
         onChange={emit}
         editable={editable}
-        theme={dark ? "dark" : "light"}
+        theme={theme ?? (dark ? "dark" : "light")}
         className={fullHeight ? "flex-1 min-h-0 overflow-y-auto py-4" : ""}
       />
     </div>

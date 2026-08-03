@@ -39,7 +39,7 @@ export default function BlogPage() {
 
   if (loading) {
     return (
-      <div className="bg-white min-h-screen w-full flex items-center justify-center">
+      <div className="bg-white text-[#111827] min-h-screen w-full flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#1099a1]" />
       </div>
     );
@@ -47,7 +47,7 @@ export default function BlogPage() {
 
   if (!blog) {
     return (
-      <div className="bg-white min-h-screen w-full flex flex-col items-center justify-center">
+      <div className="bg-white text-[#111827] min-h-screen w-full flex flex-col items-center justify-center">
         <p className="text-xl font-medium mb-4">Post not found</p>
         <button onClick={() => navigate("/#blog")} className="text-[#1099a1] hover:underline">Go Back</button>
       </div>
@@ -63,7 +63,7 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="min-h-screen flex font-sans bg-white">
+    <div className="min-h-screen flex font-sans bg-white text-[#111827]">
       {/* Reading progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent pointer-events-none">
         <div
@@ -131,7 +131,10 @@ export default function BlogPage() {
       {/* Right side: Content */}
       <div className="w-full lg:w-[55%] lg:h-screen lg:overflow-y-auto">
         <div className="max-w-[800px] mx-auto px-6 py-10 lg:px-16 lg:py-16">
-          <BlockEditor value={blog.content} editable={false} />
+          {/* Light regardless of the reader's app theme. The page around it is
+              a hardcoded white, so an editor following the dark class put a
+              black article body in the middle of it. */}
+          <BlockEditor value={blog.content} editable={false} theme="light" />
         </div>
       </div>
     </div>
