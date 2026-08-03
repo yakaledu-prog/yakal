@@ -1,106 +1,122 @@
+import { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Toaster } from "sonner";
+
+// ============================================================
+// Pages are loaded when they are first visited.
+//
+// Imported eagerly, all ninety of them ended up in one bundle: a student
+// on a phone downloaded the admin dashboard, the counselor tools and the
+// tutor earnings pages before their homework could render. Nearly a
+// megabyte gzipped, before a single pixel.
+//
+// Each page resolves its own named export because lazy() wants a default
+// and these files do not have one. Layouts stay eager: they are on every
+// route, so splitting them would only add a request.
+// ============================================================
+
+const AdminApplicants = lazy(() => import("../pages/admin/AdminApplicants").then((m) => ({ default: m.AdminApplicants })));
+const AdminBilling = lazy(() => import("../pages/admin/AdminBilling").then((m) => ({ default: m.AdminBilling })));
+const AdminContact = lazy(() => import("../pages/admin/AdminContact").then((m) => ({ default: m.AdminContact })));
+const AdminCourseDetail = lazy(() => import("../pages/admin/AdminCourseDetail").then((m) => ({ default: m.AdminCourseDetail })));
+const AdminCourses = lazy(() => import("../pages/admin/AdminCourses").then((m) => ({ default: m.AdminCourses })));
+const AdminHome = lazy(() => import("../pages/admin/AdminHome").then((m) => ({ default: m.AdminHome })));
+const AdminLayout = lazy(() => import("../pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
+const AdminPostEditor = lazy(() => import("../pages/admin/cms/AdminPostEditor").then((m) => ({ default: m.AdminPostEditor })));
+const AdminPosts = lazy(() => import("../pages/admin/cms/AdminPosts").then((m) => ({ default: m.AdminPosts })));
+const AdminProfile = lazy(() => import("../pages/admin/AdminProfile").then((m) => ({ default: m.AdminProfile })));
+const AdminReports = lazy(() => import("../pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
+const AdminUsers = lazy(() => import("../pages/admin/AdminUsers").then((m) => ({ default: m.AdminUsers })));
+const Billing1 = lazy(() => import("../pages/parent/billing/Billing1").then((m) => ({ default: m.Billing1 })));
+const Billing2 = lazy(() => import("../pages/parent/billing/Billing2").then((m) => ({ default: m.Billing2 })));
+const Billing4 = lazy(() => import("../pages/parent/billing/Billing4").then((m) => ({ default: m.Billing4 })));
+const BookingV1 = lazy(() => import("../pages/parent/booking/BookingV1").then((m) => ({ default: m.BookingV1 })));
+const BookingV2 = lazy(() => import("../pages/parent/booking/BookingV2").then((m) => ({ default: m.BookingV2 })));
+const CancellationPolicyPage = lazy(() => import("../pages/shared/CancellationPolicyPage").then((m) => ({ default: m.CancellationPolicyPage })));
+const CollegeListPreview = lazy(() => import("../pages/preview/CollegeListPreview").then((m) => ({ default: m.CollegeListPreview })));
+const CookiePreferencesPage = lazy(() => import("../pages/shared/CookiePreferencesPage").then((m) => ({ default: m.CookiePreferencesPage })));
+const CounselorEarnings = lazy(() => import("../pages/counselor/CounselorEarnings").then((m) => ({ default: m.CounselorEarnings })));
+const CounselorEssays = lazy(() => import("../pages/counselor/CounselorEssays").then((m) => ({ default: m.CounselorEssays })));
+const CounselorExplore = lazy(() => import("../pages/counselor/CounselorExplore").then((m) => ({ default: m.CounselorExplore })));
+const CounselorHome = lazy(() => import("../pages/counselor/CounselorHome").then((m) => ({ default: m.CounselorHome })));
+const CounselorLayout = lazy(() => import("../pages/counselor/CounselorLayout").then((m) => ({ default: m.CounselorLayout })));
+const CounselorMessages = lazy(() => import("../pages/counselor/CounselorMessages").then((m) => ({ default: m.CounselorMessages })));
+const CounselorNotifications = lazy(() => import("../pages/counselor/CounselorNotifications").then((m) => ({ default: m.CounselorNotifications })));
+const CounselorProfile = lazy(() => import("../pages/counselor/CounselorProfile").then((m) => ({ default: m.CounselorProfile })));
+const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudents").then((m) => ({ default: m.CounselorStudents })));
+const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
+const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
+const ErrorPage = lazy(() => import("../pages/shared/ErrorPage").then((m) => ({ default: m.ErrorPage })));
+const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
+const ParentAdmissions = lazy(() => import("../pages/parent/ParentAdmissions").then((m) => ({ default: m.ParentAdmissions })));
+const ParentBilling = lazy(() => import("../pages/parent/ParentBilling").then((m) => ({ default: m.ParentBilling })));
+const ParentChildChats = lazy(() => import("../pages/parent/ParentChildChats").then((m) => ({ default: m.ParentChildChats })));
+const ParentChildren = lazy(() => import("../pages/parent/ParentChildren").then((m) => ({ default: m.ParentChildren })));
+const ParentCourseCatalogDetail = lazy(() => import("../pages/parent/ParentCourseCatalogDetail").then((m) => ({ default: m.ParentCourseCatalogDetail })));
+const ParentCourses = lazy(() => import("../pages/parent/ParentCourses").then((m) => ({ default: m.ParentCourses })));
+const ParentExplore = lazy(() => import("../pages/parent/ParentExplore").then((m) => ({ default: m.ParentExplore })));
+const ParentHome = lazy(() => import("../pages/parent/ParentHome").then((m) => ({ default: m.ParentHome })));
+const ParentLayout = lazy(() => import("../pages/parent/ParentLayout").then((m) => ({ default: m.ParentLayout })));
+const ParentMessages = lazy(() => import("../pages/parent/ParentMessages").then((m) => ({ default: m.ParentMessages })));
+const ParentNotifications = lazy(() => import("../pages/parent/ParentNotifications").then((m) => ({ default: m.ParentNotifications })));
+const ParentProfile = lazy(() => import("../pages/parent/ParentProfile").then((m) => ({ default: m.ParentProfile })));
+const ParentRoadmap = lazy(() => import("../pages/parent/ParentRoadmap").then((m) => ({ default: m.ParentRoadmap })));
+const PendingApprovalPage = lazy(() => import("../pages/shared/PendingApprovalPage").then((m) => ({ default: m.PendingApprovalPage })));
+const PrivacyPolicyPage = lazy(() => import("../pages/shared/PrivacyPolicyPage").then((m) => ({ default: m.PrivacyPolicyPage })));
+const ProposalPage = lazy(() => import("../pages/shared/ProposalPage").then((m) => ({ default: m.ProposalPage })));
+const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
+const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
+const StudentCollegeList = lazy(() => import("../pages/student/StudentCollegeList").then((m) => ({ default: m.StudentCollegeList })));
+const StudentCourseCatalogDetail = lazy(() => import("../pages/student/StudentCourseCatalogDetail").then((m) => ({ default: m.StudentCourseCatalogDetail })));
+const StudentCourseDashboard = lazy(() => import("../pages/student/StudentCourseDashboard").then((m) => ({ default: m.StudentCourseDashboard })));
+const StudentCourseMessages = lazy(() => import("../pages/student/StudentCourseMessages").then((m) => ({ default: m.StudentCourseMessages })));
+const StudentCourseSessions = lazy(() => import("../pages/student/StudentCourseSessions").then((m) => ({ default: m.StudentCourseSessions })));
+const StudentCourseTasks = lazy(() => import("../pages/student/StudentCourseTasks").then((m) => ({ default: m.StudentCourseTasks })));
+const StudentDiagnosticOnboardingPreview = lazy(() => import("../pages/preview/StudentDiagnosticOnboardingPreview").then((m) => ({ default: m.StudentDiagnosticOnboardingPreview })));
+const StudentDiagnostics = lazy(() => import("../pages/student/StudentDiagnostics").then((m) => ({ default: m.StudentDiagnostics })));
+const StudentExploreUniversities = lazy(() => import("../pages/student/StudentExploreUniversities").then((m) => ({ default: m.StudentExploreUniversities })));
+const StudentHome = lazy(() => import("../pages/student/StudentHome").then((m) => ({ default: m.StudentHome })));
+const StudentLayout = lazy(() => import("../pages/student/StudentLayout").then((m) => ({ default: m.StudentLayout })));
+const StudentMeeting = lazy(() => import("../pages/student/StudentMeeting").then((m) => ({ default: m.StudentMeeting })));
+const StudentMessages = lazy(() => import("../pages/student/StudentMessages").then((m) => ({ default: m.StudentMessages })));
+const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
+const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
+const StudentResources = lazy(() => import("../pages/student/StudentResources").then((m) => ({ default: m.StudentResources })));
+const StudentRoadmap = lazy(() => import("../pages/student/StudentRoadmap").then((m) => ({ default: m.StudentRoadmap })));
+const StudentSessionDetail = lazy(() => import("../pages/student/StudentSessionDetail").then((m) => ({ default: m.StudentSessionDetail })));
+const StudentSessions = lazy(() => import("../pages/student/StudentSessions").then((m) => ({ default: m.StudentSessions })));
+const TermsConditionsPage = lazy(() => import("../pages/shared/TermsConditionsPage").then((m) => ({ default: m.TermsConditionsPage })));
+const TrackerPreview = lazy(() => import("../pages/preview/TrackerPreview").then((m) => ({ default: m.TrackerPreview })));
+const TutorCalendar = lazy(() => import("../pages/tutor/TutorCalendar").then((m) => ({ default: m.TutorCalendar })));
+const TutorCourseCatalog = lazy(() => import("../pages/tutor/TutorCourseCatalog").then((m) => ({ default: m.TutorCourseCatalog })));
+const TutorCourses = lazy(() => import("../pages/tutor/TutorCourses").then((m) => ({ default: m.TutorCourses })));
+const TutorEarnings = lazy(() => import("../pages/tutor/TutorEarnings").then((m) => ({ default: m.TutorEarnings })));
+const TutorHome = lazy(() => import("../pages/tutor/TutorHome").then((m) => ({ default: m.TutorHome })));
+const TutorLayout = lazy(() => import("../pages/tutor/TutorLayout").then((m) => ({ default: m.TutorLayout })));
+const TutorMeeting = lazy(() => import("../pages/tutor/TutorMeeting").then((m) => ({ default: m.TutorMeeting })));
+const TutorMessages = lazy(() => import("../pages/tutor/TutorMessages").then((m) => ({ default: m.TutorMessages })));
+const TutorNotifications = lazy(() => import("../pages/tutor/TutorNotifications").then((m) => ({ default: m.TutorNotifications })));
+const TutorProfile = lazy(() => import("../pages/tutor/TutorProfile").then((m) => ({ default: m.TutorProfile })));
+const TutorSessionDetail = lazy(() => import("../pages/tutor/TutorSessionDetail").then((m) => ({ default: m.TutorSessionDetail })));
+const TutorSessions = lazy(() => import("../pages/tutor/TutorSessions").then((m) => ({ default: m.TutorSessions })));
+const TutorStudents = lazy(() => import("../pages/tutor/TutorStudents").then((m) => ({ default: m.TutorStudents })));
 
 import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
-import { EmailConfirmationPage } from "../pages/shared/EmailConfirmationPage";
-import { OnboardingPage } from "../pages/shared/OnboardingPage";
-import { PendingApprovalPage } from "../pages/shared/PendingApprovalPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
-import { ErrorPage } from "../pages/shared/ErrorPage";
-import { SettingsPage } from "../pages/shared/SettingsPage";
-import { ProposalPage } from "../pages/shared/ProposalPage";
-import { StudentDiagnosticOnboardingPreview } from "../pages/preview/StudentDiagnosticOnboardingPreview";
-import { DevConsole } from "../pages/dev/DevConsole";
-import { CollegeListPreview } from "../pages/preview/CollegeListPreview";
-import { TrackerPreview } from "../pages/preview/TrackerPreview";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
-import { CancellationPolicyPage } from "../pages/shared/CancellationPolicyPage";
-import { TermsConditionsPage } from "../pages/shared/TermsConditionsPage";
-import { PrivacyPolicyPage } from "../pages/shared/PrivacyPolicyPage";
-import { CookiePreferencesPage } from "../pages/shared/CookiePreferencesPage";
-import { StudentLayout } from "../pages/student/StudentLayout";
-import { StudentHome } from "../pages/student/StudentHome";
-import { StudentCalendar } from "../pages/student/StudentCalendar";
-import { StudentCourseTasks } from "../pages/student/StudentCourseTasks";
-import { StudentCourseDashboard } from "../pages/student/StudentCourseDashboard";
 
-import { StudentCourseSessions } from "../pages/student/StudentCourseSessions";
-import { StudentCourseMessages } from "../pages/student/StudentCourseMessages";
-import { StudentCourseCatalogDetail } from "../pages/student/StudentCourseCatalogDetail";
-import { StudentSessions } from "../pages/student/StudentSessions";
-import { StudentResources } from "../pages/student/StudentResources";
-import { StudentNotifications } from "../pages/student/StudentNotifications";
-import { StudentMessages } from "../pages/student/StudentMessages";
-import { StudentRoadmap } from "../pages/student/StudentRoadmap";
-import { StudentCollegeList } from "../pages/student/StudentCollegeList";
-import { StudentExploreUniversities } from "../pages/student/StudentExploreUniversities";
-import { StudentApplicationTracker } from "../pages/student/StudentApplicationTracker";
-import { StudentSessionDetail } from "../pages/student/StudentSessionDetail";
-import { StudentProfile } from "../pages/student/StudentProfile";
-import { StudentMeeting } from "../pages/student/StudentMeeting";
-import { StudentDiagnostics } from "../pages/student/StudentDiagnostics";
 
-import { TutorLayout } from "../pages/tutor/TutorLayout";
-import { TutorHome } from "../pages/tutor/TutorHome";
-import { TutorCalendar } from "../pages/tutor/TutorCalendar";
-import { TutorCourses } from "../pages/tutor/TutorCourses";
-import { TutorCourseCatalog } from "../pages/tutor/TutorCourseCatalog";
-import { TutorStudents } from "../pages/tutor/TutorStudents";
-import { TutorEarnings } from "../pages/tutor/TutorEarnings";
-import { TutorSessions } from "../pages/tutor/TutorSessions";
-import { TutorNotifications } from "../pages/tutor/TutorNotifications";
-import { TutorMessages } from "../pages/tutor/TutorMessages";
-import { TutorSessionDetail } from "../pages/tutor/TutorSessionDetail";
-import { TutorMeeting } from "../pages/tutor/TutorMeeting";
-import { CounselorLayout } from "../pages/counselor/CounselorLayout";
-import { CounselorHome } from "../pages/counselor/CounselorHome";
-import { CounselorStudents } from "../pages/counselor/CounselorStudents";
-import { CounselorProfile } from "../pages/counselor/CounselorProfile";
 // import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
-import { CounselorMessages } from "../pages/counselor/CounselorMessages";
-import { CounselorNotifications } from "../pages/counselor/CounselorNotifications";
-import { CounselorEarnings } from "../pages/counselor/CounselorEarnings";
-import { CounselorEssays } from "../pages/counselor/CounselorEssays";
 import { CounselorCalendar } from "@/pages/counselor/CounselorCalendar";
 import { CounselorSessions } from "@/pages/counselor/CounselorSessions";
 import { CounselorSessionDetail } from "@/pages/counselor/CounselorSessionDetail";
-import { AdminLayout } from "../pages/admin/AdminLayout";
-import { AdminHome } from "../pages/admin/AdminHome";
-import { AdminUsers } from "../pages/admin/AdminUsers";
-import { AdminApplicants } from "../pages/admin/AdminApplicants";
-import { AdminReports } from "../pages/admin/AdminReports";
-import { AdminCourses } from "../pages/admin/AdminCourses";
-import { AdminCourseDetail } from "../pages/admin/AdminCourseDetail";
-import { AdminPosts } from "../pages/admin/cms/AdminPosts";
-import { AdminPostEditor } from "../pages/admin/cms/AdminPostEditor";
-import { AdminBilling } from "../pages/admin/AdminBilling";
-import { AdminContact } from "../pages/admin/AdminContact";
-import { AdminProfile } from "../pages/admin/AdminProfile";
-import { TutorProfile } from "../pages/tutor/TutorProfile";
 
-import { ParentLayout } from "../pages/parent/ParentLayout";
-import { ParentHome } from "../pages/parent/ParentHome";
-import { ParentCourses } from "../pages/parent/ParentCourses";
-import { ParentCourseCatalogDetail } from "../pages/parent/ParentCourseCatalogDetail";
-import { ParentChildren } from "../pages/parent/ParentChildren";
-import { ParentMessages } from "../pages/parent/ParentMessages";
-import { ParentRoadmap } from "../pages/parent/ParentRoadmap";
-import { ParentExplore } from "../pages/parent/ParentExplore";
-import { CounselorExplore } from "../pages/counselor/CounselorExplore";
-import { ParentProfile } from "../pages/parent/ParentProfile";
-import { ParentBilling } from "../pages/parent/ParentBilling";
 // Three billing designs to compare. Keep one, delete the rest.
-import { ParentAdmissions } from "../pages/parent/ParentAdmissions";
-import { Billing1 } from "../pages/parent/billing/Billing1";
-import { Billing2 } from "../pages/parent/billing/Billing2";
-import { Billing4 } from "../pages/parent/billing/Billing4";
 // Two ways to buy a month of lessons, to compare. Keep one.
-import { BookingV1 } from "../pages/parent/booking/BookingV1";
-import { BookingV2 } from "../pages/parent/booking/BookingV2";
-import { ParentChildChats } from "../pages/parent/ParentChildChats";
-import { ParentNotifications } from "../pages/parent/ParentNotifications";
 
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
@@ -407,12 +423,27 @@ const router = createBrowserRouter([
   }
 ]);
 
+/** Deliberately quiet: a spinner mid-navigation should not read as an error. */
+function RouteFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+    </div>
+  );
+}
+
 export function AppRouter() {
   return (
     <AuthProvider>
       <BreadcrumbProvider>
         <TopbarActionsProvider>
-          <RouterProvider router={router} />
+          {/* One boundary around the whole router rather than one per route.
+              A page's chunk is fetched the first time it is visited, and on a
+              slow connection that gap has to look like the app working rather
+              than a blank flash. */}
+          <Suspense fallback={<RouteFallback />}>
+            <RouterProvider router={router} />
+          </Suspense>
         </TopbarActionsProvider>
       </BreadcrumbProvider>
     </AuthProvider>
