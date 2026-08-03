@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
-import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, CheckCircle2, FileText, LucidePackagePlus, BookPlus, PackagePlusIcon } from "lucide-react";
+import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, FileText, PackagePlusIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@react-oauth/google";
 import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";

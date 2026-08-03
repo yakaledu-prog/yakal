@@ -1,5 +1,4 @@
 import Reveal from "@/components/Reveal";
-import { cn } from "@/utils/cn";
 import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap, Compass, Rocket, Crown } from "lucide-react";
 
 // Images for the services

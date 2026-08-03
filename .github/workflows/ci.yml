@@ -1,11 +1,7 @@
 name: CI
 
-# Proves the app still builds. Catches a broken import or a bad merge before
-# Vercel does, and before anyone else pulls it.
-#
-# Type checking is deliberately not a gate yet: `tsc --noEmit` currently
-# reports 38 unused-import errors that predate this workflow. Turn the step
-# below on once they are cleared, or it fails on day one and gets ignored.
+# Runs what Vercel runs, so a build that would fail the deploy fails here
+# first, on the pull request, rather than after merging.
 
 on:
   push:
@@ -30,11 +26,9 @@ jobs:
 
       - run: npm ci
 
-      # - name: Type check
-      #   run: npx tsc --noEmit
-
+      # tsc --noEmit && vite build, the same as the deploy.
       - name: Build
-        run: npx vite build
+        run: npm run build
 
       - name: Report bundle size
         run: du -sh dist && ls -lhS dist/assets/*.js | head -5

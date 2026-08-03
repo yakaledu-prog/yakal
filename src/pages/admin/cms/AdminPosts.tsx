@@ -8,8 +8,6 @@ import { Plus, Edit2, Trash2, Search, Loader2, Image as ImageIcon } from "lucide
 import { format } from "date-fns";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AdminHeader } from "../AdminHeader";
-import { cn } from "@/utils/cn";
-
 export function AdminPosts() {
   const [q, setQ] = useState("");
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);

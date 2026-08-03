@@ -1,20 +1,16 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Video, Clock, CalendarDays, Activity, MessagesSquareIcon, Settings, X, GraduationCap } from "lucide-react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { Clock, CalendarDays, Activity, MessagesSquareIcon, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { studentService } from "@/services/studentService"; // reusing student service for mock data
-import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
 export function ParentHome() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
-  const { sidebarOpen } = useOutletContext<{ sidebarOpen: boolean }>();
 
   useEffect(() => {
     // Reusing student dashboard mock data for now, but pretending it's the child's data
@@ -36,7 +32,7 @@ export function ParentHome() {
   }
 
   const firstName = profile?.full_name?.split(" ")[0] || "Parent";
-  const { nextSession, progress } = data;
+  const { nextSession } = data;
 
   return (
     <PageWrapper className="!p-0">

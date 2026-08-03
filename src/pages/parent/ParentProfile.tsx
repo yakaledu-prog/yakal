@@ -3,10 +3,9 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Edit2, Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun, Bell, X, SquarePenIcon, Phone, Users, CreditCard } from "lucide-react";
+import { Mail, Calendar, LogOut, Camera, Bell, X, SquarePenIcon, Phone, Users, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
 export function ParentProfile() {
   const { user, profile, signOut } = useAuth();
@@ -17,23 +16,6 @@ export function ParentProfile() {
     const file = e.target.files?.[0];
     if (file) {
       toast.success("Profile picture updated successfully!");
-    }
-  };
-
-  const toggleTheme = async () => {
-    const isDark = document.documentElement.classList.toggle("dark");
-    const newTheme = isDark ? "dark" : "light";
-
-    if (user?.id) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ theme: newTheme })
-        .eq('id', user.id);
-
-      if (error) {
-        toast.error("Failed to save theme preference");
-        console.error("Theme save error:", error);
-      }
     }
   };
 

@@ -10,7 +10,7 @@ import { postAuthPath } from "@/utils/roleRoutes";
 import { fireConfetti } from "@/utils/confetti";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
-import { Moon, Sun, Check, Loader2, Trash, FileText, FileUp, X, Camera, ChevronDown } from "lucide-react";
+import { Check, Loader2, Trash, FileText, FileUp, X, Camera, ChevronDown } from "lucide-react";
 import { cn } from "@/utils/cn";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";

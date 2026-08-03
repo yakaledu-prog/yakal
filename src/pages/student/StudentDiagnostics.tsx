@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
-import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
+import { diagnosticTests } from "@/data/diagnostics";
 import { Search, Loader2, Activity, CheckCircle2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";

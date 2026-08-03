@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getContactMessages, markContactHandled, type ContactMessage } from "@/services/adminService";
-import { Loader2, Phone, Inbox, Clock, Archive, DeleteIcon, Trash2Icon } from "lucide-react";
+import { Loader2, Phone, Inbox, Clock, Archive, Trash2Icon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 function fmtDate(d: string) {

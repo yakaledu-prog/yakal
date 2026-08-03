@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { User, GraduationCap, Users, Info, ChevronDown, UploadCloud, FileText } from "lucide-react";
+import { User, GraduationCap, Users, Info, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
@@ -222,7 +222,7 @@ export function AuthPage() {
                 </div>
 
                 {/* Phone Field for select roles */}
-                {(selectedRole === "parent" || selectedRole === "tutor" || selectedRole === "counselor") && (
+                {(selectedRole === "parent" || selectedRole === "tutor") && (
                   <div>
                     <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Phone number (Optional)</label>
                     <input

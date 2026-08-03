@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 // --- Mock Data ---
@@ -108,31 +108,6 @@ export function StudentCalendar() {
     }
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return `${weekdays[currentDate.getDay()]}, ${monthString} ${date}, ${year}`;
-  };
-
-  const downloadICS = () => {
-    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Yakal//Student Calendar//EN\n";
-    mockSessions.forEach(s => {
-      const [y, m, d] = s.date.split('-');
-      const [h, min] = s.startTime.split(':');
-      const startDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-      const endDate = new Date(startDate.getTime() + s.duration * 60000);
-      const formatICSDate = (dt: Date) => dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      icsContent += "BEGIN:VEVENT\n";
-      icsContent += `UID:${s.id}@yakal.com\n`;
-      icsContent += `DTSTAMP:${formatICSDate(new Date())}\n`;
-      icsContent += `DTSTART:${formatICSDate(startDate)}\n`;
-      icsContent += `DTEND:${formatICSDate(endDate)}\n`;
-      icsContent += `SUMMARY:${s.subject}\n`;
-      icsContent += `DESCRIPTION:Tutor: ${s.tutorName}\n`;
-      icsContent += "END:VEVENT\n";
-    });
-    icsContent += "END:VCALENDAR";
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'yakal_calendar.ics';
-    link.click();
   };
 
   const renderMonthView = () => {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
 import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
-import { Circle, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 
 function getAIAdvice(testId: string) {
   // Simple mocked AI advice generator based on test ID

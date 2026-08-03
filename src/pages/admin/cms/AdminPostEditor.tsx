@@ -5,7 +5,7 @@ import { getPost, createPost, updatePost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { useTopbarActions } from "@/contexts/TopbarActionsContext";
-import { Loader2, Image as ImageIcon, Save, Check, CloudUploadIcon, ImageMinusIcon, Repeat2Icon, CheckCheckIcon } from "lucide-react";
+import { Loader2, Image as ImageIcon, Save, CloudUploadIcon, ImageMinusIcon, Repeat2Icon, CheckCheckIcon } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { cn } from "@/utils/cn";
 

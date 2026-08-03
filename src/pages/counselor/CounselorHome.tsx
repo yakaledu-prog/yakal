@@ -4,11 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCounselorDashboard, getCounselorSessionsFull } from "@/services/counselorService";
-import { CalendarDays, Loader2, MessagesSquareIcon, Settings, Flag, Video, CalendarClock, Check } from "lucide-react";
+import { CalendarDays, Loader2, MessagesSquareIcon, Settings, Video, CalendarClock, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
-import { collegeImageUrl } from "@/services/collegeCatalogService";
-
 function getDaysLeft(deadline: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -47,7 +45,6 @@ export function CounselorHome() {
     return sessionDate >= now || s.date === now.toISOString().split('T')[0];
   }).slice(0, 5); // Limit to 5
 
-  const isLoading = dashLoading || sessionsLoading;
 
   // --- MOCK DATA INJECTION ---
   const mockDashboard = dashboard ? {

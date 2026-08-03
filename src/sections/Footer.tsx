@@ -18,8 +18,6 @@ const socials = [
   { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
-import type { Page } from "@/types";
-
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();

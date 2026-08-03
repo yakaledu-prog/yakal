@@ -135,14 +135,14 @@ export function TutorCourses() {
         ) : !ws || !ws.course ? (
           <div className="p-8 text-center text-muted-foreground">Course not found.</div>
         ) : (
-          <CourseDetail ws={ws} navigate={navigate} onBack={closeDetail} />
+          <CourseDetail ws={ws} onBack={closeDetail} />
         )}
       </section>
     </div>
   );
 }
 
-function CourseDetail({ ws, navigate, onBack }: { ws: CourseWorkspace; navigate: (p: string) => void; onBack: () => void }) {
+function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void }) {
   const { course, students, sessions, assignments } = ws;
   // Sessions first: teaching the course is the recurring work on it. Overview
   // previewed the sessions and assignments tabs side by side, which is the
