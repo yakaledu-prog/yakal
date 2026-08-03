@@ -627,3 +627,88 @@ export async function getPendingApplicantCounts(): Promise<Record<string, number
   for (const row of data ?? []) counts[row.course_id] = (counts[row.course_id] ?? 0) + 1;
   return counts;
 }
+
+// ============================================================
+// The work set on a course.
+//
+// Google Classroom owns the assignments themselves: they are written there,
+// turned in there and marked there. scripts/classroom-sync pushes what is in
+// the database up to a class and writes the resulting page back to
+// template_url, so a row without one has not reached anybody.
+//
+// Read only, deliberately. Editing here would put the two out of step with
+// nothing to reconcile them.
+// ============================================================
+
+export interface AdminAssignment {
+  id: string;
+  index: number;
+  title: string;
+  description: string | null;
+  materials: { title: string; link: string | null }[];
+  dueDate: string | null;
+  maxPoints: number | null;
+  /** The assignment's Classroom page, or the class itself as a fallback. */
+  link: string | null;
+  /** Null when the sync has never pushed this one. */
+  classroomUrl: string | null;
+  submissionCount: number;
+}
+
+/**
+ * One course's assignments, soonest deadline first, undated last.
+ *
+ * An admin opens this asking what is coming rather than what was written
+ * first, so due date beats created date.
+ */
+export async function getCourseAssignments(courseId: string): Promise<AdminAssignment[]> {
+  const [assignments, courseRows] = await Promise.all([
+    rows(
+      "course assignments",
+      supabase
+        .from("assignments")
+        .select("id, title, description, materials, due_date, max_points, template_url")
+        .eq("course_id", courseId)
+    ),
+    rows(
+      "course classroom link",
+      supabase.from("courses").select("google_classroom_url").eq("id", courseId)
+    ),
+  ]);
+
+  const classroomUrl = (courseRows ?? [])[0]?.google_classroom_url ?? null;
+
+  const ids = (assignments ?? []).map((a: any) => a.id);
+  const submissions = ids.length
+    ? await rows(
+        "course submissions",
+        supabase.from("submissions").select("assignment_id").in("assignment_id", ids)
+      )
+    : [];
+
+  const submissionCount = new Map<string, number>();
+  for (const s of submissions ?? []) {
+    submissionCount.set(s.assignment_id, (submissionCount.get(s.assignment_id) ?? 0) + 1);
+  }
+
+  return (assignments ?? [])
+    .map((a: any) => ({
+      id: a.id,
+      index: 0,
+      title: a.title,
+      description: a.description ?? null,
+      materials: Array.isArray(a.materials) ? a.materials : [],
+      dueDate: a.due_date ? String(a.due_date).slice(0, 10) : null,
+      maxPoints: a.max_points ?? null,
+      link: a.template_url || classroomUrl || null,
+      classroomUrl: a.template_url ?? null,
+      submissionCount: submissionCount.get(a.id) ?? 0,
+    }))
+    .sort((x: AdminAssignment, y: AdminAssignment) => {
+      if (!x.dueDate && !y.dueDate) return x.title.localeCompare(y.title);
+      if (!x.dueDate) return 1;
+      if (!y.dueDate) return -1;
+      return x.dueDate.localeCompare(y.dueDate);
+    })
+    .map((a: AdminAssignment, i: number) => ({ ...a, index: i + 1 }));
+}

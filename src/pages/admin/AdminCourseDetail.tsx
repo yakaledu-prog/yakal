@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
-import { getCourse, getCourses, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
+import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft, Loader2, TriangleAlert } from "lucide-react";
+import { getCourse, getCourses, getCourseAssignments, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
+import { AssignmentList } from "@/components/shared/AssignmentList";
+import { useQuery } from "@tanstack/react-query";
 
 // Mock Tutors
 
@@ -59,6 +61,7 @@ export function AdminCourseDetail() {
   const tabs = [
     { id: "tutors", label: "Tutors" },
     { id: "students", label: "Students" },
+    { id: "assignments", label: "Assignments" },
     { id: "sessions", label: "Sessions" },
     { id: "reviews", label: "Reviews" },
   ];
@@ -261,6 +264,9 @@ export function AdminCourseDetail() {
           />
         )}
 
+        {/* ASSIGNMENTS TAB */}
+        {activeTab === "assignments" && <AssignmentsTab courseId={course.id} />}
+
         {/* STUDENTS TAB */}
         {activeTab === "students" && (
           <div className="animate-in fade-in duration-300">
@@ -302,6 +308,59 @@ export function AdminCourseDetail() {
 
       </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * The work set on this course, as Google Classroom holds it.
+ *
+ * The same AssignmentList the tutor, parent and student pages use, so what an
+ * admin reads is what everybody else reads. Nothing is editable here: the sync
+ * pushes one way, and a change made in this direction would have nothing to
+ * reconcile it.
+ */
+function AssignmentsTab({ courseId }: { courseId: string }) {
+  const { data: assignments = [], isLoading } = useQuery({
+    queryKey: ["admin-course-assignments", courseId],
+    queryFn: () => getCourseAssignments(courseId),
+  });
+
+  // Work that exists here and nowhere else. The sync writes the assignment's
+  // Classroom page back when it pushes, so a missing one means no student has
+  // been given this.
+  const notPushed = assignments.filter((a) => !a.classroomUrl).length;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-300">
+        <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-in fade-in duration-300">
+      {notPushed > 0 && (
+        <p
+          className="mb-4 flex items-center gap-2 text-[13px]"
+          style={{ color: "#CAA25F" }}
+        >
+          <TriangleAlert size={14} />
+          {notPushed === assignments.length
+            ? notPushed === 1
+              ? "This assignment has not reached Google Classroom yet."
+              : "None of these have reached Google Classroom yet."
+            : `${notPushed} of these have not reached Google Classroom yet.`}{" "}
+          Run npm run classroom:sync to push them.
+        </p>
+      )}
+
+      <AssignmentList
+        assignments={assignments}
+        emptyText="No work set on this course yet."
+        className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-5"
+      />
     </div>
   );
 }
