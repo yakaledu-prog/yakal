@@ -46,7 +46,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      error?: string;
+      error_description?: string;
+      [key: string]: unknown;
+    };
 
     if (!response.ok) {
       console.error('Google token exchange failed:', data);

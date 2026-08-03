@@ -1,0 +1,25 @@
+{
+  // The serverless functions and the CLI scripts. Kept apart from tsconfig.json
+  // because they run on Node, not in a browser: no DOM, no JSX.
+  //
+  // Vercel type checks api/ during a deploy using the root tsconfig, which does
+  // not include api/. That gap is why a build passed here and failed there.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] }
+  },
+  "include": ["api", "scripts"]
+}

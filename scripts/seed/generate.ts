@@ -95,7 +95,9 @@ async function ask(prompt: string, schema: object): Promise<any> {
     throw new Error(`Gemini returned ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
 
-  const body = await res.json();
+  const body = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
   const text = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Gemini returned no content");
   return JSON.parse(text);

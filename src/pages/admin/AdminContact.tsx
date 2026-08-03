@@ -134,7 +134,7 @@ export function AdminContact() {
                 </div>
 
                 {/* Action bar */}
-                {true && (
+                {(
                   <div className="flex items-center justify-end gap-1 px-6 py-2.5 border-t border-[#e9edef] dark:border-[#2a3942]">
                     {/* {isNew(active) && ( */}
                     <button onClick={() => handle(active.id)} title="Mark handled"

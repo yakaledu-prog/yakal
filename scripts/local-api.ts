@@ -30,7 +30,9 @@ const app = express();
 app.use(cors());
 
 // Helper to mock VercelRequest/VercelResponse
-const createVercelHandler = (handler) => async (req, res) => {
+const createVercelHandler =
+  (handler: (req: any, res: any) => unknown) =>
+  async (req: any, res: any) => {
   // express req/res are mostly compatible with VercelReq/Res
   // VercelResponse adds .status() and .json() which Express already has
   return handler(req, res);

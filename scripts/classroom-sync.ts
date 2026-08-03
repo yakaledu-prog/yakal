@@ -37,7 +37,7 @@ async function accessToken(): Promise<string> {
     }),
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as { access_token?: string; scope?: string };
   if (!data.access_token) throw new Error(`Google refused a token: ${JSON.stringify(data)}`);
 
   // Failing here beats failing per assignment with a 403 nobody can read.
@@ -104,7 +104,7 @@ async function main() {
 
     const existing = await fetch(`${API}/courses/${classId}/courseWork?pageSize=100`, {
       headers: { Authorization: `Bearer ${token}` },
-    }).then((r) => r.json());
+    }).then((r) => r.json() as Promise<{ error?: { message: string }; courseWork?: { title: string }[] }>);
 
     if (existing.error) {
       console.log(`  ! ${existing.error.message}`);
@@ -147,7 +147,7 @@ async function main() {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const created = await res.json();
+      const created = (await res.json()) as { error?: { message?: string }; alternateLink?: string };
 
       if (!res.ok) {
         console.log(`    ! ${a.title}: ${created.error?.message ?? res.status}`);

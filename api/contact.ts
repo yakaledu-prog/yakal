@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
       throw new Error('VITE_CONTACT_DESTINATION_EMAIL is not configured');
     }
 
-    const { data: emailData, error: emailError } = await resend.emails.send({
+    const { error: emailError } = await resend.emails.send({
       from: 'Yakal Contact Form <onboarding@resend.dev>', // resend.dev is the default for free testing
       to: [destinationEmail],
       subject: `New Contact Form Submission: ${subject || 'No Subject'}`,

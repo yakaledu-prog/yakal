@@ -45,6 +45,16 @@ export interface SeedUser {
    * A real session overwrites it on the next heartbeat.
    */
   lastSeenMinutesAgo?: number;
+  /**
+   * The jsonb columns on profiles. The data and the seeder have carried these
+   * since tutor profiles grew a CV; the interface had not caught up, so every
+   * read of them in seed.ts was an error nobody saw because tsx strips types
+   * rather than checking them.
+   */
+  education?: { from: string; to: string; qualification: string; institution: string }[];
+  workExperience?: { from: string; to?: string; role: string; organisation: string; summary: string }[];
+  certifications?: { year: string; title: string; issuer: string }[];
+  languages?: { name: string; level: string }[];
 }
 
 /** Every demo account shares this password, matching the sign-in page shortcuts. */

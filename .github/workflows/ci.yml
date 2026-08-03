@@ -26,7 +26,13 @@ jobs:
 
       - run: npm ci
 
-      # tsc --noEmit && vite build, the same as the deploy.
+      - name: Lint
+        run: npm run lint
+
+      # tsc over src, tsc over api and scripts, then vite build. The api pass
+      # is the one that matters: Vercel type checks those files on deploy and
+      # the root tsconfig does not include them, so a build could pass here and
+      # fail there.
       - name: Build
         run: npm run build
 

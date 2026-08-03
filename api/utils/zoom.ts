@@ -69,7 +69,7 @@ export async function getZoomToken(): Promise<string> {
   });
   if (!res.ok) throw new Error(`Zoom token failed: ${await res.text()}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as { access_token: string; expires_in: number };
   // A minute of headroom, so a token cannot expire between the check and the
   // request that uses it.
   cached = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
@@ -127,7 +127,7 @@ export async function createMeeting(input: {
 
   if (!res.ok) throw new Error(`Zoom create failed (${res.status}): ${await res.text()}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as { id: number | string; password?: string | null; join_url?: string | null };
   return {
     meetingId: String(data.id),
     password: data.password ?? null,
@@ -193,7 +193,7 @@ export async function getPastParticipants(meetingId: string): Promise<ZoomPartic
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Zoom participants failed (${res.status}): ${await res.text()}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as { participants?: any[] };
   const rows: any[] = data.participants ?? [];
 
   // Zoom lists one row per join, so a dropped connection reads as two short

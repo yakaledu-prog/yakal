@@ -39,7 +39,7 @@ async function uploadToCloudinary(filePath: string): Promise<string | null> {
       body: formData,
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as { secure_url?: string };
     if (data.secure_url) {
       return data.secure_url;
     } else {
@@ -66,7 +66,7 @@ async function run() {
       console.log(`Uploaded ${item.img} to ${secureUrl}`);
       console.log(`Updating post '${item.title}' in DB...`);
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("blog_posts")
         .update({ thumbnail_url: secureUrl })
         .eq("title", item.title);

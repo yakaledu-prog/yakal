@@ -113,7 +113,7 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
   const excerpt = post.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
 
   return (
-    <div className={`bg-white dark:bg-[#111b21] rounded-[24px] overflow-hidden group shadow-md hover:shadow-xl transition-all duration-300 relative flex flex-col h-[360px] md:h-[400px] ${post.status == "draft" ? "border-4 border-secondary" : ""}`}>
+    <div className={`bg-white dark:bg-[#111b21] rounded-[24px] overflow-hidden group shadow-md hover:shadow-xl transition-all duration-300 relative flex flex-col h-[360px] md:h-[400px] ${post.status === "draft" ? "border-4 border-secondary" : ""}`}>
 
       {/* Background Image */}
       {post.thumbnail_url ? (
