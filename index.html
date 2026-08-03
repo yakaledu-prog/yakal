@@ -118,6 +118,32 @@
       #boot .bar i { animation: none; width: 100% }
     }
   </style>
+
+  <!-- ------------------------------------------------------------
+       Catching the install offer before React exists.
+
+       Chrome fires beforeinstallprompt as soon as it decides the site
+       qualifies, which is usually while the bundle is still downloading.
+       A listener attached later, from a component's effect, simply never
+       hears it, and the install button spends its life falling back to
+       "here is how to do it by hand". The event is not replayed.
+
+       So it is caught here, inline, before the bundle: stashed on window
+       for whatever mounts later, and re-announced as a custom event for
+       anything already listening. preventDefault stops Chrome's own
+       mini-infobar so the offer appears where we choose to put it.
+       ------------------------------------------------------------ -->
+  <script>
+    window.__yakalInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__yakalInstallPrompt = e;
+      window.dispatchEvent(new Event('yakal:installprompt'));
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__yakalInstallPrompt = null;
+    });
+  </script>
 </head>
 
 <body>

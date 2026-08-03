@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Download, Share, SquarePlus, X } from "lucide-react";
 
 import { cn } from "@/utils/cn";
@@ -8,10 +8,17 @@ import { cn } from "@/utils/cn";
 //
 // Two paths, because there is no one way to do this. Chrome, Edge and Android
 // fire beforeinstallprompt and hand over an object we can call later, so the
-// button is real. Safari fires nothing at all and has no API: on an iPhone the
-// only route is Share, then Add to Home Screen, so the same button opens
-// instructions instead. Pretending otherwise would give iOS users a button
-// that does nothing.
+// button opens the browser's real install dialogue. Safari fires nothing at
+// all and has no API: on an iPhone the only route is Share, then Add to Home
+// Screen, so the same button opens instructions instead. Pretending otherwise
+// would give iOS users a button that does nothing.
+//
+// No site can install itself silently. The browser always asks; the most a
+// button can do is bring that question up at a moment that makes sense.
+//
+// The event is caught by an inline script in index.html, before this bundle
+// exists, because Chrome fires it early and never fires it again. This module
+// picks up what that script stashed.
 //
 // Nothing is shown to somebody who already installed it, and a dismissal is
 // remembered. An install banner that reappears every visit is an advert.
@@ -70,41 +77,69 @@ function snoozed(): boolean {
   return at > 0 && Date.now() - at < SNOOZE_DAYS * 24 * 60 * 60 * 1000;
 }
 
+// ---- One shared answer, for every component that asks -------------------
+//
+// The install offer is a property of the page, not of a component. Held per
+// component, each copy had to catch the event for itself, and consuming the
+// prompt in the floating card left the button in the top bar still believing
+// it had one to fire.
+
+interface State {
+  deferred: InstallEvent | null;
+  installed: boolean;
+}
+
+const listeners = new Set<() => void>();
+
+let state: State = {
+  // Whatever the inline script caught before this bundle ran.
+  deferred: (window as any).__yakalInstallPrompt ?? null,
+  installed: isStandalone(),
+};
+
+/** getSnapshot must return a stable reference, hence replacing the object. */
+function setState(next: Partial<State>) {
+  state = { ...state, ...next };
+  listeners.forEach((l) => l());
+}
+
+// Attached once at module scope rather than per mount. The inline script has
+// the head start; these catch an event that arrives afterwards.
+window.addEventListener("yakal:installprompt", () => {
+  setState({ deferred: (window as any).__yakalInstallPrompt ?? null });
+});
+window.addEventListener("beforeinstallprompt", (e: Event) => {
+  e.preventDefault();
+  setState({ deferred: e as InstallEvent });
+});
+window.addEventListener("appinstalled", () => {
+  setState({ deferred: null, installed: true });
+});
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 /**
  * Whether to offer an install, and how.
  *
- * `deferred` is the browser's own prompt where there is one. `manual` means
- * iOS, where there is not.
+ * `canInstall` means the browser handed us a prompt we can fire. `manual`
+ * means iOS, where it never will.
  */
 export function useInstallPrompt() {
-  const [deferred, setDeferred] = useState<InstallEvent | null>(null);
-  const [installed, setInstalled] = useState(() => isStandalone());
-
-  useEffect(() => {
-    const onPrompt = (e: Event) => {
-      // Chrome shows its own mini-infobar otherwise, at a moment we did not
-      // choose. Holding the event lets the offer sit where it makes sense.
-      e.preventDefault();
-      setDeferred(e as InstallEvent);
-    };
-    const onInstalled = () => {
-      setInstalled(true);
-      setDeferred(null);
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
+  const { deferred, installed } = useSyncExternalStore(subscribe, () => state);
 
   const install = async () => {
     if (!deferred) return false;
+    // Called straight out of the click, with no await in front of it. The
+    // browser only honours prompt() while a user gesture is still in scope.
     await deferred.prompt();
     const { outcome } = await deferred.userChoice;
-    // The event is single use, whatever they chose.
-    setDeferred(null);
+    // Single use, whatever they chose. Chrome will fire a fresh event if it
+    // decides to offer again.
+    (window as any).__yakalInstallPrompt = null;
+    setState({ deferred: null });
     return outcome === "accepted";
   };
 
