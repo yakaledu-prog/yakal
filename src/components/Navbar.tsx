@@ -30,12 +30,12 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
       </div>
 
       {/* Desktop nav */}
-      <nav className="hidden md:flex items-center gap-[35px] text-white text-[16px]">
+      <nav className="hidden md:flex items-center gap-[26px] lg:gap-[32px] text-white text-[16px] min-w-0">
         {links.map((l) => (
           <button
             key={l.id}
             onClick={() => handleNav(l.id)}
-            className="relative bg-transparent border-none text-white cursor-pointer pb-[2px] group"
+            className="relative bg-transparent border-none text-white cursor-pointer pb-[2px] group whitespace-nowrap truncate max-w-[140px]"
           >
             {l.label}
             <span className="absolute bottom-0 left-0 h-[1.5px] w-0 bg-white rounded transition-all duration-300 group-hover:w-full" />

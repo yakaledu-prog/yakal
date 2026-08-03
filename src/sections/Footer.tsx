@@ -35,9 +35,9 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
   }
 
   return (
-    <footer id="footer" className="bg-black text-white rounded-[20px] md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
+    <footer id="footer" className="bg-black text-white rounded-[20px] rounded-b-none md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-[40px] mb-[48px] md:mb-[80px]">
-        <div className="col-span-2 md:col-span-1">
+        <div className="hidden md:block md:col-span-1">
           <div className="h-[40px] md:w-[120px] md:h-[47px]">
             <img alt="Yakal" className="w-full h-full object-cover" src={logo} />
           </div>
@@ -47,15 +47,15 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
           <h4 className="text-[16px] md:text-[20px] font-semibold mb-[16px] md:mb-[24px]">Quick Links</h4>
           <nav className="space-y-[12px] md:space-y-[16px]">
             {quickLinks.map((link) => (
-              <button 
-                key={link.id} 
+              <button
+                key={link.id}
                 onClick={() => {
                   if (link.id === "blogs") {
                     navigate("/posts");
                   } else {
                     scrollTo(link.id);
                   }
-                }} 
+                }}
                 className="block text-[rgba(255,255,255,0.75)] hover:text-white bg-transparent border-none cursor-pointer text-[14px] md:text-[16px]"
               >
                 {link.label}

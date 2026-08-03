@@ -36,7 +36,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
   }
 
   return (
-    <div className="bg-white flex flex-col gap-[20px] md:gap-[60px] items-center md:p-[20px] p-0 min-h-screen w-full">
+    <div className="bg-white text-[#111827] flex flex-col gap-[20px] md:gap-[60px] items-center md:p-[20px] p-0 min-h-screen w-full">
       <Hero onNav={scrollTo} />
       <About />
       <WhyJoinUs />
