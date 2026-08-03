@@ -1,7 +1,8 @@
-import { Component, type ErrorInfo, type ReactNode, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useRouteError, isRouteErrorResponse } from "react-router-dom";
-import { AlertTriangle, ChevronDown, Home, RefreshCw } from "lucide-react";
+import { Home, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import bugFixing from "@/assets/images/bug-fixing-60.png";
 
 // ============================================================
 // What a visitor sees when something breaks.
@@ -17,6 +18,10 @@ import { Button } from "@/components/ui/Button";
 // A route errorElement alone is not enough. React Router only catches what a
 // route throws, so an error in a provider above the router, or in the router's
 // own setup, still reached the browser as a blank page with a stack trace.
+//
+// Nothing technical is shown. The exception is logged to the console, where
+// whoever can act on it will look; on the screen it would only tell a parent
+// that the problem is real and not theirs to solve.
 // ============================================================
 
 /**
@@ -84,38 +89,6 @@ function describe(error: unknown): { title: string; detail: string; status?: num
   };
 }
 
-/** The raw error, for somebody who wants it. Folded away by default. */
-function TechnicalDetail({ error }: { error: unknown }) {
-  const [open, setOpen] = useState(false);
-
-  const text =
-    error instanceof Error
-      ? `${error.name}: ${error.message}${error.stack ? `\n\n${error.stack}` : ""}`
-      : typeof error === "string"
-        ? error
-        : JSON.stringify(error, null, 2);
-
-  if (!text) return null;
-
-  return (
-    <div className="mt-6 text-left">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-        Technical details
-      </button>
-      {open && (
-        <pre className="mt-2 max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-[11.5px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
-          {text}
-        </pre>
-      )}
-    </div>
-  );
-}
-
 export function ErrorScreen({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { title, detail, status } = describe(error);
   const stale = isStaleBuild(error);
@@ -123,13 +96,18 @@ export function ErrorScreen({ error, onRetry }: { error: unknown; onRetry?: () =
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
       <div className="bg-card border border-border rounded-2xl shadow-sm p-8 max-w-md w-full">
-        <div
-          className={`w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-6 ${
-            stale ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
-          }`}
-        >
-          {stale ? <RefreshCw size={30} /> : <AlertTriangle size={30} />}
-        </div>
+        {stale ? (
+          <div className="w-16 h-16 flex items-center justify-center rounded-full mx-auto mb-6 bg-primary/10 text-primary">
+            <RefreshCw size={30} />
+          </div>
+        ) : (
+          <img
+            src={bugFixing}
+            alt=""
+            className="w-[132px] h-[132px] mx-auto mb-4 object-contain select-none"
+            draggable={false}
+          />
+        )}
 
         <h1 className="text-[22px] font-bold text-foreground mb-2">{title}</h1>
         <p className="text-muted-foreground text-[14px] leading-relaxed">{detail}</p>
@@ -155,9 +133,6 @@ export function ErrorScreen({ error, onRetry }: { error: unknown; onRetry?: () =
             </Button>
           </a>
         </div>
-
-        {/* Not on a 404: there is no stack worth showing for a wrong URL. */}
-        {status !== 404 && <TechnicalDetail error={error} />}
       </div>
     </div>
   );
