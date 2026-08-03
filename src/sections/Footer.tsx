@@ -35,7 +35,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
   }
 
   return (
-    <footer id="footer" className="bg-black text-white rounded-[20px] rounded-b-none md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
+    <footer id="footer" className="bg-black text-white rounded-[20px] rounded-b-none md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pt-[20px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-[40px] mb-[48px] md:mb-[80px]">
         <div className="hidden md:block md:col-span-1">
           <div className="h-[40px] md:w-[120px] md:h-[47px]">

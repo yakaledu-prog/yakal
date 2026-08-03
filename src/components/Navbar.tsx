@@ -30,7 +30,7 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
       </div>
 
       {/* Desktop nav */}
-      <nav className="hidden md:flex items-center gap-[26px] lg:gap-[32px] text-white text-[16px] min-w-0 overflow-x-auto hide-scrollbar">
+      <nav className="hidden md:flex items-center gap-[26px] lg:gap-[32px] text-white text-[16px] min-w-0 overflow-x-auto hide-scrollbar px-[20px] lg:px-[28px]">
         {links.map((l) => (
           <button
             key={l.id}
