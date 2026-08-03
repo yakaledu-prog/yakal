@@ -584,3 +584,32 @@ export async function getStudentAssignments(studentId: string): Promise<StudentA
     };
   });
 }
+
+export interface PublicTutor {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  subjects: string[] | null;
+}
+
+/**
+ * The tutors the landing page is allowed to show a visitor who has not signed
+ * in. Reads a view rather than profiles, because profiles carries email and
+ * phone next to the name.
+ *
+ * Returns an empty list on failure rather than throwing: the section falls
+ * back to the founding team, so a database that is down costs the page four
+ * cards, not the page.
+ */
+export async function getPublicTutors(): Promise<PublicTutor[]> {
+  const { data, error } = await supabase
+    .from("v_public_tutors")
+    .select("id, full_name, avatar_url, bio, subjects");
+
+  if (error) {
+    console.error("getPublicTutors:", error.message);
+    return [];
+  }
+  return (data ?? []) as PublicTutor[];
+}

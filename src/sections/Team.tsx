@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import Carousel from "@/components/Carousel";
+import { getPublicTutors } from "@/services/tutorService";
+import { initialsAvatarUrl } from "@/utils/avatar";
 import imgTeam1 from "@/assets/images/team-eyasu.webp";
 import imgTeam2 from "@/assets/images/team-daniel.webp";
 import imgTeam3 from "@/assets/images/team-bethlehem.webp";
@@ -9,7 +12,11 @@ import imgTeam4 from "@/assets/images/team-hana.webp";
 
 type Member = { name: string; subjects: string; img: string; details: string };
 
-const members: Member[] = [
+// The founding four, kept in the source with their own photographs. They are
+// the page's floor: a database reset, a failed request or a fresh environment
+// still shows a full team rather than an empty scroller. Tutors from the
+// database are appended to them.
+const founders: Member[] = [
   {
     name: "Eyasu (Josh)",
     subjects: "Physics | Geometry 1 & 2 | Algebra 1 & 2",
@@ -36,8 +43,19 @@ const members: Member[] = [
   },
 ];
 
-function TeamCard({ member }: { member: Member }) {
-  const [expanded, setExpanded] = useState(false);
+function TeamCard({
+  member,
+  expanded,
+  onToggle,
+}: {
+  member: Member;
+  /** Left out on desktop, where each card opens on its own. */
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
+  const [ownExpanded, setOwnExpanded] = useState(false);
+  const controlled = expanded !== undefined;
+  const isOpen = controlled ? expanded : ownExpanded;
 
   return (
     <div className="bg-white rounded-tl-[20px] rounded-tr-[20px] md:rounded-[30px] border border-[#eaecf0] overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow">
@@ -50,7 +68,7 @@ function TeamCard({ member }: { member: Member }) {
 
         {/* Animated Accordion for Details */}
         <div
-          className={`grid transition-all duration-300 ease-in-out ${expanded ? 'grid-rows-[1fr] opacity-100 mb-4 mt-2' : 'grid-rows-[0fr] opacity-0'
+          className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100 mb-4 mt-2' : 'grid-rows-[0fr] opacity-0'
             }`}
         >
           <div className="overflow-hidden">
@@ -62,11 +80,11 @@ function TeamCard({ member }: { member: Member }) {
 
         <div className="mt-auto pt-2">
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => (controlled ? onToggle?.() : setOwnExpanded(!ownExpanded))}
             className="flex items-center justify-center gap-[6px] w-full text-[13px] md:text-[14px] font-semibold text-[#54656f] hover:text-[#1099A1] transition-colors py-2 rounded-lg bg-gray-50 hover:bg-[#1099a1]/5"
           >
-            {expanded ? "Show Less" : "Read Full Bio"}
-            <ChevronDown size={16} className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+            {isOpen ? "Show Less" : "Read Full Bio"}
+            <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
@@ -75,6 +93,30 @@ function TeamCard({ member }: { member: Member }) {
 }
 
 export default function Team() {
+  const { data: tutors = [] } = useQuery({
+    queryKey: ["public-tutors"],
+    queryFn: getPublicTutors,
+  });
+
+  // Every card in the carousel opens together. The track is as tall as its
+  // tallest slide, so opening one card on its own stretched every other slide
+  // to match and left them with a bio's worth of empty space under a button
+  // that said Read Full Bio.
+  const [openAll, setOpenAll] = useState(false);
+
+  const members: Member[] = [
+    ...founders,
+    ...tutors.map((t) => ({
+      name: t.full_name,
+      subjects: (t.subjects ?? []).join(" | "),
+      // Initials on a brand background when a tutor has not uploaded a
+      // photograph. The generated pattern avatars used elsewhere in the app
+      // read as a broken image at card size.
+      img: t.avatar_url || initialsAvatarUrl(t.full_name, "1099a1"),
+      details: t.bio ?? "",
+    })),
+  ];
+
   return (
     <div className="w-full max-w-[1440px] py-[50px]">
       <Reveal className="text-center mb-[40px] md:mb-[70px]">
@@ -84,13 +126,24 @@ export default function Team() {
 
       {/* Mobile: one card per view, infinite carousel */}
       <div className="md:hidden px-[40px]">
-        <Carousel slides={members.map((member, idx) => (<TeamCard key={idx} member={member} />))} />
+        <Carousel
+          slides={members.map((member, idx) => (
+            <TeamCard
+              key={idx}
+              member={member}
+              expanded={openAll}
+              onToggle={() => setOpenAll((v) => !v)}
+            />
+          ))}
+        />
       </div>
 
-      {/* Desktop: 4-column grid */}
-      <div className="hidden md:grid grid-cols-4 gap-[30px] px-[10px] items-start">
+      {/* Desktop: four across, the rest scrolled to. A grid wrapped the fifth
+          tutor onto a second row that sat mostly empty, and grew another gap
+          with every signup. */}
+      <div className="hidden md:flex gap-[30px] px-[10px] items-start overflow-x-auto hide-scrollbar">
         {members.map((member, idx) => (
-          <Reveal key={idx} delay={idx * 80}>
+          <Reveal key={idx} delay={idx * 80} className="shrink-0 w-[calc((100%-90px)/4)]">
             <TeamCard member={member} />
           </Reveal>
         ))}

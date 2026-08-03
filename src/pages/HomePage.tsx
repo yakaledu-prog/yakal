@@ -45,7 +45,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       {/* After Services, which introduces admissions consulting as a program,
           so the prices arrive once somebody knows what they are for. */}
       <CounsellingTiers scrollTo={scrollTo} />
-      <ParentResources scrollTo={scrollTo} />
+      <ParentResources />
       <Testimonials />
       <Team />
       <Blog />
