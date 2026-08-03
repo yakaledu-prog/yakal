@@ -49,7 +49,6 @@ const CounselorProfile = lazy(() => import("../pages/counselor/CounselorProfile"
 const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudents").then((m) => ({ default: m.CounselorStudents })));
 const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
 const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
-const ErrorPage = lazy(() => import("../pages/shared/ErrorPage").then((m) => ({ default: m.ErrorPage })));
 const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
 const ParentAdmissions = lazy(() => import("../pages/parent/ParentAdmissions").then((m) => ({ default: m.ParentAdmissions })));
 const ParentBilling = lazy(() => import("../pages/parent/ParentBilling").then((m) => ({ default: m.ParentBilling })));
@@ -125,6 +124,10 @@ import { homePathForRole, requiresApproval } from "../utils/roleRoutes";
 import { DEV_PREVIEW } from "../config/dev";
 import { BreadcrumbProvider } from "../contexts/BreadcrumbContext";
 import { TopbarActionsProvider } from "../contexts/TopbarActionsContext";
+// Eager, unlike every other page here. A failed chunk download is one of the
+// things this screen exists to explain, and it cannot explain it if showing it
+// needs another chunk download.
+import { ErrorPage, AppErrorBoundary } from "../pages/shared/ErrorPage";
 
 function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
@@ -233,6 +236,11 @@ function AppRootLayout() {
 const router = createBrowserRouter([
   {
     element: <AppRootLayout />,
+    // On the root, so every route inherits it. Set per route it was missing
+    // from most of them, and a page without one falls through to React
+    // Router's built-in developer screen: a raw stack trace, addressed to
+    // whoever wrote the app rather than to whoever is reading it.
+    errorElement: <ErrorPage />,
     children: [
       ...previewRoutes,
   {
@@ -440,18 +448,23 @@ function RouteFallback() {
 
 export function AppRouter() {
   return (
-    <AuthProvider>
-      <BreadcrumbProvider>
-        <TopbarActionsProvider>
-          {/* One boundary around the whole router rather than one per route.
-              A page's chunk is fetched the first time it is visited, and on a
-              slow connection that gap has to look like the app working rather
-              than a blank flash. */}
-          <Suspense fallback={<RouteFallback />}>
-            <RouterProvider router={router} />
-          </Suspense>
-        </TopbarActionsProvider>
-      </BreadcrumbProvider>
-    </AuthProvider>
+    // Outside the providers as well as the router. A context provider that
+    // throws while initialising takes the whole tree with it, and the route
+    // level errorElement is not mounted yet to catch it.
+    <AppErrorBoundary>
+      <AuthProvider>
+        <BreadcrumbProvider>
+          <TopbarActionsProvider>
+            {/* One boundary around the whole router rather than one per route.
+                A page's chunk is fetched the first time it is visited, and on a
+                slow connection that gap has to look like the app working rather
+                than a blank flash. */}
+            <Suspense fallback={<RouteFallback />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </TopbarActionsProvider>
+        </BreadcrumbProvider>
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 }
