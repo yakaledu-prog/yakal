@@ -263,8 +263,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* A shortcut nobody is told about is a shortcut nobody uses, so
-                the palette has a door as well as a key. */}
+            <InstallButton compact />
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -287,11 +286,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
             {topbarActions}
             <ThemeToggle />
-            {/* In the top bar, not the profile card: buried next to an avatar
-                it read as a setting rather than an offer, and half of it was
-                hidden with the sidebar collapsed. Removes itself once the app
-                is installed. */}
-            <InstallButton compact />
             <NotificationBell basePath={basePath} />
           </div>
         </header>
