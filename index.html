@@ -3,7 +3,19 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- viewport-fit=cover so an installed app can paint under the notch and
+       the home indicator rather than sitting in letterboxes. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- iOS reads none of the web manifest. The icon, the title on the home
+       screen and the status bar all come from these instead, and without them
+       an installed app gets a screenshot of the page as its icon. -->
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Yakal" />
+  <meta name="theme-color" content="#1099A1" />
   <title>Yakal - Personalized Tutoring</title>
   <meta name="description"
     content="Yakal offers one-on-one academic support to help students excel in Math, Science, and SAT prep, with flexible online and in-person options tailored to every learning style." />

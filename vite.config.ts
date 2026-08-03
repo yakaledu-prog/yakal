@@ -2,9 +2,101 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // ============================================================
+    // Installable, and fast on the second visit.
+    //
+    // The service worker precaches the built shell so a returning visitor
+    // renders from disk instead of waiting on the network. It does not cache
+    // any API response: those are scoped by row level security, and anything
+    // written to disk survives a sign-out and is readable by any script on the
+    // origin. A child's messages and grades are not worth a faster back
+    // button.
+    //
+    // autoUpdate rather than a prompt. This is a tool people open to check a
+    // lesson time, not somewhere they want a dialogue about versions.
+    // ============================================================
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.png', 'icons/apple-touch-icon.png'],
+      manifest: {
+        name: 'Yakal Education Services',
+        short_name: 'Yakal',
+        description: 'Tutoring and college admissions, for students, parents and tutors.',
+        // standalone is what makes it open without browser chrome, which is
+        // most of what separates an installed app from a bookmark.
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        theme_color: '#1099A1',
+        background_color: '#ffffff',
+        categories: ['education'],
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          // Android crops icons to the launcher's shape and only guarantees
+          // the middle 80%, so these carry their own margin and background.
+          { src: '/icons/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        // The app is one big lazy-loaded bundle now, so the chunks are the
+        // shell. 4 MB covers them; the default 2 MB silently drops the largest.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // The shell only: the entry, the pinned vendor chunks, styles and
+        // fonts. Precaching every chunk meant a student's phone downloading
+        // the admin dashboard and the counselor tools in the background, 4.6 MB
+        // of pages they will never open. Page chunks are cached below as they
+        // are actually visited.
+        globPatterns: ['**/*.{css,html,woff2}', 'assets/index-*.js', 'assets/vendor-*.js'],
+        // Every unknown path falls back to the SPA entry, or a deep link
+        // opened offline gets a 404 from the cache rather than the app.
+        navigateFallback: '/index.html',
+        // Never the API. Supabase and our own routes must always be live: a
+        // cached session time is worse than a spinner.
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            // A page's chunk, kept once it has been opened. Stale while
+            // revalidate: render from disk immediately, fetch a newer one in
+            // the background, so a returning visitor never waits and never
+            // stays on an old build for more than one visit.
+            urlPattern: ({ url, request }) =>
+              request.destination === 'script' && url.pathname.startsWith('/assets/'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'page-chunks',
+              expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            // Course thumbnails and avatars. Images are immutable at their URL
+            // here, so a cache hit is always correct.
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 120, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+        cleanupOutdatedCaches: true,
+      },
+      devOptions: {
+        // Off in dev by default: a service worker caching a module graph that
+        // Vite is rewriting on every save is a morning lost to phantom stale
+        // code. Turn it on deliberately to test the install flow.
+        enabled: false,
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

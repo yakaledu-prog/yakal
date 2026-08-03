@@ -1,6 +1,8 @@
 import { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { Toaster } from "sonner";
 
 // ============================================================
@@ -220,6 +222,10 @@ function AppRootLayout() {
         }}
       />
       <Outlet />
+      {/* Here rather than on one page: it should be offerable to a visitor
+          reading the landing page and to somebody already signed in, and it
+          hides itself once the app is installed. */}
+      <InstallPrompt />
     </>
   );
 }
