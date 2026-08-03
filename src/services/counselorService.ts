@@ -19,31 +19,53 @@ export interface CounselorDashboard {
   upcomingDeadlines: { id: string; school: string; student: string; studentAvatar: string | null; deadline: string; image: string | null; requirements: { label: string; is_complete: boolean }[] }[];
 }
 
-// Students assigned to this counselor (via college_guide_applications.counselor_id).
+/**
+ * The families this counsellor is working with.
+ *
+ * Driven by the plan rather than the application. The plan is the engagement
+ * somebody paid for; the application is a workspace that may hold nothing yet.
+ * Reading the application first meant a family who had bought a tier but not
+ * yet saved a college list was invisible to the person meant to be advising
+ * them.
+ */
 export async function getCounselorStudents(counselorId: string): Promise<CounselorStudent[]> {
-  const { data: apps, error } = await supabase
-    .from("college_guide_applications")
-    .select("id, student_id, stage, program_interest")
-    .eq("counselor_id", counselorId);
-  if (error || !apps || apps.length === 0) return [];
+  const { data: plans, error } = await supabase
+    .from("admissions_plans")
+    .select("student_id")
+    .eq("counselor_id", counselorId)
+    .in("status", ["active", "past_due"]);
+  if (error) {
+    console.error("getCounselorStudents:", error.message);
+    return [];
+  }
+  const studentIds = [...new Set((plans ?? []).map((p) => p.student_id))];
+  if (studentIds.length === 0) return [];
 
-  const studentIds = apps.map((a) => a.student_id);
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, email, grade_level")
-    .in("id", studentIds);
+  const [{ data: profiles }, { data: apps }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, email, grade_level")
+      .in("id", studentIds),
+    supabase
+      .from("college_guide_applications")
+      .select("id, student_id, stage, program_interest")
+      .in("student_id", studentIds),
+  ]);
 
-  return apps.map((a) => {
-    const p = profiles?.find((x) => x.id === a.student_id);
+  const appByStudent = new Map((apps ?? []).map((a) => [a.student_id, a]));
+
+  return studentIds.map((studentId) => {
+    const p = profiles?.find((x) => x.id === studentId);
+    const a = appByStudent.get(studentId);
     return {
-      id: a.student_id,
+      id: studentId,
       full_name: p?.full_name || "Student",
       avatar_url: p?.avatar_url ?? null,
       email: p?.email ?? null,
       grade_level: p?.grade_level ?? null,
-      stage: (a.stage as AppStage) ?? null,
-      program_interest: a.program_interest ?? null,
-      application_id: a.id,
+      stage: (a?.stage as AppStage) ?? null,
+      program_interest: a?.program_interest ?? null,
+      application_id: a?.id ?? null,
     };
   });
 }

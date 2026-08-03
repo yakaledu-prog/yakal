@@ -212,7 +212,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const StudentSteps = ["Profile", "Preferences"];
   const TutorSteps = ["Profile", "CV / Resume", "Subjects"];
   const ParentSteps = ["Profile", "Theme", "Children"];
-  const CounselorSteps = ["Profile", "Bio"];
+  const CounselorSteps = ["Profile", "CV / Resume", "Bio"];
 
   const stepsList =
     role === "student" ? StudentSteps
@@ -225,7 +225,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     e.preventDefault();
 
     if (!isLastStep) {
-      if (role === "tutor" && step === 2 && !cvUrl && !cvFile) {
+      if ((role === "tutor" || role === "counselor") && step === 2 && !cvUrl && !cvFile) {
         return toast.error("Please upload your CV before proceeding.");
       }
       setStep(step + 1);
@@ -273,6 +273,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
         updates.resume_url = cvUrl || null;
       } else if (role === "counselor") {
         updates.bio = bio.trim() || null;
+        updates.resume_url = cvUrl || null;
       }
 
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
@@ -428,8 +429,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
-              {/* Tutor Step 2: CV Upload */}
-              {role === "tutor" && step === 2 && (
+              {/* Tutor and counsellor step 2: the CV the admin reviews */}
+              {(role === "tutor" || role === "counselor") && step === 2 && (
                 <div className="flex flex-col gap-4">
                   <div className="p-6 border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] dark:bg-[#1a2329] hover:bg-[#f1f3f5] dark:hover:bg-[#202c33] transition-colors cursor-pointer"
                     onClick={() => cvInputRef.current?.click()}>
@@ -698,8 +699,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
-              {/* Counselor Step 2: Bio */}
-              {role === "counselor" && step === 2 && (
+              {/* Counselor Step 3: Bio */}
+              {role === "counselor" && step === 3 && (
                 <>
                   <FloatingTextarea
                     label="Short bio"

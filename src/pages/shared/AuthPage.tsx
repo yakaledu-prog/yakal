@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { User, GraduationCap, Users, Info, ChevronDown } from "lucide-react";
+import { User, GraduationCap, Users, Compass, Info, ChevronDown } from "lucide-react";
 import logoImg from "@/assets/images/logo.webp";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { DEV_PREVIEW } from "@/config/dev";
 
 type Mode = "login" | "signup";
-type RoleType = "student" | "parent" | "tutor";
+type RoleType = "student" | "parent" | "tutor" | "counselor";
 
 const DEMO_ACCOUNTS = [
   { email: "admin@yakal.com", name: "Almaz T.", role: "Administrator", img: "https://i.pravatar.cc/150?u=admin_yakal" },
@@ -188,14 +188,14 @@ export function AuthPage() {
             {mode === "signup" && (
               <>
                 {/* Role Toggle */}
-                <div className="flex gap-2 mb-4">
-                  {(['student', 'parent', 'tutor'] as RoleType[]).map(role => (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                  {(['student', 'parent', 'tutor', 'counselor'] as RoleType[]).map(role => (
                     <button
                       key={role}
                       type="button"
                       onClick={() => setSelectedRole(role)}
                       className={cn(
-                        "flex-1 py-3 border rounded-xl flex flex-col items-center gap-1 transition-colors",
+                        "py-3 border rounded-xl flex flex-col items-center gap-1 transition-colors",
                         selectedRole === role
                           ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] dark:bg-[#1099A1]/10"
                           : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
@@ -204,6 +204,7 @@ export function AuthPage() {
                       {role === 'student' && <User size={20} />}
                       {role === 'parent' && <Users size={20} />}
                       {role === 'tutor' && <GraduationCap size={20} />}
+                      {role === 'counselor' && <Compass size={20} />}
                       <span className="text-[12px] font-medium capitalize">{role}</span>
                     </button>
                   ))}
@@ -222,7 +223,7 @@ export function AuthPage() {
                 </div>
 
                 {/* Phone Field for select roles */}
-                {(selectedRole === "parent" || selectedRole === "tutor") && (
+                {(selectedRole === "parent" || selectedRole === "tutor" || selectedRole === "counselor") && (
                   <div>
                     <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">Phone number (Optional)</label>
                     <input

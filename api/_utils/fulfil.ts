@@ -291,6 +291,26 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
       .eq("id", existing.id);
   }
 
+  // Who the family will actually be working with. Kept if they already had a
+  // plan, so buying a bigger tier does not hand them to a stranger halfway
+  // through an application; otherwise the counsellor with the fewest live
+  // plans. Null when nobody has been hired yet, which leaves the plan
+  // unassigned for an admin to place rather than failing the purchase.
+  let counselorId: string | null = null;
+  if (existing) {
+    const { data: prior } = await db
+      .from("admissions_plans")
+      .select("counselor_id")
+      .eq("id", existing.id)
+      .maybeSingle();
+    counselorId = prior?.counselor_id ?? null;
+  }
+  if (!counselorId) {
+    const { data: picked, error: pickErr } = await db.rpc("next_counselor");
+    if (pickErr) console.error("fulfil: choosing a counsellor failed:", pickErr.message);
+    counselorId = (picked as string | null) ?? null;
+  }
+
   // Granted on the first payment, not the last. The instalments are how the
   // money is collected; the family gets the whole engagement straight away.
   const { error: planErr } = await db.from("admissions_plans").insert({
@@ -298,6 +318,7 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     purchased_by: invoice.parent_id,
     tier_id: tier.id,
     invoice_id: invoice.id,
+    counselor_id: counselorId,
     payments_made: 1,
     payments_due: tier.instalment_months ?? 1,
   });
@@ -306,6 +327,26 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     // delivery arriving while the first is still in flight.
     if (planErr.code !== "23505") console.error("fulfil: admissions plan failed:", planErr.message);
     return;
+  }
+
+  // The workspace the counsellor opens. Created here rather than waiting for
+  // the student to touch a college list, so the family appears on their
+  // counsellor's dashboard the moment the payment clears rather than whenever
+  // somebody first saves something.
+  if (counselorId) {
+    const { data: app } = await db
+      .from("college_guide_applications")
+      .select("id")
+      .eq("student_id", invoice.student_id)
+      .maybeSingle();
+
+    const { error: appErr } = app
+      ? await db.from("college_guide_applications").update({ counselor_id: counselorId }).eq("id", app.id)
+      : await db.from("college_guide_applications").insert({
+          student_id: invoice.student_id,
+          counselor_id: counselorId,
+        });
+    if (appErr) console.error("fulfil: assigning the counsellor failed:", appErr.message);
   }
 
   // The switch the rest of the app reads.

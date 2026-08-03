@@ -526,6 +526,48 @@ async function seedCollegeProfiles() {
       : await db.from("college_guide_applications").insert(application);
     if (appErr) fail("writing a college application", appErr);
 
+    // The engagement behind the application. The counsellor's dashboard reads
+    // plans, not applications: a plan is something a family paid for, an
+    // application is a workspace that can sit empty. Without one here the
+    // seeded counsellor opens an empty screen after every reset.
+    if (p.counselor) {
+      const { data: tier } = await db
+        .from("admissions_tiers")
+        .select("id")
+        .eq("is_active", true)
+        .order("sort_order")
+        .limit(1)
+        .maybeSingle();
+
+      if (tier) {
+        const { data: existingPlan } = await db
+          .from("admissions_plans")
+          .select("id")
+          .eq("student_id", student_id)
+          .in("status", ["active", "past_due"])
+          .maybeSingle();
+
+        const plan = {
+          student_id,
+          tier_id: tier.id,
+          counselor_id: idFor(p.counselor),
+          status: "active",
+        };
+        const { error: planErr } = existingPlan
+          ? await db.from("admissions_plans").update(plan).eq("id", existingPlan.id)
+          : await db.from("admissions_plans").insert(plan);
+        if (planErr) fail("writing an admissions plan", planErr);
+
+        // The switch the rest of the app reads before showing anything
+        // admissions related.
+        const { error: svcErr } = await db.from("child_services").upsert(
+          { student_id, service: "admissions", is_active: true },
+          { onConflict: "student_id,service" }
+        );
+        if (svcErr) fail("unlocking admissions", svcErr);
+      }
+    }
+
     const { error: acadErr } = await db.from("student_academics").upsert(
       {
         student_id,

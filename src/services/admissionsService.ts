@@ -183,8 +183,14 @@ export interface AdmissionsUsage {
  * because a family and a counselor looking at the same number is most of what
  * the meter is for.
  */
+/** First moment of the current calendar month, as an ISO date. */
+function monthStart(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+}
+
 export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsUsage> {
-  const [plan, essaysRes, interviewsRes] = await Promise.all([
+  const [plan, essaysRes, interviewsRes, advisingRes] = await Promise.all([
     getAdmissionsPlan(studentId),
     supabase.from("essays").select("id, kind, rounds_used").eq("student_id", studentId),
     supabase
@@ -193,6 +199,16 @@ export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsU
       .eq("student_id", studentId)
       .eq("kind", "mock_interview")
       .eq("status", "completed"),
+    // Advising is the one quota that refills. Booked counts against it as much
+    // as attended: a slot held is a slot nobody else can have, and letting a
+    // cancellation the morning of return it would make the allowance meaningless.
+    supabase
+      .from("sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", studentId)
+      .eq("kind", "advising")
+      .in("status", ["scheduled", "completed"])
+      .gte("date", monthStart()),
   ]);
 
   if (essaysRes.error) {
@@ -209,6 +225,11 @@ export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsU
   ).length;
 
   const lines: QuotaLine[] = [
+    {
+      label: "Advising sessions this month",
+      used: advisingRes.count ?? 0,
+      limit: plan?.tier.sessionsPerMonth ?? null,
+    },
     {
       label: "Supplemental essays reviewed",
       used: suppReviewed,
