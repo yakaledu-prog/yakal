@@ -8,11 +8,16 @@ import { bookAndPay } from "./billingService";
 // all editable, because the offering is not settled. Nothing in here assumes
 // there are three of them or what they are called.
 //
-// Quotas are counted and shown. They are not enforced anywhere, on purpose: a
-// ceiling that blocks has to answer who may spend it and what happens when
-// somebody mis-clicks, and it turns the counter into something worth gaming.
-// A number both sides can see does the same job, and the conversation about
-// asking for one more round happens between people.
+// Most quotas are counted and shown, not enforced, on purpose: a ceiling that
+// blocks has to answer who may spend it and what happens when somebody
+// mis-clicks, and it turns the counter into something worth gaming. A number
+// both sides can see does the same job, and the conversation about asking for
+// one more round happens between people.
+//
+// Advising sessions are the exception, because spending one takes an hour out
+// of a counsellor's calendar that nobody else can have. That ceiling is
+// enforced in book_advising_session, in the database, where a browser cannot
+// talk its way past it.
 // ============================================================
 
 export interface AdmissionsTier {
@@ -207,7 +212,10 @@ export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsU
       .select("id", { count: "exact", head: true })
       .eq("student_id", studentId)
       .eq("kind", "advising")
-      .in("status", ["scheduled", "completed"])
+      // upcoming, not scheduled. The check constraint allows upcoming,
+      // completed, cancelled and no-show, so the wrong word here counted
+      // nothing and the meter sat at zero however many hours were booked.
+      .in("status", ["upcoming", "completed"])
       .gte("date", monthStart()),
   ]);
 
@@ -284,4 +292,136 @@ export async function buyTier(input: {
     studentId: input.studentId,
     admissionsTierId: input.tierId,
   });
+}
+
+/**
+ * Book advising hours against the student's counsellor.
+ *
+ * Goes through book_advising_session rather than inserting: a parent has no
+ * insert on sessions at all, and the monthly allowance, the counsellor's other
+ * bookings and who is allowed to book for whom are all checked there. A cap
+ * the browser applies is not a cap.
+ *
+ * Slots are booked one at a time and the outcome is reported per slot, because
+ * the interesting failure is partial: an hour taken while the dialog was open
+ * should not lose the other three.
+ */
+export async function bookAdvisingSlots(
+  studentId: string,
+  slots: { date: string; startTime: string; durationMinutes?: number }[]
+): Promise<{ booked: number; errors: string[] }> {
+  let booked = 0;
+  const errors: string[] = [];
+
+  for (const slot of slots) {
+    const { error } = await supabase.rpc("book_advising_session", {
+      p_student: studentId,
+      p_date: slot.date,
+      p_start: slot.startTime,
+      p_duration: slot.durationMinutes ?? 60,
+    });
+    if (error) {
+      errors.push(`${slot.date} ${slot.startTime}: ${error.message}`);
+    } else {
+      booked += 1;
+    }
+  }
+
+  return { booked, errors };
+}
+
+export interface PlanPerson {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+}
+
+/**
+ * The two people a plan is between.
+ *
+ * The counsellor's id draws their calendar; both faces go on the plan card,
+ * because "who is actually working with my child" is the question a parent
+ * opens this page asking, and a name in grey text was not answering it.
+ */
+export async function getPlanPeople(
+  studentId: string
+): Promise<{ student: PlanPerson | null; counselor: PlanPerson | null }> {
+  const { data: plan, error } = await supabase
+    .from("admissions_plans")
+    .select("counselor_id")
+    .eq("student_id", studentId)
+    .in("status", ["active", "past_due"])
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPlanPeople:", error.message);
+    return { student: null, counselor: null };
+  }
+
+  const ids = [studentId, plan?.counselor_id].filter(Boolean) as string[];
+  const { data: people } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", ids);
+
+  const find = (id: string | null | undefined): PlanPerson | null => {
+    if (!id) return null;
+    const row = people?.find((p) => p.id === id);
+    return row
+      ? { id: row.id, fullName: row.full_name, avatarUrl: row.avatar_url }
+      : null;
+  };
+
+  return { student: find(studentId), counselor: find(plan?.counselor_id) };
+}
+
+export interface AdvisingSession {
+  id: string;
+  date: string;
+  startTime: string;
+  status: string;
+}
+
+/** Advising hours booked for the month containing `on`, soonest first. */
+export async function getAdvisingSessions(
+  studentId: string,
+  on: Date = new Date()
+): Promise<AdvisingSession[]> {
+  const from = new Date(on.getFullYear(), on.getMonth(), 1);
+  const to = new Date(on.getFullYear(), on.getMonth() + 1, 1);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, date, start_time, status")
+    .eq("student_id", studentId)
+    .eq("kind", "advising")
+    .in("status", ["upcoming", "completed"])
+    .gte("date", iso(from))
+    .lt("date", iso(to))
+    .order("date")
+    .order("start_time");
+
+  if (error) {
+    console.error("getAdvisingSessions:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    date: r.date,
+    startTime: String(r.start_time).slice(0, 5),
+    status: r.status,
+  }));
+}
+
+/**
+ * Give an advising hour back.
+ *
+ * Frees the counsellor's calendar and the month's count, which is what makes
+ * changing a slot possible once the allowance is spent.
+ */
+export async function cancelAdvisingSession(sessionId: string): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc("cancel_advising_session", { p_session: sessionId });
+  return error ? { error: error.message } : {};
 }

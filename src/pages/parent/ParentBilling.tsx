@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
+import { CalendarPlus, CreditCard, ExternalLink, Loader2, X } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
-import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
 import { getBilling, type CoursePackage } from "@/services/packageService";
@@ -20,11 +19,17 @@ import {
   type SavedCard,
 } from "@/services/billingService";
 import {
+  bookAdvisingSlots,
+  cancelAdvisingSession,
   getAdmissionsPlans,
   getAdmissionsUsage,
+  getAdvisingSessions,
+  getPlanPeople,
   quotaLabel,
   type AdmissionsPlan,
 } from "@/services/admissionsService";
+import { StackedAvatars } from "@/components/shared/StackedAvatars";
+import { AvailabilityPicker, type PickedSlot } from "@/components/shared/AvailabilityPicker";
 import { BillingHeader, ChildSidebar, Empty, Money, Spinner } from "./billing/shared";
 
 // ============================================================
@@ -50,12 +55,22 @@ const TABS = [
   { id: "methods", label: "Payment methods" },
 ] as const;
 
+/** The dot colours match the card outlines, so the filter names what it filters. */
+const SERVICE_FILTERS = [
+  { id: "all", label: "All", dot: null as string | null },
+  { id: "counselling", label: "Counselling", dot: "#1099A1" },
+  { id: "tutoring", label: "Tutoring", dot: "#CAA25F" },
+] as const;
+
+type ServiceFilter = (typeof SERVICE_FILTERS)[number]["id"];
+
 export function ParentBilling() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
+  const [service, setService] = useState<ServiceFilter>("all");
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data: children = [] } = useQuery({
@@ -222,12 +237,39 @@ export function ParentBilling() {
                 />
               ) : (
                 <div className="space-y-3">
-                  {admissionsPlans.map((p) => (
-                    <AdmissionsCard key={p.id} plan={p} />
-                  ))}
-                  {packages.map((p) => (
-                    <PlanCard key={`${p.courseId}|${p.studentId}`} pkg={p} />
-                  ))}
+                  {/* Only worth offering when there is something to sift. With
+                      one of each it is three buttons standing over two rows. */}
+                  {admissionsPlans.length > 0 && packages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pb-1">
+                      {SERVICE_FILTERS.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => setService(f.id)}
+                          className={cn(
+                            "rounded-lg border px-3 py-1.5 text-[13px] transition-colors",
+                            service === f.id
+                              ? "border-transparent bg-foreground text-background"
+                              : "border-border text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {f.dot && (
+                            <span
+                              className="mr-2 inline-block h-2 w-2 rounded-full align-middle"
+                              style={{ backgroundColor: f.dot }}
+                            />
+                          )}
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {service !== "tutoring" &&
+                    admissionsPlans.map((p) => <AdmissionsCard key={p.id} plan={p} />)}
+                  {service !== "counselling" &&
+                    packages.map((p) => (
+                      <PlanCard key={`${p.courseId}|${p.studentId}`} pkg={p} />
+                    ))}
                 </div>
               )
             ) : tab === "payments" ? (
@@ -298,13 +340,19 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
   const done = (pkg.slotsCompleted / total) * 100;
 
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
+    // Gold for tutoring, teal for counselling. One glance says which of the two
+    // services a row belongs to, which a list mixing both otherwise does not.
+    <article className="rounded-xl border border-[#CAA25F] bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
-          <img
-            src={pkg.tutorAvatarUrl || dicebearUrl(pkg.tutorName ?? pkg.courseTitle)}
-            alt=""
-            className="h-11 w-11 shrink-0 rounded-full object-cover"
+          <StackedAvatars
+            className="pt-0.5"
+            people={[
+              { id: pkg.studentId, name: pkg.studentName, avatarUrl: pkg.studentAvatarUrl },
+              pkg.tutorName
+                ? { id: pkg.tutorId ?? undefined, name: pkg.tutorName, avatarUrl: pkg.tutorAvatarUrl }
+                : null,
+            ]}
           />
           <div className="min-w-0">
             <h3 className="text-[16px] font-medium text-foreground">{pkg.courseTitle}</h3>
@@ -328,7 +376,13 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
           </span>
         </p>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-[#1099A1]" style={{ width: `${done}%` }} />
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${done}%`,
+              backgroundImage: "linear-gradient(90deg, #1099A1 0%, #CAA25F 100%)",
+            }}
+          />
         </div>
       </div>
     </article>
@@ -343,27 +397,57 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
  * not because anything is about to be cut off.
  */
 function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
+  const [booking, setBooking] = useState(false);
   const { data: usage } = useQuery({
     queryKey: ["admissions-usage", plan.studentId],
     queryFn: () => getAdmissionsUsage(plan.studentId),
   });
+  const { data: people } = useQuery({
+    queryKey: ["plan-people", plan.studentId],
+    queryFn: () => getPlanPeople(plan.studentId),
+  });
+
+  // The advising line is the only one a parent can act on from here, so it is
+  // what decides whether there is a button and what it says.
+  const advising = usage?.lines.find((l) => l.label.startsWith("Advising"));
+  const remaining =
+    advising == null ? 0 : advising.limit == null ? Infinity : advising.limit - advising.used;
+  const hasBooked = (advising?.used ?? 0) > 0;
 
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
+    <article className="rounded-xl border border-[#1099A1] bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h3 className="text-[16px] font-medium text-foreground">
-            {plan.tier.name} college counselling
-          </h3>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            {plan.studentName}
-            {" - since "}
-            {new Date(plan.startedAt).toLocaleDateString(undefined, {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <StackedAvatars
+            className="pt-0.5"
+            people={[
+              people?.student && {
+                id: people.student.id,
+                name: people.student.fullName,
+                avatarUrl: people.student.avatarUrl,
+              },
+              people?.counselor && {
+                id: people.counselor.id,
+                name: people.counselor.fullName,
+                avatarUrl: people.counselor.avatarUrl,
+              },
+            ]}
+          />
+          <div className="min-w-0">
+            <h3 className="text-[16px] font-medium text-foreground">
+              {plan.tier.name} college counselling
+            </h3>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              {plan.studentName}
+              {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
+              {" - since "}
+              {new Date(plan.startedAt).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
         </div>
         <p className="text-[13px] text-muted-foreground">
           <Money cents={plan.tier.priceCents} /> paid
@@ -371,21 +455,235 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
       </div>
 
       {usage && usage.lines.length > 0 && (
-        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 border-t border-border pt-3">
-          {usage.lines.map((l) => (
-            <div key={l.label}>
-              <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
-              <dd className="text-[14px] text-foreground">
-                {quotaLabel(l)}
-                {l.limit == null && (
-                  <span className="text-muted-foreground"> - no limit</span>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-3">
+          <dl className="flex flex-wrap gap-x-8 gap-y-2">
+            {usage.lines.map((l) => (
+              <div key={l.label}>
+                <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
+                <dd className="text-[14px] text-foreground">
+                  {quotaLabel(l)}
+                  {l.limit == null && (
+                    <span className="text-muted-foreground"> - no limit</span>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {advising && (
+            // Enabled whenever there is something to do: hours left to book, or
+            // hours already booked that can be given back and taken elsewhere.
+            // Disabling it the moment the allowance is spent killed it exactly
+            // when somebody wants to move an hour.
+            <Button
+              onClick={() => setBooking(true)}
+              disabled={remaining <= 0 && !hasBooked}
+              className="h-9 shrink-0 gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50"
+            >
+              <CalendarPlus size={15} />
+              {hasBooked ? "Change slots" : "Choose slots"}
+              {remaining !== Infinity && ` (${Math.max(0, remaining)})`}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {booking && (
+        <BookAdvisingDialog
+          plan={plan}
+          remaining={remaining === Infinity ? 99 : remaining}
+          onClose={() => setBooking(false)}
+        />
       )}
     </article>
+  );
+}
+
+/**
+ * Picking advising hours from the counsellor's calendar.
+ *
+ * Deliberately not part of checkout. Payment and the calendar are separate
+ * problems: a card that fails would otherwise leave hours held, and by the
+ * time anyone is here the counsellor is already assigned, so there is exactly
+ * one calendar to draw.
+ *
+ * The cap below is a courtesy, not the rule. book_advising_session enforces
+ * the allowance, the counsellor's other bookings and who may book for whom,
+ * and it is the only thing that can: a parent has no insert on sessions.
+ */
+function BookAdvisingDialog({
+  plan,
+  remaining,
+  onClose,
+}: {
+  plan: AdmissionsPlan;
+  remaining: number;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [picked, setPicked] = useState<PickedSlot[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [releasing, setReleasing] = useState<string | null>(null);
+
+  const { data: people, isLoading } = useQuery({
+    queryKey: ["plan-people", plan.studentId],
+    queryFn: () => getPlanPeople(plan.studentId),
+  });
+  const counselorId = people?.counselor?.id ?? null;
+
+  const { data: booked = [] } = useQuery({
+    queryKey: ["advising-sessions", plan.studentId],
+    queryFn: () => getAdvisingSessions(plan.studentId),
+  });
+
+  async function release(sessionId: string) {
+    setReleasing(sessionId);
+    const { error } = await cancelAdvisingSession(sessionId);
+    setReleasing(null);
+    if (error) return toast.error(error);
+    toast.success("That hour is free again.");
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["advising-sessions", plan.studentId] }),
+      qc.invalidateQueries({ queryKey: ["admissions-usage", plan.studentId] }),
+      qc.invalidateQueries({ queryKey: ["slot-conflicts"] }),
+    ]);
+  }
+
+  function toggle(slot: PickedSlot) {
+    setPicked((prev) => {
+      const on = prev.some((s) => s.key === slot.key);
+      if (on) return prev.filter((s) => s.key !== slot.key);
+      if (prev.length >= remaining) {
+        toast.error(
+          remaining === 1
+            ? "One hour left this month."
+            : `Only ${remaining} hours left this month.`
+        );
+        return prev;
+      }
+      return [...prev, slot];
+    });
+  }
+
+  async function confirm() {
+    if (picked.length === 0) return;
+    setSaving(true);
+    const { booked: madeCount, errors } = await bookAdvisingSlots(
+      plan.studentId,
+      picked.map((s) => ({ date: s.date, startTime: s.startTime, durationMinutes: 60 }))
+    );
+    setSaving(false);
+
+    if (madeCount > 0) {
+      toast.success(`${madeCount} ${madeCount === 1 ? "session" : "sessions"} booked.`);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admissions-usage", plan.studentId] }),
+        qc.invalidateQueries({ queryKey: ["advising-sessions", plan.studentId] }),
+        qc.invalidateQueries({ queryKey: ["slot-conflicts"] }),
+      ]);
+    }
+    // Reported rather than swallowed: an hour taken while this was open is the
+    // one thing a parent needs to hear about, and the rest still landed.
+    for (const message of errors) toast.error(message);
+    if (errors.length === 0) onClose();
+    else setPicked([]);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border p-5">
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-semibold text-foreground">Choose advising slots</h2>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              For {plan.studentName}. {remaining} {remaining === 1 ? "hour" : "hours"} left
+              this month.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          {/* What is already booked, and the way to give one back. Without
+              this the dialog can only ever add, so a family whose allowance is
+              spent has no way to move an hour. */}
+          {booked.length > 0 && (
+            <div className="mb-5 rounded-xl border border-border bg-muted/30 p-4">
+              <p className="mb-2 text-[13px] font-medium text-foreground">Booked this month</p>
+              <ul className="space-y-1.5">
+                {booked.map((session) => (
+                  <li key={session.id} className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {new Date(`${session.date}T00:00:00`).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                      {" at "}
+                      {session.startTime}
+                    </span>
+                    {session.status === "upcoming" ? (
+                      <button
+                        type="button"
+                        onClick={() => void release(session.id)}
+                        disabled={releasing === session.id}
+                        className="text-[12.5px] font-medium text-[#1099A1] transition-opacity hover:underline disabled:opacity-50"
+                      >
+                        {releasing === session.id ? "Releasing..." : "Release"}
+                      </button>
+                    ) : (
+                      <span className="text-[12.5px] text-muted-foreground">Done</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+            </div>
+          ) : !counselorId ? (
+            <p className="py-12 text-center text-[14px] text-muted-foreground">
+              No counsellor has been assigned yet. This usually sorts itself out within a
+              day; get in touch if it does not.
+            </p>
+          ) : (
+            <AvailabilityPicker
+              tutorId={counselorId}
+              studentId={plan.studentId}
+              selected={picked}
+              onToggle={toggle}
+              multiple
+            />
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-border bg-muted/30 p-5">
+          <Button variant="outline" onClick={onClose} className="h-10 px-5">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirm}
+            disabled={picked.length === 0 || saving}
+            className="h-10 bg-[#1099A1] px-5 font-medium text-white hover:bg-[#0d848b] disabled:opacity-50"
+          >
+            {saving
+              ? "Booking..."
+              : picked.length === 0
+                ? "Book"
+                : `Book ${picked.length} ${picked.length === 1 ? "session" : "sessions"}`}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
