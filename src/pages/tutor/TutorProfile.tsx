@@ -10,7 +10,8 @@ import {
 import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import { Calendar, Camera, Check, CheckCircle, Copy, Edit2, Loader2, LogOut, Mail, Phone, Users, X } from "lucide-react";
+import { DetailRow } from "@/components/shared/DetailRow";
+import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, SessionRow } from "@/services/tutorService";
@@ -231,112 +232,6 @@ export function TutorProfile() {
         />
       )}
     </PageWrapper>
-  );
-}
-
-/**
- * A labelled contact detail.
- *
- * `href` makes the value a link, for an email where mailto does the obvious
- * thing. `copy` makes it click-to-copy instead, which is what a phone number
- * actually needs: a tel: link does nothing on a desktop browser, and the
- * reason anyone clicks a number is to paste it somewhere else.
- */
-/**
- * Copy text, falling back to a hidden selection.
- *
- * navigator.clipboard resolves in places where nothing actually reaches the
- * clipboard: an unfocused document, or any non-secure origin. Reporting
- * success on the strength of that promise alone showed "copied" over an empty
- * clipboard, so the result is verified and the old execCommand path is kept
- * for when it is not available.
- */
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall through to the selection path.
-  }
-
-  try {
-    const area = document.createElement("textarea");
-    area.value = text;
-    area.setAttribute("readonly", "");
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(area);
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
-/** "10:00 AM - 11:00 AM" from a start time and a length. */
-
-function DetailRow({
-  icon,
-  label,
-  value,
-  href,
-  copy,
-  truncate,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  href?: string;
-  copy?: boolean;
-  truncate?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const body = cn("text-[14px]", truncate && "truncate max-w-[220px]");
-
-  return (
-    <div className="flex items-start gap-4">
-      <div className="shrink-0 text-muted-foreground mt-0.5">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[12px] text-muted-foreground font-medium mb-0.5">{label}</p>
-
-        {href ? (
-          <a href={href} className={cn(body, "text-[#1099A1] hover:underline")}>
-            {value}
-          </a>
-        ) : copy ? (
-          <button
-            type="button"
-            onClick={async () => {
-              if (await copyText(value)) {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              } else {
-                toast.error("Could not copy that.");
-              }
-            }}
-            title="Copy to clipboard"
-            className={cn(
-              body,
-              "group flex items-center gap-1.5 text-foreground transition-colors hover:text-[#1099A1]"
-            )}
-          >
-            {value}
-            {copied ? (
-              <Check size={13} className="text-[#1099A1]" />
-            ) : (
-              <Copy size={13} className="opacity-0 transition-opacity group-hover:opacity-60" />
-            )}
-          </button>
-        ) : (
-          <p className={cn(body, "text-foreground")}>{value}</p>
-        )}
-      </div>
-    </div>
   );
 }
 

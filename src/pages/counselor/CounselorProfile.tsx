@@ -3,6 +3,14 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
+import { DetailRow } from "@/components/shared/DetailRow";
+import { ResumePanel } from "@/components/shared/ResumePanel";
+import {
+  TutorResume,
+  resumeFromProfile,
+  type ResumeSection,
+} from "@/components/shared/TutorResume";
+import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import {
   Edit2, Mail, Phone, Link2, Calendar, CheckCircle, Users, LogOut,
   Camera, X, Loader2, Check,
@@ -15,24 +23,61 @@ import { dicebearUrl } from "@/utils/avatar";
 
 const SUBJECTS = ["College Advising", "Financial Aid", "Essay Review", "SAT Prep", "Other"];
 
-function formatDate(d?: string) {
-  if (!d) return "";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
 export function CounselorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
 
   useEffect(() => {
     if (!user) return;
     getCounselorSessionsFull(user.id).then(setSessions);
   }, [user]);
 
-  const recent = sessions.slice(0, 6);
+  /** The database column behind each section. */
+  const COLUMN: Record<ResumeSection, string> = {
+    certifications: "certifications",
+    education: "education",
+    workExperience: "work_experience",
+    languages: "languages",
+  };
+
+  /**
+   * Write one section back whole.
+   *
+   * jsonb has no append, and a read-modify-write is fine here: nobody edits
+   * their own CV from two tabs at once.
+   */
+  async function writeSection(section: ResumeSection, next: unknown[]) {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [COLUMN[section]]: next })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Could not save that.");
+      return;
+    }
+    await refreshProfile?.();
+  }
+
+  function addEntry(entry: Record<string, string>) {
+    if (!addingTo) return;
+    const current = resumeFromProfile(profile)[addingTo] as unknown[];
+    void writeSection(addingTo, [...current, entry]);
+    setAddingTo(null);
+  }
+
+  function removeEntry(section: ResumeSection, index: number) {
+    const current = resumeFromProfile(profile)[section] as unknown[];
+    void writeSection(
+      section,
+      current.filter((_, i) => i !== index)
+    );
+  }
 
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,65 +173,74 @@ export function CounselorProfile() {
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {/* Details */}
             <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground">Contact & Details</h3>
+              <h3 className="text-[16px] font-bold text-foreground">Contact Details</h3>
               <div className="space-y-4">
-                <DetailRow icon={<Mail size={18} />} label="Email" value={profile?.email || user?.email || "-"} />
-                <DetailRow icon={<Phone size={18} />} label="Phone" value={profile?.phone || "Not set"} />
-                <DetailRow icon={<Link2 size={18} />} label="Session Link" value={profile?.zoom_link || "Not set"} truncate />
                 <DetailRow
-                  icon={<span className="text-[13px] font-bold">{profile?.rate_currency === "USD" ? "$" : "Br"}</span>}
-                  label="Rate / session"
-                  value={profile?.hourly_rate != null ? `${profile.hourly_rate} ${profile.rate_currency || "ETB"}` : "Not set"}
+                  icon={<Mail size={18} />}
+                  label="Email"
+                  value={profile?.email || user?.email || "-"}
+                  href={profile?.email || user?.email ? `mailto:${profile?.email || user?.email}` : undefined}
+                  truncate
                 />
+                <DetailRow
+                  icon={<Phone size={18} />}
+                  label="Phone"
+                  value={profile?.phone || "Not set"}
+                  copy={!!profile?.phone}
+                />
+                <DetailRow
+                  icon={<Link2 size={18} />}
+                  label="Session Link"
+                  value={profile?.zoom_link || "Not set"}
+                  copy={!!profile?.zoom_link}
+                  truncate
+                />
+              </div>
 
+              {/* The CV given at onboarding, and the thing an admin opened
+                  before approving the account. It belongs somewhere a
+                  counsellor can check and replace it rather than only inside
+                  the application they can no longer see.
+
+                  No rate row: a tier is priced by an admin, a counsellor does
+                  not quote for one, so showing a rate here would imply a
+                  negotiation that does not exist. */}
+              <div className="border-t border-border/60 pt-6">
+                {user && (
+                  <ResumePanel
+                    userId={user.id}
+                    resumePath={(profile as any)?.resume_url ?? null}
+                    onReplaced={() => refreshProfile?.()}
+                  />
+                )}
               </div>
             </div>
 
             {/* Right column */}
             <div className="flex-1 w-full space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground border-b border-border/50 pb-4">Recent Sessions</h3>
-              <div className="space-y-0">
-                {recent.length === 0 ? (
-                  <p className="text-center text-[14px] text-muted-foreground py-10">No sessions yet.</p>
-                ) : recent.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-                    <div className="flex items-center gap-6 min-w-0">
-                      <div className="text-center w-12 shrink-0">
-                        <p className="text-[20px] font-bold text-foreground leading-none">{formatDate(item.date).split(" ")[1]}</p>
-                        <p className="text-[12px] font-medium text-muted-foreground mt-1">{formatDate(item.date).split(" ")[0]}</p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[15px] font-bold text-foreground truncate">{item.subject}</p>
-                        <p className="text-[13px] text-muted-foreground mt-0.5">{item.student_name}</p>
-                      </div>
-                    </div>
-                    <span className={cn("text-[14px] font-bold capitalize shrink-0",
-                      item.status === "completed" ? "text-green-600 dark:text-green-400" :
-                        item.status === "upcoming" ? "text-[#1099A1]" : "text-red-600 dark:text-red-400")}>
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* A counsellor's background, not their diary. Sessions have a
+                  page of their own, and repeating six of them here answered a
+                  question nobody opens a profile to ask. */}
+              <TutorResume
+                resume={resumeFromProfile(profile)}
+                onAdd={setAddingTo}
+                onRemove={removeEntry}
+              />
             </div>
           </div>
         </div>
       </div>
 
       {editOpen && <EditModal onClose={() => setEditOpen(false)} />}
-    </PageWrapper>
-  );
-}
 
-function DetailRow({ icon, label, value, truncate }: { icon: React.ReactNode; label: string; value: string; truncate?: boolean }) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="shrink-0 text-muted-foreground mt-0.5">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[12px] text-muted-foreground font-medium mb-0.5">{label}</p>
-        <p className={cn("text-[14px] font-semibold text-foreground", truncate && "truncate max-w-[220px]")}>{value}</p>
-      </div>
-    </div>
+      {addingTo && (
+        <ResumeEntryDialog
+          section={addingTo}
+          onSave={addEntry}
+          onClose={() => setAddingTo(null)}
+        />
+      )}
+    </PageWrapper>
   );
 }
 
