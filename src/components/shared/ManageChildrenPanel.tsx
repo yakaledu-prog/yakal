@@ -9,6 +9,9 @@ import {
   getPendingChildLinks,
   requestChildLink,
   searchStudentsByEmail,
+  inviteChild,
+  getPendingInvites,
+  cancelInvite,
   setChildService,
   type ServiceName,
   type StudentSuggestion,
@@ -88,6 +91,9 @@ function ServiceTick({
   );
 }
 
+/** The exact text requestChildLink returns when the address is unknown. */
+const NO_ACCOUNT = "No account uses that email address yet.";
+
 export function ManageChildrenPanel({ className }: { className?: string }) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
@@ -95,6 +101,8 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [service, setService] = useState<ServiceName | "">("");
   const [adding, setAdding] = useState(false);
+  /** The address the last attempt found no account for, if any. */
+  const [invitable, setInvitable] = useState<string | null>(null);
   // Keyed by child and service. Keying by child alone disabled both ticks in
   // the row, so toggling one made the other flicker as though it had changed
   // too.
@@ -129,10 +137,17 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     staleTime: 30_000,
   });
 
+  const { data: invites = [] } = useQuery({
+    queryKey: ["child-invites", user?.id],
+    queryFn: () => getPendingInvites(user!.id),
+    enabled: !!user?.id,
+  });
+
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["linked-children"] });
     await queryClient.invalidateQueries({ queryKey: ["pending-child-links"] });
     await queryClient.invalidateQueries({ queryKey: ["children-services"] });
+    await queryClient.invalidateQueries({ queryKey: ["child-invites"] });
   };
 
   const isOn = (studentId: string, s: ServiceName) =>
@@ -141,9 +156,19 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   async function add() {
     if (!user) return;
     setAdding(true);
+    setInvitable(null);
     try {
       const result = await requestChildLink(user.id, profile?.full_name ?? "A parent", email);
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) {
+        // No account on that address is not a failure, it is the other half of
+        // the job. Offering to invite beats telling a parent to go away and
+        // come back once their child has signed up.
+        if (result.error === NO_ACCOUNT) {
+          setInvitable(email.trim().toLowerCase());
+          return;
+        }
+        throw new Error(result.error);
+      }
       setEmail("");
       setService("");
       await refresh();
@@ -152,6 +177,36 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
       toast.error(err.message ?? "Could not send that request");
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function invite() {
+    if (!user || !invitable) return;
+    setAdding(true);
+    try {
+      const result = await inviteChild(user.id, invitable);
+      if (!result.success) throw new Error(result.error);
+      setInvitable(null);
+      setEmail("");
+      await refresh();
+      toast.success("Invited. They will be linked to you when they sign up.");
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not send that invitation");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function withdrawInvite(id: string) {
+    setBusyKey(`${id}:invite`);
+    try {
+      const result = await cancelInvite(id);
+      if (!result.success) throw new Error(result.error);
+      await refresh();
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not withdraw that invitation");
+    } finally {
+      setBusyKey(null);
     }
   }
 
@@ -197,6 +252,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             onChange={(e) => {
               setEmail(e.target.value);
               setSuggestOpen(true);
+              setInvitable(null);
             }}
             onFocus={() => setSuggestOpen(true)}
             // A blur that fires before the click would close the list out from
@@ -267,6 +323,50 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           {adding ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Add"}
         </button>
       </div>
+
+      {/* Nobody has that address yet. Rather than an error and a dead end, the
+          address is offered back with a way to bring them in. */}
+      {invitable && (
+        <div className="-mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#CAA25F]/40 bg-[#CAA25F]/5 px-4 py-3">
+          <p className="min-w-0 text-[13.5px] text-foreground">
+            No account uses{" "}
+            <span className="font-medium break-all">{invitable}</span> yet.
+          </p>
+          <button
+            onClick={invite}
+            disabled={adding}
+            className="shrink-0 rounded-xl bg-[#1099A1] px-5 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+          >
+            {adding ? <Loader2 size={15} className="mx-auto animate-spin" /> : "Invite"}
+          </button>
+        </div>
+      )}
+
+      {invites.length > 0 && (
+        <div>
+          <p className="mb-2 text-[13px] font-medium text-foreground">Invited</p>
+          <ul className="space-y-2">
+            {invites.map((inv) => (
+              <li
+                key={inv.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5"
+              >
+                <span className="min-w-0 break-all text-[13.5px] text-muted-foreground">
+                  {inv.email}
+                  <span className="ml-2 text-[12px]">waiting for them to sign up</span>
+                </span>
+                <button
+                  onClick={() => withdrawInvite(inv.id)}
+                  disabled={busyKey === `${inv.id}:invite`}
+                  className="shrink-0 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  {busyKey === `${inv.id}:invite` ? "Withdrawing..." : "Withdraw"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div>
         {isLoading ? (

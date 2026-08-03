@@ -264,3 +264,64 @@ export async function searchStudentsByEmail(prefix: string): Promise<StudentSugg
   }
   return (data as StudentSuggestion[]) ?? [];
 }
+
+export interface ChildInvite {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+/**
+ * Invite a child who has no account yet.
+ *
+ * The address is remembered rather than rejected. When somebody signs up as a
+ * student with it, a trigger creates the link request for them, so the parent
+ * does not have to come back and try again once the child has joined.
+ *
+ * The link it creates is pending, not active: an invitation is the parent
+ * asking, and the child still answers.
+ */
+export async function inviteChild(
+  parentId: string,
+  email: string
+): Promise<{ success: boolean; error?: string }> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return { success: false, error: "Enter your child's email address." };
+
+  const { error } = await supabase
+    .from("parent_child_invites")
+    .insert({ parent_id: parentId, email: trimmed });
+
+  if (error) {
+    if (error.code === "23505") {
+      return { success: false, error: "You have already invited that address." };
+    }
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+/** Invitations still waiting on somebody to sign up. */
+export async function getPendingInvites(parentId: string): Promise<ChildInvite[]> {
+  const { data, error } = await supabase
+    .from("parent_child_invites")
+    .select("id, email, created_at")
+    .eq("parent_id", parentId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getPendingInvites:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => ({ id: r.id, email: r.email, createdAt: r.created_at }));
+}
+
+/** Withdraw an invitation that has not been taken up. */
+export async function cancelInvite(inviteId: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("parent_child_invites")
+    .update({ status: "cancelled" })
+    .eq("id", inviteId);
+  return error ? { success: false, error: error.message } : { success: true };
+}
