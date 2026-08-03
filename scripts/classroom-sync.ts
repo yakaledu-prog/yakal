@@ -31,7 +31,7 @@ async function accessToken(): Promise<string> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: need("VITE_GCP_CLIENT_ID"),
-      client_secret: process.env.GCP_CLIENT_SECRET || need("GOOGLE_CONSOLE_CLIENT_SECRET"),
+      client_secret: need("GCP_CLIENT_SECRET"),
       refresh_token: need("GOOGLE_OAUTH_REFRESH_TOKEN"),
       grant_type: "refresh_token",
     }),

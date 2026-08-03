@@ -1,19 +1,18 @@
 name: Database
 
-# Keeps the hosted project's schema in step with supabase/migrations, and can
-# load the demo dataset into it for testing.
+# Keeps the hosted Supabase project in step with supabase/migrations.
 #
-# Every change is proved locally first: the verify job builds the database from
-# nothing on a clean runner and seeds it, so a migration that only works
-# against your machine cannot reach the hosted project.
+# Every change is proved on a clean runner first: the verify job builds the
+# database from nothing and seeds it, so a migration that only works against
+# your machine cannot reach production.
 #
-# Required repository secrets:
-#   SUPABASE_DB_URL             postgresql://postgres.<ref>:<password>@<pooler-host>:5432/postgres
-#   SUPABASE_URL                https://<ref>.supabase.co
-#   SUPABASE_SERVICE_ROLE_KEY   service_role key, server side only
+# Repository secrets required (Settings > Secrets and variables > Actions):
+#   SUPABASE_DB_URL            postgresql://postgres.<ref>:<password>@<pooler-host>:5432/postgres
+#   SUPABASE_URL               https://<ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  service_role key
 #
-# Use the pooler host, not db.<ref>.supabase.co. The direct host resolves to
-# IPv6 only and GitHub runners have no IPv6 route to it.
+# Use the pooler host, not db.<ref>.supabase.co: the direct host is IPv6 only
+# and GitHub runners have no IPv6 route to it.
 
 on:
   push:
@@ -36,15 +35,11 @@ on:
         type: boolean
         default: true
       seed_demo_data:
-        description: "Load demo accounts and sample data into the hosted project"
-        type: boolean
-        default: true
-      fresh_seed:
-        description: "With seeding on, clear the dataset's rows first"
+        description: "Load demo accounts and sample data"
         type: boolean
         default: false
-      adopt_existing_schema:
-        description: "One time only. Marks the baseline as applied on a project that already has the schema."
+      fresh_seed:
+        description: "With seeding on, clear the dataset's rows first"
         type: boolean
         default: false
 
@@ -71,9 +66,8 @@ jobs:
         with:
           version: latest
 
-      # Starting a local stack replays every migration in order against an
-      # empty database. A migration that depends on something already present
-      # on your machine fails here rather than in production.
+      # Replays every migration in order against an empty database, which is
+      # what the hosted project will do on its first push.
       - name: Start a local stack and replay migrations
         run: supabase start
 
@@ -83,29 +77,30 @@ jobs:
       - name: Check the result
         run: |
           PSQL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          echo "Tables:"
-          psql "$PSQL" -tAc \
-            "select count(*) from information_schema.tables where table_schema='public';"
-
-          echo "Seeded accounts:"
-          psql "$PSQL" -tAc "select count(*) from auth.users;"
+          psql "$PSQL" -tAc "select 'tables: ' || count(*) from information_schema.tables where table_schema='public';"
+          psql "$PSQL" -tAc "select 'accounts: ' || count(*) from auth.users;"
 
           # Guards the bug fixed in 20260731000100: a policy on
           # conversation_participants that queried its own table sent Postgres
-          # into infinite recursion and took the whole messaging feature down.
-          echo "Messaging reads without recursion:"
+          # into infinite recursion and took messaging down.
           psql "$PSQL" -v ON_ERROR_STOP=1 -tAc \
             "set role authenticated; select count(*) from public.conversation_participants;" \
-            || { echo "conversation_participants is not readable, check the RLS policies"; exit 1; }
+            > /dev/null || { echo "conversation_participants is unreadable, check its RLS policies"; exit 1; }
 
-          echo "OK"
+          # The landing page reads this as an anonymous visitor, and it must
+          # never become writable: it is a definer view onto profiles.
+          psql "$PSQL" -v ON_ERROR_STOP=1 -tAc \
+            "select has_table_privilege('anon','public.v_public_tutors','UPDATE');" \
+            | grep -qx f || { echo "anon can write v_public_tutors, check the grants"; exit 1; }
+
+          echo OK
 
       - name: Stop
         if: always()
         run: supabase stop --no-backup || true
 
   deploy:
-    name: Apply migrations to the hosted project
+    name: Apply migrations
     needs: verify
     if: >-
       github.event_name == 'push' ||
@@ -129,28 +124,6 @@ jobs:
           fi
           psql "$SUPABASE_DB_URL" -tAc "select 'connected to ' || current_database();"
 
-      # The hosted project was built by hand before this migration history
-      # existed, so its tables are already there but its ledger is empty.
-      # Replaying the baseline over it would fail on the first constraint that
-      # already exists. This records the baseline as applied instead, so the
-      # push starts from the migrations that come after it.
-      - name: Adopt an existing schema
-        if: github.event_name == 'workflow_dispatch' && inputs.adopt_existing_schema
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          BASELINE=$(ls supabase/migrations | head -1 | cut -d_ -f1)
-          echo "Marking $BASELINE as already applied"
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<SQL
-          create schema if not exists supabase_migrations;
-          create table if not exists supabase_migrations.schema_migrations (
-            version text primary key
-          );
-          insert into supabase_migrations.schema_migrations (version)
-          values ('$BASELINE')
-          on conflict (version) do nothing;
-          SQL
-
       - name: Show what will run
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -169,10 +142,8 @@ jobs:
   seed:
     name: Seed the hosted project
     needs: deploy
-    # Manual only. The accounts are throwaway and their password is public by
-    # design, but reseeding still rewrites profiles and can add conversations,
-    # so it should be something you asked for rather than a side effect of a
-    # push.
+    # Manual only. Seeding rewrites profiles and can add conversations, so it
+    # should be something you asked for rather than a side effect of a push.
     if: github.event_name == 'workflow_dispatch' && inputs.seed_demo_data
     runs-on: ubuntu-latest
     environment: production

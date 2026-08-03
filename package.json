@@ -31,14 +31,11 @@
     "seed:generate": "tsx scripts/seed/generate.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1085.0",
-    "@aws-sdk/s3-request-presigner": "^3.1085.0",
     "@blocknote/core": "^0.51.4",
     "@blocknote/mantine": "^0.51.4",
     "@blocknote/react": "^0.51.4",
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@fontsource/apfel-grotezk": "^5.2.5",
-    "@jitsi/react-sdk": "^1.4.4",
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@react-oauth/google": "^0.13.5",

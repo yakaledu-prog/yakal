@@ -6,7 +6,6 @@ import { config } from 'dotenv';
 import signatureHandler from '../api/zoom-signature.ts';
 import meetingsHandler from '../api/zoom-meetings.ts';
 import contactHandler from '../api/contact.ts';
-import uploadResumeHandler from '../api/upload-resume.ts';
 import googleTokenHandler from '../api/google-token.ts';
 import stripeCheckoutHandler from '../api/stripe-checkout.ts';
 import stripePortalHandler from '../api/stripe-portal.ts';
@@ -46,7 +45,6 @@ app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), createVercelHandle
 // clear the file limit in driveService with room to spare.
 app.use(express.json({ limit: '8mb' }));
 
-app.all('/api/upload-resume', createVercelHandler(uploadResumeHandler));
 app.all('/api/zoom-signature', createVercelHandler(signatureHandler));
 app.all('/api/zoom-meetings', createVercelHandler(meetingsHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
