@@ -42,6 +42,10 @@ on:
         description: "With seeding on, clear the dataset's rows first"
         type: boolean
         default: false
+      adopt_existing_schema:
+        description: "One time only. For a database that already has the tables but an empty ledger."
+        type: boolean
+        default: false
 
 # Never let two runs write to the same database at once.
 concurrency:
@@ -123,6 +127,34 @@ jobs:
             exit 1
           fi
           psql "$SUPABASE_DB_URL" -tAc "select 'connected to ' || current_database();"
+
+      # For a database whose tables were built by hand before this migration
+      # history existed. The baseline creates tables with IF NOT EXISTS and
+      # then adds their constraints unconditionally, so replaying it over an
+      # existing schema skips the tables and dies on the first primary key
+      # that is already there:
+      #
+      #   ERROR: multiple primary keys for table "..." are not allowed (42P16)
+      #
+      # This records the baseline as applied instead, so the push starts from
+      # the migrations that come after it. Only ever needed once, and only on
+      # a database that already matches the baseline.
+      - name: Adopt an existing schema
+        if: github.event_name == 'workflow_dispatch' && inputs.adopt_existing_schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          BASELINE=$(ls supabase/migrations | head -1 | cut -d_ -f1)
+          echo "Marking $BASELINE as already applied"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<SQL
+          create schema if not exists supabase_migrations;
+          create table if not exists supabase_migrations.schema_migrations (
+            version text primary key
+          );
+          insert into supabase_migrations.schema_migrations (version)
+          values ('$BASELINE')
+          on conflict (version) do nothing;
+          SQL
 
       - name: Show what will run
         env:
