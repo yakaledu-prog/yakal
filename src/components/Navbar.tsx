@@ -25,17 +25,17 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
 
   return (
     <div className="flex items-center justify-between w-full px-[20px] md:px-[50px] pt-[0px] md:pt-[0px] z-50 relative">
-      <div className="h-[40px] md:h-[46.8px] w-[110px] md:w-[130px]">
+      <div className="h-[40px] md:h-[46.8px] w-[110px] md:w-[130px] shrink-0">
         <img alt="Yakal" className="w-full h-full object-cover" src={logo} />
       </div>
 
       {/* Desktop nav */}
-      <nav className="hidden md:flex items-center gap-[26px] lg:gap-[32px] text-white text-[16px] min-w-0">
+      <nav className="hidden md:flex items-center gap-[26px] lg:gap-[32px] text-white text-[16px] min-w-0 overflow-x-auto hide-scrollbar">
         {links.map((l) => (
           <button
             key={l.id}
             onClick={() => handleNav(l.id)}
-            className="relative bg-transparent border-none text-white cursor-pointer pb-[2px] group whitespace-nowrap truncate max-w-[140px]"
+            className="relative bg-transparent border-none text-white cursor-pointer pb-[2px] group whitespace-nowrap shrink-0"
           >
             {l.label}
             <span className="absolute bottom-0 left-0 h-[1.5px] w-0 bg-white rounded transition-all duration-300 group-hover:w-full" />
@@ -43,7 +43,7 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
         ))}
       </nav>
 
-      <Link to="/login" className="hidden md:block bg-[#1099a1] px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
+      <Link to="/login" className="hidden md:block shrink-0 whitespace-nowrap bg-[#1099a1] px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
         Get Started
       </Link>
 
