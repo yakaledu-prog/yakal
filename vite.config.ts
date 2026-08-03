@@ -32,9 +32,15 @@ export default defineConfig({
         // most of what separates an installed app from a bookmark.
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // Installed, this opens at sign-in rather than the marketing page.
+        // Somebody who put the app on their home screen has already been sold
+        // to; what they want is their lessons. Signed in, /login sends them
+        // straight on to their own dashboard.
+        start_url: '/login',
         scope: '/',
         theme_color: '#1099A1',
+        // White, matching the splash the OS paints behind the icon, so the
+        // icon does not sit on a plate of a slightly different shade.
         background_color: '#ffffff',
         categories: ['education'],
         icons: [
@@ -90,10 +96,17 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       devOptions: {
-        // Off in dev by default: a service worker caching a module graph that
-        // Vite is rewriting on every save is a morning lost to phantom stale
-        // code. Turn it on deliberately to test the install flow.
-        enabled: false,
+        // On, so the install flow can be tested with `npm run dev`. Without a
+        // live service worker Chrome never fires beforeinstallprompt, and the
+        // install offer simply never appears, which reads as broken rather
+        // than as not-yet-built.
+        //
+        // The cost is that a stale chunk can survive a save. If dev ever
+        // serves code you have already changed, unregister the worker in
+        // Application > Service Workers and reload.
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html',
       },
     }),
   ],
@@ -127,6 +140,9 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: [
+      'd1ba-196-188-245-97.ngrok-free.app'
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

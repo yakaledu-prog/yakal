@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { InstallButton } from "@/components/pwa/InstallPrompt";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { LockedOverlay } from "@/components/shared/LockedOverlay";
 import {
@@ -286,6 +287,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
             {topbarActions}
             <ThemeToggle />
+            {/* In the top bar, not the profile card: buried next to an avatar
+                it read as a setting rather than an offer, and half of it was
+                hidden with the sidebar collapsed. Removes itself once the app
+                is installed. */}
+            <InstallButton compact />
             <NotificationBell basePath={basePath} />
           </div>
         </header>

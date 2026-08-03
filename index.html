@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Yakal" />
   <meta name="theme-color" content="#1099A1" />
-  <title>Yakal - Personalized Tutoring</title>
+  <title>Yakal Education Services</title>
   <meta name="description"
     content="Yakal offers one-on-one academic support to help students excel in Math, Science, and SAT prep, with flexible online and in-person options tailored to every learning style." />
   <style>
@@ -29,10 +29,104 @@
     #root {
       height: 100%;
     }
+
+    /* ------------------------------------------------------------
+       The wait before React.
+       The splash Android paints is the operating system's: its font,
+       its layout, and no animation are all fixed, and nothing here can
+       reach them. What can be controlled is the moment straight after,
+       which was a blank white screen. This fills it with the same mark
+       on the same white, so the handover is invisible.
+       Inline, and before the bundle, so it paints on the first frame.
+       ------------------------------------------------------------ */
+    #boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: #ffffff;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      transition: opacity .35s ease;
+    }
+
+    #boot.done {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #boot img {
+      width: 104px;
+      height: auto;
+      animation: boot-rise .6s cubic-bezier(.2, .8, .2, 1) both;
+    }
+
+    #boot .name {
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #111827;
+      animation: boot-rise .6s cubic-bezier(.2, .8, .2, 1) .08s both;
+    }
+
+    #boot .tag {
+      margin-top: -14px;
+      font-size: 14px;
+      color: #6b7280;
+      animation: boot-rise .6s cubic-bezier(.2, .8, .2, 1) .16s both;
+    }
+
+    #boot .bar {
+      width: 132px;
+      height: 3px;
+      border-radius: 3px;
+      background: #e9edef;
+      overflow: hidden;
+    }
+
+    #boot .bar i {
+      display: block;
+      width: 40%;
+      height: 100%;
+      border-radius: 3px;
+      background: #1099A1;
+      animation: boot-sweep 1.15s ease-in-out infinite;
+    }
+
+    @keyframes boot-rise {
+      from { opacity: 0; transform: translateY(8px) }
+      to   { opacity: 1; transform: none }
+    }
+
+    @keyframes boot-sweep {
+      0%   { transform: translateX(-110%) }
+      100% { transform: translateX(260%) }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #boot { background: #111b21 }
+      #boot .name { color: #e9edef }
+      #boot .tag { color: #8696a0 }
+      #boot .bar { background: #2a3942 }
+    }
+
+    /* The colour still says it is working, so nothing has to move. */
+    @media (prefers-reduced-motion: reduce) {
+      #boot img, #boot .name, #boot .tag { animation: none }
+      #boot .bar i { animation: none; width: 100% }
+    }
   </style>
 </head>
 
 <body>
+  <div id="boot">
+    <img src="/icons/icon-512.png" alt="" />
+    <div class="name">Yakal</div>
+    <div class="tag">Education Services</div>
+    <div class="bar"><i></i></div>
+  </div>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

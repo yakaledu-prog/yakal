@@ -33,3 +33,14 @@
       </QueryClientProvider>
     </GoogleOAuthProvider>
   );
+
+// The boot screen in index.html covers the gap between the operating system's
+// splash and React's first paint. Faded rather than removed on the same frame,
+// so the handover reads as one screen settling instead of two screens swapping.
+const boot = document.getElementById("boot");
+if (boot) {
+  requestAnimationFrame(() => {
+    boot.classList.add("done");
+    boot.addEventListener("transitionend", () => boot.remove(), { once: true });
+  });
+}

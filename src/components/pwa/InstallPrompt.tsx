@@ -40,6 +40,31 @@ function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 }
 
+/**
+ * How to install by hand, for a browser that will not offer it.
+ *
+ * Chrome only fires beforeinstallprompt once it decides the site qualifies,
+ * and never on a desktop that has already dismissed it, so a button that
+ * relies on the event alone is a button that is usually missing. These are the
+ * manual routes, which always exist.
+ */
+function manualSteps(): { where: string; steps: string[] } {
+  const ua = window.navigator.userAgent;
+  if (isIos()) {
+    return { where: "Safari", steps: ["Tap Share at the bottom", "Choose Add to Home Screen"] };
+  }
+  if (/android/i.test(ua)) {
+    return { where: "Chrome", steps: ["Open the menu, top right", "Choose Install app, or Add to Home screen"] };
+  }
+  if (/firefox/i.test(ua)) {
+    return { where: "Firefox", steps: ["Open the menu", "Choose Install"] };
+  }
+  return {
+    where: "your browser",
+    steps: ["Look for the install icon in the address bar", "Or open the menu and choose Install Yakal"],
+  };
+}
+
 function snoozed(): boolean {
   const at = Number(localStorage.getItem(DISMISSED_KEY) ?? 0);
   return at > 0 && Date.now() - at < SNOOZE_DAYS * 24 * 60 * 60 * 1000;
@@ -91,28 +116,122 @@ export function useInstallPrompt() {
   };
 }
 
-/** The iPhone route, which is a set of directions rather than a button. */
-function IosSteps() {
+/** Directions, for every browser that will not offer a button of its own. */
+function ManualSteps() {
+  const { where, steps } = manualSteps();
   return (
     <ol className="mt-2 space-y-1.5 text-[13px] text-muted-foreground">
-      <li className="flex items-center gap-2">
-        <Share size={15} className="shrink-0 text-[#1099A1]" />
-        Tap Share at the bottom of Safari
-      </li>
-      <li className="flex items-center gap-2">
-        <SquarePlus size={15} className="shrink-0 text-[#1099A1]" />
-        Choose Add to Home Screen
-      </li>
+      {steps.map((step, i) => (
+        <li key={step} className="flex items-center gap-2">
+          {i === 0 ? (
+            <Share size={15} className="shrink-0 text-[#1099A1]" />
+          ) : (
+            <SquarePlus size={15} className="shrink-0 text-[#1099A1]" />
+          )}
+          {step}
+        </li>
+      ))}
+      <li className="pt-0.5 text-[12px] opacity-70">In {where}</li>
     </ol>
   );
 }
 
-export function InstallPrompt({ className }: { className?: string }) {
-  const { installed, canInstall, manual, install } = useInstallPrompt();
-  const [dismissed, setDismissed] = useState(() => snoozed());
+/**
+ * A permanent way in, for somebody who wants the app and is looking for it.
+ *
+ * The banner below only appears when the browser volunteers, which on a
+ * desktop is rarely and on an iPhone is never. This is always there while the
+ * app is not installed, and falls back to directions when there is no prompt
+ * to fire.
+ */
+export function InstallButton({
+  className,
+  label = "Install",
+  compact = false,
+}: {
+  className?: string;
+  label?: string;
+  compact?: boolean;
+}) {
+  const { installed, canInstall, install } = useInstallPrompt();
   const [showSteps, setShowSteps] = useState(false);
 
-  if (installed || dismissed || (!canInstall && !manual)) return null;
+  if (installed) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => (canInstall ? void install() : setShowSteps(true))}
+        title="Install Yakal as an app"
+        className={cn(
+          // Outlined and worded. A bare download glyph in a row of icons is a
+          // guess, and nobody guesses at something they were not looking for.
+          "flex items-center gap-1.5 rounded-lg border border-[#1099A1]/40 font-medium text-[#1099A1] transition-colors hover:border-[#1099A1] hover:bg-[#1099A1]/5",
+          compact ? "px-2.5 py-1.5 text-[12.5px]" : "px-3.5 py-2 text-[13.5px]",
+          className
+        )}
+      >
+        <Download size={compact ? 14 : 16} />
+        {label}
+      </button>
+
+      {showSteps && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowSteps(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="How to install Yakal"
+            className="w-full max-w-sm rounded-2xl bg-popover p-5 shadow-xl"
+          >
+            <div className="flex items-start gap-3">
+              <img src="/icons/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-xl" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-semibold text-foreground">Install Yakal</p>
+                <p className="text-[13px] text-muted-foreground">
+                  It opens without browser tabs and loads instantly.
+                </p>
+                <ManualSteps />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSteps(false)}
+                aria-label="Close"
+                className="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted/60"
+              >
+                <X size={17} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function InstallPrompt({ className }: { className?: string }) {
+  const { installed, canInstall, install } = useInstallPrompt();
+  const [dismissed, setDismissed] = useState(() => snoozed());
+  const [showSteps, setShowSteps] = useState(false);
+  const [shown, setShown] = useState(false);
+
+  // Held back for a moment, so it slides in after the page has settled rather
+  // than being part of the first paint. An offer that is already there when
+  // you arrive is furniture; one that arrives is noticed.
+  useEffect(() => {
+    const t = setTimeout(() => setShown(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Shown whenever it is not installed, not only when the browser volunteers.
+  // Chrome fires beforeinstallprompt on its own schedule and Safari never
+  // does, so waiting for it meant the offer was usually absent. Without an
+  // event the button opens directions instead.
+  if (installed || dismissed) return null;
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, String(Date.now()));
@@ -123,6 +242,8 @@ export function InstallPrompt({ className }: { className?: string }) {
     <div
       className={cn(
         "fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-border bg-popover p-4 shadow-2xl md:left-auto md:right-6",
+        "transition-all duration-500 ease-out motion-reduce:transition-none",
+        shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
         className
       )}
     >
@@ -133,7 +254,7 @@ export function InstallPrompt({ className }: { className?: string }) {
           <p className="text-[13px] text-muted-foreground">
             Opens like an app, and loads instantly.
           </p>
-          {showSteps && <IosSteps />}
+          {showSteps && <ManualSteps />}
         </div>
         <button
           type="button"
@@ -148,11 +269,11 @@ export function InstallPrompt({ className }: { className?: string }) {
       {!showSteps && (
         <button
           type="button"
-          onClick={() => (manual ? setShowSteps(true) : void install())}
+          onClick={() => (canInstall ? void install() : setShowSteps(true))}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1099A1] py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
         >
           <Download size={16} />
-          {manual ? "How to install" : "Install"}
+          {canInstall ? "Install" : "How to install"}
         </button>
       )}
     </div>

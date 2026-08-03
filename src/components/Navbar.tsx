@@ -57,7 +57,7 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute top-0 pt-[14px] left-0 right-0 z-10 bg-black/50 backdrop-blur-sm rounded-[20px] rounded-t-[0px] flex flex-col py-[16px] px-[24px] gap-[4px] h-full">
+        <div className="md:hidden absolute top-0 pt-[14px] left-0 right-0 z-10 bg-[#0d2528] shadow-2xl rounded-[20px] rounded-t-[0px] flex flex-col py-[16px] px-[24px] gap-[4px] h-full">
           {links.map((l) => (
             <button key={l.id} onClick={() => handleNav(l.id)} className="text-white text-[18px] py-[12px] text-left border-none bg-transparent cursor-pointer border-b border-white/10 last:border-0 hover:text-[#1099a1] transition">
               {l.label}
