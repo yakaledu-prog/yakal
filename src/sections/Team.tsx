@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import Carousel from "@/components/Carousel";
 import { getPublicTutors } from "@/services/tutorService";
-import { initialsAvatarUrl } from "@/utils/avatar";
+import { dicebearUrl } from "@/utils/avatar";
 import imgTeam1 from "@/assets/images/team-eyasu.webp";
 import imgTeam2 from "@/assets/images/team-daniel.webp";
 import imgTeam3 from "@/assets/images/team-bethlehem.webp";
@@ -42,6 +42,78 @@ const founders: Member[] = [
     details: "Hana brings a dynamic and highly interactive approach to tutoring. By connecting theoretical physics and geometry to real-world scenarios, she helps students see the 'why' behind the math, dramatically improving both retention and genuine interest in the subjects."
   },
 ];
+
+/** Pixels a second. Slow enough to read a name as it passes. */
+const DRIFT_SPEED = 22;
+/** How long the row rests at each end before turning back. */
+const DRIFT_DWELL_MS = 1400;
+
+/**
+ * Drifts a horizontal row back and forth on its own.
+ *
+ * Only while there is something off screen to reveal, only while the row is
+ * in view, and never while a pointer is over it: somebody reading a card or
+ * reaching for Read Full Bio should not have it slide away from them.
+ */
+function useAutoScroll(ref: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
+  const paused = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Somebody who has asked the system for less movement has asked for this
+    // too. The row stays put and scrolls by hand.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let visible = true;
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
+    io.observe(el);
+
+    const pause = () => { paused.current = true; };
+    const resume = () => { paused.current = false; };
+    el.addEventListener("pointerenter", pause);
+    el.addEventListener("pointerleave", resume);
+    el.addEventListener("focusin", pause);
+    el.addEventListener("focusout", resume);
+
+    let direction = 1;
+    let restUntil = 0;
+    let last = performance.now();
+    let frame = requestAnimationFrame(function step(now) {
+      frame = requestAnimationFrame(step);
+      const elapsed = (now - last) / 1000;
+      last = now;
+
+      if (paused.current || !visible || document.hidden || now < restUntil) return;
+
+      const furthest = el.scrollWidth - el.clientWidth;
+      if (furthest <= 1) return; // everything already fits
+
+      const next = el.scrollLeft + direction * DRIFT_SPEED * elapsed;
+      if (next >= furthest) {
+        el.scrollLeft = furthest;
+        direction = -1;
+        restUntil = now + DRIFT_DWELL_MS;
+      } else if (next <= 0) {
+        el.scrollLeft = 0;
+        direction = 1;
+        restUntil = now + DRIFT_DWELL_MS;
+      } else {
+        el.scrollLeft = next;
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      io.disconnect();
+      el.removeEventListener("pointerenter", pause);
+      el.removeEventListener("pointerleave", resume);
+      el.removeEventListener("focusin", pause);
+      el.removeEventListener("focusout", resume);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
 
 function TeamCard({
   member,
@@ -104,18 +176,23 @@ export default function Team() {
   // that said Read Full Bio.
   const [openAll, setOpenAll] = useState(false);
 
+  const rowRef = useRef<HTMLDivElement>(null);
+
   const members: Member[] = [
     ...founders,
     ...tutors.map((t) => ({
       name: t.full_name,
       subjects: (t.subjects ?? []).join(" | "),
-      // Initials on a brand background when a tutor has not uploaded a
-      // photograph. The generated pattern avatars used elsewhere in the app
-      // read as a broken image at card size.
-      img: t.avatar_url || initialsAvatarUrl(t.full_name, "1099a1"),
+      // Rings when a tutor has not uploaded a photograph: a placeholder that
+      // reads as a placeholder, rather than one pretending to be a portrait.
+      img: t.avatar_url || dicebearUrl(t.full_name, "rings"),
       details: t.bio ?? "",
     })),
   ];
+
+  // Re-measured when the tutor list arrives, since the row is not scrollable
+  // until there are more cards than fit.
+  useAutoScroll(rowRef, [members.length]);
 
   return (
     <div className="w-full max-w-[1440px] py-[50px]">
@@ -138,10 +215,14 @@ export default function Team() {
         />
       </div>
 
-      {/* Desktop: four across, the rest scrolled to. A grid wrapped the fifth
-          tutor onto a second row that sat mostly empty, and grew another gap
-          with every signup. */}
-      <div className="hidden md:flex gap-[30px] px-[10px] items-start overflow-x-auto hide-scrollbar">
+      {/* Desktop: four across, the rest scrolled to, drifting on its own so
+          the fifth tutor is discoverable without a scrollbar to hint at them.
+          A grid wrapped that fifth card onto a second row that sat mostly
+          empty, and grew another gap with every signup. */}
+      <div
+        ref={rowRef}
+        className="hidden md:flex gap-[30px] px-[10px] items-start overflow-x-auto hide-scrollbar"
+      >
         {members.map((member, idx) => (
           <Reveal key={idx} delay={idx * 80} className="shrink-0 w-[calc((100%-90px)/4)]">
             <TeamCard member={member} />
