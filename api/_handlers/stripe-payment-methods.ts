@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser } from './utils/billing';
+import { getStripe, getServiceClient, requireUser } from '../_utils/billing';
 
 // Returns the parent's saved cards (brand, last4, expiry, default flag) so the
 // billing page can show the connected card instead of dev-speak.

@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser } from './utils/billing';
+import { getStripe, getServiceClient, requireUser } from '../_utils/billing';
 
 // ============================================================
 // Ask Stripe directly whether an account can be paid yet.

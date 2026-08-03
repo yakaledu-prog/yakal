@@ -52,7 +52,7 @@ export type DocumentSection = "Transcripts" | "Essays" | "Test scores" | "Other"
 export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
-  const res = await fetch("/api/drive", {
+  const res = await fetch("/api/google?action=drive", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

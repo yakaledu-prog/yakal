@@ -52,14 +52,14 @@ export interface SavedCard {
 }
 
 export async function getPaymentMethods(): Promise<SavedCard[]> {
-  const res = await authedPost("/api/stripe-payment-methods", {});
+  const res = await authedPost("/api/stripe?action=payment-methods", {});
   return (res as any).methods || [];
 }
 
 
 // Redirect the browser to a hosted Stripe Checkout page for these invoices.
 export async function startCheckout(invoiceIds: string[]): Promise<{ error?: string }> {
-  const { url, error } = await authedPost("/api/stripe-checkout", { invoiceIds });
+  const { url, error } = await authedPost("/api/stripe?action=checkout", { invoiceIds });
   if (error) return { error };
   if (url) window.location.assign(url);
   return {};
@@ -84,7 +84,7 @@ export async function bookAndPay(input: {
    */
   admissionsTierId?: string | null;
 }): Promise<{ error?: string }> {
-  const res = await authedPost("/api/create-invoice", input);
+  const res = await authedPost("/api/stripe?action=create-invoice", input);
   if (res.error) return { error: res.error };
   const invoiceId = (res as any).invoiceId as string | undefined;
   if (!invoiceId) return { error: "Could not create the invoice." };
@@ -94,14 +94,14 @@ export async function bookAndPay(input: {
 // Confirm a returned Checkout Session (marks invoices paid without needing the
 // webhook - used on the success redirect so local testing works out of the box).
 export async function confirmCheckout(sessionId: string): Promise<{ status?: string; error?: string }> {
-  const { error, ...rest } = await authedPost("/api/stripe-confirm", { sessionId });
+  const { error, ...rest } = await authedPost("/api/stripe?action=confirm", { sessionId });
   if (error) return { error };
   return rest as { status?: string };
 }
 
 // Returns the Stripe Customer Portal URL (the caller opens it - in a new tab).
 export async function getCustomerPortalUrl(): Promise<{ url?: string; error?: string }> {
-  const { url, error } = await authedPost("/api/stripe-portal", {});
+  const { url, error } = await authedPost("/api/stripe?action=portal", {});
   if (error) return { error };
   return { url };
 }

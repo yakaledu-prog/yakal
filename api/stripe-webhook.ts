@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import type Stripe from 'stripe';
-import { getStripe, getServiceClient } from './utils/billing';
-import { fulfilInvoices } from './utils/fulfil';
+import { getStripe, getServiceClient } from './_utils/billing';
+import { fulfilInvoices } from './_utils/fulfil';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.
 export const config = { api: { bodyParser: false } };

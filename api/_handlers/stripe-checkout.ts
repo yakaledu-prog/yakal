@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser, appBaseUrl } from './utils/billing';
+import { getStripe, getServiceClient, requireUser, appBaseUrl } from '../_utils/billing';
 
 // ------------------------------------------------------------
 // What the Stripe page says.

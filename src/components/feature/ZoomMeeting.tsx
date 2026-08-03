@@ -132,7 +132,7 @@ function describeJoinError(error: any, role: 0 | 1): { message: string; hint?: s
   }
   return {
     message: `Could not join the meeting: ${reason}${code ? ` (code ${code})` : ''}.`,
-    hint: 'Check the browser console and the /api/zoom-signature response for details.',
+    hint: 'Check the browser console and the /api/zoom?action=signature response for details.',
   };
 }
 
@@ -191,7 +191,7 @@ export function ZoomMeeting({
             setStatus({
               phase: 'error',
               message: `Could not get a join signature from the server: ${e?.message || e}`,
-              hint: 'Is the API server running? Locally it starts with "npm run dev" and serves /api/zoom-signature. In production the Zoom env vars must be set on Vercel.',
+              hint: 'Is the API server running? Locally it starts with "npm run dev" and serves /api/zoom?action=signature. In production the Zoom env vars must be set on Vercel.',
             });
           return;
         }

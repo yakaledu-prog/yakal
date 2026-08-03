@@ -3,22 +3,17 @@ import cors from 'cors';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
-import signatureHandler from '../api/zoom-signature.ts';
-import meetingsHandler from '../api/zoom-meetings.ts';
+
+// The same seven entry points Vercel deploys, imported the same way, so a
+// route that works here works there. The grouped ones dispatch on ?action=;
+// see api/_handlers/README.md for why they are grouped at all.
+import stripeHandler from '../api/stripe.ts';
+import connectHandler from '../api/connect.ts';
+import zoomHandler from '../api/zoom.ts';
+import googleHandler from '../api/google.ts';
 import contactHandler from '../api/contact.ts';
-import googleTokenHandler from '../api/google-token.ts';
-import stripeCheckoutHandler from '../api/stripe-checkout.ts';
-import stripePortalHandler from '../api/stripe-portal.ts';
-import connectOnboardHandler from '../api/connect-onboard.ts';
-import connectTransferHandler from '../api/connect-transfer.ts';
-import sessionPayoutHandler from '../api/session-payout.ts';
-import connectStatusHandler from '../api/connect-status.ts';
-import stripeWebhookHandler from '../api/stripe-webhook.ts';
-import stripeConfirmHandler from '../api/stripe-confirm.ts';
-import stripePaymentMethodsHandler from '../api/stripe-payment-methods.ts';
-import createInvoiceHandler from '../api/create-invoice.ts';
-import driveHandler from '../api/drive.ts';
 import devUserHandler from '../api/dev-user.ts';
+import stripeWebhookHandler from '../api/stripe-webhook.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,20 +42,11 @@ app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), createVercelHandle
 // clear the file limit in driveService with room to spare.
 app.use(express.json({ limit: '8mb' }));
 
-app.all('/api/zoom-signature', createVercelHandler(signatureHandler));
-app.all('/api/zoom-meetings', createVercelHandler(meetingsHandler));
+app.all('/api/stripe', createVercelHandler(stripeHandler));
+app.all('/api/connect', createVercelHandler(connectHandler));
+app.all('/api/zoom', createVercelHandler(zoomHandler));
+app.all('/api/google', createVercelHandler(googleHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
-app.all('/api/google-token', createVercelHandler(googleTokenHandler));
-app.all('/api/stripe-checkout', createVercelHandler(stripeCheckoutHandler));
-app.all('/api/stripe-portal', createVercelHandler(stripePortalHandler));
-app.all('/api/connect-onboard', createVercelHandler(connectOnboardHandler));
-app.all('/api/connect-transfer', createVercelHandler(connectTransferHandler));
-app.all('/api/session-payout', createVercelHandler(sessionPayoutHandler));
-app.all('/api/connect-status', createVercelHandler(connectStatusHandler));
-app.all('/api/stripe-confirm', createVercelHandler(stripeConfirmHandler));
-app.all('/api/stripe-payment-methods', createVercelHandler(stripePaymentMethodsHandler));
-app.all('/api/create-invoice', createVercelHandler(createInvoiceHandler));
-app.all('/api/drive', createVercelHandler(driveHandler));
 // Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
 app.all('/api/dev-user', createVercelHandler(devUserHandler));
 

@@ -4,7 +4,7 @@ export const CLASSROOM_BASE_URL = 'https://classroom.googleapis.com/v1';
  * Exchange the authorization code for access and refresh tokens via our backend.
  */
 export async function exchangeGoogleToken(code: string) {
-  const res = await fetch('http://localhost:3001/api/google-token', {
+  const res = await fetch('/api/google?action=token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

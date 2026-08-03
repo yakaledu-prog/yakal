@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getServiceClient, requireUser } from './utils/billing';
+import { getServiceClient, requireUser } from '../_utils/billing';
 
 // Creates an OPEN invoice for the authenticated parent (e.g. when they book a
 // course). Server-side so the parent_id is taken from the verified token and

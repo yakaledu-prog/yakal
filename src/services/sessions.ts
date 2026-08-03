@@ -229,7 +229,7 @@ async function updateZoomMeeting(
   startTime: string,
   durationMinutes: number
 ) {
-  const res = await fetch('/api/zoom-meetings', {
+  const res = await fetch('/api/zoom?action=meetings', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ meetingId, date, time: startTime, duration: durationMinutes }),

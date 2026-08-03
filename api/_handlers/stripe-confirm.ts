@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser } from './utils/billing';
-import { fulfilInvoices } from './utils/fulfil';
+import { getStripe, getServiceClient, requireUser } from '../_utils/billing';
+import { fulfilInvoices } from '../_utils/fulfil';
 
 /**
  * Give an instalment plan an end date, and remember its subscription.

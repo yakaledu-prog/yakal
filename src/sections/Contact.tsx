@@ -30,7 +30,7 @@ export default function Contact() {
               submitBtn.disabled = true;
 
               // Use local API in dev, or relative path in production if deployed to Vercel
-              const apiUrl = import.meta.env.DEV ? "http://localhost:3001/api/contact" : "/api/contact";
+              const apiUrl = import.meta.env.DEV ? "/api/contact" : "/api/contact";
 
               const res = await fetch(apiUrl, {
                 method: "POST",

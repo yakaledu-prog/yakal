@@ -263,7 +263,7 @@ export async function getConnectStatus(profileId: string): Promise<ConnectStatus
  * onboarding fails.
  */
 export async function startConnectOnboarding(): Promise<{ error?: string }> {
-  const res = await authedPost("/api/connect-onboard", {});
+  const res = await authedPost("/api/connect?action=onboard", {});
   if (res.error) return { error: res.error };
   if (res.url) window.location.assign(res.url);
   return {};
@@ -279,14 +279,14 @@ export async function startConnectOnboarding(): Promise<{ error?: string }> {
 export async function refreshConnectStatus(
   profileId?: string
 ): Promise<{ payoutsEnabled?: boolean; needs?: string[]; error?: string }> {
-  return authedPost("/api/connect-status", profileId ? { profileId } : {});
+  return authedPost("/api/connect?action=status", profileId ? { profileId } : {});
 }
 
 /** Pay one tutor for one or more settled invoices, out of the Stripe balance. */
 export async function payViaConnect(
   invoiceIds: string[]
 ): Promise<{ transferId?: string; error?: string }> {
-  return authedPost("/api/connect-transfer", { invoiceIds });
+  return authedPost("/api/connect?action=transfer", { invoiceIds });
 }
 
 // ============================================================
@@ -397,7 +397,7 @@ export async function requestSessionPayment(sessionId: string): Promise<{
     success?: boolean;
     paid?: boolean;
     message?: string;
-  }>("/api/session-payout", { sessionId });
+  }>("/api/connect?action=session-payout", { sessionId });
 
   if (payload.error) return { success: false, error: payload.error };
   return { success: true, paid: !!payload.paid, message: payload.message };

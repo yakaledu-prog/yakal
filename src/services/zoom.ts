@@ -10,7 +10,7 @@ async function readError(res: Response, fallback: string) {
 }
 
 export const generateZoomSignature = async (meetingNumber: string, role: 0 | 1) => {
-  const res = await fetch('/api/zoom-signature', {
+  const res = await fetch('/api/zoom?action=signature', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ meetingNumber, role }),
@@ -21,7 +21,7 @@ export const generateZoomSignature = async (meetingNumber: string, role: 0 | 1) 
 };
 
 export const createZoomMeeting = async (topic: string, startTime: string, duration: number) => {
-  const res = await fetch('/api/zoom-meetings', {
+  const res = await fetch('/api/zoom?action=meetings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ topic, startTime, duration }),
@@ -31,7 +31,7 @@ export const createZoomMeeting = async (topic: string, startTime: string, durati
 };
 
 export const updateZoomMeeting = async (meetingId: string, topic: string, startTime: string, duration: number) => {
-  const res = await fetch('/api/zoom-meetings', {
+  const res = await fetch('/api/zoom?action=meetings', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ meetingId, topic, startTime, duration }),
@@ -41,7 +41,7 @@ export const updateZoomMeeting = async (meetingId: string, topic: string, startT
 };
 
 export const deleteZoomMeeting = async (meetingId: string) => {
-  const res = await fetch('/api/zoom-meetings', {
+  const res = await fetch('/api/zoom?action=meetings', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ meetingId }),
