@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getPost, createPost, updatePost } from "@/services/cmsService";
@@ -106,6 +106,18 @@ export function AdminPostEditor() {
     }
   }
 
+  // The topbar keeps whatever node it is given until that node changes, so
+  // `actions` has to be referentially stable or setActions fires on every
+  // render. Stable and closing over state is the trap: for a new post isNew
+  // pins hasChanges to true, so the memo below never recomputed while anyone
+  // typed and the button went on calling the very first handleSave, which
+  // still saw an empty title. Hence the ref: one stable node, always the
+  // current values.
+  const saveRef = useRef(handleSave);
+  useEffect(() => {
+    saveRef.current = handleSave;
+  });
+
   const actions = useMemo(() => (
     <div className="flex items-center gap-3 mr-2">
       {!hasChanges && !isSaving && !isNew && (
@@ -120,7 +132,7 @@ export function AdminPostEditor() {
       )}
       {hasChanges && (
         <button
-          onClick={() => handleSave("draft")}
+          onClick={() => saveRef.current("draft")}
           disabled={isSaving}
           className="gap-1 px-4 py-2 rounded-lg text-[13px] font-medium bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center shadow-sm"
         >
@@ -129,7 +141,7 @@ export function AdminPostEditor() {
         </button>
       )}
       <button
-        onClick={() => handleSave("published")}
+        onClick={() => saveRef.current("published")}
         disabled={isSaving || (status === "published" && !hasChanges)}
         className="flex items-center gap-1.5 px-5 py-2 font-medium bg-[#1099A1] hover:bg-[#0c7f86] text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
       >
