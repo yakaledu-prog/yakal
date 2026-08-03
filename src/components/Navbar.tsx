@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "@/assets/images/logo.webp";
 
+// Home is gone: it scrolled to the top of the page, which is what the logo
+// already does, and it was spending a slot the counselling tiers needed. Those
+// have been on the page all along with nothing pointing at them.
 const links = [
-  { label: "Home", id: "home" },
   { label: "About Us", id: "about" },
   { label: "Services", id: "services" },
   { label: "Courses", id: "courses" },
+  { label: "Counselling", id: "counselling" },
   { label: "Parent Resource", id: "resources" },
   { label: "Blog", id: "blog" },
   { label: "Contact", id: "contact" },
@@ -46,20 +49,32 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
 
       {/* Hamburger */}
       <button
-        className="md:hidden flex flex-col gap-[5px] p-[8px] z-50 cursor-pointer bg-transparent border-none"
-        onClick={() => setMenuOpen((v) => !v)}
+        className={`md:hidden flex-col gap-[5px] p-[8px] z-50 cursor-pointer bg-transparent border-none ${menuOpen ? "hidden" : "flex"}`}
+        onClick={() => setMenuOpen(true)}
         aria-label="Toggle menu"
+        aria-expanded={menuOpen}
       >
-        <span className={`block w-[24px] h-[2px] bg-white transition-all ${menuOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-        <span className={`block w-[24px] h-[2px] bg-white transition-all ${menuOpen ? "opacity-0" : ""}`} />
-        <span className={`block w-[24px] h-[2px] bg-white transition-all ${menuOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+        <span className="block w-[24px] h-[2px] bg-white" />
+        <span className="block w-[24px] h-[2px] bg-white" />
+        <span className="block w-[24px] h-[2px] bg-white" />
       </button>
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute top-0 left-0 right-0 z-10 bg-[#0d2528] shadow-2xl rounded-b-[20px] flex flex-col pt-[64px] pb-[20px] px-[24px] gap-[4px]">
+        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d2528]/90 backdrop-blur-xl shadow-2xl rounded-b-[24px] flex flex-col pt-[76px] pb-[26px] px-[24px] gap-[4px] text-center">
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+            className="absolute right-[20px] top-[18px] p-[8px] bg-transparent border-none cursor-pointer"
+          >
+            <span className="block relative w-[24px] h-[24px]">
+              <span className="absolute left-0 top-[11px] block w-[24px] h-[2px] bg-white rotate-45" />
+              <span className="absolute left-0 top-[11px] block w-[24px] h-[2px] bg-white -rotate-45" />
+            </span>
+          </button>
+
           {links.map((l) => (
-            <button key={l.id} onClick={() => handleNav(l.id)} className="text-white text-[18px] py-[12px] text-left border-none bg-transparent cursor-pointer border-b border-white/10 last:border-0 hover:text-[#1099a1] transition">
+            <button key={l.id} onClick={() => handleNav(l.id)} className="text-white text-[18px] py-[12px] text-center border-none bg-transparent cursor-pointer border-b border-white/10 last:border-0 hover:text-[#1099a1] transition">
               {l.label}
             </button>
           ))}
