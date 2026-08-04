@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, FileText, PackagePlusIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@react-oauth/google";
-import { exchangeGoogleToken, fetchCourseWork } from "@/services/classroomService";
+import {
+  CLASSROOM_SCOPES,
+  CLASSROOM_TOKEN_KEY,
+  exchangeGoogleToken,
+  extractCourseId,
+  fetchCourseWork,
+} from "@/services/classroomService";
 
 interface AdminCourseModalProps {
   isOpen: boolean;
@@ -37,7 +43,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     is_active: true,
   });
 
-  const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem('google_classroom_token'));
+  const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem(CLASSROOM_TOKEN_KEY));
   const [isFetchingClassroom, setIsFetchingClassroom] = useState(false);
   const [classroomPreview, setClassroomPreview] = useState<any[] | null>(null);
   const [previewLimit, setPreviewLimit] = useState(2);
@@ -74,12 +80,12 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
   const loginGoogle = useGoogleLogin({
     flow: 'auth-code',
-    scope: 'https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me https://www.googleapis.com/auth/classroom.coursework.students https://www.googleapis.com/auth/classroom.rosters.readonly',
+    scope: CLASSROOM_SCOPES,
     onSuccess: async ({ code }) => {
       try {
         const data = await exchangeGoogleToken(code);
         setClassroomToken(data.access_token);
-        localStorage.setItem('google_classroom_token', data.access_token);
+        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
         toast.success("Connected to Google Classroom");
         handleFetchClassroom(data.access_token);
       } catch (err: any) {
@@ -88,27 +94,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     },
     onError: () => toast.error('Google login failed'),
   });
-
-  const extractCourseId = (url: string) => {
-    try {
-      const match = url.match(/\/c\/([a-zA-Z0-9_]+)/);
-      const rawId = match ? match[1] : null;
-      if (!rawId) return null;
-
-      // Google Classroom web URLs use base64 encoding for the numeric course ID
-      try {
-        const decoded = atob(rawId);
-        if (/^\d+$/.test(decoded)) {
-          return decoded;
-        }
-      } catch (e) {
-        // Not valid base64 or not numeric, fallback to raw string
-      }
-      return rawId;
-    } catch {
-      return null;
-    }
-  };
 
   const handleFetchClassroom = async (tokenToUse: string | null = classroomToken) => {
     if (!formData.google_classroom_url) {
@@ -134,7 +119,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
       toast.error(msg || "Failed to fetch from Google Classroom. Try reconnecting.");
       if (msg.includes('401') || msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('unauthorized')) {
         setClassroomToken(null);
-        localStorage.removeItem('google_classroom_token');
+        localStorage.removeItem(CLASSROOM_TOKEN_KEY);
       }
     } finally {
       setIsFetchingClassroom(false);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft, Loader2, TriangleAlert } from "lucide-react";
 import { getCourse, getCourses, getCourseAssignments, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
@@ -7,6 +7,15 @@ import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
 import { AssignmentList } from "@/components/shared/AssignmentList";
+import { useGoogleLogin } from "@react-oauth/google";
+import { toast } from "sonner";
+import {
+  CLASSROOM_SCOPES,
+  CLASSROOM_TOKEN_KEY,
+  exchangeGoogleToken,
+  extractCourseId,
+  getClassroomAssignments,
+} from "@/services/classroomService";
 import { useQuery } from "@tanstack/react-query";
 
 // Mock Tutors
@@ -265,7 +274,9 @@ export function AdminCourseDetail() {
         )}
 
         {/* ASSIGNMENTS TAB */}
-        {activeTab === "assignments" && <AssignmentsTab courseId={course.id} />}
+        {activeTab === "assignments" && (
+          <AssignmentsTab courseId={course.id} classroomUrl={course.google_classroom_url ?? null} />
+        )}
 
         {/* STUDENTS TAB */}
         {activeTab === "students" && (
@@ -313,25 +324,86 @@ export function AdminCourseDetail() {
 }
 
 /**
- * The work set on this course, as Google Classroom holds it.
+ * The work set on this course.
  *
- * The same AssignmentList the tutor, parent and student pages use, so what an
- * admin reads is what everybody else reads. Nothing is editable here: the sync
- * pushes one way, and a change made in this direction would have nothing to
+ * Read from Google Classroom when the course is linked to one, because that is
+ * where a teacher actually writes it. classroom-sync only ever pushed the
+ * other way, so anything written in Classroom itself existed nowhere this app
+ * could see, and linking a class showed a preview during creation and then
+ * dropped it.
+ *
+ * Falls back to the assignments table, which holds work set through the app.
+ * Rows that the sync has already pushed carry the Classroom page in
+ * template_url, so they are matched on that and not shown twice.
+ *
+ * The same AssignmentList the tutor, parent and student pages use. Nothing is
+ * editable: Classroom owns this, and a change made here would have nothing to
  * reconcile it.
  */
-function AssignmentsTab({ courseId }: { courseId: string }) {
-  const { data: assignments = [], isLoading } = useQuery({
+function AssignmentsTab({
+  courseId,
+  classroomUrl,
+}: {
+  courseId: string;
+  classroomUrl: string | null;
+}) {
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem(CLASSROOM_TOKEN_KEY)
+  );
+
+  const classroomCourseId = classroomUrl ? extractCourseId(classroomUrl) : null;
+
+  const connect = useGoogleLogin({
+    flow: "auth-code",
+    scope: CLASSROOM_SCOPES,
+    onSuccess: async ({ code }) => {
+      try {
+        const data = await exchangeGoogleToken(code);
+        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
+        setToken(data.access_token);
+        toast.success("Connected to Google Classroom");
+      } catch (err: any) {
+        toast.error(err.message || "Could not connect to Google");
+      }
+    },
+    onError: () => toast.error("Google login failed"),
+  });
+
+  const { data: local = [], isLoading: localLoading } = useQuery({
     queryKey: ["admin-course-assignments", courseId],
     queryFn: () => getCourseAssignments(courseId),
   });
 
-  // Work that exists here and nowhere else. The sync writes the assignment's
-  // Classroom page back when it pushes, so a missing one means no student has
-  // been given this.
-  const notPushed = assignments.filter((a) => !a.classroomUrl).length;
+  const {
+    data: classroom = [],
+    isLoading: classroomLoading,
+    error: classroomError,
+  } = useQuery({
+    queryKey: ["classroom-assignments", classroomCourseId, token],
+    queryFn: () => getClassroomAssignments(token!, classroomCourseId!),
+    enabled: !!token && !!classroomCourseId,
+    retry: false,
+  });
 
-  if (isLoading) {
+  // A token that Google has expired reads as a failure here, and the only
+  // useful thing to do about it is offer the button again.
+  useEffect(() => {
+    const message = (classroomError as any)?.message ?? "";
+    if (/401|unauthor|credential/i.test(message)) {
+      localStorage.removeItem(CLASSROOM_TOKEN_KEY);
+      setToken(null);
+    }
+  }, [classroomError]);
+
+  const merged = useMemo(() => {
+    const fromClassroom = new Set(classroom.map((a) => a.link).filter(Boolean));
+    // A local row the sync has already pushed is the same piece of work as the
+    // Classroom one it created, so only one of them belongs in the list.
+    const localOnly = local.filter((a) => !a.classroomUrl || !fromClassroom.has(a.classroomUrl));
+    return [...classroom, ...localOnly].map((a, i) => ({ ...a, index: i + 1 }));
+  }, [classroom, local]);
+
+  if (localLoading || classroomLoading) {
     return (
       <div className="flex justify-center py-16 animate-in fade-in duration-300">
         <Loader2 className="animate-spin text-[#1099A1]" size={22} />
@@ -341,26 +413,36 @@ function AssignmentsTab({ courseId }: { courseId: string }) {
 
   return (
     <div className="animate-in fade-in duration-300">
-      {notPushed > 0 && (
-        <p
-          className="mb-4 flex items-center gap-2 text-[13px]"
-          style={{ color: "#CAA25F" }}
-        >
+      {classroomUrl && !classroomCourseId && (
+        <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
           <TriangleAlert size={14} />
-          {notPushed === assignments.length
-            ? notPushed === 1
-              ? "This assignment has not reached Google Classroom yet."
-              : "None of these have reached Google Classroom yet."
-            : `${notPushed} of these have not reached Google Classroom yet.`}{" "}
-          Run npm run classroom:sync to push them.
+          That Google Classroom link is not a class URL, so nothing can be read from it.
         </p>
       )}
 
-      <AssignmentList
-        assignments={assignments}
-        emptyText="No work set on this course yet."
-        className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-5"
-      />
+      {classroomCourseId && !token && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#CAA25F]/40 bg-[#CAA25F]/5 px-4 py-3">
+          <p className="text-[13.5px] text-[#111] dark:text-white">
+            This course is linked to a Google Classroom. Connect to read the work set there.
+          </p>
+          <button
+            onClick={() => connect()}
+            className="shrink-0 rounded-xl bg-[#1099A1] px-5 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+          >
+            Connect Google Classroom
+          </button>
+        </div>
+      )}
+
+      {!classroomUrl && (
+        <p className="mb-4 text-[13px] text-muted-foreground">
+          Not linked to a Google Classroom. Only work set through Yakal appears here.
+        </p>
+      )}
+
+      {/* No card around it. The rows already carry their own borders, so a
+          panel behind them was a box inside a box. */}
+      <AssignmentList assignments={merged} emptyText="No work set on this course yet." />
     </div>
   );
 }

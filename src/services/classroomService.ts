@@ -226,3 +226,106 @@ export function courseIdFromUrl(url: string): string | null {
   }
   return match[1];
 }
+
+// ============================================================
+// Reading a linked class.
+//
+// classroom-sync pushes one way, from this database up to Classroom, and
+// writes the resulting page back to assignments.template_url. Nothing ever
+// came the other way, so work written in Classroom itself, which is where a
+// teacher actually writes it, existed nowhere the app could see. Linking a
+// course showed a preview during creation and then dropped it.
+// ============================================================
+
+/** The scopes the Classroom calls in this file need. */
+export const CLASSROOM_SCOPES = [
+  "https://www.googleapis.com/auth/classroom.courses.readonly",
+  "https://www.googleapis.com/auth/classroom.coursework.me",
+  "https://www.googleapis.com/auth/classroom.coursework.students",
+  "https://www.googleapis.com/auth/classroom.rosters.readonly",
+].join(" ");
+
+/** Where the browser keeps the Classroom token between visits. */
+export const CLASSROOM_TOKEN_KEY = "google_classroom_token";
+
+/**
+ * The numeric course id inside a Classroom URL.
+ *
+ * The web app's /c/ segment is the numeric id in base64, but not always: an
+ * id that does not decode to digits is already the id. Both shapes appear.
+ */
+export function extractCourseId(url: string): string | null {
+  try {
+    const match = url.match(/\/c\/([a-zA-Z0-9_-]+)/);
+    const rawId = match ? match[1] : null;
+    if (!rawId) return null;
+    try {
+      const decoded = atob(rawId);
+      if (/^\d+$/.test(decoded)) return decoded;
+    } catch {
+      // Not base64. The raw segment is the id.
+    }
+    return rawId;
+  } catch {
+    return null;
+  }
+}
+
+export interface ClassroomAssignment {
+  id: string;
+  index: number;
+  title: string;
+  description: string | null;
+  materials: { title: string; link: string | null }[];
+  dueDate: string | null;
+  maxPoints: number | null;
+  link: string | null;
+}
+
+/** Classroom sends a due date as parts, and omits it entirely when there is none. */
+function toIsoDate(due?: { year?: number; month?: number; day?: number }): string | null {
+  if (!due?.year || !due?.month || !due?.day) return null;
+  return `${due.year}-${String(due.month).padStart(2, "0")}-${String(due.day).padStart(2, "0")}`;
+}
+
+/**
+ * A material's title and link, whichever of the five kinds it is.
+ *
+ * Classroom wraps each in a differently named object and only one is present,
+ * so this reads whichever turned up rather than assuming a shape.
+ */
+function toMaterial(m: any): { title: string; link: string | null } {
+  const inner = m?.driveFile?.driveFile ?? m?.youtubeVideo ?? m?.link ?? m?.form;
+  return {
+    title: inner?.title ?? inner?.url ?? "Attachment",
+    link: inner?.alternateLink ?? inner?.url ?? null,
+  };
+}
+
+/** The work set in a linked class, in the shape AssignmentList draws. */
+export async function getClassroomAssignments(
+  accessToken: string,
+  classroomCourseId: string
+): Promise<ClassroomAssignment[]> {
+  const res = await fetchCourseWork(accessToken, classroomCourseId);
+  const work: any[] = Array.isArray(res?.courseWork) ? res.courseWork : [];
+
+  return work
+    .map((cw) => ({
+      id: String(cw.id),
+      index: 0,
+      title: cw.title ?? "Untitled",
+      description: cw.description ?? null,
+      materials: Array.isArray(cw.materials) ? cw.materials.map(toMaterial) : [],
+      dueDate: toIsoDate(cw.dueDate),
+      maxPoints: typeof cw.maxPoints === "number" ? cw.maxPoints : null,
+      link: cw.alternateLink ?? null,
+    }))
+    .sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return a.title.localeCompare(b.title);
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    })
+    .map((a, i) => ({ ...a, index: i + 1 }));
+}
