@@ -11,6 +11,7 @@ import { CatalogFilterRail } from "@/components/college/CatalogFilterRail";
 import { CollegeCard } from "@/components/college/CollegeCard";
 import { FitBar } from "@/components/college/FitBar";
 import { AddCollegeModal, AddCollegeInput } from "@/components/college/AddCollegeModal";
+import { MobileExplore } from "@/components/college/MobileExplore";
 import {
   CatalogFilters,
   College,
@@ -117,6 +118,18 @@ export function StudentExploreUniversities({
 
   const states = useMemo(() => (catalog ? statesIn(catalog) : []), [catalog]);
 
+  // Deadlines inside the next month, from the list itself. A count of what is
+  // coming is the one thing a student cannot work out by scrolling.
+  const upcomingDeadlines = useMemo(() => {
+    const now = new Date();
+    const horizon = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    return (profile?.schools ?? []).filter((s) => {
+      if (!s.deadline) return false;
+      const d = new Date(`${String(s.deadline).slice(0, 10)}T00:00:00`);
+      return d >= now && d <= horizon;
+    }).length;
+  }, [profile]);
+
   const results = useMemo(() => {
     if (!catalog) return [];
     const filtered = filterCatalog(catalog, filters, fitActive ? student : {});
@@ -195,7 +208,35 @@ export function StudentExploreUniversities({
 
   return (
     <div className="flex h-full min-h-0 flex-1">
+      <MobileExplore
+        colleges={visible}
+        totalCount={catalog.length}
+        resultCount={results.length}
+        filters={filters}
+        onFiltersChange={(f) => {
+          setFilters(f);
+          setLimit(PAGE_SIZE);
+        }}
+        states={states}
+        sort={sort}
+        onSortChange={setSort}
+        sorts={SORTS}
+        fitActive={fitActive}
+        student={student}
+        addedNames={addedNames}
+        addedCount={profile?.schools?.length ?? 0}
+        upcomingDeadlines={upcomingDeadlines}
+        onAdd={setPendingAdd}
+        hasProfile={hasProfile}
+        profileSummary={profileSummary}
+        fitEnabled={fitEnabled}
+        onToggleFit={setFitEnabled}
+        onShowMore={() => setLimit(limit + PAGE_SIZE * 2)}
+        moreLeft={results.length - visible.length}
+      />
+
       <CatalogFilterRail
+        className="hidden w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:flex"
         filters={filters}
         onChange={(f) => {
           setFilters(f);
@@ -209,7 +250,7 @@ export function StudentExploreUniversities({
         resultCount={results.length}
       />
 
-      <PageWrapper className="min-w-0 !p-0">
+      <PageWrapper className="hidden min-w-0 !p-0 md:flex md:flex-col">
         {/* Matches the Course Catalog banner so the two catalogs read as one product. */}
         <div className="relative shrink-0 overflow-hidden bg-[#1099A1] px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
           <svg

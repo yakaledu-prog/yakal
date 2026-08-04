@@ -49,6 +49,7 @@ export function CatalogFilterRail({
   fitEnabled,
   onToggleFit,
   resultCount,
+  className,
 }: {
   filters: CatalogFilters;
   onChange: (f: CatalogFilters) => void;
@@ -58,6 +59,8 @@ export function CatalogFilterRail({
   fitEnabled: boolean;
   onToggleFit: (v: boolean) => void;
   resultCount: number;
+  /** Overridden on a phone, where this renders inside a sheet, not beside the grid. */
+  className?: string;
 }) {
   const set = <K extends keyof CatalogFilters>(k: K, v: CatalogFilters[K]) =>
     onChange({ ...filters, [k]: v });
@@ -77,7 +80,12 @@ export function CatalogFilterRail({
     (filters.withImageOnly ? 1 : 0);
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]">
+    <aside
+      className={
+        className ??
+        "flex w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]"
+      }
+    >
       <div className="p-3">
         <div className="relative">
           <Search
