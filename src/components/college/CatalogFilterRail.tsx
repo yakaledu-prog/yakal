@@ -129,7 +129,7 @@ export function CatalogFilterRail({
             onClick={() => onToggleFit(!fitEnabled)}
             title={hasProfile ? undefined : "Add a GPA and test scores first"}
             className={cn(
-              "relative h-5 w-9 shrink-0 overflow-hidden rounded-full transition-colors",
+              "relative h-6 w-11 shrink-0 rounded-full transition-colors",
               // Off, not merely faded, when there is nothing to rank against.
               // Painted on while it could not be switched, it read as a solid
               // blob with no moving part: a control that looked broken rather
@@ -140,12 +140,14 @@ export function CatalogFilterRail({
               hasProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60"
             )}
           >
+            {/* Positioned by left, not by a transform from wherever the box
+                happened to land. With no left set, an absolute knob resolves
+                from its static position, which put it at the right hand end
+                when off and pushed it off the track altogether when on. */}
             <span
               className={cn(
-                // A shadow so the knob reads as a knob against the track
-                // rather than dissolving into it.
-                "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform",
-                fitEnabled && hasProfile ? "translate-x-[18px]" : "translate-x-0.5"
+                "absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-[left] duration-200",
+                fitEnabled && hasProfile ? "left-[22px]" : "left-[2px]"
               )}
             />
           </button>

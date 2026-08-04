@@ -199,7 +199,8 @@ export function AddCollegeModal({
     >
       <div
         className={cn(
-          "flex max-h-[88vh] w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]",
+          "flex w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]",
+          picked && step > 0 ? "max-h-[88vh] md:h-[min(88vh,700px)]" : "max-h-[88vh]",
           picked && step > 0 ? "max-w-lg md:max-w-4xl" : "max-w-lg",
           "flex-col md:flex-row"
         )}
@@ -210,36 +211,45 @@ export function AddCollegeModal({
         {picked && step > 0 && <CollegePanel college={picked} />}
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942]">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              {/* On the search step the college is still being chosen, so
-                  showing a previous pick here would be a lie. */}
-              <h2
-                className={cn(
-                  "truncate text-[16px] font-semibold text-[#111] dark:text-white",
-                  step > 0 && picked && "md:hidden"
-                )}
-              >
+        <header className="border-b border-[#e9edef] px-6 pb-5 pt-5 dark:border-[#2a3942] md:px-8 md:pb-6 md:pt-6">
+          {/* One row. On a phone it carries the college name, because the
+              side panel that would otherwise say it is not there; from md the
+              panel has the name and this row gives the space to the stepper.
+              The close button stays at the end of it either way. */}
+          <div className="flex items-center gap-6">
+            <div className={cn("min-w-0 flex-1", step > 0 && picked && "md:hidden")}>
+              <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
                 {step === 0 ? "Add a college" : name}
               </h2>
               {step > 0 && picked && (
-                <p className="truncate text-[12px] text-[#717182] md:hidden">
+                <p className="truncate text-[12px] text-[#717182]">
                   {[picked.city, picked.state].filter(Boolean).join(", ")}
                   {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
                 </p>
               )}
             </div>
+
+            <Stepper
+              className="hidden min-w-0 flex-1 md:flex"
+              steps={STEPS}
+              current={step}
+              onStepClick={(i) => name && setStep(i)}
+            />
+
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
+              className="shrink-0 text-[#717182] transition-colors hover:text-[#111] dark:hover:text-white"
             >
               <X size={18} />
             </button>
           </div>
+
+          {/* The phone keeps its stepper on its own line, where a three step
+              rail beside a title would have nowhere to go. */}
           <Stepper
+            className="mt-4 md:hidden"
             steps={STEPS}
             current={step}
             onStepClick={(i) => name && setStep(i)}
@@ -272,7 +282,7 @@ export function AddCollegeModal({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-7">
           {step === 0 && (
             <>
               <div className="relative">
@@ -343,7 +353,7 @@ export function AddCollegeModal({
           )}
 
           {step === 1 && (
-            <div className="space-y-5">
+            <div className="space-y-5 rounded-2xl border border-[#e9edef] bg-white p-5 shadow-sm md:p-6 dark:border-[#2a3942] dark:bg-[#111b21]">
               {/* Round and deadline are one decision, so they share a row. */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -427,7 +437,7 @@ export function AddCollegeModal({
           )}
         </div>
 
-        <footer className="flex items-center gap-2 border-t border-[#e9edef] px-5 py-3 dark:border-[#2a3942]">
+        <footer className="flex items-center gap-3 border-t border-[#e9edef] px-6 py-4 dark:border-[#2a3942] md:px-8 md:py-5">
           {/* Beside the navigation rather than inside a step: it is the one
               answer that is not about the college, and it stays visible while
               the rest is being filled in.
@@ -519,24 +529,19 @@ export function AddCollegeModal({
             </div>
           )}
 
+          {/* Both on the right, Prev bordered so going back is visibly a
+              button rather than a piece of text. No Skip: every field on these
+              steps is already optional and Next moves on without them, so it
+              was a second button for the same outcome. */}
+          <div className="flex-1" />
           {step > 0 && (
             <button
               type="button"
               onClick={() => setStep(step - 1)}
-              className="inline-flex h-10 items-center gap-1 rounded-xl pr-3 text-[14px] font-medium text-[#54656f] transition-colors hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-[#e9edef] px-4 text-[14px] font-medium text-[#54656f] transition-colors hover:border-[#cbd5d8] hover:text-[#111] dark:border-[#2a3942] dark:text-[#aebac1] dark:hover:text-white"
             >
               <ArrowLeft size={15} />
               Prev
-            </button>
-          )}
-          <div className="flex-1" />
-          {step > 0 && step < STEPS.length - 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step + 1)}
-              className="h-10 rounded-xl px-3 text-[14px] font-medium text-[#54656f] transition-colors hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white"
-            >
-              Skip
             </button>
           )}
           {step < STEPS.length - 1 ? (
@@ -620,63 +625,50 @@ function CollegePanel({ college }: { college: College }) {
             onError={() => setImgFailed(true)}
             className="absolute inset-0 h-full w-full object-cover"
           />
-          {/* Dark enough at both ends to hold text, lighter through the middle
-              so the campus is still a photograph rather than a texture. The
-              same black wash the hero and the blog header use, so a photo
-              behind type looks the same wherever it appears. */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/55 to-black/90" />
+          {/* The panel's own surface, thinning downwards. Opaque where the name
+              and the numbers sit, so they keep the contrast they were designed
+              with, and clear enough at the foot for the campus to show through.
+              It takes the theme's colour rather than a wash of black, which
+              turned a light panel dark and made the text fight the photograph.
+              Dark mode gets the same treatment in its own surface. */}
+          <div
+            className="absolute inset-0 dark:hidden"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 58%, rgba(247,250,251,0.88) 74%, rgba(247,250,251,0.55) 88%, rgba(247,250,251,0.35) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 hidden dark:block"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, #0f171c 0%, #0f171c 58%, rgba(15,23,28,0.88) 74%, rgba(15,23,28,0.55) 88%, rgba(15,23,28,0.35) 100%)",
+            }}
+          />
         </>
       )}
 
-      <div
-        className={cn(
-          "relative z-10 min-h-0 flex-1 overflow-y-auto p-5",
-          img && "text-white"
-        )}
-      >
-        <h3
-          className={cn(
-            "text-[19px] font-bold leading-tight",
-            img ? "text-white" : "text-[#111] dark:text-white"
-          )}
-        >
+      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-6">
+        <h3 className="text-[19px] font-bold leading-tight text-[#111] dark:text-white">
           {college.name}
         </h3>
-        <p className={cn("mt-1 text-[12.5px]", img ? "text-white/75" : "text-[#717182]")}>
+        <p className="mt-1 text-[12.5px] text-[#717182]">
           {[college.city, college.state].filter(Boolean).join(", ")}
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-2.5">
           {rows.map((r) => (
             <div
               key={r.label}
-              className={cn(
-                "flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5",
-                img
-                  // Frosted rather than solid, so the photograph reads through
-                  // and the panel stays one object instead of four cards on a
-                  // picture.
-                  ? "border-white/20 bg-white/10 backdrop-blur-sm"
-                  : "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]"
-              )}
+              className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3.5 py-3 dark:border-[#2a3942] dark:bg-[#111b21]"
             >
-              <span
-                className={cn(
-                  "flex min-w-0 items-center gap-2 text-[12.5px]",
-                  img ? "text-white/85" : "text-[#54656f] dark:text-[#aebac1]"
-                )}
-              >
-                <span className={img ? "text-[#97CE9D]" : "text-[#1099A1]"}>{r.icon}</span>
+              <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
+                <span className="text-[#1099A1]">{r.icon}</span>
                 <span className="truncate">{r.label}</span>
                 <InfoHint text={r.hint} size={11} />
               </span>
-              <span
-                className={cn(
-                  "shrink-0 text-[14px] font-semibold tabular-nums",
-                  img ? "text-white" : "text-[#111] dark:text-white"
-                )}
-              >
+              <span className="shrink-0 text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
                 {r.value}
               </span>
             </div>
