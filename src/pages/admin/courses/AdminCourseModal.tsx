@@ -12,7 +12,7 @@ import {
   CLASSROOM_SCOPES,
   CLASSROOM_TOKEN_KEY,
   exchangeGoogleToken,
-  extractCourseId,
+  courseIdFromUrl,
   fetchCourseWork,
 } from "@/services/classroomService";
 
@@ -99,7 +99,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     if (!formData.google_classroom_url) {
       return toast.error("Please enter a Google Classroom URL first");
     }
-    const courseId = extractCourseId(formData.google_classroom_url);
+    const courseId = courseIdFromUrl(formData.google_classroom_url);
     if (!courseId) {
       return toast.error("Invalid Google Classroom URL format. Example: https://classroom.google.com/c/MzUx...");
     }

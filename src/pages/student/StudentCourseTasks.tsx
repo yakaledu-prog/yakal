@@ -1,7 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { type AssignmentItem } from "@/components/shared/AssignmentList";
+import { CourseAssignments } from "@/components/shared/CourseAssignments";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCourseAssignments } from "@/services/studentService";
 
@@ -26,6 +28,21 @@ export function StudentCourseTasks() {
     enabled: !!user?.id && !!courseId,
   });
 
+  // The class this course is linked to, so work written in Classroom shows up
+  // here too rather than only what was set through Yakal.
+  const { data: classroomUrl = null } = useQuery({
+    queryKey: ["course-classroom-url", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("google_classroom_url")
+        .eq("id", courseId!)
+        .maybeSingle();
+      return data?.google_classroom_url ?? null;
+    },
+    enabled: !!courseId,
+  });
+
   const assignments: AssignmentItem[] = data.map((a, i) => ({
     id: a.id,
     index: i + 1,
@@ -41,8 +58,9 @@ export function StudentCourseTasks() {
 
   return (
     <div className="p-4 md:p-8">
-      <AssignmentList
-        assignments={assignments}
+      <CourseAssignments
+        classroomUrl={classroomUrl}
+        localAssignments={assignments}
         isLoading={isLoading}
         emptyText="Nothing has been set for this course yet."
       />

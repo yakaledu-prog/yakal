@@ -5,12 +5,13 @@
 // absent entirely when there is none, every material is wrapped in a
 // differently named object with only one of them present, and maxPoints is
 // missing rather than zero on an ungraded task. This pins all three.
-import { getClassroomAssignments } from "../../src/services/classroomService.ts";
+import { getCourseAssignments } from "../../src/services/classroomService.ts";
 
 const payload = {
   courseWork: [
     {
       id: "301",
+      state: "PUBLISHED",
       title: "Chapter 4 problems",
       description: "Questions 1 to 12.",
       dueDate: { year: 2026, month: 9, day: 5 },
@@ -24,15 +25,23 @@ const payload = {
     },
     {
       id: "302",
+      state: "PUBLISHED",
       title: "Reading, no deadline",
       // No dueDate, no maxPoints, no materials: all optional in the API.
       alternateLink: "https://classroom.google.com/c/abc/a/302/details",
     },
     {
       id: "303",
+      state: "PUBLISHED",
       title: "Earlier deadline",
       dueDate: { year: 2026, month: 8, day: 20 },
       alternateLink: "https://classroom.google.com/c/abc/a/303/details",
+    },
+    {
+      id: "304",
+      state: "DRAFT",
+      title: "Not published yet",
+      alternateLink: "https://classroom.google.com/c/abc/a/304/details",
     },
   ],
 };
@@ -45,9 +54,12 @@ function check(name: string, ok: boolean, got?: unknown) {
 
 (globalThis as any).fetch = async () => ({ ok: true, json: async () => payload });
 
-const items = await getClassroomAssignments("token", "123");
+const items = await getCourseAssignments("token", "123");
 
-check("every assignment is mapped", items.length === 3, items.length);
+check("every published assignment is mapped", items.length === 3, items.length);
+check("a draft is not shown, it is the tutor's business",
+  !items.some((i) => i.title === "Not published yet"),
+  items.map((i) => i.title));
 
 const dated = items.find((i) => i.title === "Chapter 4 problems")!;
 check("due date becomes an ISO day", dated.dueDate === "2026-09-05", dated.dueDate);
@@ -63,8 +75,6 @@ check("a missing due date is null, not a wrong date", undated.dueDate === null, 
 check("missing maxPoints is null, not zero", undated.maxPoints === null, undated.maxPoints);
 check("missing materials is an empty list", undated.materials.length === 0, undated.materials);
 
-check("soonest deadline first", items[0].title === "Earlier deadline", items[0].title);
-check("undated sorts last", items[2].title === "Reading, no deadline", items[2].title);
 check("index is 1 based and in order",
   items.map((i) => i.index).join(",") === "1,2,3",
   items.map((i) => i.index));

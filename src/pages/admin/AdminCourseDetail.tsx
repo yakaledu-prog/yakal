@@ -1,21 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft, Loader2, TriangleAlert } from "lucide-react";
+import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
 import { getCourse, getCourses, getCourseAssignments, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
-import { AssignmentList } from "@/components/shared/AssignmentList";
-import { useGoogleLogin } from "@react-oauth/google";
-import { toast } from "sonner";
-import {
-  CLASSROOM_SCOPES,
-  CLASSROOM_TOKEN_KEY,
-  exchangeGoogleToken,
-  extractCourseId,
-  getClassroomAssignments,
-} from "@/services/classroomService";
+import { CourseAssignments } from "@/components/shared/CourseAssignments";
 import { useQuery } from "@tanstack/react-query";
 
 // Mock Tutors
@@ -157,189 +148,173 @@ export function AdminCourseDetail() {
           detailClass
         )}
       >
-      {/* Header Banner */}
-      <div className="w-full bg-[#1099A1] text-white pt-8 px-6 md:px-10 relative overflow-hidden">
-        {/* Subtle background decoration */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        
-        <div className="max-w-[1440px] mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-            <div className="max-w-[800px]">
-              {/* Only the phone needs this: on desktop the catalogue is still
+        {/* Header Banner */}
+        <div className="w-full bg-[#1099A1] text-white pt-8 px-6 md:px-10 relative overflow-hidden">
+          {/* Subtle background decoration */}
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+
+          <div className="max-w-[1440px] mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+              <div className="max-w-[800px]">
+                {/* Only the phone needs this: on desktop the catalogue is still
                   beside the course. */}
-              <button
-                type="button"
-                onClick={closeDetail}
-                aria-label="Back"
-                className="-ml-2 mb-2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
-              >
-                <ChevronLeft size={22} />
-              </button>
-              <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
-              {course.description ? (
-                <div 
-                  className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6 line-clamp-2"
-                  dangerouslySetInnerHTML={{ __html: course.description }}
-                />
-              ) : (
-                <p className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6">
-                  Learn {course.subject} with our expert tutors. Tailored sessions for academic excellence.
-                </p>
-              )}
-              
-              <div className="flex flex-wrap items-center gap-6 text-[14px] font-medium text-white/95">
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 fill-[#F2C94C] text-[#F2C94C]" />
-                  <span>4.8</span>
-                  <span className="underline underline-offset-2 opacity-90 cursor-pointer hover:opacity-100">(320 reviews)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 opacity-80" />
-                  <span>1,204 students enrolled</span>
-                </div>
-                {course.google_classroom_url && (
-                  <a href={course.google_classroom_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 underline underline-offset-2 opacity-90 hover:opacity-100">
-                    <ExternalLink size={14} /> Classroom
-                  </a>
+                <button
+                  type="button"
+                  onClick={closeDetail}
+                  aria-label="Back"
+                  className="-ml-2 mb-2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
+                {course.description ? (
+                  <div
+                    className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6 line-clamp-2"
+                    dangerouslySetInnerHTML={{ __html: course.description }}
+                  />
+                ) : (
+                  <p className="text-white/90 text-[15px] md:text-[18px] leading-relaxed mb-6">
+                    Learn {course.subject} with our expert tutors. Tailored sessions for academic excellence.
+                  </p>
                 )}
+
+                <div className="flex flex-wrap items-center gap-6 text-[14px] font-medium text-white/95">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 fill-[#F2C94C] text-[#F2C94C]" />
+                    <span>4.8</span>
+                    <span className="underline underline-offset-2 opacity-90 cursor-pointer hover:opacity-100">(320 reviews)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4 opacity-80" />
+                    <span>1,204 students enrolled</span>
+                  </div>
+                  {course.google_classroom_url && (
+                    <a href={course.google_classroom_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 underline underline-offset-2 opacity-90 hover:opacity-100">
+                      <ExternalLink size={14} /> Classroom
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start md:items-end shrink-0 mt-4 md:mt-0">
+                <div className="text-[28px] md:text-[36px] font-bold mb-1">
+                  {course.price_cents != null ? money(course.price_cents) : "—"}
+                  <span className="text-[16px] font-normal opacity-80 tracking-normal">/course</span>
+                </div>
+                <div className="text-[14px] opacity-90">
+                  Or starting at {course.tutor_payout_cents != null ? money(course.tutor_payout_cents) : "—"}/hr with tutors
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-start md:items-end shrink-0 mt-4 md:mt-0">
-              <div className="text-[28px] md:text-[36px] font-bold mb-1">
-                {course.price_cents != null ? money(course.price_cents) : "—"}
-                <span className="text-[16px] font-normal opacity-80 tracking-normal">/course</span>
-              </div>
-              <div className="text-[14px] opacity-90">
-                Or starting at {course.tutor_payout_cents != null ? money(course.tutor_payout_cents) : "—"}/hr with tutors
-              </div>
+            {/* Tabs, along the foot of the header rather than a strip below it */}
+            <div className="mt-8 flex overflow-x-auto no-scrollbar border-t border-white/20">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "relative whitespace-nowrap px-6 py-4 text-[15px] font-medium transition-colors",
+                    activeTab === tab.id ? "text-white" : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 h-[3px] w-full rounded-t-full bg-white" />
+                  )}
+                </button>
+              ))}
             </div>
-          </div>
-
-          {/* Tabs, along the foot of the header rather than a strip below it */}
-          <div className="mt-8 flex overflow-x-auto no-scrollbar border-t border-white/20">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "relative whitespace-nowrap px-6 py-4 text-[15px] font-medium transition-colors",
-                  activeTab === tab.id ? "text-white" : "text-white/60 hover:text-white"
-                )}
-              >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 h-[3px] w-full rounded-t-full bg-white" />
-                )}
-              </button>
-            ))}
           </div>
         </div>
-      </div>
 
-      {/* Content Area */}
-      <div className="max-w-[1440px] mx-auto p-6 md:p-10">
+        {/* Content Area */}
+        <div className="w-full mx-auto p-6 md:p-10">
 
-        {/* Anyone still waiting on a decision, above the tabs because that is
+          {/* Anyone still waiting on a decision, above the tabs because that is
             what an admin opens an unassigned course to deal with. Who ended up
             teaching it is a different question and lives in the Tutors tab. */}
-        {(pendingCounts[course.id] ?? 0) > 0 && (
-          <>
+          {(pendingCounts[course.id] ?? 0) > 0 && (
+            <>
+              <CourseApplicants
+                courseId={course.id}
+                courseTitle={course.title}
+                assignedTutorId={course.tutor_id ?? null}
+                show="pending"
+                onAssigned={() => {
+                  if (id) getCourse(id).then(setCourse);
+                  getPendingApplicantCounts().then(setPendingCounts);
+                }}
+              />
+              <hr className="my-8 border-[#e9edef] dark:border-[#2a3942]" />
+            </>
+          )}
+
+          {/* TUTORS TAB */}
+          {activeTab === "tutors" && (
             <CourseApplicants
               courseId={course.id}
               courseTitle={course.title}
               assignedTutorId={course.tutor_id ?? null}
-              show="pending"
+              show="assigned"
               onAssigned={() => {
                 if (id) getCourse(id).then(setCourse);
                 getPendingApplicantCounts().then(setPendingCounts);
               }}
             />
-            <hr className="my-8 border-[#e9edef] dark:border-[#2a3942]" />
-          </>
-        )}
+          )}
 
-        {/* TUTORS TAB */}
-        {activeTab === "tutors" && (
-          <CourseApplicants
-            courseId={course.id}
-            courseTitle={course.title}
-            assignedTutorId={course.tutor_id ?? null}
-            show="assigned"
-            onAssigned={() => {
-              if (id) getCourse(id).then(setCourse);
-              getPendingApplicantCounts().then(setPendingCounts);
-            }}
-          />
-        )}
+          {/* ASSIGNMENTS TAB */}
+          {activeTab === "assignments" && (
+            <AssignmentsTab courseId={course.id} classroomUrl={course.google_classroom_url ?? null} />
+          )}
 
-        {/* ASSIGNMENTS TAB */}
-        {activeTab === "assignments" && (
-          <AssignmentsTab courseId={course.id} classroomUrl={course.google_classroom_url ?? null} />
-        )}
-
-        {/* STUDENTS TAB */}
-        {activeTab === "students" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
-              <Users className="w-12 h-12 text-muted-foreground/30 mb-4" />
-              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">Manage Students</h3>
-              <p className="text-[14px] text-muted-foreground max-w-sm">
-                View and manage all students enrolled in this course. You can assign them to specific tutors or sessions.
-              </p>
+          {/* STUDENTS TAB */}
+          {activeTab === "students" && (
+            <div className="animate-in fade-in duration-300">
+              <div className="p-12 flex flex-col items-center justify-center text-center">
+                <Users className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">Manage Students</h3>
+                <p className="text-[14px] text-muted-foreground max-w-sm">
+                  View and manage all students enrolled in this course. You can assign them to specific tutors or sessions.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* SESSIONS TAB */}
-        {activeTab === "sessions" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
-              <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
-              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No upcoming sessions</h3>
-              <p className="text-[14px] text-muted-foreground max-w-sm">
-                There are currently no scheduled sessions for this course. Tutors will schedule sessions as needed.
-              </p>
+          {/* SESSIONS TAB */}
+          {activeTab === "sessions" && (
+            <div className="animate-in fade-in duration-300">
+              <div className="p-12 flex flex-col items-center justify-center text-center">
+                <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No upcoming sessions</h3>
+                <p className="text-[14px] text-muted-foreground max-w-sm">
+                  There are currently no scheduled sessions for this course. Tutors will schedule sessions as needed.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* REVIEWS TAB */}
-        {activeTab === "reviews" && (
-          <div className="animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-[#182329] border border-[#e9edef] dark:border-[#2a3942] rounded-[24px] p-12 flex flex-col items-center justify-center text-center">
-              <Star className="w-12 h-12 text-muted-foreground/30 mb-4" />
-              <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">4.8 Average Rating</h3>
-              <p className="text-[14px] text-muted-foreground max-w-sm">
-                Reviews will appear here once students complete course feedback forms.
-              </p>
+          {/* REVIEWS TAB */}
+          {activeTab === "reviews" && (
+            <div className="animate-in fade-in duration-300">
+              <div className="p-12 flex flex-col items-center justify-center text-center">
+                <Star className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">4.8 Average Rating</h3>
+                <p className="text-[14px] text-muted-foreground max-w-sm">
+                  Reviews will appear here once students complete course feedback forms.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-      </div>
+        </div>
       </section>
     </div>
   );
 }
 
-/**
- * The work set on this course.
- *
- * Read from Google Classroom when the course is linked to one, because that is
- * where a teacher actually writes it. classroom-sync only ever pushed the
- * other way, so anything written in Classroom itself existed nowhere this app
- * could see, and linking a class showed a preview during creation and then
- * dropped it.
- *
- * Falls back to the assignments table, which holds work set through the app.
- * Rows that the sync has already pushed carry the Classroom page in
- * template_url, so they are matched on that and not shown twice.
- *
- * The same AssignmentList the tutor, parent and student pages use. Nothing is
- * editable: Classroom owns this, and a change made here would have nothing to
- * reconcile it.
- */
+/** Thin wrapper: the DB rows for this course, then the shared reader. */
 function AssignmentsTab({
   courseId,
   classroomUrl,
@@ -347,102 +322,16 @@ function AssignmentsTab({
   courseId: string;
   classroomUrl: string | null;
 }) {
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem(CLASSROOM_TOKEN_KEY)
-  );
-
-  const classroomCourseId = classroomUrl ? extractCourseId(classroomUrl) : null;
-
-  const connect = useGoogleLogin({
-    flow: "auth-code",
-    scope: CLASSROOM_SCOPES,
-    onSuccess: async ({ code }) => {
-      try {
-        const data = await exchangeGoogleToken(code);
-        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
-        setToken(data.access_token);
-        toast.success("Connected to Google Classroom");
-      } catch (err: any) {
-        toast.error(err.message || "Could not connect to Google");
-      }
-    },
-    onError: () => toast.error("Google login failed"),
-  });
-
-  const { data: local = [], isLoading: localLoading } = useQuery({
+  const { data: local = [], isLoading } = useQuery({
     queryKey: ["admin-course-assignments", courseId],
     queryFn: () => getCourseAssignments(courseId),
   });
 
-  const {
-    data: classroom = [],
-    isLoading: classroomLoading,
-    error: classroomError,
-  } = useQuery({
-    queryKey: ["classroom-assignments", classroomCourseId, token],
-    queryFn: () => getClassroomAssignments(token!, classroomCourseId!),
-    enabled: !!token && !!classroomCourseId,
-    retry: false,
-  });
-
-  // A token that Google has expired reads as a failure here, and the only
-  // useful thing to do about it is offer the button again.
-  useEffect(() => {
-    const message = (classroomError as any)?.message ?? "";
-    if (/401|unauthor|credential/i.test(message)) {
-      localStorage.removeItem(CLASSROOM_TOKEN_KEY);
-      setToken(null);
-    }
-  }, [classroomError]);
-
-  const merged = useMemo(() => {
-    const fromClassroom = new Set(classroom.map((a) => a.link).filter(Boolean));
-    // A local row the sync has already pushed is the same piece of work as the
-    // Classroom one it created, so only one of them belongs in the list.
-    const localOnly = local.filter((a) => !a.classroomUrl || !fromClassroom.has(a.classroomUrl));
-    return [...classroom, ...localOnly].map((a, i) => ({ ...a, index: i + 1 }));
-  }, [classroom, local]);
-
-  if (localLoading || classroomLoading) {
-    return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-300">
-        <Loader2 className="animate-spin text-[#1099A1]" size={22} />
-      </div>
-    );
-  }
-
   return (
-    <div className="animate-in fade-in duration-300">
-      {classroomUrl && !classroomCourseId && (
-        <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
-          <TriangleAlert size={14} />
-          That Google Classroom link is not a class URL, so nothing can be read from it.
-        </p>
-      )}
-
-      {classroomCourseId && !token && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#CAA25F]/40 bg-[#CAA25F]/5 px-4 py-3">
-          <p className="text-[13.5px] text-[#111] dark:text-white">
-            This course is linked to a Google Classroom. Connect to read the work set there.
-          </p>
-          <button
-            onClick={() => connect()}
-            className="shrink-0 rounded-xl bg-[#1099A1] px-5 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
-          >
-            Connect Google Classroom
-          </button>
-        </div>
-      )}
-
-      {!classroomUrl && (
-        <p className="mb-4 text-[13px] text-muted-foreground">
-          Not linked to a Google Classroom. Only work set through Yakal appears here.
-        </p>
-      )}
-
-      {/* No card around it. The rows already carry their own borders, so a
-          panel behind them was a box inside a box. */}
-      <AssignmentList assignments={merged} emptyText="No work set on this course yet." />
-    </div>
+    <CourseAssignments
+      classroomUrl={classroomUrl}
+      localAssignments={local}
+      isLoading={isLoading}
+    />
   );
 }

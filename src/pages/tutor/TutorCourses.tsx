@@ -3,15 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
-import {
-  BookOpen, Users, Clock, Loader2, CalendarClock, Search, Calendar, ChevronLeft,
-} from "lucide-react";
+import { BookOpen, Users, Clock, Loader2, Search, Calendar, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { CourseAssignments } from "@/components/shared/CourseAssignments";
 import { getTutorCourses, getCourseWorkspace, CourseWorkspace } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 
-import { stripHtml } from "@/components/ui/RichTextEditor";
 import { dicebearUrl } from "@/utils/avatar";
 import { ChatBody, ConversationList, useMessaging } from "@/components/messaging";
 
@@ -224,28 +222,24 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
         )}
 
         {activeTab === 'assignments' && (
-          <div className="animate-in fade-in space-y-4 pt-2">
-            {assignments.length === 0 ? <EmptyMsg text="No assignments for this course yet." /> :
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {assignments.map((a) => {
-                  const pending = (a.submissionCount ?? 0) - (a.reviewedCount ?? 0);
-                  return (
-                    <div key={a.id}
-                      className="text-left bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-none p-5 hover:border-[#1099A1] transition-colors group">
-                      <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2 group-hover:text-[#1099A1] transition-colors">{a.title}</h3>
-                      {a.description && <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] line-clamp-2 mb-4">{stripHtml(a.description)}</p>}
-                      <div className="flex items-center justify-between text-[12px] text-[#54656f] dark:text-[#aebac1] pt-3 border-t border-[#e9edef] dark:border-[#2a3942]">
-                        <span className="flex items-center gap-1.5 font-medium"><CalendarClock size={14} className="text-[#1099A1]" /> {a.due_date ? new Date(a.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No due date"}</span>
-                        <div className="flex items-center gap-3">
-                          <span>{a.submissionCount} submissions</span>
-                          {pending > 0 && <span className="text-[#CAA25F] font-medium uppercase tracking-wider">{pending} to review</span>}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            }
+          <div className="pt-2">
+            <CourseAssignments
+              classroomUrl={course?.google_classroom_url ?? null}
+              localAssignments={assignments.map((a, i) => ({
+                id: a.id,
+                index: i + 1,
+                title: a.title,
+                description: a.description,
+                materials: [],
+                dueDate: a.due_date ? String(a.due_date).slice(0, 10) : null,
+                maxPoints: null,
+                // template_url is the Classroom page the sync wrote back, and
+                // what keeps a pushed assignment from being listed twice.
+                link: a.template_url,
+                classroomUrl: a.template_url,
+              }))}
+              emptyText="No assignments for this course yet."
+            />
           </div>
         )}
 
