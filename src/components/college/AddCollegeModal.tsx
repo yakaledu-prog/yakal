@@ -200,7 +200,10 @@ export function AddCollegeModal({
       <div
         className={cn(
           "flex w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]",
-          picked && step > 0 ? "max-h-[88vh] md:h-[min(88vh,700px)]" : "max-h-[88vh]",
+          // A floor, not a fixed height. Pinning it to 700px gave a short form
+          // a tall box with a void through the middle and handed the panel
+          // beside it more height than there was anything to put in.
+          picked && step > 0 ? "max-h-[88vh] md:min-h-[440px]" : "max-h-[88vh]",
           picked && step > 0 ? "max-w-lg md:max-w-4xl" : "max-w-lg",
           "flex-col md:flex-row"
         )}
@@ -353,7 +356,7 @@ export function AddCollegeModal({
           )}
 
           {step === 1 && (
-            <div className="space-y-5 rounded-2xl border border-[#e9edef] bg-white p-5 shadow-sm md:p-6 dark:border-[#2a3942] dark:bg-[#111b21]">
+            <div className="space-y-5">
               {/* Round and deadline are one decision, so they share a row. */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -635,14 +638,14 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 dark:hidden"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 58%, rgba(247,250,251,0.88) 74%, rgba(247,250,251,0.55) 88%, rgba(247,250,251,0.35) 100%)",
+                "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 70%, rgba(247,250,251,0.9) 82%, rgba(247,250,251,0.6) 92%, rgba(247,250,251,0.45) 100%)",
             }}
           />
           <div
             className="absolute inset-0 hidden dark:block"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #0f171c 0%, #0f171c 58%, rgba(15,23,28,0.88) 74%, rgba(15,23,28,0.55) 88%, rgba(15,23,28,0.35) 100%)",
+                "linear-gradient(to bottom, #0f171c 0%, #0f171c 70%, rgba(15,23,28,0.9) 82%, rgba(15,23,28,0.6) 92%, rgba(15,23,28,0.45) 100%)",
             }}
           />
         </>

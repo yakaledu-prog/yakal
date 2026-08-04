@@ -4,6 +4,11 @@ import { cn } from "@/utils/cn";
 /**
  * Horizontal step indicator. Completed steps stay clickable so going back to
  * change an earlier answer never means starting over.
+ *
+ * The label sits under its number rather than beside it. Beside it, the three
+ * labels and two connectors competed for one line, so the connectors collapsed
+ * to almost nothing and the row read as text with dots in it rather than as a
+ * path with three stops on it.
  */
 export function Stepper({
   steps,
@@ -17,19 +22,17 @@ export function Stepper({
   className?: string;
 }) {
   return (
-    <ol className={cn("flex items-center gap-2", className)}>
+    <ol className={cn("flex items-start", className)}>
       {steps.map((label, i) => {
         const done = i < current;
         const active = i === current;
         const clickable = done && !!onStepClick;
 
         return (
-          // The label keeps its natural width and the connector absorbs the
-          // slack, otherwise every step truncates to "Deadli...".
           <li
             key={label}
             className={cn(
-              "flex items-center gap-2",
+              "flex min-w-0 items-start",
               i < steps.length - 1 && "flex-1"
             )}
           >
@@ -39,7 +42,7 @@ export function Stepper({
               onClick={() => clickable && onStepClick(i)}
               aria-current={active ? "step" : undefined}
               className={cn(
-                "flex shrink-0 items-center gap-2",
+                "flex w-[76px] shrink-0 flex-col items-center gap-1.5",
                 clickable && "cursor-pointer"
               )}
             >
@@ -55,7 +58,7 @@ export function Stepper({
               </span>
               <span
                 className={cn(
-                  "whitespace-nowrap text-left text-[13px] transition-colors",
+                  "whitespace-nowrap text-center text-[12.5px] leading-none transition-colors",
                   active
                     ? "font-semibold text-[#111] dark:text-white"
                     : "font-normal text-[#a8adb8] dark:text-[#7f8b93]"
@@ -64,11 +67,14 @@ export function Stepper({
                 {label}
               </span>
             </button>
+
             {i < steps.length - 1 && (
+              // Level with the circles, not the labels, so the line joins the
+              // stops rather than crossing the words under them.
               <span
                 aria-hidden
                 className={cn(
-                  "h-px min-w-[12px] flex-1 transition-colors",
+                  "mt-3 h-px min-w-[12px] flex-1 transition-colors",
                   done ? "bg-[#1099A1]" : "bg-[#e9edef] dark:bg-[#2a3942]"
                 )}
               />
