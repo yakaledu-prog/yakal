@@ -1,17 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useGoogleLogin } from "@react-oauth/google";
 import { Loader2, TriangleAlert } from "lucide-react";
-import { toast } from "sonner";
 
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
-import {
-  CLASSROOM_SCOPES,
-  CLASSROOM_TOKEN_KEY,
-  courseIdFromUrl,
-  exchangeGoogleToken,
-  getCourseAssignments as getClassroomCourseWork,
-} from "@/services/classroomService";
+import { getCourseWorkFor } from "@/services/courseWork";
 
 // ============================================================
 // The work set on a course, wherever it was written.
@@ -19,12 +11,19 @@ import {
 // classroom-sync only ever pushed, from this database up to Google Classroom,
 // and wrote the resulting page back to assignments.template_url. Nothing came
 // the other way, so work written in Classroom itself, which is where a teacher
-// writes it, existed nowhere this app could see. Both the admin course page
-// and the tutor's showed an empty list over a class full of assignments.
+// writes it, existed nowhere this app could see.
 //
-// Shared rather than written twice. The first version of this lived only on
-// the admin page, and the tutor's needing the same thing is exactly how two
-// copies start.
+// Read through our own server, not the browser. Reading it from here meant
+// every viewer signing into Google first: a student needed an account, consent
+// to Classroom scopes and membership of the class before they could see that
+// homework existed, and a token that expired hourly. Now the server holds one
+// credential for the account that owns the classes and checks who is asking.
+// Booking a course is what grants access, which is the only thing a family
+// should have to do.
+//
+// Shared by the admin, tutor and student course pages. The first version lived
+// on the admin page alone, and two more pages needing it is how a third copy
+// starts.
 // ============================================================
 
 export interface LocalAssignment extends AssignmentItem {
@@ -33,58 +32,28 @@ export interface LocalAssignment extends AssignmentItem {
 }
 
 export function CourseAssignments({
-  classroomUrl,
+  courseId,
   localAssignments,
   isLoading = false,
   emptyText = "No work set on this course yet.",
 }: {
-  classroomUrl: string | null;
+  courseId: string;
   localAssignments: LocalAssignment[];
   isLoading?: boolean;
   emptyText?: string;
 }) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem(CLASSROOM_TOKEN_KEY)
-  );
-
-  const classroomCourseId = classroomUrl ? courseIdFromUrl(classroomUrl) : null;
-
-  const connect = useGoogleLogin({
-    flow: "auth-code",
-    scope: CLASSROOM_SCOPES,
-    onSuccess: async ({ code }) => {
-      try {
-        const data = await exchangeGoogleToken(code);
-        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
-        setToken(data.access_token);
-        toast.success("Connected to Google Classroom");
-      } catch (err: any) {
-        toast.error(err.message || "Could not connect to Google");
-      }
-    },
-    onError: () => toast.error("Google login failed"),
-  });
-
   const {
-    data: classroom = [],
+    data,
     isLoading: classroomLoading,
-    error: classroomError,
+    error,
   } = useQuery({
-    queryKey: ["classroom-coursework", classroomCourseId, token],
-    queryFn: () => getClassroomCourseWork(token!, classroomCourseId!),
-    enabled: !!token && !!classroomCourseId,
+    queryKey: ["course-classwork", courseId],
+    queryFn: () => getCourseWorkFor(courseId),
+    enabled: !!courseId,
     retry: false,
   });
 
-  // Google expires these, and the only useful answer is to offer the button
-  // again rather than leave a stale token failing quietly on every visit.
-  useEffect(() => {
-    const message = (classroomError as any)?.message ?? "";
-    if (/401|unauthor|credential/i.test(message)) {
-      localStorage.removeItem(CLASSROOM_TOKEN_KEY);
-      setToken(null);
-    }
-  }, [classroomError]);
+  const classroom = data?.assignments ?? [];
 
   const merged = useMemo(() => {
     const fromClassroom = new Set(classroom.map((a) => a.link).filter(Boolean));
@@ -106,30 +75,21 @@ export function CourseAssignments({
 
   return (
     <div className="animate-in fade-in duration-300">
-      {classroomUrl && !classroomCourseId && (
+      {data?.invalidLink && (
         <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
           <TriangleAlert size={14} />
           That Google Classroom link is not a class URL, so nothing can be read from it.
         </p>
       )}
 
-      {classroomCourseId && !token && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#CAA25F]/40 bg-[#CAA25F]/5 px-4 py-3">
-          <p className="text-[13.5px] text-[#111] dark:text-white">
-            This course is linked to a Google Classroom. Connect to read the work set there.
-          </p>
-          <button
-            onClick={() => connect()}
-            className="shrink-0 rounded-xl bg-[#1099A1] px-5 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
-          >
-            Connect Google Classroom
-          </button>
-        </div>
-      )}
-
-      {!classroomUrl && (
-        <p className="mb-4 text-[13px] text-muted-foreground">
-          Not linked to a Google Classroom. Only work set through Yakal appears here.
+      {/* A failure here is worth naming rather than showing as an empty list:
+          an empty list says the teacher set nothing, which is a different and
+          much more reassuring claim than the truth. */}
+      {error != null && (
+        <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
+          <TriangleAlert size={14} />
+          Google Classroom could not be reached, so anything set there is missing from this
+          list.
         </p>
       )}
 

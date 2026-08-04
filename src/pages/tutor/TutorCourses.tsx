@@ -224,7 +224,7 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
         {activeTab === 'assignments' && (
           <div className="pt-2">
             <CourseAssignments
-              classroomUrl={course?.google_classroom_url ?? null}
+              courseId={ws.course?.id ?? ''}
               localAssignments={assignments.map((a, i) => ({
                 id: a.id,
                 index: i + 1,

@@ -6,7 +6,10 @@
   // not include api/. That gap is why a build passed here and failed there.
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    // DOM because scripts/verify imports browser modules to test them. It does
+    // not make the scripts themselves browser code; nothing in api or scripts
+    // touches window, and tsc would say so if it did.
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -17,7 +20,9 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["node"],
+    // vite/client alongside node because scripts/verify imports browser
+    // modules to test them, and those read import.meta.env.
+    "types": ["node", "vite/client"],
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] }
   },

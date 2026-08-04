@@ -266,7 +266,7 @@ export function AdminCourseDetail() {
 
           {/* ASSIGNMENTS TAB */}
           {activeTab === "assignments" && (
-            <AssignmentsTab courseId={course.id} classroomUrl={course.google_classroom_url ?? null} />
+            <AssignmentsTab courseId={course.id} />
           )}
 
           {/* STUDENTS TAB */}
@@ -315,23 +315,13 @@ export function AdminCourseDetail() {
 }
 
 /** Thin wrapper: the DB rows for this course, then the shared reader. */
-function AssignmentsTab({
-  courseId,
-  classroomUrl,
-}: {
-  courseId: string;
-  classroomUrl: string | null;
-}) {
+function AssignmentsTab({ courseId }: { courseId: string }) {
   const { data: local = [], isLoading } = useQuery({
     queryKey: ["admin-course-assignments", courseId],
     queryFn: () => getCourseAssignments(courseId),
   });
 
   return (
-    <CourseAssignments
-      classroomUrl={classroomUrl}
-      localAssignments={local}
-      isLoading={isLoading}
-    />
+    <CourseAssignments courseId={courseId} localAssignments={local} isLoading={isLoading} />
   );
 }
