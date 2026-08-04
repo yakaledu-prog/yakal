@@ -200,11 +200,10 @@ export function AddCollegeModal({
       <div
         className={cn(
           "flex w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]",
-          // A floor, not a fixed height. Pinning it to 700px gave a short form
-          // a tall box with a void through the middle and handed the panel
-          // beside it more height than there was anything to put in.
-          picked && step > 0 ? "max-h-[88vh] md:min-h-[440px]" : "max-h-[88vh]",
-          picked && step > 0 ? "max-w-lg md:max-w-4xl" : "max-w-lg",
+          // Content sets the height. A floor only moved the void from the
+          // middle of the form to the foot of it.
+          "max-h-[88vh]",
+          picked && step > 0 ? "max-w-lg md:max-w-3xl" : "max-w-lg",
           "flex-col md:flex-row"
         )}
       >
@@ -214,7 +213,7 @@ export function AddCollegeModal({
         {picked && step > 0 && <CollegePanel college={picked} />}
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="border-b border-[#e9edef] px-6 pb-5 pt-5 dark:border-[#2a3942] md:px-8 md:pb-6 md:pt-6">
+        <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942] md:px-6 md:pb-5 md:pt-5">
           {/* One row. On a phone it carries the college name, because the
               side panel that would otherwise say it is not there; from md the
               panel has the name and this row gives the space to the stepper.
@@ -285,7 +284,7 @@ export function AddCollegeModal({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-7">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6 md:py-6">
           {step === 0 && (
             <>
               <div className="relative">
@@ -440,7 +439,7 @@ export function AddCollegeModal({
           )}
         </div>
 
-        <footer className="flex items-center gap-3 border-t border-[#e9edef] px-6 py-4 dark:border-[#2a3942] md:px-8 md:py-5">
+        <footer className="flex items-center gap-3 border-t border-[#e9edef] px-5 py-3.5 dark:border-[#2a3942] md:px-6 md:py-4">
           {/* Beside the navigation rather than inside a step: it is the one
               answer that is not about the college, and it stays visible while
               the rest is being filled in.
@@ -618,7 +617,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[280px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] md:flex dark:border-[#2a3942] dark:bg-[#0f171c]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] md:flex dark:border-[#2a3942] dark:bg-[#0f171c]">
       {img && (
         <>
           <img
@@ -651,8 +650,8 @@ function CollegePanel({ college }: { college: College }) {
         </>
       )}
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-6">
-        <h3 className="text-[19px] font-bold leading-tight text-[#111] dark:text-white">
+      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
+        <h3 className="text-[17px] font-bold leading-tight text-[#111] dark:text-white">
           {college.name}
         </h3>
         <p className="mt-1 text-[12.5px] text-[#717182]">
@@ -660,11 +659,11 @@ function CollegePanel({ college }: { college: College }) {
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
 
-        <div className="mt-5 space-y-2.5">
+        <div className="mt-4 space-y-2">
           {rows.map((r) => (
             <div
               key={r.label}
-              className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3.5 py-3 dark:border-[#2a3942] dark:bg-[#111b21]"
+              className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3 py-2.5 dark:border-[#2a3942] dark:bg-[#111b21]"
             >
               <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
                 <span className="text-[#1099A1]">{r.icon}</span>
