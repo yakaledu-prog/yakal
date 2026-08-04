@@ -113,8 +113,12 @@ export function CatalogFilterRail({
       {/* Fit toggle. Off by default when we have no scores on file, because a
           fit ranking computed from nothing is worse than no ranking. */}
       <div className="border-t border-[#e9edef] px-3 py-3 dark:border-[#2a3942]">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[13px] font-semibold text-foreground">Fit for you</span>
+        <div className="flex w-full min-w-0 items-center justify-between gap-2">
+          {/* min-w-0 so the label yields rather than pushing the control past
+              the rail's padding, which left the knob outside the panel. */}
+          <span className="min-w-0 truncate text-[13px] font-semibold text-foreground">
+            Fit for you
+          </span>
           <button
             type="button"
             role="switch"
@@ -125,7 +129,7 @@ export function CatalogFilterRail({
             onClick={() => onToggleFit(!fitEnabled)}
             title={hasProfile ? undefined : "Add a GPA and test scores first"}
             className={cn(
-              "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+              "relative h-5 w-9 shrink-0 overflow-hidden rounded-full transition-colors",
               // Off, not merely faded, when there is nothing to rank against.
               // Painted on while it could not be switched, it read as a solid
               // blob with no moving part: a control that looked broken rather

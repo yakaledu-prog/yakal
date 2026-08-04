@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, Loader2, Search, X } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Check,
+  ChevronDown,
+  DollarSign,
+  GraduationCap,
+  Loader2,
+  Search,
+  Users,
+  X,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 import {
@@ -186,17 +197,34 @@ export function AddCollegeModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
+      <div
+        className={cn(
+          "flex max-h-[88vh] w-full overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]",
+          picked && step > 0 ? "max-w-lg md:max-w-4xl" : "max-w-lg",
+          "flex-col md:flex-row"
+        )}
+      >
+        {/* The college being added, kept in view while the form is filled in.
+            Desktop only: on a phone this would be a screen of context before
+            the first field, so the compact strip below stays there instead. */}
+        {picked && step > 0 && <CollegePanel college={picked} />}
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942]">
           <div className="mb-4 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               {/* On the search step the college is still being chosen, so
                   showing a previous pick here would be a lie. */}
-              <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
+              <h2
+                className={cn(
+                  "truncate text-[16px] font-semibold text-[#111] dark:text-white",
+                  step > 0 && picked && "md:hidden"
+                )}
+              >
                 {step === 0 ? "Add a college" : name}
               </h2>
               {step > 0 && picked && (
-                <p className="truncate text-[12px] text-[#717182]">
+                <p className="truncate text-[12px] text-[#717182] md:hidden">
                   {[picked.city, picked.state].filter(Boolean).join(", ")}
                   {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
                 </p>
@@ -220,7 +248,7 @@ export function AddCollegeModal({
 
         {/* Facts we already hold, shown as context rather than announced. */}
         {picked && step > 0 && (
-          <div className="grid grid-cols-4 divide-x divide-[#e9edef] border-b border-[#e9edef] bg-[#fafbfc] dark:divide-[#2a3942] dark:border-[#2a3942] dark:bg-[#0f171c]">
+          <div className="grid grid-cols-4 divide-x divide-[#e9edef] border-b border-[#e9edef] bg-[#fafbfc] md:hidden dark:divide-[#2a3942] dark:border-[#2a3942] dark:bg-[#0f171c]">
             <Stat
               k="Admit"
               v={picked.admitRate === null ? "-" : `${picked.admitRate}%`}
@@ -532,11 +560,134 @@ export function AddCollegeModal({
             </button>
           )}
         </footer>
+        </div>
       </div>
     </div>
   );
 }
 
+/**
+ * The college, beside the form.
+ *
+ * The four numbers were a strip of four cells across the top, which put them
+ * above the fold on a laptop and nowhere near the fields they inform. Down the
+ * side they stay readable while somebody works, which is the point of showing
+ * them at all.
+ *
+ * The photograph is the campus, not a crest: the catalog holds Wikimedia
+ * images and no logos, and inventing one would mean a wrong mark next to a
+ * real university.
+ */
+function CollegePanel({ college }: { college: College }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const img = imgFailed ? null : collegeImageUrl(college.image, 480);
+
+  const rows = [
+    {
+      icon: <Users size={15} />,
+      label: "Admit",
+      value: college.admitRate === null ? "-" : `${college.admitRate}%`,
+      hint: "Share of all applicants admitted, across the whole college. Competitive majors like nursing, CS and engineering are usually harder than this number suggests.",
+    },
+    {
+      icon: <DollarSign size={15} />,
+      label: "Net price",
+      value: college.netPrice === null ? "-" : `$${(college.netPrice / 1000).toFixed(0)}k`,
+      hint: "Average yearly cost after grants for students receiving federal aid, not the sticker price and not a quote for you.",
+    },
+    {
+      icon: <BarChart3 size={15} />,
+      label: "SAT",
+      value: college.satLow ? `${college.satLow}-${college.satHigh}` : "-",
+      hint: "Middle 50 percent of enrolled students who submitted a score. Because many now apply test-optional, this skews higher than the typical admitted student.",
+    },
+    {
+      icon: <GraduationCap size={15} />,
+      label: "Grad",
+      value: college.gradRate === null ? "-" : `${college.gradRate}%`,
+      hint: "Share of students who finish a bachelor's degree here within six years.",
+    },
+  ];
+
+  return (
+    <aside className="relative hidden w-[280px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] md:flex dark:border-[#2a3942] dark:bg-[#0f171c]">
+      {img && (
+        <>
+          <img
+            src={img}
+            alt=""
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* Dark enough at both ends to hold text, lighter through the middle
+              so the campus is still a photograph rather than a texture. The
+              same black wash the hero and the blog header use, so a photo
+              behind type looks the same wherever it appears. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/55 to-black/90" />
+        </>
+      )}
+
+      <div
+        className={cn(
+          "relative z-10 min-h-0 flex-1 overflow-y-auto p-5",
+          img && "text-white"
+        )}
+      >
+        <h3
+          className={cn(
+            "text-[19px] font-bold leading-tight",
+            img ? "text-white" : "text-[#111] dark:text-white"
+          )}
+        >
+          {college.name}
+        </h3>
+        <p className={cn("mt-1 text-[12.5px]", img ? "text-white/75" : "text-[#717182]")}>
+          {[college.city, college.state].filter(Boolean).join(", ")}
+          {college.control && ` - ${CONTROL_LABEL[college.control]}`}
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {rows.map((r) => (
+            <div
+              key={r.label}
+              className={cn(
+                "flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5",
+                img
+                  // Frosted rather than solid, so the photograph reads through
+                  // and the panel stays one object instead of four cards on a
+                  // picture.
+                  ? "border-white/20 bg-white/10 backdrop-blur-sm"
+                  : "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex min-w-0 items-center gap-2 text-[12.5px]",
+                  img ? "text-white/85" : "text-[#54656f] dark:text-[#aebac1]"
+                )}
+              >
+                <span className={img ? "text-[#97CE9D]" : "text-[#1099A1]"}>{r.icon}</span>
+                <span className="truncate">{r.label}</span>
+                <InfoHint text={r.hint} size={11} />
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 text-[14px] font-semibold tabular-nums",
+                  img ? "text-white" : "text-[#111] dark:text-white"
+                )}
+              >
+                {r.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+/** One cell of the compact strip a phone gets instead of the side panel. */
 function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
   return (
     <div className="px-2 py-2.5 text-center">
@@ -550,7 +701,6 @@ function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
     </div>
   );
 }
-
 
 /** One searchable college, shared by the suggestions and the search results. */
 function CollegeOption({
