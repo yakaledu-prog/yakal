@@ -32,12 +32,6 @@ import { getServiceClient, requireUser } from '../_utils/billing';
  *   GCP_CLIENT_SECRET
  */
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/classroom.courses.readonly',
-  'https://www.googleapis.com/auth/classroom.coursework.students',
-  'https://www.googleapis.com/auth/classroom.rosters.readonly',
-];
-
 /**
  * The numeric class id inside a Classroom URL.
  *
@@ -66,7 +60,11 @@ function classroomClient() {
     process.env.VITE_GCP_CLIENT_ID,
     process.env.GCP_CLIENT_SECRET
   );
-  auth.setCredentials({ refresh_token: refreshToken, scope: SCOPES.join(' ') });
+  // No scope here. A refresh token carries whatever was consented when it was
+  // minted, and naming scopes it does not have would only mislead the next
+  // person reading this. scripts/google-oauth-setup.mjs is where they are asked
+  // for.
+  auth.setCredentials({ refresh_token: refreshToken });
   return google.classroom({ version: 'v1', auth });
 }
 
@@ -194,8 +192,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ assignments, linked: true });
   } catch (err: any) {
     console.error('classroom error:', err);
-    const message = err?.message || 'Server error';
-    const status = message.includes('session') || message.includes('token') ? 401 : 500;
-    return res.status(status).json({ error: message });
+    const raw = err?.message || 'Server error';
+
+    // invalid_grant means the operations account's refresh token is dead, and
+    // Google gives the same answer whether it expired or was revoked. It is
+    // worth translating: the raw string sends whoever reads it looking at the
+    // request, and the request is fine. An OAuth app left in Testing expires
+    // its refresh tokens after seven days, which is the usual reason.
+    if (/invalid_grant/i.test(raw)) {
+      return res.status(503).json({
+        error:
+          'Google access has expired. Re-run scripts/google-oauth-setup.mjs signed in ' +
+          'as the account that owns the classes, and publish the OAuth consent screen ' +
+          'so the token stops expiring weekly.',
+      });
+    }
+
+    // The class exists for somebody, just not for this account.
+    if (/not found|notFound/i.test(raw)) {
+      return res.status(404).json({
+        error:
+          'That class was not found for the Yakal Google account. It is owned by a ' +
+          'different account, or the link points at a class that no longer exists.',
+      });
+    }
+
+    const status = raw.includes('session') || raw.includes('token') ? 401 : 500;
+    return res.status(status).json({ error: raw });
   }
 }
