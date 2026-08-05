@@ -1,4 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import {
+  renderNotification,
+  type TemplateKey,
+  type TemplateVars,
+} from "@/lib/notifications";
 
 // ============================================================
 // In-app notifications.
@@ -18,6 +23,10 @@ export interface AppNotification {
   isRead: boolean;
   archived: boolean;
   createdAt: Date;
+  /** Which template wrote this. Null on rows written before templates existed. */
+  template: string | null;
+  /** The facts it was about. The words are rendered from these, not stored. */
+  vars: Record<string, unknown> | null;
 }
 
 function toNotification(row: any): AppNotification {
@@ -31,6 +40,8 @@ function toNotification(row: any): AppNotification {
     isRead: !!row.is_read,
     archived: !!row.archived,
     createdAt: new Date(row.created_at),
+    template: row.template ?? null,
+    vars: (row.vars as Record<string, unknown> | null) ?? null,
   };
 }
 
@@ -38,7 +49,7 @@ function toNotification(row: any): AppNotification {
 export async function getNotifications(userId: string): Promise<AppNotification[]> {
   const { data, error } = await supabase
     .from("notifications")
-    .select("id, user_id, type, title, message, link, is_read, archived, created_at")
+    .select("id, user_id, type, title, message, link, is_read, archived, created_at, template, vars")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -77,6 +88,9 @@ export async function sendNotification(input: {
   message: string;
   type?: string;
   link?: string | null;
+  /** The template that wrote this, and what it was about. */
+  template?: string | null;
+  vars?: Record<string, unknown> | null;
 }): Promise<void> {
   const { error } = await supabase.from("notifications").insert({
     user_id: input.userId,
@@ -84,8 +98,34 @@ export async function sendNotification(input: {
     title: input.title,
     message: input.message,
     link: input.link ?? null,
+    template: input.template ?? null,
+    vars: input.vars ?? null,
   });
   if (error) throw error;
+}
+
+/**
+ * Send one from a template.
+ *
+ * The title and the line are stored so a row still reads if the template is
+ * ever renamed, and the facts are stored so everything else can be rendered
+ * fresh each time it is drawn.
+ */
+export async function sendFromTemplate<K extends TemplateKey>(
+  userId: string,
+  key: K,
+  vars: TemplateVars<K>
+): Promise<void> {
+  const n = renderNotification(key, vars);
+  await sendNotification({
+    userId,
+    type: n.type,
+    title: n.title,
+    message: n.message,
+    link: n.link,
+    template: key,
+    vars: vars as Record<string, unknown>,
+  });
 }
 
 /** Fires whenever a row for this user changes, so a badge can update live. */

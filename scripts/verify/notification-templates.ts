@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import {
   TEMPLATE_KEYS,
   TEMPLATES,
+  detailFor,
   renderSample,
 } from "../../src/lib/notifications/index.ts";
 
@@ -63,6 +64,53 @@ for (const key of TEMPLATE_KEYS) {
     `${key}: no unreplaced placeholder survived`,
     !/undefined|null|\[object/.test(`${email.subject} ${email.intro} ${notification.message}`)
   );
+}
+
+// The round trip: what the seeder stores, read back the way the app reads it.
+for (const key of TEMPLATE_KEYS) {
+  const { notification, vars, detail } = renderSample(key);
+  const row = {
+    template: key,
+    vars: vars as Record<string, unknown>,
+    title: notification.title,
+    message: notification.message,
+    link: notification.link,
+  };
+  const rendered = detailFor(row);
+
+  check(`${key}: a stored row renders its full detail back`,
+    rendered.body === detail.body && rendered.facts.length === detail.facts.length,
+    { body: rendered.body.length, facts: rendered.facts.length });
+
+  check(`${key}: opening it says more than the list row did`,
+    rendered.body.length > notification.message.length,
+    { detail: rendered.body.length, row: notification.message.length });
+}
+
+// Rows written before templates existed, which is every row today.
+{
+  const legacy = detailFor({
+    template: null,
+    vars: null,
+    title: "Something happened",
+    message: "A sentence that was stored rather than rendered.",
+    link: "/student",
+  });
+  check("a row with no template still renders", legacy.body.length > 0);
+  check("a row with no template still offers its link", legacy.action?.url === "/student");
+}
+
+// A template that has been renamed since the row was written.
+{
+  const orphan = detailFor({
+    template: "aTemplateThatNoLongerExists",
+    vars: { anything: true },
+    title: "Old news",
+    message: "Stored when the template still existed.",
+    link: null,
+  });
+  check("an unknown template falls back rather than throwing",
+    orphan.body === "Stored when the template still existed.");
 }
 
 const types = new Set(TEMPLATE_KEYS.map((k) => TEMPLATES[k].type));

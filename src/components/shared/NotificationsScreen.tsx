@@ -1,7 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Archive, ArchiveRestore, ArrowLeft, Clock, Inbox, Loader2, Mail, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, ArrowRight, Clock, Inbox, Loader2, Mail, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { detailFor } from "@/lib/notifications";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { useAuth } from "@/contexts/AuthContext";
@@ -285,8 +287,60 @@ export function NotificationsScreen({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                  <p className="text-[14.5px] text-foreground leading-relaxed">{active.message}</p>
-                  {renderAction?.(active, afterAction)}
+                  {(() => {
+                    // Rendered from the template, not from stored prose, so a
+                    // wording fix reaches notifications sent months ago. A row
+                    // with no template falls back to the line it was stored
+                    // with, which is every row written before templates.
+                    const detail = detailFor(active);
+                    return (
+                      <div className="max-w-none">
+                        <p className="text-[14.5px] leading-[1.65] text-foreground">
+                          {detail.body}
+                        </p>
+
+                        {detail.facts.length > 0 && (
+                          <dl className="mt-5 border-t border-border">
+                            {detail.facts.map((f) => (
+                              <div
+                                key={f.label}
+                                className="flex gap-4 border-b border-border py-2.5"
+                              >
+                                <dt className="w-[140px] shrink-0 text-[13px] text-muted-foreground">
+                                  {f.label}
+                                </dt>
+                                <dd className="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">
+                                  {f.value}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+
+                        {/* Whatever the notification is for. A decision, when
+                            there is one to make, comes from renderAction: those
+                            are role specific and bound by row level security,
+                            so they belong to the page and not to a template. */}
+                        {detail.action && (
+                          <Link
+                            to={detail.action.url}
+                            className="mt-5 inline-flex items-center gap-1.5 bg-[#1099A1] px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                          >
+                            {detail.action.label}
+                            <ArrowRight size={15} />
+                          </Link>
+                        )}
+
+                        {detail.footnote && (
+                          <p className="mt-6 border-t border-border pt-4 text-[12.5px] leading-relaxed text-muted-foreground">
+                            {detail.footnote}
+                          </p>
+                        )}
+
+                        {renderAction?.(active, afterAction)}
+                      </div>
+                    );
+                  })()}
                 </div>
               </>
             )}

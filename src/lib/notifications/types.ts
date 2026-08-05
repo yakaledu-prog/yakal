@@ -40,6 +40,26 @@ export interface RenderedNotification {
   link: string | null;
 }
 
+/**
+ * A notification opened, rather than glanced at.
+ *
+ * The same substance as the email and none of its chrome: no greeting, no
+ * heading, no signature. Somebody reading this is already inside the app and
+ * knows who is talking to them.
+ *
+ * Derived from the template's email rather than written again. Two versions of
+ * the same paragraph is how they come to disagree.
+ */
+export interface NotificationDetail {
+  title: string;
+  /** The paragraph. What the list row summarised in one line. */
+  body: string;
+  facts: EmailFact[];
+  action: { label: string; url: string } | null;
+  /** Anything worth knowing that is not the news. */
+  footnote: string | null;
+}
+
 /** A labelled pair under the opening line of an email. */
 export interface EmailFact {
   label: string;

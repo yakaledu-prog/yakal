@@ -92,13 +92,18 @@ async function main() {
   const keys = shuffled([...TEMPLATE_KEYS], 20260804);
   const now = Date.now();
   const rows = keys.map((key, i) => {
-    const { notification } = renderSample(key);
+    const { notification, vars } = renderSample(key);
     return {
       user_id: profile.id,
       type: notification.type,
       title: notification.title,
       message: notification.message,
       link: notification.link,
+      // The facts, not the words. Everything a reader sees on opening this is
+      // rendered from the template each time, so fixing a sentence fixes rows
+      // that were written months ago.
+      template: key,
+      vars,
       // Spread back over a fortnight, newest first, with the first three left
       // unread so the tabs have something to separate.
       created_at: new Date(now - i * 26 * 60 * 60 * 1000).toISOString(),
