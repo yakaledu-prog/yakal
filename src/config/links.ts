@@ -6,16 +6,31 @@
  * one with none.
  */
 /**
- * Set `VITE_BOOKING_URL` to the real Calendly. The fallback is the developer
- * account it was built against, which books into the wrong calendar the moment
- * anybody else deploys this, and is the kind of thing nobody notices until a
- * stranger appears in your week.
+ * The booking page, from `VITE_BOOKING_URL`.
+ *
+ * Empty when unset, and openBooking then does nothing rather than guessing.
+ * It used to fall back to the Calendly of whoever built this, which books
+ * strangers into a private calendar and is not the sort of thing anybody
+ * thinks to check.
  */
-export const CALENDLY_URL =
-  import.meta.env.VITE_BOOKING_URL ||
-  "https://calendly.com/binyammamo01/parent-counseling-session";
+export const CALENDLY_URL = import.meta.env.VITE_BOOKING_URL ?? "";
 
 /** Opens a booking page without handing it a window it can navigate. */
 export function openBooking() {
+  if (!CALENDLY_URL) {
+    console.warn("VITE_BOOKING_URL is not set, so there is no booking page to open.");
+    return;
+  }
   window.open(CALENDLY_URL, "_blank", "noopener,noreferrer");
 }
+
+/**
+ * What the footer prints. Placeholders until the real ones are supplied: the
+ * address and phone always were, and the email said contact@yamal.com while
+ * linking to a personal inbox, so both halves were wrong in different ways.
+ */
+export const CONTACT = {
+  email: import.meta.env.VITE_CONTACT_EMAIL ?? "hello@yakal.me",
+  phone: import.meta.env.VITE_CONTACT_PHONE ?? "+1 (123) 456-7890",
+  address: import.meta.env.VITE_CONTACT_ADDRESS ?? "123 Design Street, New York, United States",
+};

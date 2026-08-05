@@ -18,6 +18,7 @@ const socials = [
   { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
+import { CONTACT } from "@/config/links";
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
@@ -65,13 +66,13 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
         <div>
           <h4 className="text-[16px] md:text-[20px] font-semibold mb-[16px] md:mb-[24px]">Location</h4>
           <p className="text-[rgba(255,255,255,0.75)] text-[13px] md:text-[16px] leading-[24px] md:leading-[28px] mb-[12px]">
-            <strong className="text-white">Address:</strong> 123 Design Street, New York, United States
+            <strong className="text-white">Address:</strong> {CONTACT.address}
           </p>
           <p className="text-[rgba(255,255,255,0.75)] text-[13px] md:text-[16px] leading-[24px] md:leading-[28px] mb-[12px]">
-            <strong className="text-white">Phone:</strong> +1 (123) 456-7890
+            <strong className="text-white">Phone:</strong> {CONTACT.phone}
           </p>
           <p className="text-[rgba(255,255,255,0.75)] text-[13px] wrap-anywhere md:text-[16px] leading-[24px] md:leading-[28px]">
-            <strong className="text-white">Email:</strong> <a href="mailto:binyam2537@gmail.com" className="text-primary" target="_blank">contact@yamal.com</a>
+            <strong className="text-white">Email:</strong> <a href={`mailto:${CONTACT.email}`} className="text-primary">{CONTACT.email}</a>
           </p>
         </div>
 
