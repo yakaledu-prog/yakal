@@ -57,26 +57,48 @@ export async function getAllTestimonials(): Promise<Testimonial[]> {
 }
 
 /**
- * Starting points for the role field, not a closed list.
+ * The roles a testimonial can carry: the app's own roles, capitalised.
  *
- * The useful label is specific: "Algebra Student" says more than "Student",
- * and that specificity is most of what a testimonial is doing on a tutoring
- * site. So the field takes any text. Offering what has been used before is
- * what stops the same idea being spelled three ways, which is the actual risk
- * with free text, rather than the freedom itself.
+ * Closed rather than free text, because these are filtered, counted and
+ * coloured. Free text gave "Algebra Student", "Physics & Calculus Student"
+ * and "SAT Prep Student" for three rows, which is a filter with one item
+ * behind every option, and no way to colour a card by who is speaking.
  */
-const ROLE_SEEDS = ["Student", "Parent", "Tutor", "Counselor"];
+export const TESTIMONIAL_ROLES = ["Student", "Parent", "Tutor", "Counselor"] as const;
+export type TestimonialRole = (typeof TESTIMONIAL_ROLES)[number];
 
-/** profiles.role is lowercase. Prefilled capitalised, then edited if wanted. */
-export function roleLabel(profileRole: string | null | undefined): string {
+/** profiles.role is lowercase. Returns "" for anything not in the set. */
+export function roleLabel(profileRole: string | null | undefined): TestimonialRole | "" {
   if (!profileRole) return "";
-  return profileRole.charAt(0).toUpperCase() + profileRole.slice(1).toLowerCase();
+  return TESTIMONIAL_ROLES.find((r) => r.toLowerCase() === profileRole.toLowerCase()) ?? "";
 }
 
-/** Roles already in use, plus the seeds, for the role field's suggestions. */
-export function roleSuggestions(existing: Testimonial[]): string[] {
-  const used = existing.map((t) => t.role.trim()).filter(Boolean);
-  return [...new Set([...used, ...ROLE_SEEDS])].sort((a, b) => a.localeCompare(b));
+/**
+ * The outline a card gets for each role.
+ *
+ * Three brand colours against four roles, so Parent keeps the neutral border.
+ * Tutor and Counselor follow the mapping the billing cards already use, so a
+ * gold outline means the same thing in both places.
+ */
+export const ROLE_COLOR: Record<string, string> = {
+  Student: "#97CE9D",
+  Tutor: "#CAA25F",
+  Counselor: "#1099A1",
+};
+
+/**
+ * The same colour, faint, for a count badge to sit on.
+ *
+ * Built from the brand hex rather than reaching for a theme token, because
+ * --muted-foreground is #717182, which is a blue-violet grey. Fine as body
+ * text, wrong as a swatch beside three brand colours: it reads as a fourth
+ * colour that nobody chose.
+ */
+export function roleTint(role: string, alpha = 0.16): string | undefined {
+  const hex = ROLE_COLOR[role];
+  if (!hex) return undefined;
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Quote as QuoteIcon } from "lucide-react";
+import { MessageCirclePlus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Eye, EyeOff, Quote as QuoteIcon } from "lucide-react";
 import {
   getAllTestimonials,
   createTestimonial,
@@ -10,7 +10,9 @@ import {
   reorderTestimonials,
   uploadTestimonialPhoto,
   roleLabel,
-  roleSuggestions,
+  TESTIMONIAL_ROLES,
+  ROLE_COLOR,
+  roleTint,
   type Testimonial,
   type TestimonialInput,
 } from "@/services/testimonialService";
@@ -35,13 +37,11 @@ const EMPTY: Draft = { name: "", role: "", quote: "", avatar_url: "", published:
 
 function EditDialog({
   initial,
-  roles,
   busy,
   onSave,
   onClose,
 }: {
   initial: Testimonial | null;
-  roles: string[];
   busy: boolean;
   onSave: (input: Draft) => void;
   onClose: () => void;
@@ -78,9 +78,12 @@ function EditDialog({
   }));
 
   /**
-   * Picking somebody fills what the database already knows and stops there.
-   * The quote is theirs to paste, and an existing photo is not overwritten,
-   * because an admin who chose one meant it.
+   * Picking somebody replaces what the database knows about them.
+   *
+   * Role is overwritten rather than kept, because the account is the authority
+   * on what somebody is: a typed "Parent" left standing over a tutor's record
+   * would be wrong on the site and wrong in the filters. The photo follows the
+   * same rule when they have one, and their quote is never touched.
    */
   function pickPerson(item: ComboboxItem) {
     const person = people.find((p) => p.id === item.id);
@@ -88,8 +91,8 @@ function EditDialog({
     setForm((f) => ({
       ...f,
       name: person.full_name ?? f.name,
-      role: f.role.trim() || roleLabel(person.role),
-      avatar_url: f.avatar_url?.trim() ? f.avatar_url : person.avatar_url ?? "",
+      role: roleLabel(person.role) || f.role,
+      avatar_url: person.avatar_url || f.avatar_url,
     }));
   }
 
@@ -176,14 +179,13 @@ function EditDialog({
             </div>
 
             <div>
-              <label htmlFor="t-role" className={label}>Role</label>
-              <Combobox
-                id="t-role"
-                value={form.role}
+              <span className={label}>Role</span>
+              <Dropdown
+                value={form.role || "Student"}
                 onChange={(v) => set("role", v)}
-                items={roles.map((r) => ({ id: r, label: r }))}
-                placeholder="Algebra Student"
-                emptyHint="New role. What you type is used as it is."
+                options={TESTIMONIAL_ROLES.map((r) => ({ value: r, label: r }))}
+                ariaLabel="Role"
+                className="w-full"
               />
             </div>
 
@@ -321,14 +323,15 @@ export function AdminTestimonials() {
    */
   const filtering = q.trim() !== "" || visibility !== "all" || role !== "all";
 
-  const roleCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const t of items) {
-      const name = t.role.trim();
-      if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [items]);
+  // Over the fixed set rather than what happens to be in use, so the filters
+  // do not appear and disappear as rows are added.
+  const roleFilters = useMemo(
+    () => [
+      ["all", items.length] as const,
+      ...TESTIMONIAL_ROLES.map((r) => [r, items.filter((t) => t.role === r).length] as const),
+    ],
+    [items]
+  );
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -425,6 +428,47 @@ export function AdminTestimonials() {
               />
             </div>
 
+            {/* Beside the search rather than on their own row: four short
+                chips fit, and a second row of controls above three cards read
+                as more chrome than content. Hidden on a phone, where the
+                search field does the same job in less width. */}
+            <div className="hidden flex-wrap items-center gap-2 lg:flex">
+              {roleFilters.map(([name, count]) => {
+                const on = role === name;
+                const colour = ROLE_COLOR[name];
+                return (
+                  <button
+                    key={name}
+                    onClick={() => setRole(on ? "all" : name)}
+                    aria-pressed={on}
+                    disabled={count === 0 && !on}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+                      on ? "font-medium text-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                    )}
+                    style={on ? { borderColor: colour ?? "currentColor" } : undefined}
+                  >
+                    {colour && (
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colour }} />
+                    )}
+                    {name === "all" ? "All" : name}
+                    {/* Tinted with the role's own colour. The neutral token
+                        this used is #717182, a violet grey that reads as a
+                        fourth brand colour nobody picked. */}
+                    <span
+                      className="rounded-full px-1.5 text-[11px] font-medium"
+                      style={{
+                        backgroundColor: roleTint(name) ?? "rgba(16, 153, 161, 0.12)",
+                        color: colour ?? "#1099A1",
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <Dropdown
               value={visibility}
               onChange={setVisibility}
@@ -435,38 +479,16 @@ export function AdminTestimonials() {
               ]}
               size="sm"
               ariaLabel="Filter by visibility"
-              className="w-[150px]"
+              className="ml-auto w-[150px]"
             />
 
             <button
               onClick={() => setEditing(null)}
               className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-[#0d7f86]"
             >
-              <Plus size={16} /> Add testimonial
+              <MessageCirclePlus size={16} /> Add testimonial
             </button>
           </div>
-
-          {/* Roles are free text, so these are the roles actually in use rather
-              than a fixed set. Hidden on a phone, where the search field does
-              the same job in less space. */}
-          {roleCounts.length > 1 && (
-            <div className="hidden flex-wrap gap-2 md:flex">
-              {roleCounts.map(([name, count]) => (
-                <button
-                  key={name}
-                  onClick={() => setRole(role === name ? "all" : name)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-[12.5px] transition-colors",
-                    role === name
-                      ? "border-[#1099A1] text-[#1099A1]"
-                      : "border-border text-muted-foreground hover:border-[#1099A1]/50 hover:text-foreground"
-                  )}
-                >
-                  {name} ({count})
-                </button>
-              ))}
-            </div>
-          )}
 
           <p className="text-[13px] text-muted-foreground">
             {filtering
@@ -499,9 +521,19 @@ export function AdminTestimonials() {
                     void dropped();
                   }}
                   className={cn(
-                    "flex items-start gap-4 rounded-xl border border-border bg-card p-4 transition-opacity",
+                    "flex items-start gap-4 rounded-xl border bg-card p-4 transition-all",
+                    ROLE_COLOR[t.role] ? "border-transparent" : "border-border",
+                    // Hidden is shown by the card being inactive rather than by
+                    // a word on it: the whole row reads at a glance, and the
+                    // label was repeating what the colour could say on its own.
+                    !t.published && "opacity-45 grayscale",
                     dragId === t.id && "opacity-40"
                   )}
+                  style={
+                    ROLE_COLOR[t.role] && t.published
+                      ? { borderColor: ROLE_COLOR[t.role] }
+                      : undefined
+                  }
                 >
                   <span
                     aria-hidden
@@ -517,24 +549,25 @@ export function AdminTestimonials() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2.5">
                       <p className="text-[15px] font-medium">{t.name}</p>
-                      {t.role && <p className="text-[13px] text-[#1099A1]">{t.role}</p>}
-                      <button
-                        onClick={() => togglePublished(t)}
-                        className={cn(
-                          "text-[12.5px] font-medium transition-colors",
-                          t.published
-                            ? "text-[#97CE9D] hover:text-[#1099A1]"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {t.published ? "Visible" : "Hidden"}
-                      </button>
+                      {t.role && (
+                        <p className="text-[13px]" style={{ color: ROLE_COLOR[t.role] ?? undefined }}>
+                          {t.role}
+                        </p>
+                      )}
                     </div>
                     <p className="mt-1 line-clamp-2 text-[13.5px] leading-relaxed text-muted-foreground">
                       {t.quote}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => togglePublished(t)}
+                      aria-label={t.published ? `Hide ${t.name}` : `Show ${t.name}`}
+                      title={t.published ? "Visible on site" : "Hidden"}
+                      className="rounded-lg p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    >
+                      {t.published ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </button>
                     <button
                       onClick={() => setEditing(t)}
                       aria-label={`Edit ${t.name}`}
@@ -560,7 +593,6 @@ export function AdminTestimonials() {
       {editing !== undefined && (
         <EditDialog
           initial={editing}
-          roles={roleSuggestions(saved)}
           busy={busy}
           onSave={save}
           onClose={() => setEditing(undefined)}
