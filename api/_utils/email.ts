@@ -104,46 +104,62 @@ export function layout(opts: {
   facts?: { label: string; value: string }[];
   cta?: { label: string; url: string };
   footer?: string;
+  /** Who it is to, so the greeting is a name rather than "Hello there". */
+  recipientName?: string;
 }): string {
   const facts = (opts.facts ?? [])
     .filter((f) => f.value)
     .map(
       (f) => `
         <tr>
-          <td style="padding:6px 0;color:#667781;font-size:13px;width:140px;vertical-align:top;">${escapeHtml(f.label)}</td>
-          <td style="padding:6px 0;color:#111111;font-size:14px;font-weight:600;">${escapeHtml(f.value)}</td>
+          <td style="padding:8px 0;color:#667781;font-size:13px;width:150px;vertical-align:top;">${escapeHtml(f.label)}</td>
+          <td style="padding:8px 0;color:#111111;font-size:14px;font-weight:600;">${escapeHtml(f.value)}</td>
         </tr>`
     )
     .join("");
 
+  // Full width, no card. A 560px rounded panel floating on grey is a web page
+  // pretending to be an email: on a phone it is a narrow column inside a
+  // narrow screen, and the rounding is the first thing an older client throws
+  // away. The content is the page, and it reads at any width.
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f3f4f6;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-        <tr><td style="background:${TEAL};padding:24px 28px;">
-          <p style="margin:0;color:#ffffff;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Yakal Education Services</p>
-          <h1 style="margin:6px 0 0;color:#ffffff;font-size:22px;font-weight:700;">${escapeHtml(opts.heading)}</h1>
-        </td></tr>
+<html><body style="margin:0;padding:0;background:#ffffff;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+    <tr><td style="background:${TEAL};padding:28px 24px;">
+      <p style="margin:0;color:#ffffff;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;">Yakal Education Services</p>
+      <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.25;">${escapeHtml(opts.heading)}</h1>
+    </td></tr>
 
-        <tr><td style="padding:24px 28px;">
-          <p style="margin:0 0 16px;color:#333333;font-size:15px;line-height:1.55;">${escapeHtml(opts.intro)}</p>
+    <tr><td style="padding:28px 24px 0;">
+      ${
+        opts.recipientName
+          ? `<p style="margin:0 0 16px;color:#111111;font-size:15px;line-height:1.6;">Hello ${escapeHtml(
+              opts.recipientName
+            )},</p>`
+          : ""
+      }
+      <p style="margin:0 0 20px;color:#333333;font-size:15px;line-height:1.65;">${escapeHtml(opts.intro)}</p>
 
-          ${facts ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e9edef;border-bottom:1px solid #e9edef;margin:0 0 20px;padding:6px 0;">${facts}</table>` : ""}
+      ${facts ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e9edef;border-bottom:1px solid #e9edef;margin:0 0 22px;">${facts}</table>` : ""}
 
-          ${
-            opts.cta
-              ? `<a href="${opts.cta.url}" style="display:inline-block;background:${TEAL};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border-radius:12px;">${escapeHtml(opts.cta.label)}</a>`
-              : ""
-          }
-        </td></tr>
+      ${
+        opts.cta
+          ? `<a href="${opts.cta.url}" style="display:inline-block;background:${TEAL};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 24px;">${escapeHtml(opts.cta.label)}</a>`
+          : ""
+      }
+    </td></tr>
 
-        <tr><td style="padding:0 28px 26px;">
-          <p style="margin:0;color:#8696a0;font-size:12px;line-height:1.5;">${escapeHtml(
-            opts.footer ?? "You are receiving this because you have a Yakal account."
-          )}</p>
-        </td></tr>
-      </table>
+    <tr><td style="padding:26px 24px 0;">
+      <p style="margin:0;color:#333333;font-size:15px;line-height:1.6;">Yakal Education Services</p>
+      <p style="margin:4px 0 0;color:#8696a0;font-size:13px;line-height:1.6;">Tutoring and college admissions</p>
+    </td></tr>
+
+    <tr><td style="padding:22px 24px 32px;">
+      <div style="border-top:1px solid #e9edef;padding-top:16px;">
+        <p style="margin:0;color:#8696a0;font-size:12px;line-height:1.6;">${escapeHtml(
+          opts.footer ?? "You are receiving this because you have a Yakal account."
+        )}</p>
+      </div>
     </td></tr>
   </table>
 </body></html>`;
