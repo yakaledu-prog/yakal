@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MessageCirclePlus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Eye, EyeOff, Quote as QuoteIcon } from "lucide-react";
+import { MessageCirclePlus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Eye, EyeOff, SlidersHorizontal, Quote as QuoteIcon } from "lucide-react";
 import {
   getAllTestimonials,
   createTestimonial,
@@ -312,6 +312,7 @@ export function AdminTestimonials() {
   const [q, setQ] = useState("");
   const [visibility, setVisibility] = useState<"all" | "visible" | "hidden">("all");
   const [role, setRole] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   /**
    * Dragging is off while anything is filtered.
@@ -411,6 +412,51 @@ export function AdminTestimonials() {
     refresh();
   }
 
+  const chips = roleFilters.map(([name, count]) => {
+    const on = role === name;
+    const colour = ROLE_COLOR[name];
+    return (
+      <button
+        key={name}
+        onClick={() => setRole(on ? "all" : name)}
+        aria-pressed={on}
+        disabled={count === 0 && !on}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+          on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
+          // Greyish rather than the near-black foreground: All is the resting
+          // state, and it should not shout louder than a real filter.
+          on && !colour && "text-foreground/70",
+          // All has no colour of its own, so its active state is a plain grey
+          // ring. Left to the inline style it fell back to currentColor, which
+          // is near-black and read as a selected checkbox rather than a filter.
+          on && !colour && "border-black/25 dark:border-white/30"
+        )}
+        style={on && colour ? { borderColor: colour } : undefined}
+      >
+        {colour && <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colour }} />}
+        {name === "all" ? "All" : name}
+        {/* Tinted with the role's own colour. The neutral token this used is
+            #717182, a violet grey that reads as a fourth brand colour. */}
+        <span
+          className={cn(
+            "rounded-full px-1.5 text-[11px] font-medium",
+            !colour && "bg-black/[0.07] text-foreground/70 dark:bg-white/10 dark:text-white/70"
+          )}
+          style={colour ? { backgroundColor: roleTint(name), color: colour } : undefined}
+        >
+          {count}
+        </span>
+      </button>
+    );
+  });
+
+  const visibilityOptions = [
+    { value: "all" as const, label: `All (${items.length})` },
+    { value: "visible" as const, label: `Visible (${items.filter((t) => t.published).length})` },
+    { value: "hidden" as const, label: `Hidden (${items.filter((t) => !t.published).length})` },
+  ];
+
   return (
     <PageWrapper className="!p-0">
       <div className="min-h-screen flex-1 bg-background dark:bg-[#111b21]">
@@ -424,8 +470,25 @@ export function AdminTestimonials() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search name, role or quote..."
-                className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
+                className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-10 text-[13.5px] outline-none transition-colors focus:border-[#1099A1] lg:pr-3"
               />
+              {/* On a phone the filters live behind this, inside the field, so
+                  the row is search plus Add and nothing else. Above lg the
+                  chips and the dropdown are on the row already, so it goes. */}
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((o) => !o)}
+                aria-label="Filters"
+                aria-expanded={filtersOpen}
+                className={cn(
+                  "absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors lg:hidden",
+                  role !== "all" || visibility !== "all"
+                    ? "text-[#1099A1]"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <SlidersHorizontal size={16} />
+              </button>
             </div>
 
             {/* Beside the search rather than on their own row: four short
@@ -433,53 +496,17 @@ export function AdminTestimonials() {
                 as more chrome than content. Hidden on a phone, where the
                 search field does the same job in less width. */}
             <div className="hidden flex-wrap items-center gap-2 lg:flex">
-              {roleFilters.map(([name, count]) => {
-                const on = role === name;
-                const colour = ROLE_COLOR[name];
-                return (
-                  <button
-                    key={name}
-                    onClick={() => setRole(on ? "all" : name)}
-                    aria-pressed={on}
-                    disabled={count === 0 && !on}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
-                      on ? "font-medium text-foreground" : "border-border text-muted-foreground hover:text-foreground"
-                    )}
-                    style={on ? { borderColor: colour ?? "currentColor" } : undefined}
-                  >
-                    {colour && (
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colour }} />
-                    )}
-                    {name === "all" ? "All" : name}
-                    {/* Tinted with the role's own colour. The neutral token
-                        this used is #717182, a violet grey that reads as a
-                        fourth brand colour nobody picked. */}
-                    <span
-                      className="rounded-full px-1.5 text-[11px] font-medium"
-                      style={{
-                        backgroundColor: roleTint(name) ?? "rgba(16, 153, 161, 0.12)",
-                        color: colour ?? "#1099A1",
-                      }}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+              {chips}
             </div>
 
             <Dropdown
               value={visibility}
               onChange={setVisibility}
-              options={[
-                { value: "all", label: `All (${items.length})` },
-                { value: "visible", label: `Visible (${items.filter((t) => t.published).length})` },
-                { value: "hidden", label: `Hidden (${items.filter((t) => !t.published).length})` },
-              ]}
+              options={visibilityOptions}
               size="sm"
               ariaLabel="Filter by visibility"
-              className="ml-auto w-[150px]"
+              className="ml-auto hidden w-[150px] lg:block"
+              buttonClassName="text-foreground/70"
             />
 
             <button
@@ -489,6 +516,21 @@ export function AdminTestimonials() {
               <MessageCirclePlus size={16} /> Add testimonial
             </button>
           </div>
+
+          {filtersOpen && (
+            <div className="flex flex-wrap items-center gap-2 lg:hidden">
+              {chips}
+              <Dropdown
+                value={visibility}
+                onChange={setVisibility}
+                options={visibilityOptions}
+                size="sm"
+                ariaLabel="Filter by visibility"
+                className="w-[150px]"
+                buttonClassName="text-foreground/70"
+              />
+            </div>
+          )}
 
           <p className="text-[13px] text-muted-foreground">
             {filtering
@@ -522,10 +564,14 @@ export function AdminTestimonials() {
                   }}
                   className={cn(
                     "flex items-start gap-4 rounded-xl border bg-card p-4 transition-all",
-                    ROLE_COLOR[t.role] ? "border-transparent" : "border-border",
                     // Hidden is shown by the card being inactive rather than by
                     // a word on it: the whole row reads at a glance, and the
                     // label was repeating what the colour could say on its own.
+                    // It keeps a plain border, because a card with none reads as
+                    // a gap in the list rather than as a row that is switched
+                    // off. Only the role colour is dropped, since that is the
+                    // part that means "live on the site".
+                    ROLE_COLOR[t.role] && t.published ? "border-transparent" : "border-border",
                     !t.published && "opacity-45 grayscale",
                     dragId === t.id && "opacity-40"
                   )}

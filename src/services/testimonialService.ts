@@ -84,6 +84,11 @@ export const ROLE_COLOR: Record<string, string> = {
   Student: "#97CE9D",
   Tutor: "#CAA25F",
   Counselor: "#1099A1",
+  // Four roles against three brand colours. Parent takes the deep teal the
+  // buttons already use for their hover state, so it stays inside the palette
+  // instead of introducing a fourth hue. Grey was the alternative and it read
+  // as "no role" rather than as a role.
+  Parent: "#0d7f86",
 };
 
 /**

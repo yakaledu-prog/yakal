@@ -39,7 +39,19 @@ async function main() {
 
   try {
     const { data: pub } = await anon.from('testimonials').select('name, published');
-    check('anon reads published testimonials', (pub ?? []).length >= 3, `${(pub ?? []).length} rows`);
+
+    // Against what the database actually holds, not a number written here.
+    // Hiding a testimonial from the admin screen is a normal thing to do, and
+    // it used to fail this check, which teaches people to ignore it.
+    const { count: publishedCount } = await admin
+      .from('testimonials')
+      .select('id', { count: 'exact', head: true })
+      .eq('published', true);
+    check(
+      'anon reads exactly the published testimonials',
+      (pub ?? []).length === publishedCount,
+      `anon ${(pub ?? []).length}, published ${publishedCount}`
+    );
     check(
       'anon cannot see a draft',
       !(pub ?? []).some((t) => t.name === 'Draft Person')
