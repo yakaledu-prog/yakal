@@ -11,3 +11,39 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+/* ── Falling paper, while work is fetched from Google ──
+   Each sheet drifts down and sideways, fading at both ends so it has no hard
+   start or stop. The sideways drift and the tilt are what stop seven identical
+   glyphs reading as a progress bar. */
+@keyframes paper-fall {
+  0% {
+    transform: translate3d(0, -28px, 0) rotate(-12deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(14px, 120px, 0) rotate(14deg);
+    opacity: 0;
+  }
+}
+
+.paper-sheet {
+  animation-name: paper-fall;
+  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+/* Somebody who asked the system for less movement gets a still page and the
+   label underneath, which was carrying the message anyway. */
+@media (prefers-reduced-motion: reduce) {
+  .paper-sheet {
+    animation: none;
+    opacity: 0.4;
+  }
+}

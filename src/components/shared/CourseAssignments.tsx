@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { PaperRain } from "@/components/shared/PaperRain";
 import { getCourseWorkFor } from "@/services/courseWork";
 
 // ============================================================
@@ -66,11 +67,10 @@ export function CourseAssignments({
   }, [classroom, localAssignments]);
 
   if (isLoading || classroomLoading) {
-    return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-300">
-        <Loader2 className="animate-spin text-[#1099A1]" size={22} />
-      </div>
-    );
+    // Reading a class from Google is slower than a database read, and long
+    // enough that a bare spinner leaves somebody wondering whether anything is
+    // happening at all.
+    return <PaperRain className="animate-in fade-in duration-300" />;
   }
 
   return (
