@@ -125,6 +125,23 @@ classroom.student-submissions.students.readonly
 Put it in `.env` as `GOOGLE_OAUTH_REFRESH_TOKEN` **and** in Vercel in the next
 step. The two are separate; changing one does not change the other.
 
+### This is once, not a routine
+
+A refresh token does not expire on a schedule. Once the consent screen is
+published, the one you mint here keeps working until something ends it: you
+revoke it, six months pass with no use, or the scopes change. Minting it on
+your machine is how you obtain it, not a step you repeat before each deploy.
+
+The weekly breakage was the Testing expiry from step 1a, not this.
+
+Nor is it a workaround. Running as one operations identity is the supported
+pattern for an account that is not on Google Workspace. The alternative Google
+prefers is a **service account**, which needs a Workspace domain to delegate
+from; `api/_handlers/drive.ts` already takes one through
+`GOOGLE_SERVICE_ACCOUNT_JSON` if Yakal ever has a domain. Classroom would need
+domain-wide delegation set up alongside it. Until then, this is the right
+shape.
+
 > After changing it locally, **restart the local API server**. `dotenv` reads
 > `.env` once at boot, so a running process keeps the old token and every
 > Google call answers "Google access has expired" against a token that is
@@ -143,9 +160,13 @@ step. The two are separate; changing one does not change the other.
 | `GCP_CLIENT_SECRET` | the client secret |
 | `GOOGLE_OAUTH_REFRESH_TOKEN` | from step 3 |
 
-`VITE_GCP_CLIENT_ID` is public by design: it goes in the bundle so the admin's
-sign-in popup can start. The other two are server only and must never carry a
-`VITE_` prefix, which would publish them.
+Read that table as: the same three values that are in your `.env`, copied into
+Vercel. There is nothing new to generate.
+
+`VITE_GCP_CLIENT_ID` is public by design: it is compiled into the bundle so the
+admin's sign-in popup can start, and a client id is not a secret. The other two
+are server only. Renaming either to start with `VITE_` would publish it to
+every visitor, which is the one mistake here that cannot be undone quietly.
 
 **Redeploy after adding them.** Vercel bakes environment variables in at build
 time; adding a variable does not change a build that already exists.
@@ -191,11 +212,43 @@ reason, so stopping at the first failure tells you the most.
 
 ---
 
-## What this does not cover
+## Who is actually in the class
 
-Students are not added to the Google Classroom roster. They read the work
-through Yakal and never sign in to Google, which is the point, but it also
-means they cannot submit inside Classroom. Adding them to a roster needs a
-Google account each and an invitation each of them accepts, which is exactly
-the friction this arrangement removes. Worth deciding deliberately rather than
-discovering.
+Nobody except the operations account. Not students, and not tutors either.
+Everything either of them sees is read through the server on that one
+credential.
+
+For a **student** that is the point. They only ever need to read what has been
+set, and asking a sixteen year old for a Google account, consent to Classroom
+scopes and an accepted invitation before they can see their homework is the
+friction this arrangement exists to remove. The cost is that they cannot turn
+work in inside Classroom.
+
+For a **tutor** it does not fit, and this is worth deciding rather than
+inheriting. A tutor needs to write: set the work, see who has handed it in,
+mark it. None of that is possible from outside the class, so today a tutor
+sees a read-only list and the Open in Google Classroom link goes nowhere
+useful for them.
+
+Three ways out, in increasing order of work:
+
+1. **Add each tutor as a co-teacher by hand**, once per class, from Classroom
+   itself. No code. They need a Google account and they accept an invitation.
+   Reasonable while there are a handful of courses.
+
+2. **Show submissions in Yakal.** The operations account is a teacher on the
+   class, so the server can already read who has submitted:
+   `classroom.coursework.students` and
+   `classroom.student-submissions.students.readonly` are both in the token.
+   `getSubmissions` and `getRoster` exist in `src/services/classroomService.ts`
+   and nothing calls them. A tutor would see the state of every submission
+   without being in the class. Marking would still happen in Classroom.
+
+3. **Invite tutors through the API** when they are assigned a course, with
+   `invitations.create` and role `TEACHER`. Automatic, but not instant: Google
+   emails an invitation and the tutor has to accept it, so a course still
+   cannot be taught the second it is assigned.
+
+Whichever way, a tutor is a member of staff and a Google account is a
+reasonable thing to ask of one. A family is not, which is why the two answers
+are allowed to differ.
