@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { openBooking } from "@/config/links";
 import { useNavigate } from "react-router-dom";
 import imgPrograms1 from "@/assets/images/landing-page/book-session.webp";
 import imgPrograms3 from "@/assets/images/landing-page/parent-resources.webp";
@@ -22,12 +23,12 @@ export default function ParentResources() {
             screen apart with the picture wedged between them. */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-[32px] mb-[70px] md:mb-[105px] text-justify">
           <div className="order-2 md:order-1 w-full md:max-w-[520px] flex flex-col items-center md:items-start">
-            <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Book a Session</h3>
+            <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Book a free session</h3>
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
               Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student.
             </p>
-            <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer text-white px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[8px]">
-              Book a Session <ArrowRight size={18} strokeWidth={2} />
+            <button onClick={openBooking} className="btn-shimmer text-white px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[8px]">
+              Book a free session <ArrowRight size={18} strokeWidth={2} />
             </button>
           </div>
           <div className="order-1 md:order-2 overflow-hidden flex items-center justify-center md:justify-end">

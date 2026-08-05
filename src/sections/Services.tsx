@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { openBooking } from "@/config/links";
 import Reveal from "@/components/Reveal";
 import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap, Compass, Rocket, Crown } from "lucide-react";
 
@@ -33,7 +35,7 @@ const services = [
       { icon: "parent", label: "Parents", sub: "Monitor grades & communication" },
       { icon: "student", label: "Students", sub: "Learn, practice & improve" },
     ],
-    primaryCta: "Get Started",
+    primaryCta: "Free consultation",
     secondaryCta: "Become a Tutor",
   },
   {
@@ -55,7 +57,7 @@ const services = [
       { icon: "parent", label: "Parents", sub: "Track deadlines & milestones" },
       { icon: "student", label: "Students", sub: "Build a competitive application" },
     ],
-    primaryCta: "Get Started",
+    primaryCta: "Free consultation",
     secondaryCta: "Join Our Team",
   },
 ];
@@ -169,12 +171,14 @@ export default function Services() {
 
                 {/* CTAs */}
                 <div className="flex flex-wrap gap-3 mt-auto">
-                  <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
+                  <button onClick={openBooking} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
                     {svc.primaryCta} <ArrowRight size={16} />
                   </button>
-                  <button className="px-6 py-3 bg-transparent border border-white hover:bg-white/10 text-white rounded-[8px] text-[14px] font-semibold transition-colors w-full sm:w-auto text-center">
+                  {/* Applying is a sign-up, so it goes where signing up happens
+                      rather than to a call. */}
+                  <Link to="/login" className="px-6 py-3 bg-transparent border border-white hover:bg-white/10 text-white rounded-[8px] text-[14px] font-semibold transition-colors w-full sm:w-auto text-center">
                     {svc.secondaryCta}
-                  </button>
+                  </Link>
                 </div>
               </div>
             </Reveal>

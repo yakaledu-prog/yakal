@@ -9,7 +9,7 @@ const links = [
   { label: "About Us", id: "about" },
   { label: "Services", id: "services" },
   { label: "Courses", id: "courses" },
-  { label: "Counselling", id: "counselling" },
+  { label: "College admissions", id: "counselling" },
   { label: "Parent Resource", id: "resources" },
   { label: "Blog", id: "blog" },
   { label: "Contact", id: "contact" },

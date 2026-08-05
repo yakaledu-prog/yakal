@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+import { openBooking } from "@/config/links";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 
@@ -18,13 +20,19 @@ import { getTiers, monthlyCents, type AdmissionsTier } from "@/services/admissio
 // worse than no pricing section.
 // ============================================================
 
-export default function CounsellingTiers({ scrollTo }: { scrollTo?: (id: string) => void }) {
+export default function CounsellingTiers(_props: { scrollTo?: (id: string) => void }) {
+  const navigate = useNavigate();
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: ["admissions-tiers"],
     queryFn: getTiers,
   });
 
-  if (isLoading || tiers.length === 0) return null;
+  // The section is always in the document, even with nothing in it yet. It
+  // used to return null while the tiers loaded, so the College admissions link
+  // in the navbar looked for an element that was not there and did nothing.
+  if (isLoading || tiers.length === 0) {
+    return <section id="counselling" className="w-full" aria-hidden />;
+  }
 
   return (
     <section id="counselling" className="w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
@@ -46,7 +54,7 @@ export default function CounsellingTiers({ scrollTo }: { scrollTo?: (id: string)
       <div className="mt-10 grid gap-6 md:mt-14 lg:grid-cols-3">
         {tiers.map((tier, i) => (
           <Reveal key={tier.id} delay={i * 100}>
-            <TierCard tier={tier} onEnquire={() => scrollTo?.("contact")} />
+            <TierCard tier={tier} onEnquire={() => navigate("/login")} />
           </Reveal>
         ))}
       </div>
@@ -55,7 +63,7 @@ export default function CounsellingTiers({ scrollTo }: { scrollTo?: (id: string)
         <p className="mt-8 text-center text-[13.5px] text-[#54656f]">
           Not sure which one fits?{" "}
           <button
-            onClick={() => scrollTo?.("contact")}
+            onClick={openBooking}
             className="font-semibold text-[#1099A1] underline-offset-4 hover:underline"
           >
             Talk to us first

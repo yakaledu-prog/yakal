@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { openBooking } from "@/config/links";
 import { ArrowRight, X } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import imgAboutBanner1 from "@/assets/images/landing-page/about-yakal.webp";
@@ -65,7 +66,7 @@ export default function About() {
                 <h3 className="text-[22px] font-medium mb-[12px] text-[#111]">{step.title}</h3>
                 <p className="text-[#555] leading-[26px] mb-[20px] max-w-[280px]">{step.desc}</p>
                 {step.hasButton && (
-                  <button onClick={() => window.open('https://calendly.com/binyammamo01/parent-counseling-session', '_blank')} className="btn-shimmer text-white px-[25px] py-[12px] rounded-[500px] text-[14px] md:text-[15px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[6px]">
+                  <button onClick={openBooking} className="btn-shimmer text-white px-[25px] py-[12px] rounded-[500px] text-[14px] md:text-[15px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[6px]">
                     Book Now <ArrowRight size={18} />
                   </button>
                 )}
