@@ -13,8 +13,17 @@ export async function exchangeGoogleToken(code: string) {
   });
   
   if (!res.ok) {
-    const errorData = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(errorData.error || 'Failed to exchange token');
+    // The body is not always JSON. A function that crashed before its own
+    // handler ran, or a route that did not match, answers with HTML, and
+    // reading that as JSON threw away the only evidence of what happened.
+    const raw = await res.text();
+    let message = raw.slice(0, 200);
+    try {
+      message = (JSON.parse(raw) as { error?: string }).error ?? message;
+    } catch {
+      message = `${res.status} ${res.statusText}. The server did not answer with JSON: ${message}`;
+    }
+    throw new Error(message);
   }
   
   return res.json();

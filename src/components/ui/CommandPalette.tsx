@@ -193,9 +193,9 @@ export function CommandPalette({
     const hits = (pool: Entry[]) =>
       needle
         ? pool.filter(
-            (e) =>
-              e.label.toLowerCase().includes(needle) || e.hint.toLowerCase().includes(needle)
-          )
+          (e) =>
+            e.label.toLowerCase().includes(needle) || e.hint.toLowerCase().includes(needle)
+        )
         : pool;
     return { navigation: hits(navigation), actions: hits(actions) };
   }, [query, navigation, actions]);
@@ -350,18 +350,18 @@ export function CommandPalette({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-3 text-[12px] text-muted-foreground">
+        <div className="capitalize flex items-center justify-between gap-4 border-t border-border px-5 py-3 text-[12px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Key>&uarr;</Key>
             <Key>&darr;</Key>
-            to navigate
+            navigate
             <span className="px-1">&middot;</span>
             <Key>Tab</Key>
-            to filter
+            filter
           </span>
           <span className="flex items-center gap-1.5">
             <Key>Enter</Key>
-            to select
+            select
           </span>
         </div>
       </div>

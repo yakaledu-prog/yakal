@@ -108,11 +108,11 @@ export function CollegeProfilePanel({
         renderHeader(tabsNode)
       ) : (
         <div className="bg-[#1099A1] text-white px-6 pt-6 md:px-10 md:pt-10">
-          <div className="max-w-[1100px] mx-auto">{tabsNode}</div>
+          <div className="">{tabsNode}</div>
         </div>
       )}
-      
-      <div className="w-full max-w-[1100px] mx-auto p-6 md:p-10">
+
+      <div className="w-full auto p-6 md:p-10">
         {tab === "overview" && (
           <OverviewTab data={data!} readOnly={readOnly} canEditNotes={canEditNotes} studentId={studentId} run={run} />
         )}
