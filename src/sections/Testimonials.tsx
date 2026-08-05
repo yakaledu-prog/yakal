@@ -1,16 +1,46 @@
+import { useQuery } from "@tanstack/react-query";
 import Reveal from "@/components/Reveal";
 import TestimonialCarousel, { type Testimonial } from "@/components/TestimonialCarousel";
+import { getPublishedTestimonials } from "@/services/testimonialService";
+import { dicebearUrl } from "@/utils/avatar";
 import imgUser1 from "@/assets/images/testimonial-david.webp";
 import imgUser5 from "@/assets/images/testimonial-sarah.webp";
 import imgUser6 from "@/assets/images/testimonial-ellyse.webp";
 
-const items: Testimonial[] = [
+/**
+ * What the page shows before the query answers, and if it never does.
+ *
+ * The band is a solid teal block most of the way down the landing page, so an
+ * empty one is a hole rather than a smaller page. Keeping the original three
+ * here means a slow network shows the real thing rather than a skeleton, and a
+ * database that is down costs a visitor nothing they can see. These are the
+ * same three the migration seeds, so the swap is invisible.
+ */
+const fallback: Testimonial[] = [
   { name: "David Warner", role: "Algebra Student", text: "Yakal's tutoring completely changed my approach to learning. I was struggling with Algebra, but my tutor broke concepts into easy-to-understand steps.", img: imgUser1 },
   { name: "Sarah Taylor", role: "Physics & Calculus Student", text: "I used to struggle with Physics and Calculus, but Yakal made these subjects understandable and even enjoyable. The personalized approach meant I was always working on my weaknesses.", img: imgUser5 },
   { name: "Ellyse Perry", role: "SAT Prep Student", text: "I loved how flexible Yakal's sessions were. Each lesson was tailored to my pace and learning style. I finally feel like I'm learning efficiently and achieving real results.", img: imgUser6 },
 ];
 
 export default function Testimonials() {
+  const { data } = useQuery({
+    queryKey: ["public-testimonials"],
+    queryFn: getPublishedTestimonials,
+    // Marketing copy does not change while somebody reads the page, and this
+    // renders above the fold on the busiest route in the app.
+    staleTime: 5 * 60_000,
+  });
+
+  const items: Testimonial[] =
+    data && data.length > 0
+      ? data.map((t) => ({
+          name: t.name,
+          role: t.role,
+          text: t.quote,
+          img: t.avatar_url || dicebearUrl(t.name),
+        }))
+      : fallback;
+
   return (
     <div className="bg-[#1099a1] rounded-[20px] md:rounded-[30px] py-[48px] md:py-[100px] px-[24px] md:px-[55px] w-full max-w-[1440px] overflow-hidden">
       <div className="max-w-[1290px] mx-auto">
