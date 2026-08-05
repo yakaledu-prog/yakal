@@ -11,6 +11,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preflight": "npm run lint && npm run build",
+    "check": "npm run typecheck && npm run lint && node scripts/check.mjs",
+    "prepare": "git config core.hooksPath .githooks || true",
     "verify": "tsx scripts/verify/run-all.mjs",
     "preview": "vite preview",
     "optimize:images": "node scripts/optimize-images.mjs",

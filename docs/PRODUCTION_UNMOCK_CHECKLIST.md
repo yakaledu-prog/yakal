@@ -26,11 +26,20 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   is the shape to copy, including the `REVOKE`, and
   `scripts/verify/testimonials.mjs` is the shape of the test.
 
-- [ ] **`profiles` is readable by anyone with the anon key.** The `SELECT`
-  policy is `USING (true)` for `public`, so an unauthenticated request returns
-  every user's name, email and phone. The marketing page needs four tutor
-  cards, which is what `v_public_tutors` exists for, so the wide policy has no
-  remaining caller. This is the most serious item on this list.
+- [x] **`profiles` is no longer readable signed out.**
+  `20260805000400_profiles_not_public.sql` narrows `SELECT` to `authenticated`
+  and revokes the leftover `anon` grant. Before it, an unauthenticated request
+  returned every row: name, email, phone, `stripe_account_id`.
+  `scripts/verify/profiles-not-public.mjs` pins it, and fails with
+  "17 rows came back" against the old policy.
+
+- [ ] **Any signed-in user can still read every profile.** The remaining half
+  of the above: the policy is `USING (true)` for `authenticated`. Scoping it
+  person by person (your tutors, your students, your children's tutors, anyone
+  you share a conversation with) touches around ten services, so it was left
+  as its own job rather than bundled into a security fix that had to ship.
+  Note this overlaps the `getContacts` item below, and the two should be done
+  together.
 
 - [ ] **Notifications INSERT policy is wide open.** The
   "Authenticated users can insert notifications" policy in the baseline

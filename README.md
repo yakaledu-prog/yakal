@@ -51,7 +51,8 @@ somebody opens the repo with.
 | `npm run db:seed` | Load the demo dataset. Safe to re-run |
 | `npm run db:new <name>` | New migration file |
 | `npm run db:diff <name>` | Capture Studio changes as a migration |
-| `npm run preflight` | Lint, type-check and build. Run before every push |
+| `npm run check` | Type-check, lint and the fast checks. Also runs on pre-push |
+| `npm run preflight` | Lint, type-check and build |
 
 ## Structure
 

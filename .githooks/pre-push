@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs before every push. Bypass with --no-verify when you mean to.
+#
+# pre-push rather than pre-commit on purpose: typecheck and lint take about
+# twenty seconds, which is fine once before sharing work and infuriating on
+# every commit. A hook people disable protects nothing.
+echo "Running npm run check before push..."
+npm run check || {
+  echo ""
+  echo "Push stopped: checks failed. Fix them, or push with --no-verify."
+  exit 1
+}

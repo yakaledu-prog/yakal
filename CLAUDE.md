@@ -29,8 +29,13 @@ never touches the hosted project.
 ## Before you push
 
 ```
+npm run check         # typecheck, lint, and the fast checks. Before every push
 npm run preflight     # eslint, then tsc for src and api, then vite build
 ```
+
+`npm run check` also runs from a **pre-push git hook** (`.githooks/pre-push`,
+wired by the `prepare` script, no husky). Bypass with `git push --no-verify`
+when you mean to.
 
 There are 58 pre-existing eslint warnings and **zero errors**. If your change
 adds an error, or a 59th warning, it is yours.
