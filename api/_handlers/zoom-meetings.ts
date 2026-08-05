@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { createMeeting, deleteMeeting, updateMeeting, getPastParticipants } from '../_utils/zoom';
+import { createMeeting, deleteMeeting, updateMeeting, getPastParticipants } from '../_utils/zoom.js';
 
 /**
  * Sessions hold a date and a time separately; older callers send one ISO

@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // package is 204 MB and took this whole function over Vercel's limit.
 import { classroom_v1, auth as googleAuth } from '@googleapis/classroom';
 
-import { getServiceClient, requireUser } from '../_utils/supabase';
+import { getServiceClient, requireUser } from '../_utils/supabase.js';
 
 /**
  * Google Classroom, read through an account Yakal controls.

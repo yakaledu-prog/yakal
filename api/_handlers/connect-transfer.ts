@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe } from '../_utils/billing';
-import { getServiceClient, requireUser } from '../_utils/supabase';
+import { getStripe } from '../_utils/billing.js';
+import { getServiceClient, requireUser } from '../_utils/supabase.js';
 
 // ============================================================
 // Paying a tutor out of the platform balance.

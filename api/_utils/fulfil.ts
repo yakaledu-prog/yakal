@@ -1,5 +1,5 @@
-import { sendEmail, layout, appUrl } from "./email";
-import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom";
+import { sendEmail, layout, appUrl } from "./email.js";
+import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
 
 // ============================================================
 // What happens after a course is paid for.

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe } from '../_utils/billing';
-import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase';
+import { getStripe } from '../_utils/billing.js';
+import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase.js';
 
 // ============================================================
 // A tutor connecting their bank to the platform.

@@ -17,7 +17,7 @@ function isLoader(route: Route): route is () => Promise<{ default: Handler }> {
  * them changed when they were grouped. An unknown action is a 404 naming what
  * was valid, because the alternative is a silent 200 with an empty body.
  *
- * A route may be given as `() => import('./thing')` instead of the handler
+ * A route may be given as `() => import('./thing.js')` instead of the handler
  * itself, and then that module is only loaded when its action is asked for.
  * This matters because the actions grouped here do not need the same things:
  * the Google token exchange needs no SDK at all, but sat behind top-level

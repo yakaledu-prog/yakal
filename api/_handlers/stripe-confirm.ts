@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe } from '../_utils/billing';
-import { getServiceClient, requireUser } from '../_utils/supabase';
-import { fulfilInvoices } from '../_utils/fulfil';
+import { getStripe } from '../_utils/billing.js';
+import { getServiceClient, requireUser } from '../_utils/supabase.js';
+import { fulfilInvoices } from '../_utils/fulfil.js';
 
 /**
  * Give an instalment plan an end date, and remember its subscription.
