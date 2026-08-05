@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Yakal - personalized tutoring for students who want to excel.",
-  "postinstall": "react-flagpack",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch scripts/local-api.ts\"",
     "build": "npm run typecheck && vite build",
