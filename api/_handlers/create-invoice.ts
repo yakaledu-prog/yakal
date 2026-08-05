@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient, requireUser } from '../_utils/supabase';
 
 // Creates an OPEN invoice for the authenticated parent (e.g. when they book a

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
 import { useTopbarActionsContext } from "../contexts/TopbarActionsContext";
+import { useNavBadges } from "@/hooks/useNavBadges";
 import logoImg from "@/assets/images/logo.webp";
 
 interface NavItem {
@@ -55,6 +56,24 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
+  const badges = useNavBadges();
+
+  // Applied here rather than in each role's layout, because all five build the
+  // same two links and would otherwise each have to remember to ask for the
+  // count. Matched on the tail of the href so /tutor/messages and
+  // /parent/messages need no separate cases.
+  const decorated = useMemo(() => {
+    const countFor = (href?: string) =>
+      href?.endsWith("/notifications") ? badges.notifications
+      : href?.endsWith("/messages") ? badges.messages
+      : undefined;
+    const apply = (item: NavItem): NavItem => ({
+      ...item,
+      badge: countFor(item.href) ?? item.badge,
+      children: item.children?.map(apply),
+    });
+    return navItems.map(apply);
+  }, [navItems, badges.notifications, badges.messages]);
 
 
 
@@ -166,7 +185,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
-          {navItems.map((item) =>
+          {decorated.map((item) =>
             item.children?.length ? (
               <NavGroup
                 key={item.name}
@@ -360,6 +379,11 @@ function NavLeaf({
           <div className="absolute -bottom-1 -right-1 rounded-full bg-background p-0.5">
             <Lock size={10} className="text-muted-foreground" />
           </div>
+        )}
+        {/* Collapsed there is no room for the number, but hiding it entirely
+            meant a collapsed sidebar silently swallowed every unread count. */}
+        {!isLocked && !sidebarOpen && item.badge !== undefined && item.badge > 0 && (
+          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#1099A1] ring-2 ring-card dark:ring-[#111b21]" />
         )}
       </div>
       {sidebarOpen && (

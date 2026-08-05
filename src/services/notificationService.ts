@@ -128,18 +128,58 @@ export async function sendFromTemplate<K extends TemplateKey>(
   });
 }
 
-/** Fires whenever a row for this user changes, so a badge can update live. */
-export function subscribeToNotifications(userId: string, onChange: () => void) {
-  const channel = supabase
-    .channel(`notifications:${userId}`)
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-      onChange
-    )
-    .subscribe();
+/**
+ * Fires whenever a row for this user changes, so a badge can update live.
+ *
+ * One channel per user, counted in and out, for the same reason
+ * subscribeToMessages does it: the Supabase client caches channels by topic,
+ * so a second `supabase.channel("notifications:<id>")` hands back the one that
+ * has already subscribed, and `.on("postgres_changes", ...)` on it throws
+ * "cannot add postgres_changes callbacks after subscribe()". That took the
+ * whole dashboard down through the error boundary as soon as a second caller
+ * appeared beside the bell.
+ */
+const notificationChannels = new Map<
+  string,
+  { channel: ReturnType<typeof supabase.channel>; listeners: Set<() => void> }
+>();
 
+export function subscribeToNotifications(userId: string, onChange: () => void) {
+  let entry = notificationChannels.get(userId);
+
+  if (!entry) {
+    const listeners = new Set<() => void>();
+    // Fan out here rather than registering a handler per subscriber, so the
+    // callback is attached exactly once, before subscribe.
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => {
+          for (const listener of listeners) listener();
+        }
+      )
+      .subscribe();
+    entry = { channel, listeners };
+    notificationChannels.set(userId, entry);
+  }
+
+  entry.listeners.add(onChange);
+
+  let released = false;
   return () => {
-    supabase.removeChannel(channel);
+    // Guard against a double unsubscribe closing the channel out from under
+    // the subscribers still using it.
+    if (released) return;
+    released = true;
+
+    const current = notificationChannels.get(userId);
+    if (!current) return;
+    current.listeners.delete(onChange);
+    if (current.listeners.size > 0) return;
+
+    notificationChannels.delete(userId);
+    void supabase.removeChannel(current.channel);
   };
 }

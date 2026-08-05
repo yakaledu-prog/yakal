@@ -21,13 +21,13 @@ import {
 
 import { Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Dropdown } from "@/components/ui/Dropdown";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
 import { ResumePanel } from "@/components/shared/ResumePanel";
 import { dicebearUrl } from "@/utils/avatar";
+import { plainText } from "@/utils/richText";
 import {
   applyForCourse,
   getMyApplications,
@@ -309,7 +309,7 @@ export function TutorCourseCatalog() {
             {/* View, then search, then filter, then the count hard right.
                 The controls used to run in a different order to the parent's
                 catalog and sat on the banner's bottom edge. */}
-            <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/20 pb-6 pt-4">
+            <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/20 pb-4 pt-4">
               <div className="flex items-center gap-1 rounded-lg bg-white/10 p-1">
                 {([
                   ["grid", LayoutGrid, "Grid view"],
@@ -347,22 +347,6 @@ export function TutorCourseCatalog() {
                 />
               </div>
 
-              <Dropdown
-                value={filter}
-                onChange={(v) => {
-                  setFilter(v);
-                  setPage(1);
-                }}
-                options={FILTERS.map((f) => ({
-                  value: f.value,
-                  label: `${f.label} (${counts[f.value]})`,
-                }))}
-                tone="onDark"
-                size="sm"
-                ariaLabel="Filter courses"
-                className="w-[190px]"
-              />
-
               <div className="ml-auto flex items-center gap-2">
                 {matches.length > 0 && (
                   <span className="text-[13px] text-white/80">
@@ -387,6 +371,40 @@ export function TutorCourseCatalog() {
                   <ChevronRight size={16} />
                 </button>
               </div>
+            </div>
+
+            {/* On the banner's bottom edge, so the underline of the active tab
+                doubles as the join between the header and the courses below.
+                Scrolls sideways rather than wrapping: five tabs wrapping to a
+                second line pushed the first card off a phone screen. */}
+            <div
+              role="tablist"
+              aria-label="Filter courses"
+              className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:-mx-8 md:px-8 [&::-webkit-scrollbar]:hidden"
+            >
+              {FILTERS.map((f) => {
+                const active = filter === f.value;
+                return (
+                  <button
+                    key={f.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => {
+                      setFilter(f.value);
+                      setPage(1);
+                    }}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap border-b-2 px-3 pb-3 pt-1 text-[14px] transition-colors",
+                      active
+                        ? "border-white font-semibold text-white"
+                        : "border-transparent text-white/70 hover:text-white"
+                    )}
+                  >
+                    {f.label} ({counts[f.value]})
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -459,7 +477,7 @@ export function TutorCourseCatalog() {
                     </h3>
                     {course.description && (
                       <p className="mt-1.5 line-clamp-2 text-[13px] text-muted-foreground">
-                        {course.description}
+                        {plainText(course.description)}
                       </p>
                     )}
 

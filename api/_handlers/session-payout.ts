@@ -1,4 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getStripe } from '../_utils/billing';
 import { getServiceClient, getUserClient, requireUser } from '../_utils/supabase';
 
