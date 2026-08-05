@@ -18,7 +18,6 @@ Operational guides live one level up in `docs/`:
 
 *   `STRIPE_SETUP.md` - keys, the webhook, and what breaks without each
 *   `GOOGLE_CLOUD_FROM_SCRATCH.md` - setting up Google on a fresh account
-*   `GOOGLE_SETUP.md` - the same thing for a project that already exists
 *   `PRODUCTION_SETUP.md` - standing up a new Supabase and deployment
 *   `PRODUCTION_UNMOCK_CHECKLIST.md` - **what is deliberately unfinished.**
     Read this before assuming something is a bug
