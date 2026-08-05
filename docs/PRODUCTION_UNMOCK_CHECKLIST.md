@@ -10,12 +10,27 @@ Legend: `[ ]` still needs action before production, `[x]` handled
 
 ## Security
 
-- [ ] **Dev preview routes and the developer console**, `src/config/dev.ts` ->
-  `DEV_PREVIEW = true`. Exposes public, no-auth routes: `/preview/*` and
-  `/dev`. The console lists every account and can sign in as any of them with
-  the shared demo password, so it must never reach production. Set the flag to
-  `false` before deploy; a red console warning fires if a production build
+- [x] **Dev preview routes and the developer console**, `src/config/dev.ts`.
+  `DEV_PREVIEW` is now `false`, which closes the public, no-auth `/preview/*`
+  and `/dev` routes. It shipped as `true` to production once, so the developer
+  console was briefly reachable by anyone: it lists every account and signs in
+  as any of them with the shared demo password. Check the flag before a deploy
+  rather than trusting it; a red console warning fires if a production build
   ships with it on.
+
+- [ ] **`blog_posts` is writable by anyone with the anon key.** The baseline
+  migration carries `Enable all access for anon ... USING (true)`, and the anon
+  key ships in the browser bundle, so an unauthenticated request can create,
+  edit and delete posts. Replace with a public `SELECT` on published rows and
+  an admin-only write policy. `supabase/migrations/20260805000100_testimonials.sql`
+  is the shape to copy, including the `REVOKE`, and
+  `scripts/verify/testimonials.mjs` is the shape of the test.
+
+- [ ] **`profiles` is readable by anyone with the anon key.** The `SELECT`
+  policy is `USING (true)` for `public`, so an unauthenticated request returns
+  every user's name, email and phone. The marketing page needs four tutor
+  cards, which is what `v_public_tutors` exists for, so the wide policy has no
+  remaining caller. This is the most serious item on this list.
 
 - [ ] **Notifications INSERT policy is wide open.** The
   "Authenticated users can insert notifications" policy in the baseline
@@ -77,6 +92,42 @@ Legend: `[ ]` still needs action before production, `[x]` handled
 The mock surface is deliberately concentrated: `src/mock/index.ts` is the only
 module holding hardcoded application data. When it is empty, the app runs
 entirely on the database.
+
+## Google OAuth scopes
+
+- [ ] **The service-account path asks for full Drive.**
+  `api/_handlers/drive.ts` sets `SCOPES = ['https://www.googleapis.com/auth/drive']`,
+  used at the `googleAuth.JWT` call in the `GOOGLE_SERVICE_ACCOUNT_JSON`
+  branch. That is every file in the account, not just ours.
+
+  It is unreachable today: production runs the refresh-token path, where the
+  scope comes from the token `scripts/google-oauth-setup.mjs` minted, which is
+  `drive.file`. So it does not affect the consent screen as configured.
+
+  It becomes live the moment anyone switches to a service account, which is
+  exactly what a Google Workspace plan would tempt you into. **Narrow it to
+  `drive.file` before that switch, not after.** `drive.file` grants access only
+  to files this app created, which is all the app ever touches.
+
+  The cost of getting this wrong is not just over-permissioning. Full
+  `auth/drive` is a **restricted** scope, not merely sensitive: Google requires
+  verification *and* an annual third-party security assessment (CASA) for it,
+  which is a real recurring bill. `drive.file` avoids that entirely.
+
+- [ ] **`src/hooks/useClassroomToken.ts` is dead code with a misleading scope
+  list.** Nothing imports it. The live browser flow is `CLASSROOM_SCOPES` in
+  `src/services/classroomService.ts`, used by `AdminCourseModal`. The dead hook
+  carries a third, different list including
+  `classroom.coursework.me.readonly`, which appears nowhere else in the
+  codebase. Delete it, so nobody configures a consent screen from it later.
+
+  For reference, the three scope lists that exist today:
+
+  | Where | Used by |
+  | --- | --- |
+  | `scripts/google-oauth-setup.mjs` | the server refresh token, the one that matters |
+  | `classroomService.ts` `CLASSROOM_SCOPES` | admin Fetch Details popup |
+  | `useClassroomToken.ts` | nothing |
 
 ## Notes
 
