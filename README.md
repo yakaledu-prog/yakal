@@ -27,6 +27,17 @@ Development talks to a Supabase stack running on your machine, not the hosted
 project, so you can wipe and reseed freely. `docs/DATABASE.md` covers the whole
 setup, including how to point at the hosted project instead.
 
+## Where to read next
+
+**`docs/architecture/`** is the orientation for anybody new, human or
+otherwise: what the product is, how the code is arranged, how access control
+works, and a `gotchas.md` of bugs that each cost days. Read that before
+debugging anything that "should work".
+
+`CLAUDE.md` and `AGENTS.md` at the root are the same guidance in short form for
+AI assistants. They are kept identical, so it does not matter which tool
+somebody opens the repo with.
+
 ## Scripts
 
 | Command | Description |
@@ -40,6 +51,7 @@ setup, including how to point at the hosted project instead.
 | `npm run db:seed` | Load the demo dataset. Safe to re-run |
 | `npm run db:new <name>` | New migration file |
 | `npm run db:diff <name>` | Capture Studio changes as a migration |
+| `npm run preflight` | Lint, type-check and build. Run before every push |
 
 ## Structure
 
@@ -62,9 +74,15 @@ supabase/
 scripts/
   seed.ts       Seeds either database from one dataset
   seed/data.ts  The dataset. Edit this to add demo data
-  local-api.ts  Runs the /api routes locally
-api/            Serverless routes: Stripe, Zoom, Drive, contact form
-docs/           DATABASE.md and the production hardening checklist
+  local-api.ts  Runs the /api routes locally, on Express
+  verify/       One script per bug that already happened. Run by hand
+api/
+  *.ts          One serverless function each. Grouped by ?action=
+  _handlers/    The handlers themselves. A leading _ means "not a route"
+  _utils/       Supabase, Stripe, email, Zoom, fulfilment
+docs/
+  architecture/ Start here
+  *.md          Setting up Stripe, Google, Supabase, and what is unfinished
 ```
 
 ## Deployment
@@ -72,6 +90,12 @@ docs/           DATABASE.md and the production hardening checklist
 The front end deploys to [Vercel](https://vercel.com) (see `vercel.json`);
 Vercel auto-detects the Vite preset and the SPA rewrite keeps deep links
 working. A production build defaults to the hosted Supabase project.
+
+Nothing is tied to Vercel beyond that file and a couple of environment
+variable names. `scripts/local-api.ts` already serves the same seven functions
+under Express, so moving to any host that runs Node is a deployment change
+rather than a rewrite. `docs/architecture/api.md` explains what the grouping
+into seven files was for, and when it stops being necessary.
 
 Database changes go out through `.github/workflows/database.yml`, which rebuilds
 the schema from nothing on a clean runner and only then applies pending

@@ -42,3 +42,11 @@ Thumbs.db
 # Local database snapshots taken around a db reset.
 .snapshots/
 dev-dist/
+
+# Windows marks files downloaded from the internet with an alternate data
+# stream, which WSL surfaces as a companion file. Nine of them were committed
+# alongside the landing page images.
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
+desktop.ini
