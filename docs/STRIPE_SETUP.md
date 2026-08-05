@@ -101,20 +101,28 @@ That exact path. It is its own serverless function, separate from
 `/api/stripe`, because Stripe needs the raw unparsed body to check the
 signature.
 
-**Events to send.** Choose these five and nothing else. Each one is handled;
-anything else is answered and ignored.
+**Scope: Your account.** Leave the API version at whatever Stripe offers by
+default; the SDK pins its own and the two agree.
+
+**Events to send.** Four, and nothing else. Expand **Checkout** and **Invoice**
+and tick:
 
 ```
 checkout.session.completed
 checkout.session.async_payment_succeeded
 invoice.paid
 invoice.payment_failed
-account.updated
 ```
 
-The first is what marks a one-off course purchase paid. `invoice.paid` covers
-the instalment plans, including the first charge when a subscription is
-created. `account.updated` is the tutor payout side, from step 6.
+The first marks a one-off course purchase paid. `invoice.paid` covers the
+instalment plans, including the first charge when a subscription is created.
+
+Do **not** tick any `v2.core.*` event. This app reads v1 payload shapes, so a
+v2 event would arrive and do nothing. That rules out the entire "Account v2"
+and "Account Person v2" groups, whatever their names suggest.
+
+`account.updated` is deliberately not on this list. It belongs to the tutor
+payout side and routes differently: see step 6.
 
 Then **reveal the signing secret** on the endpoint you just created. It begins
 `whsec_`. That is `STRIPE_WEBHOOK_SECRET` in step 2.
@@ -177,9 +185,20 @@ Connect, and it is separate.
 mode needs no KYC from you or from the tutors: onboarding is a form that
 accepts obviously fake details, and Stripe fills the rest.
 
-The `account.updated` event from step 3 is what tells the app a tutor has
-finished onboarding. Without it the tutor stays stuck on "complete your
-details" after they already have.
+`account.updated` is what tells the app a tutor has finished onboarding.
+Without it the tutor stays stuck on "complete your details" after they already
+have.
+
+It needs a **second event destination**, because the tutors are v1 connected
+accounts and in v1 their events go to a destination scoped to **Connected
+accounts**. Adding `account.updated` to the step 3 destination, which is scoped
+to your own account, delivers nothing.
+
+Before creating it, know that **each destination has its own signing secret**,
+and the handler reads a single `STRIPE_WEBHOOK_SECRET`. A second destination
+pointed at the same URL will fail signature verification with a 400 on every
+delivery until the handler is taught to try more than one secret. Payments do
+not need this. Only payouts do.
 
 ---
 
@@ -193,7 +212,7 @@ details" after they already have.
 | Webhook attempts show `400` | signing secret belongs to a different endpoint, often `stripe listen` |
 | Webhook attempts show `500` | it arrived; read the Vercel function log |
 | Works locally, not deployed | you set it in `.env` and not in Vercel |
-| Tutor stuck on "complete your details" | `account.updated` not selected in step 3 |
+| Tutor stuck on "complete your details" | `account.updated` needs a Connected accounts destination, step 6 |
 
 ---
 
