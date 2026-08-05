@@ -15,6 +15,7 @@ Usage:
       --out ../out/image_licenses.ndjson
 """
 
+import os
 import argparse
 import json
 import sys
@@ -23,7 +24,9 @@ import urllib.parse
 import urllib.request
 
 API = "https://commons.wikimedia.org/w/api.php"
-UA = "YakalCollegeCatalog/0.1 (https://yakal.me; binyam2537@gmail.com)"
+# Wikimedia asks for a contact address in the User-Agent and rate-limits
+# requests that arrive without one. Set CATALOG_CONTACT to your own.
+UA = f"YakalCollegeCatalog/0.1 (https://yakal.me; {os.environ.get('CATALOG_CONTACT', 'hello@yakal.me')})"
 BATCH = 50
 
 # Licences that permit commercial use with attribution. Anything outside this set

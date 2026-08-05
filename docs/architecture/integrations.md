@@ -46,7 +46,7 @@ paid.
 needs a destination scoped to Connected accounts, which is a second endpoint
 with a second signing secret. The handler currently reads one
 `STRIPE_WEBHOOK_SECRET`, so tutor payouts need that resolved before they work.
-See `docs/STRIPE_SETUP.md`.
+The Stripe dashboard walkthrough is kept with the setup notes; ask for it.
 
 ## Google
 

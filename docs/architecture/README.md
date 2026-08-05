@@ -14,14 +14,16 @@ Read in this order. Each one assumes the ones above it.
 | [integrations.md](integrations.md) | Stripe, Google, Zoom, email, realtime |
 | [gotchas.md](gotchas.md) | Things that cost days. Read before debugging anything |
 
-Operational guides live one level up in `docs/`:
+Two more live one level up in `docs/`:
 
-*   `STRIPE_SETUP.md` - keys, the webhook, and what breaks without each
-*   `GOOGLE_CLOUD_FROM_SCRATCH.md` - setting up Google on a fresh account
-*   `PRODUCTION_SETUP.md` - standing up a new Supabase and deployment
 *   `PRODUCTION_UNMOCK_CHECKLIST.md` - **what is deliberately unfinished.**
     Read this before assuming something is a bug
-*   `DATABASE.md` - local stack, migrations, seeding
+*   `DATABASE.md` - the local stack, migrations and seeding
+
+Setting up the third-party accounts themselves - Stripe keys and webhooks,
+Google Cloud, a new Supabase project - is dashboard work rather than code, so
+those walkthroughs are kept separately by the maintainer. Ask for them when you
+need to stand up your own credentials.
 
 ---
 

@@ -97,7 +97,8 @@ rebuilding an OAuth client that was never broken.
 
 Not the access token, the refresh token. Publishing the OAuth consent screen
 stops it. This is the reason Drive and Classroom appeared to break roughly
-every seven days for no reason. See `docs/GOOGLE_CLOUD_FROM_SCRATCH.md`.
+every seven days for no reason. The Google Cloud walkthrough is kept with
+the setup notes; ask for it.
 
 ## A webhook signing secret belongs to one endpoint
 

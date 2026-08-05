@@ -1,4 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+
+// Plus-addressing off one real inbox, so every demo account is reachable
+// without registering five mailboxes. Whoever runs this should use their own.
+const BASE_EMAIL = process.env.DEMO_BASE_EMAIL ?? "hello@yakal.me";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,11 +14,11 @@ const localUrl = process.env.VITE_SUPABASE_LOCAL_URL || "http://127.0.0.1:54321"
 const localKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
 const ACCOUNTS = [
-  { email: "binyam2537+demoadmin@gmail.com", role: "admin", name: "Demo Admin" },
-  { email: "binyam2537+demostudent@gmail.com", role: "student", name: "Demo Student" },
-  { email: "binyam2537+demotutor@gmail.com", role: "tutor", name: "Demo Tutor" },
-  { email: "binyam2537+democounselor@gmail.com", role: "counselor", name: "Demo Counselor" },
-  { email: "binyam2537+demoparent@gmail.com", role: "parent", name: "Demo Parent" }
+  { email: `${BASE_EMAIL.replace("@", "+demoadmin@")}`, role: "admin", name: "Demo Admin" },
+  { email: `${BASE_EMAIL.replace("@", "+demostudent@")}`, role: "student", name: "Demo Student" },
+  { email: `${BASE_EMAIL.replace("@", "+demotutor@")}`, role: "tutor", name: "Demo Tutor" },
+  { email: `${BASE_EMAIL.replace("@", "+democounselor@")}`, role: "counselor", name: "Demo Counselor" },
+  { email: `${BASE_EMAIL.replace("@", "+demoparent@")}`, role: "parent", name: "Demo Parent" }
 ];
 
 async function updateProfiles(url: string | undefined, key: string | undefined, envName: string) {
