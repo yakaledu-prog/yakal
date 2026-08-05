@@ -277,7 +277,11 @@ function EditDialog({
               className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Save<span className="hidden sm:inline">&nbsp;testimonial</span>
+              {/* One flex item, or the button's gap lands between the two
+                  words on top of the space already inside them. */}
+              <span>
+                Save<span className="hidden sm:inline"> testimonial</span>
+              </span>
             </button>
           </div>
         </div>
