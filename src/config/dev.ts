@@ -15,7 +15,7 @@ export const DEV_PREVIEW = false;
 
 if (DEV_PREVIEW && import.meta.env.PROD) {
   // Loud warning if a production build ships with previews enabled.
-  // eslint-disable-next-line no-console
+   
   console.warn(
     "%c[YAKAL] DEV_PREVIEW is ON in a production build. Disable it in src/config/dev.ts before shipping.",
     "background:#b91c1c;color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold"

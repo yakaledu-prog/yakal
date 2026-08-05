@@ -41,8 +41,14 @@ npm run preflight     # eslint, then tsc for src and api, then vite build
 wired by the `prepare` script, no husky). Bypass with `git push --no-verify`
 when you mean to.
 
-There are 58 pre-existing eslint warnings and **zero errors**. If your change
-adds an error, or a 59th warning, it is yours.
+There are 56 pre-existing eslint warnings and **zero errors**. If your change
+adds an error, or a 57th warning, it is yours.
+
+Most of them are `react-hooks/set-state-in-effect` from the React Compiler
+rules, which are stylistic here rather than broken. Two categories are worth
+reading properly when you see them, because they usually are real:
+`static-components` (a component defined during render is a new type each
+render, so React remounts its whole subtree and loses its state) and `refs`.
 
 `scripts/verify/` holds 31 checks. They are not unit tests: each one pins a bug
 that already happened. Read the comment at the top of one before deciding it is

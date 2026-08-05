@@ -116,22 +116,8 @@ export function ParentMessages({
     return labels;
   }, [reports]);
 
-  // One wrapper for both modes: embedded fills its tab, standalone fills the page.
-  const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    embedded ? (
-      <div className="flex flex-col flex-1 min-h-0 h-full bg-background dark:bg-[#111b21]">
-        {children}
-      </div>
-    ) : (
-      <PageWrapper className="!p-0 h-full overflow-hidden">
-        <div className="flex flex-col h-full min-h-0 bg-background dark:bg-[#111b21]">
-          {children}
-        </div>
-      </PageWrapper>
-    );
-
-  return (
-    <Wrapper>
+  const body = (
+    <>
         <MessagingLayout
           header={
             embedded ? undefined : (
@@ -210,6 +196,23 @@ export function ParentMessages({
             onDone={() => void refetchFlag()}
           />
         )}
-    </Wrapper>
+    </>
+  );
+
+  // Two shells for the same content: embedded fills its tab, standalone fills
+  // the page. Written as a component defined in here once, which made it a new
+  // component type on every render, so React unmounted and remounted the whole
+  // conversation each time. Scroll position and a half-typed message went with
+  // it, and this page re-renders on every arriving message.
+  return embedded ? (
+    <div className="flex flex-col flex-1 min-h-0 h-full bg-background dark:bg-[#111b21]">
+      {body}
+    </div>
+  ) : (
+    <PageWrapper className="!p-0 h-full overflow-hidden">
+      <div className="flex flex-col h-full min-h-0 bg-background dark:bg-[#111b21]">
+        {body}
+      </div>
+    </PageWrapper>
   );
 }
