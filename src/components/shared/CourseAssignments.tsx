@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TriangleAlert } from "lucide-react";
 
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
-import { PaperRain } from "@/components/shared/PaperRain";
+import { LoadingPanel } from "@/components/shared/Spinner";
 import { getCourseWorkFor } from "@/services/courseWork";
 
 // ============================================================
@@ -70,7 +70,12 @@ export function CourseAssignments({
     // Reading a class from Google is slower than a database read, and long
     // enough that a bare spinner leaves somebody wondering whether anything is
     // happening at all.
-    return <PaperRain className="animate-in fade-in duration-300" />;
+    return (
+      <LoadingPanel
+        label="Fetching the work set on this course"
+        className="animate-in fade-in duration-300"
+      />
+    );
   }
 
   return (

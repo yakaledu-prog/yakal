@@ -11,39 +11,54 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-/* ── Falling paper, while work is fetched from Google ──
-   Each sheet drifts down and sideways, fading at both ends so it has no hard
-   start or stop. The sideways drift and the tilt are what stop seven identical
-   glyphs reading as a progress bar. */
-@keyframes paper-fall {
+/* ── Material indeterminate circular ──
+   Google's own loader, in our colour. Two animations at once: the whole thing
+   turns, and the arc grows and shrinks by animating the dash. That second part
+   is what separates it from a spinning ring, and why it reads as working
+   rather than merely turning.
+
+   Timings are Material's: 1.4s for a full sweep of the dash against a 2s
+   rotation, so the two never quite line up and the motion does not appear to
+   repeat. */
+@keyframes md-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes md-spinner-dash {
   0% {
-    transform: translate3d(0, -28px, 0) rotate(-12deg);
-    opacity: 0;
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
   }
-  15% {
-    opacity: 0.85;
-  }
-  85% {
-    opacity: 0.5;
+  50% {
+    stroke-dasharray: 90, 200;
+    stroke-dashoffset: -35px;
   }
   100% {
-    transform: translate3d(14px, 120px, 0) rotate(14deg);
-    opacity: 0;
+    stroke-dasharray: 90, 200;
+    stroke-dashoffset: -125px;
   }
 }
 
-.paper-sheet {
-  animation-name: paper-fall;
-  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
-  animation-iteration-count: infinite;
-  will-change: transform, opacity;
+.md-spinner {
+  animation: md-spinner-rotate 2s linear infinite;
+  transform-origin: center;
 }
 
-/* Somebody who asked the system for less movement gets a still page and the
-   label underneath, which was carrying the message anyway. */
+.md-spinner circle {
+  animation: md-spinner-dash 1.4s ease-in-out infinite;
+  stroke-linecap: round;
+  transform-origin: center;
+}
+
+/* Still, but present. A ring that does not move still says "not yet". */
 @media (prefers-reduced-motion: reduce) {
-  .paper-sheet {
+  .md-spinner,
+  .md-spinner circle {
     animation: none;
-    opacity: 0.4;
+  }
+  .md-spinner circle {
+    stroke-dasharray: 70, 200;
   }
 }
