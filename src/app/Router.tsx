@@ -84,7 +84,6 @@ const StudentMeeting = lazy(() => import("../pages/student/StudentMeeting").then
 const StudentMessages = lazy(() => import("../pages/student/StudentMessages").then((m) => ({ default: m.StudentMessages })));
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
-const StudentResources = lazy(() => import("../pages/student/StudentResources").then((m) => ({ default: m.StudentResources })));
 const StudentRoadmap = lazy(() => import("../pages/student/StudentRoadmap").then((m) => ({ default: m.StudentRoadmap })));
 const StudentSessionDetail = lazy(() => import("../pages/student/StudentSessionDetail").then((m) => ({ default: m.StudentSessionDetail })));
 const StudentSessions = lazy(() => import("../pages/student/StudentSessions").then((m) => ({ default: m.StudentSessions })));
@@ -415,9 +414,7 @@ const router = createBrowserRouter([
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
-          { path: "resources", element: <StudentResources /> },
           { path: "profile", element: <StudentProfile /> },
-          { path: "settings", element: <SettingsPage /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "meeting/:sessionId", element: <StudentMeeting /> },
           { path: "*", element: <NotFoundPage /> },
