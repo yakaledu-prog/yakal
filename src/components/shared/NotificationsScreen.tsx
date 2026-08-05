@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Archive, ArchiveRestore, Clock, Inbox, Loader2, Mail, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Clock, Inbox, Loader2, Mail, Trash2 } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getNotifications,
@@ -62,6 +63,10 @@ export function NotificationsScreen({
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("inbox");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // One column at a time on a phone. Stacked, the list took the screen and the
+  // notification you had just tapped began below the fold, which got worse with
+  // every notification you had.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -88,6 +93,7 @@ export function NotificationsScreen({
 
   async function open(n: AppNotification) {
     setSelectedId(n.id);
+    openDetail();
     if (n.isRead) return;
     try {
       await markNotificationRead(n.id);
@@ -101,6 +107,9 @@ export function NotificationsScreen({
     try {
       await setNotificationArchived(n.id, !n.archived);
       setSelectedId(null);
+      // Back to the list. On a phone the detail pane's only way out is the
+      // back arrow, which lives inside the notification that just left.
+      closeDetail();
       await refresh();
       toast.success(n.archived ? "Moved back to the inbox" : "Archived");
     } catch (err: any) {
@@ -121,6 +130,7 @@ export function NotificationsScreen({
 
   async function afterAction() {
     setSelectedId(null);
+    closeDetail();
     await refresh();
   }
 
@@ -148,12 +158,20 @@ export function NotificationsScreen({
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-          <div className="w-full md:w-[380px] md:shrink-0 border-r border-border flex flex-col min-h-0">
+          <div
+            className={cn(
+              "w-full md:w-[380px] md:shrink-0 border-r border-border flex-col min-h-0",
+              listClass
+            )}
+          >
             <div className="flex items-center border-b border-border shrink-0">
               {(["inbox", "unread", "archived"] as const).map((t) => (
                 <button
                   key={t}
-                  onClick={() => setActiveTab(t)}
+                  onClick={() => {
+                    setActiveTab(t);
+                    closeDetail();
+                  }}
                   className={cn(
                     "flex-1 py-3 text-[13px] font-medium capitalize border-b-2 transition-colors",
                     activeTab === t
@@ -218,8 +236,10 @@ export function NotificationsScreen({
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          <div className={cn("flex-1 min-w-0 flex-col min-h-0", detailClass)}>
             {!active ? (
+              // Only ever seen on a desktop: a phone never opens this column
+              // without having chosen something first.
               <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
                 <Mail size={36} className="text-[#aebac1] mb-3" />
                 <p className="text-[15px] font-semibold text-foreground">No notification selected</p>
@@ -232,6 +252,15 @@ export function NotificationsScreen({
                 {/* Subject sits on the action row rather than above it: the
                     toolbar was otherwise an unlabelled strip of icons. */}
                 <div className="flex items-center gap-3 px-4 md:px-6 py-3 border-b border-border shrink-0">
+                  {/* The way back to the list, which on a phone is the only
+                      way back. */}
+                  <button
+                    onClick={closeDetail}
+                    aria-label="Back to notifications"
+                    className="-ml-1 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 md:hidden"
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
                   <h2 className="flex-1 min-w-0 text-[15px] md:text-[16px] font-bold text-foreground truncate">
                     {active.title}
                   </h2>
