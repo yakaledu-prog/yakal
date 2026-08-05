@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MessageCirclePlus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Eye, EyeOff, SlidersHorizontal, Quote as QuoteIcon } from "lucide-react";
+import { MessageCirclePlus, Edit2, Trash2, Loader2, X, GripVertical, Upload, Save, Search, Eye, EyeOff, SlidersHorizontal, Check, Quote as QuoteIcon } from "lucide-react";
 import {
   getAllTestimonials,
   createTestimonial,
@@ -274,10 +274,10 @@ function EditDialog({
             <button
               onClick={submit}
               disabled={busy || uploading}
-              className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white hover:bg-[#0d7f86] disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Save testimonial
+              Save<span className="hidden sm:inline">&nbsp;testimonial</span>
             </button>
           </div>
         </div>
@@ -313,6 +313,18 @@ export function AdminTestimonials() {
   const [visibility, setVisibility] = useState<"all" | "visible" | "hidden">("all");
   const [role, setRole] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const visibilityMenu = useRef<HTMLDivElement>(null);
+
+  // A menu that survives a click elsewhere is a menu people close by leaving
+  // the page.
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!visibilityMenu.current?.contains(e.target as Node)) setFiltersOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [filtersOpen]);
 
   /**
    * Dragging is off while anything is filtered.
@@ -422,7 +434,7 @@ export function AdminTestimonials() {
         aria-pressed={on}
         disabled={count === 0 && !on}
         className={cn(
-          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+          "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
           on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
           // Greyish rather than the near-black foreground: All is the resting
           // state, and it should not shout louder than a real filter.
@@ -472,32 +484,48 @@ export function AdminTestimonials() {
                 placeholder="Search name, role or quote..."
                 className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-10 text-[13.5px] outline-none transition-colors focus:border-[#1099A1] lg:pr-3"
               />
-              {/* On a phone the filters live behind this, inside the field, so
-                  the row is search plus Add and nothing else. Above lg the
-                  chips and the dropdown are on the row already, so it goes. */}
-              <button
-                type="button"
-                onClick={() => setFiltersOpen((o) => !o)}
-                aria-label="Filters"
-                aria-expanded={filtersOpen}
-                className={cn(
-                  "absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 transition-colors lg:hidden",
-                  role !== "all" || visibility !== "all"
-                    ? "text-[#1099A1]"
-                    : "text-muted-foreground hover:text-foreground"
+              {/* On a phone this is the visibility filter. The dropdown beside
+                  it would push the Add button onto its own line, and the three
+                  states it holds are short enough to list here. */}
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 lg:hidden" ref={visibilityMenu}>
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((o) => !o)}
+                  aria-label="Filter by visibility"
+                  aria-expanded={filtersOpen}
+                  className={cn(
+                    "rounded-lg p-1.5 transition-colors",
+                    visibility !== "all" ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <SlidersHorizontal size={16} />
+                </button>
+
+                {filtersOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 w-[150px] rounded-xl border border-border bg-card p-1 shadow-lg">
+                    {visibilityOptions.map((o) => (
+                      <button
+                        key={o.value}
+                        onClick={() => {
+                          setVisibility(o.value);
+                          setFiltersOpen(false);
+                        }}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-muted/60",
+                          visibility === o.value ? "font-medium text-foreground" : "text-foreground/70"
+                        )}
+                      >
+                        {o.label}
+                        {visibility === o.value && <Check size={14} className="text-[#1099A1]" />}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              >
-                <SlidersHorizontal size={16} />
-              </button>
+              </div>
             </div>
 
-            {/* Beside the search rather than on their own row: four short
-                chips fit, and a second row of controls above three cards read
-                as more chrome than content. Hidden on a phone, where the
-                search field does the same job in less width. */}
-            <div className="hidden flex-wrap items-center gap-2 lg:flex">
-              {chips}
-            </div>
+            {/* Inline with the search from lg up, where there is room. */}
+            <div className="hidden flex-wrap items-center gap-2 lg:flex">{chips}</div>
 
             <Dropdown
               value={visibility}
@@ -517,20 +545,13 @@ export function AdminTestimonials() {
             </button>
           </div>
 
-          {filtersOpen && (
-            <div className="flex flex-wrap items-center gap-2 lg:hidden">
-              {chips}
-              <Dropdown
-                value={visibility}
-                onChange={setVisibility}
-                options={visibilityOptions}
-                size="sm"
-                ariaLabel="Filter by visibility"
-                className="w-[150px]"
-                buttonClassName="text-foreground/70"
-              />
-            </div>
-          )}
+          {/* Below lg the same chips get their own line and scroll sideways.
+              Four of them wrapping onto two rows pushed the first card off a
+              phone screen, and hiding them behind the icon meant the roles
+              stopped being visible at all. */}
+          <div className="-mx-6 flex items-center gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] md:-mx-10 md:px-10 lg:hidden [&::-webkit-scrollbar]:hidden">
+            {chips}
+          </div>
 
           <p className="text-[13px] text-muted-foreground">
             {filtering
