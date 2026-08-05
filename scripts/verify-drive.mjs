@@ -13,7 +13,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { google } from 'googleapis';
+import { auth as googleAuth, drive_v3 } from '@googleapis/drive';
 
 // Minimal .env reader so this runs without pulling in a dependency.
 if (existsSync('.env')) {
@@ -50,7 +50,7 @@ if (refreshToken) {
     bad('VITE_GCP_CLIENT_ID or GCP_CLIENT_SECRET is missing',
         'Both are needed to exchange the refresh token.');
   } else {
-    auth = new google.auth.OAuth2(id, secret);
+    auth = new googleAuth.OAuth2(id, secret);
     auth.setCredentials({ refresh_token: refreshToken });
   }
   console.log(driveId
@@ -81,7 +81,7 @@ if (refreshToken) {
           + 'shared drive (needs Workspace), or use GOOGLE_OAUTH_REFRESH_TOKEN instead: '
           + 'node scripts/google-oauth-setup.mjs');
     }
-    auth = new google.auth.JWT({
+    auth = new googleAuth.JWT({
       email: creds.client_email,
       key: String(creds.private_key || '').replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/drive'],
@@ -99,7 +99,7 @@ if (!auth) {
 console.log(`  INFO  mode: ${mode}`);
 
 // 2. Authenticate ------------------------------------------------------------
-const drive = google.drive({ version: 'v3', auth });
+const drive = new drive_v3.Drive({ auth });
 
 try {
   if (mode === 'oauth') await auth.getAccessToken();

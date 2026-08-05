@@ -1,6 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Bold, Italic, Underline as UnderlineIcon, List, RemoveFormatting, Paperclip } from 'lucide-react'
 
@@ -15,8 +14,10 @@ interface TipTapEditorProps {
 export function TipTapEditor({ value, onChange, onAttachClick, toolbarRight, placeholder }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
+      // StarterKit already registers Underline. Adding it again logged a
+      // duplicate-extension warning on every mount; toggleUnderline below is
+      // StarterKit's all the same.
       StarterKit,
-      Underline,
       Placeholder.configure({
         placeholder: placeholder || 'Instructions (optional)',
         emptyEditorClass: 'is-editor-empty',

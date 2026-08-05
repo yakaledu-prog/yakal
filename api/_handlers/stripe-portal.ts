@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser, appBaseUrl } from '../_utils/billing';
+import { getStripe } from '../_utils/billing';
+import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase';
 
 // Opens the Stripe Customer Portal so a parent can manage saved payment
 // methods and see receipts. Requires the Portal to be enabled in the

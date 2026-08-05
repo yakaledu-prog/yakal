@@ -14,7 +14,7 @@
 
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
-import { google } from 'googleapis';
+import { auth as googleAuth } from '@googleapis/drive';
 
 // Override with --port if 5599 is taken, or to match a URI already registered
 // on the client: node scripts/google-oauth-setup.mjs --port 5173
@@ -60,7 +60,7 @@ if (!clientId || !clientSecret) {
   process.exit(1);
 }
 
-const oauth = new google.auth.OAuth2(clientId, clientSecret, REDIRECT);
+const oauth = new googleAuth.OAuth2(clientId, clientSecret, REDIRECT);
 
 const url = oauth.generateAuthUrl({
   access_type: 'offline',

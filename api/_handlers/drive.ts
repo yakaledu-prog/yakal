@@ -1,6 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Readable } from 'node:stream';
-import { google } from 'googleapis';
+// The Drive client alone, not the whole googleapis package.
+//
+// googleapis is 204 MB unpacked because it carries every Google API there is.
+// Vercel allows 250 MB unzipped per function, and this one shares its bundle
+// with the Classroom and token handlers, so the three of them together failed
+// to invoke at all: FUNCTION_INVOCATION_FAILED, including for the token
+// exchange, which needs no Google client whatsoever. This package is 2.4 MB.
+import { drive_v3, auth as googleAuth } from '@googleapis/drive';
 
 /**
  * Student documents, stored in Drive under an account Yakal controls.
@@ -38,7 +45,7 @@ const DOC_MIME = 'application/vnd.google-apps.document';
 const SUBFOLDERS = ['Transcripts', 'Essays', 'Test scores', 'Other'] as const;
 type Subfolder = (typeof SUBFOLDERS)[number];
 
-type Drive = ReturnType<typeof google.drive>;
+type Drive = drive_v3.Drive;
 
 /**
  * Where files live, and who owns them.
@@ -70,12 +77,12 @@ function getContext(): Ctx {
   const serviceKey = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
   if (refreshToken) {
-    const auth = new google.auth.OAuth2(
+    const auth = new googleAuth.OAuth2(
       process.env.VITE_GCP_CLIENT_ID,
       process.env.GCP_CLIENT_SECRET
     );
     auth.setCredentials({ refresh_token: refreshToken });
-    return { drive: google.drive({ version: 'v3', auth }), sharedDriveId, mode: 'oauth' };
+    return { drive: new drive_v3.Drive({ auth }), sharedDriveId, mode: 'oauth' };
   }
 
   if (serviceKey) {
@@ -86,14 +93,14 @@ function getContext(): Ctx {
       );
     }
     const creds = JSON.parse(serviceKey);
-    const auth = new google.auth.JWT({
+    const auth = new googleAuth.JWT({
       email: creds.client_email,
       // Vercel env vars collapse real newlines, so restore them before signing.
       key: String(creds.private_key).replace(/\\n/g, '\n'),
       scopes: SCOPES,
     });
     return {
-      drive: google.drive({ version: 'v3', auth }),
+      drive: new drive_v3.Drive({ auth }),
       sharedDriveId,
       mode: 'service_account',
     };

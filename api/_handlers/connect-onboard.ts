@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, requireUser, appBaseUrl } from '../_utils/billing';
+import { getStripe } from '../_utils/billing';
+import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase';
 
 // ============================================================
 // A tutor connecting their bank to the platform.

@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe, getServiceClient, getUserClient, requireUser } from '../_utils/billing';
+import { getStripe } from '../_utils/billing';
+import { getServiceClient, getUserClient, requireUser } from '../_utils/supabase';
 
 // ============================================================
 // A tutor asks to be paid for one session, and is paid.

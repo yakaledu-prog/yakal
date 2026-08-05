@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import type Stripe from 'stripe';
-import { getStripe, getServiceClient } from './_utils/billing';
+import { getStripe } from './_utils/billing';
+import { getServiceClient } from './_utils/supabase';
 import { fulfilInvoices } from './_utils/fulfil';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.

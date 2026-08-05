@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
+// The Classroom client alone. See the note in drive.ts: the full googleapis
+// package is 204 MB and took this whole function over Vercel's limit.
+import { classroom_v1, auth as googleAuth } from '@googleapis/classroom';
 
-import { getServiceClient, requireUser } from '../_utils/billing';
+import { getServiceClient, requireUser } from '../_utils/supabase';
 
 /**
  * Google Classroom, read through an account Yakal controls.
@@ -56,7 +58,7 @@ function classroomClient() {
   if (!refreshToken) {
     throw new Error('GOOGLE_OAUTH_REFRESH_TOKEN is not set');
   }
-  const auth = new google.auth.OAuth2(
+  const auth = new googleAuth.OAuth2(
     process.env.VITE_GCP_CLIENT_ID,
     process.env.GCP_CLIENT_SECRET
   );
@@ -65,7 +67,7 @@ function classroomClient() {
   // person reading this. scripts/google-oauth-setup.mjs is where they are asked
   // for.
   auth.setCredentials({ refresh_token: refreshToken });
-  return google.classroom({ version: 'v1', auth });
+  return new classroom_v1.Classroom({ auth });
 }
 
 /**

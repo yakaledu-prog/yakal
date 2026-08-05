@@ -4,7 +4,6 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Star, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
-import 'react-flagpack/dist/style.css';
 import { getTutorReviews } from "@/services/sessions";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorAvailability, TutorAvailability } from "@/services/availability";
@@ -16,7 +15,6 @@ import { getSlotConflicts, slotKey } from "@/services/slotService";
 import { TutorResume, resumeFromProfile } from "@/components/shared/TutorResume";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
-import 'react-flagpack/dist/style.css';
 import { ChatBody, useDirectConversation } from "@/components/messaging";
 
 const courseData = {
