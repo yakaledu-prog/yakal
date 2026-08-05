@@ -60,6 +60,49 @@ async function main() {
     check('sibling query params survive', seen.id === '8891', `meetingId=${seen.id}`);
   }
 
+  {
+    // A lazy route must not be loaded until its action is asked for. This is
+    // what keeps the Google token exchange independent of the Drive and
+    // Classroom clients it is grouped with.
+    let loaded = '';
+    const h = dispatch({
+      cheap: (_req: any, r: any) => r.status(200).json({ hit: 'cheap' }),
+      heavy: async () => { loaded = 'heavy'; return { default: (_req: any, r: any) => r.status(200).json({}) }; },
+    } as any);
+    const { res, out } = mockRes();
+    await h({ query: { action: 'cheap' } } as any, res);
+    check('a lazy route stays unloaded until asked for',
+      out.code === 200 && loaded === '', loaded ? `loaded ${loaded}` : 'nothing loaded');
+
+    const second = mockRes();
+    await h({ query: { action: 'heavy' } } as any, second.res);
+    check('a lazy route loads when asked for', second.out.code === 200 && loaded === 'heavy');
+  }
+  {
+    // A handler that throws where its own try cannot catch it used to get
+    // Vercel's HTML error page, which the browser could not read as JSON, so
+    // the reason never reached the client.
+    const h = dispatch({
+      boom: () => { throw new Error('the credential is missing'); },
+    } as any);
+    const { res, out } = mockRes();
+    await h({ query: { action: 'boom' } } as any, res);
+    check('a throwing handler answers as JSON, with the reason',
+      out.code === 500 && typeof out.body?.error === 'string'
+        && out.body.error.includes('the credential is missing'),
+      out.body?.error);
+  }
+  {
+    // Same for a module that fails to load at all.
+    const h = dispatch({
+      broken: async () => { throw new Error('cannot find module'); },
+    } as any);
+    const { res, out } = mockRes();
+    await h({ query: { action: 'broken' } } as any, res);
+    check('a route that fails to load answers as JSON',
+      out.code === 500 && String(out.body?.error).includes('cannot find module'));
+  }
+
   console.log(failures === 0 ? '\nall passed' : `\n${failures} failed`);
   process.exit(failures === 0 ? 0 : 1);
 }
