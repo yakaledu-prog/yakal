@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
 import { diagnosticTests } from "@/data/diagnostics";
+import { useQuery } from "@tanstack/react-query";
+import { getPublishedDiagnostics } from "@/services/diagnosticAdminService";
 import { Search, Loader2, Activity, CheckCircle2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
@@ -51,14 +53,23 @@ export function StudentDiagnostics() {
     });
   }, [user]);
 
-  const categories = useMemo(() => Array.from(new Set(diagnosticTests.map(t => t.categoryName))), []);
+  // Written by an admin when there are any, otherwise the ones built into the
+  // app. See getPublishedDiagnostics.
+  const { data: liveTests } = useQuery({
+    queryKey: ["published-diagnostics"],
+    queryFn: getPublishedDiagnostics,
+    staleTime: 5 * 60_000,
+  });
+  const tests = liveTests ?? diagnosticTests;
+
+  const categories = useMemo(() => Array.from(new Set(tests.map(t => t.categoryName))), [tests]);
   const filteredCategories = useMemo(
     () => categories.filter((c) => c.toLowerCase().includes(filterText.toLowerCase())),
     [categories, filterText]
   );
 
   const [selectedCategory, setSelectedCategory] = useState<string>(categories[0] || "");
-  const categoryTests = useMemo(() => diagnosticTests.filter(t => t.categoryName === selectedCategory), [selectedCategory]);
+  const categoryTests = useMemo(() => tests.filter(t => t.categoryName === selectedCategory), [tests, selectedCategory]);
 
   const [activeTabId, setActiveTabId] = useState<string>("");
 
@@ -128,7 +139,7 @@ export function StudentDiagnostics() {
             <>
               {filteredCategories.map((c) => {
                 const active = c === selectedCategory;
-                const cTests = diagnosticTests.filter(t => t.categoryName === c);
+                const cTests = tests.filter(t => t.categoryName === c);
                 const cCompleted = cTests.filter(t => results.some(r => r.id === t.id)).length;
 
                 return (
