@@ -8,6 +8,9 @@ export interface AdminUser {
   status: string;
   avatar_url: string | null;
   created_at: string;
+  /** Written by the presence heartbeat. Null for an account that never signed in. */
+  last_seen_at: string | null;
+  phone: string | null;
   rejection_reason: string | null;
   bio?: string | null;
   cv_url?: string | null;
@@ -206,7 +209,7 @@ async function rows<T = any>(
 export async function getUsers(role?: string): Promise<AdminUser[]> {
   let q = supabase
     .from("profiles")
-    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, subjects")
+    .select("id, full_name, email, role, status, avatar_url, created_at, last_seen_at, phone, rejection_reason, subjects")
     // Deleting is soft, so the row survives for sessions and invoices to point
     // at. It should still leave this list, or a delete looks like it did
     // nothing at all.
@@ -221,7 +224,7 @@ export async function getUsers(role?: string): Promise<AdminUser[]> {
 export async function getPendingApprovals(): Promise<AdminUser[]> {
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, status, avatar_url, created_at, rejection_reason, subjects")
+    .select("id, full_name, email, role, status, avatar_url, created_at, last_seen_at, phone, rejection_reason, subjects")
     .in("role", ["tutor", "counselor"])
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -384,7 +387,7 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
       .select(
         // bio and resume_url were missing, so the modal's View Resume button
         // was reading an undefined cv_url and never rendered for anybody.
-        "id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, subjects, resume_url"
+        "id, full_name, email, role, status, avatar_url, created_at, last_seen_at, phone, rejection_reason, bio, subjects, resume_url"
       )
       .eq("id", id)
       .single();
