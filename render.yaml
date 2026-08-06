@@ -1,0 +1,41 @@
+# Render deployment, as one service.
+#
+# The built app and the API are served by the same process, which is why there
+# is no static site here and no CORS anywhere: they are the same origin. That
+# also means one URL to register with Google and Stripe rather than two.
+#
+# Environment variables are deliberately not listed. They are secrets, and
+# Render's dashboard takes a whole .env pasted at once (Environment > Add from
+# .env), so `npx vercel env pull` produces a file that goes straight in.
+#
+# What has to be set, at minimum:
+#   NODE_ENV=production          switches email to Resend and closes /api/dev-user
+#   VITE_SUPABASE_URL            baked into the bundle at build time
+#   VITE_SUPABASE_ANON_KEY       same
+#   SUPABASE_SERVICE_ROLE_KEY    server only, never VITE_
+#   APP_BASE_URL                 this service's own URL, or Stripe returns
+#   PUBLIC_APP_URL               people to localhost after paying
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+#   VITE_GCP_CLIENT_ID, GCP_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN
+#   RESEND_API_KEY, VITE_CONTACT_DESTINATION_EMAIL
+#   ZOOM_S2S_*, VITE_ZOOM_MEETING_CLIENT_ID, ZOOM_MEETING_CLIENT_SECRET
+#
+# Do NOT set VITE_BACKEND=local. It points the deployed site at 127.0.0.1,
+# which on a visitor's machine is the visitor's machine.
+
+services:
+  - type: web
+    name: yakal
+    runtime: node
+    plan: starter
+    # Free instances sleep after fifteen minutes and take about a minute to
+    # wake, which is unusable in front of anybody. Starter stays up.
+    region: oregon
+    branch: main
+    # npm ci, not install: the lockfile is the point of having one, and a
+    # deploy that resolves different versions than the machine it was tested
+    # on is a deploy that fails differently.
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
