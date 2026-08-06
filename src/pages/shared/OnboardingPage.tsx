@@ -4,6 +4,8 @@ import { StudentDiagnosticOnboarding } from "@/pages/student/StudentDiagnosticOn
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FloatingInput, FloatingTextarea } from "@/components/ui/FloatingField";
+import { SelectMenu } from "@/components/ui/SelectMenu";
+import { GRADE_LEVELS } from "@/config/grades";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
@@ -520,21 +522,15 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
               {/* Student Step 2: grade level, then the same theme cards */}
               {role === "student" && step === 2 && (
                 <div className="flex flex-col gap-6">
-                  <div>
-                    <label className="block text-[13px] font-medium text-[#111] dark:text-white mb-1.5">
-                      What grade are you in?
-                    </label>
-                    <select
-                      value={gradeLevel}
-                      onChange={(e) => setGradeLevel(e.target.value)}
-                      className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
-                    >
-                      <option value="">Select your grade</option>
-                      {["Grade 9", "Grade 10", "Grade 11", "Grade 12", "University", "Other"].map((g) => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* SelectMenu, not a native select: the operating system
+                      draws that one, so it ignores the theme and looks like a
+                      different application on Windows. */}
+                  <SelectMenu
+                    label="What grade are you in?"
+                    value={gradeLevel}
+                    onChange={setGradeLevel}
+                    options={[...GRADE_LEVELS]}
+                  />
                 </div>
               )}
 

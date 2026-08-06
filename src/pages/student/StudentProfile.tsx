@@ -7,18 +7,71 @@ import { Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { SelectMenu } from "@/components/ui/SelectMenu";
+import { GRADE_LEVELS } from "@/config/grades";
 
 export function StudentProfile() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // The form is opened from the profile, so it starts from what is stored
+  // rather than from empty, and only writes what changed.
+  const [form, setForm] = useState({ fullName: "", phone: "", gradeLevel: "", bio: "" });
+  const [saving, setSaving] = useState(false);
+
+  function openEditor() {
+    setForm({
+      fullName: profile?.full_name ?? "",
+      phone: profile?.phone ?? "",
+      gradeLevel: profile?.grade_level ?? "",
+      bio: profile?.bio ?? "",
+    });
+    setIsEditModalOpen(true);
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      toast.success("Profile picture updated successfully!");
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Please choose an image under 2 MB.");
+    try {
+      const path = `${user.id}/${Date.now()}.${file.name.split(".").pop()}`;
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const { error: saveErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: data.publicUrl })
+        .eq("id", user.id);
+      if (saveErr) throw saveErr;
+      await refreshProfile();
+      toast.success("Photo updated.");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed.");
+    } finally {
+      e.target.value = "";
     }
   };
+
+  async function saveProfile() {
+    if (!user) return;
+    if (!form.fullName.trim()) return toast.error("A name is needed.");
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: form.fullName.trim(),
+        phone: form.phone.trim() || null,
+        grade_level: form.gradeLevel || null,
+        bio: form.bio.trim() || null,
+      })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    await refreshProfile();
+    toast.success("Profile saved.");
+    setIsEditModalOpen(false);
+  }
 
   const toggleTheme = async () => {
     const isDark = document.documentElement.classList.toggle("dark");
@@ -90,7 +143,7 @@ export function StudentProfile() {
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
               <button
-                onClick={() => setIsEditModalOpen(true)}
+                onClick={openEditor}
                 className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto"
               >
                 <SquarePenIcon size={16} /> Edit Profile
@@ -259,10 +312,12 @@ export function StudentProfile() {
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Full Name</label>
                 <input
                   type="text"
-                  defaultValue={profile?.full_name || ""}
+                  value={form.fullName}
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                   className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary"
                 />
               </div>
+
               <div className="space-y-2">
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Email Address</label>
                 <input
@@ -270,6 +325,37 @@ export function StudentProfile() {
                   defaultValue={user?.email || ""}
                   disabled
                   className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] text-[#54656f] dark:text-[#aebac1] cursor-not-allowed opacity-70"
+                />
+              </div>
+
+              {/* Grade was asked for at onboarding and then had nowhere to be
+                  corrected, which matters every September. */}
+              <SelectMenu
+                label="Grade"
+                value={form.gradeLevel}
+                onChange={(v) => setForm((f) => ({ ...f, gradeLevel: v }))}
+                options={[...GRADE_LEVELS]}
+              />
+
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Phone</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">About you</label>
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  rows={3}
+                  placeholder="What you are working on, what you find hard, anything a tutor should know."
+                  className="w-full px-3 py-2.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary resize-y leading-relaxed"
                 />
               </div>
             </div>
@@ -283,10 +369,8 @@ export function StudentProfile() {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  toast.success("Profile saved!");
-                  setIsEditModalOpen(false);
-                }}
+                onClick={saveProfile}
+                disabled={saving}
                 className="h-10 px-6 bg-[#1099A1] hover:bg-[#1099A1]/90 text-white font-bold"
               >
                 Save Changes
