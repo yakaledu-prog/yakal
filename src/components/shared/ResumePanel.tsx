@@ -99,7 +99,7 @@ export function ResumePanel({
     setOpening(true);
     const url = await getResumeUrl(path);
     setOpening(false);
-    if (!url) return toast.error("Could not open that CV.");
+    if (!url) return toast.error("Could not open that resume.");
     if (download) {
       const a = document.createElement("a");
       a.href = url;
@@ -114,10 +114,10 @@ export function ResumePanel({
     setBusy(true);
     const res = await uploadResume(userId, file);
     setBusy(false);
-    if (!res.success || !res.path) return toast.error(res.error ?? "Could not upload that CV.");
+    if (!res.success || !res.path) return toast.error(res.error ?? "Could not upload that resume.");
     setPath(res.path);
     onReplaced?.(res.path);
-    toast.success("CV updated.");
+    toast.success("Resume updated.");
   }
 
   if (!path) {
@@ -136,7 +136,7 @@ export function ResumePanel({
         ) : (
           <Upload size={22} className="text-[#1099A1]" />
         )}
-        <span className="text-[14px] font-medium text-foreground">Upload your CV</span>
+        <span className="text-[14px] font-medium text-foreground">Upload your resume</span>
         <span className="text-[12.5px] text-muted-foreground">PDF or Word document</span>
         <input
           ref={input}
@@ -176,7 +176,7 @@ export function ResumePanel({
             type="button"
             onClick={() => setMenu((m) => !m)}
             onBlur={() => setTimeout(() => setMenu(false), 160)}
-            aria-label="CV options"
+            aria-label="Resume options"
             aria-expanded={menu}
             className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           >

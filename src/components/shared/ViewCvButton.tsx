@@ -20,7 +20,7 @@ import { cn } from "@/utils/cn";
 export function ViewCvButton({
   path,
   className,
-  label = "View CV",
+  label = "View resume",
 }: {
   path: string | null | undefined;
   className?: string;
@@ -35,7 +35,7 @@ export function ViewCvButton({
     try {
       const url = await getResumeUrl(path);
       if (!url) {
-        toast.error("That CV could not be opened. It may have been removed.");
+        toast.error("That resume could not be opened. It may have been removed.");
         return;
       }
       window.open(url, "_blank", "noopener");

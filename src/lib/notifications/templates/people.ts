@@ -56,7 +56,7 @@ export const accountApproved: NotificationTemplate<{
     heading: v.approved ? "You are in" : "Your application",
     intro: v.approved
       ? `Your ${v.role} account has been approved, ${v.fullName}. You can sign in now. ` +
-        `Your profile, including the CV you uploaded, is what families see when they are ` +
+        `Your profile, including the resume you uploaded, is what families see when they are ` +
         `choosing, so it is worth a few minutes before you take your first booking.`
       : `Thank you for applying to Yakal, ${v.fullName}. After reviewing your application ` +
         `we are not able to take it further at the moment.` +

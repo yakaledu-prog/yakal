@@ -591,6 +591,46 @@ export interface PublicTutor {
   avatar_url: string | null;
   bio: string | null;
   subjects: string[] | null;
+  /** Null until somebody has rated them. Zero would draw an empty five stars. */
+  average_stars: number | null;
+  rating_count: number;
+}
+
+export interface TutorRating {
+  tutorId: string;
+  averageStars: number | null;
+  ratingCount: number;
+}
+
+/**
+ * What a set of tutors is rated, for cards that list several at once.
+ *
+ * Reads v_tutor_ratings, which exposes the average and the count and nothing
+ * else. session_ratings itself is readable only by the people who were in the
+ * session, so a parent comparing tutors cannot see the rows this is built
+ * from, which is the point.
+ */
+export async function getTutorRatings(tutorIds: string[]): Promise<Map<string, TutorRating>> {
+  const ids = [...new Set(tutorIds.filter(Boolean))];
+  if (ids.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("v_tutor_ratings")
+    .select("tutor_id, average_stars, rating_count")
+    .in("tutor_id", ids);
+
+  if (error) {
+    // A missing rating is a card without stars, not a card that fails to draw.
+    console.error("getTutorRatings:", error.message);
+    return new Map();
+  }
+
+  return new Map(
+    (data ?? []).map((r: any) => [
+      r.tutor_id as string,
+      { tutorId: r.tutor_id, averageStars: r.average_stars, ratingCount: r.rating_count },
+    ])
+  );
 }
 
 /**
@@ -605,7 +645,7 @@ export interface PublicTutor {
 export async function getPublicTutors(): Promise<PublicTutor[]> {
   const { data, error } = await supabase
     .from("v_public_tutors")
-    .select("id, full_name, avatar_url, bio, subjects");
+    .select("id, full_name, avatar_url, bio, subjects, average_stars, rating_count");
 
   if (error) {
     console.error("getPublicTutors:", error.message);

@@ -5,6 +5,7 @@ import { Star, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-reac
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { getTutorReviews } from "@/services/sessions";
+import { getTutorRatings } from "@/services/tutorService";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorAvailability, TutorAvailability } from "@/services/availability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -197,6 +198,16 @@ export function ParentCourseCatalogDetail() {
     queryFn: () => getTutorReviews(realTutor!.id),
     enabled: !!realTutor?.id,
   });
+
+  // The average comes from the aggregate view rather than from those reviews:
+  // session_ratings is readable only by the people who were in the session, so
+  // the list above is this family's slice of it, not everybody's.
+  const { data: tutorRatings } = useQuery({
+    queryKey: ["tutor-ratings", realTutor?.id],
+    queryFn: () => getTutorRatings([realTutor!.id]),
+    enabled: !!realTutor?.id,
+  });
+  const rating = realTutor ? tutorRatings?.get(realTutor.id) : undefined;
 
   const selectedTutor = realTutor
     ? {
@@ -537,6 +548,19 @@ export function ParentCourseCatalogDetail() {
                       {selectedTutor?.name}
                     </h2>
                     <div className="text-[18px] font-medium text-white/90">{selectedTutor?.headline}</div>
+                    {/* The real average, not the course's mock 4.8. A tutor
+                        nobody has rated says so rather than showing zero. */}
+                    {rating?.averageStars != null ? (
+                      <div className="flex items-center gap-1.5 text-[15px]">
+                        <Star size={16} className="text-[#CAA25F]" fill="currentColor" strokeWidth={0} />
+                        <span className="font-semibold text-white">{rating.averageStars.toFixed(1)}</span>
+                        <span className="text-white/70">
+                          ({rating.ratingCount} {rating.ratingCount === 1 ? "rating" : "ratings"})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-[14px] text-white/70">Not yet rated</div>
+                    )}
                   </div>
                 </div>
 

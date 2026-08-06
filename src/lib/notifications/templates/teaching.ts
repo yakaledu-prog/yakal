@@ -16,7 +16,7 @@ export const courseApplication: NotificationTemplate<{
     subject: `${v.tutorName} applied to teach ${v.courseTitle}`,
     heading: "A tutor has applied",
     intro:
-      `${v.tutorName} has applied to teach ${v.courseTitle}. Their CV, subjects and rate are ` +
+      `${v.tutorName} has applied to teach ${v.courseTitle}. Their resume, subjects and rate are ` +
       `on the application, and the course cannot be booked by a family until somebody is ` +
       `assigned to it.`,
     facts: [

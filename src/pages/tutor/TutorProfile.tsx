@@ -11,10 +11,10 @@ import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { DetailRow } from "@/components/shared/DetailRow";
-import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Users, X } from "lucide-react";
+import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import { getTutorSessionsFull, getTutorCourses, SessionRow } from "@/services/tutorService";
+import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
 
 const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "SAT Prep", "College Advising", "Other"];
@@ -68,6 +68,7 @@ export function TutorProfile() {
   const [editOpen, setEditOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courseCount, setCourseCount] = useState(0);
+  const [myRating, setMyRating] = useState<TutorRating | undefined>();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -75,6 +76,9 @@ export function TutorProfile() {
     if (!user) return;
     getTutorSessionsFull(user.id).then(setSessions);
     getTutorCourses(user.id).then((c) => setCourseCount(c.length));
+    // The aggregate view, same as the one families see, so a tutor is looking
+    // at the number that is being shown about them.
+    getTutorRatings([user.id]).then((m) => setMyRating(m.get(user.id)));
   }, [user]);
 
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +147,7 @@ export function TutorProfile() {
             </div>
 
             {/* Bottom Row Stats in Header */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-6 pb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 pb-6">
               <div>
                 <div className="inline-flex flex-col items-center">
                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Active Students</p>
@@ -160,6 +164,21 @@ export function TutorProfile() {
                 <div className="inline-flex flex-col items-center">
                   <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar size={14} /> Assigned Courses</p>
                   <p className="text-3xl font-bold">{courseCount}</p>
+                </div>
+              </div>
+              <div>
+                <div className="inline-flex flex-col items-center">
+                  <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1 flex items-center gap-2"><Star size={14} /> Average Rating</p>
+                  {/* A dash, not 0.0. Nobody has rated them yet, which is not
+                      the same as being rated badly. */}
+                  {myRating?.averageStars != null ? (
+                    <p className="text-3xl font-bold">
+                      {myRating.averageStars.toFixed(1)}
+                      <span className="text-[14px] font-medium text-white/70"> ({myRating.ratingCount})</span>
+                    </p>
+                  ) : (
+                    <p className="text-3xl font-bold text-white/50">-</p>
+                  )}
                 </div>
               </div>
             </div>

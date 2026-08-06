@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import Carousel from "@/components/Carousel";
 import { getPublicTutors } from "@/services/tutorService";
@@ -10,7 +10,15 @@ import imgTeam2 from "@/assets/images/team-daniel.webp";
 import imgTeam3 from "@/assets/images/team-bethlehem.webp";
 import imgTeam4 from "@/assets/images/team-hana.webp";
 
-type Member = { name: string; subjects: string; img: string; details: string };
+type Member = {
+  name: string;
+  subjects: string;
+  img: string;
+  details: string;
+  /** Absent on the founders, who are not rated. Null on a tutor nobody rated. */
+  averageStars?: number | null;
+  ratingCount?: number;
+};
 
 // The founding four, kept in the source with their own photographs. They are
 // the page's floor: a database reset, a failed request or a fresh environment
@@ -71,7 +79,18 @@ function TeamCard({
       </div>
       <div className="p-[16px] md:p-[20px] text-center flex flex-col flex-grow">
         <h4 className="text-[16px] md:text-[18px] font-bold mb-[6px] md:mb-[8px] text-[#111]">{member.name}</h4>
-        <p className="text-[#1099A1] font-medium text-[12px] md:text-[14px] mb-3">{member.subjects}</p>
+        <p className="text-[#1099A1] font-medium text-[12px] md:text-[14px] mb-2">{member.subjects}</p>
+
+        {/* Only for tutors, and only once somebody has rated them. The founders
+            carry no rating, and an unrated tutor shows nothing rather than an
+            empty row of stars, which reads as a bad score. */}
+        {member.averageStars != null && (member.ratingCount ?? 0) > 0 && (
+          <div className="mb-3 flex items-center justify-center gap-1.5">
+            <Star size={14} className="text-[#CAA25F]" fill="currentColor" strokeWidth={0} />
+            <span className="text-[13px] font-semibold text-[#111]">{member.averageStars.toFixed(1)}</span>
+            <span className="text-[12px] text-[#667781]">({member.ratingCount})</span>
+          </div>
+        )}
 
         {/* Animated Accordion for Details */}
         <div
@@ -278,6 +297,8 @@ export default function Team() {
       // reads as a placeholder, rather than one pretending to be a portrait.
       img: t.avatar_url || dicebearUrl(t.full_name, "rings"),
       details: t.bio ?? "",
+      averageStars: t.average_stars,
+      ratingCount: t.rating_count,
     })),
   ];
 

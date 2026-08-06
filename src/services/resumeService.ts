@@ -41,8 +41,8 @@ export async function getResumeUrl(path: string | null | undefined): Promise<str
 
 /** The original filename, for showing next to a download link. */
 export function resumeFileName(path: string | null | undefined): string {
-  if (!path) return "CV";
-  return path.split("/").pop() || "CV";
+  if (!path) return "Resume";
+  return path.split("/").pop() || "Resume";
 }
 
 /**
