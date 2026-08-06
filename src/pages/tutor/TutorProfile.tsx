@@ -8,7 +8,6 @@ import {
   type ResumeSection,
 } from "@/components/shared/TutorResume";
 import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { DetailRow } from "@/components/shared/DetailRow";
 import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X } from "lucide-react";
@@ -254,18 +253,35 @@ export function TutorProfile() {
   );
 }
 
+/**
+ * The tutor's own details.
+ *
+ * Same four fields it always had. What changed is the shape: it was a stack of
+ * boxed rows with the subjects as a wall of toggle capsules, which made eight
+ * subjects look like eight decisions of equal weight and left the name, the
+ * thing people actually change, competing with them for attention.
+ *
+ * Now it reads top to bottom in the order somebody thinks: who you are, how to
+ * reach you, what you say about yourself, what you teach. Subjects are a list
+ * that is searched rather than scanned, so the section stops growing as the
+ * catalogue does.
+ */
 function EditModal({ onClose }: { onClose: () => void }) {
   const { user, profile, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [subjects, setSubjects] = useState<string[]>(profile?.subjects || []);
+  const [subjectQuery, setSubjectQuery] = useState("");
   const [saving, setSaving] = useState(false);
 
   const toggle = (s: string) => setSubjects((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
 
+  const shown = SUBJECTS.filter((s) => s.toLowerCase().includes(subjectQuery.trim().toLowerCase()));
+
   const save = async () => {
     if (!user) return;
+    if (!fullName.trim()) return toast.error("A name is needed.");
     setSaving(true);
     const { error } = await supabase.from("profiles").update({
       full_name: fullName.trim(),
@@ -280,38 +296,121 @@ function EditModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const field = "w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary text-[14px]";
-  const lbl = "text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]";
+  const input =
+    "w-full rounded-lg border border-[#e9edef] bg-transparent px-3 py-2.5 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#9aa5ab] focus:border-[#1099A1] dark:border-[#2a3942] dark:text-white";
+  const lbl = "mb-2 block text-[12px] font-medium uppercase tracking-wider text-[#8696a0]";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 bg-white dark:bg-[#202c33]">
-          <h2 className="text-[20px] font-bold text-[#111] dark:text-white">Edit Profile</h2>
-          <button onClick={onClose} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"><X size={20} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit profile"
+        className="flex max-h-[88vh] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.3)] dark:bg-[#202c33]"
+      >
+        <div className="flex items-center justify-between px-7 pt-6">
+          <h2 className="text-[17px] font-semibold tracking-tight text-[#111] dark:text-white">Edit profile</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-2 rounded-full p-2 text-[#8696a0] transition-colors hover:bg-[#f0f2f5] hover:text-[#111] dark:hover:bg-[#111b21] dark:hover:text-white"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="space-y-1.5"><label className={lbl}>Full Name</label><input className={field} value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Phone</label><input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Bio</label><textarea className={cn(field, "h-auto py-2 resize-none")} rows={3} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Subjects</label>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECTS.map((s) => {
-                const on = subjects.includes(s);
-                return (
-                  <button key={s} type="button" onClick={() => toggle(s)}
-                    className={cn("px-3 py-1.5 rounded-full text-[12px] font-medium border flex items-center gap-1", on ? "border-primary bg-primary/10 text-primary" : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1]")}>
-                    {on && <Check size={12} />}{s}
-                  </button>
-                );
-              })}
+
+        <div className="flex-1 space-y-7 overflow-y-auto px-7 py-6">
+          <div>
+            <label className={lbl}>Name</label>
+            <input className={input} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+
+          <div>
+            <label className={lbl}>Phone</label>
+            <input
+              className={input}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <label className={lbl}>About</label>
+            <textarea
+              className={cn(input, "min-h-[104px] resize-y leading-relaxed")}
+              rows={4}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="How you teach, and who you teach best."
+            />
+            {/* The bio is what a family reads before booking, and the public
+                listing hides a tutor whose bio is under eighty characters. */}
+            <p className="mt-2 text-[12px] text-[#8696a0]">
+              {bio.trim().length < 80
+                ? `${80 - bio.trim().length} more characters before you appear on the public site.`
+                : "Long enough to appear on the public site."}
+            </p>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className={cn(lbl, "mb-0")}>Subjects</span>
+              <span className="text-[12px] text-[#8696a0]">{subjects.length} selected</span>
+            </div>
+
+            <input
+              value={subjectQuery}
+              onChange={(e) => setSubjectQuery(e.target.value)}
+              placeholder="Search subjects"
+              className={cn(input, "mb-1")}
+            />
+
+            {/* A list, not a field of capsules. Rows are the same width, so the
+                eye runs down the ticks instead of hunting through wrapped
+                pills of different lengths. */}
+            <div className="max-h-[196px] overflow-y-auto">
+              {shown.length === 0 ? (
+                <p className="py-6 text-center text-[13px] text-[#8696a0]">Nothing matches that.</p>
+              ) : (
+                shown.map((s) => {
+                  const on = subjects.includes(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => toggle(s)}
+                      aria-pressed={on}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-[#f0f2f5] dark:hover:bg-[#111b21]"
+                    >
+                      <span className={cn(on ? "text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]")}>
+                        {s}
+                      </span>
+                      {on && <Check size={16} className="shrink-0 text-[#1099A1]" />}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] sticky bottom-0">
-          <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={save} disabled={saving} className="h-10 px-6 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold">{saving ? "Saving..." : "Save Changes"}</Button>
+
+        <div className="flex items-center justify-end gap-2 border-t border-[#e9edef] px-7 py-4 dark:border-[#2a3942]">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-2.5 text-[13.5px] font-medium text-[#54656f] transition-colors hover:bg-[#f0f2f5] dark:text-[#aebac1] dark:hover:bg-[#111b21]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+          >
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            Save
+          </button>
         </div>
       </div>
     </div>
