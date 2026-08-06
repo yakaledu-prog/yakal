@@ -161,12 +161,20 @@ function QuestionEditor({
   );
 }
 
+/**
+ * Two steps, because the two halves are different jobs.
+ *
+ * What the test is gets filled in once and rarely revisited; the questions are
+ * where the work is and want the whole width. One long form made the questions
+ * start below the fold, so a screen whose point is writing questions opened on
+ * a form about titles.
+ */
 function EditDialog({
   initial, busy, onSave, onClose,
 }: {
   initial: DiagnosticRow | null;
   busy: boolean;
-  onSave: (input: Draft) => void;
+  onSave: (input: Draft, publish: boolean) => void;
   onClose: () => void;
 }) {
   const [form, setForm] = useState<Draft>(
@@ -184,18 +192,21 @@ function EditDialog({
         }
       : EMPTY
   );
+  const [step, setStep] = useState<1 | 2>(1);
   const [mode, setMode] = useState<"form" | "json">("form");
-  // Held separately from the questions, so a half-typed paste is not parsed on
-  // every keystroke and the caret does not jump while somebody edits.
+  // Held apart from the questions, so a half-typed paste is not parsed on every
+  // keystroke and the caret does not jump while somebody edits.
   const [json, setJson] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setForm((f) => ({ ...f, [k]: v }));
 
+  const written = form.questions.filter((q) => q.text.trim());
+  const usable = written.filter((q) => q.options.filter((o) => o.trim()).length >= 2);
+
   function openJson() {
-    // Whatever is in the form already, or the template when starting empty, so
-    // the box is never a blank rectangle with no clue what goes in it.
-    const written = form.questions.filter((q) => q.text.trim());
+    // Whatever is written already, or a worked example when starting from
+    // nothing, so the box is never a blank rectangle with no clue what fits.
     setJson(written.length ? JSON.stringify(written, null, 2) : QUESTION_TEMPLATE);
     setJsonError(null);
     setMode("json");
@@ -210,17 +221,43 @@ function EditDialog({
     toast.success(`${parsed.questions.length} question${parsed.questions.length === 1 ? "" : "s"} loaded.`);
   }
 
-  function submit() {
-    if (!form.title.trim()) return toast.error("A title is needed.");
-    if (!form.slug.trim()) return toast.error("An id is needed. Results are keyed by it.");
-    if (!form.categoryName.trim()) return toast.error("A subject is needed.");
-    const usable = form.questions.filter((q) => q.text.trim() && q.options.filter((o) => o.trim()).length >= 2);
-    if (usable.length === 0) return toast.error("Add at least one question with two options.");
-    if (form.published && usable.length !== form.questions.length) {
-      return toast.error("Some questions are incomplete. Finish them, or remove them before publishing.");
+  /** What both buttons share. Publishing asks for more than saving a draft. */
+  function collect(publish: boolean): Draft | null {
+    if (!form.title.trim()) {
+      setStep(1);
+      toast.error("A title is needed.");
+      return null;
     }
-    onSave({ ...form, questions: usable, categoryId: form.categoryId.trim() || form.categoryName.trim().toLowerCase() });
+    if (!form.slug.trim()) {
+      setStep(1);
+      toast.error("An id is needed. Results are keyed by it.");
+      return null;
+    }
+    if (!form.categoryName.trim()) {
+      setStep(1);
+      toast.error("A subject is needed.");
+      return null;
+    }
+    if (publish && usable.length === 0) {
+      setStep(2);
+      toast.error("A published test needs at least one question with two options.");
+      return null;
+    }
+    if (publish && usable.length !== form.questions.length) {
+      setStep(2);
+      toast.error("Some questions are unfinished. Finish them, or remove them before publishing.");
+      return null;
+    }
+    return {
+      ...form,
+      // A draft may hold half-written questions; a published one may not.
+      questions: publish ? usable : form.questions.filter((q) => q.text.trim() || q.options.some((o) => o.trim())),
+      categoryId: form.categoryId.trim() || form.categoryName.trim().toLowerCase(),
+      published: publish,
+    };
   }
+
+  const steps = ["Details", "Questions"] as const;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -231,102 +268,99 @@ function EditDialog({
         aria-label={initial ? "Edit diagnostic" : "New diagnostic"}
         className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 md:px-6">
-          <h2 className="text-[18px] font-semibold tracking-tight">
-            {initial ? "Edit diagnostic" : "New diagnostic"}
-          </h2>
-          <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
-            <X size={18} />
-          </button>
+        <div className="border-b border-border px-5 pt-5 md:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-[18px] font-semibold tracking-tight">
+              {initial ? "Edit diagnostic" : "New diagnostic"}
+            </h2>
+            <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Clickable, because step one is four fields somebody will want to
+              jump back to without answering "are you sure" first. */}
+          <div className="mt-4 flex gap-1">
+            {steps.map((name, i) => {
+              const n = (i + 1) as 1 | 2;
+              const active = step === n;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setStep(n)}
+                  className={cn(
+                    "flex items-center gap-2 border-b-2 px-1 pb-3 pr-5 text-[13.5px] transition-colors",
+                    active ? "border-[#1099A1] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-medium",
+                      active ? "bg-[#1099A1] text-white" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {n}
+                  </span>
+                  {name}
+                  {n === 2 && written.length > 0 && (
+                    <span className="text-[12px] text-muted-foreground">{written.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex-1 space-y-5 overflow-y-auto p-5 md:p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={label}>Title</label>
-              <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Algebra" className={field} />
-            </div>
-            <div>
-              <label className={label}>Id</label>
-              <input
-                value={form.slug}
-                onChange={(e) => set("slug", e.target.value)}
-                placeholder="algebra"
-                className={field}
-              />
-              <p className="mt-1 text-[12px] text-muted-foreground">
-                Results are stored against this. Changing it on a live test orphans past scores.
-              </p>
-            </div>
-            <div>
-              <label className={label}>Subject</label>
-              <input
-                value={form.categoryName}
-                onChange={(e) => set("categoryName", e.target.value)}
-                placeholder="K-12 Math"
-                className={field}
-              />
-              <p className="mt-1 text-[12px] text-muted-foreground">Tests are grouped under this on the student page.</p>
-            </div>
-            <div>
-              <label className={label}>Time limit</label>
-              <input
-                type="number"
-                min={0}
-                value={form.timeLimitMinutes ?? ""}
-                onChange={(e) => set("timeLimitMinutes", e.target.value ? Number(e.target.value) : null)}
-                placeholder="Minutes, or leave blank"
-                className={field}
-              />
-            </div>
-          </div>
+        <div className="flex-1 overflow-y-auto p-5 md:p-6">
+          {step === 1 ? (
+            <div className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className={label}>Title</label>
+                  <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Algebra" className={field} />
+                </div>
+                <div>
+                  <label className={label}>Id</label>
+                  <input value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="algebra" className={field} />
+                  <p className="mt-1 text-[12px] text-muted-foreground">
+                    Results are stored against this. Changing it on a live test orphans past scores.
+                  </p>
+                </div>
+                <div>
+                  <label className={label}>Subject</label>
+                  <input
+                    value={form.categoryName}
+                    onChange={(e) => set("categoryName", e.target.value)}
+                    placeholder="K-12 Math"
+                    className={field}
+                  />
+                  <p className="mt-1 text-[12px] text-muted-foreground">Tests are grouped under this.</p>
+                </div>
+                <div>
+                  <label className={label}>Time limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.timeLimitMinutes ?? ""}
+                    onChange={(e) => set("timeLimitMinutes", e.target.value ? Number(e.target.value) : null)}
+                    placeholder="Minutes, or leave blank"
+                    className={field}
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className={label}>Description</label>
-            <input
-              value={form.description}
-              onChange={(e) => set("description", e.target.value)}
-              placeholder="What this covers"
-              className={field}
-            />
-          </div>
-
-          <div className="flex items-center justify-between border-t border-border pt-4">
-            <div>
-              <p className="text-[14px] font-medium">
-                Questions
-                <span className="ml-2 text-[13px] font-normal text-muted-foreground">
-                  {form.questions.filter((q) => q.text.trim()).length}
-                </span>
-              </p>
+              <div>
+                <label className={label}>Description</label>
+                <input
+                  value={form.description}
+                  onChange={(e) => set("description", e.target.value)}
+                  placeholder="What this covers"
+                  className={field}
+                />
+              </div>
             </div>
-            {/* Two ways in, because these are usually generated elsewhere and
-                pasted, but a single typo should not mean editing JSON. */}
-            <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
-              <button
-                type="button"
-                onClick={() => setMode("form")}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-[12.5px] transition-colors",
-                  mode === "form" ? "bg-card font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                One by one
-              </button>
-              <button
-                type="button"
-                onClick={openJson}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-[12.5px] transition-colors",
-                  mode === "json" ? "bg-card font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Paste JSON
-              </button>
-            </div>
-          </div>
-
-          {mode === "form" ? (
+          ) : mode === "form" ? (
             <div className="space-y-3">
               {form.questions.map((q, i) => (
                 <QuestionEditor
@@ -364,13 +398,20 @@ function EditDialog({
                   {jsonError}
                 </p>
               )}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={applyJson}
-                  className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#0d7f86]"
+                  className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white transition-colors hover:bg-[#0d7f86]"
                 >
                   Load questions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode("form"); setJsonError(null); }}
+                  className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Cancel
                 </button>
                 <span className="text-[12px] text-muted-foreground">
                   correctAnswer counts from 0. A whole test can be pasted; only its questions are read.
@@ -381,39 +422,52 @@ function EditDialog({
         </div>
 
         <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4 md:px-6">
-          <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px]">
+          {/* Bottom left, and quiet: pasting is the shortcut, not the main way
+              in, and it only belongs beside the questions. */}
+          {step === 2 && mode === "form" ? (
             <button
               type="button"
-              role="switch"
-              aria-checked={form.published}
-              onClick={() => set("published", !form.published)}
-              className={cn(
-                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                form.published ? "bg-[#1099A1]" : "bg-muted-foreground/30"
-              )}
+              onClick={openJson}
+              className="text-[13px] text-[#1099A1] transition-colors hover:text-[#0d7f86]"
             >
-              <span
-                className={cn(
-                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
-                  form.published ? "left-[22px]" : "left-0.5"
-                )}
-              />
+              Paste JSON
             </button>
-            {form.published ? "Available to students" : "Draft"}
-          </label>
+          ) : (
+            <span />
+          )}
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60">
               Cancel
             </button>
-            <button
-              onClick={submit}
-              disabled={busy}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
-            >
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Save
-            </button>
+            {step === 1 ? (
+              <button
+                onClick={() => setStep(2)}
+                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86]"
+              >
+                Next
+              </button>
+            ) : (
+              <>
+                {/* Saving a draft accepts an unfinished test on purpose: it is
+                    what you press when you have to stop halfway. */}
+                <button
+                  onClick={() => { const d = collect(false); if (d) onSave(d, false); }}
+                  disabled={busy}
+                  className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60 disabled:opacity-50"
+                >
+                  Save draft
+                </button>
+                <button
+                  onClick={() => { const d = collect(true); if (d) onSave(d, true); }}
+                  disabled={busy}
+                  className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
+                >
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {initial?.published ? "Save and keep live" : "Publish"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -450,12 +504,12 @@ export function AdminDiagnostics() {
     { label: "Questions", value: tests.reduce((n, t) => n + t.questions.length, 0) },
   ];
 
-  async function save(input: Draft) {
+  async function save(input: Draft, publish: boolean) {
     setBusy(true);
     const res = editing ? await updateDiagnostic(editing.rowId, input) : await createDiagnostic(input);
     setBusy(false);
     if (!res.success) return toast.error(res.error ?? "Could not save that.");
-    toast.success(editing ? "Diagnostic updated." : "Diagnostic created.");
+    toast.success(publish ? "Published. Students can sit it now." : "Saved as a draft.");
     setEditing(undefined);
     refresh();
   }
