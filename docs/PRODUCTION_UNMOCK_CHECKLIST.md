@@ -10,13 +10,15 @@ Legend: `[ ]` still needs action before production, `[x]` handled
 
 ## Security
 
-- [x] **Dev preview routes and the developer console**, `src/config/dev.ts`.
-  `DEV_PREVIEW` is now `false`, which closes the public, no-auth `/preview/*`
-  and `/dev` routes. It shipped as `true` to production once, so the developer
-  console was briefly reachable by anyone: it lists every account and signs in
-  as any of them with the shared demo password. Check the flag before a deploy
-  rather than trusting it; a red console warning fires if a production build
-  ships with it on.
+- [ ] **Dev preview routes and the developer console**, `src/config/dev.ts`.
+  `DEV_PREVIEW` now reads `VITE_DEV_PREVIEW`, so it is per deployment rather
+  than per commit. **It must be unset or "false" on the deployment real people
+  use.** On, it publishes `/preview/*`, the `/dev` console, and the one-click
+  demo logins, and those accounts use `demo123`, which is written down in this
+  repository. `/dev` also refuses whenever `VERCEL_ENV=production`, which is a
+  second lock on the server side, but the demo logins are client-side and have
+  only this one. A red console warning fires on every load of a production
+  build with it on.
 
 - [ ] **`blog_posts` is writable by anyone with the anon key.** The baseline
   migration carries `Enable all access for anon ... USING (true)`, and the anon
