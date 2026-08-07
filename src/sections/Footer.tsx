@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Twitter, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/images/logo.webp";
 
@@ -11,11 +11,12 @@ const quickLinks = [
   { label: "Contact", id: "contact" },
 ];
 
+// The LinkedIn link is the public company page, not the /admin/dashboard URL
+// the page owner sees: that one only opens for admins and leaks the admin path.
 const socials = [
-  { href: "#facebook", icon: <Facebook size={15} strokeWidth={2} /> },
-  { href: "#instagram", icon: <Instagram size={15} strokeWidth={2} /> },
-  { href: "#twitter", icon: <Twitter size={15} strokeWidth={2} /> },
-  { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
+  { href: "https://www.instagram.com/yakaledu/", label: "Instagram", icon: <Instagram size={15} strokeWidth={2} /> },
+  { href: "https://x.com/yakaleducation", label: "X", icon: <Twitter size={15} strokeWidth={2} /> },
+  { href: "https://www.linkedin.com/company/106175583/", label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
 import { CONTACT } from "@/config/links";
@@ -99,8 +100,15 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
           <a href="/cancellation-policy" className="hover:text-white">Cancellation Policy</a>
         </div>
         <div className="flex gap-[10px] md:gap-[12px]">
-          {socials.map(({ href, icon }) => (
-            <a key={href} href={href} className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full border border-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white">
+          {socials.map(({ href, label, icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full border border-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white"
+            >
               {icon}
             </a>
           ))}
