@@ -23,6 +23,7 @@ const AdminBilling = lazy(() => import("../pages/admin/AdminBilling").then((m) =
 const AdminContact = lazy(() => import("../pages/admin/AdminContact").then((m) => ({ default: m.AdminContact })));
 const AdminCourseDetail = lazy(() => import("../pages/admin/AdminCourseDetail").then((m) => ({ default: m.AdminCourseDetail })));
 const AdminCourses = lazy(() => import("../pages/admin/AdminCourses").then((m) => ({ default: m.AdminCourses })));
+const AdminAdmissions = lazy(() => import("../pages/admin/AdminAdmissions").then((m) => ({ default: m.AdminAdmissions })));
 const AdminHome = lazy(() => import("../pages/admin/AdminHome").then((m) => ({ default: m.AdminHome })));
 const AdminLayout = lazy(() => import("../pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const AdminPostEditor = lazy(() => import("../pages/admin/cms/AdminPostEditor").then((m) => ({ default: m.AdminPostEditor })));
@@ -308,6 +309,7 @@ const router = createBrowserRouter([
           { path: "reports", element: <AdminReports /> },
           { path: "courses", element: <AdminCourses /> },
           { path: "courses/:id", element: <AdminCourseDetail /> },
+          { path: "admissions", element: <AdminAdmissions /> },
           { path: "posts", element: <AdminPosts /> },
           { path: "testimonials", element: <AdminTestimonials /> },
           { path: "diagnostics", element: <AdminDiagnostics /> },

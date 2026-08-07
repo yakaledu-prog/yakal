@@ -38,6 +38,8 @@ export interface AdmissionsTier {
   fits: string | null;
   isRecommended: boolean;
   sortOrder: number;
+  /** Only meaningful to an admin; getTiers only ever returns active tiers. */
+  isActive: boolean;
 }
 
 export interface AdmissionsPlan {
@@ -65,11 +67,18 @@ function toTier(row: any): AdmissionsTier {
     fits: row.fits,
     isRecommended: row.is_recommended,
     sortOrder: row.sort_order,
+    // is_active is not always selected (the public read omits it); default the
+    // shape to active so a partial row never reads as hidden.
+    isActive: row.is_active ?? true,
   };
 }
 
 const TIER_FIELDS =
   "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, instalment_months, features, fits, is_recommended, sort_order";
+
+// The admin editor needs is_active as well, because hiding a tier is one of the
+// things it is for. Kept separate so the public getTiers query stays lean.
+const ADMIN_TIER_FIELDS = `${TIER_FIELDS}, is_active`;
 
 /**
  * One instalment. Derived, never stored: a total and a number of months are
@@ -93,6 +102,104 @@ export async function getTiers(): Promise<AdmissionsTier[]> {
     return [];
   }
   return (data ?? []).map(toTier);
+}
+
+// ============================================================
+// Admin editing.
+//
+// A tier is a row and the RLS already lets an admin write it (see
+// admissions_tiers_admin). These are the browser side of that: the same rows
+// the marketing page and the parent checkout read, edited in one place so a
+// price is never right on the card and wrong at the till.
+// ============================================================
+
+/** Every tier including hidden ones, for the admin list. Admin RLS only. */
+export async function getAllTiers(): Promise<AdmissionsTier[]> {
+  const { data, error } = await supabase
+    .from("admissions_tiers")
+    .select(ADMIN_TIER_FIELDS)
+    .order("sort_order");
+
+  if (error) {
+    console.error("getAllTiers failed:", error);
+    return [];
+  }
+  return (data ?? []).map(toTier);
+}
+
+/**
+ * The editable half of a tier. `key` is set once at creation and never sent in
+ * an update: renaming the display name is fine, but the stable handle that
+ * plans and invoices point at must not move.
+ */
+export interface TierInput {
+  name: string;
+  blurb: string | null;
+  priceCents: number;
+  instalmentMonths: number;
+  psRoundsLimit: number | null;
+  suppEssaysLimit: number | null;
+  mockInterviewsLimit: number | null;
+  sessionsPerMonth: number | null;
+  features: string[];
+  fits: string | null;
+  isRecommended: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+type TierResult = { success: boolean; error?: string };
+
+/** camelCase editor state to the snake_case columns the table actually has. */
+function toRow(input: TierInput) {
+  return {
+    name: input.name,
+    blurb: input.blurb,
+    price_cents: input.priceCents,
+    instalment_months: input.instalmentMonths,
+    ps_rounds_limit: input.psRoundsLimit,
+    supp_essays_limit: input.suppEssaysLimit,
+    mock_interviews_limit: input.mockInterviewsLimit,
+    sessions_per_month: input.sessionsPerMonth,
+    features: input.features,
+    fits: input.fits,
+    is_recommended: input.isRecommended,
+    is_active: input.isActive,
+    sort_order: input.sortOrder,
+  };
+}
+
+export async function updateTier(id: string, input: TierInput): Promise<TierResult> {
+  const { error } = await supabase
+    .from("admissions_tiers")
+    .update({ ...toRow(input), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function createTier(input: TierInput & { key: string }): Promise<TierResult> {
+  const { error } = await supabase
+    .from("admissions_tiers")
+    .insert({ key: input.key, ...toRow(input) });
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/**
+ * Flip a single flag without opening the editor, for the toggles on the list.
+ * Narrow on purpose: only the two booleans a list row shows can be set here.
+ */
+export async function setTierFlag(
+  id: string,
+  patch: { isActive?: boolean; isRecommended?: boolean }
+): Promise<TierResult> {
+  const row: Record<string, boolean> = {};
+  if (patch.isActive !== undefined) row.is_active = patch.isActive;
+  if (patch.isRecommended !== undefined) row.is_recommended = patch.isRecommended;
+  const { error } = await supabase.from("admissions_tiers").update(row).eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 /** The tier a student is on, or null if admissions has not been bought. */
