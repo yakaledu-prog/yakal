@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { cn } from "@/utils/cn";
 
 /**
@@ -94,6 +94,7 @@ export function JsonEditor({
   onChange,
   rows = 16,
   hint,
+  action,
   className,
 }: {
   value: string;
@@ -101,6 +102,8 @@ export function JsonEditor({
   rows?: number;
   /** Shown inside the block, above the code, where the code is being read. */
   hint?: string;
+  /** Floated over the bottom right of the block, above the textarea. */
+  action?: React.ReactNode;
   className?: string;
 }) {
   const preRef = useRef<HTMLPreElement>(null);
@@ -149,6 +152,10 @@ export function JsonEditor({
         )}
       />
       </div>
+
+      {/* Over the code rather than under it. The textarea covers the whole
+          block, so this has to sit above it to stay clickable. */}
+      {action && <div className="absolute bottom-3 right-3 z-20">{action}</div>}
     </div>
   );
 }
