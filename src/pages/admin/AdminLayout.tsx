@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Users, Library, CreditCard, Bell, Flag, PencilRulerIcon, UserCheck , Quote, ClipboardList } from "lucide-react";
+import { Home, Users, Library, CreditCard, Bell, Flag, PencilRulerIcon, UserCheck , Quote, ClipboardList, GraduationCap } from "lucide-react";
 
 export function AdminLayout() {
   // Profile is reached via the sidebar footer avatar (links to /admin/profile),
@@ -10,6 +10,7 @@ export function AdminLayout() {
     { name: "Applicants", href: "/admin/applicants", icon: <UserCheck size={20} /> },
     { name: "Reports", href: "/admin/reports", icon: <Flag size={20} /> },
     { name: "Courses", href: "/admin/courses", icon: <Library size={20} /> },
+    { name: "Admissions", href: "/admin/admissions", icon: <GraduationCap size={20} /> },
     { name: "Posts", href: "/admin/posts", icon: <PencilRulerIcon size={20} /> },
     { name: "Testimonials", href: "/admin/testimonials", icon: <Quote size={20} /> },
     { name: "Diagnostics", href: "/admin/diagnostics", icon: <ClipboardList size={20} /> },
