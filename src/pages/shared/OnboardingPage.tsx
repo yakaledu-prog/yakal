@@ -21,6 +21,8 @@ import subjPhysics from "@/assets/images/subject-physics.webp";
 import subjSat from "@/assets/images/subject-sat-prep.webp";
 import subjAdvising from "@/assets/images/resource-book-session.webp";
 import subjOther from "@/assets/images/about-offer.webp";
+import { gradYearFromGrade } from "@/config/admissionsCalendar";
+import { upsertApplication } from "@/services/collegeService";
 
 const SUBJECTS = [
   "K-12 Math", "K-12 ELA", "Physics", "Standardized Tests",
@@ -63,6 +65,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
+  const [intendedMajor, setIntendedMajor] = useState("");
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvUrl, setCvUrl] = useState("");
 
@@ -286,6 +289,17 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       await refreshProfile();
 
       if (role === "student") {
+        // Seed the college application from what was just answered, so the
+        // roadmap opens on the right year instead of asking again in its own
+        // banner. The graduation year is derived rather than asked: a grade
+        // goes stale every August, a year does not.
+        const gradYear = gradYearFromGrade(gradeLevel, new Date());
+        if (gradYear || intendedMajor.trim()) {
+          await upsertApplication(user.id, {
+            grad_year: gradYear,
+            program_interest: intendedMajor.trim() || null,
+          });
+        }
         // Straight into the assessment, no confetti yet: the journey is not over.
         setStudentStage("diagnostic");
         return;
@@ -531,6 +545,22 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     onChange={setGradeLevel}
                     options={[...GRADE_LEVELS]}
                   />
+
+                  {/* Asked here rather than on the roadmap banner, where it
+                      was three inputs a student had to notice were editable.
+                      Optional: plenty of people do not know yet, and an empty
+                      answer is more honest than a guess they never revisit. */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[14px] font-semibold text-[#111] dark:text-white">
+                      What do you want to study? (optional)
+                    </label>
+                    <input
+                      value={intendedMajor}
+                      onChange={(e) => setIntendedMajor(e.target.value)}
+                      placeholder="e.g. Computer Science"
+                      className="h-11 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-3.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+                    />
+                  </div>
                 </div>
               )}
 

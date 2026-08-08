@@ -16,8 +16,23 @@ import { getServiceClient, requireUser } from '../_utils/supabase.js';
  * editing a request.
  */
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-3.6-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+
+/**
+ * Thinking has to be held down, and the budget has to be well clear of it.
+ *
+ * The 3.x models think by default and the thoughts are charged against
+ * maxOutputTokens. Measured on this prompt: at 700 tokens with thinking left
+ * alone, 669 went to thoughts and 27 to the answer, which came back truncated
+ * with finishReason MAX_TOKENS. It does not fail loudly, it just answers half a
+ * sentence. 'low' plus real headroom keeps the reasoning without the cliff.
+ */
+const GENERATION_CONFIG = {
+  temperature: 0.4,
+  maxOutputTokens: 1500,
+  thinkingConfig: { thinkingLevel: 'low' },
+};
 
 interface Turn {
   role: 'user' | 'model';
@@ -183,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
           { role: 'user', parts: [{ text: message }] },
         ],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 700 },
+        generationConfig: GENERATION_CONFIG,
       }),
     });
 
@@ -195,8 +210,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!reply) return res.status(502).json({ error: 'The assistant returned nothing.' });
+    // Every part, not parts[0]: a thinking model can put a thought summary
+    // first, and taking the first part alone then returns the reasoning, or
+    // nothing at all, while the real answer sits in the part after it.
+    const candidate = data?.candidates?.[0];
+    const reply: string = (candidate?.content?.parts ?? [])
+      .filter((p: { thought?: boolean; text?: string }) => !p.thought && p.text)
+      .map((p: { text: string }) => p.text)
+      .join('')
+      .trim();
+
+    if (!reply) {
+      console.error('gemini returned no text:', candidate?.finishReason, data?.usageMetadata);
+      return res.status(502).json({ error: 'The assistant returned nothing. Try asking again.' });
+    }
 
     return res.status(200).json({ reply });
   } catch (err: any) {

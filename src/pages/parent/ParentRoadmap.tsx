@@ -99,7 +99,6 @@ export function ParentRoadmap() {
             subjectName={child.name.split(" ")[0]}
             embedded
             hideChrome
-            canEdit={false}
             tab={tab}
             onTabChange={setTab}
           />

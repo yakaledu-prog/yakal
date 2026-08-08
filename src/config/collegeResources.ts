@@ -13,6 +13,12 @@ export interface CollegeResource {
   title: string;
   desc: string;
   url: string;
+  /**
+   * Labels from ADMISSIONS_CALENDAR that belong to this site, so a card can
+   * carry its own date instead of the page carrying a separate deadline strip
+   * that is not attached to anything you can act on.
+   */
+  dates?: string[];
 }
 
 export const COLLEGE_RESOURCES: CollegeResource[] = [
@@ -20,6 +26,11 @@ export const COLLEGE_RESOURCES: CollegeResource[] = [
     title: "Common App",
     desc: "Apply to 1,000+ colleges in one place",
     url: "https://www.commonapp.org/",
+    dates: [
+      "Early Decision and Early Action deadlines",
+      "Most Regular Decision deadlines",
+      "National college decision day",
+    ],
   },
   {
     title: "FAFSA - Federal Student Aid",
@@ -27,11 +38,13 @@ export const COLLEGE_RESOURCES: CollegeResource[] = [
     // The apply page rather than studentaid.gov, which is a portal that buries
     // the form somebody actually came for.
     url: "https://studentaid.gov/h/apply-for-aid/fafsa",
+    dates: ["FAFSA opens", "FAFSA closes"],
   },
   {
     title: "CSS Profile",
     desc: "Institutional aid at many private colleges",
     url: "https://cssprofile.collegeboard.org/",
+    dates: ["CSS Profile opens"],
   },
   {
     title: "BigFuture (College Board)",

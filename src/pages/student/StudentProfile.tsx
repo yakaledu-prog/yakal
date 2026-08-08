@@ -2,22 +2,95 @@ import React from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/utils/cn";
-import { Mail, Settings, Calendar, CheckCircle, Clock, LogOut, Camera, Moon, Sun, Bell, X, SquarePenIcon } from "lucide-react";
+import { Mail, Phone, Flag, LogOut, Camera, X, SquarePenIcon } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PastSessions, type SessionListItem } from "@/components/shared/SessionList";
+import { getStudentSessions } from "@/services/sessions";
+import { getApplication, upsertApplication, type CollegeApplication } from "@/services/collegeService";
+import { gradYearFromGrade } from "@/config/admissionsCalendar";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import { GRADE_LEVELS } from "@/config/grades";
 
+/** The stored stage values, said the way a family would say them. */
+const STAGE_LABELS: Record<string, string> = {
+  research: "Researching",
+  apply: "Applying",
+  submitted: "Submitted",
+  decisions: "Waiting on decisions",
+  enrolled: "Enrolled",
+};
+
+/**
+ * One labelled fact in the teal banner.
+ *
+ * Module level on purpose: a component declared inside the page body is a new
+ * type on every render, so React throws the old subtree away and rebuilds it.
+ */
+function HeaderFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | number | null;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span className="text-white/70 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
+        <p className="text-[14px] text-white truncate">{value || "Not set"}</p>
+      </div>
+    </div>
+  );
+}
+
 export function StudentProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const qc = useQueryClient();
+
+  // Stage, intended major and graduation year live on the college
+  // application, not the profile, so they need their own read.
+  const { data: app } = useQuery({
+    queryKey: ["college-application", user?.id],
+    queryFn: () => getApplication(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const { data: sessionRows = [], isLoading: sessionsLoading } = useQuery({
+    queryKey: ["student-sessions", user?.id],
+    queryFn: async () => {
+      const { data } = await getStudentSessions(user!.id);
+      return (data ?? []) as any[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const sessions: SessionListItem[] = sessionRows.map((s: any) => ({
+    id: s.id,
+    date: s.date,
+    startTime: s.start_time,
+    durationMinutes: s.duration_minutes,
+    status: s.status,
+    title: s.subject,
+    personName: s.tutor_name ?? null,
+    personAvatarUrl: s.tutor_avatar ?? null,
+  }));
+
+  const summary = [
+    profile?.grade_level,
+    app?.grad_year ? `Class of ${app.grad_year}` : null,
+    app?.program_interest,
+  ].filter(Boolean) as string[];
 
   // The form is opened from the profile, so it starts from what is stored
   // rather than from empty, and only writes what changed.
-  const [form, setForm] = useState({ fullName: "", phone: "", gradeLevel: "", bio: "" });
+  const [form, setForm] = useState({ fullName: "", phone: "", gradeLevel: "", bio: "", major: "", stage: "" });
   const [saving, setSaving] = useState(false);
 
   function openEditor() {
@@ -25,6 +98,8 @@ export function StudentProfile() {
       fullName: profile?.full_name ?? "",
       phone: profile?.phone ?? "",
       gradeLevel: profile?.grade_level ?? "",
+      major: app?.program_interest ?? "",
+      stage: app?.stage ?? "research",
       bio: profile?.bio ?? "",
     });
     setIsEditModalOpen(true);
@@ -66,43 +141,28 @@ export function StudentProfile() {
         bio: form.bio.trim() || null,
       })
       .eq("id", user.id);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Major and stage live on the college application, and the graduation
+    // year is re-derived rather than asked for: correcting the grade in
+    // September has to move the year with it, or the roadmap keeps showing
+    // last year's timeline.
+    const appRes = await upsertApplication(user.id, {
+      program_interest: form.major.trim() || null,
+      stage: form.stage as CollegeApplication["stage"],
+      grad_year: gradYearFromGrade(form.gradeLevel, new Date()) ?? app?.grad_year ?? null,
+    });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (!appRes.success) return toast.error(appRes.error || "Could not save your college details.");
+
     await refreshProfile();
+    qc.invalidateQueries({ queryKey: ["college-application", user.id] });
     toast.success("Profile saved.");
     setIsEditModalOpen(false);
   }
-
-  const toggleTheme = async () => {
-    const isDark = document.documentElement.classList.toggle("dark");
-    const newTheme = isDark ? "dark" : "light";
-
-    if (user?.id) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ theme: newTheme })
-        .eq('id', user.id);
-
-      if (error) {
-        toast.error("Failed to save theme preference");
-        console.error("Theme save error:", error);
-      }
-    }
-  };
-
-  const stats = [
-    { label: "Active Courses", value: "3", icon: <Calendar size={18} />, trend: "+1 this month", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/10", cardBg: "bg-blue-50/50 dark:bg-blue-900/5 border-blue-100 dark:border-blue-900/30" },
-    { label: "Completed Sessions", value: "12", icon: <CheckCircle size={18} />, trend: "Top 20%", color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/10", cardBg: "bg-green-50/50 dark:bg-green-900/5 border-green-100 dark:border-green-900/30" },
-    { label: "Upcoming Tasks", value: "5", icon: <Clock size={18} />, trend: "Due this week", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/10", cardBg: "bg-amber-50/50 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/30" }
-  ];
-
-  const recentActivity = [
-    { date: "Oct 29", title: "1-on-1 Mentorship: Algebra", status: "Done", type: "Session", time: "11:00 - 12:30" },
-    { date: "Oct 15", title: "Variables Practice Worksheet", status: "Done", type: "Task", time: "Completed" },
-    { date: "Oct 11", title: "Pre-Calculus Assessment", status: "Pending", type: "Task", time: "Due in 2 days" },
-    { date: "Oct 05", title: "Group Review: Physics", status: "Done", type: "Session", time: "14:00 - 15:30" },
-    { date: "Sep 28", title: "Geometry Fundamentals Quiz", status: "Done", type: "Task", time: "Completed" },
-  ];
 
   return (
     <PageWrapper>
@@ -117,8 +177,11 @@ export function StudentProfile() {
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-6">
+            {/* Centered on a phone: stacked and left-aligned, the avatar sat
+                in a wide empty band and read as misplaced rather than as a
+                column. */}
+            <div className="flex flex-col md:flex-row items-center md:items-center gap-6 text-center md:text-left">
               <div className="relative group cursor-pointer shrink-0">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
@@ -133,10 +196,15 @@ export function StudentProfile() {
                 </label>
               </div>
 
-              <div className="flex flex-col min-w-0">
+              <div className="flex flex-col min-w-0 items-center md:items-start">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">
                   {profile?.full_name || "Student"}
                 </h1>
+                {/* The name alone left the avatar unbalanced. This is the
+                    same three facts the roadmap runs on, said in one line. */}
+                {summary.length > 0 && (
+                  <p className="text-white/80 text-[14px] mt-1.5">{summary.join(" \u00b7 ")}</p>
+                )}
                 {profile?.bio && <p className="text-white/80 text-[14px] mt-3 max-w-xl">{profile.bio}</p>}
               </div>
             </div>
@@ -157,120 +225,33 @@ export function StudentProfile() {
             </div>
           </div>
 
-          {/* Stats Grid inside header */}
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 mt-10">
-            {stats.map((stat, i) => (
-              <div key={i} className="p-6 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 text-white/80 mb-2 uppercase text-[12px] font-bold tracking-wider">
-                  {stat.icon} {stat.label}
-                </div>
-                <div className="text-3xl font-black tracking-tight">{stat.value}</div>
-              </div>
-            ))}
+          {/* Where the three stat cards were. Those read 3, 12 and 5 for
+              everybody, because they were hardcoded. These are facts about
+              the person, so they are worth the space and cannot go stale. */}
+          <div className="relative z-10 mt-10 px-6 md:px-10 lg:px-12 pb-8 flex flex-wrap justify-center gap-x-20 gap-y-6">
+            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
+            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
+            <HeaderFact
+              icon={<Flag size={15} />}
+              label="Application stage"
+              value={STAGE_LABELS[app?.stage ?? ""] ?? "Not set"}
+            />
           </div>
         </div>
 
         {/* Lower Content */}
-        <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px] flex flex-col lg:flex-row gap-10">
+        <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px]">
+          <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity</h3>
 
-          {/* Left Column: Contact & Details */}
-          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Contact & Details</h3>
-
-            <div className="flex flex-col gap-6">
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Mail size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Email</p>
-                  <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{user?.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Settings size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Theme Preference</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white capitalize truncate">
-                      {document.documentElement.classList.contains('dark') ? 'Dark' : 'Light'} Mode
-                    </p>
-                    <button
-                      onClick={toggleTheme}
-                      className="p-2 rounded-lg bg-gray-100 dark:bg-[#202c33] hover:bg-gray-200 dark:hover:bg-[#2a3942] transition-colors text-[#54656f] dark:text-[#aebac1]"
-                    >
-                      <Moon size={16} className="hidden dark:block" />
-                      <Sun size={16} className="block dark:hidden" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Bell size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Notifications</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
-                      Marketing Alerts
-                    </p>
-                    <button
-                      onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                      className={cn(
-                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-                        notificationsEnabled ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700"
-                      )}
-                    >
-                      <span className={cn(
-                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                        notificationsEnabled ? "translate-x-6" : "translate-x-1"
-                      )} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Recent Activity */}
-          <div className="flex-1 w-full space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity</h3>
-
-            <div className="flex flex-col">
-              <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-                {recentActivity.map((activity, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center py-6 gap-6 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4 rounded-xl">
-                    <div className="flex flex-col items-center justify-center shrink-0 w-12 text-[#1099A1]">
-                      <span className="text-[20px] font-bold leading-none mb-0.5">{activity.date.split(" ")[1]}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{activity.date.split(" ")[0]}</span>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[15px] font-bold text-[#111] dark:text-white truncate mb-1">{activity.title}</h4>
-                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">{activity.time}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0 mt-4 sm:mt-0">
-                      <span className={cn(
-                        "text-[14px] font-bold",
-                        activity.status === "Done" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
-                      )}>
-                        {activity.status}
-                      </span>
-                      <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] w-16 text-right">
-                        {activity.type}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* The shared session rows, not a bespoke list. What was here read
+              "1-on-1 Mentorship: Algebra" and four more for every student,
+              hardcoded, and looked unlike sessions anywhere else in the app. */}
+          <PastSessions
+            sessions={sessions}
+            isLoading={sessionsLoading}
+            limit={6}
+            emptyText="Nothing yet. Your finished sessions will show up here."
+          />
         </div>
       </div>
 
@@ -335,6 +316,30 @@ export function StudentProfile() {
                 value={form.gradeLevel}
                 onChange={(v) => setForm((f) => ({ ...f, gradeLevel: v }))}
                 options={[...GRADE_LEVELS]}
+              />
+
+              {/* These two used to be inputs in the roadmap banner. That page
+                  is read-only now, so they are corrected here instead. */}
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Intended major</label>
+                <input
+                  value={form.major}
+                  onChange={(e) => setForm((f) => ({ ...f, major: e.target.value }))}
+                  placeholder="e.g. Computer Science"
+                  className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <SelectMenu
+                label="Application stage"
+                value={STAGE_LABELS[form.stage] ?? ""}
+                onChange={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    stage: Object.keys(STAGE_LABELS).find((k) => STAGE_LABELS[k] === v) ?? f.stage,
+                  }))
+                }
+                options={Object.values(STAGE_LABELS)}
               />
 
               <div className="space-y-2">
