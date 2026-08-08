@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Check, Star, EyeOff, Rows3, Columns3, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X, MoreVertical, Search } from "lucide-react";
+import { Loader2, Plus, Pencil, Check, Star, EyeOff, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X, MoreVertical, Search, List, LayoutGrid } from "lucide-react";
 import { dicebearUrl } from "@/utils/avatar";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
@@ -172,8 +172,10 @@ export function AdminAdmissions() {
               buttonClassName="text-foreground/70"
             />
             <div className="flex items-center gap-3 shrink-0">
-              <div className="flex items-center gap-1 rounded-lg bg-[#f0f2f5] p-1 dark:bg-[#182329]">
-                {([["row", Rows3, "Rows"], ["column", Columns3, "Columns"]] as const).map(
+              {/* The same control as the Courses page. Two togglers that do
+                  the same job should not look like two different components. */}
+              <div className="flex rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329]">
+                {([["row", List, "List view"], ["column", LayoutGrid, "Column view"]] as const).map(
                   ([v, Icon, label]) => (
                     <button
                       key={v}
@@ -184,15 +186,16 @@ export function AdminAdmissions() {
                       className={cn(
                         "rounded-md p-1.5 transition-colors",
                         view === v
-                          ? "bg-white text-[#1099A1] shadow-sm dark:bg-[#111b21]"
+                          ? "bg-white shadow-sm dark:bg-[#202c33]"
                           : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
                       )}
                     >
-                      <Icon size={16} />
+                      <Icon size={18} />
                     </button>
                   )
                 )}
               </div>
+
               <Button onClick={openCreate} className="gap-2">
                 <Plus size={16} /> New tier
               </Button>
@@ -224,12 +227,7 @@ export function AdminAdmissions() {
                     !t.isActive && "opacity-60"
                   )}
                 >
-                  <div className={cn(
-                    "flex justify-between gap-5",
-                    // A column is about 350px. Keeping the actions beside the
-                    // name there squeezed the name to one word per line.
-                    view === "row" ? "flex-col md:flex-row md:items-start" : "flex-col"
-                  )}>
+                  <div className="flex items-start justify-between gap-4">
                     {/* Left: identity + price */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
