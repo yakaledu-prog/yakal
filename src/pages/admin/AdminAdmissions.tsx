@@ -221,16 +221,6 @@ export function AdminAdmissions() {
 
                     {/* Right: actions */}
                     <div className="flex items-center gap-2 shrink-0">
-                      <ToggleChip
-                        label="Recommended"
-                        active={t.isRecommended}
-                        onClick={() => toggle(t, { isRecommended: !t.isRecommended })}
-                      />
-                      <ToggleChip
-                        label={t.isActive ? "Active" : "Hidden"}
-                        active={t.isActive}
-                        onClick={() => toggle(t, { isActive: !t.isActive })}
-                      />
                       {/* The arrows point the way the cards are laid out, so
                           "left" always means "earlier" on screen. */}
                       <div className="flex items-center">
@@ -253,13 +243,22 @@ export function AdminAdmissions() {
                           {view === "row" ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </button>
                       </div>
+                      <ToggleChip
+                        label="Recommended"
+                        active={t.isRecommended}
+                        onClick={() => toggle(t, { isRecommended: !t.isRecommended })}
+                      />
+                      <ToggleChip
+                        label={t.isActive ? "Active" : "Hidden"}
+                        active={t.isActive}
+                        onClick={() => toggle(t, { isActive: !t.isActive })}
+                      />
                       <button
                         type="button"
                         onClick={() => openEdit(t)}
-                        aria-label={`Edit ${t.name}`}
-                        className="rounded-lg border border-[#e9edef] p-2 text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
+                        className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
                       >
-                        <Pencil size={15} />
+                        <Pencil size={14} /> Edit
                       </button>
                     </div>
                   </div>
