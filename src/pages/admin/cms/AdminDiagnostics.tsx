@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ClipboardList, Edit2, Trash2, Loader2, X, Plus, Save, Check, AlertTriangle, GripVertical,
+  Edit2, Trash2, Loader2, X, Plus, Save, Send, Check, AlertTriangle, GripVertical, Search, ChevronLeft,
 } from "lucide-react";
 import {
   getDiagnostics, createDiagnostic, updateDiagnostic, deleteDiagnostic,
@@ -13,6 +13,7 @@ import type { DiagnosticQuestion } from "@/data/diagnostics";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { cn } from "@/utils/cn";
+import { JsonEditor } from "@/components/ui/JsonEditor";
 import { AdminHeader } from "../AdminHeader";
 
 const BLANK_QUESTION = (n: number): DiagnosticQuestion => ({
@@ -23,6 +24,28 @@ const BLANK_QUESTION = (n: number): DiagnosticQuestion => ({
 });
 
 type Draft = DiagnosticInput;
+
+/**
+ * A saved row back into the shape the writer takes.
+ *
+ * The inline adder needs this because updateDiagnostic replaces the whole
+ * record: appending one question still means sending every other field back
+ * untouched, and rebuilding it by hand at the call site is how a title or a
+ * time limit quietly gets dropped.
+ */
+function toInput(row: DiagnosticRow): Draft {
+  return {
+    slug: row.id,
+    title: row.title,
+    description: row.description,
+    categoryId: row.categoryId,
+    categoryName: row.categoryName,
+    timeLimitMinutes: row.timeLimitMinutes ?? null,
+    questions: row.questions,
+    courseId: row.courseId,
+    published: row.published,
+  };
+}
 
 const EMPTY: Draft = {
   slug: "",
@@ -35,6 +58,18 @@ const EMPTY: Draft = {
   courseId: null,
   published: false,
 };
+
+/**
+ * The results key, derived from the title.
+ *
+ * It used to be a field. Nobody wants to invent one, and the only thing it
+ * could usefully be told was not to change, because scores are stored against
+ * it and moving it on a live test orphans every past result. So it is
+ * generated once at creation and never written again on edit.
+ */
+function slugify(title: string): string {
+  return title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 const field =
   "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]";
@@ -228,11 +263,6 @@ function EditDialog({
       toast.error("A title is needed.");
       return null;
     }
-    if (!form.slug.trim()) {
-      setStep(1);
-      toast.error("An id is needed. Results are keyed by it.");
-      return null;
-    }
     if (!form.categoryName.trim()) {
       setStep(1);
       toast.error("A subject is needed.");
@@ -253,6 +283,8 @@ function EditDialog({
       // A draft may hold half-written questions; a published one may not.
       questions: publish ? usable : form.questions.filter((q) => q.text.trim() || q.options.some((o) => o.trim())),
       categoryId: form.categoryId.trim() || form.categoryName.trim().toLowerCase(),
+      // Keep whatever the test already has; only a new one gets a fresh slug.
+      slug: initial ? initial.id : slugify(form.title),
       published: publish,
     };
   }
@@ -321,13 +353,6 @@ function EditDialog({
                   <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Algebra" className={field} />
                 </div>
                 <div>
-                  <label className={label}>Id</label>
-                  <input value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="algebra" className={field} />
-                  <p className="mt-1 text-[12px] text-muted-foreground">
-                    Results are stored against this. Changing it on a live test orphans past scores.
-                  </p>
-                </div>
-                <div>
                   <label className={label}>Subject</label>
                   <input
                     value={form.categoryName}
@@ -336,17 +361,6 @@ function EditDialog({
                     className={field}
                   />
                   <p className="mt-1 text-[12px] text-muted-foreground">Tests are grouped under this.</p>
-                </div>
-                <div>
-                  <label className={label}>Time limit</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.timeLimitMinutes ?? ""}
-                    onChange={(e) => set("timeLimitMinutes", e.target.value ? Number(e.target.value) : null)}
-                    placeholder="Minutes, or leave blank"
-                    className={field}
-                  />
                 </div>
               </div>
 
@@ -382,15 +396,14 @@ function EditDialog({
             </div>
           ) : (
             <div className="space-y-3">
-              <textarea
+              <JsonEditor
                 value={json}
-                onChange={(e) => {
-                  setJson(e.target.value);
+                onChange={(next) => {
+                  setJson(next);
                   setJsonError(null);
                 }}
-                spellCheck={false}
                 rows={16}
-                className={cn(field, "resize-y font-mono text-[12.5px] leading-relaxed")}
+                hint="correctAnswer counts from 0. A whole test can be pasted; only its questions are read."
               />
               {jsonError && (
                 <p className="flex items-start gap-1.5 text-[12.5px] text-[#CAA25F]">
@@ -398,48 +411,47 @@ function EditDialog({
                   {jsonError}
                 </p>
               )}
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={applyJson}
-                  className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white transition-colors hover:bg-[#0d7f86]"
-                >
-                  Load questions
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMode("form"); setJsonError(null); }}
-                  className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Cancel
-                </button>
-                <span className="text-[12px] text-muted-foreground">
-                  correctAnswer counts from 0. A whole test can be pasted; only its questions are read.
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={applyJson}
+                className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white transition-colors hover:bg-[#0d7f86]"
+              >
+                Load questions
+              </button>
             </div>
           )}
         </div>
 
         <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4 md:px-6">
-          {/* Bottom left, and quiet: pasting is the shortcut, not the main way
-              in, and it only belongs beside the questions. */}
-          {step === 2 && mode === "form" ? (
-            <button
-              type="button"
-              onClick={openJson}
-              className="text-[13px] text-[#1099A1] transition-colors hover:text-[#0d7f86]"
-            >
-              Paste JSON
-            </button>
-          ) : (
-            <span />
-          )}
+          {/* Back at the left end. Closing is the X in the header, so a
+              Cancel beside Publish only competed with it. */}
+          <div className="flex items-center gap-4">
+            {step === 2 ? (
+              <button
+                type="button"
+                onClick={() => { if (mode === "json") { setMode("form"); setJsonError(null); } else setStep(1); }}
+                className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60"
+              >
+                <ChevronLeft size={15} /> Back
+              </button>
+            ) : (
+              <span />
+            )}
+
+            {/* Quiet: pasting is the shortcut, not the main way in, and it
+                only belongs beside the questions. */}
+            {step === 2 && mode === "form" && (
+              <button
+                type="button"
+                onClick={openJson}
+                className="text-[13px] text-[#1099A1] transition-colors hover:text-[#0d7f86]"
+              >
+                Paste JSON
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60">
-              Cancel
-            </button>
             {step === 1 ? (
               <button
                 onClick={() => setStep(2)}
@@ -454,16 +466,16 @@ function EditDialog({
                 <button
                   onClick={() => { const d = collect(false); if (d) onSave(d, false); }}
                   disabled={busy}
-                  className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60 disabled:opacity-50"
                 >
-                  Save draft
+                  <Save size={14} /> Save draft
                 </button>
                 <button
                   onClick={() => { const d = collect(true); if (d) onSave(d, true); }}
                   disabled={busy}
                   className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
                 >
-                  {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   {initial?.published ? "Save and keep live" : "Publish"}
                 </button>
               </>
@@ -475,11 +487,27 @@ function EditDialog({
   );
 }
 
+/**
+ * The admin side of diagnostics, laid out like the student side.
+ *
+ * Subjects down the left, the chosen subject's tests as tabs across the top,
+ * one test at a time below. The student sits these tests through exactly this
+ * shape, so an admin checking what a subject looks like is looking at the
+ * thing itself rather than at a list that describes it.
+ *
+ * A subject is not a table of its own: it exists because a test names it. So
+ * "New subject" is a new diagnostic with its subject field empty and focused,
+ * rather than a separate thing to create and then fill.
+ */
 export function AdminDiagnostics() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<DiagnosticRow | null | undefined>(undefined);
   const [toDelete, setToDelete] = useState<DiagnosticRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [filterText, setFilterText] = useState("");
+  const [subject, setSubject] = useState<string | null>(null);
+  const [testId, setTestId] = useState<string | null>(null);
+  const [draftQuestion, setDraftQuestion] = useState<DiagnosticQuestion | null>(null);
 
   const { data: tests = [], isLoading } = useQuery({
     queryKey: ["admin-diagnostics"],
@@ -488,20 +516,37 @@ export function AdminDiagnostics() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-diagnostics"] });
 
-  const bySubject = useMemo(() => {
+  const subjects = useMemo(() => {
     const groups = new Map<string, DiagnosticRow[]>();
     for (const t of tests) {
       const list = groups.get(t.categoryName) ?? [];
       list.push(t);
       groups.set(t.categoryName, list);
     }
-    return [...groups.entries()];
+    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [tests]);
 
+  const shown = useMemo(() => {
+    const q = filterText.trim().toLowerCase();
+    if (!q) return subjects;
+    return subjects.filter(
+      ([name, group]) =>
+        name.toLowerCase().includes(q) ||
+        group.some((t) => t.title.toLowerCase().includes(q))
+    );
+  }, [subjects, filterText]);
+
+  // Derived rather than synced from an effect: the selection is only ever a
+  // name, and a name that no longer exists should fall back rather than leave
+  // the pane blank after a delete or a rename.
+  const activeSubject = shown.find(([name]) => name === subject)?.[0] ?? shown[0]?.[0] ?? null;
+  const group = shown.find(([name]) => name === activeSubject)?.[1] ?? [];
+  const activeTest = group.find((t) => t.rowId === testId) ?? group[0] ?? null;
+
   const stats = [
-    { label: "Tests", value: tests.length },
-    { label: "Published", value: tests.filter((t) => t.published).length },
-    { label: "Questions", value: tests.reduce((n, t) => n + t.questions.length, 0) },
+    { label: "Tests", value: group.length },
+    { label: "Published", value: group.filter((t) => t.published).length },
+    { label: "Questions", value: group.reduce((n, t) => n + t.questions.length, 0) },
   ];
 
   async function save(input: Draft, publish: boolean) {
@@ -510,7 +555,24 @@ export function AdminDiagnostics() {
     setBusy(false);
     if (!res.success) return toast.error(res.error ?? "Could not save that.");
     toast.success(publish ? "Published. Students can sit it now." : "Saved as a draft.");
+    // Follow the subject that was just written, so creating a test in a new
+    // subject does not leave you looking at the old one.
+    if (input.categoryName) setSubject(input.categoryName);
     setEditing(undefined);
+    refresh();
+  }
+
+  async function addQuestion(test: DiagnosticRow) {
+    if (!draftQuestion) return;
+    setBusy(true);
+    const res = await updateDiagnostic(test.rowId, {
+      ...toInput(test),
+      questions: [...test.questions, draftQuestion],
+    });
+    setBusy(false);
+    if (!res.success) return toast.error(res.error ?? "Could not add that question.");
+    toast.success("Question added.");
+    setDraftQuestion(null);
     refresh();
   }
 
@@ -525,78 +587,203 @@ export function AdminDiagnostics() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="min-h-screen flex-1 bg-background dark:bg-[#111b21]">
-        <AdminHeader title="Diagnostics" subtitle="The placement tests students sit" stats={stats} />
-
-        <div className="mx-auto max-w-[1440px] space-y-5 p-6 md:p-10">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[13px] text-muted-foreground">
-              Grouped by subject. Students see published tests only.
-            </p>
-            <button
-              onClick={() => setEditing(null)}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-[#0d7f86]"
-            >
-              <ClipboardList size={16} /> New diagnostic
-            </button>
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden dark:bg-[#111b21]">
+        <aside className="flex w-full flex-col border-b border-[#e9edef] md:h-full md:w-[300px] md:shrink-0 md:border-b-0 md:border-r dark:border-[#2a3942]">
+          <div className="border-b border-[#e9edef] bg-white px-3 pb-2 pt-5 dark:border-[#2a3942] dark:bg-[#111b21]">
+            <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition ease-in-out focus-within:border-[#1099A1]">
+              <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
+              <input
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                placeholder="Search subjects"
+                className="flex-1 bg-transparent text-[14px] text-[#111] outline-none placeholder:text-[#8696a0] dark:text-white"
+              />
+            </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-muted-foreground" />
-            </div>
-          ) : tests.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-muted-foreground">
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="animate-spin text-[#1099A1]" />
+              </div>
+            ) : shown.length === 0 ? (
+              <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+                {filterText ? "No subject matches that." : "No subjects yet."}
+              </p>
+            ) : (
+              shown.map(([name, list]) => {
+                const active = name === activeSubject;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => { setSubject(name); setTestId(null); }}
+                    className={cn(
+                      "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
+                      active
+                        ? "border-l-[#1099A1] bg-[#1099A1]/5"
+                        : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className={cn("truncate text-[14px] font-semibold", active ? "text-[#1099A1]" : "text-[#111] dark:text-white")}>
+                        {name}
+                      </p>
+                      <p className="truncate text-[12px] text-muted-foreground">
+                        {list.filter((t) => t.published).length} / {list.length} published
+                      </p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="border-t border-[#e9edef] p-3 dark:border-[#2a3942]">
+            <button
+              onClick={() => setEditing(null)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+            >
+              <Plus size={15} /> New diagnostic
+            </button>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col md:h-full md:overflow-y-auto">
+          {activeSubject === null ? (
+            <div className="flex flex-1 items-center justify-center p-10 text-center">
+              <p className="max-w-sm text-muted-foreground">
                 Nothing here yet. Students fall back to the tests built into the app until you add one.
               </p>
             </div>
           ) : (
-            bySubject.map(([subject, group]) => (
-              <div key={subject} className="space-y-3">
-                <h3 className="text-[14px] font-medium text-muted-foreground">{subject}</h3>
-                {group.map((t) => (
-                  <div
-                    key={t.rowId}
-                    className={cn(
-                      "flex items-start gap-4 rounded-xl border border-border bg-card p-4",
-                      !t.published && "opacity-55"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
+            <>
+              <AdminHeader
+                title={activeSubject}
+                subtitle={`${group.length} test${group.length === 1 ? "" : "s"}`}
+                stats={stats}
+              >
+                <div className="mt-6 flex gap-5 overflow-x-auto">
+                  {group.map((t) => (
+                    <button
+                      key={t.rowId}
+                      onClick={() => setTestId(t.rowId)}
+                      className={cn(
+                        "whitespace-nowrap border-b-[3px] pb-3 text-[13.5px] font-normal transition-all",
+                        t.rowId === activeTest?.rowId
+                          ? "border-white text-white"
+                          : "border-transparent text-white/70 hover:text-white"
+                      )}
+                    >
+                      {t.title}
+                      {!t.published && <span className="ml-2 text-white/60">Draft</span>}
+                    </button>
+                  ))}
+                </div>
+              </AdminHeader>
+
+              {activeTest && (
+                <div className="mx-auto w-full space-y-6 p-6 md:p-10">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2.5">
-                        <p className="text-[15px] font-medium">{t.title}</p>
-                        <span className="text-[12.5px] text-muted-foreground">{t.id}</span>
-                        {!t.published && <span className="text-[12.5px] text-muted-foreground">Draft</span>}
+                        <h2 className="text-[18px] font-semibold">{activeTest.title}</h2>
+                        <span className="text-[12.5px] text-muted-foreground">{activeTest.id}</span>
+                        {!activeTest.published && (
+                          <span className="text-[12.5px] text-[#CAA25F]">Draft</span>
+                        )}
                       </div>
-                      <p className="mt-0.5 text-[13.5px] text-muted-foreground">{t.description}</p>
+                      <p className="mt-1 text-[13.5px] text-muted-foreground">{activeTest.description}</p>
                       <p className="mt-1.5 text-[12.5px] text-muted-foreground">
-                        {t.questions.length} question{t.questions.length === 1 ? "" : "s"}
-                        {t.timeLimitMinutes ? ` / ${t.timeLimitMinutes} min` : ""}
+                        {activeTest.questions.length} question{activeTest.questions.length === 1 ? "" : "s"}
                       </p>
                     </div>
-                    <div className="flex shrink-0 gap-1">
+                    <div className="flex shrink-0 items-center gap-2">
                       <button
-                        onClick={() => setEditing(t)}
-                        aria-label={`Edit ${t.title}`}
-                        className="rounded-lg p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        onClick={() => setEditing(activeTest)}
+                        className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
                       >
-                        <Edit2 size={15} />
+                        <Edit2 size={14} /> Edit
                       </button>
                       <button
-                        onClick={() => setToDelete(t)}
-                        aria-label={`Delete ${t.title}`}
-                        className="rounded-lg p-2 text-muted-foreground hover:bg-muted/60 hover:text-red-600"
+                        onClick={() => setToDelete(activeTest)}
+                        aria-label={`Delete ${activeTest.title}`}
+                        className="rounded-xl border border-border p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-red-600"
                       >
                         <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            ))
+
+                  {/* The questions as the student meets them, correct answer
+                      marked. Reading them here is the check that matters. */}
+                  <div className="space-y-3">
+                    {activeTest.questions.map((q, i) => (
+                      <div key={q.id ?? i} className="rounded-xl border border-border bg-card p-4">
+                        <p className="text-[14px] font-medium">
+                          {i + 1}. {q.text || <span className="text-muted-foreground">No question text</span>}
+                        </p>
+                        <div className="mt-2.5 space-y-1.5">
+                          {q.options.map((opt, n) => (
+                            <div key={n} className="flex items-start gap-2 text-[13.5px]">
+                              <span className={cn("shrink-0", n === q.correctAnswer ? "text-[#1099A1]" : "text-transparent")}>
+                                <Check size={15} />
+                              </span>
+                              <span className={n === q.correctAnswer ? "text-[#1099A1]" : "text-muted-foreground"}>
+                                {opt || "Empty option"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Adding a question does not need the whole stepper. The
+                      modal is for making a test; once it exists, another
+                      question is one form appended in place. */}
+                  {draftQuestion ? (
+                    <div className="space-y-3 rounded-xl border border-[#1099A1] p-4">
+                      <QuestionEditor
+                        question={draftQuestion}
+                        index={activeTest.questions.length}
+                        canRemove={false}
+                        onChange={setDraftQuestion}
+                        onRemove={() => setDraftQuestion(null)}
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setDraftQuestion(null)}
+                          className="rounded-xl border border-border px-4 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => void addQuestion(activeTest)}
+                          disabled={
+                            busy ||
+                            !draftQuestion.text.trim() ||
+                            draftQuestion.options.filter((o) => o.trim()).length < 2
+                          }
+                          className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
+                        >
+                          {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                          Add question
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDraftQuestion(BLANK_QUESTION(activeTest.questions.length + 1))}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                    >
+                      <Plus size={15} /> Add a question
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
-        </div>
+        </section>
       </div>
 
       {editing !== undefined && (

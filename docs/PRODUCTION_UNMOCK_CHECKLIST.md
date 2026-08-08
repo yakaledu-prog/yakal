@@ -140,6 +140,23 @@ entirely on the database.
   | `classroomService.ts` `CLASSROOM_SCOPES` | admin Fetch Details popup |
   | `useClassroomToken.ts` | nothing |
 
+## Diagnostics
+
+- [ ] **`time_limit_minutes` is enforced nowhere.** It is stored on the
+  `diagnostics` table, set on all twelve seeded tests, and read into
+  `DiagnosticRow`, but no student screen ever uses it. There is no timer, and
+  it is not even displayed. A student can take as long as they like, and stop
+  and come back.
+
+  The admin form used to ask for it, which promised a rule the app does not
+  apply. The field is off the form until there is a timer behind it. The column
+  is untouched, so implementing one later needs no migration.
+
+  Two ways out, whichever is wanted: run a real countdown on the student side
+  and submit on expiry, or drop the column. Leaving it collected but unused is
+  the one option that misleads.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local
