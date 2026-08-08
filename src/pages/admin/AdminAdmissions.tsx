@@ -222,13 +222,17 @@ export function AdminAdmissions() {
                 <div
                   key={t.id}
                   className={cn(
-                    "bg-white dark:bg-[#111b21] rounded-2xl border p-6 md:p-7 transition-colors",
+                    "relative bg-white dark:bg-[#111b21] rounded-2xl border p-6 md:p-7 transition-colors",
                     t.isRecommended ? "border-[#1099A1]" : "border-[#e9edef] dark:border-[#2a3942]",
                     !t.isActive && "opacity-60"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    {/* Left: identity + price */}
+                  {/* The actions float instead of sharing a flex row. As a
+                      sibling they took width from the price line, which then
+                      wrapped "over 10 months" onto its own line in a card with
+                      room to spare. The padding-right is what keeps the name
+                      from running under them. */}
+                  <div className="pr-[104px]">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <h3 className="text-[20px] font-bold text-[#111] dark:text-white">{t.name}</h3>
@@ -257,8 +261,7 @@ export function AdminAdmissions() {
 
                     </div>
 
-                    {/* Right: actions */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="absolute right-6 top-6 flex items-center gap-2 md:right-7 md:top-7">
                       {/* The arrows point the way the cards are laid out, so
                           "left" always means "earlier" on screen. */}
                       <div className="flex items-center">
@@ -386,11 +389,27 @@ export function AdminAdmissions() {
   );
 }
 
+/**
+ * One quota, in a fixed-height tile.
+ *
+ * Truncated rather than wrapped. "Advising / month" and "Mock interviews" are
+ * wider than a quarter of a column, and letting them wrap made four tiles of
+ * four different heights, so the numbers underneath stopped lining up and the
+ * row read as a ragged list instead of a set. The title attribute carries the
+ * full label for whoever needs it.
+ */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-gray-50 dark:bg-[#182329] px-3.5 py-2.5">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-[14px] font-semibold text-[#111] dark:text-white">{value}</p>
+    <div className="min-w-0 rounded-xl bg-gray-50 px-3.5 py-2.5 dark:bg-[#182329]">
+      <p
+        title={label}
+        className="truncate text-[11px] uppercase tracking-wider text-muted-foreground"
+      >
+        {label}
+      </p>
+      <p title={value} className="mt-0.5 truncate text-[14px] font-semibold text-[#111] dark:text-white">
+        {value}
+      </p>
     </div>
   );
 }
