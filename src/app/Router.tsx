@@ -51,6 +51,8 @@ const CounselorProfile = lazy(() => import("../pages/counselor/CounselorProfile"
 const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudents").then((m) => ({ default: m.CounselorStudents })));
 const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
 const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
+const ForgotPasswordPage = lazy(() => import("../pages/shared/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("../pages/shared/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
 const ParentAdmissions = lazy(() => import("../pages/parent/ParentAdmissions").then((m) => ({ default: m.ParentAdmissions })));
 const ParentBilling = lazy(() => import("../pages/parent/ParentBilling").then((m) => ({ default: m.ParentBilling })));
@@ -252,6 +254,14 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <AuthPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
   },
   {
     path: "/proposal",
