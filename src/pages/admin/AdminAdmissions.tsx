@@ -126,7 +126,7 @@ export function AdminAdmissions() {
           ]}
         />
 
-        <div className="max-w-[1100px] mx-auto p-6 md:p-10">
+        <div className="mx-auto max-w-[1440px] p-6 md:p-10">
           <div className="flex justify-between items-center gap-4 mb-8">
             <p className="text-[13px] text-muted-foreground">
               Editing a tier changes the public page and the parent checkout together.
