@@ -108,7 +108,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full border border-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white"
+              className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full ring ring-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white"
             >
               {icon}
             </a>
