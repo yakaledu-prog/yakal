@@ -255,11 +255,6 @@ export function AdminAdmissions() {
                         )}
                       </div>
 
-                      {t.blurb && (
-                        <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground max-w-xl">
-                          {t.blurb}
-                        </p>
-                      )}
                     </div>
 
                     {/* Right: actions */}
@@ -320,6 +315,18 @@ export function AdminAdmissions() {
                       )}
                     </div>
                   </div>
+
+                  {/* Below the header rather than inside it. As a flex child
+                      beside the actions it only ever got the leftover width,
+                      which in a column left half the card empty. */}
+                  {t.blurb && (
+                    <p className={cn(
+                      "mt-4 text-[13.5px] leading-relaxed text-muted-foreground",
+                      view === "row" && "max-w-2xl"
+                    )}>
+                      {t.blurb}
+                    </p>
+                  )}
 
                   {/* Quotas */}
                   <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
