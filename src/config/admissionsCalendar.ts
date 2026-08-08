@@ -20,6 +20,8 @@ export interface CycleDate {
   day: number;
   /** Where to confirm or act on it, matched to the resource list. */
   url: string;
+  /** A shorter wording, for the banner where the full label does not fit. */
+  short?: string;
 }
 
 export const ADMISSIONS_CALENDAR: CycleDate[] = [
@@ -37,6 +39,7 @@ export const ADMISSIONS_CALENDAR: CycleDate[] = [
   },
   {
     label: "Early Decision and Early Action deadlines",
+    short: "Early apps (ED / EA)",
     month: 11,
     day: 1,
     url: "https://www.commonapp.org/",
@@ -55,6 +58,7 @@ export const ADMISSIONS_CALENDAR: CycleDate[] = [
   },
   {
     label: "National college decision day",
+    short: "Decision Day",
     month: 5,
     day: 1,
     url: "https://www.commonapp.org/",
@@ -65,6 +69,19 @@ export const ADMISSIONS_CALENDAR: CycleDate[] = [
     day: 30,
     url: "https://studentaid.gov/h/apply-for-aid/fafsa",
   },
+];
+
+/**
+ * The three the banner leads with.
+ *
+ * Not "the next three": these are the dates a family plans a year around, and
+ * a banner that reshuffles itself every few weeks is harder to read than one
+ * that always says the same three things.
+ */
+export const KEY_DATE_LABELS = [
+  "FAFSA opens",
+  "Early Decision and Early Action deadlines",
+  "National college decision day",
 ];
 
 export interface UpcomingDate extends CycleDate {

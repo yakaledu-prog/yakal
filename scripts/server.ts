@@ -25,7 +25,6 @@ import googleHandler from '../api/google.js';
 import contactHandler from '../api/contact.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
-import aiHandler from '../api/ai.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../dist');
@@ -65,7 +64,6 @@ const routes = {
   '/api/zoom': zoomHandler,
   '/api/google': googleHandler,
   '/api/contact': contactHandler,
-  '/api/ai': aiHandler,
   // Refuses on its own whenever VERCEL_ENV or NODE_ENV is production, so it is
   // mounted unconditionally and guarded where the guard belongs.
   '/api/dev-user': devUserHandler,

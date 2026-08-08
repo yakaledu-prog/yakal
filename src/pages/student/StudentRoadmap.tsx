@@ -1,23 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { TestingPlan } from "@/components/college/TestingPlan";
 import { RoadmapTimeline } from "@/components/college/RoadmapTimeline";
 import { getCollegeProfile, AppStage } from "@/services/collegeService";
-import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, Sparkles } from "lucide-react";
+import { Loader2, ExternalLink, Calendar, PenTool, BookOpen } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { COLLEGE_RESOURCES } from "@/config/collegeResources";
-import { nextDateFor } from "@/config/admissionsCalendar";
-import { RoadmapAssistant } from "@/components/college/RoadmapAssistant";
+import { nextDateFor, upcomingDates, KEY_DATE_LABELS } from "@/config/admissionsCalendar";
 
-export type RoadmapTab = "timeline" | "testing" | "resources" | "assistant";
+export type RoadmapTab = "timeline" | "testing" | "resources";
 
 export const ROADMAP_TABS: { id: RoadmapTab; label: string }[] = [
   { id: "timeline", label: "Timeline" },
   { id: "testing", label: "Testing Plan" },
   { id: "resources", label: "Resources" },
-  { id: "assistant", label: "Ask Yakal" },
 ];
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -84,6 +82,11 @@ export function StudentRoadmap({
 
   const app = data?.application;
 
+  const keyDates = useMemo(
+    () => upcomingDates(now).filter((d) => KEY_DATE_LABELS.includes(d.label)),
+    [now]
+  );
+
   const [ownTab, setOwnTab] = useState<RoadmapTab>("timeline");
   const tab = tabProp ?? ownTab;
   const setTab = onTabChange ?? setOwnTab;
@@ -114,9 +117,40 @@ export function StudentRoadmap({
           </svg>
 
           <div className="relative z-10 flex flex-col gap-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">College Admissions</h1>
-              <p className="text-white/80 text-[15px] mt-1">Your roadmap to college</p>
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">College Admissions</h1>
+                <p className="text-white/80 text-[15px] mt-1">Your roadmap to college</p>
+              </div>
+
+              {/* The three dates a year is planned around. They were three
+                  cards below the tabs, on the timeline tab only, so they
+                  vanished the moment you looked at anything else. */}
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4 md:flex md:flex-wrap md:items-stretch md:gap-0">
+                {keyDates.map((d) => (
+                  <div
+                    key={d.label}
+                    className="flex items-center gap-3 md:gap-3.5 md:border-l md:border-white/20 md:px-5 md:first:border-l-0 md:first:pl-0"
+                  >
+                    {/* The stacked day-over-month block the session rows use,
+                        so a date reads the same way everywhere in the app. */}
+                    <div className="flex w-8 shrink-0 flex-col items-center leading-none md:w-9">
+                      <span className="text-[19px] font-bold tracking-tight md:text-[22px]">
+                        {d.date.getDate()}
+                      </span>
+                      <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
+                        {d.date.toLocaleDateString(undefined, { month: "short" })}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13.5px] font-semibold text-white md:text-[14px]">{d.short ?? d.label}</p>
+                      <p className="text-[12px] text-white/70 md:text-[12.5px]">
+                        {d.daysAway === 0 ? "today" : `in ${d.daysAway} days`}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Tabs */}
@@ -124,8 +158,7 @@ export function StudentRoadmap({
               {[
                 { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
                 { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
-                { id: "resources", label: "Resources", icon: <BookOpen size={16} /> },
-                { id: "assistant", label: "Ask Yakal", icon: <Sparkles size={16} /> }
+                { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
               ].map((t) => (
                 <button
                   key={t.id}
@@ -158,8 +191,7 @@ export function StudentRoadmap({
             {[
               { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
               { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
-              { id: "resources", label: "Resources", icon: <BookOpen size={16} /> },
-              { id: "assistant", label: "Ask Yakal", icon: <Sparkles size={16} /> }
+              { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
             ].map((t) => (
               <button
                 key={t.id}
@@ -188,24 +220,6 @@ export function StudentRoadmap({
           <>
             {tab === "timeline" && (
               <div className="space-y-8">
-                {/* Milestones Grid */}
-                {!embedded && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
-                      <p className="text-[15px] font-semibold">FAFSA opens</p>
-                    </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
-                      <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
-                    </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
-                      <p className="text-[15px] font-semibold">Decision Day</p>
-                    </div>
-                  </div>
-                )}
-
                 <RoadmapTimeline
                   gradYear={gradYear ? Number(gradYear) : app?.grad_year}
                   gradeLevel={studentId ? gradeLevel : profile?.grade_level}
@@ -252,9 +266,6 @@ export function StudentRoadmap({
               </div>
             )}
 
-            {tab === "assistant" && (
-              <RoadmapAssistant studentId={targetId} />
-            )}
 
           </>
         )}
