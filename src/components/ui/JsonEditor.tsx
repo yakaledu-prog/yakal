@@ -155,7 +155,7 @@ export function JsonEditor({
 
       {/* Over the code rather than under it. The textarea covers the whole
           block, so this has to sit above it to stay clickable. */}
-      {action && <div className="absolute bottom-3 right-3 z-20">{action}</div>}
+      {action && <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2">{action}</div>}
     </div>
   );
 }

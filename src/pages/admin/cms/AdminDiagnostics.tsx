@@ -400,6 +400,24 @@ function EditDialog({
                 }}
                 rows={16}
                 hint="correctAnswer counts from 0. A whole test can be pasted; only its questions are read."
+                action={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("form"); setJsonError(null); }}
+                      className="rounded-xl bg-white/10 px-4 py-2 text-[13px] font-normal text-white/80 backdrop-blur transition-colors hover:bg-white/20 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyJson}
+                      className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-[#0d7f86]"
+                    >
+                      Load questions
+                    </button>
+                  </>
+                }
               />
               {jsonError && (
                 <p className="flex items-start gap-1.5 text-[12.5px] text-[#CAA25F]">
@@ -407,13 +425,6 @@ function EditDialog({
                   {jsonError}
                 </p>
               )}
-              <button
-                type="button"
-                onClick={applyJson}
-                className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white transition-colors hover:bg-[#0d7f86]"
-              >
-                Load questions
-              </button>
             </div>
           )}
         </div>
@@ -679,36 +690,18 @@ export function AdminDiagnostics() {
 
               {activeTest && (
                 <div className="mx-auto w-full space-y-6 p-6 md:p-10">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-x-2.5">
-                        <h2 className="text-[18px] font-semibold">{activeTest.title}</h2>
-                        <span className="text-[12.5px] text-muted-foreground">{activeTest.id}</span>
-                        {!activeTest.published && (
-                          <span className="text-[12.5px] text-[#CAA25F]">Draft</span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-[13.5px] text-muted-foreground">{activeTest.description}</p>
-                      <p className="mt-1.5 text-[12.5px] text-muted-foreground">
-                        {activeTest.questions.length} question{activeTest.questions.length === 1 ? "" : "s"}
-                      </p>
+                  {/* The description only, not the title: the tab above and
+                      the banner already say which test this is. */}
+                  {(activeTest.description || !activeTest.published) && (
+                    <div className="flex flex-wrap items-center gap-x-3">
+                      {activeTest.description && (
+                        <p className="text-[13.5px] text-muted-foreground">{activeTest.description}</p>
+                      )}
+                      {!activeTest.published && (
+                        <span className="text-[12.5px] text-[#CAA25F]">Draft</span>
+                      )}
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        onClick={() => setEditing(activeTest)}
-                        className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
-                      >
-                        <Edit2 size={14} /> Edit
-                      </button>
-                      <button
-                        onClick={() => setToDelete(activeTest)}
-                        aria-label={`Delete ${activeTest.title}`}
-                        className="rounded-xl border border-border p-2 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-red-600"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
+                  )}
 
                   {/* The questions as the student meets them, correct answer
                       marked. Reading them here is the check that matters. */}
@@ -768,12 +761,30 @@ export function AdminDiagnostics() {
                       </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setDraftQuestion(BLANK_QUESTION(activeTest.questions.length + 1))}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
-                    >
-                      <Plus size={15} /> Add a question
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => setDraftQuestion(BLANK_QUESTION(activeTest.questions.length + 1))}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                      >
+                        <Plus size={15} /> Add a question
+                      </button>
+                      {/* Down here rather than above the questions. Up there
+                          they sat in a block that repeated the title already
+                          shown in the tab and the banner. */}
+                      <button
+                        onClick={() => setEditing(activeTest)}
+                        className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2.5 text-[13px] font-medium transition-colors hover:bg-muted/60"
+                      >
+                        <Edit2 size={14} /> Edit test
+                      </button>
+                      <button
+                        onClick={() => setToDelete(activeTest)}
+                        aria-label={`Delete ${activeTest.title}`}
+                        className="rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-red-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
