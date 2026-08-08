@@ -168,7 +168,7 @@ export function StudentProfile() {
     <PageWrapper>
       <div className="flex flex-col min-h-0 bg-background overflow-y-auto">
         {/* Teal Header */}
-        <div className="bg-[#1099A1] text-white pt-8 md:pt-12 relative overflow-hidden shrink-0">
+        <div className="bg-[#1099A1] text-white py-10 md:py-12 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -209,6 +209,20 @@ export function StudentProfile() {
               </div>
             </div>
 
+
+            {/* Between the avatar and the buttons rather than on a row of its
+                own: the band was tall and mostly empty, and the facts read as
+                a separate section when they are part of the same header. */}
+            <div className="flex flex-1 flex-wrap justify-center gap-x-12 gap-y-5 md:px-8">
+              <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
+              <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
+              <HeaderFact
+                icon={<Flag size={15} />}
+                label="Application stage"
+                value={STAGE_LABELS[app?.stage ?? ""] ?? "Not set"}
+              />
+            </div>
+
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
               <button
                 onClick={openEditor}
@@ -225,18 +239,6 @@ export function StudentProfile() {
             </div>
           </div>
 
-          {/* Where the three stat cards were. Those read 3, 12 and 5 for
-              everybody, because they were hardcoded. These are facts about
-              the person, so they are worth the space and cannot go stale. */}
-          <div className="relative z-10 mt-10 px-6 md:px-10 lg:px-12 pb-8 flex flex-wrap justify-center gap-x-20 gap-y-6">
-            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
-            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
-            <HeaderFact
-              icon={<Flag size={15} />}
-              label="Application stage"
-              value={STAGE_LABELS[app?.stage ?? ""] ?? "Not set"}
-            />
-          </div>
         </div>
 
         {/* Lower Content */}
