@@ -274,6 +274,20 @@ USERS.push(
  * child is locked out of both, which is correct but made a fresh database
  * look broken: every admissions page showed "ask your parent to unlock it"
  * and the parent's own college views had nothing to show.
+ *
+ * Permission is only half of it. A student also needs an entitlement, which
+ * comes from an enrolment or an admissions plan, so student@yakal.com is
+ * seeded with both and is the account to sign in as for a full demo.
+ *
+ * Two fixtures depend on that, and scripts/verify/service-entitlements.mjs
+ * asserts against them by email:
+ *
+ *   student@yakal.com   permitted AND paid, so both services are open
+ *   any other student   neither, so permission alone can be shown to open
+ *                       nothing
+ *
+ * Leave at least one other student out of this list, or that check loses the
+ * only case that proves the rule.
  */
 export const PARENT_LINKS: {
   parent: string;

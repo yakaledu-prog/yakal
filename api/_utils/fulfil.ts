@@ -102,6 +102,22 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
+  // Permit tutoring for this student, the way paying for admissions permits
+  // admissions further down. Nothing wrote "tutoring" anywhere before, so a
+  // family could buy a course and the child would still find My Learning,
+  // Diagnostics and Sessions locked until a parent found the toggle.
+  //
+  // This is the parent's permission, not the entitlement: the entitlement is
+  // the enrolment row just written, which v_student_entitlements derives from.
+  // Turning it on here means the common case needs no toggle at all.
+  const { error: tutSvcErr } = await db
+    .from("child_services")
+    .upsert(
+      { student_id: invoice.student_id, service: "tutoring", is_active: true },
+      { onConflict: "student_id,service" }
+    );
+  if (tutSvcErr) console.error("fulfil: permitting tutoring failed:", tutSvcErr.message);
+
   // ---- sessions ----
   const slots = Array.isArray(invoice.booking) ? invoice.booking : [];
   let created = 0;

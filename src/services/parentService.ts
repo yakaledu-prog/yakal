@@ -37,23 +37,41 @@ export interface ChildService {
 }
 
 /**
- * The services active for the signed-in student.
+ * The services a student can actually use.
  *
- * A student can read their own rows (child_services_student_select), so this
- * works without going through the parent. A service with no row at all counts
- * as inactive: nothing is unlocked until a parent turns it on.
+ * Two conditions, and both have to hold:
+ *
+ *   entitled    somebody paid. Derived in v_student_entitlements from
+ *               enrolments and admissions_plans, which only the Stripe webhook
+ *               writes.
+ *   permitted   child_services.is_active, the parent allowing it.
+ *
+ * They used to be the same boolean, so a parent toggling a switch could hand
+ * out a service nobody had bought, and buying a course granted nothing at all
+ * because nothing ever wrote "tutoring". Keeping them apart means a purchase
+ * cannot be undone by a stale row, and a parent can still hide a section from a
+ * child they have paid for.
  */
 export async function getMyActiveServices(studentId: string): Promise<ServiceName[]> {
-  const { data, error } = await supabase
-    .from("child_services")
-    .select("service, is_active")
-    .eq("student_id", studentId)
-    .eq("is_active", true);
-  if (error) {
-    console.warn("Could not read services", error.message);
+  const [{ data: permitted, error }, { data: entitled, error: entErr }] = await Promise.all([
+    supabase
+      .from("child_services")
+      .select("service")
+      .eq("student_id", studentId)
+      .eq("is_active", true),
+    supabase.from("v_student_entitlements").select("service").eq("student_id", studentId),
+  ]);
+
+  if (error || entErr) {
+    // Locked rather than open. A read that failed is not permission.
+    console.warn("Could not read services", error?.message ?? entErr?.message);
     return [];
   }
-  return (data ?? []).map((r) => r.service as ServiceName);
+
+  const allowed = new Set((permitted ?? []).map((r) => r.service as ServiceName));
+  return (entitled ?? [])
+    .map((r) => r.service as ServiceName)
+    .filter((s) => allowed.has(s));
 }
 
 export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
