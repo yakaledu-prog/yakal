@@ -300,19 +300,13 @@ function EditDialog({
         aria-label={initial ? "Edit diagnostic" : "New diagnostic"}
         className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl"
       >
-        <div className="border-b border-border px-5 pt-5 md:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <h2 className="text-[18px] font-semibold tracking-tight">
-              {initial ? "Edit diagnostic" : "New diagnostic"}
-            </h2>
-            <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Clickable, because step one is four fields somebody will want to
+        {/* The stepper is the heading. A title saying "New diagnostic" above
+            a step called "Details" said the same thing twice, and the dialog
+            is already named for assistive tech by aria-label. */}
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 pt-5 md:px-6">
+          {/* Clickable, because step one is three fields somebody will want to
               jump back to without answering "are you sure" first. */}
-          <div className="mt-4 flex gap-1">
+          <div className="flex gap-1">
             {steps.map((name, i) => {
               const n = (i + 1) as 1 | 2;
               const active = step === n;
@@ -342,26 +336,28 @@ function EditDialog({
               );
             })}
           </div>
+
+          <button onClick={onClose} aria-label="Close" className="-mt-1 rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
+            <X size={18} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 md:p-6">
           {step === 1 ? (
             <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className={label}>Title</label>
-                  <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Algebra" className={field} />
-                </div>
-                <div>
-                  <label className={label}>Subject</label>
-                  <input
-                    value={form.categoryName}
-                    onChange={(e) => set("categoryName", e.target.value)}
-                    placeholder="K-12 Math"
-                    className={field}
-                  />
-                  <p className="mt-1 text-[12px] text-muted-foreground">Tests are grouped under this.</p>
-                </div>
+              <div>
+                <label className={label}>Title</label>
+                <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Algebra" className={field} />
+              </div>
+
+              <div>
+                <label className={label}>Subject</label>
+                <input
+                  value={form.categoryName}
+                  onChange={(e) => set("categoryName", e.target.value)}
+                  placeholder="K-12 Math (tests are grouped under this)"
+                  className={field}
+                />
               </div>
 
               <div>
@@ -466,7 +462,7 @@ function EditDialog({
                 <button
                   onClick={() => { const d = collect(false); if (d) onSave(d, false); }}
                   disabled={busy}
-                  className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#CAA25F] px-4 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#CAA25F]/90 disabled:opacity-50"
                 >
                   <Save size={14} /> Save draft
                 </button>
