@@ -488,6 +488,147 @@ function EditDialog({
 }
 
 /**
+ * Adding questions to a test that already exists.
+ *
+ * Its own dialog rather than the create stepper: there is nothing to say about
+ * the test itself, only questions to write, so the two steps and the Publish
+ * decision would all be noise. Several can be added at once, by hand or by
+ * pasting, because a batch is the usual reason to come here.
+ */
+function AddQuestionsDialog({
+  test, busy, onAdd, onClose,
+}: {
+  test: DiagnosticRow;
+  busy: boolean;
+  onAdd: (questions: DiagnosticQuestion[]) => void;
+  onClose: () => void;
+}) {
+  const [questions, setQuestions] = useState<DiagnosticQuestion[]>([
+    BLANK_QUESTION(test.questions.length + 1),
+  ]);
+  const [mode, setMode] = useState<"form" | "json">("form");
+  const [json, setJson] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  const written = questions.filter((q) => q.text.trim());
+  const usable = written.filter((q) => q.options.filter((o) => o.trim()).length >= 2);
+
+  function openJson() {
+    setJson(written.length ? JSON.stringify(written, null, 2) : QUESTION_TEMPLATE);
+    setJsonError(null);
+    setMode("json");
+  }
+
+  function applyJson() {
+    const parsed = parseQuestionsJson(json);
+    if (!parsed.ok) return setJsonError(parsed.error);
+    setQuestions(parsed.questions);
+    setJsonError(null);
+    setMode("form");
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Add questions to ${test.title}`}
+        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 md:px-6">
+          <h2 className="text-[15px] font-semibold tracking-tight">Add questions to {test.title}</h2>
+          <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 md:p-6">
+          {mode === "form" ? (
+            <div className="space-y-3">
+              {questions.map((q, i) => (
+                <QuestionEditor
+                  key={i}
+                  question={q}
+                  index={test.questions.length + i}
+                  canRemove={questions.length > 1}
+                  onChange={(next) => setQuestions(questions.map((old, n) => (n === i ? next : old)))}
+                  onRemove={() => setQuestions(questions.filter((_, n) => n !== i))}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => setQuestions([...questions, BLANK_QUESTION(test.questions.length + questions.length + 1)])}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+              >
+                <Plus size={15} /> Add question
+              </button>
+              <button
+                type="button"
+                onClick={openJson}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+              >
+                <Braces size={15} /> Paste JSON
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <JsonEditor
+                value={json}
+                onChange={(next) => { setJson(next); setJsonError(null); }}
+                rows={16}
+                hint="correctAnswer counts from 0. A whole test can be pasted; only its questions are read."
+                action={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("form"); setJsonError(null); }}
+                      className="rounded-xl bg-white/10 px-4 py-2 text-[13px] font-normal text-white/80 backdrop-blur transition-colors hover:bg-white/20 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyJson}
+                      className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-[#0d7f86]"
+                    >
+                      Load questions
+                    </button>
+                  </>
+                }
+              />
+              {jsonError && (
+                <p className="flex items-start gap-1.5 text-[12.5px] text-[#CAA25F]">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                  {jsonError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4 md:px-6">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-normal text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onAdd(usable)}
+            disabled={busy || usable.length === 0}
+            className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Add {usable.length || ""} question{usable.length === 1 ? "" : "s"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * The admin side of diagnostics, laid out like the student side.
  *
  * Subjects down the left, the chosen subject's tests as tabs across the top,
@@ -507,7 +648,7 @@ export function AdminDiagnostics() {
   const [filterText, setFilterText] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
-  const [draftQuestion, setDraftQuestion] = useState<DiagnosticQuestion | null>(null);
+  const [adding, setAdding] = useState<DiagnosticRow | null>(null);
 
   const { data: tests = [], isLoading } = useQuery({
     queryKey: ["admin-diagnostics"],
@@ -562,17 +703,17 @@ export function AdminDiagnostics() {
     refresh();
   }
 
-  async function addQuestion(test: DiagnosticRow) {
-    if (!draftQuestion) return;
+  async function addQuestions(test: DiagnosticRow, questions: DiagnosticQuestion[]) {
+    if (!questions.length) return;
     setBusy(true);
     const res = await updateDiagnostic(test.rowId, {
       ...toInput(test),
-      questions: [...test.questions, draftQuestion],
+      questions: [...test.questions, ...questions],
     });
     setBusy(false);
-    if (!res.success) return toast.error(res.error ?? "Could not add that question.");
-    toast.success("Question added.");
-    setDraftQuestion(null);
+    if (!res.success) return toast.error(res.error ?? "Could not add those questions.");
+    toast.success(questions.length === 1 ? "Question added." : `${questions.length} questions added.`);
+    setAdding(null);
     refresh();
   }
 
@@ -707,43 +848,9 @@ export function AdminDiagnostics() {
                     ))}
                   </div>
 
-                  {/* Adding a question does not need the whole stepper. The
-                      modal is for making a test; once it exists, another
-                      question is one form appended in place. */}
-                  {draftQuestion ? (
-                    <div className="space-y-3 rounded-xl border border-[#1099A1] p-4">
-                      <QuestionEditor
-                        question={draftQuestion}
-                        index={activeTest.questions.length}
-                        canRemove={false}
-                        onChange={setDraftQuestion}
-                        onRemove={() => setDraftQuestion(null)}
-                      />
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setDraftQuestion(null)}
-                          className="rounded-xl border border-border px-4 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => void addQuestion(activeTest)}
-                          disabled={
-                            busy ||
-                            !draftQuestion.text.trim() ||
-                            draftQuestion.options.filter((o) => o.trim()).length < 2
-                          }
-                          className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
-                        >
-                          {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                          Add question
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                       <button
-                        onClick={() => setDraftQuestion(BLANK_QUESTION(activeTest.questions.length + 1))}
+                        onClick={() => setAdding(activeTest)}
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
                       >
                         <Plus size={15} /> Add a question
@@ -764,8 +871,7 @@ export function AdminDiagnostics() {
                       >
                         <Trash2 size={15} />
                       </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
             </>
@@ -775,6 +881,15 @@ export function AdminDiagnostics() {
 
       {editing !== undefined && (
         <EditDialog initial={editing} busy={busy} onSave={save} onClose={() => setEditing(undefined)} />
+      )}
+
+      {adding && (
+        <AddQuestionsDialog
+          test={adding}
+          busy={busy}
+          onAdd={(questions) => void addQuestions(adding, questions)}
+          onClose={() => setAdding(null)}
+        />
       )}
 
       <ConfirmModal
