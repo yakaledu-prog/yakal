@@ -172,18 +172,13 @@ function QuestionEditor({
           </div>
         ))}
 
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            type="button"
-            onClick={addOption}
-            className="text-[12.5px] text-[#1099A1] transition-colors hover:text-[#0d7f86]"
-          >
-            Add option
-          </button>
-          <span className="text-[12px] text-muted-foreground">
-            The ticked option is the correct one.
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={addOption}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[12.5px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+        >
+          <Plus size={14} /> Add option
+        </button>
 
         <input
           value={question.explanation ?? ""}
@@ -447,7 +442,7 @@ function EditDialog({
               <button
                 type="button"
                 onClick={() => { if (mode === "json") { setMode("form"); setJsonError(null); } else setStep(1); }}
-                className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-medium hover:bg-muted/60"
+                className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-normal text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
                 <ChevronLeft size={15} /> Back
               </button>
@@ -471,7 +466,7 @@ function EditDialog({
                 <button
                   onClick={() => { const d = collect(false); if (d) onSave(d, false); }}
                   disabled={busy}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#CAA25F] px-4 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#CAA25F]/90 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl border border-[#97CE9D] bg-[#97CE9D]/15 px-4 py-2.5 text-[13.5px] font-normal text-foreground transition-colors hover:bg-[#97CE9D]/30 disabled:opacity-50"
                 >
                   <Save size={14} /> Save draft
                 </button>
@@ -688,19 +683,6 @@ export function AdminDiagnostics() {
 
               {activeTest && (
                 <div className="mx-auto w-full space-y-6 p-6 md:p-10">
-                  {/* The description only, not the title: the tab above and
-                      the banner already say which test this is. */}
-                  {(activeTest.description || !activeTest.published) && (
-                    <div className="flex flex-wrap items-center gap-x-3">
-                      {activeTest.description && (
-                        <p className="text-[13.5px] text-muted-foreground">{activeTest.description}</p>
-                      )}
-                      {!activeTest.published && (
-                        <span className="text-[12.5px] text-[#CAA25F]">Draft</span>
-                      )}
-                    </div>
-                  )}
-
                   {/* The questions as the student meets them, correct answer
                       marked. Reading them here is the check that matters. */}
                   <div className="space-y-3">
