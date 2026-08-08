@@ -1,24 +1,26 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { TestingPlan } from "@/components/college/TestingPlan";
 import { RoadmapTimeline } from "@/components/college/RoadmapTimeline";
 import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
-import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
+import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
+import { COLLEGE_RESOURCES } from "@/config/collegeResources";
+import { upcomingDates, type UpcomingDate } from "@/config/admissionsCalendar";
+import { RoadmapAssistant } from "@/components/college/RoadmapAssistant";
 
 const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
 
-import { COLLEGE_RESOURCES } from "@/config/collegeResources";
-
-export type RoadmapTab = "timeline" | "testing" | "resources";
+export type RoadmapTab = "timeline" | "testing" | "resources" | "assistant";
 
 export const ROADMAP_TABS: { id: RoadmapTab; label: string }[] = [
   { id: "timeline", label: "Timeline" },
   { id: "testing", label: "Testing Plan" },
   { id: "resources", label: "Resources" },
+  { id: "assistant", label: "Ask Yakal" },
 ];
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -77,6 +79,11 @@ export function StudentRoadmap({
   const qc = useQueryClient();
 
   const targetId = studentId || user?.id;
+  // Read once per mount rather than during render: the compiler rules count a
+  // Date() in the render body as impure, and it would also re-sort on every
+  // keystroke elsewhere on the page.
+  const [now] = useState(() => new Date());
+  const upcoming = useMemo(() => upcomingDates(now, 3), [now]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", targetId],
@@ -201,13 +208,14 @@ export function StudentRoadmap({
               {[
                 { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
                 { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
-                { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
+                { id: "resources", label: "Resources", icon: <BookOpen size={16} /> },
+                { id: "assistant", label: "Ask Yakal", icon: <Sparkles size={16} /> }
               ].map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id as any)}
                   className={cn(
-                    "flex items-center gap-2 pb-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
+                    "flex items-center gap-2 pb-3 text-[13px] font-normal uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
                     tab === t.id
                       ? "border-white text-white !hover:border-primary"
                       : "border-transparent text-white/70 hover:text-white !hover:border-primary"
@@ -234,7 +242,8 @@ export function StudentRoadmap({
             {[
               { id: "timeline", label: "Timeline", icon: <Calendar size={16} /> },
               { id: "testing", label: "Testing Plan", icon: <PenTool size={16} /> },
-              { id: "resources", label: "Resources", icon: <BookOpen size={16} /> }
+              { id: "resources", label: "Resources", icon: <BookOpen size={16} /> },
+              { id: "assistant", label: "Ask Yakal", icon: <Sparkles size={16} /> }
             ].map((t) => (
               <button
                 key={t.id}
@@ -243,7 +252,7 @@ export function StudentRoadmap({
                 className={cn(
                   "whitespace-nowrap border-b-[3px] py-3 text-[14px] flex items-center gap-2 transition-colors",
                   tab === t.id
-                    ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+                    ? "border-[#1099A1] font-normal text-[#111] dark:text-white"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -293,6 +302,28 @@ export function StudentRoadmap({
 
             {tab === "resources" && (
               <div>
+                {/* The cycle's fixed dates, worked out from today so the list
+                    never expires. Published facts, not anything derived from
+                    this student, so nothing here can be wrong about them. */}
+                <div className="mb-5 flex flex-wrap gap-x-6 gap-y-2 border-b border-[#e9edef] pb-4 dark:border-[#2a3942]">
+                  {upcoming.map((d: UpcomingDate) => (
+                    <a
+                      key={d.label}
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group"
+                    >
+                      <p className="text-[13px] text-foreground group-hover:underline">{d.label}</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {d.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                        {" · "}
+                        {d.daysAway === 0 ? "today" : `in ${d.daysAway} days`}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {COLLEGE_RESOURCES.map((r) => (
                     <a
@@ -313,6 +344,10 @@ export function StudentRoadmap({
                   ))}
                 </div>
               </div>
+            )}
+
+            {tab === "assistant" && (
+              <RoadmapAssistant studentId={targetId} />
             )}
 
           </>

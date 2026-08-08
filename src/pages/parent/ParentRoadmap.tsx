@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Calendar, PenTool } from "lucide-react";
+import { BookOpen, Calendar, PenTool , Sparkles } from "lucide-react";
 
 import { ChildViewFrame } from "@/components/shared/ChildViewFrame";
 import { getCollegeProfile } from "@/services/collegeService";
@@ -29,6 +29,7 @@ const TAB_ICON: Record<RoadmapTab, React.ReactNode> = {
   timeline: <Calendar size={16} />,
   testing: <PenTool size={16} />,
   resources: <BookOpen size={16} />,
+  assistant: <Sparkles size={16} />,
 };
 
 function HeaderFact({ label, value }: { label: string; value: string }) {
