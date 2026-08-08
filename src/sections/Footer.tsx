@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Instagram, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Linkedin } from "lucide-react";
+import { XIcon } from "@/components/icons/XIcon";
 import { toast } from "sonner";
 import logo from "@/assets/images/logo.webp";
 
@@ -15,7 +16,7 @@ const quickLinks = [
 // the page owner sees: that one only opens for admins and leaks the admin path.
 const socials = [
   { href: "https://www.instagram.com/yakaledu/", label: "Instagram", icon: <Instagram size={15} strokeWidth={2} /> },
-  { href: "https://x.com/yakaleducation", label: "X", icon: <Twitter size={15} strokeWidth={2} /> },
+  { href: "https://x.com/yakaleducation", label: "X", icon: <XIcon size={14} /> },
   { href: "https://www.linkedin.com/company/106175583/", label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
