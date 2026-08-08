@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Edit2, Trash2, Loader2, X, Plus, Save, Send, Check, AlertTriangle, GripVertical, Search, ChevronLeft,
+  Edit2, Trash2, Loader2, X, Plus, Save, Send, Check, AlertTriangle, GripVertical, Search, ChevronLeft, Braces,
 } from "lucide-react";
 import {
   getDiagnostics, createDiagnostic, updateDiagnostic, deleteDiagnostic,
@@ -389,6 +389,16 @@ function EditDialog({
               >
                 <Plus size={15} /> Add question
               </button>
+
+              {/* Under Add question because it is the other way to get
+                  questions in, not a footer action on the dialog. */}
+              <button
+                type="button"
+                onClick={openJson}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+              >
+                <Braces size={15} /> Paste JSON
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -443,18 +453,6 @@ function EditDialog({
               </button>
             ) : (
               <span />
-            )}
-
-            {/* Quiet: pasting is the shortcut, not the main way in, and it
-                only belongs beside the questions. */}
-            {step === 2 && mode === "form" && (
-              <button
-                type="button"
-                onClick={openJson}
-                className="text-[13px] text-[#1099A1] transition-colors hover:text-[#0d7f86]"
-              >
-                Paste JSON
-              </button>
             )}
           </div>
 
