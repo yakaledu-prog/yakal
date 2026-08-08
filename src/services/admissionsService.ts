@@ -178,12 +178,100 @@ export async function updateTier(id: string, input: TierInput): Promise<TierResu
   return { success: true };
 }
 
-export async function createTier(input: TierInput & { key: string }): Promise<TierResult> {
-  const { error } = await supabase
-    .from("admissions_tiers")
-    .insert({ key: input.key, ...toRow(input) });
+/**
+ * A stable handle derived from the name.
+ *
+ * `key` is NOT NULL on the table, so a row needs one, but nothing in the app
+ * reads it: plans and invoices point at `id`. Asking an admin to invent a slug
+ * for a field with no consumer is friction with no payoff, so it is generated
+ * and the suffix only appears if the obvious one is taken.
+ */
+function slugify(name: string): string {
+  const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return base || "tier";
+}
+
+export async function createTier(input: TierInput): Promise<TierResult> {
+  const { data: taken } = await supabase.from("admissions_tiers").select("key");
+  const used = new Set((taken ?? []).map((r: { key: string }) => r.key));
+
+  let key = slugify(input.name);
+  for (let n = 2; used.has(key); n++) key = `${slugify(input.name)}-${n}`;
+
+  const { error } = await supabase.from("admissions_tiers").insert({ key, ...toRow(input) });
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+/**
+ * Write a new order from the tiers in the order they should appear.
+ *
+ * Renumbered in tens from scratch rather than swapping the pair that moved.
+ * Swapping leaves gaps, and after enough moves two tiers share a number, at
+ * which point the list orders itself by something else and the arrows appear
+ * to do nothing.
+ */
+export async function reorderTiers(orderedIds: string[]): Promise<TierResult> {
+  const results = await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase.from("admissions_tiers").update({ sort_order: (i + 1) * 10 }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  return failed?.error ? { success: false, error: failed.error.message } : { success: true };
+}
+
+export interface TierSubscriber {
+  planId: string;
+  studentId: string;
+  studentName: string;
+  studentAvatar: string | null;
+  parentName: string | null;
+  parentAvatar: string | null;
+  status: string;
+  startedAt: string | null;
+}
+
+/**
+ * Who is on each tier, for the counts on the cards.
+ *
+ * One query for every tier rather than one per card: the list draws three or
+ * four of these and a request each would be a waterfall for a number.
+ * Admin RLS on admissions_plans is what allows reading somebody else's plan.
+ */
+export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]>> {
+  const { data, error } = await supabase
+    .from("admissions_plans")
+    .select(
+      `id, tier_id, status, started_at,
+       student:profiles!admissions_plans_student_id_fkey(id, full_name, avatar_url),
+       parent:profiles!admissions_plans_purchased_by_fkey(id, full_name, avatar_url)`
+    )
+    .neq("status", "cancelled");
+
+  if (error) {
+    // A card without a count is a card; a card that fails to draw is not.
+    console.error("getTierSubscribers failed:", error.message);
+    return new Map();
+  }
+
+  const byTier = new Map<string, TierSubscriber[]>();
+  for (const row of (data ?? []) as any[]) {
+    if (!row.tier_id) continue;
+    const list = byTier.get(row.tier_id) ?? [];
+    list.push({
+      planId: row.id,
+      studentId: row.student?.id ?? "",
+      studentName: row.student?.full_name ?? "Unknown",
+      studentAvatar: row.student?.avatar_url ?? null,
+      parentName: row.parent?.full_name ?? null,
+      parentAvatar: row.parent?.avatar_url ?? null,
+      status: row.status,
+      startedAt: row.started_at,
+    });
+    byTier.set(row.tier_id, list);
+  }
+  return byTier;
 }
 
 /**
