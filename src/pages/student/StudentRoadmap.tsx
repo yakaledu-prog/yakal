@@ -11,6 +11,8 @@ import { cn } from "@/utils/cn";
 
 const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
 
+import { COLLEGE_RESOURCES } from "@/config/collegeResources";
+
 export type RoadmapTab = "timeline" | "testing" | "resources";
 
 export const ROADMAP_TABS: { id: RoadmapTab; label: string }[] = [
@@ -292,17 +294,16 @@ export function StudentRoadmap({
             {tab === "resources" && (
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
-                    { title: "FAFSA - Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
-                    { title: "CSS Profile", desc: "Institutional aid at many private colleges", url: "#" },
-                    { title: "BigFuture (College Board)", desc: "College search, planning & scholarships", url: "#" },
-                    { title: "Digital SAT & Bluebook", desc: "Register and practice for the digital SAT", url: "#" },
-                    { title: "The ACT", desc: "Register and prep for the ACT", url: "#" },
-                    { title: "Khan Academy", desc: "Free SAT prep and academic help", url: "#" },
-                    { title: "College Essay Guy", desc: "Step-by-step walkthroughs and essay guides", url: "#" }
-                  ].map((r, i) => (
-                    <a key={i} href={r.url} className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors">
+                  {COLLEGE_RESOURCES.map((r) => (
+                    <a
+                      key={r.url}
+                      href={r.url}
+                      // A new tab, because a family is midway through a
+                      // roadmap and sending them off it loses their place.
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors"
+                    >
                       <div>
                         <p className="font-semibold text-[#1099A1] group-hover:underline text-[14px]">{r.title}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
