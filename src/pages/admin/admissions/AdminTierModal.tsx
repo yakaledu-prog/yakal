@@ -227,187 +227,187 @@ export function AdminTierModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
           {step === 1 && (
-          <section className="space-y-4">
+            <section className="space-y-4">
 
-            {/* No key field. The column is NOT NULL so a row needs one, but
+              {/* No key field. The column is NOT NULL so a row needs one, but
                 nothing in the app reads it (plans point at id), so it is
                 generated from the name rather than invented by hand. */}
-            <div>
-              <label className={labelCls}>Name</label>
-              <Input
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="Premier"
-                className={inputCls}
-              />
-            </div>
+              <div>
+                <label className={labelCls}>Name</label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="Premier"
+                  className={inputCls}
+                />
+              </div>
 
-            <div>
-              <label className={labelCls}>Short description</label>
-              <textarea
-                value={form.blurb}
-                onChange={(e) => set("blurb", e.target.value)}
-                rows={2}
-                placeholder="One or two sentences, shown under the name on the card."
-                className={areaCls}
-              />
-            </div>
+              <div>
+                <label className={labelCls}>Short description</label>
+                <textarea
+                  value={form.blurb}
+                  onChange={(e) => set("blurb", e.target.value)}
+                  rows={2}
+                  placeholder="One or two sentences, shown under the name on the card."
+                  className={areaCls}
+                />
+              </div>
 
-            <div>
-              <label className={labelCls}>
-                Who it suits <span className="font-normal text-muted-foreground">(the box at the bottom of the card)</span>
-              </label>
-              <textarea
-                value={form.fits}
-                onChange={(e) => set("fits", e.target.value)}
-                rows={2}
-                placeholder="Families wanting ongoing mentorship, not just checkpoints."
-                className={areaCls}
-              />
-            </div>
-          </section>
+              <div>
+                <label className={labelCls}>
+                  Who it suits <span className="font-normal text-muted-foreground">(the box at the bottom of the card)</span>
+                </label>
+                <textarea
+                  value={form.fits}
+                  onChange={(e) => set("fits", e.target.value)}
+                  rows={2}
+                  placeholder="Families wanting ongoing mentorship, not just checkpoints."
+                  className={areaCls}
+                />
+              </div>
+            </section>
           )}
 
           {step === 2 && (
 
-          <section className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Total price (USD)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">$</span>
+            <section className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className={labelCls}>Total price (USD)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">$</span>
+                    <Input
+                      value={form.priceDollars}
+                      onChange={(e) => set("priceDollars", e.target.value)}
+                      placeholder="2500.00"
+                      inputMode="decimal"
+                      className={cn(inputCls, "pl-7")}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Monthly payments</label>
                   <Input
-                    value={form.priceDollars}
-                    onChange={(e) => set("priceDollars", e.target.value)}
-                    placeholder="2500.00"
-                    inputMode="decimal"
-                    className={cn(inputCls, "pl-7")}
+                    value={form.instalmentMonths}
+                    onChange={(e) => set("instalmentMonths", e.target.value)}
+                    placeholder="10"
+                    inputMode="numeric"
+                    className={inputCls}
                   />
+                  <p className="mt-1 text-[12px] text-muted-foreground">
+                    1 is a single payment. Otherwise the total is split over this many months.
+                  </p>
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>Monthly payments</label>
-                <Input
-                  value={form.instalmentMonths}
-                  onChange={(e) => set("instalmentMonths", e.target.value)}
-                  placeholder="10"
-                  inputMode="numeric"
-                  className={inputCls}
-                />
-                <p className="mt-1 text-[12px] text-muted-foreground">
-                  1 is a single payment. Otherwise the total is split over this many months.
-                </p>
-              </div>
-            </div>
-          </section>
+            </section>
           )}
 
           {step === 3 && (
-          <>
-          <section className="space-y-3">
-            <h3 className="sr-only">
-              What is included
-            </h3>
-            <p className="text-[12px] text-muted-foreground -mt-1">
-              The bullet list on the card, in order.
-            </p>
-            <div className="space-y-2">
-              {form.features.map((f, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={f}
-                    onChange={(e) => setFeature(i, e.target.value)}
-                    placeholder="Two advising sessions per month"
-                    className={inputCls}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeFeature(i)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
-                    title="Remove"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+            <>
+              <section className="space-y-3">
+                <h3 className="sr-only">
+                  What is included
+                </h3>
+                <p className="text-[12px] text-muted-foreground -mt-1">
+                  The bullet list on the card, in order.
+                </p>
+                <div className="space-y-2">
+                  {form.features.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        value={f}
+                        onChange={(e) => setFeature(i, e.target.value)}
+                        placeholder="Two advising sessions per month"
+                        className={inputCls}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFeature(i)}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
+                        title="Remove"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <Button type="button" variant="outline" onClick={addFeature} className="gap-2 h-9">
-              <Plus size={15} /> Add line
-            </Button>
-          </section>
+                <Button type="button" variant="outline" onClick={addFeature} className="gap-2 h-9">
+                  <Plus size={15} /> Add line
+                </Button>
+              </section>
 
 
-          <section className="space-y-4">
-            <p className="text-[12px] text-muted-foreground -mt-1">
-              Leave blank for unlimited. These are shown to families, not enforced, except advising
-              sessions per month, which the counselor calendar does enforce. For mock interviews, 0
-              means the tier includes none.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <label className={labelCls}>Advising / month</label>
-                <Input
-                  value={form.sessionsPerMonth}
-                  onChange={(e) => set("sessionsPerMonth", e.target.value)}
-                  placeholder="unlimited"
-                  inputMode="numeric"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>PS rounds</label>
-                <Input
-                  value={form.psRoundsLimit}
-                  onChange={(e) => set("psRoundsLimit", e.target.value)}
-                  placeholder="unlimited"
-                  inputMode="numeric"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Supp. essays</label>
-                <Input
-                  value={form.suppEssaysLimit}
-                  onChange={(e) => set("suppEssaysLimit", e.target.value)}
-                  placeholder="unlimited"
-                  inputMode="numeric"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Mock interviews</label>
-                <Input
-                  value={form.mockInterviewsLimit}
-                  onChange={(e) => set("mockInterviewsLimit", e.target.value)}
-                  placeholder="unlimited"
-                  inputMode="numeric"
-                  className={inputCls}
-                />
-              </div>
-            </div>
-          </section>
-          </>
+              <section className="space-y-4">
+                <p className="text-[12px] text-muted-foreground -mt-1">
+                  Leave blank for unlimited. These are shown to families, not enforced, except advising
+                  sessions per month, which the counselor calendar does enforce. For mock interviews, 0
+                  means the tier includes none.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className={labelCls}>Advising / month</label>
+                    <Input
+                      value={form.sessionsPerMonth}
+                      onChange={(e) => set("sessionsPerMonth", e.target.value)}
+                      placeholder="unlimited"
+                      inputMode="numeric"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>PS rounds</label>
+                    <Input
+                      value={form.psRoundsLimit}
+                      onChange={(e) => set("psRoundsLimit", e.target.value)}
+                      placeholder="unlimited"
+                      inputMode="numeric"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Supp. essays</label>
+                    <Input
+                      value={form.suppEssaysLimit}
+                      onChange={(e) => set("suppEssaysLimit", e.target.value)}
+                      placeholder="unlimited"
+                      inputMode="numeric"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Mock interviews</label>
+                    <Input
+                      value={form.mockInterviewsLimit}
+                      onChange={(e) => set("mockInterviewsLimit", e.target.value)}
+                      placeholder="unlimited"
+                      inputMode="numeric"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+              </section>
+            </>
           )}
 
           {step === 4 && (
-          <section className="space-y-4">
-            {/* Stacked, not side by side. These are two independent switches
+            <section className="space-y-4">
+              {/* Stacked, not side by side. These are two independent switches
                 and a row of two reads as one choice with two halves. */}
-            <div className="grid grid-cols-1 gap-4">
-              <ToggleRow
-                label="Recommended"
-                hint="Marks the card Most chosen and highlights it."
-                value={form.isRecommended}
-                onChange={(v) => set("isRecommended", v)}
-              />
-              <ToggleRow
-                label="Active"
-                hint="Off hides it from families but keeps existing plans."
-                value={form.isActive}
-                onChange={(v) => set("isActive", v)}
-              />
-            </div>
-          </section>
+              <div className="grid grid-cols-1 gap-4">
+                <ToggleRow
+                  label="Recommended"
+                  hint="Marks the card Most chosen and highlights it."
+                  value={form.isRecommended}
+                  onChange={(v) => set("isRecommended", v)}
+                />
+                <ToggleRow
+                  label="Active"
+                  hint="Off hides it from families but keeps existing plans."
+                  value={form.isActive}
+                  onChange={(v) => set("isActive", v)}
+                />
+              </div>
+            </section>
           )}
         </div>
 

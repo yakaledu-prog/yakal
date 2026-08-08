@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Check, Star, EyeOff, Rows3, Columns3, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
+import { Loader2, Plus, Pencil, Check, Star, EyeOff, Rows3, Columns3, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X, MoreVertical, Search } from "lucide-react";
 import { dicebearUrl } from "@/utils/avatar";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { cn } from "@/utils/cn";
 import { AdminHeader } from "./AdminHeader";
 import { AdminTierModal } from "./admissions/AdminTierModal";
@@ -46,6 +47,8 @@ export function AdminAdmissions() {
   // Tiers are sold as columns on the landing page, so an admin comparing them
   // wants the same shape. The row view stays for reading the detail.
   const [view, setView] = useState<"row" | "column">("row");
+  const [q, setQ] = useState("");
+  const [visibility, setVisibility] = useState<"all" | "active" | "hidden">("all");
   const [subsFor, setSubsFor] = useState<AdmissionsTier | null>(null);
 
   const { data: subscribers } = useQuery({
@@ -58,6 +61,23 @@ export function AdminAdmissions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextSortOrder = tiers.reduce((m, t) => Math.max(m, t.sortOrder), 0) + 1;
+
+  const needle = q.trim().toLowerCase();
+  const shown = tiers.filter((t) => {
+    if (visibility === "active" && !t.isActive) return false;
+    if (visibility === "hidden" && t.isActive) return false;
+    if (!needle) return true;
+    return (
+      t.name.toLowerCase().includes(needle) ||
+      (t.blurb ?? "").toLowerCase().includes(needle) ||
+      t.features.some((f) => f.toLowerCase().includes(needle))
+    );
+  });
+
+  // Reordering writes positions from the rows on screen, so a filtered list
+  // would renumber two tiers and quietly reshuffle whatever is hidden between
+  // them. The arrows are therefore only offered on the full list.
+  const filtering = needle !== "" || visibility !== "all";
   const activeCount = tiers.filter((t) => t.isActive).length;
 
   /** Move a tier one place and write the whole order back. */
@@ -127,10 +147,30 @@ export function AdminAdmissions() {
         />
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
-          <div className="flex justify-between items-center gap-4 mb-8">
-            <p className="text-[13px] text-muted-foreground">
-              Editing a tier changes the public page and the parent checkout together.
-            </p>
+          <div className="mb-8 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[200px] flex-1">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search tiers, descriptions or features..."
+                className="h-10 w-full rounded-xl border border-[#e9edef] bg-transparent pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1] dark:border-[#2a3942]"
+              />
+            </div>
+
+            <Dropdown
+              value={visibility}
+              onChange={setVisibility}
+              options={[
+                { value: "all", label: `All (${tiers.length})` },
+                { value: "active", label: `Active (${tiers.filter((t) => t.isActive).length})` },
+                { value: "hidden", label: `Hidden (${tiers.filter((t) => !t.isActive).length})` },
+              ]}
+              size="sm"
+              ariaLabel="Filter by visibility"
+              className="w-[150px]"
+              buttonClassName="text-foreground/70"
+            />
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-1 rounded-lg bg-[#f0f2f5] p-1 dark:bg-[#182329]">
                 {([["row", Rows3, "Rows"], ["column", Columns3, "Columns"]] as const).map(
@@ -163,9 +203,9 @@ export function AdminAdmissions() {
             <div className="flex justify-center py-16">
               <Loader2 className="animate-spin text-[#1099A1]" />
             </div>
-          ) : tiers.length === 0 ? (
+          ) : shown.length === 0 ? (
             <p className="text-center py-16 text-[14px] text-muted-foreground">
-              No tiers yet. Create the first one.
+              {filtering ? "No tiers match that." : "No tiers yet. Create the first one."}
             </p>
           ) : (
             <div className={cn(
@@ -175,7 +215,7 @@ export function AdminAdmissions() {
                 // compare the columns families compare.
                 : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start"
             )}>
-              {tiers.map((t, i) => (
+              {shown.map((t, i) => (
                 <div
                   key={t.id}
                   className={cn(
@@ -184,7 +224,12 @@ export function AdminAdmissions() {
                     !t.isActive && "opacity-60"
                   )}
                 >
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
+                  <div className={cn(
+                    "flex justify-between gap-5",
+                    // A column is about 350px. Keeping the actions beside the
+                    // name there squeezed the name to one word per line.
+                    view === "row" ? "flex-col md:flex-row md:items-start" : "flex-col"
+                  )}>
                     {/* Left: identity + price */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
@@ -227,7 +272,7 @@ export function AdminAdmissions() {
                         <button
                           type="button"
                           onClick={() => move(i, -1)}
-                          disabled={i === 0}
+                          disabled={i === 0 || filtering}
                           aria-label={`Move ${t.name} earlier`}
                           className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-[#f0f2f5] hover:text-[#111] disabled:opacity-30 dark:hover:bg-[#182329] dark:hover:text-white"
                         >
@@ -236,30 +281,45 @@ export function AdminAdmissions() {
                         <button
                           type="button"
                           onClick={() => move(i, 1)}
-                          disabled={i === tiers.length - 1}
+                          disabled={i === shown.length - 1 || filtering}
                           aria-label={`Move ${t.name} later`}
                           className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-[#f0f2f5] hover:text-[#111] disabled:opacity-30 dark:hover:bg-[#182329] dark:hover:text-white"
                         >
                           {view === "row" ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                         </button>
                       </div>
-                      <ToggleChip
-                        label="Recommended"
-                        active={t.isRecommended}
-                        onClick={() => toggle(t, { isRecommended: !t.isRecommended })}
-                      />
-                      <ToggleChip
-                        label={t.isActive ? "Active" : "Hidden"}
-                        active={t.isActive}
-                        onClick={() => toggle(t, { isActive: !t.isActive })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => openEdit(t)}
-                        className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
-                      >
-                        <Pencil size={14} /> Edit
-                      </button>
+
+                      {/* Side by side in a row, behind a kebab in a column.
+                          Three controls and a name do not fit across 350px,
+                          and the arrows stay out because reordering is the one
+                          thing you do repeatedly. */}
+                      {view === "row" ? (
+                        <>
+                          <ToggleChip
+                            label="Recommended"
+                            active={t.isRecommended}
+                            onClick={() => toggle(t, { isRecommended: !t.isRecommended })}
+                          />
+                          <ToggleChip
+                            label={t.isActive ? "Active" : "Hidden"}
+                            active={t.isActive}
+                            onClick={() => toggle(t, { isActive: !t.isActive })}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => openEdit(t)}
+                            className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
+                          >
+                            <Pencil size={14} /> Edit
+                          </button>
+                        </>
+                      ) : (
+                        <CardMenu
+                          tier={t}
+                          onEdit={() => openEdit(t)}
+                          onToggle={(patch: { isActive?: boolean; isRecommended?: boolean }) => toggle(t, patch)}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -475,6 +535,75 @@ function SubscribersModal({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The three controls that do not fit across a column.
+ *
+ * Only used in the column view. In rows there is width for them to be visible,
+ * and a menu that hides what could be shown costs a click for nothing.
+ */
+function CardMenu({
+  tier, onEdit, onToggle,
+}: {
+  tier: AdmissionsTier;
+  onEdit: () => void;
+  onToggle: (patch: { isActive?: boolean; isRecommended?: boolean }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const item =
+    "flex w-full items-center justify-between gap-4 rounded-lg px-3 py-2 text-left text-[13px] transition-colors hover:bg-[#f0f2f5] dark:hover:bg-[#182329]";
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={`Actions for ${tier.name}`}
+        aria-expanded={open}
+        className="rounded-lg border border-[#e9edef] p-2 text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
+      >
+        <MoreVertical size={15} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-40 mt-1 w-56 rounded-xl border border-[#e9edef] bg-white p-1 shadow-lg dark:border-[#2a3942] dark:bg-[#111b21]">
+          <button
+            type="button"
+            onClick={() => { onToggle({ isRecommended: !tier.isRecommended }); setOpen(false); }}
+            className={item}
+          >
+            Recommended
+            {tier.isRecommended && <Check size={14} className="shrink-0 text-[#1099A1]" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => { onToggle({ isActive: !tier.isActive }); setOpen(false); }}
+            className={item}
+          >
+            {tier.isActive ? "Visible to families" : "Hidden"}
+            {tier.isActive && <Check size={14} className="shrink-0 text-[#1099A1]" />}
+          </button>
+          <div className="my-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
+          <button type="button" onClick={() => { onEdit(); setOpen(false); }} className={item}>
+            Edit tier
+            <Pencil size={13} className="shrink-0 text-muted-foreground" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
