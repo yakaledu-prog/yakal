@@ -2,7 +2,7 @@ import React from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { Mail, Phone, Flag, LogOut, Camera, X, SquarePenIcon } from "lucide-react";
+import { Mail, Phone, Flag, ListChecks, LogOut, Camera, X, SquarePenIcon } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PastSessions, type SessionListItem } from "@/components/shared/SessionList";
@@ -81,6 +81,20 @@ export function StudentProfile() {
     personName: s.tutor_name ?? null,
     personAvatarUrl: s.tutor_avatar ?? null,
   }));
+
+  // A count rather than the list itself: the college list has its own page,
+  // and what belongs here is whether there is one at all.
+  const { data: collegeCount } = useQuery({
+    queryKey: ["college-list-count", user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("college_list_items")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", user!.id);
+      return count ?? 0;
+    },
+    enabled: !!user?.id,
+  });
 
   const summary = [
     profile?.grade_level,
@@ -210,19 +224,6 @@ export function StudentProfile() {
             </div>
 
 
-            {/* Between the avatar and the buttons rather than on a row of its
-                own: the band was tall and mostly empty, and the facts read as
-                a separate section when they are part of the same header. */}
-            <div className="flex flex-1 flex-wrap justify-center gap-x-12 gap-y-5 md:px-8">
-              <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
-              <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
-              <HeaderFact
-                icon={<Flag size={15} />}
-                label="Application stage"
-                value={STAGE_LABELS[app?.stage ?? ""] ?? "Not set"}
-              />
-            </div>
-
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
               <button
                 onClick={openEditor}
@@ -239,6 +240,23 @@ export function StudentProfile() {
             </div>
           </div>
 
+          {/* Its own row under the avatar, left aligned to the same edge as
+              the name. Centred it read as a separate band rather than part of
+              the header. */}
+          <div className="relative z-10 mt-9 px-6 md:px-10 lg:px-12 flex flex-wrap gap-x-14 gap-y-5">
+            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
+            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
+            <HeaderFact
+              icon={<Flag size={15} />}
+              label="Application stage"
+              value={STAGE_LABELS[app?.stage ?? ""] ?? "Not set"}
+            />
+            <HeaderFact
+              icon={<ListChecks size={15} />}
+              label="Colleges on list"
+              value={collegeCount === undefined ? null : collegeCount === 0 ? "None yet" : collegeCount}
+            />
+          </div>
         </div>
 
         {/* Lower Content */}
