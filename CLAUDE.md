@@ -33,9 +33,9 @@ npm run check         # typecheck, lint, and the fast checks. Before every push
 npm run preflight     # eslint, then tsc for src and api, then vite build
 ```
 
-`npm run check` also runs from a **pre-push git hook** (`.githooks/pre-push`,
-wired by the `prepare` script, no husky). Bypass with `git push --no-verify`
-when you mean to.
+There is no pre-push hook. It ran `npm run check` on every push, which cost
+twenty seconds each time and got bypassed with `--no-verify` often enough that
+it was protecting nothing. Run it yourself before anything that matters.
 
 There are 56 pre-existing eslint warnings and **zero errors**. If your change
 adds an error, or a 57th warning, it is yours.
