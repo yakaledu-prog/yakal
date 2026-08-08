@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 
 export interface LinkedChild {
   id: string;
@@ -268,44 +269,94 @@ export async function searchStudentsByEmail(prefix: string): Promise<StudentSugg
 export interface ChildInvite {
   id: string;
   email: string;
+  services: ServiceName[];
+  token: string;
   createdAt: string;
 }
 
+/** The public URL a child follows to accept, built from a token. */
+export function inviteLink(token: string): string {
+  return `${window.location.origin}/invite/${token}`;
+}
+
 /**
- * Invite a child who has no account yet.
+ * A pragmatic email check: one @, no spaces, and a dot in the domain.
  *
- * The address is remembered rather than rejected. When somebody signs up as a
- * student with it, a trigger creates the link request for them, so the parent
- * does not have to come back and try again once the child has joined.
+ * Deliberately not the full RFC. The point is to stop a name being stored as an
+ * address, which is what happened when a parent typed "sami abate" into an
+ * email field whose native validation the button click had bypassed. The invite
+ * then went nowhere and the child looked like they had no access. Anything that
+ * could plausibly be delivered to passes; the mail server is the real judge.
+ */
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+/**
+ * Invite a child by email for one or more services.
  *
- * The link it creates is pending, not active: an invitation is the parent
- * asking, and the child still answers.
+ * Creates a token-carrying invite the child accepts by following a link sent to
+ * that address. The same link works whether or not they already have an
+ * account: a new child signs up and is linked as part of it, an existing child
+ * is linked on the spot. The token and expiry come from the row's defaults.
+ *
+ * A second invite to the same address is not an error: the parent is usually
+ * trying to resend, so the existing pending invite is returned to be mailed
+ * again rather than rejected.
  */
 export async function inviteChild(
   parentId: string,
-  email: string
-): Promise<{ success: boolean; error?: string }> {
+  email: string,
+  services: ServiceName[]
+): Promise<{ success: boolean; error?: string; inviteId?: string; token?: string }> {
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return { success: false, error: "Enter your child's email address." };
+  if (!isValidEmail(trimmed)) {
+    return { success: false, error: "That does not look like an email address." };
+  }
+  if (services.length === 0) return { success: false, error: "Choose at least one service." };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("parent_child_invites")
-    .insert({ parent_id: parentId, email: trimmed });
+    .insert({ parent_id: parentId, email: trimmed, services })
+    .select("id, token")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
+      // Already a live invite for this address: hand back the existing one so
+      // the caller can resend the link rather than being turned away.
+      const { data: existing } = await supabase
+        .from("parent_child_invites")
+        .select("id, token")
+        .eq("parent_id", parentId)
+        .eq("email", trimmed)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (existing) {
+        return { success: true, inviteId: existing.id, token: existing.token };
+      }
       return { success: false, error: "You have already invited that address." };
     }
     return { success: false, error: error.message };
   }
-  return { success: true };
+  return { success: true, inviteId: data.id, token: data.token };
 }
 
-/** Invitations still waiting on somebody to sign up. */
+/** Mail the invitation link. The row already exists; this only sends it. */
+export async function sendInviteEmail(
+  inviteId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const res = await authedPost<{ sent?: boolean }>("/api/invites?action=send", { inviteId });
+  if (res.error) return { sent: false, error: res.error };
+  return { sent: !!res.sent };
+}
+
+/** Invitations still waiting to be accepted. */
 export async function getPendingInvites(parentId: string): Promise<ChildInvite[]> {
   const { data, error } = await supabase
     .from("parent_child_invites")
-    .select("id, email, created_at")
+    .select("id, email, services, token, created_at")
     .eq("parent_id", parentId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -314,7 +365,61 @@ export async function getPendingInvites(parentId: string): Promise<ChildInvite[]
     console.error("getPendingInvites:", error.message);
     return [];
   }
-  return (data ?? []).map((r) => ({ id: r.id, email: r.email, createdAt: r.created_at }));
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    email: r.email,
+    services: (Array.isArray(r.services) ? r.services : []) as ServiceName[],
+    token: r.token,
+    createdAt: r.created_at,
+  }));
+}
+
+// ------------------------------------------------------------
+// The child's side of a link invite.
+//
+// Both go through SECURITY DEFINER functions, because the invite row is not
+// readable by the child directly: the token is the only thing that opens it,
+// and accepting is checked against the signed-in account in the database.
+// ------------------------------------------------------------
+
+export interface InviteDetails {
+  valid: boolean;
+  reason: "ok" | "used" | "expired" | "cancelled" | "invalid";
+  email: string | null;
+  services: ServiceName[];
+  parentName: string;
+}
+
+/** What an invite link points at, for the landing page. Works signed out. */
+export async function getInviteByToken(token: string): Promise<InviteDetails | null> {
+  const { data, error } = await supabase.rpc("get_child_invite", { p_token: token });
+  if (error) {
+    console.error("getInviteByToken:", error.message);
+    return null;
+  }
+  const d = (data ?? {}) as any;
+  return {
+    valid: !!d.valid,
+    reason: (d.reason ?? "invalid") as InviteDetails["reason"],
+    email: d.email ?? null,
+    services: (Array.isArray(d.services) ? d.services : []) as ServiceName[],
+    parentName: d.parent_name ?? "A parent",
+  };
+}
+
+/**
+ * Accept an invite as the signed-in student. Grants the parent link and the
+ * services on the spot. Idempotent, so calling it after a fresh signup (where
+ * the profile trigger has already granted everything) still reports success.
+ */
+export async function acceptInviteByToken(
+  token: string
+): Promise<{ ok: boolean; error?: string; services?: ServiceName[] }> {
+  const { data, error } = await supabase.rpc("accept_child_invite", { p_token: token });
+  if (error) return { ok: false, error: error.message };
+  const d = (data ?? {}) as any;
+  if (!d.ok) return { ok: false, error: d.error ?? "Could not accept the invitation." };
+  return { ok: true, services: (Array.isArray(d.services) ? d.services : []) as ServiceName[] };
 }
 
 /** Withdraw an invitation that has not been taken up. */

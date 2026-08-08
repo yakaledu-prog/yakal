@@ -51,6 +51,7 @@ const CounselorProfile = lazy(() => import("../pages/counselor/CounselorProfile"
 const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudents").then((m) => ({ default: m.CounselorStudents })));
 const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
 const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
+const InviteAcceptPage = lazy(() => import("../pages/shared/InviteAcceptPage").then((m) => ({ default: m.InviteAcceptPage })));
 const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
 const ParentAdmissions = lazy(() => import("../pages/parent/ParentAdmissions").then((m) => ({ default: m.ParentAdmissions })));
 const ParentBilling = lazy(() => import("../pages/parent/ParentBilling").then((m) => ({ default: m.ParentBilling })));
@@ -252,6 +253,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <AuthPage />,
+  },
+  {
+    path: "/invite/:token",
+    element: <InviteAcceptPage />,
   },
   {
     path: "/proposal",

@@ -13,6 +13,7 @@ import zoomHandler from '../api/zoom.ts';
 import googleHandler from '../api/google.ts';
 import contactHandler from '../api/contact.ts';
 import devUserHandler from '../api/dev-user.ts';
+import invitesHandler from '../api/invites.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +48,7 @@ app.all('/api/connect', createVercelHandler(connectHandler));
 app.all('/api/zoom', createVercelHandler(zoomHandler));
 app.all('/api/google', createVercelHandler(googleHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
+app.all('/api/invites', createVercelHandler(invitesHandler));
 // Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
 app.all('/api/dev-user', createVercelHandler(devUserHandler));
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { User, GraduationCap, Users, Compass, Info, ChevronDown } from "lucide-react";
@@ -24,13 +24,19 @@ const DEMO_ACCOUNTS = [
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("login");
+  const [params] = useSearchParams();
+
+  // An invite link lands here with the address to use, whether to start on
+  // signup, and where to go afterwards. Read once so the fields arrive filled
+  // rather than flickering in from an effect.
+  const nextPath = params.get("next");
+  const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const [showDemo, setShowDemo] = useState(false);
 
   // Form State
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
@@ -77,7 +83,13 @@ export function AuthPage() {
         });
         if (error) throw error;
         toast.success("Welcome back!");
-        if (data.user) await routeByProfile(data.user.id);
+        // An invite link (or any ?next=) wins over the default landing page, so
+        // an existing child lands back on the invite to accept it.
+        if (nextPath) {
+          navigate(nextPath);
+        } else if (data.user) {
+          await routeByProfile(data.user.id);
+        }
       } else {
 
 
