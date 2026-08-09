@@ -1,13 +1,15 @@
-// A service needs both a payment and a parent's permission.
+// Service access follows payment, and payment alone.
 //
 // child_services.is_active used to be the whole answer, which meant a parent
 // toggle could hand out a service nobody had bought, and buying a course
 // granted nothing at all because no code path ever wrote "tutoring".
 //
-// Entitlement now comes from v_student_entitlements, derived from enrolments
-// and admissions_plans. This asserts the two halves are really independent:
-// permission without payment opens nothing, and payment without permission
-// opens nothing either.
+// Access is now derived from v_student_entitlements (enrolments and
+// admissions_plans, written only by the Stripe webhook) and nothing else. This
+// asserts payment is both necessary and sufficient: a permission row without
+// payment opens nothing, and a paid service stays open whatever child_services
+// says. (child_services is retained only as a support/admin override elsewhere;
+// it is not part of the student's access rule.)
 import { createClient } from '@supabase/supabase-js';
 
 const URL = process.env.VITE_SUPABASE_LOCAL_URL || 'http://127.0.0.1:54321';
@@ -23,14 +25,13 @@ function check(name, ok, detail = '') {
   if (!ok) failures++;
 }
 
-/** The same rule getMyActiveServices applies, against the same two sources. */
+/** The same rule getMyActiveServices applies: entitlement only, no permission. */
 async function effectiveServices(studentId) {
-  const [{ data: permitted }, { data: entitled }] = await Promise.all([
-    admin.from('child_services').select('service').eq('student_id', studentId).eq('is_active', true),
-    admin.from('v_student_entitlements').select('service').eq('student_id', studentId),
-  ]);
-  const allowed = new Set((permitted ?? []).map((r) => r.service));
-  return (entitled ?? []).map((r) => r.service).filter((s) => allowed.has(s));
+  const { data: entitled } = await admin
+    .from('v_student_entitlements')
+    .select('service')
+    .eq('student_id', studentId);
+  return (entitled ?? []).map((r) => r.service);
 }
 
 async function main() {
@@ -56,61 +57,42 @@ async function main() {
     .eq('student_id', student.id);
 
   try {
-    const entitledNow = await admin
-      .from('v_student_entitlements')
-      .select('service')
-      .eq('student_id', student.id);
-    const entitled = (entitledNow.data ?? []).map((r) => r.service);
+    const entitled = await effectiveServices(student.id);
     check('entitlements are derived, not stored', Array.isArray(entitled), entitled.join(', ') || 'none');
 
-    // ---- permission without payment ----
-    // A student who has bought nothing, with both switches on. This is the
-    // case the old behaviour got wrong: the toggle was the whole answer.
-    if (!unpaid) {
-      check('permission alone does not open an unpaid service', false, 'every student has paid for something, so this cannot be tested');
-    } else {
-      for (const s of ['tutoring', 'admissions']) {
-        await admin
-          .from('child_services')
-          .upsert({ student_id: unpaid.id, service: s, is_active: true }, { onConflict: 'student_id,service' });
-      }
-      const opened = await effectiveServices(unpaid.id);
-      check(
-        'permission alone does not open an unpaid service',
-        opened.length === 0,
-        opened.length ? `${unpaid.full_name} got ${opened.join(', ')} without paying` : `${unpaid.full_name} stayed shut`
-      );
-      await admin.from('child_services').delete().eq('student_id', unpaid.id);
+    // ---- payment is necessary ----
+    // A student who has bought nothing, with both permission rows on. The
+    // toggle is no longer part of the rule, so it opens nothing.
+    for (const s of ['tutoring', 'admissions']) {
+      await admin
+        .from('child_services')
+        .upsert({ student_id: unpaid.id, service: s, is_active: true }, { onConflict: 'student_id,service' });
     }
+    const opened = await effectiveServices(unpaid.id);
+    check(
+      'a permission row without payment opens nothing',
+      opened.length === 0,
+      opened.length ? `${unpaid.full_name} got ${opened.join(', ')} without paying` : `${unpaid.full_name} stayed shut`
+    );
+    await admin.from('child_services').delete().eq('student_id', unpaid.id);
 
-    // ---- payment without permission ----
-    // Everything the student has paid for, switched off by the parent.
+    // ---- payment is sufficient ----
+    // Everything the student has paid for, with the permission rows turned off.
+    // Access follows payment, so a toggle cannot close it.
     for (const s of entitled) {
       await admin
         .from('child_services')
         .upsert({ student_id: student.id, service: s, is_active: false }, { onConflict: 'student_id,service' });
     }
-    const withoutPermission = await effectiveServices(student.id);
+    const stillOpen = await effectiveServices(student.id);
     check(
-      'a parent can still hide a service they paid for',
-      withoutPermission.length === 0,
-      `${withoutPermission.length} left open`
-    );
-
-    // ---- both ----
-    for (const s of entitled) {
-      await admin
-        .from('child_services')
-        .upsert({ student_id: student.id, service: s, is_active: true }, { onConflict: 'student_id,service' });
-    }
-    const withBoth = await effectiveServices(student.id);
-    check(
-      'paid and permitted opens exactly what was paid for',
-      withBoth.length === entitled.length && entitled.every((s) => withBoth.includes(s)),
-      withBoth.join(', ') || 'none'
+      'a paid service stays open regardless of the permission row',
+      stillOpen.length === entitled.length && entitled.every((s) => stillOpen.includes(s)),
+      stillOpen.join(', ') || 'none'
     );
   } finally {
     // Put the rows back exactly as they were.
+    await admin.from('child_services').delete().eq('student_id', student.id);
     for (const row of before ?? []) {
       await admin
         .from('child_services')

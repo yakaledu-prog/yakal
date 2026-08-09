@@ -27,7 +27,7 @@ const PURE = [
 const NEEDS_DB = [
   ['profiles-not-public.mjs', 'profiles is not readable signed out'],
   ['testimonials.mjs', 'testimonials RLS'],
-  ['service-entitlements.mjs', 'a service needs payment and permission'],
+  ['service-entitlements.mjs', 'service access follows payment alone'],
 ];
 
 /** Needs the local Supabase and the Vite loader, because it imports src/. */
