@@ -1,3 +1,5 @@
+import { cn } from "@/utils/cn";
+
 // Shared branded header band for admin pages: teal background with the app's
 // SVG wave pattern. Title/subtitle sit on the LEFT, stats on the RIGHT.
 
@@ -12,12 +14,20 @@ export function AdminHeader({
   stats = [],
   children,
   rightContent,
+  leading,
+  hideStatsOnMobile = false,
+  hideSubtitleOnMobile = false,
 }: {
   title?: string;
   subtitle?: string;
   stats?: HeaderStat[];
   children?: React.ReactNode;
   rightContent?: React.ReactNode;
+  /** Above the title. A back link belongs there, not under the subtitle. */
+  leading?: React.ReactNode;
+  /** For a banner that already carries tabs, where stats crowd them on a phone. */
+  hideStatsOnMobile?: boolean;
+  hideSubtitleOnMobile?: boolean;
 }) {
   return (
     <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 relative overflow-hidden shrink-0">
@@ -28,10 +38,15 @@ export function AdminHeader({
         <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
         <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
       </svg>
-      <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
         <div className="min-w-0">
+          {leading}
           {title && <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{title}</h1>}
-          {subtitle && <p className="text-white/80 text-[14px] mt-1">{subtitle}</p>}
+          {subtitle && (
+            <p className={cn("text-white/80 text-[14px] mt-1", hideSubtitleOnMobile && "hidden md:block")}>
+              {subtitle}
+            </p>
+          )}
           {children}
         </div>
         {rightContent && (
@@ -40,7 +55,7 @@ export function AdminHeader({
           </div>
         )}
         {stats && stats.length > 0 && (
-          <div className="flex flex-wrap items-end gap-x-8 gap-y-4 shrink-0">
+          <div className={cn("flex-wrap items-end gap-x-8 gap-y-4 shrink-0", hideStatsOnMobile ? "hidden md:flex" : "flex")}>
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col items-center">
                 <span className="text-2xl md:text-3xl font-bold tracking-tight leading-none">{s.value}</span>
