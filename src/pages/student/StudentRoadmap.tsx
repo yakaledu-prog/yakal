@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { TestingPlan } from "@/components/college/TestingPlan";
 import { RoadmapTimeline } from "@/components/college/RoadmapTimeline";
-import { getCollegeProfile, upsertApplication, AppStage } from "@/services/collegeService";
-import { Loader2, ExternalLink, Calendar, PenTool, BookOpen, ChevronDown } from "lucide-react";
-import { toast } from "sonner";
+import { getCollegeProfile, AppStage } from "@/services/collegeService";
+import { Loader2, ExternalLink, Calendar, PenTool, BookOpen } from "lucide-react";
 import { cn } from "@/utils/cn";
-
-const STAGES: AppStage[] = ["research", "apply", "submitted", "decisions", "enrolled"];
+import { COLLEGE_RESOURCES } from "@/config/collegeResources";
+import { nextDateFor, upcomingDates, KEY_DATE_LABELS } from "@/config/admissionsCalendar";
 
 export type RoadmapTab = "timeline" | "testing" | "resources";
 
@@ -30,15 +29,13 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-const field = "bg-white/10 border-transparent text-white placeholder-white/50 focus:border-white focus:bg-white/20 transition-all rounded-sm px-3 py-2 text-[13px] outline-none w-full";
-
 /**
  * The college roadmap: stage, intended major, graduation year and the
  * grade-by-grade timeline.
  *
- * Shared with the parent's read-only view. `embedded` drops the banner so it
- * can sit inside another page's chrome; `canEdit` decides whether the header
- * fields are inputs or plain text.
+ * Read-only everywhere. Stage, major and graduation year are collected at
+ * onboarding and edited on the profile, so this page only shows them.
+ * `embedded` drops the banner so it can sit inside another page's chrome.
  */
 export function StudentRoadmap({
   studentId,
@@ -46,13 +43,11 @@ export function StudentRoadmap({
   tab: tabProp,
   onTabChange,
   hideChrome,
-  canEdit = true,
   gradeLevel,
   subjectName,
 }: {
   studentId?: string;
   embedded?: boolean;
-  canEdit?: boolean;
   /**
    * The student's grade level. Only needed when viewing someone else: the
    * timeline highlights the current year, and reading it off the signed-in
@@ -72,9 +67,12 @@ export function StudentRoadmap({
   hideChrome?: boolean;
 }) {
   const { user, profile } = useAuth();
-  const qc = useQueryClient();
 
   const targetId = studentId || user?.id;
+  // Read once per mount rather than during render: the compiler rules count a
+  // Date() in the render body as impure, and it would also re-sort on every
+  // keystroke elsewhere on the page.
+  const [now] = useState(() => new Date());
 
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", targetId],
@@ -84,46 +82,24 @@ export function StudentRoadmap({
 
   const app = data?.application;
 
-  // Use state or derive from data
-  const [stage, setStage] = useState<AppStage>(app?.stage || "research");
-  const [major, setMajor] = useState(app?.program_interest || "");
-  const [gradYear, setGradYear] = useState(app?.grad_year ? String(app.grad_year) : "");
+  const keyDates = useMemo(
+    () => upcomingDates(now).filter((d) => KEY_DATE_LABELS.includes(d.label)),
+    [now]
+  );
+
   const [ownTab, setOwnTab] = useState<RoadmapTab>("timeline");
   const tab = tabProp ?? ownTab;
   const setTab = onTabChange ?? setOwnTab;
-  const [stageOpen, setStageOpen] = useState(false);
 
-  // Sync state when data loads
-  useEffect(() => {
-    if (app) {
-      setStage(app.stage);
-      setMajor(app.program_interest || "");
-      setGradYear(app.grad_year ? String(app.grad_year) : "");
-    }
-  }, [app]);
-
-  // Debounced autosave, against the student whose roadmap this is.
+  // Read straight off the query rather than mirrored into state.
   //
-  // This used to write to the signed-in user's id unconditionally, so opening
-  // someone else's roadmap created a college application row on the viewer's
-  // own account and did nothing to the student's. A reader saves nothing at
-  // all.
-  useEffect(() => {
-    if (!canEdit || !targetId || isLoading) return;
-    const timeout = setTimeout(async () => {
-      const res = await upsertApplication(targetId, {
-        stage,
-        program_interest: major.trim() || null,
-        grad_year: gradYear ? Number(gradYear) : null,
-      });
-      if (!res.success) {
-        toast.error(res.error || "Failed to save profile");
-      } else {
-        qc.invalidateQueries({ queryKey: ["college-profile", targetId] });
-      }
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [stage, major, gradYear, targetId, canEdit, isLoading, qc]);
+  // These were three editable fields in the banner with a debounced autosave
+  // behind them. They are collected at onboarding and edited on the profile
+  // now, so here they are only read, and mirroring a query into state costs a
+  // sync effect and a stale render for nothing.
+  const stage: AppStage = app?.stage || "research";
+  const major = app?.program_interest || "";
+  const gradYear = app?.grad_year ? String(app.grad_year) : "";
 
   if (!targetId) return null;
 
@@ -140,57 +116,40 @@ export function StudentRoadmap({
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 max-w-[1100px] mx-auto flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row justify-between gap-6">
+          <div className="relative z-10 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">College Admissions</h1>
-                <p className="text-white/80 text-[15px] mt-1 mb-6">Your roadmap to college</p>
+                <p className="text-white/80 text-[15px] mt-1">Your roadmap to college</p>
               </div>
 
-              {/* Stats / Inputs in Header */}
-              <div className="flex flex-col xl:flex-row gap-5 bg-black/10 p-4 rounded-md backdrop-blur-sm self-start w-full md:w-auto">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">Stage</label>
-                  <div className="relative">
-                    <button
-                      onClick={() => setStageOpen(!stageOpen)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-wider bg-black/20 hover:bg-black/30 transition-colors rounded-sm text-white min-w-[140px] justify-between border border-transparent focus:border-white/50 outline-none"
-                    >
-                      {stage === "research" ? "Researching" : stage}
-                      <ChevronDown size={14} className={cn("transition-transform", stageOpen && "rotate-180")} />
-                    </button>
-
-                    {stageOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setStageOpen(false)} />
-                        <div className="absolute top-full left-0 mt-1 w-full bg-white rounded-sm shadow-xl overflow-hidden z-50 text-black py-1">
-                          {STAGES.map((s) => (
-                            <button
-                              key={s}
-                              onClick={() => { setStage(s); setStageOpen(false); }}
-                              className={cn(
-                                "block w-full text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors",
-                                stage === s ? "bg-[#1099A1]/10 text-[#1099A1]" : "hover:bg-black/5 text-gray-700"
-                              )}
-                            >
-                              {s === "research" ? "Researching" : s}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
+              {/* The three dates a year is planned around. They were three
+                  cards below the tabs, on the timeline tab only, so they
+                  vanished the moment you looked at anything else. */}
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4 md:flex md:flex-wrap md:items-stretch md:gap-0">
+                {keyDates.map((d) => (
+                  <div
+                    key={d.label}
+                    className="flex items-center gap-3 md:gap-3.5 md:border-l md:border-white/20 md:px-5 md:first:border-l-0 md:first:pl-0"
+                  >
+                    {/* The stacked day-over-month block the session rows use,
+                        so a date reads the same way everywhere in the app. */}
+                    <div className="flex w-8 shrink-0 flex-col items-center leading-none md:w-9">
+                      <span className="text-[19px] font-bold tracking-tight md:text-[22px]">
+                        {d.date.getDate()}
+                      </span>
+                      <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
+                        {d.date.toLocaleDateString(undefined, { month: "short" })}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13.5px] font-semibold text-white md:text-[14px]">{d.short ?? d.label}</p>
+                      <p className="text-[12px] text-white/70 md:text-[12.5px]">
+                        {d.daysAway === 0 ? "today" : `in ${d.daysAway} days`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-full sm:w-56">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Intended major</label>
-                    <input className={field} value={major} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
-                  </div>
-                  <div className="w-full sm:w-24">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 block mb-1">Grad year</label>
-                    <input className={field} type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -205,7 +164,7 @@ export function StudentRoadmap({
                   key={t.id}
                   onClick={() => setTab(t.id as any)}
                   className={cn(
-                    "flex items-center gap-2 pb-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
+                    "flex items-center gap-2 pb-3 text-[13px] font-normal uppercase tracking-wider whitespace-nowrap transition-all border-b-[3px]",
                     tab === t.id
                       ? "border-white text-white !hover:border-primary"
                       : "border-transparent text-white/70 hover:text-white !hover:border-primary"
@@ -241,7 +200,7 @@ export function StudentRoadmap({
                 className={cn(
                   "whitespace-nowrap border-b-[3px] py-3 text-[14px] flex items-center gap-2 transition-colors",
                   tab === t.id
-                    ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+                    ? "border-[#1099A1] font-normal text-[#111] dark:text-white"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -261,24 +220,6 @@ export function StudentRoadmap({
           <>
             {tab === "timeline" && (
               <div className="space-y-8">
-                {/* Milestones Grid */}
-                {!embedded && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Oct 1</p>
-                      <p className="text-[15px] font-semibold">FAFSA opens</p>
-                    </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">Nov 1</p>
-                      <p className="text-[15px] font-semibold">Early apps (ED / EA)</p>
-                    </div>
-                    <div className="border border-[#e9edef] dark:border-[#2a3942] p-4 bg-muted/20">
-                      <p className="text-[13px] font-bold text-[#1099A1] uppercase tracking-wider mb-1">May 1</p>
-                      <p className="text-[15px] font-semibold">Decision Day</p>
-                    </div>
-                  </div>
-                )}
-
                 <RoadmapTimeline
                   gradYear={gradYear ? Number(gradYear) : app?.grad_year}
                   gradeLevel={studentId ? gradeLevel : profile?.grade_level}
@@ -290,29 +231,41 @@ export function StudentRoadmap({
             {tab === "testing" && <TestingPlan />}
 
             {tab === "resources" && (
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[
-                    { title: "Common App", desc: "Apply to 1,000+ colleges in one place", url: "#" },
-                    { title: "FAFSA - Federal Student Aid", desc: "Federal grants, loans & work-study", url: "#" },
-                    { title: "CSS Profile", desc: "Institutional aid at many private colleges", url: "#" },
-                    { title: "BigFuture (College Board)", desc: "College search, planning & scholarships", url: "#" },
-                    { title: "Digital SAT & Bluebook", desc: "Register and practice for the digital SAT", url: "#" },
-                    { title: "The ACT", desc: "Register and prep for the ACT", url: "#" },
-                    { title: "Khan Academy", desc: "Free SAT prep and academic help", url: "#" },
-                    { title: "College Essay Guy", desc: "Step-by-step walkthroughs and essay guides", url: "#" }
-                  ].map((r, i) => (
-                    <a key={i} href={r.url} className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {COLLEGE_RESOURCES.map((r) => {
+                  // The date rides on the card it belongs to. A separate strip
+                  // above the grid was a second list to read that pointed at
+                  // the same links.
+                  const due = nextDateFor(now, r.dates);
+                  return (
+                    <a
+                      key={r.url}
+                      href={r.url}
+                      // A new tab, because a family is midway through a
+                      // roadmap and sending them off it loses their place.
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors"
+                    >
                       <div>
                         <p className="font-semibold text-[#1099A1] group-hover:underline text-[14px]">{r.title}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
+                        {due && (
+                          <p className="text-[12.5px] text-[#CAA25F] mt-1.5">
+                            {due.label}{" "}
+                            {due.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                            {" \u00b7 "}
+                            {due.daysAway === 0 ? "today" : `in ${due.daysAway} days`}
+                          </p>
+                        )}
                       </div>
                       <ExternalLink size={14} className="text-muted-foreground opacity-50 group-hover:opacity-100" />
                     </a>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
+
 
           </>
         )}

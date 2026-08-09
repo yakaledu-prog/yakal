@@ -155,6 +155,30 @@ entirely on the database.
   Two ways out, whichever is wanted: run a real countdown on the student side
   and submit on expiry, or drop the column. Leaving it collected but unused is
   the one option that misleads.
+## Student profile (fixed 2026-08-08, kept here as the pattern)
+
+- [x] **The three stat cards read 3, 12 and 5 for every student.** Hardcoded in
+  `StudentProfile.tsx` as a `stats` array, complete with fake trend lines
+  ("+1 this month", "Top 20%"). Removed rather than wired up: the same page now
+  shows facts about the person, which cannot go stale.
+
+- [x] **The whole Recent Activity list was invented.** Five hardcoded rows,
+  "1-on-1 Mentorship: Algebra" and friends, identical for every account and
+  dated October in a page anyone might open in August. Replaced with the shared
+  `PastSessions` list reading `getStudentSessions`.
+
+- [x] **The notifications toggle was wired to nothing.** `useState(true)`, a
+  switch that animated and saved nothing, under a heading that promised
+  "Marketing Alerts". Removed. If marketing preferences are wanted later they
+  need a column and a writer, not a toggle.
+
+- [x] **Eight resource links were `href="#"`.** Every card on the roadmap
+  Resources tab looked and hovered like a link and did nothing. Real URLs now
+  live in `src/config/collegeResources.ts`.
+
+The lesson each of these shares: a fake value that renders correctly is
+invisible in review and only shows up when a real user reads it as true. When
+adding a screen, prefer an empty state over a plausible number.
 
 
 ## Notes

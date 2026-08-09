@@ -410,7 +410,7 @@ export function StudentApplicationTracker({
             <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
           </svg>
 
-          <div className="relative z-10 mx-auto max-w-[1100px]">
+          <div className="relative z-10">
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Applications</h1>
             <p className="pb-6 pt-1 text-[15px] text-white/80">
               What each college still needs from you.
@@ -458,7 +458,7 @@ export function StudentApplicationTracker({
           )
         )}
 
-        <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10 max-w-[1150px]")}>
+        <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10")}>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-[#1099A1]" />
