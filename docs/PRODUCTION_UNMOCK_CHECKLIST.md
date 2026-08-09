@@ -181,6 +181,20 @@ invisible in review and only shows up when a real user reads it as true. When
 adding a screen, prefer an empty state over a plausible number.
 
 
+## Newsletter (fixed 2026-08-09)
+
+- [x] **The footer Subscribe form threw the address away.** It ran
+  `toast.success("Thanks for joining our newsletter")` and nothing else, so
+  everyone who signed up between launch and now is gone, with no record they
+  ever tried. It writes to `newsletter_subscribers` now.
+
+- [ ] **`EMAIL_FROM` is unset, so every email sends from
+  `onboarding@resend.dev`.** That is Resend's shared sandbox sender and only
+  delivers to the Resend account owner's own address. Transactional mail has
+  the same problem, not just the newsletter. Set it to an address on
+  `yakal.me`, which is verified. See `docs/EMAIL_SETUP.md`.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local

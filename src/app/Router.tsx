@@ -113,6 +113,7 @@ import { AuthPage } from "../pages/shared/AuthPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
+import UnsubscribePage from "../pages/UnsubscribePage";
 
 
 // import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
@@ -275,6 +276,10 @@ const router = createBrowserRouter([
   {
     path: "/post/:id",
     element: <BlogPage />,
+  },
+  {
+    path: "/unsubscribe",
+    element: <UnsubscribePage />,
   },
   {
     path: "/cancellation-policy",
