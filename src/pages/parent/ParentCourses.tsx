@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { money } from "@/services/billingService";
@@ -8,6 +8,8 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { StarRating } from "@/components/ui/StarRating";
+import { getTutorRatings } from "@/services/tutorService";
 
 // ============================================================
 // The course catalog.
@@ -29,6 +31,19 @@ export function ParentCourses() {
   const { data: catalogCourses = [], isLoading } = useQuery({
     queryKey: ["catalog-courses"],
     queryFn: getCatalogCourses,
+  });
+
+  // One lookup for every tutor in the catalog rather than one per card. The
+  // ratings are the same view the tutor's own profile and the course detail
+  // page read, so a card cannot disagree with the page it opens.
+  const tutorIds = useMemo(
+    () => catalogCourses.map((c) => c.tutor?.id).filter(Boolean) as string[],
+    [catalogCourses]
+  );
+  const { data: ratings } = useQuery({
+    queryKey: ["catalog-tutor-ratings", tutorIds],
+    queryFn: () => getTutorRatings(tutorIds),
+    enabled: tutorIds.length > 0,
   });
 
   const totalPages = Math.ceil(catalogCourses.length / ITEMS_PER_PAGE);
@@ -208,9 +223,19 @@ export function ParentCourses() {
                           src={course.tutor.avatarUrl || dicebearUrl(course.tutor.name)}
                           alt=""
                         />
-                        <span className="text-[13px] font-medium text-[#111] dark:text-white truncate">
-                          {course.tutor.name}
-                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium text-[#111] dark:text-white">
+                            {course.tutor.name}
+                          </p>
+                          {/* Real, from the same view as everywhere else. The
+                              six cards this replaced carried invented ones,
+                              which is why stars were dropped at the time. */}
+                          <StarRating
+                            average={ratings?.get(course.tutor.id)?.averageStars}
+                            count={ratings?.get(course.tutor.id)?.ratingCount ?? 0}
+                            size={12}
+                          />
+                        </div>
                       </>
                     ) : (
                       <span className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
