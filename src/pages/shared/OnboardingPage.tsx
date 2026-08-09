@@ -230,17 +230,21 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     e.preventDefault();
 
     if (!isLastStep) {
-      if ((role === "tutor" || role === "counselor") && step === 2 && !cvUrl && !cvFile) {
+      // A counselor still has to attach one. A tutor does not: the whole
+      // point of the change is that a tutor can get in and finish the profile
+      // later, with the badge on their profile page doing the asking.
+      if (role === "counselor" && step === 2 && !cvUrl && !cvFile) {
         return toast.error("Please upload your CV before proceeding.");
       }
       setStep(step + 1);
       return;
     }
 
-    if (role === "tutor" && subjects.length === 0) {
-      return toast.error("Select at least one subject you teach.");
-    }
+    await submit();
+  };
 
+  /** The save itself, so Skip for now can reach it without a form event. */
+  const submit = async () => {
     if (role === "parent" && childrenDetails.length === 0) {
       toast.error("Please add at least one child to continue.");
       return;
@@ -749,13 +753,29 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </Button>
               ) : <div />}
 
-              <Button
-                type="submit"
-                className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
-                disabled={loading}
-              >
-                {loading ? "Saving..." : isLastStep ? "Complete Setup" : "Next"}
-              </Button>
+              <div className="flex items-center gap-4">
+                {/* Skipping is offered rather than tolerated. A tutor stuck
+                    without a resume to hand used to be stuck at step two, and
+                    the profile badge does the asking from here on. */}
+                {role === "tutor" && step > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => (isLastStep ? void submit() : setStep(step + 1))}
+                    disabled={loading}
+                    className="text-[13.5px] font-normal text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  >
+                    Skip for now
+                  </button>
+                )}
+
+                <Button
+                  type="submit"
+                  className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : isLastStep ? "Complete Setup" : "Next"}
+                </Button>
+              </div>
             </div>
           </form>
         </Card>

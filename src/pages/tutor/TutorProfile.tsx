@@ -10,7 +10,8 @@ import {
 import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { cn } from "@/utils/cn";
 import { DetailRow } from "@/components/shared/DetailRow";
-import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X } from "lucide-react";
+import { tutorProfileCompleteness } from "@/config/tutorProfile";
+import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X , AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
@@ -65,6 +66,7 @@ export function TutorProfile() {
     );
   }
   const [editOpen, setEditOpen] = useState(false);
+  const completeness = tutorProfileCompleteness(profile);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courseCount, setCourseCount] = useState(0);
   const [myRating, setMyRating] = useState<TutorRating | undefined>();
@@ -132,6 +134,20 @@ export function TutorProfile() {
                   <h1 className="text-3xl font-bold tracking-tight mb-2">{profile?.full_name || "Tutor"}</h1>
                   {/* <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
+
+                  {/* Framed as findability rather than as an unfinished form.
+                      Nothing is blocked by this; it is the only thing that
+                      asks, now that onboarding lets a tutor skip past it. */}
+                  {!completeness.complete && (
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      className="mt-3 flex items-center gap-2 text-left text-[13px] text-white/90 underline-offset-4 hover:underline"
+                    >
+                      <AlertCircle size={15} className="shrink-0" />
+                      Profile {completeness.percent}% complete. Students find you more easily with{" "}
+                      {completeness.missing.map((m) => m.label.toLowerCase()).join(", ")}.
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="shrink-0 flex flex-col gap-3">
