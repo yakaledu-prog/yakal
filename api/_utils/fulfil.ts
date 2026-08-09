@@ -102,21 +102,9 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
-  // Permit tutoring for this student, the way paying for admissions permits
-  // admissions further down. Nothing wrote "tutoring" anywhere before, so a
-  // family could buy a course and the child would still find My Learning,
-  // Diagnostics and Sessions locked until a parent found the toggle.
-  //
-  // This is the parent's permission, not the entitlement: the entitlement is
-  // the enrolment row just written, which v_student_entitlements derives from.
-  // Turning it on here means the common case needs no toggle at all.
-  const { error: tutSvcErr } = await db
-    .from("child_services")
-    .upsert(
-      { student_id: invoice.student_id, service: "tutoring", is_active: true },
-      { onConflict: "student_id,service" }
-    );
-  if (tutSvcErr) console.error("fulfil: permitting tutoring failed:", tutSvcErr.message);
+  // No child_services write here. Access follows payment: the enrolment row
+  // just written is the entitlement, and v_student_entitlements derives
+  // tutoring access from it directly. There is no separate permission to set.
 
   // ---- sessions ----
   const slots = Array.isArray(invoice.booking) ? invoice.booking : [];
@@ -365,14 +353,9 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     if (appErr) console.error("fulfil: assigning the counsellor failed:", appErr.message);
   }
 
-  // The switch the rest of the app reads.
-  const { error: svcErr } = await db
-    .from("child_services")
-    .upsert(
-      { student_id: invoice.student_id, service: "admissions", is_active: true },
-      { onConflict: "student_id,service" }
-    );
-  if (svcErr) console.error("fulfil: unlocking admissions failed:", svcErr.message);
+  // No child_services write. The admissions_plan row is the entitlement, and
+  // v_student_entitlements derives admissions access from it. Access follows
+  // payment, with nothing else to switch on.
 
   const { data: people } = await db
     .from("profiles")

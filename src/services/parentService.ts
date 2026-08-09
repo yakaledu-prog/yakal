@@ -61,39 +61,17 @@ export async function getMyActiveServices(studentId: string): Promise<ServiceNam
   return (data ?? []).map((r) => r.service as ServiceName);
 }
 
-/**
- * A support/admin override for a child's service, kept separate from payment.
- *
- * Access is normally a fact about payment (see active_services). This is the
- * escape hatch the doc allows - "unless support overrides it" - used by the
- * dev console and by a parent answering a child's access request. It is not the
- * parent's day-to-day switch; the Manage children screen no longer offers one.
- * active_services honours an active row here on top of the paid entitlements.
- */
-export async function setChildService(
-  studentId: string,
-  service: ServiceName,
-  isActive: boolean
-): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase
-    .from("child_services")
-    .upsert({ student_id: studentId, service, is_active: isActive }, { onConflict: "student_id,service" });
-  if (error) {
-    console.error("setChildService failed:", error);
-    return { success: false, error: error.message };
-  }
-  return { success: true };
-}
+// setChildService was removed: child_services is no longer part of the access
+// rule, so there is nothing for a manual setter to change. Access is granted by
+// payment (see getMyActiveServices / v_student_entitlements) and by nothing
+// else.
 
 /**
- * The active services for each linked child, derived from payment (plus any
- * support override).
+ * The active services for each linked child, derived from payment.
  *
- * One active_services call per child rather than a read of a table: access is
- * a fact about enrolments and admissions plans, and this is the parent's view
- * of the same answer the child's app computes. The parent is authorised for
- * their own linked children, so the guard inside active_services returns the
- * real set rather than an empty one.
+ * One getMyActiveServices call per child, which reads v_student_entitlements:
+ * access is a fact about enrolments and admissions plans, and this is the
+ * parent's view of the same answer the child's app computes.
  */
 export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
   if (childIds.length === 0) return [];
