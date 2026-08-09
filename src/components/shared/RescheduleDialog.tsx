@@ -41,19 +41,29 @@ function readableDate(date: string, startTime: string) {
 export function RescheduleDialog({
   session,
   onClose,
+  /**
+   * Set when the tutor is the one moving it. They may move a session at any
+   * time, including inside the 24 hours a client cannot, and in exchange they
+   * say why: the student arranged a day around this, and no reason given is
+   * what makes the change feel arbitrary rather than unavoidable.
+   */
+  askReason = false,
 }: {
   session: ReschedulableSession;
   onClose: () => void;
+  askReason?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [picked, setPicked] = useState<PickedSlot | null>(null);
   const [saving, setSaving] = useState(false);
+  const [reason, setReason] = useState("");
 
   const confirm = async () => {
     if (!picked) return;
+    if (askReason && !reason.trim()) return toast.error("Give the student a reason for the change.");
     setSaving(true);
 
-    const result = await rescheduleSession(session.id, picked.date, picked.startTime);
+    const result = await rescheduleSession(session.id, picked.date, picked.startTime, reason.trim());
     setSaving(false);
 
     if (!result.success) {
@@ -95,6 +105,20 @@ export function RescheduleDialog({
             onToggle={(slot) => setPicked((p) => (p?.key === slot.key ? null : slot))}
             currentSlot={{ date: session.date, startTime: session.startTime }}
           />
+
+          {askReason && (
+            <div className="mt-5 border-t border-border pt-4">
+              <label className="mb-1.5 block text-[13px] text-muted-foreground">
+                Why are you moving it? The student sees this.
+              </label>
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Clashing appointment, sorry"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border p-5">
@@ -104,7 +128,7 @@ export function RescheduleDialog({
           <Button variant="outline" onClick={onClose} className="h-11 px-5 border border-muted">
             Cancel
           </Button>
-          <Button disabled={!picked || saving} onClick={confirm} className="h-11 px-6 font-semibold">
+          <Button disabled={!picked || saving || (askReason && !reason.trim())} onClick={confirm} className="h-11 px-6 font-semibold">
             {saving
               ? "Moving..."
               : picked

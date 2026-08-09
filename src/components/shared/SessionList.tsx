@@ -291,6 +291,8 @@ export function UpcomingSessions({
   hideIfEmpty = false,
   onJoin,
   onReschedule,
+  rescheduleAs = "client",
+  onRequestChange,
   compact = false,
   /** Show only the first few, for a home page agenda with a View all beside it. */
   limit,
@@ -306,6 +308,15 @@ export function UpcomingSessions({
   /** Omitted, and no session offers Join: a parent watches, they do not attend. */
   onJoin?: (session: SessionListItem) => void;
   onReschedule?: (session: SessionListItem) => void;
+  /**
+   * Who is looking. A tutor may move a session at any time, because their
+   * alternative is cancelling or not turning up. A client may move it only
+   * while it is more than 24 hours away, which is what the published
+   * cancellation policy has always said; inside that they ask instead.
+   */
+  rescheduleAs?: "client" | "tutor";
+  /** Offered to a client inside the 24 hours, in place of Reschedule. */
+  onRequestChange?: (session: SessionListItem) => void;
   className?: string;
 }) {
   const { upcoming } = splitSessions(sessions);
@@ -330,7 +341,12 @@ export function UpcomingSessions({
             </button>
           );
         }
-        if (onReschedule) {
+        // The clock is read here rather than in the component body on purpose:
+        // isJoinable above does the same, and a row deciding its own button
+        // partway through a render is the thing the purity rule guards against.
+        const mayMove = rescheduleAs === "tutor" || canClientReschedule(s, new Date());
+
+        if (onReschedule && mayMove) {
           return (
             <button
               type="button"
@@ -338,6 +354,21 @@ export function UpcomingSessions({
               className="h-10 rounded-md border border-[#1099A1] px-5 text-[14px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
             >
               Reschedule
+            </button>
+          );
+        }
+
+        // Inside the window the move stops being self-serve. The tutor has
+        // held the hour and turned other work away, so it becomes a request.
+        if (onRequestChange) {
+          return (
+            <button
+              type="button"
+              onClick={() => onRequestChange(s)}
+              title="Less than 24 hours away. Ask your tutor."
+              className="h-10 rounded-md border border-border px-5 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Request change
             </button>
           );
         }
@@ -406,4 +437,25 @@ export function useSessionExtras(sessions: { id: string }[]) {
     queryFn: () => getSessionExtras(ids),
     enabled: ids.length > 0,
   });
+}
+
+/**
+ * How long before a session a client may still move it themselves.
+ *
+ * The published cancellation policy has always said 24 hours. This is the
+ * same number, in the one place the UI reads it, so the button and the
+ * database rule cannot drift apart.
+ */
+export const RESCHEDULE_NOTICE_HOURS = 24;
+
+/**
+ * Whether a student or parent can still move this themselves.
+ *
+ * `now` is a parameter rather than read here: the compiler rules count a clock
+ * call during render as impure, and a row that changes its own buttons partway
+ * through a render is worse than one a minute out of date.
+ */
+export function canClientReschedule(item: SessionListItem, now: Date): boolean {
+  if (!isStillToCome(item)) return false;
+  return startsAt(item).getTime() - now.getTime() > RESCHEDULE_NOTICE_HOURS * 3_600_000;
 }

@@ -198,12 +198,15 @@ export const getSessionAttendance = async (sessionId: string) => {
 export const rescheduleSession = async (
   sessionId: string,
   date: string,
-  startTime: string
+  startTime: string,
+  /** Required of a tutor, ignored for everyone else. Enforced in the RPC. */
+  reason?: string
 ): Promise<{ success: boolean; error?: string }> => {
   const { data, error } = await supabase.rpc('reschedule_session', {
     p_session_id: sessionId,
     p_date: date,
     p_start_time: startTime.length === 5 ? `${startTime}:00` : startTime,
+    p_reason: reason ?? null,
   });
 
   if (error) {

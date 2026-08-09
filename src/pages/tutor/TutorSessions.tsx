@@ -222,6 +222,7 @@ export function TutorSessions() {
         <div className="p-4 md:p-8 w-full flex-1">
           {activeTab === "upcoming" ? (
             <UpcomingSessions
+              rescheduleAs="tutor"
               sessions={items}
               isLoading={loading}
               emptyText="Nothing booked yet."
@@ -237,7 +238,7 @@ export function TutorSessions() {
           )}
         </div>
 
-        {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
+        {moving && <RescheduleDialog session={moving} askReason onClose={() => setMoving(null)} />}
       </section>
 
       {notesFor && (
