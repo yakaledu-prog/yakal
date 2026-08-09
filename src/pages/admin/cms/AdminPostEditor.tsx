@@ -164,7 +164,7 @@ export function AdminPostEditor() {
           <button
             onClick={() => saveRef.current("draft")}
             disabled={isSaving}
-            className="flex items-center gap-1.5 text-[13px] font-normal text-muted-foreground transition-colors hover:text-[#1099A1] disabled:opacity-50"
+            className="flex items-center gap-1.5 text-[13px] font-normal text-muted-foreground transition-colors hover:text-secondary disabled:opacity-50"
           >
             <Save size={14} strokeWidth={2} />
             {status === "published" ? "Save as draft" : "Save draft"}
