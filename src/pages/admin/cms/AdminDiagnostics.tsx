@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Edit2, Trash2, Loader2, X, Plus, Save, Send, Check, AlertTriangle, GripVertical, Search, ChevronLeft, Braces,
+  Edit2, Trash2, Loader2, X, Plus, Save, Send, Check, AlertTriangle, GripVertical, Search, ChevronLeft, Braces, ChevronRight, MoreVertical,
 } from "lucide-react";
 import {
   getDiagnostics, createDiagnostic, updateDiagnostic, deleteDiagnostic,
@@ -14,6 +15,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { cn } from "@/utils/cn";
 import { JsonEditor } from "@/components/ui/JsonEditor";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { AdminHeader } from "../AdminHeader";
 
 const BLANK_QUESTION = (n: number): DiagnosticQuestion => ({
@@ -117,7 +119,7 @@ function QuestionEditor({
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-start gap-3">
-        <GripVertical size={16} className="mt-2.5 shrink-0 text-muted-foreground/40" />
+        <GripVertical size={16} className="mt-2.5 hidden shrink-0 text-muted-foreground/40 sm:block" />
         <span className="mt-2.5 shrink-0 text-[13px] font-medium text-muted-foreground">{index + 1}.</span>
         <textarea
           value={question.text}
@@ -200,27 +202,32 @@ function QuestionEditor({
  * a form about titles.
  */
 function EditDialog({
-  initial, busy, onSave, onClose,
+  initial, presetSubject, busy, onSave, onDelete, onClose,
 }: {
   initial: DiagnosticRow | null;
+  /** Filled in when creating from a subject that is already open. */
+  presetSubject?: string | null;
   busy: boolean;
   onSave: (input: Draft, publish: boolean) => void;
+  /** Deleting lives in here rather than beside the tab, so the tab needs
+      only a pencil and the destructive option is one level in. */
+  onDelete: () => void;
   onClose: () => void;
 }) {
   const [form, setForm] = useState<Draft>(
     initial
       ? {
-          slug: initial.id,
-          title: initial.title,
-          description: initial.description,
-          categoryId: initial.categoryId,
-          categoryName: initial.categoryName,
-          timeLimitMinutes: initial.timeLimitMinutes ?? null,
-          questions: initial.questions.length ? initial.questions : [BLANK_QUESTION(1)],
-          courseId: initial.courseId,
-          published: initial.published,
-        }
-      : EMPTY
+        slug: initial.id,
+        title: initial.title,
+        description: initial.description,
+        categoryId: initial.categoryId,
+        categoryName: initial.categoryName,
+        timeLimitMinutes: initial.timeLimitMinutes ?? null,
+        questions: initial.questions.length ? initial.questions : [BLANK_QUESTION(1)],
+        courseId: initial.courseId,
+        published: initial.published,
+      }
+      : { ...EMPTY, categoryName: presetSubject ?? "" }
   );
   const [step, setStep] = useState<1 | 2>(1);
   const [mode, setMode] = useState<"form" | "json">("form");
@@ -438,6 +445,15 @@ function EditDialog({
           {/* Back at the left end. Closing is the X in the header, so a
               Cancel beside Publish only competed with it. */}
           <div className="flex items-center gap-4">
+            {initial && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="flex items-center gap-1.5 text-[13px] font-normal text-red-600 transition-colors hover:text-red-700"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
+            )}
             {step === 2 ? (
               <button
                 type="button"
@@ -486,6 +502,58 @@ function EditDialog({
     </div>
   );
 }
+
+/**
+ * A kebab menu.
+ *
+ * The menu is portalled to the body and placed from the button's rect, because
+ * the subject list scrolls with overflow-y-auto and an overflow container
+ * crops its own descendants however high their z-index. Positioned inside the
+ * row it was clipped to a few pixels, which looked like it was not opening.
+ */
+function Kebab({ label, children }: { label: string; children: (close: () => void) => React.ReactNode }) {
+  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (at) return setAt(null);
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setAt({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  }
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={toggle}
+        aria-label={label}
+        aria-expanded={!!at}
+        className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+      >
+        <MoreVertical size={15} />
+      </button>
+
+      {at &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[70]" onClick={() => setAt(null)} />
+            <div
+              style={{ top: at.top, right: at.right }}
+              className="fixed z-[71] w-52 rounded-xl border border-[#e9edef] bg-white p-1 text-left shadow-lg dark:border-[#2a3942] dark:bg-[#111b21]"
+            >
+              {children(() => setAt(null))}
+            </div>
+          </>,
+          document.body
+        )}
+    </>
+  );
+}
+
+const menuItem =
+  "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:bg-muted/60";
 
 /**
  * Adding questions to a test that already exists.
@@ -649,6 +717,12 @@ export function AdminDiagnostics() {
   const [subject, setSubject] = useState<string | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
   const [adding, setAdding] = useState<DiagnosticRow | null>(null);
+  const [presetSubject, setPresetSubject] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<{ from: string; to: string } | null>(null);
+  const [subjectToDelete, setSubjectToDelete] = useState<string | null>(null);
+  // One pane at a time on a phone, both on a desktop. The same hook nine other
+  // pages use, rather than a tenth take on it.
+  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
 
   const { data: tests = [], isLoading } = useQuery({
     queryKey: ["admin-diagnostics"],
@@ -717,6 +791,49 @@ export function AdminDiagnostics() {
     refresh();
   }
 
+  /** Rename rewrites categoryName on every test grouped under it. */
+  async function confirmRename() {
+    if (!renaming) return;
+    const to = renaming.to.trim();
+    if (!to) return toast.error("A subject name is needed.");
+    const affected = tests.filter((t) => t.categoryName === renaming.from);
+    setBusy(true);
+    for (const t of affected) {
+      const res = await updateDiagnostic(t.rowId, {
+        ...toInput(t),
+        categoryName: to,
+        categoryId: to.toLowerCase(),
+      });
+      if (!res.success) {
+        setBusy(false);
+        return toast.error(res.error ?? "Could not rename that subject.");
+      }
+    }
+    setBusy(false);
+    toast.success(`Renamed to ${to}.`);
+    setSubject(to);
+    setRenaming(null);
+    refresh();
+  }
+
+  async function confirmDeleteSubject() {
+    if (!subjectToDelete) return;
+    const affected = tests.filter((t) => t.categoryName === subjectToDelete);
+    setBusy(true);
+    for (const t of affected) {
+      const res = await deleteDiagnostic(t.rowId);
+      if (!res.success) {
+        setBusy(false);
+        return toast.error(res.error ?? "Could not delete that subject.");
+      }
+    }
+    setBusy(false);
+    toast.success(`${subjectToDelete} deleted.`);
+    setSubjectToDelete(null);
+    setSubject(null);
+    refresh();
+  }
+
   async function confirmDelete() {
     if (!toDelete) return;
     const res = await deleteDiagnostic(toDelete.rowId);
@@ -729,7 +846,7 @@ export function AdminDiagnostics() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden dark:bg-[#111b21]">
-        <aside className="flex w-full flex-col border-b border-[#e9edef] md:h-full md:w-[300px] md:shrink-0 md:border-b-0 md:border-r dark:border-[#2a3942]">
+        <aside className={cn("w-full flex-col border-b border-[#e9edef] md:h-full md:w-[300px] md:shrink-0 md:border-b-0 md:border-r dark:border-[#2a3942]", listClass)}>
           <div className="border-b border-[#e9edef] bg-white px-3 pb-2 pt-5 dark:border-[#2a3942] dark:bg-[#111b21]">
             <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition ease-in-out focus-within:border-[#1099A1]">
               <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
@@ -755,25 +872,48 @@ export function AdminDiagnostics() {
               shown.map(([name, list]) => {
                 const active = name === activeSubject;
                 return (
-                  <button
+                  <div
                     key={name}
-                    onClick={() => { setSubject(name); setTestId(null); }}
                     className={cn(
-                      "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
+                      "flex items-center gap-2 border-l-2 pr-2 transition-colors",
                       active
                         ? "border-l-[#1099A1] bg-[#1099A1]/5"
                         : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                     )}
                   >
-                    <div className="min-w-0">
+                    <button
+                      onClick={() => { setSubject(name); setTestId(null); openDetail(); }}
+                      className="min-w-0 flex-1 p-4 text-left"
+                    >
                       <p className={cn("truncate text-[14px] font-semibold", active ? "text-[#1099A1]" : "text-[#111] dark:text-white")}>
                         {name}
                       </p>
                       <p className="truncate text-[12px] text-muted-foreground">
                         {list.filter((t) => t.published).length} / {list.length} published
                       </p>
-                    </div>
-                  </button>
+                    </button>
+
+                    <Kebab label={`Actions for ${name}`}>
+                      {(close) => (
+                        <>
+                          <button
+                            type="button"
+                            className={menuItem}
+                            onClick={() => { setRenaming({ from: name, to: name }); close(); }}
+                          >
+                            <Edit2 size={14} /> Rename subject
+                          </button>
+                          <button
+                            type="button"
+                            className={cn(menuItem, "text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30")}
+                            onClick={() => { setSubjectToDelete(name); close(); }}
+                          >
+                            <Trash2 size={14} /> Delete subject
+                          </button>
+                        </>
+                      )}
+                    </Kebab>
+                  </div>
                 );
               })
             )}
@@ -781,7 +921,7 @@ export function AdminDiagnostics() {
 
           <div className="border-t border-[#e9edef] p-3 dark:border-[#2a3942]">
             <button
-              onClick={() => setEditing(null)}
+              onClick={() => { setPresetSubject(null); setEditing(null); }}
               className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
             >
               <Plus size={15} /> New diagnostic
@@ -789,7 +929,7 @@ export function AdminDiagnostics() {
           </div>
         </aside>
 
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col md:h-full md:overflow-y-auto">
+        <section className={cn("min-h-0 min-w-0 flex-1 flex-col md:h-full md:overflow-y-auto", detailClass)}>
           {activeSubject === null ? (
             <div className="flex flex-1 items-center justify-center p-10 text-center">
               <p className="max-w-sm text-muted-foreground">
@@ -802,76 +942,120 @@ export function AdminDiagnostics() {
                 title={activeSubject}
                 subtitle={`${group.length} test${group.length === 1 ? "" : "s"}`}
                 stats={stats}
+                hideStatsOnMobile
+                hideSubtitleOnMobile
+                leading={
+                  <button
+                    onClick={closeDetail}
+                    className="mb-2 flex items-center gap-1 text-[13px] text-white/80 transition-colors hover:text-white md:hidden"
+                  >
+                    <ChevronLeft size={15} /> Subjects
+                  </button>
+                }
               >
-                <div className="mt-6 flex gap-5 overflow-x-auto">
-                  {group.map((t) => (
-                    <button
-                      key={t.rowId}
-                      onClick={() => setTestId(t.rowId)}
-                      className={cn(
-                        "whitespace-nowrap border-b-[3px] pb-3 text-[13.5px] font-normal transition-all",
-                        t.rowId === activeTest?.rowId
-                          ? "border-white text-white"
-                          : "border-transparent text-white/70 hover:text-white"
-                      )}
-                    >
-                      {t.title}
-                      {!t.published && <span className="ml-2 text-white/60">Draft</span>}
-                    </button>
-                  ))}
+                <div className="-mb-8 mt-6 flex items-center gap-5 overflow-x-auto">
+                  {group.map((t) => {
+                    const on = t.rowId === activeTest?.rowId;
+                    return (
+                      /* Each tab carries its own kebab, so a test can be
+                         edited or deleted without selecting it first. */
+                      <div
+                        key={t.rowId}
+                        className={cn(
+                          "flex shrink-0 items-center gap-1 border-b-2 pb-0.5 transition-all",
+                          on ? "border-white" : "border-transparent"
+                        )}
+                      >
+                        <button
+                          onClick={() => setTestId(t.rowId)}
+                          className={cn(
+                            "whitespace-nowrap px-1 text-[13.5px] font-normal transition-colors",
+                            on ? "text-white" : "text-white/70 hover:text-white"
+                          )}
+                        >
+                          {t.title}
+                          {!t.published && <span className="ml-2 text-white/60">Draft</span>}
+                        </button>
+
+                        <button
+                          onClick={() => setEditing(t)}
+                          aria-label={`Edit ${t.title}`}
+                          title={`Edit ${t.title}`}
+                          className="shrink-0 rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* A new test in the subject already open, rather than the
+                      sidebar button which starts from an empty subject. */}
+                  <button
+                    onClick={() => { setPresetSubject(activeSubject); setEditing(null); }}
+                    aria-label={`New test in ${activeSubject}`}
+                    title={`New test in ${activeSubject}`}
+                    className="mb-1 shrink-0 rounded-lg p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Plus size={16} />
+                  </button>
                 </div>
               </AdminHeader>
 
               {activeTest && (
                 <div className="mx-auto w-full space-y-6 p-6 md:p-10">
-                  {/* The questions as the student meets them, correct answer
-                      marked. Reading them here is the check that matters. */}
-                  <div className="space-y-3">
+                  {/* Laid out the way the student meets it: the question, then
+                      the choices as cards. Reading it here is the check that
+                      matters, and it only works if it looks like the thing. */}
+                  <div className="space-y-10">
                     {activeTest.questions.map((q, i) => (
-                      <div key={q.id ?? i} className="rounded-xl border border-border bg-card p-4">
-                        <p className="text-[14px] font-medium">
-                          {i + 1}. {q.text || <span className="text-muted-foreground">No question text</span>}
+                      <div key={q.id ?? i}>
+                        <p className="text-[16px] font-semibold">
+                          {i + 1}. {q.text || <span className="font-normal text-muted-foreground">No question text</span>}
                         </p>
-                        <div className="mt-2.5 space-y-1.5">
-                          {q.options.map((opt, n) => (
-                            <div key={n} className="flex items-start gap-2 text-[13.5px]">
-                              <span className={cn("shrink-0", n === q.correctAnswer ? "text-[#1099A1]" : "text-transparent")}>
-                                <Check size={15} />
-                              </span>
-                              <span className={n === q.correctAnswer ? "text-[#1099A1]" : "text-muted-foreground"}>
-                                {opt || "Empty option"}
-                              </span>
-                            </div>
-                          ))}
+
+                        <div className="mt-4 space-y-3">
+                          {q.options.map((opt, n) => {
+                            const correct = n === q.correctAnswer;
+                            return (
+                              <div
+                                key={n}
+                                className={cn(
+                                  "flex items-center justify-between gap-3 rounded-xl border px-4 py-3.5 text-[14px]",
+                                  correct
+                                    ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
+                                    : "border-border text-foreground"
+                                )}
+                              >
+                                <span>{opt || <span className="text-muted-foreground">Empty option</span>}</span>
+                                {correct && <Check size={16} className="shrink-0" />}
+                              </div>
+                            );
+                          })}
                         </div>
+
+                        {/* Folded away: it is shown to the student only after
+                            marking, and reading a page of them while checking
+                            the questions buries the questions. */}
+                        {q.explanation && (
+                          <details className="mt-3 group">
+                            <summary className="cursor-pointer list-none text-[12.5px] text-muted-foreground transition-colors hover:text-foreground">
+                              <ChevronRight size={13} className="mr-1 inline transition-transform group-open:rotate-90" />
+                              Explanation
+                            </summary>
+                            <p className="mt-2 pl-5 text-[13px] text-muted-foreground">{q.explanation}</p>
+                          </details>
+                        )}
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => setAdding(activeTest)}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
-                      >
-                        <Plus size={15} /> Add a question
-                      </button>
-                      {/* Down here rather than above the questions. Up there
-                          they sat in a block that repeated the title already
-                          shown in the tab and the banner. */}
-                      <button
-                        onClick={() => setEditing(activeTest)}
-                        className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2.5 text-[13px] font-medium transition-colors hover:bg-muted/60"
-                      >
-                        <Edit2 size={14} /> Edit test
-                      </button>
-                      <button
-                        onClick={() => setToDelete(activeTest)}
-                        aria-label={`Delete ${activeTest.title}`}
-                        className="rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-red-600"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                  </div>
+                  <button
+                    onClick={() => setAdding(activeTest)}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                  >
+                    <Plus size={15} /> Add a question
+                  </button>
                 </div>
               )}
             </>
@@ -880,7 +1064,14 @@ export function AdminDiagnostics() {
       </div>
 
       {editing !== undefined && (
-        <EditDialog initial={editing} busy={busy} onSave={save} onClose={() => setEditing(undefined)} />
+        <EditDialog
+          initial={editing}
+          presetSubject={presetSubject}
+          busy={busy}
+          onSave={save}
+          onDelete={() => { if (editing) { setToDelete(editing); setEditing(undefined); } }}
+          onClose={() => { setEditing(undefined); setPresetSubject(null); }}
+        />
       )}
 
       {adding && (
@@ -891,6 +1082,63 @@ export function AdminDiagnostics() {
           onClose={() => setAdding(null)}
         />
       )}
+
+      {renaming && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setRenaming(null)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Rename subject"
+            className="w-full max-w-md rounded-2xl bg-card p-5 shadow-xl md:p-6"
+          >
+            <h2 className="text-[15px] font-semibold tracking-tight">Rename subject</h2>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Every test grouped under {renaming.from} moves with it.
+            </p>
+            <input
+              autoFocus
+              value={renaming.to}
+              onChange={(e) => setRenaming({ ...renaming, to: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") void confirmRename(); }}
+              className={cn(field, "mt-4")}
+            />
+            <div className="mt-5 flex items-center gap-2">
+              <button
+                onClick={() => { setSubjectToDelete(renaming.from); setRenaming(null); }}
+                className="flex items-center gap-1.5 text-[13px] font-normal text-red-600 transition-colors hover:text-red-700"
+              >
+                <Trash2 size={14} /> Delete subject
+              </button>
+              <span className="flex-1" />
+              <button
+                onClick={() => setRenaming(null)}
+                className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-normal text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void confirmRename()}
+                disabled={busy || !renaming.to.trim()}
+                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
+              >
+                {busy && <Loader2 size={14} className="animate-spin" />}
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={!!subjectToDelete}
+        onClose={() => setSubjectToDelete(null)}
+        onConfirm={confirmDeleteSubject}
+        title="Delete subject"
+        message={`Delete "${subjectToDelete}" and all ${tests.filter((t) => t.categoryName === subjectToDelete).length} test(s) in it? Scores already recorded are kept, but nobody will be able to sit them again.`}
+        confirmText="Delete"
+        isDestructive
+      />
 
       <ConfirmModal
         isOpen={!!toDelete}
