@@ -35,10 +35,11 @@ import { cn } from "@/utils/cn";
 // The invitation is the relationship, not a purchase.
 // ============================================================
 
-// Where a parent goes to buy each service for a child.
-const SERVICES: { key: ServiceName; label: string; buyHref: string }[] = [
-  { key: "tutoring", label: "Tutoring", buyHref: "/parent/courses" },
-  { key: "admissions", label: "Admissions", buyHref: "/parent/admissions" },
+// Where a parent goes to buy each service for a specific child. The child id
+// travels in the URL so the purchase screen lands with them already chosen.
+const SERVICES: { key: ServiceName; label: string; buyHref: (childId: string) => string }[] = [
+  { key: "tutoring", label: "Tutoring", buyHref: (id) => `/parent/courses?student=${id}` },
+  { key: "admissions", label: "Admissions", buyHref: (id) => `/parent/admissions?student=${id}` },
 ];
 
 export function ManageChildrenPanel({ className }: { className?: string }) {
@@ -352,7 +353,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           </span>
                         ) : (
                           <Link
-                            to={s.buyHref}
+                            to={s.buyHref(c.id)}
                             className="text-[13px] font-medium text-muted-foreground underline-offset-2 hover:text-[#1099A1] hover:underline"
                           >
                             Add

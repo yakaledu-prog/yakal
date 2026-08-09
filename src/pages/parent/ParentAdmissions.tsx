@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,8 +32,14 @@ import { ChildSidebar } from "./billing/shared";
 
 export function ParentAdmissions() {
   const { user } = useAuth();
-  const [childId, setChildId] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  // The child can arrive preselected, e.g. from "Add" on a child's row, so the
+  // parent lands with the right child already chosen rather than picking again.
+  const [childId, setChildId] = useState<string | null>(params.get("student"));
   const [busy, setBusy] = useState<string | null>(null);
+  // The tier awaiting confirmation. Buying names the child first, because
+  // buying the right plan for the wrong child is the expensive mistake here.
+  const [pendingTier, setPendingTier] = useState<AdmissionsTier | null>(null);
 
   const { data: children = [] } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -120,7 +127,7 @@ export function ParentAdmissions() {
                     hasPlan={!!currentPlan}
                     disabled={!activeChildId}
                     busy={busy === t.id}
-                    onChoose={() => void choose(t)}
+                    onChoose={() => setPendingTier(t)}
                   />
                 ))}
               </div>
@@ -134,6 +141,56 @@ export function ParentAdmissions() {
           </div>
         </section>
       </div>
+
+      {/* Naming the child at checkout. The most expensive, most common mistake
+          is buying the right plan for the wrong child, so the confirmation
+          leads with who it is for. */}
+      {pendingTier && activeChild && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
+              <button
+                onClick={() => setPendingTier(null)}
+                aria-label="Close"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-[14px] leading-relaxed text-foreground">
+              Purchasing <span className="font-semibold">{pendingTier.name} admissions</span> for{" "}
+              <span className="font-semibold">{activeChild.full_name}</span>.
+            </p>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              {pendingTier.instalmentMonths > 1
+                ? `${money(monthlyCents(pendingTier))}/month for ${pendingTier.instalmentMonths} months (${money(pendingTier.priceCents)} total).`
+                : `${money(pendingTier.priceCents)}, one payment.`}
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setPendingTier(null)}
+                className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const t = pendingTier;
+                  setPendingTier(null);
+                  void choose(t);
+                }}
+                disabled={!!busy}
+                className="h-11 flex-1 rounded-xl bg-[#1099A1] text-[14px] font-bold text-white hover:bg-[#0d7f86] disabled:opacity-50"
+              >
+                Continue to payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }
