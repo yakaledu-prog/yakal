@@ -25,6 +25,12 @@
 
 DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
 
+-- Dropped by its own name too, not just the old one. Without this the
+-- migration cannot be re-run against a database that already has it, which
+-- is any database restored from a dump taken after this shipped, and it fails
+-- halfway leaving everything after it unapplied.
+DROP POLICY IF EXISTS "Signed-in users can view profiles" ON public.profiles;
+
 CREATE POLICY "Signed-in users can view profiles" ON public.profiles
   FOR SELECT TO authenticated
   USING (true);

@@ -29,6 +29,7 @@ const AdminLayout = lazy(() => import("../pages/admin/AdminLayout").then((m) => 
 const AdminPostEditor = lazy(() => import("../pages/admin/cms/AdminPostEditor").then((m) => ({ default: m.AdminPostEditor })));
 const AdminPosts = lazy(() => import("../pages/admin/cms/AdminPosts").then((m) => ({ default: m.AdminPosts })));
 const AdminTestimonials = lazy(() => import("../pages/admin/cms/AdminTestimonials").then((m) => ({ default: m.AdminTestimonials })));
+const AdminSubscribers = lazy(() => import("../pages/admin/cms/AdminSubscribers").then((m) => ({ default: m.AdminSubscribers })));
 const AdminDiagnostics = lazy(() => import("../pages/admin/cms/AdminDiagnostics").then((m) => ({ default: m.AdminDiagnostics })));
 const AdminProfile = lazy(() => import("../pages/admin/AdminProfile").then((m) => ({ default: m.AdminProfile })));
 const AdminReports = lazy(() => import("../pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
@@ -113,6 +114,7 @@ import { AuthPage } from "../pages/shared/AuthPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
+import UnsubscribePage from "../pages/UnsubscribePage";
 
 
 // import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
@@ -277,6 +279,10 @@ const router = createBrowserRouter([
     element: <BlogPage />,
   },
   {
+    path: "/unsubscribe",
+    element: <UnsubscribePage />,
+  },
+  {
     path: "/cancellation-policy",
     element: <CancellationPolicyPage />,
   },
@@ -321,6 +327,7 @@ const router = createBrowserRouter([
           { path: "courses/:id", element: <AdminCourseDetail /> },
           { path: "admissions", element: <AdminAdmissions /> },
           { path: "posts", element: <AdminPosts /> },
+          { path: "subscribers", element: <AdminSubscribers /> },
           { path: "testimonials", element: <AdminTestimonials /> },
           { path: "diagnostics", element: <AdminDiagnostics /> },
           { path: "posts/new", element: <AdminPostEditor /> },
