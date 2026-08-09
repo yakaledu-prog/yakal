@@ -39,3 +39,18 @@ export async function broadcastPost(postId: string) {
   const { authedPost } = await import("@/lib/authedFetch");
   return authedPost<{ sent?: number; failed?: number }>(`${BASE}?action=broadcast`, { postId });
 }
+
+export interface Subscriber {
+  id: string;
+  email: string;
+  status: "subscribed" | "unsubscribed";
+  source: string;
+  created_at: string;
+  unsubscribed_at: string | null;
+}
+
+/** Admin only, checked on the server. `remove` unsubscribes that id first. */
+export async function getSubscribers(remove?: string) {
+  const { authedPost } = await import("@/lib/authedFetch");
+  return authedPost<{ subscribers?: Subscriber[]; subscribed?: number }>(`${BASE}?action=list`, { remove });
+}

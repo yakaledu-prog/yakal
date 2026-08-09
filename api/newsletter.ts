@@ -7,4 +7,5 @@ export default dispatch({
   subscribe: () => import('./_handlers/newsletter-subscribe.js'),
   unsubscribe: () => import('./_handlers/newsletter-unsubscribe.js'),
   broadcast: () => import('./_handlers/newsletter-broadcast.js'),
+  list: () => import('./_handlers/newsletter-list.js'),
 });

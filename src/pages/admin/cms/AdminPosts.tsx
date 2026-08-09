@@ -7,7 +7,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Plus, Edit2, Trash2, Search, Loader2, Image as ImageIcon , Send } from "lucide-react";
 import { format } from "date-fns";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { broadcastPost } from "@/services/newsletterService";
+import { broadcastPost, getSubscribers } from "@/services/newsletterService";
 import { AdminHeader } from "../AdminHeader";
 export function AdminPosts() {
   const [q, setQ] = useState("");
@@ -20,6 +20,14 @@ export function AdminPosts() {
     queryKey: ["admin-posts"],
     queryFn: getPosts,
   });
+
+  // Only the count is used here. It is what turns "send this" into a decision
+  // with a size attached.
+  const { data: list } = useQuery({
+    queryKey: ["admin-subscribers"],
+    queryFn: () => getSubscribers(),
+  });
+  const subscriberCount = list?.subscribed ?? 0;
 
   const filtered = posts.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()));
 
@@ -116,7 +124,7 @@ export function AdminPosts() {
         onClose={() => (sending ? null : setPostToSend(null))}
         onConfirm={handleSendConfirm}
         title="Send to subscribers"
-        message={`Email "${postToSend?.title}" to everyone on the newsletter list? This cannot be undone, and a post can only be sent once.`}
+        message={`Email "${postToSend?.title}" to ${subscriberCount} subscriber${subscriberCount === 1 ? "" : "s"}? This cannot be undone, and a post can only be sent once.`}
         confirmText={sending ? "Sending..." : "Send"}
       />
 
