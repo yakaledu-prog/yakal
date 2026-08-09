@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Star, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -180,7 +180,10 @@ export function ParentCourseCatalogDetail() {
     queryFn: () => getLinkedChildren(user!.id),
     enabled: !!user?.id,
   });
-  const [childId, setChildId] = useState<string | null>(null);
+  // The child can arrive preselected from an "Add tutoring" link on their row,
+  // so the parent buys for the child they meant without picking again.
+  const [params] = useSearchParams();
+  const [childId, setChildId] = useState<string | null>(params.get("student"));
   const bookingFor = children.find((c) => c.id === childId) ?? children[0] ?? null;
 
   const realTutor = realCourse?.tutor ?? null;

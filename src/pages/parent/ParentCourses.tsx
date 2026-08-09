@@ -6,7 +6,7 @@ import { dicebearUrl } from "@/utils/avatar";
 import { getCatalogCourses } from "@/services/courseApplicationService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -25,6 +25,13 @@ export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
+
+  // Carry a preselected child (from an "Add tutoring" link on their row)
+  // through to the course page so the purchase stays for that child.
+  const [params] = useSearchParams();
+  const studentParam = params.get("student");
+  const detailHref = (courseId: string) =>
+    studentParam ? `/parent/courses/${courseId}?student=${studentParam}` : `/parent/courses/${courseId}`;
 
   const { data: catalogCourses = [], isLoading } = useQuery({
     queryKey: ["catalog-courses"],
@@ -139,7 +146,7 @@ export function ParentCourses() {
             {visibleCourses.map(course => (
               <Link
                 key={course.id}
-                to={`/parent/courses/${course.id}`}
+                to={detailHref(course.id)}
                 className={cn(
                   "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden ring-2 ring-transparent hover:ring-primary/50 transition-all ease-in-out duration-300 hover:border-primary/50 flex flex-col",
                   viewMode === "list" && "sm:flex-row sm:h-[160px]"

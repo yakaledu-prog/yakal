@@ -18,6 +18,7 @@ import {
   type ServiceName,
   type StudentSuggestion,
 } from "@/services/parentService";
+import { getAdmissionsPlans } from "@/services/admissionsService";
 import { supabase } from "@/lib/supabase";
 import { dicebearUrl } from "@/utils/avatar";
 import { cn } from "@/utils/cn";
@@ -68,6 +69,14 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   const { data: services = [] } = useQuery({
     queryKey: ["children-services", childIds.join(",")],
     queryFn: () => getChildServices(childIds),
+    enabled: childIds.length > 0,
+  });
+
+  // Admissions plans, so the row can name the tier a child is on rather than
+  // just saying "Active".
+  const { data: plans } = useQuery({
+    queryKey: ["admissions-plans", childIds.join(",")],
+    queryFn: () => getAdmissionsPlans(childIds),
     enabled: childIds.length > 0,
   });
 
@@ -345,22 +354,29 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       </div>
                     </td>
 
-                    {SERVICES.map((s) => (
-                      <td key={s.key} className="py-3 text-center">
-                        {hasService(c.id, s.key) ? (
-                          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1099A1]">
-                            <Check size={14} /> Active
-                          </span>
-                        ) : (
-                          <Link
-                            to={s.buyHref(c.id)}
-                            className="text-[13px] font-medium text-muted-foreground underline-offset-2 hover:text-[#1099A1] hover:underline"
-                          >
-                            Add
-                          </Link>
-                        )}
-                      </td>
-                    ))}
+                    {SERVICES.map((s) => {
+                      const on = hasService(c.id, s.key);
+                      // Name the admissions tier when there is a plan, so the
+                      // row is a summary ("Premier - Active") not just a tick.
+                      const tierName =
+                        s.key === "admissions" ? (plans?.get(c.id)?.tier.name ?? null) : null;
+                      return (
+                        <td key={s.key} className="py-3 text-center">
+                          {on ? (
+                            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1099A1]">
+                              <Check size={14} /> {tierName ? `${tierName} - Active` : "Active"}
+                            </span>
+                          ) : (
+                            <Link
+                              to={s.buyHref(c.id)}
+                              className="text-[13px] font-medium text-muted-foreground underline-offset-2 hover:text-[#1099A1] hover:underline"
+                            >
+                              Add
+                            </Link>
+                          )}
+                        </td>
+                      );
+                    })}
 
                     <td className="py-3 text-right">
                       <button
