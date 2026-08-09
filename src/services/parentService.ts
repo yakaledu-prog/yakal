@@ -37,53 +37,39 @@ export interface ChildService {
 }
 
 /**
- * The services a student can actually use.
+ * The services a student can actually use, derived from what has been paid for.
  *
- * Two conditions, and both have to hold:
+ * Read straight from v_student_entitlements, which is payment alone: an active
+ * course enrolment means tutoring, an active admissions plan means admissions.
+ * Both are written only by the Stripe webhook.
  *
- *   entitled    somebody paid. Derived in v_student_entitlements from
- *               enrolments and admissions_plans, which only the Stripe webhook
- *               writes.
- *   permitted   child_services.is_active, the parent allowing it.
- *
- * They used to be the same boolean, so a parent toggling a switch could hand
- * out a service nobody had bought, and buying a course granted nothing at all
- * because nothing ever wrote "tutoring". Keeping them apart means a purchase
- * cannot be undone by a stale row, and a parent can still hide a section from a
- * child they have paid for.
+ * There is no parent permission gate on top. The product model is that a
+ * payment creates access for a child, and access is a server-side entitlement
+ * rather than a manually editable switch, so nothing a parent toggles turns a
+ * paid service off. (An earlier version AND-ed this with child_services as a
+ * parent permission; that gate was removed to match the payment-only model.)
  */
 export async function getMyActiveServices(studentId: string): Promise<ServiceName[]> {
-  const [{ data: permitted, error }, { data: entitled, error: entErr }] = await Promise.all([
-    supabase
-      .from("child_services")
-      .select("service")
-      .eq("student_id", studentId)
-      .eq("is_active", true),
-    supabase.from("v_student_entitlements").select("service").eq("student_id", studentId),
-  ]);
-
-  if (error || entErr) {
-    // Locked rather than open. A read that failed is not permission.
-    console.warn("Could not read services", error?.message ?? entErr?.message);
+  const { data, error } = await supabase
+    .from("v_student_entitlements")
+    .select("service")
+    .eq("student_id", studentId);
+  if (error) {
+    console.warn("Could not read services", error.message);
     return [];
   }
-
-  const allowed = new Set((permitted ?? []).map((r) => r.service as ServiceName));
-  return (entitled ?? [])
-    .map((r) => r.service as ServiceName)
-    .filter((s) => allowed.has(s));
+  return (data ?? []).map((r) => r.service as ServiceName);
 }
 
-export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
-  if (childIds.length === 0) return [];
-  const { data } = await supabase
-    .from("child_services")
-    .select("id, student_id, service, is_active")
-    .in("student_id", childIds);
-  return (data as ChildService[]) || [];
-}
-
-// Toggle a service on/off for a child (upsert on the unique (student_id, service)).
+/**
+ * A support/admin override for a child's service, kept separate from payment.
+ *
+ * Access is normally a fact about payment (see active_services). This is the
+ * escape hatch the doc allows - "unless support overrides it" - used by the
+ * dev console and by a parent answering a child's access request. It is not the
+ * parent's day-to-day switch; the Manage children screen no longer offers one.
+ * active_services honours an active row here on top of the paid entitlements.
+ */
 export async function setChildService(
   studentId: string,
   service: ServiceName,
@@ -97,6 +83,32 @@ export async function setChildService(
     return { success: false, error: error.message };
   }
   return { success: true };
+}
+
+/**
+ * The active services for each linked child, derived from payment (plus any
+ * support override).
+ *
+ * One active_services call per child rather than a read of a table: access is
+ * a fact about enrolments and admissions plans, and this is the parent's view
+ * of the same answer the child's app computes. The parent is authorised for
+ * their own linked children, so the guard inside active_services returns the
+ * real set rather than an empty one.
+ */
+export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
+  if (childIds.length === 0) return [];
+  const perChild = await Promise.all(
+    childIds.map(async (id) => {
+      const services = await getMyActiveServices(id);
+      return services.map((service) => ({
+        id: `${id}:${service}`,
+        student_id: id,
+        service,
+        is_active: true,
+      }));
+    })
+  );
+  return perChild.flat();
 }
 
 /** Upcoming session count per child, for the children list. */
@@ -311,7 +323,9 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Invite a child by email for one or more services.
+ * Invite a child by email. The invitation is the family relationship only, not
+ * a purchase: it lets the child sign in and be linked, and services are bought
+ * per child separately. So no service scope is chosen here.
  *
  * Creates a token-carrying invite the child accepts by following a link sent to
  * that address. The same link works whether or not they already have an
@@ -324,19 +338,17 @@ export function isValidEmail(email: string): boolean {
  */
 export async function inviteChild(
   parentId: string,
-  email: string,
-  services: ServiceName[]
+  email: string
 ): Promise<{ success: boolean; error?: string; inviteId?: string; token?: string }> {
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return { success: false, error: "Enter your child's email address." };
   if (!isValidEmail(trimmed)) {
     return { success: false, error: "That does not look like an email address." };
   }
-  if (services.length === 0) return { success: false, error: "Choose at least one service." };
 
   const { data, error } = await supabase
     .from("parent_child_invites")
-    .insert({ parent_id: parentId, email: trimmed, services })
+    .insert({ parent_id: parentId, email: trimmed })
     .select("id, token")
     .single();
 

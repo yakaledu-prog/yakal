@@ -14,18 +14,6 @@ import { sendEmail, layout, appUrl } from './_utils/email.js';
 // A parent can only send the link for an invite that is theirs.
 // ============================================================
 
-const SERVICE_LABEL: Record<string, string> = {
-  tutoring: 'Tutoring',
-  admissions: 'College admissions',
-};
-
-function scopeSentence(services: string[]): string {
-  const labels = services.map((s) => SERVICE_LABEL[s] ?? s);
-  if (labels.length === 0) return 'Yakal';
-  if (labels.length === 1) return labels[0];
-  return labels.slice(0, -1).join(', ') + ' and ' + labels[labels.length - 1];
-}
-
 export default async function handler(req: any, res: any) {
   const action = req.query?.action;
   if (req.method !== 'POST' || action !== 'send') {
@@ -61,7 +49,6 @@ export default async function handler(req: any, res: any) {
       .maybeSingle();
     if (prof?.full_name) parentName = prof.full_name;
 
-    const services: string[] = Array.isArray(invite.services) ? invite.services : [];
     const link = appUrl(`/invite/${invite.token}`);
 
     const result = await sendEmail({
@@ -69,13 +56,8 @@ export default async function handler(req: any, res: any) {
       subject: `${parentName} invited you to Yakal Education Services`,
       html: layout({
         heading: 'You have been invited to Yakal',
-        intro: `${parentName} has invited you to Yakal Education Services for ${scopeSentence(
-          services
-        )}. Follow the link below to get started. If you do not have an account yet, you will be able to create one.`,
-        facts: [
-          { label: 'Invited by', value: parentName },
-          { label: 'Access', value: scopeSentence(services) },
-        ],
+        intro: `${parentName} has invited you to Yakal Education Services and to link your account to theirs. Follow the link below to get started. If you do not have an account yet, you will be able to create one.`,
+        facts: [{ label: 'Invited by', value: parentName }],
         cta: { label: 'Accept invitation', url: link },
         footer:
           'If you were not expecting this, you can ignore this email. The link only works for this email address.',
