@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail , Plus, ChevronRight, Star, Crown, Sparkle } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, Star, Crown, Sparkle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
 import {
@@ -499,85 +499,102 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                   const courses = coursesFor(c.id);
                   const open = expandedId === c.id;
                   return (
-                  <Fragment key={c.id}>
-                  <tr
-                    onClick={() => courses.length > 0 && setExpandedId(open ? null : c.id)}
-                    className={cn(
-                      "border-b border-border/30 last:border-0",
-                      courses.length > 0 && "cursor-pointer hover:bg-muted/30"
-                    )}
-                  >
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        {/* Only where there is something to open. A chevron on
+                    <Fragment key={c.id}>
+                      <tr
+                        onClick={() => courses.length > 0 && setExpandedId(open ? null : c.id)}
+                        className={cn(
+                          "border-b border-border/30 last:border-0",
+                          courses.length > 0 && "cursor-pointer hover:bg-muted/30"
+                        )}
+                      >
+                        <td className="py-3">
+                          <div className="flex items-center gap-3">
+                            {/* Only where there is something to open. A chevron on
                             a row that does nothing is a broken control. */}
-                        <ChevronRight
-                          size={15}
-                          className={cn(
-                            "shrink-0 text-muted-foreground transition-transform",
-                            open && "rotate-90",
-                            courses.length === 0 && "invisible"
-                          )}
-                        />
-                        <img
-                          src={c.avatar_url || dicebearUrl(c.full_name)}
-                          alt=""
-                          className="h-10 w-10 shrink-0 rounded-full object-cover"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-[14px] font-semibold text-foreground">
-                            {c.full_name}
-                          </p>
-                          <p className="truncate text-[12.5px] text-muted-foreground">
-                            {c.grade_level ?? "Grade not set"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
+                            <ChevronRight
+                              size={15}
+                              className={cn(
+                                "shrink-0 text-muted-foreground transition-transform",
+                                open && "rotate-90",
+                                courses.length === 0 && "invisible"
+                              )}
+                            />
+                            <img
+                              src={c.avatar_url || dicebearUrl(c.full_name)}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-full object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-[14px] font-semibold text-foreground">
+                                {c.full_name}
+                              </p>
+                              <p className="truncate text-[12.5px] text-muted-foreground">
+                                {c.grade_level ?? "Grade not set"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
 
-                    <td className="py-3 pr-4">
-                      <ServiceCell
-                        empty={!hasService(c.id, "tutoring")}
-                        addHref={SERVICES[0].buyHref(c.id)}
-                      >
-                        <CourseList courses={courses} />
-                      </ServiceCell>
-                    </td>
+                        <td className="py-3 pr-4">
+                          <ServiceCell
+                            empty={!hasService(c.id, "tutoring")}
+                            addHref={SERVICES[0].buyHref(c.id)}
+                          >
+                            <CourseList courses={courses} />
+                          </ServiceCell>
+                        </td>
 
-                    <td className="py-3 pr-4">
-                      <ServiceCell
-                        empty={!hasService(c.id, "admissions")}
-                        addHref={SERVICES[1].buyHref(c.id)}
-                      >
-                        <TierChip tier={plans?.get(c.id)?.tier.name ?? null} />
-                      </ServiceCell>
-                    </td>
+                        <td className="py-3 pr-4">
+                          <ServiceCell
+                            empty={!hasService(c.id, "admissions")}
+                            addHref={SERVICES[1].buyHref(c.id)}
+                          >
+                            <TierChip tier={plans?.get(c.id)?.tier.name ?? null} />
+                          </ServiceCell>
+                        </td>
 
-                    <td className="py-3 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setToRemove({ id: c.id, name: c.full_name });
-                        }}
-                        disabled={busyKey === `${c.id}:unlink`}
-                        title={`Remove ${c.full_name}`}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
+                        <td className="py-3 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setToRemove({ id: c.id, name: c.full_name });
+                            }}
+                            disabled={busyKey === `${c.id}:unlink`}
+                            title={`Remove ${c.full_name}`}
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
 
-                  {open && (
-                    <tr className="border-b border-border/30">
-                      <td colSpan={4} className="py-1 pl-10 pr-2">
-                        {courses.map((course) => (
-                          <CourseCard key={course.courseId} course={course} />
-                        ))}
-                      </td>
-                    </tr>
-                  )}
-                  </Fragment>
+                      {open && (
+                        <tr className="border-b border-border/30">
+                          <td colSpan={4} className="py-1 pl-10 pr-2">
+                            {courses.map((course) => (
+                              <CourseCard key={course.courseId} course={course} />
+                            ))}
+
+                            {/* The same shape as a course row, so it reads as the
+                            next one rather than a control bolted underneath.
+                            It goes to the catalogue with the child already
+                            chosen: buying for the wrong child is the expensive
+                            mistake, and this is the one place the right one is
+                            already known. */}
+                            <Link
+                              to={SERVICES[0].buyHref(c.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-3 py-2.5 text-muted-foreground transition-colors hover:text-[#1099A1]"
+                            >
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-border">
+                                <Plus size={14} />
+                              </span>
+                              <span className="text-[13px]">Add another course for {c.full_name.split(" ")[0]}</span>
+                            </Link>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
 
