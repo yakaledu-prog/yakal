@@ -191,15 +191,13 @@ export function ParentBilling() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden">
-        <ChildSidebar
-          children={children}
-          activeId={childId}
-          onSelect={setChildId}
-          countFor={countFor}
-        />
-
-        <section className="min-w-0 flex-1 md:h-full md:overflow-y-auto">
+      {/* Header, then the children, then the content. On a phone the rail
+          used to sit above the page title, so the first thing you read was a
+          list of names with no heading explaining what they were a list of.
+          A grid keeps one DOM order and moves the rail into its own column at
+          md, rather than rendering it twice. */}
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+        <div className="md:order-2 md:col-start-2 md:row-start-1">
           <BillingHeader
             subtitle={
               childId
@@ -225,8 +223,18 @@ export function ParentBilling() {
               ))}
             </nav>
           </BillingHeader>
+        </div>
 
-          <div className="p-6">
+        <div className="md:order-1 md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto md:border-r md:border-border">
+          <ChildSidebar
+            children={children}
+            activeId={childId}
+            onSelect={setChildId}
+            countFor={countFor}
+          />
+        </div>
+
+        <div className="p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto">
             {isLoading ? (
               <Spinner />
             ) : tab === "plans" ? (
@@ -321,8 +329,7 @@ export function ParentBilling() {
             ) : (
               <Methods cards={cards} isLoading={cardsLoading} busy={busy} onPortal={portal} />
             )}
-          </div>
-        </section>
+        </div>
       </div>
     </PageWrapper>
   );

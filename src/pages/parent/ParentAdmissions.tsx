@@ -77,15 +77,11 @@ export function ParentAdmissions() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden">
-        <ChildSidebar
-          children={children}
-          activeId={activeChildId}
-          onSelect={setChildId}
-          countFor={(id) => (id ? (plans?.get(id) ? 1 : 0) : (plans?.size ?? 0))}
-        />
-
-        <section className="min-w-0 flex-1 md:h-full md:overflow-y-auto">
+      {/* Header, then the children, then the plans. Same reason as billing:
+          on a phone the rail sat above the page title, so the first thing you
+          read was a list of names with nothing saying what they were for. */}
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+        <div className="md:order-2 md:col-start-2 md:row-start-1">
           <header className="relative overflow-hidden bg-[#1099A1] px-6 py-6 text-white md:px-8 md:py-8">
             <svg
               className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -107,8 +103,18 @@ export function ParentAdmissions() {
               </p>
             </div>
           </header>
+        </div>
 
-          <div className="p-6 md:p-8">
+        <div className="md:order-1 md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto md:border-r md:border-border">
+          <ChildSidebar
+            children={children}
+            activeId={activeChildId}
+            onSelect={setChildId}
+            countFor={(id) => (id ? (plans?.get(id) ? 1 : 0) : (plans?.size ?? 0))}
+          />
+        </div>
+
+        <div className="p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8">
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="animate-spin text-[#1099A1]" />
@@ -138,8 +144,7 @@ export function ParentAdmissions() {
                 Pick a child on the left to choose a plan for them.
               </p>
             )}
-          </div>
-        </section>
+        </div>
       </div>
 
       {/* Naming the child at checkout. The most expensive, most common mistake

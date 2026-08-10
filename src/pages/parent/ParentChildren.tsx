@@ -387,39 +387,6 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           <StudentCollegeList studentId={child.id} embedded canEdit={false} />
         )}
 
-        {activeTab === 'applications' && (
-          <div className="space-y-6">
-            {!hasAdmissions ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-xl dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-muted/10 animate-in fade-in zoom-in-95">
-                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
-                  <Lock size={32} />
-                </div>
-                <h3 className="text-xl font-bold mb-2">College Admissions Locked</h3>
-                <p className="text-muted-foreground mb-6 max-w-sm">
-                  Upgrade to our College Admissions service to track {child.name}'s application progress, essays, and college list.
-                </p>
-                <Link to={'/parent/billing'} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-2.5 rounded-xl font-bold transition-all">
-                  Manage Services
-                </Link>
-              </div>
-            ) : (
-              /* The student's own requirements view, read only.
-                 What was here before derived the ticks from the school's name:
-                 anything containing "Hopkins" got six requirements, anything
-                 containing "Maryland" got none. So it agreed with the student's
-                 own tracker only by accident. Sharing the component means a
-                 parent sees exactly what their child sees. */
-              <div className="-mx-4 md:-mx-8">
-                <StudentApplicationTracker
-                  studentId={child.id}
-                  embedded
-                  canEdit={false}
-                  forcedTab="requirements"
-                />
-              </div>
-            )}
-          </div>
-        )}
         {activeTab === 'messages' && (
           <ParentMessages embedded childId={child.id} childName={child.name} childAvatarUrl={child.avatar} />
         )}

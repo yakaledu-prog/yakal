@@ -334,7 +334,7 @@ export function StudentCollegeList({
               disabled={schools.length === 0}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition-colors hover:bg-muted disabled:opacity-40"
             >
-              <Download size={15} /> Export CSV
+              <Download size={15} /> CSV
             </button>
             {canEdit && (
               <button

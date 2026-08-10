@@ -66,10 +66,10 @@ export function ParentCourses() {
             </div>
 
             {/* Controls Row inside header */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex items-center gap-4 w-full lg:w-auto">
+            <div className="flex flex-row items-center justify-between gap-3 pt-4 border-t border-white/20">
+              <div className="flex items-center gap-4 min-w-0 flex-1 lg:flex-none lg:w-auto">
                 {/* View Toggles */}
-                <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
+                <div className="hidden sm:flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
@@ -98,8 +98,10 @@ export function ParentCourses() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center gap-2 self-end lg:self-auto">
-                <span className="text-[13px] text-white/80 mr-2">
+              <div className="flex shrink-0 items-center gap-2">
+                {/* The count is the first thing to go when the row is tight:
+                    the arrows are the control, the tally is commentary. */}
+                <span className="hidden text-[13px] text-white/80 mr-2 sm:inline">
                   Showing {catalogCourses.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, catalogCourses.length)} of {catalogCourses.length}
                 </span>
                 <button

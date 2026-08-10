@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Clock, Loader2, Trash2, Link2, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -52,6 +53,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   /** The invite whose link was just copied, so the button can confirm. */
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [toRemove, setToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -168,6 +170,12 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     }
   }
 
+  /**
+   * Asked, not done. Removing a child cuts the parent off from their sessions,
+   * their college list and their messages, and the only way back is another
+   * invitation the child has to accept. A trash icon a thumb can reach is not
+   * enough on its own.
+   */
   async function unlink(studentId: string, name: string) {
     if (!user) return;
     setBusyKey(`${studentId}:unlink`);
@@ -380,7 +388,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                     <td className="py-3 text-right">
                       <button
-                        onClick={() => unlink(c.id, c.full_name)}
+                        onClick={() => setToRemove({ id: c.id, name: c.full_name })}
                         disabled={busyKey === `${c.id}:unlink`}
                         title={`Remove ${c.full_name}`}
                         className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
@@ -416,7 +424,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                     </td>
                     <td className="py-3 text-right">
                       <button
-                        onClick={() => unlink(p.student_id, p.full_name)}
+                        onClick={() => setToRemove({ id: p.student_id, name: p.full_name })}
                         disabled={busyKey === `${p.student_id}:unlink`}
                         title="Withdraw the request"
                         className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
@@ -431,6 +439,19 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={!!toRemove}
+        onClose={() => setToRemove(null)}
+        onConfirm={() => {
+          if (toRemove) void unlink(toRemove.id, toRemove.name);
+          setToRemove(null);
+        }}
+        title="Remove child"
+        message={`Remove ${toRemove?.name ?? "this child"} from your account? You will lose access to their sessions, college list and messages, and getting it back means sending another invitation for them to accept.`}
+        confirmText="Remove"
+        isDestructive
+      />
     </div>
   );
 }

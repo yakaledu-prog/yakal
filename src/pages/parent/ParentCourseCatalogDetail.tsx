@@ -545,8 +545,18 @@ export function ParentCourseCatalogDetail() {
               </button>
 
               <div className="flex flex-col sm:flex-row gap-6 items-center justify-between mb-8">
-                <div className="flex flex-col sm:flex-row gap-6 items-center">
-                  <div className="space-y-3 max-w-5xl">
+                {/* Left aligned on a phone. items-center centred the whole
+                    block, so the name, the subjects and the rating each sat on
+                    their own axis and nothing lined up with the tabs below. */}
+                <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+                  {/* The face, which the card in the sidebar was carrying on a
+                      desktop and nothing carried on a phone. */}
+                  <img
+                    src={selectedTutor?.avatar || dicebearUrl(selectedTutor?.name ?? "tutor")}
+                    alt=""
+                    className="h-16 w-16 shrink-0 rounded-full border-2 border-white/25 object-cover sm:h-20 sm:w-20"
+                  />
+                  <div className="min-w-0 space-y-3 max-w-5xl">
                     <h2 className="text-3xl md:text-[40px] font-bold text-white flex items-center gap-3 leading-tight">
                       {selectedTutor?.name}
                     </h2>
@@ -561,20 +571,20 @@ export function ParentCourseCatalogDetail() {
                           ({rating.ratingCount} {rating.ratingCount === 1 ? "rating" : "ratings"})
                         </span>
                       </div>
-                    ) : (
-                      <div className="text-[14px] text-white/70">Not yet rated</div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
-                <div className="flex flex-col shrink-0 sm:items-end sm:text-right">
-                  <div className="text-[32px] md:text-[40px] font-bold text-white leading-none mb-1">
-                    {selectedTutor?.students}
+                {Number(selectedTutor?.students) > 0 && (
+                  <div className="flex flex-col shrink-0 sm:items-end sm:text-right">
+                    <div className="text-[32px] md:text-[40px] font-bold text-white leading-none mb-1">
+                      {selectedTutor?.students}
+                    </div>
+                    <div className="text-[14px] text-white/80 font-medium flex items-center gap-1.5">
+                      <Users size={14} className="text-white/60" /> active students
+                    </div>
                   </div>
-                  <div className="text-[14px] text-white/80 font-medium flex items-center gap-1.5">
-                    <Users size={14} className="text-white/60" /> active students
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Tabs inside Header */}
@@ -761,20 +771,38 @@ export function ParentCourseCatalogDetail() {
                         )}
 
                         {selectedSlots.length > 0 && (
-                          <div className="xl:hidden bg-white dark:bg-[#202c33] p-6 border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg sticky bottom-4 flex items-center justify-between">
-                            <div>
-                              <div className="text-lg font-bold">{selectedSlots.length} slot(s) selected</div>
-                              <div className="text-[#54656f]">
-                                Total: {money((realCourse?.priceCents ?? 0) * selectedSlots.length)}
+                          <div className="xl:hidden sticky bottom-4 space-y-3 rounded-xl border border-[#e9edef] bg-white p-4 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-[15px] font-bold">
+                                  {selectedSlots.length} slot{selectedSlots.length === 1 ? "" : "s"} selected
+                                </div>
+                                <div className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                                  Total: {money((realCourse?.priceCents ?? 0) * selectedSlots.length)}
+                                </div>
                               </div>
+                              <Button
+                                onClick={handleBookSlot}
+                                disabled={isBooking || children.length === 0}
+                                className="shrink-0 bg-[#1099A1] hover:bg-[#0d848b] text-white px-6 !h-11 text-[15px] font-bold rounded-xl transition-all"
+                              >
+                                {isBooking ? "Booking..." : "Checkout"}
+                              </Button>
                             </div>
-                            <Button
-                              onClick={handleBookSlot}
-                              disabled={isBooking}
-                              className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8 !h-12 py-4 text-[16px] font-bold rounded-xl transition-all"
-                            >
-                              {isBooking ? "Booking..." : "Checkout"}
-                            </Button>
+
+                            {/* The sidebar card is hidden at this width, so
+                                this is the only place the child is chosen, and
+                                buying for the wrong one is the expensive
+                                mistake. */}
+                            {children.length === 0 ? (
+                              <p className="text-[13px] font-medium text-[#CAA25F]">No children linked yet.</p>
+                            ) : (
+                              <ChildPicker
+                                options={children}
+                                value={bookingFor?.id ?? null}
+                                onChange={setChildId}
+                              />
+                            )}
                           </div>
                         )}
 
@@ -872,7 +900,7 @@ export function ParentCourseCatalogDetail() {
 
                 {/* Sticky Booking Card (Right Pane) */}
                 {activeTab !== "Messages" && (
-                  <div className="w-full xl:w-[400px] shrink-0 p-6 md:p-10 bg-white dark:bg-[#111b21] border-l border-[#e9edef] dark:border-[#2a3942]">
+                  <div className="hidden xl:block xl:w-[400px] shrink-0 p-6 md:p-10 bg-white dark:bg-[#111b21] border-l border-[#e9edef] dark:border-[#2a3942]">
                     {/* Not overflow-hidden: the child dropdown opens downwards
                         and a parent with several children would have the list
                         cut off at the bottom of the card. */}
