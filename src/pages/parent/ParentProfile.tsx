@@ -2,15 +2,40 @@ import React from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/utils/cn";
-import { Mail, Calendar, LogOut, Camera, Bell, X, SquarePenIcon, Phone, Users, CreditCard } from "lucide-react";
+import { Mail, LogOut, Camera, X, SquarePenIcon, Phone } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getBilling } from "@/services/packageService";
+import { money } from "@/services/billingService";
 import { toast } from "sonner";
+
+/**
+ * One labelled fact in the teal banner. Module level: a component declared
+ * inside the page body is a new type every render, so React rebuilds it.
+ */
+function HeaderFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="shrink-0 text-white/70">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
+        <p className="truncate text-[14px] text-white">{value || "Not set"}</p>
+      </div>
+    </div>
+  );
+}
 
 export function ParentProfile() {
   const { user, profile, signOut } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -19,19 +44,22 @@ export function ParentProfile() {
     }
   };
 
-  const stats = [
-    { label: "Children Enrolled", value: "2", icon: <Users size={18} />, trend: "", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/10", cardBg: "bg-blue-50/50 dark:bg-blue-900/5 border-blue-100 dark:border-blue-900/30" },
-    { label: "Active Courses", value: "3", icon: <Calendar size={18} />, trend: "", color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/10", cardBg: "bg-green-50/50 dark:bg-green-900/5 border-green-100 dark:border-green-900/30" },
-    { label: "Next Payment Due", value: "Nov 15", icon: <CreditCard size={18} />, trend: "", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/10", cardBg: "bg-amber-50/50 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/30" }
-  ];
+  const { data: billing } = useQuery({
+    queryKey: ["billing", user?.id],
+    queryFn: () => getBilling(user!.id),
+    enabled: !!user?.id,
+  });
 
-  const recentActivity = [
-    { date: "Oct 29", title: "Payment processed for Fall Semester", status: "Paid", type: "Billing", time: "$1,200.00" },
-    { date: "Oct 15", title: "Brooklyn enrolled in AP Physics", status: "Active", type: "Enrollment", time: "Course Started" },
-    { date: "Oct 11", title: "Austin completed Algebra II Assessment", status: "Done", type: "Academics", time: "Grade: 92%" },
-    { date: "Oct 05", title: "New message from Dr. Alex", status: "Read", type: "Communication", time: "Regarding Brooklyn" },
-    { date: "Sep 28", title: "Fall Semester Registration", status: "Confirmed", type: "Enrollment", time: "Completed" },
-  ];
+  /**
+   * What has actually been paid, newest first.
+   *
+   * Only paid invoices: an unpaid one is a thing to do, and this is a record
+   * of what happened. The service is derived rather than stored, since an
+   * invoice against a course is tutoring and one without is counselling.
+   */
+  const payments = (billing?.invoices ?? [])
+    .filter((i) => i.paidAt)
+    .sort((a, b) => (a.paidAt! < b.paidAt! ? 1 : -1));
 
   return (
     <PageWrapper>
@@ -66,9 +94,12 @@ export function ParentProfile() {
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">
                   {profile?.full_name || "Parent"}
                 </h1>
-                <p className="text-white/80 text-[14px] mt-3 max-w-xl">
-                  {profile?.bio || "Parent of Brooklyn and Austin. Passionate about ensuring my children receive the best academic support and guidance."}
-                </p>
+                {/* Only when written. The fallback named two children who do
+                    not exist, so every parent without a bio read as the parent
+                    of Brooklyn and Austin. */}
+                {profile?.bio && (
+                  <p className="mt-3 max-w-xl text-[14px] text-white/80">{profile.bio}</p>
+                )}
               </div>
             </div>
 
@@ -88,109 +119,54 @@ export function ParentProfile() {
             </div>
           </div>
 
-          {/* Stats Grid inside header */}
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 mt-10">
-            {stats.map((stat, i) => (
-              <div key={i} className="p-6 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 text-white/80 mb-2 uppercase text-[12px] font-bold tracking-wider">
-                  {stat.icon} {stat.label}
-                </div>
-                <div className="text-3xl font-black tracking-tight">{stat.value}</div>
-              </div>
-            ))}
+          {/* Contact, where the stat cards were. Those counted children and
+              courses, which the pages for children and courses already say,
+              and one of them was a date nothing calculated. */}
+          <div className="relative z-10 mt-10 px-6 md:px-10 lg:px-12 pb-8 flex flex-wrap gap-x-14 gap-y-5">
+            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
+            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
           </div>
         </div>
 
         {/* Lower Content */}
-        <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px] flex flex-col lg:flex-row gap-10">
+        <div className="mx-auto w-full max-w-[1400px] p-6 md:p-10 lg:p-12">
+          <h3 className="mb-4 text-[18px] font-bold text-[#111] dark:text-white">Payment history</h3>
 
-          {/* Left Column: Contact & Details */}
-          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Contact & Details</h3>
-
-            <div className="flex flex-col gap-6">
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Mail size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Email</p>
-                  <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{user?.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Phone size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Phone Number</p>
-                  <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">+1 (555) 123-4567</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5">
-                  <Bell size={20} className="text-[#54656f] dark:text-[#aebac1]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Notifications</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">
-                      Marketing Alerts
-                    </p>
-                    <button
-                      onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                      className={cn(
-                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-                        notificationsEnabled ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700"
-                      )}
-                    >
-                      <span className={cn(
-                        "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                        notificationsEnabled ? "translate-x-6" : "translate-x-1"
-                      )} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Recent Activity */}
-          <div className="flex-1 w-full space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity</h3>
-
-            <div className="flex flex-col">
-              <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-                {recentActivity.map((activity, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center py-6 gap-6 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4 rounded-xl">
-                    <div className="flex flex-col items-center justify-center shrink-0 w-12 text-[#1099A1]">
-                      <span className="text-[20px] font-bold leading-none mb-0.5">{activity.date.split(" ")[1]}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{activity.date.split(" ")[0]}</span>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[15px] font-bold text-[#111] dark:text-white truncate mb-1">{activity.title}</h4>
-                      <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">{activity.time}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0 mt-4 sm:mt-0">
-                      <span className={cn(
-                        "text-[14px] font-bold",
-                        activity.status === "Done" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
-                      )}>
-                        {activity.status}
-                      </span>
-                      <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] w-16 text-right">
-                        {activity.type}
+          {payments.length === 0 ? (
+            <p className="py-16 text-center text-[14px] text-muted-foreground">
+              Nothing paid yet. Courses and counselling plans appear here once they are bought.
+            </p>
+          ) : (
+            <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+              {payments.map((p) => {
+                const paid = new Date(p.paidAt!);
+                return (
+                  <div key={p.id} className="flex items-center gap-6 py-5">
+                    <div className="flex w-12 shrink-0 flex-col items-center justify-center text-[#1099A1]">
+                      <span className="mb-0.5 text-[20px] font-bold leading-none">{paid.getDate()}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {paid.toLocaleDateString(undefined, { month: "short" })}
                       </span>
                     </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h4 className="truncate text-[15px] font-semibold text-[#111] dark:text-white">
+                        {p.description}
+                      </h4>
+                      <p className="truncate text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                        {p.courseId ? "Tutoring" : "College counselling"}
+                        {p.studentName ? ` \u00b7 ${p.studentName}` : ""}
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 text-[15px] font-semibold text-[#111] dark:text-white">
+                      {money(p.amountCents)}
+                    </span>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -195,6 +195,26 @@ adding a screen, prefer an empty state over a plausible number.
   `yakal.me`, which is verified. See `docs/EMAIL_SETUP.md`.
 
 
+## Parent profile (fixed 2026-08-11)
+
+- [x] **Recent Activity was five invented rows.** "Brooklyn enrolled in AP
+  Physics", "Austin completed Algebra II Assessment", "New message from Dr.
+  Alex" - names belonging to nobody in the database, identical on every parent
+  account. Replaced with the real payment history from `getBilling`.
+
+- [x] **The bio fell back to a fabricated one.** Any parent who had not written
+  a bio was described as "Parent of Brooklyn and Austin. Passionate about
+  ensuring my children receive the best academic support and guidance." It now
+  shows nothing when there is nothing.
+
+- [x] **The phone number was `+1 (555) 123-4567`,** hardcoded, for everyone.
+  Reads `profiles.phone`.
+
+- [x] **The three stat cards were invented:** 2 children, 3 active courses, and
+  a "Next Payment Due" of Nov 15 that nothing calculated. Removed; the header
+  carries contact details instead, which cannot go stale.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local

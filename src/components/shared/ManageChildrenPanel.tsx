@@ -519,7 +519,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="pb-2 pr-4 text-left uppercase text-[11px] font-semibold text-muted-foreground">Children</th>
+                  <th className="pb-2 w-[200px] pr-8 text-left uppercase text-[11px] font-semibold text-muted-foreground">Children</th>
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
