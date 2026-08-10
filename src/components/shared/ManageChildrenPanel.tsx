@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, Star, Crown, Sparkle } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, Star, Crown, Sparkle, PackagePlusIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
 import {
@@ -476,10 +476,10 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="pb-2 text-left text-[14px] font-medium text-foreground">Children</th>
+                  <th className="pb-2 pr-4 text-left text-[14px] font-medium text-foreground">Children</th>
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
@@ -535,7 +535,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           </div>
                         </td>
 
-                        <td className="py-3 pr-4">
+                        <td className="py-3">
                           <ServiceCell
                             empty={!hasService(c.id, "tutoring")}
                             addHref={SERVICES[0].buyHref(c.id)}
@@ -586,8 +586,8 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                               onClick={(e) => e.stopPropagation()}
                               className="flex items-center gap-3 py-2.5 text-muted-foreground transition-colors hover:text-[#1099A1]"
                             >
-                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-border">
-                                <Plus size={14} />
+                              <span className="grid h-8 shrink-0 place-items-center">
+                                <PackagePlusIcon size={14} />
                               </span>
                               <span className="text-[13px]">Add another course for {c.full_name.split(" ")[0]}</span>
                             </Link>
@@ -600,7 +600,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                 {pending.map((p) => (
                   <tr key={p.id} className="border-b border-border/30 last:border-0 opacity-70">
-                    <td className="py-3">
+                    <td className="py-3 pr-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={p.avatar_url || dicebearUrl(p.full_name)}
