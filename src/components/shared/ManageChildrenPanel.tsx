@@ -259,9 +259,9 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
         </button>
       </div>
 
-      <p className="-mt-3 text-[12.5px] text-muted-foreground">
+      <p className="-mt-3 px-2 text-[12.5px] text-muted-foreground">
         Inviting a child links them to your account and lets them sign in. Services are added per
-        child from their row below, and turn on once paid for.
+        child from their row below, and become active once paid for.
       </p>
 
       {invites.length > 0 && (
@@ -329,11 +329,11 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="pb-2 text-left text-[14px] font-bold text-foreground">Children</th>
+                  <th className="pb-2 text-left text-[14px] font-medium text-foreground">Children</th>
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
-                      className="w-[150px] pb-2 text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
+                      className="w-[150px] pb-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
                     >
                       {s.label}
                     </th>
@@ -371,7 +371,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       return (
                         <td key={s.key} className="py-3 text-center">
                           {on ? (
-                            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1099A1]">
+                            <span className="inline-flex items-center gap-1.5 text-[13px] font-normal text-[#1099A1]">
                               <Check size={14} /> {tierName ? `${tierName} - Active` : "Active"}
                             </span>
                           ) : (

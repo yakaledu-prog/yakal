@@ -97,8 +97,9 @@ export default function About() {
                 className="w-full h-full object-contain"
                 controls
                 autoPlay
+                loop
               >
-                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+                <source src="https://res.cloudinary.com/xzveklkp/video/upload/v1786397240/Describe_a_promotion_of_yakal_mxu5ga.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>

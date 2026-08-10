@@ -2,10 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Loader2, Lock, Users } from "lucide-react";
+import { ChildSidebar } from "@/pages/parent/billing/shared";
+import { cn } from "@/utils/cn";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Dropdown } from "@/components/ui/Dropdown";
 import {
   getChildServices,
   getLinkedChildren,
@@ -105,7 +106,13 @@ export function ChildViewFrame({
 
   return (
     <PageWrapper className="!p-0">
-      <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
+      {/* Header, then the children, then the page. The child used to be a
+          dropdown tucked under the title, which is a different control from
+          the rail every other parent page uses for the same choice. One rail,
+          one habit. A grid keeps a single DOM order and moves the rail into
+          its own column at md. */}
+      <div className="grid min-h-full grid-cols-1 bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] dark:bg-[#111b21]">
+        <div className="md:col-start-2 md:row-start-1">
         {chrome ? (
         <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
@@ -137,42 +144,29 @@ export function ChildViewFrame({
               {headerRight}
             </div>
 
-            {/* One child needs no picker at all. More than one gets a
-                dropdown rather than a row of tabs: these pages carry their own
-                tabs, and a second row of them across the top read as another
-                level of navigation rather than a choice of person. */}
-            {linked.length > 1 ? (
-              <div className="mt-5 w-56">
-                <Dropdown
-                  tone="onDark"
-                  ariaLabel="Which child"
-                  value={child?.id ?? ""}
-                  onChange={(id) => setSelectedId(id)}
-                  options={linked.map((c) => ({ value: c.id, label: c.full_name }))}
-                />
-              </div>
-            ) : (
-              !headerBottom && <div className="h-6" />
-            )}
+            {!headerBottom && <div className="h-6" />}
 
             {headerBottom}
           </div>
         </header>
-        ) : (
-          // No banner, so the picker stands alone above whatever the page
-          // renders for itself.
-          linked.length > 1 && (
-            <div className="w-56 px-4 pt-4 md:px-8">
-              <Dropdown
-                ariaLabel="Which child"
-                value={child?.id ?? ""}
-                onChange={(id) => setSelectedId(id)}
-                options={linked.map((c) => ({ value: c.id, label: c.full_name }))}
-              />
-            </div>
-          )
+        ) : null}
+
+        </div>
+
+        {linked.length > 1 && (
+          <div className="md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto">
+            <ChildSidebar
+              children={linked}
+              activeId={child?.id ?? null}
+              onSelect={(id) => id && setSelectedId(id)}
+              countFor={() => 0}
+              showAll={false}
+              countLabel={["", ""]}
+            />
+          </div>
         )}
 
+        <div className={cn("pb-12 md:row-start-2", linked.length > 1 ? "md:col-start-2" : "md:col-span-2")}>
         {isLoading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-[#1099A1]" />
@@ -196,6 +190,7 @@ export function ChildViewFrame({
           // than carrying one child's open tab and scroll into the next.
           <div key={child.id}>{children(child)}</div>
         )}
+        </div>
       </div>
     </PageWrapper>
   );
