@@ -89,6 +89,23 @@ export function monthlyCents(tier: AdmissionsTier): number {
   return Math.floor(tier.priceCents / Math.max(1, tier.instalmentMonths));
 }
 
+/**
+ * A distinct shade per tier, so the plans read as three different things at a
+ * glance without inventing a colour. It cycles Yakal's three brand colours in
+ * list order - green, teal, gold - which lands Essential green, Premier teal
+ * (also the recommended one) and Elite gold. Position, not key, so a rename or
+ * a fourth tier still gets a stable colour.
+ *
+ * Used only for identity accents (a card's border, a marker by the name), never
+ * for the action buttons, which stay teal so their contrast never drops.
+ */
+export const TIER_SHADES = ["#97CE9D", "#1099A1", "#CAA25F"] as const;
+
+export function tierShade(index: number): string {
+  const n = TIER_SHADES.length;
+  return TIER_SHADES[((index % n) + n) % n];
+}
+
 /** What is on offer, in the order it should be shown. */
 export async function getTiers(): Promise<AdmissionsTier[]> {
   const { data, error } = await supabase

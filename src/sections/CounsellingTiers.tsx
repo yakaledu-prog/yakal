@@ -6,7 +6,7 @@ import { Check } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
-import { getTiers, monthlyCents, type AdmissionsTier } from "@/services/admissionsService";
+import { getTiers, monthlyCents, tierShade, type AdmissionsTier } from "@/services/admissionsService";
 
 // ============================================================
 // College counselling plans, on the public page.
@@ -54,7 +54,7 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
       <div className="mt-10 grid gap-6 md:mt-14 lg:grid-cols-3">
         {tiers.map((tier, i) => (
           <Reveal key={tier.id} delay={i * 100}>
-            <TierCard tier={tier} onEnquire={() => navigate("/login")} />
+            <TierCard tier={tier} shade={tierShade(i)} onEnquire={() => navigate("/login")} />
           </Reveal>
         ))}
       </div>
@@ -75,19 +75,30 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
   );
 }
 
-function TierCard({ tier, onEnquire }: { tier: AdmissionsTier; onEnquire: () => void }) {
+function TierCard({
+  tier,
+  shade,
+  onEnquire,
+}: {
+  tier: AdmissionsTier;
+  shade: string;
+  onEnquire: () => void;
+}) {
   const monthly = tier.instalmentMonths > 1;
 
   return (
     <article
       className={cn(
-        "flex h-full flex-col rounded-2xl border bg-white p-6 md:p-7",
-        tier.isRecommended ? "border-[#1099A1] shadow-sm" : "border-[#e9edef]"
+        "flex h-full flex-col overflow-hidden rounded-2xl border bg-white p-6 md:p-7",
+        tier.isRecommended && "shadow-sm"
       )}
+      // The tier's shade is its identity: the top edge and the border carry it,
+      // so the three plans read as three different things at a glance.
+      style={{ borderColor: shade, borderTopWidth: 4 }}
     >
       {/* A fixed line whether or not it says anything, so three cards start at
           the same height rather than one sitting lower than its neighbours. */}
-      <p className="mb-1 h-4 text-[11px] font-bold uppercase tracking-wider text-[#1099A1]">
+      <p className="mb-1 h-4 text-[11px] font-bold uppercase tracking-wider" style={{ color: shade }}>
         {tier.isRecommended ? "Most chosen" : ""}
       </p>
 
