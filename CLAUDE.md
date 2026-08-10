@@ -118,3 +118,20 @@ Explain **why**, not what. The codebase leans on this: most non-obvious
 decisions carry a comment saying what was tried before and why it failed.
 Preserve them. If you change the code they describe, update them; if you delete
 the reason, the next person repeats the mistake.
+
+---
+
+## Working with more than one assistant
+
+When Codex, Claude, or another assistant share this repo, the coordination rules
+(branching, PRs, who integrates, what not to force-push, the models not to
+regress) live in `docs/COLLABORATION.md`. The essentials:
+
+- Branch off the latest `main`; keep PRs small and focused; stage only your files.
+- Never force-push a shared branch. If it moved under you, `git fetch` and rebase on top.
+- Claude is the integrator and owns merges to `main`. Contributors open PRs into
+  `main` and flag any change to a shared model (access rules, RLS, billing, the
+  invite flow) rather than deciding it alone.
+- Access follows payment, not a manual toggle; the invitation is the family
+  relationship, not a purchase. Do not regress either.
+- Run `npm run check` before every push.
