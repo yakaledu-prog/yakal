@@ -22,6 +22,22 @@ widening `notifications_type_check` alongside it. See
 
 ---
 
+## The structural gap, now closed
+
+`sendFromTemplate` wrote the in-app row and stopped. Email needs the Resend key
+or the SMTP credentials, neither of which is in the browser and neither of
+which should be, so **every notification raised from client code appeared in
+the bell and reached no inbox**. It reads as a broken mail server, which is
+where the debugging goes, and the mail server is fine.
+
+`/api/notify?action=email` is the missing half. It imports the same templates
+rather than restating them, looks the address up from the user id (never takes
+one from the request), and `sendFromTemplate` calls it after writing the row.
+Fixing it once fixes it for every template.
+
+Server-side flows in `api/_utils/fulfil.ts` were never affected: they call
+`sendEmail` directly and always did.
+
 ## Templates written but never fired
 
 Each of these is a `NotificationTemplate` in `src/lib/notifications/templates/`
@@ -29,19 +45,21 @@ with no caller anywhere in `src/` or `api/`.
 
 - [ ] **`assignment`** - work set on a course. A student is told nothing when
   a tutor adds homework, so it is found only by opening the course.
-- [ ] **`parentLink`** - a parent asking to link to a student, and the answer.
-  Both sides of that exchange are currently silent.
-- [ ] **`accountApproved`** - a tutor or counselor being approved or rejected
-  after signing up. They are left refreshing the page to find out.
+- [ ] **`parentLink`** - the template is unused, but `parentService.ts` writes
+  a raw `parent_link` row, so in-app works and email does not.
+- [ ] **`accountApproved`** - the template is unused, but `approveUser` and
+  `rejectUser` do notify: they write a raw `system` row directly rather than
+  going through the template. In-app works; switching them to the template
+  would give them the email and the better wording.
 - [ ] **`unlockRequest`** - a student asking for content to be unlocked.
 - [ ] **`admissionsPlan`** - fired from `api/_utils/fulfil.ts` on purchase, so
   the plan case is covered; no client-side path uses it.
 - [ ] **`messageReport`** - a reported message. Admins are not told, so a
   report waits until somebody opens the reports page.
-- [ ] **`booking`** - a session being booked. The template is written and
-  reads well. Nothing calls it: `bookAndPay` creates the session and sends
-  nothing. This is the highest value one on the list, because the email it
-  would send is the one that tells a family the hour exists.
+- [ ] **`booking`** - a session being booked. Narrower than it first looks:
+  `api/_utils/fulfil.ts` does notify the student, the parent and the tutor on
+  purchase, and names the session count, so the purchase is covered. What is
+  missing is a per-session confirmation naming the actual hour.
 
 ## Actions with no template and no notification
 

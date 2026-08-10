@@ -13,6 +13,7 @@ import zoomHandler from '../api/zoom.ts';
 import googleHandler from '../api/google.ts';
 import contactHandler from '../api/contact.ts';
 import newsletterHandler from '../api/newsletter.ts';
+import notifyHandler from '../api/notify.ts';
 import devUserHandler from '../api/dev-user.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
 
@@ -49,6 +50,7 @@ app.all('/api/zoom', createVercelHandler(zoomHandler));
 app.all('/api/google', createVercelHandler(googleHandler));
 app.all('/api/contact', createVercelHandler(contactHandler));
 app.all('/api/newsletter', createVercelHandler(newsletterHandler));
+app.all('/api/notify', createVercelHandler(notifyHandler));
 // Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
 app.all('/api/dev-user', createVercelHandler(devUserHandler));
 

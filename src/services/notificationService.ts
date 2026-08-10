@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 import {
   renderNotification,
   type TemplateKey,
@@ -126,6 +127,20 @@ export async function sendFromTemplate<K extends TemplateKey>(
     template: key,
     vars: vars as Record<string, unknown>,
   });
+
+  // The email half, which has to happen on the server: the Resend key and the
+  // SMTP credentials are not in the browser and must not be. Without this every
+  // notification raised from the client landed in the bell and nowhere else,
+  // which reads as a broken mail server rather than a missing call.
+  //
+  // Deliberately after the row and deliberately swallowed. The notification is
+  // the record and it is already written; a mail server having a bad minute
+  // must not turn a successful action into a failed one.
+  try {
+    await authedPost("/api/notify?action=email", { userId, template: key, vars });
+  } catch (e) {
+    console.error("Notification saved but the email did not send", e);
+  }
 }
 
 /**
