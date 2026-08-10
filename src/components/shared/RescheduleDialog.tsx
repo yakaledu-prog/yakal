@@ -108,10 +108,14 @@ export function RescheduleDialog({
 
         </div>
 
-        {/* In the footer, not the scrolling body. Below the picker it sat
-            under the fold, so the confirm button looked broken: disabled, with
-            the field explaining why nowhere on screen. */}
-        {askReason && (
+        {/* After a slot is picked, not before. Asking why you are moving a
+            session while nothing has been chosen is a question about a change
+            that does not exist yet.
+
+            In the footer rather than the scrolling body: below the picker it
+            sat under the fold, so the confirm button looked broken, disabled
+            with the field explaining why nowhere on screen. */}
+        {askReason && picked && (
           <div className="border-t border-border px-5 pt-4">
             <label className="mb-1.5 block text-[13px] text-muted-foreground">
               Why are you moving it? The student sees this.
