@@ -106,22 +106,26 @@ export function RescheduleDialog({
             currentSlot={{ date: session.date, startTime: session.startTime }}
           />
 
-          {askReason && (
-            <div className="mt-5 border-t border-border pt-4">
-              <label className="mb-1.5 block text-[13px] text-muted-foreground">
-                Why are you moving it? The student sees this.
-              </label>
-              <input
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Clashing appointment, sorry"
-                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
-              />
-            </div>
-          )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-border p-5">
+        {/* In the footer, not the scrolling body. Below the picker it sat
+            under the fold, so the confirm button looked broken: disabled, with
+            the field explaining why nowhere on screen. */}
+        {askReason && (
+          <div className="border-t border-border px-5 pt-4">
+            <label className="mb-1.5 block text-[13px] text-muted-foreground">
+              Why are you moving it? The student sees this.
+            </label>
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Clashing appointment, sorry"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3 p-5">
           <p className="truncate text-[13px] text-muted-foreground flex-grow">
             {session.title}, currently {readableDate(session.date, session.startTime)}
           </p>
@@ -131,9 +135,11 @@ export function RescheduleDialog({
           <Button disabled={!picked || saving || (askReason && !reason.trim())} onClick={confirm} className="h-11 px-6 font-semibold">
             {saving
               ? "Moving..."
-              : picked
-                ? `Move to ${readableDate(picked.date, picked.startTime)}`
-                : "Pick a new time"}
+              : !picked
+                ? "Pick a new time"
+                : askReason && !reason.trim()
+                  ? "Add a reason"
+                  : `Move to ${readableDate(picked.date, picked.startTime)}`}
           </Button>
         </div>
       </div>
