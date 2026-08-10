@@ -23,6 +23,7 @@ export interface ChildOption {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  grade_level?: string | null;
 }
 
 /** The list of children, plus an "everyone" entry. */
@@ -39,6 +40,11 @@ export function ChildSidebar({
   showAll = true,
   /** What the line under each name counts. Billing counts plans. */
   countLabel = ["plan", "plans"],
+  /**
+   * The line under a name, when a count is the wrong thing to put there. The
+   * roadmap has nothing to count, so it says which grade they are in.
+   */
+  sublineFor,
 }: {
   children: ChildOption[];
   activeId: string | null;
@@ -46,6 +52,7 @@ export function ChildSidebar({
   countFor: (childId: string | null) => number;
   showAll?: boolean;
   countLabel?: [string, string];
+  sublineFor?: (child: ChildOption) => string;
 }) {
   return (
     <aside className="w-full shrink-0 border-b border-border bg-card md:h-full md:w-[260px] md:border-b-0 md:border-r">
@@ -108,7 +115,9 @@ export function ChildSidebar({
                 {c.full_name}
               </span>
               <span className="block text-[12px] text-muted-foreground">
-                {countFor(c.id)} {countFor(c.id) === 1 ? countLabel[0] : countLabel[1]}
+                {sublineFor
+                  ? sublineFor(c)
+                  : `${countFor(c.id)} ${countFor(c.id) === 1 ? countLabel[0] : countLabel[1]}`}
               </span>
             </span>
           </button>

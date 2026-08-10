@@ -161,7 +161,7 @@ export function ChildViewFrame({
               onSelect={(id) => id && setSelectedId(id)}
               countFor={() => 0}
               showAll={false}
-              countLabel={["", ""]}
+              sublineFor={(c) => c.grade_level || "Grade not set"}
             />
           </div>
         )}

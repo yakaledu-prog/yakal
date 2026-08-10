@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getLinkedChildren,
@@ -197,72 +197,77 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
-      <div className="relative flex flex-col sm:flex-row items-stretch gap-2 border border-border rounded-2xl p-2">
-        <div className="relative flex-1 min-w-0">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setSuggestOpen(true);
-            }}
-            onFocus={() => setSuggestOpen(true)}
-            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setSuggestOpen(false);
-              if (e.key === "Enter" && !adding) sendInvite();
-            }}
-            placeholder="Child's email address"
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={suggestOpen && suggestions.length > 0}
-            aria-autocomplete="list"
-            className="w-full bg-transparent px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
-          />
+      {/* One box around the field and the sentence that explains it, so the
+          two read as one thing: what you type, and what typing it does. */}
+      <div className="rounded-2xl border border-border p-4">
+        <div className="relative flex flex-col items-stretch gap-3 sm:flex-row">
+          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border px-3.5 transition-colors focus-within:border-[#1099A1]">
+            <Mail size={17} className="shrink-0 text-muted-foreground" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setSuggestOpen(true);
+              }}
+              onFocus={() => setSuggestOpen(true)}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setSuggestOpen(false);
+                if (e.key === "Enter" && !adding) sendInvite();
+              }}
+              placeholder="Child's email address"
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={suggestOpen && suggestions.length > 0}
+              aria-autocomplete="list"
+              className="w-full bg-transparent py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+            />
 
-          {suggestOpen && suggestions.length > 0 && (
-            <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-border bg-white py-1 shadow-lg dark:bg-[#202c33]">
-              {suggestions.map((sug: StudentSuggestion) => (
-                <li key={sug.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setSuggestOpen(false)}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
-                  >
-                    <img
-                      src={sug.avatar_url || dicebearUrl(sug.full_name)}
-                      alt=""
-                      className="h-7 w-7 shrink-0 rounded-full object-cover"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium text-foreground">
-                        {sug.full_name}
+            {suggestOpen && suggestions.length > 0 && (
+              <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-border bg-white py-1 shadow-lg dark:bg-[#202c33]">
+                {suggestions.map((sug: StudentSuggestion) => (
+                  <li key={sug.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setSuggestOpen(false)}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <img
+                        src={sug.avatar_url || dicebearUrl(sug.full_name)}
+                        alt=""
+                        className="h-7 w-7 shrink-0 rounded-full object-cover"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-medium text-foreground">
+                          {sug.full_name}
+                        </span>
+                        <span className="block truncate text-[12px] italic text-muted-foreground">
+                          {sug.masked_email}
+                          {sug.grade_level ? ` - ${sug.grade_level}` : ""}
+                        </span>
                       </span>
-                      <span className="block truncate text-[12px] italic text-muted-foreground">
-                        {sug.masked_email}
-                        {sug.grade_level ? ` - ${sug.grade_level}` : ""}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button
+            onClick={sendInvite}
+            disabled={adding || !email.trim()}
+            className="shrink-0 rounded-xl bg-[#1099A1] px-6 py-3 text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+          >
+            {adding ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Send invitation"}
+          </button>
         </div>
-        <button
-          onClick={sendInvite}
-          disabled={adding || !email.trim()}
-          className="px-6 py-2.5 rounded-xl bg-[#1099A1] text-white text-[14px] font-semibold hover:bg-[#0d7f86] disabled:opacity-50 transition-colors shrink-0"
-        >
-          {adding ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Send invitation"}
-        </button>
-      </div>
 
-      <p className="-mt-3 px-2 text-[12.5px] text-muted-foreground">
-        Inviting a child links them to your account and lets them sign in. Services are added per
-        child from their row below, and become active once paid for.
-      </p>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">
+          Inviting a child links them to your account and lets them sign in. Services are added per
+          child from their row below, and become active once paid for.
+        </p>
+      </div>
 
       {invites.length > 0 && (
         <div>
