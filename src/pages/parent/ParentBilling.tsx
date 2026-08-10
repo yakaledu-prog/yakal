@@ -82,7 +82,12 @@ export function ParentBilling() {
 
   // One pane at a time on a phone: the children, then the child. The same
   // hook the other master-detail pages use.
-  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
+  // showDetail rather than listClass/detailClass: those carry `flex`, and a
+  // grid child set to display:flex stops stretching to its column, which left
+  // the header sized to its own text instead of the full width.
+  const { showDetail, openDetail, closeDetail } = useMasterDetail();
+  const listClass = showDetail ? "hidden md:block" : "block";
+  const detailClass = showDetail ? "block" : "hidden md:block";
 
   const { data, isLoading } = useQuery({
     queryKey: ["billing", user?.id],
@@ -201,7 +206,7 @@ export function ParentBilling() {
           list of names with no heading explaining what they were a list of.
           A grid keeps one DOM order and moves the rail into its own column at
           md, rather than rendering it twice. */}
-      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
         <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
           <BillingHeader
             subtitle={

@@ -215,6 +215,21 @@ adding a screen, prefer an empty state over a plausible number.
   carries contact details instead, which cannot go stale.
 
 
+## Parent home (fixed 2026-08-11)
+
+- [x] **The whole banner and agenda were fabricated.** `ParentHome` called
+  `studentService.getDashboardSummary()`, which returns `MOCK_DASHBOARD_SUMMARY`
+  after a fake 600ms delay: a session in "AP Calculus AB" with "Dr. Alex",
+  homework called "Derivatives Practice", and four stats that were string
+  literals in the JSX (3 courses, 2 children, 1 message, 4 classes). The page
+  then hardcoded the name "Brooklyn" around it, because a student summary has
+  no child to name.
+
+  Replaced with `getParentDashboard`, built from the family's real rows:
+  linked children, their upcoming sessions with the tutor, active enrolments,
+  unread conversations and paid invoices. Every figure now belongs to somebody.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local

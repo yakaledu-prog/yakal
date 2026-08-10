@@ -269,7 +269,7 @@ export function CommandPalette({
           </button>
         </div>
 
-        <div className="hidden md:flex lg:flex items-center gap-2 border-b border-border px-4 py-3">
+        <div className="hidden md:flex lg:flex items-center gap-2 border-b border-border/35 px-2 py-3">
           <Chip
             active={filter === "navigation"}
             onClick={() => setFilter((f) => (f === "navigation" ? "all" : "navigation"))}
@@ -350,7 +350,7 @@ export function CommandPalette({
           </div>
         )}
 
-        <div className="capitalize flex items-center justify-between gap-4 border-t border-border px-5 py-3 text-[12px] text-muted-foreground">
+        <div className="capitalize hidden md:flex lg:flex items-center justify-between gap-4 border-t border-border/35 px-5 py-3 text-[12px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Key>&uarr;</Key>
             <Key>&darr;</Key>

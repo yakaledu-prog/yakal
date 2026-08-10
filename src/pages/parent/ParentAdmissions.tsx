@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, X , ChevronLeft } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import {
   monthlyCents,
   type AdmissionsTier,
 } from "@/services/admissionsService";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { ChildSidebar } from "./billing/shared";
 
 // ============================================================
@@ -36,6 +37,12 @@ export function ParentAdmissions() {
   // The child can arrive preselected, e.g. from "Add" on a child's row, so the
   // parent lands with the right child already chosen rather than picking again.
   const [childId, setChildId] = useState<string | null>(params.get("student"));
+  // showDetail rather than the hook's listClass/detailClass: those carry
+  // `flex`, and a grid child set to display:flex stops stretching to its
+  // column, which leaves the header sized to its own text.
+  const { showDetail, openDetail, closeDetail } = useMasterDetail();
+  const listClass = showDetail ? "hidden md:block" : "block";
+  const detailClass = showDetail ? "block" : "hidden md:block";
   const [busy, setBusy] = useState<string | null>(null);
   // The tier awaiting confirmation. Buying names the child first, because
   // buying the right plan for the wrong child is the expensive mistake here.
@@ -80,8 +87,8 @@ export function ParentAdmissions() {
       {/* Header, then the children, then the plans. Same reason as billing:
           on a phone the rail sat above the page title, so the first thing you
           read was a list of names with nothing saying what they were for. */}
-      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[300px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
-        <div className="md:order-2 md:col-start-2 md:row-start-1">
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+        <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
           <header className="relative overflow-hidden bg-[#1099A1] px-6 py-6 text-white md:px-8 md:py-8">
             <svg
               className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -93,6 +100,12 @@ export function ParentAdmissions() {
               <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             </svg>
             <div className="relative z-10">
+              <button
+                onClick={closeDetail}
+                className="mb-2 flex items-center gap-1 text-[13px] text-white/80 transition-colors hover:text-white md:hidden"
+              >
+                <ChevronLeft size={15} /> Children
+              </button>
               <h1 className="text-2xl font-bold tracking-tight md:text-3xl">College counselling</h1>
               <p className="mt-1 text-[14px] text-white/80">
                 {currentPlan
@@ -105,16 +118,19 @@ export function ParentAdmissions() {
           </header>
         </div>
 
-        <div className="md:order-1 md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto md:border-r md:border-border">
+        <div className={cn("md:order-1 md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto md:border-r md:border-border", listClass)}>
           <ChildSidebar
             children={children}
             activeId={activeChildId}
-            onSelect={setChildId}
+            onSelect={(id) => {
+              setChildId(id);
+              openDetail();
+            }}
             countFor={(id) => (id ? (plans?.get(id) ? 1 : 0) : (plans?.size ?? 0))}
           />
         </div>
 
-        <div className="p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8">
+        <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8", detailClass)}>
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="animate-spin text-[#1099A1]" />

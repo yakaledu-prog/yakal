@@ -69,7 +69,7 @@ export function AdminBilling() {
           ]}
         />
 
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-12">
+        <div className="p-6 md:p-10 space-y-12">
           {/* Tutor payouts */}
           <div>
             <div className="flex items-center gap-2 border-b border-border/50 pb-3 mb-4">

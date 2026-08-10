@@ -1,4 +1,7 @@
 import { supabase } from "@/lib/supabase";
+import { getAllAssignments } from "@/services/studentService";
+import { getConversations } from "@/services/messageService";
+import { getBilling } from "@/services/packageService";
 import { authedPost } from "@/lib/authedFetch";
 
 export interface LinkedChild {
@@ -437,4 +440,166 @@ export async function cancelInvite(inviteId: string): Promise<{ success: boolean
     .update({ status: "cancelled" })
     .eq("id", inviteId);
   return error ? { success: false, error: error.message } : { success: true };
+}
+
+// ============================================================
+// The parent's home screen.
+//
+// It used to call studentService.getDashboardSummary(), which returns
+// MOCK_DASHBOARD_SUMMARY after a fake 600ms delay: a session in AP Calculus AB
+// with Dr. Alex, homework called Derivatives Practice, and four stats that
+// were string literals in the JSX. None of it belonged to anyone, and the page
+// hardcoded the name "Brooklyn" around it because a student summary has no
+// child to name.
+//
+// This is the same thing built from the family's real rows.
+// ============================================================
+
+export interface ParentAgendaSession {
+  id: string;
+  /** Whose it is. The whole reason a parent's version differs from a student's. */
+  childName: string;
+  childId: string;
+  subject: string;
+  tutorName: string | null;
+  tutorAvatarUrl: string | null;
+  startsAt: Date;
+}
+
+export interface ParentAgendaTask {
+  id: string;
+  childName: string;
+  title: string;
+  dueDate: string | null;
+}
+
+export interface ParentPayment {
+  id: string;
+  description: string;
+  amountCents: number;
+  paidAt: string;
+  childName: string | null;
+  service: "Tutoring" | "College counselling";
+}
+
+export interface ParentDashboard {
+  childCount: number;
+  enrolledCourses: number;
+  upcomingSessions: number;
+  unreadMessages: number;
+  /** Soonest first. The banner names the first, the agenda lists the rest. */
+  upcoming: ParentAgendaSession[];
+  dueSoon: ParentAgendaTask[];
+  /** Newest first. What has actually been paid for. */
+  recentPayments: ParentPayment[];
+}
+
+export async function getParentDashboard(parentId: string): Promise<ParentDashboard> {
+  const children = await getLinkedChildren(parentId);
+
+  const empty: ParentDashboard = {
+    childCount: 0,
+    enrolledCourses: 0,
+    upcomingSessions: 0,
+    unreadMessages: 0,
+    upcoming: [],
+    dueSoon: [],
+    recentPayments: [],
+  };
+  if (children.length === 0) return empty;
+
+  const ids = children.map((c) => c.id);
+  const nameOf = new Map(children.map((c) => [c.id, c.full_name]));
+
+  // Sessions still to come, and the courses they are enrolled on. Both are
+  // read per child because the row-level policies are written per child.
+  const [sessionRows, enrolments, conversations, billing] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("id, student_id, tutor_id, subject, date, start_time, status")
+      .in("student_id", ids)
+      .eq("status", "upcoming")
+      .order("date", { ascending: true }),
+    supabase
+      .from("enrolments")
+      .select("id, student_id")
+      .in("student_id", ids)
+      .eq("status", "active"),
+    getConversations(parentId),
+    getBilling(parentId),
+  ]);
+
+  const sessions = sessionRows.data ?? [];
+
+  // One lookup for the tutors on those sessions, rather than one per row.
+  const tutorIds = [...new Set(sessions.map((s) => s.tutor_id).filter(Boolean))] as string[];
+  const { data: tutors } = tutorIds.length
+    ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", tutorIds)
+    : { data: [] as { id: string; full_name: string; avatar_url: string | null }[] };
+  const tutorOf = new Map((tutors ?? []).map((t) => [t.id, t]));
+
+  const now = Date.now();
+  const upcoming: ParentAgendaSession[] = sessions
+    .map((s) => {
+      const [h, m] = String(s.start_time ?? "00:00").split(":").map(Number);
+      const startsAt = new Date(`${s.date}T00:00:00`);
+      startsAt.setHours(h || 0, m || 0, 0, 0);
+      const tutor = s.tutor_id ? tutorOf.get(s.tutor_id) : null;
+      return {
+        id: s.id,
+        childId: s.student_id,
+        childName: nameOf.get(s.student_id) ?? "Your child",
+        subject: s.subject ?? "Session",
+        tutorName: tutor?.full_name ?? null,
+        tutorAvatarUrl: tutor?.avatar_url ?? null,
+        startsAt,
+      };
+    })
+    // Still upcoming by the clock, not only by the status column: a session
+    // nobody confirmed afterwards keeps that status forever.
+    .filter((s) => s.startsAt.getTime() >= now)
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+
+  // Work set and not yet turned in, across every child.
+  const perChild = await Promise.all(
+    ids.map(async (id) => {
+      const rows = await getAllAssignments(id);
+      return rows
+        .filter((a) => !a.isSubmitted)
+        .map((a) => ({
+          id: a.id,
+          childName: nameOf.get(id) ?? "Your child",
+          title: a.title,
+          dueDate: a.dueDate,
+        }));
+    })
+  );
+
+  const dueSoon = perChild
+    .flat()
+    .sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"))
+    .slice(0, 5);
+
+  return {
+    childCount: children.length,
+    enrolledCourses: (enrolments.data ?? []).length,
+    upcomingSessions: upcoming.length,
+    unreadMessages: conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0),
+    upcoming: upcoming.slice(0, 4),
+    dueSoon,
+    recentPayments: billing.invoices
+      .filter((i) => i.paidAt)
+      .sort((a, b) => (a.paidAt! < b.paidAt! ? 1 : -1))
+      .slice(0, 5)
+      .map((i) => ({
+        id: i.id,
+        description: i.description,
+        amountCents: i.amountCents,
+        paidAt: i.paidAt!,
+        childName: i.studentName,
+        // Derived, not stored: an invoice against a course is tutoring, one
+        // without is counselling.
+        service: i.courseId ? "Tutoring" : "College counselling",
+      })),
+  };
 }
