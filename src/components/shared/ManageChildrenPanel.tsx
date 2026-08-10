@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, PackagePlusIcon, Pencil } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, PackagePlusIcon, SquarePenIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
 import type { AdmissionsPlan } from "@/services/admissionsService";
@@ -623,7 +623,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                                   title="Change this plan"
                                   className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#1099A1]"
                                 >
-                                  <Pencil size={15} />
+                                  <SquarePenIcon size={15} />
                                 </Link>
                               </div>
                             )}
