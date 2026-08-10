@@ -11,7 +11,7 @@ import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { cn } from "@/utils/cn";
 import { DetailRow } from "@/components/shared/DetailRow";
 import { tutorProfileCompleteness } from "@/config/tutorProfile";
-import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X , AlertCircle } from "lucide-react";
+import { Calendar, Camera, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X , AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
@@ -22,6 +22,18 @@ const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
+
+  /** Written straight through: one tap, one column, nothing to confirm. */
+  async function toggleSubject(subject: string) {
+    if (!user) return;
+    const current: string[] = profile?.subjects ?? [];
+    const next = current.includes(subject)
+      ? current.filter((s) => s !== subject)
+      : [...current, subject];
+    const { error } = await supabase.from("profiles").update({ subjects: next }).eq("id", user.id);
+    if (error) return toast.error(error.message);
+    await refreshProfile();
+  }
 
   /** The database column behind each section. */
   const COLUMN: Record<ResumeSection, string> = {
@@ -242,6 +254,40 @@ export function TutorProfile() {
 
             {/* Right column */}
             <div className="flex-1 w-full space-y-6">
+              {/* Its own section rather than a list inside the edit modal.
+                  Subjects are what the catalog filters and searches on, so
+                  they belong beside the rest of what a family reads, not
+                  buried under a name and a phone number. */}
+              <div>
+                <div className="mb-3 flex items-baseline justify-between">
+                  <h3 className="text-[16px] font-bold text-foreground">Subjects</h3>
+                  <span className="text-[12px] text-muted-foreground">
+                    {(profile?.subjects?.length ?? 0)} selected
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {SUBJECTS.map((s) => {
+                    const on = (profile?.subjects ?? []).includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => void toggleSubject(s)}
+                        aria-pressed={on}
+                        className={cn(
+                          "rounded-xl border px-3.5 py-2 text-[13.5px] transition-colors",
+                          on
+                            ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
+                            : "border-border text-muted-foreground hover:border-[#1099A1] hover:text-foreground"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* A tutor's background, not their diary. Sessions already have
                   a page of their own, and repeating five of them here answered
                   a question nobody opens a profile to ask. What a family
@@ -287,13 +333,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [bio, setBio] = useState(profile?.bio || "");
-  const [subjects, setSubjects] = useState<string[]>(profile?.subjects || []);
-  const [subjectQuery, setSubjectQuery] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const toggle = (s: string) => setSubjects((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
-
-  const shown = SUBJECTS.filter((s) => s.toLowerCase().includes(subjectQuery.trim().toLowerCase()));
 
   const save = async () => {
     if (!user) return;
@@ -303,7 +343,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
       full_name: fullName.trim(),
       phone: phone.trim() || null,
       bio: bio.trim() || null,
-      subjects,
     }).eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -370,46 +409,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
             </p>
           </div>
 
-          <div>
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className={cn(lbl, "mb-0")}>Subjects</span>
-              <span className="text-[12px] text-[#8696a0]">{subjects.length} selected</span>
-            </div>
-
-            <input
-              value={subjectQuery}
-              onChange={(e) => setSubjectQuery(e.target.value)}
-              placeholder="Search subjects"
-              className={cn(input, "mb-1")}
-            />
-
-            {/* A list, not a field of capsules. Rows are the same width, so the
-                eye runs down the ticks instead of hunting through wrapped
-                pills of different lengths. */}
-            <div className="max-h-[196px] overflow-y-auto">
-              {shown.length === 0 ? (
-                <p className="py-6 text-center text-[13px] text-[#8696a0]">Nothing matches that.</p>
-              ) : (
-                shown.map((s) => {
-                  const on = subjects.includes(s);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggle(s)}
-                      aria-pressed={on}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-[#f0f2f5] dark:hover:bg-[#111b21]"
-                    >
-                      <span className={cn(on ? "text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]")}>
-                        {s}
-                      </span>
-                      {on && <Check size={16} className="shrink-0 text-[#1099A1]" />}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-[#e9edef] px-7 py-4 dark:border-[#2a3942]">

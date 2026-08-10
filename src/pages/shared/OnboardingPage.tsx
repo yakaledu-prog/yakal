@@ -22,6 +22,8 @@ import subjSat from "@/assets/images/subject-sat-prep.webp";
 import subjAdvising from "@/assets/images/resource-book-session.webp";
 import subjOther from "@/assets/images/about-offer.webp";
 import { gradYearFromGrade } from "@/config/admissionsCalendar";
+import { TutorResume, type TutorResumeData, type ResumeSection } from "@/components/shared/TutorResume";
+import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { upsertApplication } from "@/services/collegeService";
 
 const SUBJECTS = [
@@ -66,6 +68,15 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [bio, setBio] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
   const [intendedMajor, setIntendedMajor] = useState("");
+  // Held here and written with everything else at the end, so skipping the
+  // step leaves nothing half saved.
+  const [resume, setResume] = useState<TutorResumeData>({
+    education: [],
+    workExperience: [],
+    certifications: [],
+    languages: [],
+  });
+  const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvUrl, setCvUrl] = useState("");
 
@@ -215,7 +226,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   };
 
   const StudentSteps = ["Profile", "Preferences"];
-  const TutorSteps = ["Profile", "CV / Resume", "Subjects"];
+  const TutorSteps = ["Profile", "CV / Resume", "Subjects", "Background"];
   const ParentSteps = ["Profile", "Theme", "Children"];
   const CounselorSteps = ["Profile", "CV / Resume", "Bio"];
 
@@ -278,6 +289,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
       if (role === "tutor") {
         updates.subjects = subjects;
+        updates.education = resume.education;
+        updates.work_experience = resume.workExperience;
+        updates.certifications = resume.certifications;
+        updates.languages = resume.languages;
         updates.bio = bio.trim() || null;
         updates.resume_url = cvUrl || null;
       } else if (role === "counselor") {
@@ -537,6 +552,28 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
+              {/* Tutor Step 4: the background a family reads on the catalog.
+                  The same component and the same dialog the profile page uses,
+                  so an entry added here and one added later are the same shape
+                  and there is one editor to keep right. Skippable, like the
+                  rest: none of it blocks teaching, all of it helps being
+                  found. */}
+              {role === "tutor" && step === 4 && (
+                <div className="space-y-4">
+                  <p className="text-[13px] text-muted-foreground">
+                    Education, work and certifications appear on your card in the course catalog.
+                    Add what you have now, or fill it in later from your profile.
+                  </p>
+                  <TutorResume
+                    resume={resume}
+                    onAdd={(section) => setAddingTo(section)}
+                    onRemove={(section, index) =>
+                      setResume((r) => ({ ...r, [section]: r[section].filter((_, i) => i !== index) }))
+                    }
+                  />
+                </div>
+              )}
+
               {/* Student Step 2: grade level, then the same theme cards */}
               {role === "student" && step === 2 && (
                 <div className="flex flex-col gap-6">
@@ -780,6 +817,17 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
           </form>
         </Card>
       </div>
+
+      {addingTo && (
+        <ResumeEntryDialog
+          section={addingTo}
+          onSave={(entry) => {
+            setResume((r) => ({ ...r, [addingTo]: [...r[addingTo], entry] }));
+            setAddingTo(null);
+          }}
+          onClose={() => setAddingTo(null)}
+        />
+      )}
     </div>
   );
 }
