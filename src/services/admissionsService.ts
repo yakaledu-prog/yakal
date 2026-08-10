@@ -49,6 +49,9 @@ export interface AdmissionsPlan {
   tier: AdmissionsTier;
   startedAt: string;
   status: string;
+  /** Who is actually advising them. Null until one is assigned. */
+  counselorName: string | null;
+  counselorAvatarUrl: string | null;
 }
 
 function toTier(row: any): AdmissionsTier {
@@ -296,6 +299,7 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     .from("admissions_plans")
     .select(`id, student_id, started_at, status,
              student:profiles!admissions_plans_student_id_fkey (full_name),
+             counselor:profiles!admissions_plans_counselor_id_fkey (full_name, avatar_url),
              tier:admissions_tiers (${TIER_FIELDS})`)
     .eq("student_id", studentId)
     .eq("status", "active")
@@ -314,6 +318,8 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     tier: toTier((data as any).tier),
     startedAt: data.started_at,
     status: data.status,
+    counselorName: (data as any).counselor?.full_name ?? null,
+    counselorAvatarUrl: (data as any).counselor?.avatar_url ?? null,
   };
 }
 
@@ -346,6 +352,8 @@ export async function getAdmissionsPlans(
       tier: toTier(row.tier),
       startedAt: row.started_at,
       status: row.status,
+      counselorName: row.counselor?.full_name ?? null,
+      counselorAvatarUrl: row.counselor?.avatar_url ?? null,
     });
   }
   return out;

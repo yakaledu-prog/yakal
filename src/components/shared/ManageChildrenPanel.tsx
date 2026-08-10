@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, Star, Crown, Sparkle, PackagePlusIcon } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, PackagePlusIcon, Pencil } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
+import type { AdmissionsPlan } from "@/services/admissionsService";
 import {
   getLinkedChildren,
   getChildServices,
@@ -148,32 +149,48 @@ function CourseCard({ course }: { course: CoursePackage }) {
 }
 
 /**
- * The admissions tier, in its own colour.
+ * The three tiers, in brand colours, ordered the way the tiers are.
  *
- * The three are ordered, and a parent comparing two children wants to see
- * which is on which without reading. Brand colours only, so the ladder is
- * green, then gold, then teal for the top one.
+ * Used for the word in the row and for the band above the courses, so the two
+ * cannot end up disagreeing about which colour Premier is.
  */
-const TIER_LOOK: Record<string, { colour: string; icon: React.ReactNode }> = {
-  essential: { colour: "#97CE9D", icon: <Sparkle size={13} /> },
-  premier: { colour: "#CAA25F", icon: <Star size={13} /> },
-  elite: { colour: "#1099A1", icon: <Crown size={13} /> },
+const TIER_COLOUR: Record<string, string> = {
+  essential: "#97CE9D",
+  premier: "#CAA25F",
+  elite: "#1099A1",
 };
 
-function TierChip({ tier }: { tier: string | null }) {
-  if (!tier) return <span className="text-[13px] text-muted-foreground">Paid, no plan yet</span>;
+function tierColour(tier: string | null | undefined): string {
+  return TIER_COLOUR[(tier ?? "").trim().toLowerCase()] ?? "#1099A1";
+}
 
-  const look = TIER_LOOK[tier.trim().toLowerCase()] ?? {
-    colour: "#1099A1",
-    icon: <Star size={13} />,
-  };
+/**
+ * The plan, said as who is advising them and on what.
+ *
+ * The tier alone answered "what did we buy" and left "who is actually doing
+ * it" to another page, which is the question a parent opens this to ask.
+ */
+function PlanCell({ plan }: { plan: AdmissionsPlan | null | undefined }) {
+  if (!plan) return <span className="text-[13px] text-muted-foreground">Paid, no plan yet</span>;
 
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-[13px] font-medium"
-      style={{ color: look.colour }}
-    >
-      {look.icon} {tier}
+    <span className="flex min-w-0 items-center gap-2.5">
+      <img
+        src={plan.counselorAvatarUrl || dicebearUrl(plan.counselorName ?? plan.tier.name)}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+      />
+      <span className="min-w-0">
+        <span className="block truncate text-[12px] text-muted-foreground">
+          {plan.counselorName ?? "Counselor to be assigned"}
+        </span>
+        <span
+          className="block truncate text-[13px] font-medium"
+          style={{ color: tierColour(plan.tier.name) }}
+        >
+          {plan.tier.name}
+        </span>
+      </span>
     </span>
   );
 }
@@ -408,7 +425,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           </button>
         </div>
 
-        <p className="mt-3 text-[12.5px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
           Inviting a child links them to your account and lets them sign in. Services are added per
           child from their row below, and become active once paid for.
         </p>
@@ -479,19 +496,19 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="pb-2 pr-4 text-left text-[14px] font-medium text-foreground">Children</th>
+                  <th className="pb-2 pr-4 text-left uppercase text-[11px] font-semibold text-muted-foreground">Children</th>
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
                       className={cn(
                         "pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground",
-                        s.key === "tutoring" ? "w-[300px]" : "w-[160px]"
+                        s.key === "tutoring" ? "w-[190px]" : "w-[210px]"
                       )}
                     >
                       {s.label}
                     </th>
                   ))}
-                  <th className="w-[52px]" />
+                  <th className="w-[92px]" />
                 </tr>
               </thead>
               <tbody>
@@ -549,28 +566,58 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                             empty={!hasService(c.id, "admissions")}
                             addHref={SERVICES[1].buyHref(c.id)}
                           >
-                            <TierChip tier={plans?.get(c.id)?.tier.name ?? null} />
+                            <PlanCell plan={plans?.get(c.id)} />
                           </ServiceCell>
                         </td>
 
-                        <td className="py-3 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setToRemove({ id: c.id, name: c.full_name });
-                            }}
-                            disabled={busyKey === `${c.id}:unlink`}
-                            title={`Remove ${c.full_name}`}
-                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                        <td className="py-3">
+                          <div className="flex items-center justify-end gap-0.5">
+                            {/* Their page, not a form. There is nothing on a
+                                child a parent should be typing over: the name
+                                and grade are the child's own, and the services
+                                follow payment. */}
+                            <Link
+                              to={`/parent/children?student=${c.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              title={`Open ${c.full_name}`}
+                              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#1099A1]"
+                            >
+                              <Pencil size={16} />
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setToRemove({ id: c.id, name: c.full_name });
+                              }}
+                              disabled={busyKey === `${c.id}:unlink`}
+                              title={`Remove ${c.full_name}`}
+                              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
                       {open && (
                         <tr className="border-b border-border/30">
                           <td colSpan={4} className="py-1 pl-10 pr-2">
+                            {/* The plan sits above the courses, under a rule
+                                in its own colour, so the panel reads as this
+                                child's whole arrangement rather than a list of
+                                lessons. */}
+                            {plans?.get(c.id) && (
+                              <div
+                                className="mb-2 flex items-center justify-between gap-3 border-b pb-2"
+                                style={{ borderColor: tierColour(plans.get(c.id)!.tier.name) }}
+                              >
+                                <PlanCell plan={plans.get(c.id)} />
+                                <span className="shrink-0 text-[12px] text-muted-foreground">
+                                  College counselling
+                                </span>
+                              </div>
+                            )}
+
                             {courses.map((course) => (
                               <CourseCard key={course.courseId} course={course} />
                             ))}
