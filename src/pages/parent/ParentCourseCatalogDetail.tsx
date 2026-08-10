@@ -537,14 +537,14 @@ export function ParentCourseCatalogDetail() {
             </svg>
 
             <div className="relative z-10 max-w-[1440px] mx-auto">
-              <button
-                onClick={() => setSelectedTutorId(null)}
+              <Link
+                to="/parent/courses"
                 className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-6 font-medium text-[14px]"
               >
-                <ChevronLeft size={16} /> Back to gallery
-              </button>
+                <ChevronLeft size={16} /> Back to courses
+              </Link>
 
-              <div className="flex flex-col sm:flex-row gap-6 items-center justify-between mb-8">
+              <div className="mb-8 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                 {/* Left aligned on a phone. items-center centred the whole
                     block, so the name, the subjects and the rating each sat on
                     their own axis and nothing lined up with the tabs below. */}

@@ -250,7 +250,7 @@ export function CommandPalette({
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-popover shadow-2xl duration-200 animate-in fade-in zoom-in-95">
-        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+        <div className="flex items-center gap-3 border-b-0 border-border px-5 py-4">
           <Search size={20} className="shrink-0 text-muted-foreground" />
           <input
             autoFocus
@@ -263,13 +263,13 @@ export function CommandPalette({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded border border-border px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            className="hidden md:flex lg:flex shrink-0 rounded border border-border px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
           >
             Esc
           </button>
         </div>
 
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <div className="hidden md:flex lg:flex items-center gap-2 border-b border-border px-4 py-3">
           <Chip
             active={filter === "navigation"}
             onClick={() => setFilter((f) => (f === "navigation" ? "all" : "navigation"))}
@@ -297,11 +297,11 @@ export function CommandPalette({
                 {/* The heading is dropped when only one group is showing: it
                     would be labelling the whole list after the chip above
                     already said so. */}
-                {groups.length > 1 && (
+                {/* {groups.length > 1 && (
                   <p className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {group.label}
                   </p>
-                )}
+                )} */}
                 {group.entries.map((entry) => {
                   const i = results.indexOf(entry);
                   const selected = i === index;
@@ -313,7 +313,7 @@ export function CommandPalette({
                       onMouseEnter={() => setIndex(i)}
                       onClick={() => choose(entry)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                        "flex w-full items-center gap-3 rounded px-3 py-2.5 text-left transition-colors",
                         selected ? "bg-[#1099A1]/10" : "hover:bg-muted/50"
                       )}
                     >
@@ -331,12 +331,12 @@ export function CommandPalette({
                         >
                           {entry.label}
                         </span>
-                        <span className="block truncate text-[12.5px] text-muted-foreground">
+                        {/* <span className="block truncate text-[12.5px] text-muted-foreground">
                           {entry.hint}
-                        </span>
+                        </span> */}
                       </span>
                       {selected ? (
-                        <span className="flex shrink-0 items-center rounded-md border border-[#1099A1]/40 px-1.5 py-1 text-[#1099A1]">
+                        <span className="hidden md:flex lg:flex shrink-0 items-center rounded-md border border-[#1099A1]/40 px-1.5 py-1 text-[#1099A1]">
                           <CornerDownLeft size={13} />
                         </span>
                       ) : (

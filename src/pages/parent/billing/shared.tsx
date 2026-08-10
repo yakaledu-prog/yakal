@@ -228,10 +228,13 @@ export function PackageActions({
 export function BillingHeader({
   subtitle,
   stats,
+  leading,
   children,
 }: {
   subtitle: string;
   stats: { label: string; value: string | number }[];
+  /** Above the title. A back link belongs there, not under the stats. */
+  leading?: React.ReactNode;
   /** Anything that belongs under the stats, e.g. tabs. */
   children?: React.ReactNode;
 }) {
@@ -255,6 +258,7 @@ export function BillingHeader({
       </svg>
 
       <div className="relative z-10">
+        {leading}
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Billing</h1>

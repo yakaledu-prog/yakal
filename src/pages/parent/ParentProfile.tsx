@@ -75,7 +75,9 @@ export function ParentProfile() {
           </svg>
 
           <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            {/* Centred on a phone: stacked and left aligned, the avatar sat
+                in a wide empty band and read as misplaced. */}
+            <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:text-left">
               <div className="relative group cursor-pointer shrink-0">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
@@ -90,7 +92,7 @@ export function ParentProfile() {
                 </label>
               </div>
 
-              <div className="flex flex-col min-w-0">
+              <div className="flex min-w-0 flex-col items-center md:items-start">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">
                   {profile?.full_name || "Parent"}
                 </h1>
@@ -122,7 +124,7 @@ export function ParentProfile() {
           {/* Contact, where the stat cards were. Those counted children and
               courses, which the pages for children and courses already say,
               and one of them was a date nothing calculated. */}
-          <div className="relative z-10 mt-10 px-6 md:px-10 lg:px-12 pb-8 flex flex-wrap gap-x-14 gap-y-5">
+          <div className="relative z-10 mt-10 flex flex-wrap justify-center gap-x-14 gap-y-5 px-6 pb-8 md:justify-start md:px-10 lg:px-12">
             <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
             <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
           </div>
