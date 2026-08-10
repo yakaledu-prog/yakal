@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail , Plus, ChevronRight, Star, Crown, Sparkle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getBilling, type CoursePackage } from "@/services/packageService";
 import {
   getLinkedChildren,
   getChildServices,
@@ -44,6 +45,117 @@ const SERVICES: { key: ServiceName; label: string; buyHref: (childId: string) =>
   { key: "admissions", label: "Admissions", buyHref: (id) => `/parent/admissions?student=${id}` },
 ];
 
+
+/**
+ * A service column: what is there, or a way to start it.
+ *
+ * Kept as one wrapper so the two columns cannot drift into different empty
+ * states, which is what a tick and a dash used to be.
+ */
+function ServiceCell({
+  empty,
+  addHref,
+  children,
+}: {
+  empty: boolean;
+  addHref: string;
+  children: React.ReactNode;
+}) {
+  if (empty) {
+    return (
+      <Link
+        to={addHref}
+        className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-[#1099A1] hover:underline"
+      >
+        <Plus size={14} /> Add
+      </Link>
+    );
+  }
+  return <>{children}</>;
+}
+
+/**
+ * The courses a child is booked on, as one line.
+ *
+ * The tutors' faces and a count, because the row belongs to a table about who
+ * your children are, not about what they study: three stacked cards per child
+ * turned four rows into a page. The detail opens as a row of its own, so it
+ * gets the full width rather than a column's worth.
+ */
+function CourseList({ courses }: { courses: CoursePackage[] }) {
+  if (courses.length === 0) {
+    return <span className="text-[13px] text-muted-foreground">Paid, no course yet</span>;
+  }
+
+  const faces = courses.slice(0, 3);
+
+  return (
+    <span className="flex items-center gap-2 whitespace-nowrap">
+      <span className="flex shrink-0 items-center">
+        {faces.map((c, i) => (
+          <img
+            key={c.courseId}
+            src={c.tutorAvatarUrl || dicebearUrl(c.tutorName ?? c.courseTitle)}
+            alt=""
+            title={c.tutorName ?? c.courseTitle}
+            className={cn(
+              "h-7 w-7 rounded-full border-2 border-card object-cover",
+              i > 0 && "-ml-2.5"
+            )}
+          />
+        ))}
+      </span>
+      <span className="text-[13px] text-foreground">
+        {courses.length} course{courses.length === 1 ? "" : "s"}
+      </span>
+    </span>
+  );
+}
+
+function CourseCard({ course }: { course: CoursePackage }) {
+  const left = course.slotsPurchased - course.slotsCompleted;
+  return (
+    <div className="rounded-lg border border-border px-3 py-2.5">
+      <p className="truncate text-[13px] font-medium text-foreground">{course.courseTitle}</p>
+      <p className="truncate text-[12px] text-muted-foreground">
+        {course.tutorName ?? "Tutor being assigned"}
+        {course.slotsPurchased > 0 && ` \u00b7 ${left} of ${course.slotsPurchased} left`}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The admissions tier, in its own colour.
+ *
+ * The three are ordered, and a parent comparing two children wants to see
+ * which is on which without reading. Brand colours only, so the ladder is
+ * green, then gold, then teal for the top one.
+ */
+const TIER_LOOK: Record<string, { colour: string; icon: React.ReactNode }> = {
+  essential: { colour: "#97CE9D", icon: <Sparkle size={13} /> },
+  premier: { colour: "#CAA25F", icon: <Star size={13} /> },
+  elite: { colour: "#1099A1", icon: <Crown size={13} /> },
+};
+
+function TierChip({ tier }: { tier: string | null }) {
+  if (!tier) return <span className="text-[13px] text-muted-foreground">Paid, no plan yet</span>;
+
+  const look = TIER_LOOK[tier.trim().toLowerCase()] ?? {
+    colour: "#1099A1",
+    icon: <Star size={13} />,
+  };
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[13px] font-medium"
+      style={{ color: look.colour }}
+    >
+      {look.icon} {tier}
+    </span>
+  );
+}
+
 export function ManageChildrenPanel({ className }: { className?: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -54,6 +166,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [toRemove, setToRemove] = useState<{ id: string; name: string } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -76,6 +189,16 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
   // Admissions plans, so the row can name the tier a child is on rather than
   // just saying "Active".
+  const { data: billing } = useQuery({
+    queryKey: ["billing", user?.id],
+    queryFn: () => getBilling(user!.id),
+    enabled: !!user?.id,
+  });
+
+  /** Booked courses per child, so a row can name them rather than tick. */
+  const coursesFor = (childId: string) =>
+    (billing?.packages ?? []).filter((p) => p.studentId === childId);
+
   const { data: plans } = useQuery({
     queryKey: ["admissions-plans", childIds.join(",")],
     queryFn: () => getAdmissionsPlans(childIds),
@@ -199,9 +322,9 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
     <div className={cn("flex flex-col gap-6", className)}>
       {/* One box around the field and the sentence that explains it, so the
           two read as one thing: what you type, and what typing it does. */}
-      <div className="rounded-2xl border border-border p-4">
+      <div className="rounded-lg border border-border p-4">
         <div className="relative flex flex-col items-stretch gap-3 sm:flex-row">
-          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border px-3.5 transition-colors focus-within:border-[#1099A1]">
+          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border px-3.5 transition-colors focus-within:border-[#1099A1]">
             <Mail size={17} className="shrink-0 text-muted-foreground" />
             <input
               type="email"
@@ -257,7 +380,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           <button
             onClick={sendInvite}
             disabled={adding || !email.trim()}
-            className="shrink-0 rounded-xl bg-[#1099A1] px-6 py-3 text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[#1099A1] px-7 py-3 text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
           >
             {adding ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Send invitation"}
           </button>
@@ -338,7 +461,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
-                      className="w-[150px] pb-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                      className="w-[230px] pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
                     >
                       {s.label}
                     </th>
@@ -347,10 +470,30 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                 </tr>
               </thead>
               <tbody>
-                {children.map((c) => (
-                  <tr key={c.id} className="border-b border-border/30 last:border-0">
+                {children.map((c) => {
+                  const courses = coursesFor(c.id);
+                  const open = expandedId === c.id;
+                  return (
+                  <Fragment key={c.id}>
+                  <tr
+                    onClick={() => courses.length > 0 && setExpandedId(open ? null : c.id)}
+                    className={cn(
+                      "border-b border-border/30 last:border-0",
+                      courses.length > 0 && "cursor-pointer hover:bg-muted/30"
+                    )}
+                  >
                     <td className="py-3">
                       <div className="flex items-center gap-3">
+                        {/* Only where there is something to open. A chevron on
+                            a row that does nothing is a broken control. */}
+                        <ChevronRight
+                          size={15}
+                          className={cn(
+                            "shrink-0 text-muted-foreground transition-transform",
+                            open && "rotate-90",
+                            courses.length === 0 && "invisible"
+                          )}
+                        />
                         <img
                           src={c.avatar_url || dicebearUrl(c.full_name)}
                           alt=""
@@ -367,33 +510,30 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       </div>
                     </td>
 
-                    {SERVICES.map((s) => {
-                      const on = hasService(c.id, s.key);
-                      // Name the admissions tier when there is a plan, so the
-                      // row is a summary ("Premier - Active") not just a tick.
-                      const tierName =
-                        s.key === "admissions" ? (plans?.get(c.id)?.tier.name ?? null) : null;
-                      return (
-                        <td key={s.key} className="py-3 text-center">
-                          {on ? (
-                            <span className="inline-flex items-center gap-1.5 text-[13px] font-normal text-[#1099A1]">
-                              <Check size={14} /> {tierName ? `${tierName} - Active` : "Active"}
-                            </span>
-                          ) : (
-                            <Link
-                              to={s.buyHref(c.id)}
-                              className="text-[13px] font-medium text-muted-foreground underline-offset-2 hover:text-[#1099A1] hover:underline"
-                            >
-                              Add
-                            </Link>
-                          )}
-                        </td>
-                      );
-                    })}
+                    <td className="py-3 pr-4">
+                      <ServiceCell
+                        empty={!hasService(c.id, "tutoring")}
+                        addHref={SERVICES[0].buyHref(c.id)}
+                      >
+                        <CourseList courses={courses} />
+                      </ServiceCell>
+                    </td>
+
+                    <td className="py-3 pr-4">
+                      <ServiceCell
+                        empty={!hasService(c.id, "admissions")}
+                        addHref={SERVICES[1].buyHref(c.id)}
+                      >
+                        <TierChip tier={plans?.get(c.id)?.tier.name ?? null} />
+                      </ServiceCell>
+                    </td>
 
                     <td className="py-3 text-right">
                       <button
-                        onClick={() => setToRemove({ id: c.id, name: c.full_name })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setToRemove({ id: c.id, name: c.full_name });
+                        }}
                         disabled={busyKey === `${c.id}:unlink`}
                         title={`Remove ${c.full_name}`}
                         className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
@@ -402,7 +542,21 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       </button>
                     </td>
                   </tr>
-                ))}
+
+                  {open && (
+                    <tr className="border-b border-border/30">
+                      <td colSpan={4} className="bg-muted/20 px-4 py-3">
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {courses.map((course) => (
+                            <CourseCard key={course.courseId} course={course} />
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
+                  );
+                })}
 
                 {pending.map((p) => (
                   <tr key={p.id} className="border-b border-border/30 last:border-0 opacity-70">
