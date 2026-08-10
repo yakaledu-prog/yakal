@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getPost, createPost, updatePost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-import { useTopbarActions } from "@/contexts/TopbarActionsContext";
 import { Loader2, Image as ImageIcon, Save, CloudUploadIcon, ImageMinusIcon, Repeat2Icon, CheckCheckIcon } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { broadcastPost } from "@/services/newsletterService";
 import { cn } from "@/utils/cn";
 
 export function AdminPostEditor() {
@@ -24,6 +25,11 @@ export function AdminPostEditor() {
   const [isLoading, setIsLoading] = useState(!isNew);
   const [isSaving, setIsSaving] = useState(false);
   const [showCoverUpload, setShowCoverUpload] = useState(false);
+  // Null means the newsletter for this post has never been sent, which is the
+  // only state in which offering to send it makes sense.
+  const [sentAt, setSentAt] = useState<string | null>(null);
+  const [askBroadcast, setAskBroadcast] = useState<string | null>(null);
+  const [broadcasting, setBroadcasting] = useState(false);
 
   // Track changes
   const [originalData, setOriginalData] = useState({
@@ -45,6 +51,7 @@ export function AdminPostEditor() {
         setContent(post.content);
         setThumbnailUrl(post.thumbnail_url || "");
         setStatus(post.status);
+        setSentAt(post.newsletter_sent_at);
         if (post.thumbnail_url) setShowCoverUpload(true);
         setOriginalData({
           title: post.title,
@@ -65,6 +72,16 @@ export function AdminPostEditor() {
     content !== originalData.content ||
     thumbnailUrl !== originalData.thumbnailUrl ||
     status !== originalData.status;
+
+  async function sendNewsletter(postId: string) {
+    setBroadcasting(true);
+    const res = await broadcastPost(postId);
+    setBroadcasting(false);
+    setAskBroadcast(null);
+    if (res.error) return toast.error(res.error);
+    setSentAt(new Date().toISOString());
+    toast.success(`Sent to ${res.sent} subscriber${res.sent === 1 ? "" : "s"}.`);
+  }
 
   async function handleSave(newStatus?: "draft" | "published") {
     if (!title.trim()) {
@@ -87,6 +104,9 @@ export function AdminPostEditor() {
         navigate(`/admin/posts/${res.data}/edit`, { replace: true });
         setStatus(saveStatus);
         setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
+        // Asked, not assumed. Publishing and mailing the list are different
+        // decisions, and only one of them can be taken back.
+        if (saveStatus === "published" && res.data) setAskBroadcast(res.data);
       } else {
         const res = await updatePost(id, {
           title,
@@ -98,6 +118,9 @@ export function AdminPostEditor() {
         toast.success(saveStatus === "published" ? "Post updated & published!" : "Draft updated.");
         setStatus(saveStatus);
         setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
+        // Only if it has never gone out. Editing a post that was already
+        // mailed must not offer to mail it again.
+        if (saveStatus === "published" && !sentAt) setAskBroadcast(id);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to save post.");
@@ -118,40 +141,47 @@ export function AdminPostEditor() {
     saveRef.current = handleSave;
   });
 
-  const actions = useMemo(() => (
-    <div className="flex items-center gap-3 mr-2">
-      {!hasChanges && !isSaving && !isNew && (
-        <span className="text-[12px] text-muted-foreground hidden sm:inline-block mr-2">
-          All changes saved.
-        </span>
-      )}
-      {isSaving && (
-        <span className="text-[12px] text-muted-foreground hidden sm:inline-block mr-2">
-          Saving...
-        </span>
-      )}
-      {hasChanges && (
-        <button
-          onClick={() => saveRef.current("draft")}
-          disabled={isSaving}
-          className="gap-1 px-4 py-2 rounded-lg text-[13px] font-medium bg-[#87bE8D] text-white hover:bg-[#97CE9D] dark:hover:bg-[#182329] transition-colors disabled:opacity-50 flex items-center shadow-sm"
-        >
-          <Save size={14} strokeWidth={2} />
-          <span>{status === "published" ? "Save as Draft" : "Save Draft"}</span>
-        </button>
-      )}
-      <button
-        onClick={() => saveRef.current("published")}
-        disabled={isSaving || (status === "published" && !hasChanges)}
-        className="flex items-center gap-1.5 px-5 py-2 font-medium bg-[#1099A1] hover:bg-[#0c7f86] text-white rounded-lg text-[13px] transition-colors disabled:opacity-50 shadow-sm"
-      >
-        {status === "published" ? hasChanges ? <Repeat2Icon strokeWidth={2} size={16} /> : <CheckCheckIcon strokeWidth={2} size={16} /> : <CloudUploadIcon size={16} />}
-        {status === "published" ? hasChanges ? "Update" : "Published" : "Publish"}
-      </button>
-    </div>
-  ), [hasChanges, isSaving, isNew, status]);
+  /**
+   * A status bar along the bottom, rather than buttons in the topbar.
+   *
+   * The editor is a long scroll and the buttons were pinned to a bar shared
+   * with the breadcrumb and the search, so on a long post they were nowhere
+   * near what you were writing. Down here the save state and the two things
+   * you can do about it sit together, out of the way of the page.
+   */
+  const actionBar = (
+    <div className="flex h-11 shrink-0 items-center justify-between gap-4 border-t border-[#e9edef] bg-white px-4 dark:border-[#2a3942] dark:bg-[#111b21]">
+      <span className="truncate text-[12.5px] text-muted-foreground">
+        {isSaving
+          ? "Saving..."
+          : hasChanges
+            ? status === "published" ? "Unpublished changes" : "Draft, not published"
+            : isNew ? "" : "All changes saved."}
+      </span>
 
-  useTopbarActions(actions);
+      <div className="flex shrink-0 items-center gap-5">
+        {hasChanges && (
+          <button
+            onClick={() => saveRef.current("draft")}
+            disabled={isSaving}
+            className="flex items-center gap-1.5 text-[13px] font-normal text-muted-foreground transition-colors hover:text-secondary disabled:opacity-50"
+          >
+            <Save size={14} strokeWidth={2} />
+            {status === "published" ? "Save as draft" : "Save draft"}
+          </button>
+        )}
+
+        <button
+          onClick={() => saveRef.current("published")}
+          disabled={isSaving || (status === "published" && !hasChanges)}
+          className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] transition-all hover:font-bold disabled:opacity-40 disabled:hover:font-medium"
+        >
+          {status === "published" ? hasChanges ? <Repeat2Icon strokeWidth={2} size={15} /> : <CheckCheckIcon strokeWidth={2} size={15} /> : <CloudUploadIcon size={15} />}
+          {status === "published" ? hasChanges ? "Update" : "Published" : "Publish"}
+        </button>
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -238,6 +268,18 @@ export function AdminPostEditor() {
           </div>
         </div>
       </div>
+
+      {actionBar}
+
+      <ConfirmModal
+        isOpen={!!askBroadcast}
+        onClose={() => (broadcasting ? null : setAskBroadcast(null))}
+        onConfirm={() => askBroadcast && sendNewsletter(askBroadcast)}
+        title="Send to subscribers"
+        message="Email this post to everyone on the newsletter list? A post can only be sent once, and it cannot be taken back. You can also skip this and send it later from the posts list."
+        confirmText={broadcasting ? "Sending..." : "Send"}
+        cancelText="Not now"
+      />
     </div>
   );
 }

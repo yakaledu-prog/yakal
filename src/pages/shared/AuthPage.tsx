@@ -275,6 +275,17 @@ export function AuthPage() {
               />
             </div>
 
+            {mode === "login" && (
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-2"

@@ -7,11 +7,16 @@ export interface BlogPost {
   thumbnail_url: string | null;
   read_time_minutes: number;
   status: "draft" | "published";
+  /** When the newsletter for this post went out. Null means never. */
+  newsletter_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type BlogPostInput = Omit<BlogPost, "id" | "created_at" | "updated_at" | "read_time_minutes">;
+export type BlogPostInput = Omit<
+  BlogPost,
+  "id" | "created_at" | "updated_at" | "read_time_minutes" | "newsletter_sent_at"
+>;
 
 type Result<T = undefined> = { success: boolean; data?: T; error?: string };
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Linkedin } from "lucide-react";
+import { XIcon } from "@/components/icons/XIcon";
 import { toast } from "sonner";
 import logo from "@/assets/images/logo.webp";
 
@@ -11,25 +12,36 @@ const quickLinks = [
   { label: "Contact", id: "contact" },
 ];
 
+// The LinkedIn link is the public company page, not the /admin/dashboard URL
+// the page owner sees: that one only opens for admins and leaks the admin path.
 const socials = [
-  { href: "#facebook", icon: <Facebook size={15} strokeWidth={2} /> },
-  { href: "#instagram", icon: <Instagram size={15} strokeWidth={2} /> },
-  { href: "#twitter", icon: <Twitter size={15} strokeWidth={2} /> },
-  { href: "#linkedin", icon: <Linkedin size={15} strokeWidth={2} /> },
+  { href: "https://www.instagram.com/yakaledu/", label: "Instagram", icon: <Instagram size={15} strokeWidth={2} /> },
+  { href: "https://x.com/yakaleducation", label: "X", icon: <XIcon size={14} /> },
+  { href: "https://www.linkedin.com/company/106175583/", label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
 import { CONTACT } from "@/config/links";
+import { subscribeToNewsletter } from "@/services/newsletterService";
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
-  function handleSubscribe(e: React.FormEvent) {
+  const [saving, setSaving] = useState(false);
+
+  // This used to congratulate you and throw the address away, so everyone who
+  // signed up since launch was lost. It writes to the list now.
+  async function handleSubscribe(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) {
+    const value = email.trim();
+    if (!value) {
       toast.error("Please enter your email address.");
       return;
     }
-    toast.success("Thanks for joining our newsletter.");
+    setSaving(true);
+    const res = await subscribeToNewsletter(value);
+    setSaving(false);
+    if (res.error) return toast.error(res.error);
+    toast.success("Thanks for joining our newsletter. Check your inbox.");
     setEmail("");
   }
 
@@ -86,7 +98,13 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 px-[14px] py-[12px] rounded-[500px] bg-[rgba(255,255,255,0.2)] border-none text-white placeholder:text-[rgba(255,255,255,0.75)] text-[14px] outline-none focus:bg-[rgba(255,255,255,0.28)] transition-colors"
             />
-            <button type="submit" className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap">Subscribe</button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap disabled:opacity-60"
+            >
+              {saving ? "Adding..." : "Subscribe"}
+            </button>
           </form>
         </div>
       </div>
@@ -99,8 +117,15 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
           <a href="/cancellation-policy" className="hover:text-white">Cancellation Policy</a>
         </div>
         <div className="flex gap-[10px] md:gap-[12px]">
-          {socials.map(({ href, icon }) => (
-            <a key={href} href={href} className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full border border-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white">
+          {socials.map(({ href, label, icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              className="w-[34px] h-[34px] md:w-[38px] md:h-[38px] rounded-full ring ring-[rgba(255,255,255,0.3)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition text-white"
+            >
               {icon}
             </a>
           ))}

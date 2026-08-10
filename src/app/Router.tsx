@@ -23,11 +23,13 @@ const AdminBilling = lazy(() => import("../pages/admin/AdminBilling").then((m) =
 const AdminContact = lazy(() => import("../pages/admin/AdminContact").then((m) => ({ default: m.AdminContact })));
 const AdminCourseDetail = lazy(() => import("../pages/admin/AdminCourseDetail").then((m) => ({ default: m.AdminCourseDetail })));
 const AdminCourses = lazy(() => import("../pages/admin/AdminCourses").then((m) => ({ default: m.AdminCourses })));
+const AdminAdmissions = lazy(() => import("../pages/admin/AdminAdmissions").then((m) => ({ default: m.AdminAdmissions })));
 const AdminHome = lazy(() => import("../pages/admin/AdminHome").then((m) => ({ default: m.AdminHome })));
 const AdminLayout = lazy(() => import("../pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const AdminPostEditor = lazy(() => import("../pages/admin/cms/AdminPostEditor").then((m) => ({ default: m.AdminPostEditor })));
 const AdminPosts = lazy(() => import("../pages/admin/cms/AdminPosts").then((m) => ({ default: m.AdminPosts })));
 const AdminTestimonials = lazy(() => import("../pages/admin/cms/AdminTestimonials").then((m) => ({ default: m.AdminTestimonials })));
+const AdminSubscribers = lazy(() => import("../pages/admin/cms/AdminSubscribers").then((m) => ({ default: m.AdminSubscribers })));
 const AdminDiagnostics = lazy(() => import("../pages/admin/cms/AdminDiagnostics").then((m) => ({ default: m.AdminDiagnostics })));
 const AdminProfile = lazy(() => import("../pages/admin/AdminProfile").then((m) => ({ default: m.AdminProfile })));
 const AdminReports = lazy(() => import("../pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
@@ -52,6 +54,8 @@ const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudent
 const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
 const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
 const InviteAcceptPage = lazy(() => import("../pages/shared/InviteAcceptPage").then((m) => ({ default: m.InviteAcceptPage })));
+const ForgotPasswordPage = lazy(() => import("../pages/shared/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("../pages/shared/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
 const ParentAdmissions = lazy(() => import("../pages/parent/ParentAdmissions").then((m) => ({ default: m.ParentAdmissions })));
 const ParentBilling = lazy(() => import("../pages/parent/ParentBilling").then((m) => ({ default: m.ParentBilling })));
@@ -111,6 +115,7 @@ import { AuthPage } from "../pages/shared/AuthPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import BlogsPage from "../pages/BlogsPage";
 import BlogPage from "../pages/BlogPage";
+import UnsubscribePage from "../pages/UnsubscribePage";
 
 
 // import { CounselorStudentDetail } from "../pages/counselor/CounselorStudentDetail";
@@ -259,6 +264,14 @@ const router = createBrowserRouter([
     element: <InviteAcceptPage />,
   },
   {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
     path: "/proposal",
     element: <ProposalPage />,
   },
@@ -269,6 +282,10 @@ const router = createBrowserRouter([
   {
     path: "/post/:id",
     element: <BlogPage />,
+  },
+  {
+    path: "/unsubscribe",
+    element: <UnsubscribePage />,
   },
   {
     path: "/cancellation-policy",
@@ -313,7 +330,9 @@ const router = createBrowserRouter([
           { path: "reports", element: <AdminReports /> },
           { path: "courses", element: <AdminCourses /> },
           { path: "courses/:id", element: <AdminCourseDetail /> },
+          { path: "admissions", element: <AdminAdmissions /> },
           { path: "posts", element: <AdminPosts /> },
+          { path: "subscribers", element: <AdminSubscribers /> },
           { path: "testimonials", element: <AdminTestimonials /> },
           { path: "diagnostics", element: <AdminDiagnostics /> },
           { path: "posts/new", element: <AdminPostEditor /> },

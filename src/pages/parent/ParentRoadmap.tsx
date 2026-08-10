@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Calendar, PenTool } from "lucide-react";
+import { BookOpen, Calendar, PenTool  } from "lucide-react";
 
 import { ChildViewFrame } from "@/components/shared/ChildViewFrame";
 import { getCollegeProfile } from "@/services/collegeService";
@@ -98,7 +98,6 @@ export function ParentRoadmap() {
             subjectName={child.name.split(" ")[0]}
             embedded
             hideChrome
-            canEdit={false}
             tab={tab}
             onTabChange={setTab}
           />

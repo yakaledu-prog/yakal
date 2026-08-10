@@ -4,19 +4,30 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getPosts, deletePost, BlogPost } from "@/services/cmsService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Plus, Edit2, Trash2, Search, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Loader2, Image as ImageIcon , Send } from "lucide-react";
 import { format } from "date-fns";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { broadcastPost, getSubscribers } from "@/services/newsletterService";
 import { AdminHeader } from "../AdminHeader";
 export function AdminPosts() {
   const [q, setQ] = useState("");
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
+  const [postToSend, setPostToSend] = useState<BlogPost | null>(null);
+  const [sending, setSending] = useState(false);
   const qc = useQueryClient();
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["admin-posts"],
     queryFn: getPosts,
   });
+
+  // Only the count is used here. It is what turns "send this" into a decision
+  // with a size attached.
+  const { data: list } = useQuery({
+    queryKey: ["admin-subscribers"],
+    queryFn: () => getSubscribers(),
+  });
+  const subscriberCount = list?.subscribed ?? 0;
 
   const filtered = posts.filter((p) => p.title.toLowerCase().includes(q.toLowerCase()));
 
@@ -25,6 +36,21 @@ export function AdminPosts() {
     { label: "Published", value: posts.filter((p) => p.status === "published").length },
     { label: "Drafts", value: posts.filter((p) => p.status === "draft").length },
   ];
+
+  async function handleSendConfirm() {
+    if (!postToSend) return;
+    setSending(true);
+    const res = await broadcastPost(postToSend.id);
+    setSending(false);
+    if (res.error) return toast.error(res.error);
+    toast.success(
+      res.failed
+        ? `Sent to ${res.sent}. ${res.failed} could not be delivered.`
+        : `Sent to ${res.sent} subscriber${res.sent === 1 ? "" : "s"}.`
+    );
+    qc.invalidateQueries({ queryKey: ["admin-posts"] });
+    setPostToSend(null);
+  }
 
   async function handleDeleteConfirm() {
     if (!postToDelete) return;
@@ -86,12 +112,22 @@ export function AdminPosts() {
                   key={post.id}
                   post={post}
                   onDelete={() => setPostToDelete(post)}
+                  onSend={() => setPostToSend(post)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+      <ConfirmModal
+        isOpen={!!postToSend}
+        onClose={() => (sending ? null : setPostToSend(null))}
+        onConfirm={handleSendConfirm}
+        title="Send to subscribers"
+        message={`Email "${postToSend?.title}" to ${subscriberCount} subscriber${subscriberCount === 1 ? "" : "s"}? This cannot be undone, and a post can only be sent once.`}
+        confirmText={sending ? "Sending..." : "Send"}
+      />
+
       <ConfirmModal
         isOpen={!!postToDelete}
         onClose={() => setPostToDelete(null)}
@@ -109,7 +145,7 @@ export function AdminPosts() {
   );
 }
 
-function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) {
+function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => void; onSend: () => void }) {
   const excerpt = post.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
 
   return (
@@ -136,6 +172,18 @@ function PostCard({ post, onDelete }: { post: BlogPost; onDelete: () => void }) 
         >
           <Edit2 size={16} />
         </Link>
+        {/* Only on a published post, and only once. Sending is the one
+            action here with no undo, so the button disappears rather than
+            greying out after it has been used. */}
+        {post.status === "published" && !post.newsletter_sent_at && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSend(); }}
+            className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-[#1099A1]/50 hover:scale-110 transition-all ease-in-out duration-200"
+            title="Send to newsletter subscribers"
+          >
+            <Send size={16} />
+          </button>
+        )}
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
           className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-red-500/50 hover:scale-110 transition-all ease-in-out duration-200"

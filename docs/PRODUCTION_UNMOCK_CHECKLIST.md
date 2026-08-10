@@ -140,6 +140,61 @@ entirely on the database.
   | `classroomService.ts` `CLASSROOM_SCOPES` | admin Fetch Details popup |
   | `useClassroomToken.ts` | nothing |
 
+## Diagnostics
+
+- [ ] **`time_limit_minutes` is enforced nowhere.** It is stored on the
+  `diagnostics` table, set on all twelve seeded tests, and read into
+  `DiagnosticRow`, but no student screen ever uses it. There is no timer, and
+  it is not even displayed. A student can take as long as they like, and stop
+  and come back.
+
+  The admin form used to ask for it, which promised a rule the app does not
+  apply. The field is off the form until there is a timer behind it. The column
+  is untouched, so implementing one later needs no migration.
+
+  Two ways out, whichever is wanted: run a real countdown on the student side
+  and submit on expiry, or drop the column. Leaving it collected but unused is
+  the one option that misleads.
+## Student profile (fixed 2026-08-08, kept here as the pattern)
+
+- [x] **The three stat cards read 3, 12 and 5 for every student.** Hardcoded in
+  `StudentProfile.tsx` as a `stats` array, complete with fake trend lines
+  ("+1 this month", "Top 20%"). Removed rather than wired up: the same page now
+  shows facts about the person, which cannot go stale.
+
+- [x] **The whole Recent Activity list was invented.** Five hardcoded rows,
+  "1-on-1 Mentorship: Algebra" and friends, identical for every account and
+  dated October in a page anyone might open in August. Replaced with the shared
+  `PastSessions` list reading `getStudentSessions`.
+
+- [x] **The notifications toggle was wired to nothing.** `useState(true)`, a
+  switch that animated and saved nothing, under a heading that promised
+  "Marketing Alerts". Removed. If marketing preferences are wanted later they
+  need a column and a writer, not a toggle.
+
+- [x] **Eight resource links were `href="#"`.** Every card on the roadmap
+  Resources tab looked and hovered like a link and did nothing. Real URLs now
+  live in `src/config/collegeResources.ts`.
+
+The lesson each of these shares: a fake value that renders correctly is
+invisible in review and only shows up when a real user reads it as true. When
+adding a screen, prefer an empty state over a plausible number.
+
+
+## Newsletter (fixed 2026-08-09)
+
+- [x] **The footer Subscribe form threw the address away.** It ran
+  `toast.success("Thanks for joining our newsletter")` and nothing else, so
+  everyone who signed up between launch and now is gone, with no record they
+  ever tried. It writes to `newsletter_subscribers` now.
+
+- [ ] **`EMAIL_FROM` is unset, so every email sends from
+  `onboarding@resend.dev`.** That is Resend's shared sandbox sender and only
+  delivers to the Resend account owner's own address. Transactional mail has
+  the same problem, not just the newsletter. Set it to an address on
+  `yakal.me`, which is verified. See `docs/EMAIL_SETUP.md`.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local
