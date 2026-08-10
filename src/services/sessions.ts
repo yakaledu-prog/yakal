@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { sendFromTemplate } from '@/services/notificationService';
 
 export interface CreateSessionParams {
   tutor_id: string;
@@ -195,6 +196,57 @@ export const getSessionAttendance = async (sessionId: string) => {
  * refuses, the session has still moved and the meeting keeps its old time,
  * which is visible and fixable, unlike the reverse.
  */
+
+/**
+ * Tell whoever did not move it.
+ *
+ * The mover never hears about their own change, so who receives it depends on
+ * who acted: a tutor moving an hour tells the student, anyone else tells the
+ * tutor. A parent or admin acting on a student's behalf counts as "anyone
+ * else", and the tutor is the one who needs to know their day changed.
+ */
+async function notifyMoved(
+  moved: { id: string; date: string; start_time: string; subject?: string | null;
+           student_id: string; tutor_id: string } | null,
+  was: { date: string; start_time: string; subject?: string | null } | null,
+  reason?: string
+): Promise<void> {
+  if (!moved) return;
+
+  const { data: auth } = await supabase.auth.getUser();
+  const actor = auth.user?.id;
+  if (!actor) return;
+
+  const movedByTutor = actor === moved.tutor_id;
+  const recipient = movedByTutor ? moved.student_id : moved.tutor_id;
+  if (recipient === actor) return;
+
+  const { data: mover } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', actor)
+    .maybeSingle();
+
+  await sendFromTemplate(recipient, 'sessionMoved', {
+    subject: moved.subject ?? was?.subject ?? 'Your session',
+    movedBy: mover?.full_name ?? 'Someone',
+    from: was ? readableSlot(was.date, was.start_time) : 'its previous time',
+    to: readableSlot(moved.date, moved.start_time),
+    // Only a tutor is asked for one, so only a tutor's move carries it.
+    reason: movedByTutor ? reason?.trim() || null : null,
+  });
+}
+
+/** "Thursday 14 August, 4pm", the wording the booking emails already use. */
+function readableSlot(date: string, startTime: string): string {
+  const [h, m] = startTime.split(':').map(Number);
+  const d = new Date(`${date}T00:00:00`);
+  d.setHours(h, m ?? 0, 0, 0);
+  return d.toLocaleString(undefined, {
+    weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
+  });
+}
+
 export const rescheduleSession = async (
   sessionId: string,
   date: string,
@@ -202,6 +254,15 @@ export const rescheduleSession = async (
   /** Required of a tutor, ignored for everyone else. Enforced in the RPC. */
   reason?: string
 ): Promise<{ success: boolean; error?: string }> => {
+  // Read before the move: the row that comes back has the new time on it, and
+  // "moved from X to Y" needs the old one.
+  const { data: before } = await supabase
+    .from('sessions')
+    .select('date, start_time, subject, student_id, tutor_id')
+    .eq('id', sessionId)
+    .maybeSingle();
+  const was = before;
+
   const { data, error } = await supabase.rpc('reschedule_session', {
     p_session_id: sessionId,
     p_date: date,
@@ -220,6 +281,18 @@ export const rescheduleSession = async (
     } catch (e) {
       console.error('Session moved but its Zoom meeting did not', e);
     }
+  }
+
+  // Tell the other side. Nothing did before, while the booking email was
+  // telling people that moving an hour in the app is what informs the tutor.
+  //
+  // After the move, not before, and failures are swallowed: the session has
+  // already moved, and throwing here would report a failure for something
+  // that succeeded.
+  try {
+    await notifyMoved(moved, was, reason);
+  } catch (e) {
+    console.error('Session moved but nobody was told', e);
   }
 
   return { success: true };

@@ -15,6 +15,7 @@
 /** Every type the notifications table's check constraint allows. */
 export type NotificationType =
   | "booking"
+  | "session_moved"
   | "assignment"
   | "approval"
   | "message"
