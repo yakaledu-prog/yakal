@@ -438,15 +438,29 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             {invites.map((inv) => (
               <li
                 key={inv.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3"
               >
-                <span className="min-w-0 text-[13.5px] text-muted-foreground">
-                  <span className="break-all text-foreground">{inv.email}</span>
-                  <span className="ml-2 inline-flex items-center gap-1 text-[12px]">
-                    <Clock size={12} /> Invitation pending
+                <span className="flex min-w-0 items-center gap-3">
+                  {/* An identicon, in grey. Nobody has an avatar before they
+                      have an account, and a generated face would suggest a
+                      person is already here when the whole row is about them
+                      not being. */}
+                  <img
+                    src={dicebearUrl(inv.email, "identicon")}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full bg-muted object-cover border opacity-60 grayscale"
+                  />
+                  <span className="min-w-0">
+                    <span className="block break-all text-[13.5px] text-foreground">{inv.email}</span>
+                    <span className="mt-0.5 flex items-center gap-1 text-[12px] text-muted-foreground">
+                      <Clock size={12} /> Invitation pending
+                    </span>
                   </span>
                 </span>
                 <div className="flex shrink-0 items-center gap-3">
+                  {/* Three actions, three weights. Copying is the helpful one,
+                      resending costs the child another email, cancelling
+                      throws the invitation away. */}
                   <button
                     onClick={() => copyLink(inv.id, inv.token)}
                     className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[#1099A1] transition-colors hover:text-[#0d7f86]"
@@ -464,14 +478,14 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                   <button
                     onClick={() => resend(inv.id)}
                     disabled={busyKey === `${inv.id}:resend`}
-                    className="text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                    className="text-[12.5px] font-medium text-[#CAA25F] transition-colors hover:text-[#CAA25F]/80 disabled:opacity-50"
                   >
                     {busyKey === `${inv.id}:resend` ? "Sending..." : "Resend"}
                   </button>
                   <button
                     onClick={() => cancelInvitation(inv.id)}
                     disabled={busyKey === `${inv.id}:invite`}
-                    className="text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                    className="text-[12.5px] font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
                   >
                     {busyKey === `${inv.id}:invite` ? "Cancelling..." : "Cancel invitation"}
                   </button>
