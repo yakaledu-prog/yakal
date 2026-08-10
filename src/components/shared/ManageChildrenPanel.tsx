@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Clock, Loader2, Trash2, Link2, Check, Mail, Plus, ChevronRight, PackagePlusIcon, SquarePenIcon } from "lucide-react";
+import { Clock, Loader2, Trash2, Link2, Check, Mail, ChevronRight, PackagePlusIcon, SquarePenIcon, GraduationCap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
 import type { AdmissionsPlan } from "@/services/admissionsService";
@@ -56,20 +56,29 @@ const SERVICES: { key: ServiceName; label: string; buyHref: (childId: string) =>
 function ServiceCell({
   empty,
   addHref,
+  addLabel,
+  addIcon,
   children,
 }: {
   empty: boolean;
   addHref: string;
+  /** Says what starts, not that something can. "Add" twice on one row said
+      nothing about which of the two you were about to buy. */
+  addLabel: string;
+  addIcon: React.ReactNode;
   children: React.ReactNode;
 }) {
   if (empty) {
     return (
-      <Link
-        to={addHref}
-        className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-[#1099A1] hover:underline"
-      >
-        <Plus size={14} /> Add
-      </Link>
+      <div className="flex justify-center">
+        <Link
+          to={addHref}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-[#1099A1] hover:underline"
+        >
+          {addIcon} {addLabel}
+        </Link>
+      </div>
     );
   }
   return <>{children}</>;
@@ -383,7 +392,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
               role="combobox"
               aria-expanded={suggestOpen && suggestions.length > 0}
               aria-autocomplete="list"
-              className="w-full bg-transparent py-3 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+              className="w-full bg-transparent py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
             />
 
             {suggestOpen && suggestions.length > 0 && (
@@ -419,9 +428,9 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           <button
             onClick={sendInvite}
             disabled={adding || !email.trim()}
-            className="shrink-0 rounded-lg bg-[#1099A1] px-7 py-3 text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[#1099A1] px-7 !py-2.5 !h-fit text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
           >
-            {adding ? <Loader2 size={16} className="animate-spin mx-auto" /> : "Send invitation"}
+            {adding ? <Loader2 size={15} className="animate-spin mx-auto" /> : "Send invitation"}
           </button>
         </div>
 
@@ -570,6 +579,8 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           <ServiceCell
                             empty={!hasService(c.id, "tutoring")}
                             addHref={SERVICES[0].buyHref(c.id)}
+                            addLabel="Add a course"
+                            addIcon={<PackagePlusIcon size={15} />}
                           >
                             <CourseList courses={courses} />
                           </ServiceCell>
@@ -579,6 +590,8 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           <ServiceCell
                             empty={!hasService(c.id, "admissions")}
                             addHref={SERVICES[1].buyHref(c.id)}
+                            addLabel="Select a tier"
+                            addIcon={<GraduationCap size={15} />}
                           >
                             <PlanCell plan={plans?.get(c.id)} />
                           </ServiceCell>
