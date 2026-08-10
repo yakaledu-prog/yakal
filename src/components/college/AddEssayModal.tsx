@@ -6,6 +6,7 @@ import { CollegeListItem } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { FieldLabel } from "@/components/ui/InfoHint";
 import { NumberStepper } from "@/components/ui/NumberStepper";
+import { Segmented } from "@/components/ui/Segmented";
 
 export interface NewEssay {
   title: string;
@@ -44,6 +45,10 @@ export function AddEssayModal({
   const [schoolId, setSchoolId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [limit, setLimit] = useState<number | null>(null);
+  // Asked rather than worked out from whether a college is picked. It used to
+  // be inferred, so a student had no way to see which of the two they were
+  // making, and the 650 word limit appeared from nowhere.
+  const [kind, setKind] = useState<"personal_statement" | "supplement">("personal_statement");
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +56,7 @@ export function AddEssayModal({
     setPrompt("");
     setLimit(null);
     setSchoolId(presetSchoolId ?? "");
+    setKind(presetSchoolId ? "supplement" : "personal_statement");
   }, [open, presetSchoolId]);
 
   useEffect(() => {
@@ -66,12 +72,13 @@ export function AddEssayModal({
     if (!title.trim()) return;
     onSubmit({
       title: title.trim(),
-      kind: schoolId ? "supplement" : "personal_statement",
-      college_list_item_id: schoolId || null,
+      kind,
+      // A personal statement goes to every college, so it belongs to none.
+      college_list_item_id: kind === "supplement" ? schoolId || null : null,
       prompt: prompt.trim() || null,
-      // The Common App personal statement limit is fixed at 650, so it is
-      // filled in rather than asked for. Supplement limits vary per prompt.
-      word_limit: limit ?? (schoolId ? null : 650),
+      // The Common App personal statement is fixed at 650, so it is filled in
+      // rather than asked for. Supplement limits vary per prompt.
+      word_limit: limit ?? (kind === "supplement" ? null : 650),
     });
   };
 
@@ -84,69 +91,67 @@ export function AddEssayModal({
       onMouseDown={(e) => e.target === e.currentTarget && !saving && onClose()}
     >
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-5 py-4 text-white">
-          <svg
-            className="pointer-events-none absolute right-0 top-0 h-full w-[55%] text-white/10"
-            viewBox="0 0 400 200"
-            preserveAspectRatio="none"
-            fill="none"
-            aria-hidden
+        <header className="flex items-center justify-between gap-4 border-b border-[#e9edef] px-5 py-4 dark:border-[#2a3942]">
+          <h2 className="text-[16px] font-semibold">Add an essay</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Close"
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-40"
           >
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path
-              d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.3"
-            />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
-          <div className="relative z-10 flex items-center gap-3">
-            <h2 className="flex-1 text-[16px] font-semibold">Add an essay</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              aria-label="Close"
-              className="text-white/70 transition-colors hover:text-white disabled:opacity-40"
-            >
-              <X size={18} />
-            </button>
-          </div>
+            <X size={18} />
+          </button>
         </header>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <FieldLabel hint="The personal statement is the one essay every college reads. A supplement is written for one college and answers its own question.">
+              What kind
+            </FieldLabel>
+            <Segmented
+              value={kind}
+              onChange={setKind}
+              ariaLabel="Kind of essay"
+              options={[
+                { value: "personal_statement", label: "Personal statement" },
+                { value: "supplement", label: "Supplement" },
+              ]}
+            />
+          </div>
+
+          <div>
+            <FieldLabel htmlFor="essay-title">Title</FieldLabel>
+            <input
+              id="essay-title"
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={kind === "supplement" ? "Why Hopkins?" : "Personal statement"}
+              className={input}
+            />
+          </div>
+
+          {/* Only for a supplement. A personal statement goes to every
+              college, so asking which one it is for is a question with no
+              right answer. */}
+          {kind === "supplement" && (
             <div>
-              <FieldLabel htmlFor="essay-title">Title</FieldLabel>
-              <input
-                id="essay-title"
-                autoFocus
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Why Hopkins? supplement"
-                className={input}
-              />
-            </div>
-            <div>
-              <FieldLabel hint="Leave as Common App if this is your main personal statement, which every college sees.">
-                For which college
+              <FieldLabel hint="Add colleges to your list first if the one you want is not here.">
+                Which college
               </FieldLabel>
               <Dropdown
                 value={schoolId}
                 onChange={setSchoolId}
                 options={[
-                  { value: "", label: "Common App (all colleges)" },
+                  { value: "", label: "Not decided yet" },
                   ...schools.map((s) => ({ value: s.id, label: s.school_name })),
                 ]}
                 buttonClassName="h-11 rounded-xl text-[14px] font-normal"
                 ariaLabel="College this essay is for"
               />
             </div>
-          </div>
+          )}
 
           <div>
             <FieldLabel
@@ -166,16 +171,21 @@ export function AddEssayModal({
           </div>
 
           <div>
-            <FieldLabel hint="Colleges enforce these. The Common App statement is fixed at 650; supplements vary, so leave it blank if the prompt does not say.">
+            <FieldLabel hint="Colleges enforce these. Supplements vary, so leave it blank if the prompt does not say.">
               Word limit
             </FieldLabel>
             <NumberStepper
               value={limit}
               onChange={setLimit}
               max={2000}
-              placeholder={schoolId ? "-" : "650"}
+              placeholder={kind === "supplement" ? "-" : "650"}
               ariaLabel="Word limit"
             />
+            {kind === "personal_statement" && limit === null && (
+              <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                Left blank this is 650, the Common App limit.
+              </p>
+            )}
           </div>
         </div>
 

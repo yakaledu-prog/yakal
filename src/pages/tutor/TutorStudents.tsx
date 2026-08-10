@@ -315,6 +315,7 @@ function StudentDetailView({
             ) : (
               <>
                 <UpcomingSessions
+              rescheduleAs="tutor"
                   sessions={sessionItems}
                   hideIfEmpty
                   onJoin={(s) => join(s.id)}
@@ -364,7 +365,7 @@ function StudentDetailView({
         )}
       </div>
 
-      {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
+      {moving && <RescheduleDialog session={moving} askReason onClose={() => setMoving(null)} />}
     </div>
   );
 }

@@ -147,3 +147,50 @@ export const message: NotificationTemplate<{
     preview: "Nice work on the last set. Have a look at question 7 before Tuesday.",
   },
 };
+
+/**
+ * A booked hour moved.
+ *
+ * Goes to the other side, never the person who did it. The reason is only
+ * present when a tutor moved it, which is the case where it matters: the
+ * student arranged a day around this and did not ask for the change.
+ */
+export const sessionMoved: NotificationTemplate<{
+  subject: string;
+  movedBy: string;
+  from: string;
+  to: string;
+  reason?: string | null;
+}> = {
+  type: "session_moved",
+  label: "Session moved",
+  notification: (v) => ({
+    title: "Session moved",
+    message: `${v.subject} is now ${v.to}${v.reason ? `. ${v.reason}` : ""}`,
+    link: "/student/sessions",
+  }),
+  email: (v) => ({
+    subject: `${v.subject} moved to ${v.to}`,
+    heading: "A session has been moved",
+    intro:
+      `${v.movedBy} moved ${v.subject} from ${v.from} to ${v.to}.` +
+      (v.reason ? ` They said: "${v.reason}".` : "") +
+      ` Nothing else about the session has changed, and the meeting link still ` +
+      `appears on the session itself shortly before it starts.`,
+    facts: [
+      { label: "Subject", value: v.subject },
+      { label: "Was", value: v.from },
+      { label: "Now", value: v.to },
+      ...(v.reason ? [{ label: "Reason", value: v.reason }] : []),
+    ],
+    cta: { label: "Open the session", url: "/student/sessions" },
+    footer: null,
+  }),
+  sample: {
+    subject: "Mathematics",
+    movedBy: "Bethlehem Alemu",
+    from: "Tuesday 12 August, 4pm",
+    to: "Thursday 14 August, 4pm",
+    reason: "Clashing appointment, sorry",
+  },
+};

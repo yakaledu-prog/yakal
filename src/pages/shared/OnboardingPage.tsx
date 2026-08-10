@@ -22,6 +22,8 @@ import subjSat from "@/assets/images/subject-sat-prep.webp";
 import subjAdvising from "@/assets/images/resource-book-session.webp";
 import subjOther from "@/assets/images/about-offer.webp";
 import { gradYearFromGrade } from "@/config/admissionsCalendar";
+import { TutorResume, type TutorResumeData, type ResumeSection } from "@/components/shared/TutorResume";
+import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { upsertApplication } from "@/services/collegeService";
 
 const SUBJECTS = [
@@ -66,6 +68,16 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   const [bio, setBio] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
   const [intendedMajor, setIntendedMajor] = useState("");
+  // Held here and written with everything else at the end, so skipping the
+  // step leaves nothing half saved.
+  const [resume, setResume] = useState<TutorResumeData>({
+    education: [],
+    workExperience: [],
+    certifications: [],
+    languages: [],
+  });
+  const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
+  const [confirmSkip, setConfirmSkip] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvUrl, setCvUrl] = useState("");
 
@@ -215,7 +227,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   };
 
   const StudentSteps = ["Profile", "Preferences"];
-  const TutorSteps = ["Profile", "CV / Resume", "Subjects"];
+  const TutorSteps = ["Profile", "CV / Resume", "Subjects", "Background"];
   const ParentSteps = ["Profile", "Theme", "Children"];
   const CounselorSteps = ["Profile", "CV / Resume", "Bio"];
 
@@ -230,6 +242,9 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
     e.preventDefault();
 
     if (!isLastStep) {
+      // Required of both. Everything else about a tutor's profile can be
+      // filled in later, but there is no version of being approved to teach
+      // that does not involve somebody reading a CV first.
       if ((role === "tutor" || role === "counselor") && step === 2 && !cvUrl && !cvFile) {
         return toast.error("Please upload your CV before proceeding.");
       }
@@ -237,10 +252,11 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       return;
     }
 
-    if (role === "tutor" && subjects.length === 0) {
-      return toast.error("Select at least one subject you teach.");
-    }
+    await submit();
+  };
 
+  /** The save itself, so Skip for now can reach it without a form event. */
+  const submit = async () => {
     if (role === "parent" && childrenDetails.length === 0) {
       toast.error("Please add at least one child to continue.");
       return;
@@ -274,6 +290,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
       if (role === "tutor") {
         updates.subjects = subjects;
+        updates.education = resume.education;
+        updates.work_experience = resume.workExperience;
+        updates.certifications = resume.certifications;
+        updates.languages = resume.languages;
         updates.bio = bio.trim() || null;
         updates.resume_url = cvUrl || null;
       } else if (role === "counselor") {
@@ -533,6 +553,28 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </div>
               )}
 
+              {/* Tutor Step 4: the background a family reads on the catalog.
+                  The same component and the same dialog the profile page uses,
+                  so an entry added here and one added later are the same shape
+                  and there is one editor to keep right. Skippable, like the
+                  rest: none of it blocks teaching, all of it helps being
+                  found. */}
+              {role === "tutor" && step === 4 && (
+                <div className="space-y-4">
+                  <p className="text-[13px] text-muted-foreground">
+                    Education, work and certifications appear on your card in the course catalog.
+                    Add what you have now, or fill it in later from your profile.
+                  </p>
+                  <TutorResume
+                    resume={resume}
+                    onAdd={(section) => setAddingTo(section)}
+                    onRemove={(section, index) =>
+                      setResume((r) => ({ ...r, [section]: r[section].filter((_, i) => i !== index) }))
+                    }
+                  />
+                </div>
+              )}
+
               {/* Student Step 2: grade level, then the same theme cards */}
               {role === "student" && step === 2 && (
                 <div className="flex flex-col gap-6">
@@ -749,17 +791,84 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 </Button>
               ) : <div />}
 
-              <Button
-                type="submit"
-                className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
-                disabled={loading}
-              >
-                {loading ? "Saving..." : isLastStep ? "Complete Setup" : "Next"}
-              </Button>
+              <div className="flex items-center gap-4">
+                {/* Skipping is offered rather than tolerated. A tutor stuck
+                    without a resume to hand used to be stuck at step two, and
+                    the profile badge does the asking from here on. */}
+                {role === "tutor" && step > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmSkip(true)}
+                    disabled={loading}
+                    className="text-[13.5px] font-normal text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  >
+                    Skip for now
+                  </button>
+                )}
+
+                <Button
+                  type="submit"
+                  className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : isLastStep ? "Complete Setup" : "Next"}
+                </Button>
+              </div>
             </div>
           </form>
         </Card>
       </div>
+
+      {/* Asked rather than done, the same way skipping the diagnostic is. The
+          step costs nothing to skip and something to have skipped, and that is
+          exactly the case worth a sentence before it happens. */}
+      {confirmSkip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#202c33] max-w-md w-full rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-[#111] dark:text-white mb-2">
+                {step === 3 ? "Skip subjects?" : "Skip your background?"}
+              </h3>
+              <p className="text-[#54656f] dark:text-[#aebac1] text-[15px] leading-relaxed">
+                {step === 3
+                  ? "Families search the catalog by subject, so a profile without any is harder to find. You can pick them later from your profile."
+                  : "Your education, work and certifications are what a family reads on your card before booking. You can add them later from your profile."}
+              </p>
+            </div>
+            <div className="p-4 bg-[#f8f9fa] dark:bg-[#182329] border-t border-[#e9edef] dark:border-[#2a3942] flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmSkip(false)}
+                className="border-[#e9edef] dark:border-[#2a3942] hover:bg-[#e9edef] dark:hover:bg-[#2a3942]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setConfirmSkip(false);
+                  if (isLastStep) void submit();
+                  else setStep(step + 1);
+                }}
+                disabled={loading}
+                className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80"
+              >
+                {loading ? "Skipping..." : "Skip for now"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addingTo && (
+        <ResumeEntryDialog
+          section={addingTo}
+          onSave={(entry) => {
+            setResume((r) => ({ ...r, [addingTo]: [...r[addingTo], entry] }));
+            setAddingTo(null);
+          }}
+          onClose={() => setAddingTo(null)}
+        />
+      )}
     </div>
   );
 }

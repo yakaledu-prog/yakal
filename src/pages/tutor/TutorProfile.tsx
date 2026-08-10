@@ -10,13 +10,12 @@ import {
 import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { cn } from "@/utils/cn";
 import { DetailRow } from "@/components/shared/DetailRow";
-import { Calendar, Camera, Check, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X } from "lucide-react";
+import { tutorProfileCompleteness } from "@/config/tutorProfile";
+import { Calendar, Camera, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X , AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
-
-const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "SAT Prep", "College Advising", "Other"];
 
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -65,6 +64,7 @@ export function TutorProfile() {
     );
   }
   const [editOpen, setEditOpen] = useState(false);
+  const completeness = tutorProfileCompleteness(profile);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courseCount, setCourseCount] = useState(0);
   const [myRating, setMyRating] = useState<TutorRating | undefined>();
@@ -132,6 +132,20 @@ export function TutorProfile() {
                   <h1 className="text-3xl font-bold tracking-tight mb-2">{profile?.full_name || "Tutor"}</h1>
                   {/* <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
+
+                  {/* Framed as findability rather than as an unfinished form.
+                      Nothing is blocked by this; it is the only thing that
+                      asks, now that onboarding lets a tutor skip past it. */}
+                  {!completeness.complete && (
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      className="mt-3 flex items-center gap-2 text-left text-[13px] text-white/90 underline-offset-4 hover:underline"
+                    >
+                      <AlertCircle size={15} className="shrink-0" />
+                      Profile {completeness.percent}% complete. Students find you more easily with{" "}
+                      {completeness.missing.map((m) => m.label.toLowerCase()).join(", ")}.
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="shrink-0 flex flex-col gap-3">
@@ -271,13 +285,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [bio, setBio] = useState(profile?.bio || "");
-  const [subjects, setSubjects] = useState<string[]>(profile?.subjects || []);
-  const [subjectQuery, setSubjectQuery] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const toggle = (s: string) => setSubjects((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
-
-  const shown = SUBJECTS.filter((s) => s.toLowerCase().includes(subjectQuery.trim().toLowerCase()));
 
   const save = async () => {
     if (!user) return;
@@ -287,7 +295,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
       full_name: fullName.trim(),
       phone: phone.trim() || null,
       bio: bio.trim() || null,
-      subjects,
     }).eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -345,55 +352,16 @@ function EditModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setBio(e.target.value)}
               placeholder="How you teach, and who you teach best."
             />
-            {/* The bio is what a family reads before booking, and the public
-                listing hides a tutor whose bio is under eighty characters. */}
-            <p className="mt-2 text-[12px] text-[#8696a0]">
-              {bio.trim().length < 80
-                ? `${80 - bio.trim().length} more characters before you appear on the public site.`
-                : "Long enough to appear on the public site."}
-            </p>
+            {/* Said only while it is still a problem. The public listing
+                hides a tutor whose bio is under eighty characters, so the
+                count is worth showing; confirming it is fine is not. */}
+            {bio.trim().length < 80 && (
+              <p className="mt-2 text-[12px] text-[#8696a0]">
+                {80 - bio.trim().length} more characters before you appear on the public site.
+              </p>
+            )}
           </div>
 
-          <div>
-            <div className="mb-2 flex items-baseline justify-between">
-              <span className={cn(lbl, "mb-0")}>Subjects</span>
-              <span className="text-[12px] text-[#8696a0]">{subjects.length} selected</span>
-            </div>
-
-            <input
-              value={subjectQuery}
-              onChange={(e) => setSubjectQuery(e.target.value)}
-              placeholder="Search subjects"
-              className={cn(input, "mb-1")}
-            />
-
-            {/* A list, not a field of capsules. Rows are the same width, so the
-                eye runs down the ticks instead of hunting through wrapped
-                pills of different lengths. */}
-            <div className="max-h-[196px] overflow-y-auto">
-              {shown.length === 0 ? (
-                <p className="py-6 text-center text-[13px] text-[#8696a0]">Nothing matches that.</p>
-              ) : (
-                shown.map((s) => {
-                  const on = subjects.includes(s);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggle(s)}
-                      aria-pressed={on}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-[#f0f2f5] dark:hover:bg-[#111b21]"
-                    >
-                      <span className={cn(on ? "text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]")}>
-                        {s}
-                      </span>
-                      {on && <Check size={16} className="shrink-0 text-[#1099A1]" />}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-[#e9edef] px-7 py-4 dark:border-[#2a3942]">

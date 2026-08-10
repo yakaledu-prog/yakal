@@ -77,6 +77,9 @@ export function StudentCourseSessions() {
             hideIfEmpty
             onJoin={(s) => navigate(`/student/meeting/${s.id}`)}
             onReschedule={(s) => setMoving(toReschedulable(s))}
+              // Inside 24 hours it stops being self-serve, so the button
+              // takes them to the person who can actually agree to it.
+              onRequestChange={() => navigate("/student/messages")}
           />
           <PastSessions sessions={sessions} hideIfEmpty onRate={setRating} />
         </>
