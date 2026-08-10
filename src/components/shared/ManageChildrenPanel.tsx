@@ -508,7 +508,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       {s.label}
                     </th>
                   ))}
-                  <th className="w-[92px]" />
+                  <th className="w-[52px]" />
                 </tr>
               </thead>
               <tbody>
@@ -570,32 +570,18 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           </ServiceCell>
                         </td>
 
-                        <td className="py-3">
-                          <div className="flex items-center justify-end gap-0.5">
-                            {/* Their page, not a form. There is nothing on a
-                                child a parent should be typing over: the name
-                                and grade are the child's own, and the services
-                                follow payment. */}
-                            <Link
-                              to={`/parent/children?student=${c.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              title={`Open ${c.full_name}`}
-                              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#1099A1]"
-                            >
-                              <Pencil size={16} />
-                            </Link>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setToRemove({ id: c.id, name: c.full_name });
-                              }}
-                              disabled={busyKey === `${c.id}:unlink`}
-                              title={`Remove ${c.full_name}`}
-                              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                        <td className="py-3 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setToRemove({ id: c.id, name: c.full_name });
+                            }}
+                            disabled={busyKey === `${c.id}:unlink`}
+                            title={`Remove ${c.full_name}`}
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </tr>
 
@@ -608,13 +594,23 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                                 lessons. */}
                             {plans?.get(c.id) && (
                               <div
-                                className="mb-2 flex items-center justify-between gap-3 border-b pb-2"
-                                style={{ borderColor: tierColour(plans.get(c.id)!.tier.name) }}
+                                className="flex items-center justify-between gap-3 border-b pb-2"
+                                style={{ borderColor: `${tierColour(plans.get(c.id)!.tier.name)}50` }}
                               >
                                 <PlanCell plan={plans.get(c.id)} />
-                                <span className="shrink-0 text-[12px] text-muted-foreground">
-                                  College counselling
-                                </span>
+                                {/* Here rather than on the row, because here
+                                    it is unambiguous: it changes this plan.
+                                    Beside a child's name it could have meant
+                                    the child, which is not a parent's to
+                                    edit. */}
+                                <Link
+                                  to={SERVICES[1].buyHref(c.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Change this plan"
+                                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#1099A1]"
+                                >
+                                  <Pencil size={15} />
+                                </Link>
                               </div>
                             )}
 
@@ -631,7 +627,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                             <Link
                               to={SERVICES[0].buyHref(c.id)}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-3 py-2.5 text-muted-foreground transition-colors hover:text-[#1099A1]"
+                              className="flex items-center gap-3 py-1.5 text-muted-foreground transition-colors hover:text-[#1099A1]"
                             >
                               <span className="grid h-8 shrink-0 place-items-center">
                                 <PackagePlusIcon size={14} />
