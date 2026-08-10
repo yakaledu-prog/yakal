@@ -112,15 +112,37 @@ function CourseList({ courses }: { courses: CoursePackage[] }) {
   );
 }
 
+/**
+ * One booked course, shaped like a row rather than a card.
+ *
+ * A card inside a table row is two frames around the same thing. Face, then
+ * what it is, then the numbers on the right, and only a rule between them.
+ */
 function CourseCard({ course }: { course: CoursePackage }) {
   const left = course.slotsPurchased - course.slotsCompleted;
   return (
-    <div className="rounded-lg border border-border px-3 py-2.5">
-      <p className="truncate text-[13px] font-medium text-foreground">{course.courseTitle}</p>
-      <p className="truncate text-[12px] text-muted-foreground">
-        {course.tutorName ?? "Tutor being assigned"}
-        {course.slotsPurchased > 0 && ` \u00b7 ${left} of ${course.slotsPurchased} left`}
-      </p>
+    <div className="flex items-center gap-3 border-b border-border/40 py-2.5 last:border-0">
+      <img
+        src={course.tutorAvatarUrl || dicebearUrl(course.tutorName ?? course.courseTitle)}
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+      />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium text-foreground">{course.courseTitle}</p>
+        <p className="truncate text-[12px] text-muted-foreground">
+          {course.tutorName ?? "Tutor being assigned"}
+        </p>
+      </div>
+
+      <div className="shrink-0 text-right">
+        <p className="text-[13px] text-foreground">
+          {course.slotsPurchased > 0 ? `${left} of ${course.slotsPurchased} left` : "No sessions yet"}
+        </p>
+        <p className="text-[12px] text-muted-foreground">
+          {course.slotsUpcoming > 0 ? `${course.slotsUpcoming} booked` : "None booked"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -461,7 +483,10 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
-                      className="w-[230px] pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+                      className={cn(
+                        "pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground",
+                        s.key === "tutoring" ? "w-[300px]" : "w-[160px]"
+                      )}
                     >
                       {s.label}
                     </th>
@@ -545,12 +570,10 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                   {open && (
                     <tr className="border-b border-border/30">
-                      <td colSpan={4} className="bg-muted/20 px-4 py-3">
-                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                          {courses.map((course) => (
-                            <CourseCard key={course.courseId} course={course} />
-                          ))}
-                        </div>
+                      <td colSpan={4} className="py-1 pl-10 pr-2">
+                        {courses.map((course) => (
+                          <CourseCard key={course.courseId} course={course} />
+                        ))}
                       </td>
                     </tr>
                   )}
