@@ -46,12 +46,9 @@ export const TUTOR_PROFILE_REQUIREMENTS: ProfileRequirement[] = [
     why: "A few sentences on what you teach and how. Aim for 80 characters or more.",
     done: (p) => (p.bio ?? "").trim().length >= 80,
   },
-  {
-    key: "subjects",
-    label: "Subjects you teach",
-    why: "You only appear in searches for the subjects listed here.",
-    done: (p) => (p.subjects?.length ?? 0) > 0,
-  },
+  // Subjects are asked for once, at onboarding, and there is no editor for
+  // them on the profile. A badge that asks for something the page it sits on
+  // cannot fix is a dead end, so it is not counted here.
   {
     key: "resume",
     label: "Your resume",

@@ -17,23 +17,9 @@ import { supabase } from "@/lib/supabase";
 import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
 
-const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "SAT Prep", "College Advising", "Other"];
-
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const [addingTo, setAddingTo] = useState<ResumeSection | null>(null);
-
-  /** Written straight through: one tap, one column, nothing to confirm. */
-  async function toggleSubject(subject: string) {
-    if (!user) return;
-    const current: string[] = profile?.subjects ?? [];
-    const next = current.includes(subject)
-      ? current.filter((s) => s !== subject)
-      : [...current, subject];
-    const { error } = await supabase.from("profiles").update({ subjects: next }).eq("id", user.id);
-    if (error) return toast.error(error.message);
-    await refreshProfile();
-  }
 
   /** The database column behind each section. */
   const COLUMN: Record<ResumeSection, string> = {
@@ -254,40 +240,6 @@ export function TutorProfile() {
 
             {/* Right column */}
             <div className="flex-1 w-full space-y-6">
-              {/* Its own section rather than a list inside the edit modal.
-                  Subjects are what the catalog filters and searches on, so
-                  they belong beside the rest of what a family reads, not
-                  buried under a name and a phone number. */}
-              <div>
-                <div className="mb-3 flex items-baseline justify-between">
-                  <h3 className="text-[16px] font-bold text-foreground">Subjects</h3>
-                  <span className="text-[12px] text-muted-foreground">
-                    {(profile?.subjects?.length ?? 0)} selected
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {SUBJECTS.map((s) => {
-                    const on = (profile?.subjects ?? []).includes(s);
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => void toggleSubject(s)}
-                        aria-pressed={on}
-                        className={cn(
-                          "rounded-xl border px-3.5 py-2 text-[13.5px] transition-colors",
-                          on
-                            ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
-                            : "border-border text-muted-foreground hover:border-[#1099A1] hover:text-foreground"
-                        )}
-                      >
-                        {s}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* A tutor's background, not their diary. Sessions already have
                   a page of their own, and repeating five of them here answered
                   a question nobody opens a profile to ask. What a family
@@ -400,13 +352,14 @@ function EditModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setBio(e.target.value)}
               placeholder="How you teach, and who you teach best."
             />
-            {/* The bio is what a family reads before booking, and the public
-                listing hides a tutor whose bio is under eighty characters. */}
-            <p className="mt-2 text-[12px] text-[#8696a0]">
-              {bio.trim().length < 80
-                ? `${80 - bio.trim().length} more characters before you appear on the public site.`
-                : "Long enough to appear on the public site."}
-            </p>
+            {/* Said only while it is still a problem. The public listing
+                hides a tutor whose bio is under eighty characters, so the
+                count is worth showing; confirming it is fine is not. */}
+            {bio.trim().length < 80 && (
+              <p className="mt-2 text-[12px] text-[#8696a0]">
+                {80 - bio.trim().length} more characters before you appear on the public site.
+              </p>
+            )}
           </div>
 
         </div>
