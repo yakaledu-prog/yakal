@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, use
 import { Loader2 } from "lucide-react";
 
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { IdleTimeout } from "@/components/shared/IdleTimeout";
 import { Toaster } from "sonner";
 
 // ============================================================
@@ -232,6 +233,9 @@ function AppRootLayout() {
         }}
       />
       <Outlet />
+      {/* Signs an idle session out to /login. Here, under both AuthProvider and
+          the router, so it runs on every authenticated screen regardless of role. */}
+      <IdleTimeout />
       {/* Here rather than on one page: it should be offerable to a visitor
           reading the landing page and to somebody already signed in, and it
           hides itself once the app is installed. */}
