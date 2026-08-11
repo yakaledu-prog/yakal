@@ -9,6 +9,8 @@ import type { AdmissionsTier, TierInput } from "@/services/admissionsService";
 interface Props {
   onClose: () => void;
   initialData: AdmissionsTier | null;
+  /** The tier's brand shade, so the editor wears the colour of the plan it edits. */
+  shade: string;
   /** Highest existing sort_order, so a new tier lands at the end of the list. */
   nextSortOrder: number;
   onSubmit: (input: TierInput & { key?: string }) => Promise<void>;
@@ -94,6 +96,7 @@ function initForm(tier: AdmissionsTier | null): FormState {
 export function AdminTierModal({
   onClose,
   initialData,
+  shade,
   nextSortOrder,
   onSubmit,
   isSubmitting,
@@ -182,7 +185,12 @@ export function AdminTierModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#111b21] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+      <div
+        className="bg-white dark:bg-[#111b21] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
+        // The editor wears the tier's shade on its top edge, so it matches the
+        // card the admin opened it from.
+        style={{ borderTop: `4px solid ${shade}` }}
+      >
         {/* The stepper is the heading. A title saying "Edit Premier" above a
             step called Content repeated what the list already said to open it. */}
         <div className="flex items-start justify-between gap-4 border-b border-[#e9edef] px-6 pt-4 shrink-0 dark:border-[#2a3942]">

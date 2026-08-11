@@ -15,6 +15,7 @@ import {
   getTierSubscribers,
   reorderTiers,
   monthlyCents,
+  tierShade,
   updateTier,
   createTier,
   setTierFlag,
@@ -222,10 +223,17 @@ export function AdminAdmissions() {
                 <div
                   key={t.id}
                   className={cn(
-                    "relative bg-white dark:bg-[#111b21] rounded-2xl border p-6 md:p-7 transition-colors",
-                    t.isRecommended ? "border-[#1099A1]" : "border-[#e9edef] dark:border-[#2a3942]",
+                    "relative overflow-hidden bg-white dark:bg-[#111b21] rounded-2xl border p-6 md:p-7 transition-colors",
                     !t.isActive && "opacity-60"
                   )}
+                  // Each tier's brand shade on the top edge and border, the same
+                  // colour families and parents see, so admin edits the plan it
+                  // looks like. Position in the full list, not the filtered one,
+                  // so a search does not repaint the cards.
+                  style={{
+                    borderColor: tierShade(tiers.findIndex((x) => x.id === t.id)),
+                    borderTopWidth: 4,
+                  }}
                 >
                   {/* The actions float instead of sharing a flex row. As a
                       sibling they took width from the price line, which then
@@ -380,6 +388,9 @@ export function AdminAdmissions() {
           key={editing?.id ?? "new"}
           onClose={() => setIsModalOpen(false)}
           initialData={editing}
+          shade={tierShade(
+            editing ? tiers.findIndex((x) => x.id === editing.id) : tiers.length
+          )}
           nextSortOrder={nextSortOrder}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}

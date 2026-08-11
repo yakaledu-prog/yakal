@@ -14,6 +14,7 @@ import {
   getAdmissionsPlans,
   getTiers,
   monthlyCents,
+  tierShade,
   type AdmissionsTier,
 } from "@/services/admissionsService";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
@@ -141,10 +142,11 @@ export function ParentAdmissions() {
               </p>
             ) : (
               <div className="grid gap-5 lg:grid-cols-3">
-                {tiers.map((t) => (
+                {tiers.map((t, i) => (
                   <TierCard
                     key={t.id}
                     tier={t}
+                    shade={tierShade(i)}
                     current={currentPlan?.tier.id === t.id}
                     hasPlan={!!currentPlan}
                     disabled={!activeChildId}
@@ -218,6 +220,7 @@ export function ParentAdmissions() {
 
 function TierCard({
   tier,
+  shade,
   current,
   hasPlan,
   disabled,
@@ -225,6 +228,7 @@ function TierCard({
   onChoose,
 }: {
   tier: AdmissionsTier;
+  shade: string;
   current: boolean;
   hasPlan: boolean;
   disabled: boolean;
@@ -233,18 +237,14 @@ function TierCard({
 }) {
   return (
     <article
-      className={cn(
-        "relative flex flex-col rounded-2xl border bg-card p-6",
-        current
-          ? "border-[#1099A1]"
-          : tier.isRecommended
-            ? "border-[#1099A1]/40"
-            : "border-border"
-      )}
+      className="relative flex flex-col overflow-hidden rounded-2xl border bg-card p-6"
+      // Each tier carries its own brand shade on the top edge and border, so
+      // the plans are distinguishable at a glance.
+      style={{ borderColor: shade, borderTopWidth: 4 }}
     >
       {/* One line above the title rather than a floating tab, so the three
           cards stay the same height and start at the same place. */}
-      <p className="mb-1 h-4 text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
+      <p className="mb-1 h-4 text-[11px] font-medium uppercase tracking-wider" style={{ color: shade }}>
         {current ? "Current plan" : tier.isRecommended ? "Most chosen" : ""}
       </p>
 
