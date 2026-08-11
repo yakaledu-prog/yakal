@@ -6,7 +6,7 @@ import { Loader2, ExternalLink, RotateCcw, Check, Clock, X, LogIn, Trash2, Lock,
 import { supabase, BACKEND } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { postAuthPath } from "@/utils/roleRoutes";
-import { getChildServices, setChildService, type ServiceName } from "@/services/parentService";
+import { getChildServices, type ServiceName } from "@/services/parentService";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -108,30 +108,11 @@ export function DevConsole() {
     enabled: studentIds.length > 0,
   });
 
+  // Read-only now: a service is active when it has been paid for (an enrolment,
+  // an admissions plan), which is what getChildServices reports. There is no
+  // toggle, because access no longer follows a switch.
   const isActive = (studentId: string, service: ServiceName) =>
     services.some((s) => s.student_id === studentId && s.service === service && s.is_active);
-
-  /**
-   * Flips a service directly, skipping the request-and-grant round trip. The
-   * point is to reach the locked or unlocked state in one click when showing
-   * someone the difference.
-   */
-  async function toggleService(student: DevProfile, service: ServiceName) {
-    setBusy(student.id);
-    try {
-      const next = !isActive(student.id, service);
-      const result = await setChildService(student.id, service, next);
-      if (!result.success) throw new Error(result.error);
-      await queryClient.invalidateQueries({ queryKey: ["dev-services"] });
-      toast.success(`${student.full_name}: ${service} ${next ? "unlocked" : "locked"}`);
-    } catch (err: any) {
-      toast.error(
-        isAdmin ? err.message : "Sign in as admin first, row level security blocks this otherwise."
-      );
-    } finally {
-      setBusy(null);
-    }
-  }
 
   async function deleteAccount(target: DevProfile) {
     setBusy(target.id);
@@ -297,17 +278,19 @@ export function DevConsole() {
                         Sign in
                       </button>
 
+                      {/* Read-only. Access follows payment now, so this reports
+                          what the student has (an enrolment, an admissions
+                          plan) rather than offering a switch that no longer
+                          controls anything. */}
                       {p.role === "student" &&
                         (["tutoring", "admissions"] as ServiceName[]).map((service) => {
                           const on = isActive(p.id, service);
                           return (
-                            <button
+                            <span
                               key={service}
-                              onClick={() => toggleService(p, service)}
-                              disabled={isBusy}
-                              title={`${on ? "Lock" : "Unlock"} ${service} for ${p.full_name}`}
+                              title={`${service} is ${on ? "active (paid)" : "not active"} for ${p.full_name}`}
                               className={cn(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium border transition-colors disabled:opacity-50",
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium border",
                                 on
                                   ? "border-[#1099A1] bg-[#1099A1]/10 text-[#1099A1]"
                                   : "border-[#e9edef] dark:border-[#2a3942] text-[#667781] dark:text-[#8696a0]"
@@ -315,7 +298,7 @@ export function DevConsole() {
                             >
                               {on ? <Unlock size={12} /> : <Lock size={12} />}
                               {service}
-                            </button>
+                            </span>
                           );
                         })}
 

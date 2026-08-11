@@ -23,6 +23,7 @@ export interface ChildOption {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  grade_level?: string | null;
 }
 
 /** The list of children, plus an "everyone" entry. */
@@ -31,11 +32,27 @@ export function ChildSidebar({
   activeId,
   onSelect,
   countFor,
+  /**
+   * Off where the page is about one child at a time. A roadmap for "all
+   * children" is not a thing: the timeline, the stage and the graduation year
+   * all belong to one person.
+   */
+  showAll = true,
+  /** What the line under each name counts. Billing counts plans. */
+  countLabel = ["plan", "plans"],
+  /**
+   * The line under a name, when a count is the wrong thing to put there. The
+   * roadmap has nothing to count, so it says which grade they are in.
+   */
+  sublineFor,
 }: {
   children: ChildOption[];
   activeId: string | null;
   onSelect: (id: string | null) => void;
   countFor: (childId: string | null) => number;
+  showAll?: boolean;
+  countLabel?: [string, string];
+  sublineFor?: (child: ChildOption) => string;
 }) {
   return (
     <aside className="w-full shrink-0 border-b border-border bg-card md:h-full md:w-[260px] md:border-b-0 md:border-r">
@@ -43,6 +60,7 @@ export function ChildSidebar({
         Children
       </p>
 
+      {showAll && (
       <button
         onClick={() => onSelect(null)}
         className={cn(
@@ -65,10 +83,11 @@ export function ChildSidebar({
             All children
           </span>
           <span className="block text-[12px] text-muted-foreground">
-            {countFor(null)} {countFor(null) === 1 ? "plan" : "plans"}
+            {countFor(null)} {countFor(null) === 1 ? countLabel[0] : countLabel[1]}
           </span>
         </span>
       </button>
+      )}
 
       {children.map((c) => {
         const active = c.id === activeId;
@@ -96,7 +115,9 @@ export function ChildSidebar({
                 {c.full_name}
               </span>
               <span className="block text-[12px] text-muted-foreground">
-                {countFor(c.id)} {countFor(c.id) === 1 ? "plan" : "plans"}
+                {sublineFor
+                  ? sublineFor(c)
+                  : `${countFor(c.id)} ${countFor(c.id) === 1 ? countLabel[0] : countLabel[1]}`}
               </span>
             </span>
           </button>
@@ -207,10 +228,13 @@ export function PackageActions({
 export function BillingHeader({
   subtitle,
   stats,
+  leading,
   children,
 }: {
   subtitle: string;
   stats: { label: string; value: string | number }[];
+  /** Above the title. A back link belongs there, not under the stats. */
+  leading?: React.ReactNode;
   /** Anything that belongs under the stats, e.g. tabs. */
   children?: React.ReactNode;
 }) {
@@ -234,6 +258,7 @@ export function BillingHeader({
       </svg>
 
       <div className="relative z-10">
+        {leading}
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Billing</h1>

@@ -33,6 +33,7 @@ export function Dropdown<T extends string = string>({
   buttonClassName,
   ariaLabel,
   placeholder = "Select",
+  icon,
 }: {
   value: T;
   onChange: (value: T) => void;
@@ -44,6 +45,12 @@ export function Dropdown<T extends string = string>({
   buttonClassName?: string;
   ariaLabel?: string;
   placeholder?: string;
+  /**
+   * Renders as a single icon button instead of label-plus-chevron, for a
+   * toolbar where the label repeats what the list below already shows and the
+   * width is better spent on a search field.
+   */
+  icon?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -173,11 +180,17 @@ export function Dropdown<T extends string = string>({
           buttonClassName
         )}
       >
-        <span className="truncate">{selected?.label ?? placeholder}</span>
-        <ChevronDown
-          size={15}
-          className={cn("shrink-0 transition-transform", open && "rotate-180")}
-        />
+        {icon ? (
+          icon
+        ) : (
+          <>
+            <span className="truncate">{selected?.label ?? placeholder}</span>
+            <ChevronDown
+              size={15}
+              className={cn("shrink-0 transition-transform", open && "rotate-180")}
+            />
+          </>
+        )}
       </button>
 
       {open && rect && createPortal(

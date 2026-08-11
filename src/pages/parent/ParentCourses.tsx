@@ -6,7 +6,7 @@ import { dicebearUrl } from "@/utils/avatar";
 import { getCatalogCourses } from "@/services/courseApplicationService";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Search, LayoutGrid, List, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { StarRating } from "@/components/ui/StarRating";
 import { getTutorRatings } from "@/services/tutorService";
@@ -27,6 +27,13 @@ export function ParentCourses() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
+
+  // Carry a preselected child (from an "Add tutoring" link on their row)
+  // through to the course page so the purchase stays for that child.
+  const [params] = useSearchParams();
+  const studentParam = params.get("student");
+  const detailHref = (courseId: string) =>
+    studentParam ? `/parent/courses/${courseId}?student=${studentParam}` : `/parent/courses/${courseId}`;
 
   const { data: catalogCourses = [], isLoading } = useQuery({
     queryKey: ["catalog-courses"],
@@ -74,10 +81,10 @@ export function ParentCourses() {
             </div>
 
             {/* Controls Row inside header */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex items-center gap-4 w-full lg:w-auto">
+            <div className="flex flex-row items-center justify-between gap-3 pt-4 border-t border-white/20">
+              <div className="flex items-center gap-4 min-w-0 flex-1 lg:flex-none lg:w-auto">
                 {/* View Toggles */}
-                <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
+                <div className="hidden sm:flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
@@ -106,8 +113,10 @@ export function ParentCourses() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center gap-2 self-end lg:self-auto">
-                <span className="text-[13px] text-white/80 mr-2">
+              <div className="flex shrink-0 items-center gap-2">
+                {/* The count is the first thing to go when the row is tight:
+                    the arrows are the control, the tally is commentary. */}
+                <span className="hidden text-[13px] text-white/80 mr-2 sm:inline">
                   Showing {catalogCourses.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, catalogCourses.length)} of {catalogCourses.length}
                 </span>
                 <button
@@ -154,7 +163,7 @@ export function ParentCourses() {
             {visibleCourses.map(course => (
               <Link
                 key={course.id}
-                to={`/parent/courses/${course.id}`}
+                to={detailHref(course.id)}
                 className={cn(
                   "group bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden ring-2 ring-transparent hover:ring-primary/50 transition-all ease-in-out duration-300 hover:border-primary/50 flex flex-col",
                   viewMode === "list" && "sm:flex-row sm:h-[160px]"

@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X , ChevronLeft } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +16,7 @@ import {
   monthlyCents,
   type AdmissionsTier,
 } from "@/services/admissionsService";
+import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { ChildSidebar } from "./billing/shared";
 
 // ============================================================
@@ -31,8 +33,20 @@ import { ChildSidebar } from "./billing/shared";
 
 export function ParentAdmissions() {
   const { user } = useAuth();
-  const [childId, setChildId] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  // The child can arrive preselected, e.g. from "Add" on a child's row, so the
+  // parent lands with the right child already chosen rather than picking again.
+  const [childId, setChildId] = useState<string | null>(params.get("student"));
+  // showDetail rather than the hook's listClass/detailClass: those carry
+  // `flex`, and a grid child set to display:flex stops stretching to its
+  // column, which leaves the header sized to its own text.
+  const { showDetail, openDetail, closeDetail } = useMasterDetail();
+  const listClass = showDetail ? "hidden md:block" : "block";
+  const detailClass = showDetail ? "block" : "hidden md:block";
   const [busy, setBusy] = useState<string | null>(null);
+  // The tier awaiting confirmation. Buying names the child first, because
+  // buying the right plan for the wrong child is the expensive mistake here.
+  const [pendingTier, setPendingTier] = useState<AdmissionsTier | null>(null);
 
   const { data: children = [] } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -70,15 +84,11 @@ export function ParentAdmissions() {
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden">
-        <ChildSidebar
-          children={children}
-          activeId={activeChildId}
-          onSelect={setChildId}
-          countFor={(id) => (id ? (plans?.get(id) ? 1 : 0) : (plans?.size ?? 0))}
-        />
-
-        <section className="min-w-0 flex-1 md:h-full md:overflow-y-auto">
+      {/* Header, then the children, then the plans. Same reason as billing:
+          on a phone the rail sat above the page title, so the first thing you
+          read was a list of names with nothing saying what they were for. */}
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+        <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
           <header className="relative overflow-hidden bg-[#1099A1] px-6 py-6 text-white md:px-8 md:py-8">
             <svg
               className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
@@ -90,6 +100,12 @@ export function ParentAdmissions() {
               <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             </svg>
             <div className="relative z-10">
+              <button
+                onClick={closeDetail}
+                className="mb-2 flex items-center gap-1 text-[13px] text-white/80 transition-colors hover:text-white md:hidden"
+              >
+                <ChevronLeft size={15} /> Children
+              </button>
               <h1 className="text-2xl font-bold tracking-tight md:text-3xl">College counselling</h1>
               <p className="mt-1 text-[14px] text-white/80">
                 {currentPlan
@@ -100,8 +116,21 @@ export function ParentAdmissions() {
               </p>
             </div>
           </header>
+        </div>
 
-          <div className="p-6 md:p-8">
+        <div className={cn("md:order-1 md:col-start-1 md:row-span-2 md:h-full md:overflow-y-auto md:border-r md:border-border", listClass)}>
+          <ChildSidebar
+            children={children}
+            activeId={activeChildId}
+            onSelect={(id) => {
+              setChildId(id);
+              openDetail();
+            }}
+            countFor={(id) => (id ? (plans?.get(id) ? 1 : 0) : (plans?.size ?? 0))}
+          />
+        </div>
+
+        <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8", detailClass)}>
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="animate-spin text-[#1099A1]" />
@@ -120,7 +149,7 @@ export function ParentAdmissions() {
                     hasPlan={!!currentPlan}
                     disabled={!activeChildId}
                     busy={busy === t.id}
-                    onChoose={() => void choose(t)}
+                    onChoose={() => setPendingTier(t)}
                   />
                 ))}
               </div>
@@ -131,9 +160,58 @@ export function ParentAdmissions() {
                 Pick a child on the left to choose a plan for them.
               </p>
             )}
-          </div>
-        </section>
+        </div>
       </div>
+
+      {/* Naming the child at checkout. The most expensive, most common mistake
+          is buying the right plan for the wrong child, so the confirmation
+          leads with who it is for. */}
+      {pendingTier && activeChild && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
+              <button
+                onClick={() => setPendingTier(null)}
+                aria-label="Close"
+                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-[14px] leading-relaxed text-foreground">
+              Purchasing <span className="font-semibold">{pendingTier.name} admissions</span> for{" "}
+              <span className="font-semibold">{activeChild.full_name}</span>.
+            </p>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              {pendingTier.instalmentMonths > 1
+                ? `${money(monthlyCents(pendingTier))}/month for ${pendingTier.instalmentMonths} months (${money(pendingTier.priceCents)} total).`
+                : `${money(pendingTier.priceCents)}, one payment.`}
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setPendingTier(null)}
+                className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const t = pendingTier;
+                  setPendingTier(null);
+                  void choose(t);
+                }}
+                disabled={!!busy}
+                className="h-11 flex-1 rounded-xl bg-[#1099A1] text-[14px] font-bold text-white hover:bg-[#0d7f86] disabled:opacity-50"
+              >
+                Continue to payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }

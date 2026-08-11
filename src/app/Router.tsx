@@ -53,6 +53,7 @@ const CounselorProfile = lazy(() => import("../pages/counselor/CounselorProfile"
 const CounselorStudents = lazy(() => import("../pages/counselor/CounselorStudents").then((m) => ({ default: m.CounselorStudents })));
 const DevConsole = lazy(() => import("../pages/dev/DevConsole").then((m) => ({ default: m.DevConsole })));
 const EmailConfirmationPage = lazy(() => import("../pages/shared/EmailConfirmationPage").then((m) => ({ default: m.EmailConfirmationPage })));
+const InviteAcceptPage = lazy(() => import("../pages/shared/InviteAcceptPage").then((m) => ({ default: m.InviteAcceptPage })));
 const ForgotPasswordPage = lazy(() => import("../pages/shared/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import("../pages/shared/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const OnboardingPage = lazy(() => import("../pages/shared/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
@@ -257,6 +258,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <AuthPage />,
+  },
+  {
+    path: "/invite/:token",
+    element: <InviteAcceptPage />,
   },
   {
     path: "/forgot-password",

@@ -102,6 +102,10 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
+  // No child_services write here. Access follows payment: the enrolment row
+  // just written is the entitlement, and v_student_entitlements derives
+  // tutoring access from it directly. There is no separate permission to set.
+
   // ---- sessions ----
   const slots = Array.isArray(invoice.booking) ? invoice.booking : [];
   let created = 0;
@@ -349,14 +353,9 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     if (appErr) console.error("fulfil: assigning the counsellor failed:", appErr.message);
   }
 
-  // The switch the rest of the app reads.
-  const { error: svcErr } = await db
-    .from("child_services")
-    .upsert(
-      { student_id: invoice.student_id, service: "admissions", is_active: true },
-      { onConflict: "student_id,service" }
-    );
-  if (svcErr) console.error("fulfil: unlocking admissions failed:", svcErr.message);
+  // No child_services write. The admissions_plan row is the entitlement, and
+  // v_student_entitlements derives admissions access from it. Access follows
+  // payment, with nothing else to switch on.
 
   const { data: people } = await db
     .from("profiles")

@@ -1,4 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import { getAllAssignments } from "@/services/studentService";
+import { getConversations } from "@/services/messageService";
+import { getBilling } from "@/services/packageService";
+import { authedPost } from "@/lib/authedFetch";
 
 export interface LinkedChild {
   id: string;
@@ -36,18 +40,23 @@ export interface ChildService {
 }
 
 /**
- * The services active for the signed-in student.
+ * The services a student can actually use, derived from what has been paid for.
  *
- * A student can read their own rows (child_services_student_select), so this
- * works without going through the parent. A service with no row at all counts
- * as inactive: nothing is unlocked until a parent turns it on.
+ * Read straight from v_student_entitlements, which is payment alone: an active
+ * course enrolment means tutoring, an active admissions plan means admissions.
+ * Both are written only by the Stripe webhook.
+ *
+ * There is no parent permission gate on top. The product model is that a
+ * payment creates access for a child, and access is a server-side entitlement
+ * rather than a manually editable switch, so nothing a parent toggles turns a
+ * paid service off. (An earlier version AND-ed this with child_services as a
+ * parent permission; that gate was removed to match the payment-only model.)
  */
 export async function getMyActiveServices(studentId: string): Promise<ServiceName[]> {
   const { data, error } = await supabase
-    .from("child_services")
-    .select("service, is_active")
-    .eq("student_id", studentId)
-    .eq("is_active", true);
+    .from("v_student_entitlements")
+    .select("service")
+    .eq("student_id", studentId);
   if (error) {
     console.warn("Could not read services", error.message);
     return [];
@@ -55,29 +64,32 @@ export async function getMyActiveServices(studentId: string): Promise<ServiceNam
   return (data ?? []).map((r) => r.service as ServiceName);
 }
 
+// setChildService was removed: child_services is no longer part of the access
+// rule, so there is nothing for a manual setter to change. Access is granted by
+// payment (see getMyActiveServices / v_student_entitlements) and by nothing
+// else.
+
+/**
+ * The active services for each linked child, derived from payment.
+ *
+ * One getMyActiveServices call per child, which reads v_student_entitlements:
+ * access is a fact about enrolments and admissions plans, and this is the
+ * parent's view of the same answer the child's app computes.
+ */
 export async function getChildServices(childIds: string[]): Promise<ChildService[]> {
   if (childIds.length === 0) return [];
-  const { data } = await supabase
-    .from("child_services")
-    .select("id, student_id, service, is_active")
-    .in("student_id", childIds);
-  return (data as ChildService[]) || [];
-}
-
-// Toggle a service on/off for a child (upsert on the unique (student_id, service)).
-export async function setChildService(
-  studentId: string,
-  service: ServiceName,
-  isActive: boolean
-): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase
-    .from("child_services")
-    .upsert({ student_id: studentId, service, is_active: isActive }, { onConflict: "student_id,service" });
-  if (error) {
-    console.error("setChildService failed:", error);
-    return { success: false, error: error.message };
-  }
-  return { success: true };
+  const perChild = await Promise.all(
+    childIds.map(async (id) => {
+      const services = await getMyActiveServices(id);
+      return services.map((service) => ({
+        id: `${id}:${service}`,
+        student_id: id,
+        service,
+        is_active: true,
+      }));
+    })
+  );
+  return perChild.flat();
 }
 
 /** Upcoming session count per child, for the children list. */
@@ -268,44 +280,94 @@ export async function searchStudentsByEmail(prefix: string): Promise<StudentSugg
 export interface ChildInvite {
   id: string;
   email: string;
+  services: ServiceName[];
+  token: string;
   createdAt: string;
 }
 
+/** The public URL a child follows to accept, built from a token. */
+export function inviteLink(token: string): string {
+  return `${window.location.origin}/invite/${token}`;
+}
+
 /**
- * Invite a child who has no account yet.
+ * A pragmatic email check: one @, no spaces, and a dot in the domain.
  *
- * The address is remembered rather than rejected. When somebody signs up as a
- * student with it, a trigger creates the link request for them, so the parent
- * does not have to come back and try again once the child has joined.
+ * Deliberately not the full RFC. The point is to stop a name being stored as an
+ * address, which is what happened when a parent typed "sami abate" into an
+ * email field whose native validation the button click had bypassed. The invite
+ * then went nowhere and the child looked like they had no access. Anything that
+ * could plausibly be delivered to passes; the mail server is the real judge.
+ */
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+/**
+ * Invite a child by email. The invitation is the family relationship only, not
+ * a purchase: it lets the child sign in and be linked, and services are bought
+ * per child separately. So no service scope is chosen here.
  *
- * The link it creates is pending, not active: an invitation is the parent
- * asking, and the child still answers.
+ * Creates a token-carrying invite the child accepts by following a link sent to
+ * that address. The same link works whether or not they already have an
+ * account: a new child signs up and is linked as part of it, an existing child
+ * is linked on the spot. The token and expiry come from the row's defaults.
+ *
+ * A second invite to the same address is not an error: the parent is usually
+ * trying to resend, so the existing pending invite is returned to be mailed
+ * again rather than rejected.
  */
 export async function inviteChild(
   parentId: string,
   email: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; inviteId?: string; token?: string }> {
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return { success: false, error: "Enter your child's email address." };
+  if (!isValidEmail(trimmed)) {
+    return { success: false, error: "That does not look like an email address." };
+  }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("parent_child_invites")
-    .insert({ parent_id: parentId, email: trimmed });
+    .insert({ parent_id: parentId, email: trimmed })
+    .select("id, token")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
+      // Already a live invite for this address: hand back the existing one so
+      // the caller can resend the link rather than being turned away.
+      const { data: existing } = await supabase
+        .from("parent_child_invites")
+        .select("id, token")
+        .eq("parent_id", parentId)
+        .eq("email", trimmed)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (existing) {
+        return { success: true, inviteId: existing.id, token: existing.token };
+      }
       return { success: false, error: "You have already invited that address." };
     }
     return { success: false, error: error.message };
   }
-  return { success: true };
+  return { success: true, inviteId: data.id, token: data.token };
 }
 
-/** Invitations still waiting on somebody to sign up. */
+/** Mail the invitation link. The row already exists; this only sends it. */
+export async function sendInviteEmail(
+  inviteId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const res = await authedPost<{ sent?: boolean }>("/api/invites?action=send", { inviteId });
+  if (res.error) return { sent: false, error: res.error };
+  return { sent: !!res.sent };
+}
+
+/** Invitations still waiting to be accepted. */
 export async function getPendingInvites(parentId: string): Promise<ChildInvite[]> {
   const { data, error } = await supabase
     .from("parent_child_invites")
-    .select("id, email, created_at")
+    .select("id, email, services, token, created_at")
     .eq("parent_id", parentId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -314,7 +376,61 @@ export async function getPendingInvites(parentId: string): Promise<ChildInvite[]
     console.error("getPendingInvites:", error.message);
     return [];
   }
-  return (data ?? []).map((r) => ({ id: r.id, email: r.email, createdAt: r.created_at }));
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    email: r.email,
+    services: (Array.isArray(r.services) ? r.services : []) as ServiceName[],
+    token: r.token,
+    createdAt: r.created_at,
+  }));
+}
+
+// ------------------------------------------------------------
+// The child's side of a link invite.
+//
+// Both go through SECURITY DEFINER functions, because the invite row is not
+// readable by the child directly: the token is the only thing that opens it,
+// and accepting is checked against the signed-in account in the database.
+// ------------------------------------------------------------
+
+export interface InviteDetails {
+  valid: boolean;
+  reason: "ok" | "used" | "expired" | "cancelled" | "invalid";
+  email: string | null;
+  services: ServiceName[];
+  parentName: string;
+}
+
+/** What an invite link points at, for the landing page. Works signed out. */
+export async function getInviteByToken(token: string): Promise<InviteDetails | null> {
+  const { data, error } = await supabase.rpc("get_child_invite", { p_token: token });
+  if (error) {
+    console.error("getInviteByToken:", error.message);
+    return null;
+  }
+  const d = (data ?? {}) as any;
+  return {
+    valid: !!d.valid,
+    reason: (d.reason ?? "invalid") as InviteDetails["reason"],
+    email: d.email ?? null,
+    services: (Array.isArray(d.services) ? d.services : []) as ServiceName[],
+    parentName: d.parent_name ?? "A parent",
+  };
+}
+
+/**
+ * Accept an invite as the signed-in student. Grants the parent link and the
+ * services on the spot. Idempotent, so calling it after a fresh signup (where
+ * the profile trigger has already granted everything) still reports success.
+ */
+export async function acceptInviteByToken(
+  token: string
+): Promise<{ ok: boolean; error?: string; services?: ServiceName[] }> {
+  const { data, error } = await supabase.rpc("accept_child_invite", { p_token: token });
+  if (error) return { ok: false, error: error.message };
+  const d = (data ?? {}) as any;
+  if (!d.ok) return { ok: false, error: d.error ?? "Could not accept the invitation." };
+  return { ok: true, services: (Array.isArray(d.services) ? d.services : []) as ServiceName[] };
 }
 
 /** Withdraw an invitation that has not been taken up. */
@@ -324,4 +440,166 @@ export async function cancelInvite(inviteId: string): Promise<{ success: boolean
     .update({ status: "cancelled" })
     .eq("id", inviteId);
   return error ? { success: false, error: error.message } : { success: true };
+}
+
+// ============================================================
+// The parent's home screen.
+//
+// It used to call studentService.getDashboardSummary(), which returns
+// MOCK_DASHBOARD_SUMMARY after a fake 600ms delay: a session in AP Calculus AB
+// with Dr. Alex, homework called Derivatives Practice, and four stats that
+// were string literals in the JSX. None of it belonged to anyone, and the page
+// hardcoded the name "Brooklyn" around it because a student summary has no
+// child to name.
+//
+// This is the same thing built from the family's real rows.
+// ============================================================
+
+export interface ParentAgendaSession {
+  id: string;
+  /** Whose it is. The whole reason a parent's version differs from a student's. */
+  childName: string;
+  childId: string;
+  subject: string;
+  tutorName: string | null;
+  tutorAvatarUrl: string | null;
+  startsAt: Date;
+}
+
+export interface ParentAgendaTask {
+  id: string;
+  childName: string;
+  title: string;
+  dueDate: string | null;
+}
+
+export interface ParentPayment {
+  id: string;
+  description: string;
+  amountCents: number;
+  paidAt: string;
+  childName: string | null;
+  service: "Tutoring" | "College counselling";
+}
+
+export interface ParentDashboard {
+  childCount: number;
+  enrolledCourses: number;
+  upcomingSessions: number;
+  unreadMessages: number;
+  /** Soonest first. The banner names the first, the agenda lists the rest. */
+  upcoming: ParentAgendaSession[];
+  dueSoon: ParentAgendaTask[];
+  /** Newest first. What has actually been paid for. */
+  recentPayments: ParentPayment[];
+}
+
+export async function getParentDashboard(parentId: string): Promise<ParentDashboard> {
+  const children = await getLinkedChildren(parentId);
+
+  const empty: ParentDashboard = {
+    childCount: 0,
+    enrolledCourses: 0,
+    upcomingSessions: 0,
+    unreadMessages: 0,
+    upcoming: [],
+    dueSoon: [],
+    recentPayments: [],
+  };
+  if (children.length === 0) return empty;
+
+  const ids = children.map((c) => c.id);
+  const nameOf = new Map(children.map((c) => [c.id, c.full_name]));
+
+  // Sessions still to come, and the courses they are enrolled on. Both are
+  // read per child because the row-level policies are written per child.
+  const [sessionRows, enrolments, conversations, billing] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("id, student_id, tutor_id, subject, date, start_time, status")
+      .in("student_id", ids)
+      .eq("status", "upcoming")
+      .order("date", { ascending: true }),
+    supabase
+      .from("enrolments")
+      .select("id, student_id")
+      .in("student_id", ids)
+      .eq("status", "active"),
+    getConversations(parentId),
+    getBilling(parentId),
+  ]);
+
+  const sessions = sessionRows.data ?? [];
+
+  // One lookup for the tutors on those sessions, rather than one per row.
+  const tutorIds = [...new Set(sessions.map((s) => s.tutor_id).filter(Boolean))] as string[];
+  const { data: tutors } = tutorIds.length
+    ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", tutorIds)
+    : { data: [] as { id: string; full_name: string; avatar_url: string | null }[] };
+  const tutorOf = new Map((tutors ?? []).map((t) => [t.id, t]));
+
+  const now = Date.now();
+  const upcoming: ParentAgendaSession[] = sessions
+    .map((s) => {
+      const [h, m] = String(s.start_time ?? "00:00").split(":").map(Number);
+      const startsAt = new Date(`${s.date}T00:00:00`);
+      startsAt.setHours(h || 0, m || 0, 0, 0);
+      const tutor = s.tutor_id ? tutorOf.get(s.tutor_id) : null;
+      return {
+        id: s.id,
+        childId: s.student_id,
+        childName: nameOf.get(s.student_id) ?? "Your child",
+        subject: s.subject ?? "Session",
+        tutorName: tutor?.full_name ?? null,
+        tutorAvatarUrl: tutor?.avatar_url ?? null,
+        startsAt,
+      };
+    })
+    // Still upcoming by the clock, not only by the status column: a session
+    // nobody confirmed afterwards keeps that status forever.
+    .filter((s) => s.startsAt.getTime() >= now)
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+
+  // Work set and not yet turned in, across every child.
+  const perChild = await Promise.all(
+    ids.map(async (id) => {
+      const rows = await getAllAssignments(id);
+      return rows
+        .filter((a) => !a.isSubmitted)
+        .map((a) => ({
+          id: a.id,
+          childName: nameOf.get(id) ?? "Your child",
+          title: a.title,
+          dueDate: a.dueDate,
+        }));
+    })
+  );
+
+  const dueSoon = perChild
+    .flat()
+    .sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"))
+    .slice(0, 5);
+
+  return {
+    childCount: children.length,
+    enrolledCourses: (enrolments.data ?? []).length,
+    upcomingSessions: upcoming.length,
+    unreadMessages: conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0),
+    upcoming: upcoming.slice(0, 4),
+    dueSoon,
+    recentPayments: billing.invoices
+      .filter((i) => i.paidAt)
+      .sort((a, b) => (a.paidAt! < b.paidAt! ? 1 : -1))
+      .slice(0, 5)
+      .map((i) => ({
+        id: i.id,
+        description: i.description,
+        amountCents: i.amountCents,
+        paidAt: i.paidAt!,
+        childName: i.studentName,
+        // Derived, not stored: an invoice against a course is tutoring, one
+        // without is counselling.
+        service: i.courseId ? "Tutoring" : "College counselling",
+      })),
+  };
 }

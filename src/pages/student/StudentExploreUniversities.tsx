@@ -14,6 +14,8 @@ import { AddCollegeModal, AddCollegeInput } from "@/components/college/AddColleg
 import { MobileExplore } from "@/components/college/MobileExplore";
 import {
   CatalogFilters,
+  getBookmarks,
+  toggleBookmark,
   College,
   CONTROL_LABEL,
   EMPTY_FILTERS,
@@ -142,6 +144,25 @@ export function StudentExploreUniversities({
   // fields we cannot look up (deadline, round, essay count) are cheapest to
   // capture at the moment the student is already looking at the college.
   const [pendingAdd, setPendingAdd] = useState<College | null>(null);
+
+  // The shortlist. Kept separate from the college list: saving is "come back
+  // to this", adding is a decision with a tier attached.
+  const { data: bookmarks } = useQuery({
+    queryKey: ["college-bookmarks", targetId],
+    queryFn: () => getBookmarks(targetId!),
+    enabled: !!targetId,
+  });
+
+  const toggleSaved = async (c: College) => {
+    if (!targetId) return;
+    const saved = bookmarks?.has(c.unitid) ?? false;
+    try {
+      await toggleBookmark(targetId, c.unitid, saved);
+      qc.invalidateQueries({ queryKey: ["college-bookmarks", targetId] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Could not save that.");
+    }
+  };
   // Everyone the next add goes to. Starts as the only child when there is one,
   // because a list of one to choose from is not a choice.
   const [chosen, setChosen] = useState<string[]>(targets?.length === 1 ? [targets[0].id] : []);
@@ -227,6 +248,8 @@ export function StudentExploreUniversities({
         addedCount={profile?.schools?.length ?? 0}
         upcomingDeadlines={upcomingDeadlines}
         onAdd={setPendingAdd}
+        savedIds={bookmarks ?? new Set<number>()}
+        onToggleSave={toggleSaved}
         hasProfile={hasProfile}
         profileSummary={profileSummary}
         fitEnabled={fitEnabled}

@@ -49,6 +49,8 @@ export function CatalogFilterRail({
   fitEnabled,
   onToggleFit,
   resultCount,
+  totalCount,
+  showSearch = true,
   className,
 }: {
   filters: CatalogFilters;
@@ -59,6 +61,10 @@ export function CatalogFilterRail({
   fitEnabled: boolean;
   onToggleFit: (v: boolean) => void;
   resultCount: number;
+  /** Named in the search placeholder, so it says how many rather than "1,900+". */
+  totalCount?: number;
+  /** Off in the phone sheet, where the toolbar above already carries one. */
+  showSearch?: boolean;
   /** Overridden on a phone, where this renders inside a sheet, not beside the grid. */
   className?: string;
 }) {
@@ -86,6 +92,7 @@ export function CatalogFilterRail({
         "flex w-[260px] shrink-0 flex-col overflow-y-auto border-r border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]"
       }
     >
+      {showSearch && (
       <div className="p-3">
         <div className="relative">
           <Search
@@ -95,7 +102,7 @@ export function CatalogFilterRail({
           <input
             value={filters.query}
             onChange={(e) => set("query", e.target.value)}
-            placeholder="Search 1,900+ universities"
+            placeholder={`Search ${totalCount ? totalCount.toLocaleString() : ""} universities`.replace("  ", " ")}
             className="w-full rounded-sm border border-[#e9edef] bg-[#f3f3f5] py-2 pl-8 pr-7 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32]"
           />
           {filters.query && (
@@ -109,6 +116,7 @@ export function CatalogFilterRail({
           )}
         </div>
       </div>
+      )}
 
       {/* Fit toggle. Off by default when we have no scores on file, because a
           fit ranking computed from nothing is worse than no ranking. */}
