@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, GraduationCap, ListChecks, SlidersHorizontal, X } from "lucide-react";
+import { CalendarClock, GraduationCap, ListChecks, SlidersHorizontal, X, Search, ArrowUpDown, Bookmark } from "lucide-react";
 
 import { Dropdown, DropdownOption } from "@/components/ui/Dropdown";
 import { CatalogFilterRail } from "@/components/college/CatalogFilterRail";
@@ -159,30 +159,46 @@ export function MobileExplore({
         </div>
       </header>
 
-      {/* One scrolling row rather than a wrapping block, so the controls never
-          push the first result below the fold. */}
-      <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-border bg-background px-4 py-3 hide-scrollbar">
-        <button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          className={cn(
-            "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors",
-            activeFilters > 0
-              ? "border-[#1099A1] text-[#1099A1]"
-              : "border-border text-foreground"
-          )}
-        >
-          <SlidersHorizontal size={14} />
-          Filters
-          {activeFilters > 0 && <span className="tabular-nums">({activeFilters})</span>}
-        </button>
+      {/* Search takes the width, because typing a name is how somebody finds
+          one school among nineteen hundred. The filter button lives inside it
+          rather than beside it, and sort sits at the end. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-4 py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border px-3 transition-colors focus-within:border-[#1099A1]">
+          <Search size={16} className="shrink-0 text-muted-foreground" />
+          <input
+            value={filters.query}
+            onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
+            placeholder={`Search ${totalCount.toLocaleString()} universities`}
+            className="min-w-0 flex-1 bg-transparent py-2.5 text-[13.5px] outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label="Filters"
+            className={cn(
+              "-mr-1 flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 transition-colors",
+              activeFilters > 0 ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <SlidersHorizontal size={15} />
+            {activeFilters > 0 && (
+              <span className="text-[12px] font-medium tabular-nums">{activeFilters}</span>
+            )}
+          </button>
+        </div>
 
+        {/* An icon, not a 130px button. The label repeated what the list
+            below already showed, and it was taking width from the one control
+            somebody actually types into. */}
         <Dropdown
           value={sort}
           onChange={onSortChange}
           options={sorts}
           ariaLabel="Sort universities"
-          className="w-[150px] shrink-0"
+          align="end"
+          className="shrink-0"
+          buttonClassName="!w-10 !px-0 justify-center"
+          icon={<ArrowUpDown size={16} className="shrink-0 text-muted-foreground" />}
         />
       </div>
 
@@ -280,8 +296,8 @@ export function MobileExplore({
             onClick={() => setSheetOpen(false)}
           />
           <div className="flex max-h-[85vh] flex-col rounded-t-2xl bg-card">
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-              <p className="text-[15px] font-semibold text-foreground">Filters</p>
+            <div className="flex shrink-0 items-center justify-between !border-b-0 border-border px-4 py-3">
+              <p className="text-[15px] font-medium text-foreground">Select Filters</p>
               <div className="flex items-center gap-3">
                 {activeFilters > 0 && (
                   <button
@@ -304,6 +320,7 @@ export function MobileExplore({
             </div>
 
             <CatalogFilterRail
+              showSearch={false}
               className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-card"
               filters={filters}
               onChange={onFiltersChange}
@@ -428,19 +445,37 @@ function MobileCollegeCard({
         <p className="text-[12.5px] text-muted-foreground">
           {college.undergrads ? `${college.undergrads.toLocaleString()} undergrads` : "Size not reported"}
         </p>
-        <button
-          type="button"
-          onClick={() => onAdd(college)}
-          disabled={isAdded}
-          className={cn(
-            "shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors",
-            isAdded
-              ? "border border-border text-muted-foreground"
-              : "bg-[#1099A1] text-white"
-          )}
-        >
-          {isAdded ? "Added" : "Add"}
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          {/* The Saved tab is the list, so this is the same action as Add,
+              said quietly. Filled once it is on, so a glance down the column
+              says which are already there without reading a word. */}
+          <button
+            type="button"
+            onClick={() => !isAdded && onAdd(college)}
+            aria-label={isAdded ? `${college.name} is on your list` : `Save ${college.name}`}
+            title={isAdded ? "On your list" : "Save to your list"}
+            className={cn(
+              "rounded-lg p-2 transition-colors",
+              isAdded ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Bookmark size={17} fill={isAdded ? "currentColor" : "none"} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onAdd(college)}
+            disabled={isAdded}
+            className={cn(
+              "shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors",
+              isAdded
+                ? "border border-border text-muted-foreground"
+                : "bg-[#1099A1] text-white"
+            )}
+          >
+            {isAdded ? "Added" : "Add"}
+          </button>
+        </div>
       </div>
     </li>
   );

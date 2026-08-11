@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Clock, CalendarDays, MessagesSquareIcon, Settings, CreditCard, BadgeDollarSignIcon } from "lucide-react";
+import { Clock, CalendarDays, MessagesSquareIcon, Settings, BadgeDollarSignIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getParentDashboard } from "@/services/parentService";
