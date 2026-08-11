@@ -75,6 +75,8 @@ export function MobileExplore({
   addedCount,
   upcomingDeadlines,
   onAdd,
+  savedIds,
+  onToggleSave,
   hasProfile,
   profileSummary,
   fitEnabled,
@@ -97,6 +99,9 @@ export function MobileExplore({
   addedCount: number;
   upcomingDeadlines: number;
   onAdd: (c: College) => void;
+  /** unitids the student has bookmarked. */
+  savedIds: Set<number>;
+  onToggleSave: (c: College) => void;
   hasProfile: boolean;
   profileSummary: string;
   fitEnabled: boolean;
@@ -112,7 +117,7 @@ export function MobileExplore({
   // The tabs are a view of the same list, not three queries. Saved reads the
   // names already on the student's list, which is what the Add button writes.
   const shown = useMemo(() => {
-    if (tab === "saved") return colleges.filter((c) => addedNames.has(c.name.toLowerCase()));
+    if (tab === "saved") return colleges.filter((c) => savedIds.has(c.unitid));
     if (tab === "fit" && fitActive) {
       return colleges.filter((c) => {
         const f = computeFit(c, student);
@@ -120,7 +125,7 @@ export function MobileExplore({
       });
     }
     return colleges;
-  }, [tab, colleges, addedNames, fitActive, student]);
+  }, [tab, colleges, savedIds, fitActive, student]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:hidden">
@@ -240,11 +245,11 @@ export function MobileExplore({
         {shown.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <p className="text-[14px] font-semibold text-foreground">
-              {tab === "saved" ? "Nothing on the list yet." : "No universities match these filters."}
+              {tab === "saved" ? "Nothing saved yet." : "No universities match these filters."}
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
               {tab === "saved"
-                ? "Add a university and it appears here."
+                ? "Tap the bookmark on a university to keep it here."
                 : "Widen the net price or admit rate, or clear a state."}
             </p>
             {tab !== "saved" && activeFilters > 0 && (
@@ -265,6 +270,8 @@ export function MobileExplore({
                 college={c}
                 fit={fitActive ? computeFit(c, student) : "unknown"}
                 isAdded={addedNames.has(c.name.toLowerCase())}
+                isSaved={savedIds.has(c.unitid)}
+                onToggleSave={onToggleSave}
                 onAdd={onAdd}
               />
             ))}
@@ -296,7 +303,7 @@ export function MobileExplore({
             onClick={() => setSheetOpen(false)}
           />
           <div className="flex max-h-[85vh] flex-col rounded-t-2xl bg-card">
-            <div className="flex shrink-0 items-center justify-between !border-b-0 border-border px-4 py-3">
+            <div className="flex shrink-0 items-center justify-between !border-b-0 border-border px-4 py-3 pt-4">
               <p className="text-[15px] font-medium text-foreground">Select Filters</p>
               <div className="flex items-center gap-3">
                 {activeFilters > 0 && (
@@ -383,11 +390,15 @@ function MobileCollegeCard({
   fit,
   isAdded,
   onAdd,
+  isSaved,
+  onToggleSave,
 }: {
   college: College;
   fit: Fit;
   isAdded: boolean;
   onAdd: (c: College) => void;
+  isSaved: boolean;
+  onToggleSave: (c: College) => void;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const img = imgFailed ? null : collegeImageUrl(college.image, 320);
@@ -417,9 +428,29 @@ function MobileCollegeCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-semibold leading-snug text-foreground">
-            {college.name}
-          </h3>
+          <div className="flex items-start gap-2">
+            <h3 className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-foreground">
+              {college.name}
+            </h3>
+
+            {/* Just a bookmark: one tap saves, another unsaves, and saved is
+                what the Saved tab shows. Adding to the college list is a
+                separate decision with a tier attached, which is why it stays
+                a button of its own below. */}
+            <button
+              type="button"
+              onClick={() => onToggleSave(college)}
+              aria-pressed={isSaved}
+              aria-label={isSaved ? `Remove ${college.name} from saved` : `Save ${college.name}`}
+              title={isSaved ? "Saved" : "Save"}
+              className={cn(
+                "-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 transition-colors",
+                isSaved ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Bookmark size={17} fill={isSaved ? "currentColor" : "none"} />
+            </button>
+          </div>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
             {[college.city, college.state].filter(Boolean).join(", ")}
             {college.control ? ` - ${college.control}` : ""}
@@ -446,22 +477,6 @@ function MobileCollegeCard({
           {college.undergrads ? `${college.undergrads.toLocaleString()} undergrads` : "Size not reported"}
         </p>
         <div className="flex shrink-0 items-center gap-1">
-          {/* The Saved tab is the list, so this is the same action as Add,
-              said quietly. Filled once it is on, so a glance down the column
-              says which are already there without reading a word. */}
-          <button
-            type="button"
-            onClick={() => !isAdded && onAdd(college)}
-            aria-label={isAdded ? `${college.name} is on your list` : `Save ${college.name}`}
-            title={isAdded ? "On your list" : "Save to your list"}
-            className={cn(
-              "rounded-lg p-2 transition-colors",
-              isAdded ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Bookmark size={17} fill={isAdded ? "currentColor" : "none"} />
-          </button>
-
           <button
             type="button"
             onClick={() => onAdd(college)}

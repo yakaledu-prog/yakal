@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 /**
  * College catalog: 1,944 US bachelor's-granting institutions.
  *
@@ -371,4 +372,55 @@ export function sortCatalog(
 /** States present in the catalog, for the location filter. */
 export function statesIn(colleges: College[]): string[] {
   return [...new Set(colleges.map((c) => c.state).filter(Boolean) as string[])].sort();
+}
+
+// ------------------------------------------------------------
+// Saved universities.
+//
+// A shortlist, not the college list. Adding to the list is a decision with a
+// tier attached and a dialog to fill in; saving is "come back to this one",
+// which is what somebody browsing nineteen hundred schools does first.
+//
+// Keyed by unitid because the catalogue is a static JSON file rather than a
+// table, so there is no row to reference and a name is not a key.
+// ------------------------------------------------------------
+
+export async function getBookmarks(studentId: string): Promise<Set<number>> {
+  const { data, error } = await supabase
+    .from("college_bookmarks")
+    .select("unitid")
+    .eq("student_id", studentId);
+
+  if (error) {
+    // A failed read is a card without a filled bookmark, not a page that
+    // fails to draw.
+    console.error("getBookmarks:", error.message);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.unitid as number));
+}
+
+/** Returns whether it ended up saved, so a caller can update without refetching. */
+export async function toggleBookmark(
+  studentId: string,
+  unitid: number,
+  saved: boolean
+): Promise<boolean> {
+  if (saved) {
+    const { error } = await supabase
+      .from("college_bookmarks")
+      .delete()
+      .eq("student_id", studentId)
+      .eq("unitid", unitid);
+    if (error) throw new Error(error.message);
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("college_bookmarks")
+    .insert({ student_id: studentId, unitid });
+  // Already there is not a failure: two taps in quick succession should end
+  // up saved, not throw.
+  if (error && error.code !== "23505") throw new Error(error.message);
+  return true;
 }
