@@ -164,7 +164,16 @@ jobs:
       - name: Push
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        # --include-all: branches merge to main out of timestamp order, so a
+        # migration can land dated earlier than one already applied on the
+        # hosted DB (the invite migrations, 20260807/20260808, merged after the
+        # newsletter and reschedule ones dated 20260809/20260810). Plain
+        # `db push` refuses that with "migration files to be inserted before the
+        # last migration on remote" and the whole deploy aborts, so nothing
+        # reaches production. Our migrations are additive and idempotent
+        # (IF NOT EXISTS, CREATE OR REPLACE), so applying an older-dated one
+        # after a newer one is safe; --include-all lets the skipped ones through.
+        run: supabase db push --include-all --db-url "$SUPABASE_DB_URL"
 
       - name: Confirm
         env:
