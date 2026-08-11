@@ -553,6 +553,42 @@ export interface SeedBlogPost {
 
 export const BLOG_POSTS: SeedBlogPost[] = [
   {
+    title: "How to Support Your Child's Learning at Home (Without Doing It for Them)",
+    thumbnailUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200&q=80",
+    readTimeMinutes: 4,
+    status: "published",
+    sections: [
+      {
+        heading: null,
+        body: "Every parent wants to help, and the instinct when a child is stuck is to step in and fix it. But the goal is not a finished worksheet tonight, it is a child who can finish the next one on their own. The most useful thing you can offer is not the answer, it is the conditions and the confidence to reach it. Here is how to do that without hovering, and without taking the work off their hands.",
+      },
+      {
+        heading: "Set up a calm, consistent place to work",
+        body: "Children focus better when the where and the when stop being a daily negotiation. Pick one spot with good light, a clear surface, and the phone in another room. Keep it the same each day so sitting down there becomes a signal to start. It does not need to be a dedicated study, a corner of the kitchen table works, as long as it is predictable.",
+      },
+      {
+        heading: "Ask questions instead of giving answers",
+        body: "When your child hits a wall, resist solving it. Ask what the question is really asking, what they have tried, and where it stopped making sense. Prompts like \"what is the next small step?\" or \"can you explain that part back to me?\" hand the thinking back to them. They keep the win, and you learn exactly where the gap is.",
+      },
+      {
+        heading: "Praise the effort and the strategy, not just the grade",
+        body: "\"You worked hard and stuck with the tricky part\" teaches more than \"you're so smart.\" Praising effort and good strategy tells a child that struggle is normal and progress comes from what they do, not from a fixed talent they either have or don't. That is the belief that keeps them trying when the work gets harder.",
+      },
+      {
+        heading: "Build a routine, and protect the downtime",
+        body: "A short, regular study block beats a long, dreaded one. Twenty to forty focused minutes, then a real break, does more than an exhausted marathon the night before a test. Rest, play, and sleep are not the opposite of good grades, they are part of them. A rhythm your child can predict is calmer for everyone.",
+      },
+      {
+        heading: "Notice when it is time to bring in help",
+        body: "If the same topic keeps causing tears, or homework has become a nightly fight, that is information, not failure. Sometimes a child needs a fresh explanation from someone who is not their parent. A tutor can find the exact gap and close it directly, and a counselor can take the weight of the bigger decisions off the family. Asking for help early is a sign you are paying attention, not that anything is wrong.",
+      },
+      {
+        heading: null,
+        body: "Supporting your child's learning is less about knowing the material and more about steadiness: a quiet place, a good question, honest encouragement, and the sense that you are on their team. Do that consistently, and the confidence you build outlasts any single assignment.",
+      },
+    ],
+  },
+  {
     title: "5 Tips to Improve Math Grades",
     thumbnailUrl: "https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?w=800&q=80",
     readTimeMinutes: 3,

@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { openBooking } from "@/config/links";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/utils/cn";
 import imgPrograms1 from "@/assets/images/landing-page/book-session.webp";
 import imgPrograms3 from "@/assets/images/landing-page/parent-resources.webp";
 
@@ -17,41 +18,94 @@ export default function ParentResources() {
           </p>
         </div>
 
-        {/* Book a Session */}
-        {/* On a phone the image leads and the copy follows, matching Blogs
-            below. Stacked the other way the heading and the button sat a
-            screen apart with the picture wedged between them. */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-[32px] mb-[70px] md:mb-[105px] text-justify">
-          <div className="order-2 md:order-1 w-full md:max-w-[520px] flex flex-col items-center md:items-start">
-            <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Book a free session</h3>
-            <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
-              Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student.
-            </p>
-            <button onClick={openBooking} className="btn-shimmer text-white px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[8px]">
-              Book a free session <ArrowRight size={18} strokeWidth={2} />
-            </button>
-          </div>
-          <div className="order-1 md:order-2 overflow-hidden flex items-center justify-center md:justify-end">
-            <img src={imgPrograms1} alt="Book a Session" className="h-[70%] rounded-xl object-cover" />
-          </div>
-        </div>
+        {/* Two feature rows sharing one treatment, so the section reads as a
+            pair rather than two loosely stacked blocks: a framed image with a
+            soft brand-tinted shadow, an eyebrow, and copy centred against it.
+            They alternate side on desktop; on a phone the image always leads. */}
+        <div className="flex flex-col gap-[64px] md:gap-[110px]">
+          {/* Book a session: copy left, image right on desktop. */}
+          <FeatureRow
+            eyebrow="One-on-one tutoring"
+            title="Book a free session"
+            body="Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student."
+            cta="Book a free session"
+            onCta={openBooking}
+            image={imgPrograms1}
+            imageAlt="Book a session"
+            imageSide="right"
+          />
 
-        {/* Blogs */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-[32px]">
-          <div className="overflow-hidden">
-            <img src={imgPrograms3} alt="Blogs" className="h-[70%] rounded-xl object-cover" />
-          </div>
-          <div className="w-full md:max-w-[520px] flex items-center md:items-start flex-col">
-            <h3 className="text-[36px] md:text-[56px] font-medium leading-[44px] md:leading-[66px] mb-[16px]">Blogs</h3>
-            <p className="text-[#4a4a4a] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] text-center md:text-left">
-              Explore our collection of articles and guides designed for parents and students. Get tips on study strategies and academic growth.
-            </p>
-            {/* The full archive, not the three latest further down the page. */}
-            <button onClick={() => navigate("/posts")} className="btn-shimmer text-white px-[28px] py-[14px] rounded-[500px] text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity flex items-center gap-[8px]">
-              See All Blogs <ArrowRight size={18} strokeWidth={2} />
-            </button>
-          </div>
+          {/* Blogs: image left, copy right on desktop. */}
+          <FeatureRow
+            eyebrow="Guides for parents"
+            title="Blogs"
+            body="Explore our collection of articles and guides written for parents and students, from study strategies at home to navigating academic growth."
+            cta="See all blogs"
+            onCta={() => navigate("/posts")}
+            image={imgPrograms3}
+            imageAlt="Yakal blog"
+            imageSide="left"
+          />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One image-and-copy feature. The image is framed the same way each time - a
+ * 4:3 crop, a generous radius and a soft teal-tinted shadow - so the two rows
+ * feel like one system. The image leads on a phone; on desktop it sits on the
+ * side asked for and the copy centres against it.
+ */
+function FeatureRow({
+  eyebrow,
+  title,
+  body,
+  cta,
+  onCta,
+  image,
+  imageAlt,
+  imageSide,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta: string;
+  onCta: () => void;
+  image: string;
+  imageAlt: string;
+  imageSide: "left" | "right";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-[32px] md:gap-[72px]",
+        imageSide === "right" ? "md:flex-row-reverse" : "md:flex-row"
+      )}
+    >
+      <div className="w-full md:flex-1 md:max-w-[520px]">
+        <div className="aspect-[4/3] w-full overflow-hidden rounded-[28px] shadow-[0_24px_60px_-24px_rgba(16,153,161,0.45)]">
+          <img src={image} alt={imageAlt} className="h-full w-full object-cover" />
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-center text-center md:flex-1 md:max-w-[520px] md:items-start md:text-left">
+        <span className="mb-[14px] text-[13px] font-semibold uppercase tracking-[0.18em] text-[#1099a1]">
+          {eyebrow}
+        </span>
+        <h3 className="mb-[16px] text-[36px] md:text-[52px] font-medium leading-[44px] md:leading-[60px]">
+          {title}
+        </h3>
+        <p className="mb-[32px] max-w-[480px] text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] text-[#4a4a4a]">
+          {body}
+        </p>
+        <button
+          onClick={onCta}
+          className="btn-shimmer flex items-center gap-[8px] rounded-[500px] px-[28px] py-[14px] text-[16px] md:text-[18px] uppercase text-white shadow-lg transition-opacity hover:opacity-90"
+        >
+          {cta} <ArrowRight size={18} strokeWidth={2} />
+        </button>
       </div>
     </div>
   );
