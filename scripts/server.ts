@@ -25,6 +25,7 @@ import googleHandler from '../api/google.js';
 import contactHandler from '../api/contact.js';
 import newsletterHandler from '../api/newsletter.js';
 import notifyHandler from '../api/notify.js';
+import invitesHandler from '../api/invites.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
 
@@ -68,6 +69,11 @@ const routes = {
   '/api/contact': contactHandler,
   '/api/newsletter': newsletterHandler,
   '/api/notify': notifyHandler,
+  // Sends a child's invitation email. Vercel routes api/invites.ts on its own,
+  // but this single-process host has to mount every endpoint by hand, and this
+  // one was missed - so a parent's invite 404'd in production while working in
+  // dev, where local-api.ts does have it.
+  '/api/invites': invitesHandler,
   // Refuses on its own whenever VERCEL_ENV or NODE_ENV is production, so it is
   // mounted unconditionally and guarded where the guard belongs.
   '/api/dev-user': devUserHandler,

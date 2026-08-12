@@ -172,8 +172,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         invoice_ids: invoices.map((i: any) => i.id).join(','),
         parent_id: user.id,
       },
-      success_url: `${appBaseUrl()}/parent/billing?paid=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appBaseUrl()}/parent/billing?canceled=1`,
+      success_url: `${appBaseUrl(req)}/parent/billing?paid=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appBaseUrl(req)}/parent/billing?canceled=1`,
     };
 
     if (isInstalments) {

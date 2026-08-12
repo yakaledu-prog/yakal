@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: mapping.stripe_customer_id,
-      return_url: `${appBaseUrl()}/parent/billing`,
+      return_url: `${appBaseUrl(req)}/parent/billing`,
     });
 
     return res.status(200).json({ url: session.url });

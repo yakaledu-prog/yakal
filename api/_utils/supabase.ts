@@ -89,6 +89,55 @@ export function getUserClient(req: any): SupabaseClient {
   });
 }
 
-export function appBaseUrl(): string {
-  return process.env.APP_BASE_URL || 'http://localhost:5173';
+/**
+ * The public origin the app is served from, for links Stripe and Google send
+ * the browser back to (checkout success, portal return, Connect onboarding).
+ *
+ * APP_BASE_URL wins when set, with any trailing slash stripped so callers can
+ * append a path without producing "//parent/billing" (which React Router does
+ * not match, and answers with the 404 page).
+ *
+ * It used to be the only source, defaulting to http://localhost:5173. A deploy
+ * that forgot to set it therefore sent every Stripe redirect to localhost -
+ * which on a payer's machine is their own machine - so checkout finished on a
+ * broken page instead of the paid screen. Here the API and the built app are
+ * the same origin, so the request already carries the right host: we fall back
+ * to that. Plain localhost stays only as the last resort for a context with no
+ * request and no env (local scripts).
+ *
+ * Pass `req` only where the resulting URL goes back to the same person who
+ * made the request, which is every Stripe and Connect redirect. Do not pass it
+ * for anything that ends up in an email to somebody else: Host is client
+ * controlled, so a crafted header would put an attacker's domain into a link
+ * a third party receives. See emailBaseUrl below.
+ */
+export function appBaseUrl(req?: {
+  headers: Record<string, string | string[] | undefined>;
+}): string {
+  const configured = process.env.APP_BASE_URL?.trim().replace(/\/+$/, '');
+  if (configured) return configured;
+
+  if (req) {
+    const pick = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+    // x-forwarded-* are what Render's proxy sets; host is the direct fallback.
+    const host = pick(req.headers['x-forwarded-host']) || pick(req.headers.host);
+    if (host) {
+      const proto = pick(req.headers['x-forwarded-proto']) || 'https';
+      return `${proto}://${host}`;
+    }
+  }
+  return 'http://localhost:5173';
+}
+
+/**
+ * The origin for links inside an email.
+ *
+ * Configured only, never taken from the request. An email goes to somebody who
+ * did not make the request, and Host is set by whoever made it, so trusting it
+ * here would let one signed-in user put their own domain into a link that
+ * lands in another user's inbox. Unset, the link is a dead localhost URL:
+ * broken, which is noticed and fixed, rather than dangerous, which is not.
+ */
+export function emailBaseUrl(): string {
+  return (process.env.APP_BASE_URL?.trim().replace(/\/+$/, '')) || 'http://localhost:5173';
 }

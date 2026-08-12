@@ -59,8 +59,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const link = await stripe.accountLinks.create({
       account: accountId,
       type: 'account_onboarding',
-      refresh_url: `${appBaseUrl()}/${profile.role}/earnings?connect=refresh`,
-      return_url: `${appBaseUrl()}/${profile.role}/earnings?connect=done`,
+      refresh_url: `${appBaseUrl(req)}/${profile.role}/earnings?connect=refresh`,
+      return_url: `${appBaseUrl(req)}/${profile.role}/earnings?connect=done`,
     });
 
     return res.status(200).json({ url: link.url, accountId });
