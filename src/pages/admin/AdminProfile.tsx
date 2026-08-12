@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { dicebearUrl } from "@/utils/avatar";
 import { Mail, Phone, LogOut, SquarePenIcon, X } from "lucide-react";
 
 export function AdminProfile() {
@@ -54,13 +55,17 @@ export function AdminProfile() {
   }
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name || "");
+  const [bio, setBio] = useState(profile?.bio || "");
   const [saving, setSaving] = useState(false);
 
 
   const saveName = async () => {
     if (!user?.id || !name.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: name.trim(), bio: bio.trim() || null })
+      .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     await refreshProfile();
@@ -84,16 +89,21 @@ export function AdminProfile() {
           <div className="relative z-10 flex flex-col items-stretch justify-between gap-6 px-6 md:flex-row md:items-center md:px-10 lg:px-12">
             <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:text-left">
               <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20 shrink-0">
-                <img src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`} alt={profile?.full_name || "Admin"} className="w-full h-full object-cover" />
+                <img src={profile?.avatar_url || dicebearUrl(profile?.full_name || "admin")} alt={profile?.full_name || "Admin"} className="w-full h-full object-cover" />
               </div>
               <div className="flex min-w-0 flex-col items-center md:items-start">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">{profile?.full_name || "Administrator"}</h1>
-                <p className="text-white/80 text-[14px] mt-3 max-w-xl">{profile?.bio || "Platform administrator overseeing users, courses, and billing."}</p>
+                {/* Only when written. The fallback described every admin as
+                    overseeing users, courses and billing whether or not they
+                    had said anything about themselves. */}
+                {profile?.bio && (
+                  <p className="mt-3 max-w-xl text-[14px] text-white/80">{profile.bio}</p>
+                )}
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
-              <button onClick={() => { setName(profile?.full_name || ""); setEditOpen(true); }}
+              <button onClick={() => { setName(profile?.full_name || ""); setBio(profile?.bio || ""); setEditOpen(true); }}
                 className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto">
                 <SquarePenIcon size={16} /> Edit Profile
               </button>
@@ -179,6 +189,16 @@ export function AdminProfile() {
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Full Name</label>
                 <input value={name} onChange={(e) => setName(e.target.value)}
                   className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">About you</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={3}
+                  placeholder="Shown under your name on this page."
+                  className="w-full resize-y rounded-lg border border-[#e9edef] bg-white px-3 py-2.5 leading-relaxed text-[#111] focus:border-primary focus:outline-none dark:border-[#2a3942] dark:bg-[#111b21] dark:text-white"
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Email Address</label>
