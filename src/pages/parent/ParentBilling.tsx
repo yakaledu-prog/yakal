@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft } from "lucide-react";
+import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft, List, LayoutGrid } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
@@ -72,6 +72,9 @@ export function ParentBilling() {
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
   const [service, setService] = useState<ServiceFilter>("all");
+  // Two per row on a wide screen. Only the layout changes: the same card,
+  // with its quota lines wrapped rather than strung across one line.
+  const [view, setView] = useState<"list" | "grid">("list");
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data: children = [] } = useQuery({
@@ -268,9 +271,13 @@ export function ParentBilling() {
                 <div className="space-y-3">
                   {/* Only worth offering when there is something to sift. With
                       one of each it is three buttons standing over two rows. */}
-                  {admissionsPlans.length > 0 && packages.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pb-1">
-                      {SERVICE_FILTERS.map((f) => (
+                  {/* The toggler shows whenever there is more than one card,
+                      even when the filters do not: two plans is already enough
+                      for the denser layout to be worth having. */}
+                  {(admissionsPlans.length + packages.length > 1 ||
+                    (admissionsPlans.length > 0 && packages.length > 0)) && (
+                    <div className="flex flex-wrap items-center gap-2 pb-1">
+                      {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => (
                         <button
                           key={f.id}
                           onClick={() => setService(f.id)}
@@ -290,15 +297,50 @@ export function ParentBilling() {
                           {f.label}
                         </button>
                       ))}
+
+                      <div className="ml-auto flex items-center gap-1 rounded-lg border border-border p-0.5">
+                        {([
+                          ["list", List, "One per row"],
+                          ["grid", LayoutGrid, "Two per row"],
+                        ] as const).map(([mode, Icon, title]) => (
+                          <button
+                            key={mode}
+                            onClick={() => setView(mode)}
+                            aria-label={title}
+                            aria-pressed={view === mode}
+                            title={title}
+                            className={cn(
+                              "rounded-md p-1.5 transition-colors",
+                              view === mode
+                                ? "bg-foreground text-background"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <Icon size={15} />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {service !== "tutoring" &&
-                    admissionsPlans.map((p) => <AdmissionsCard key={p.id} plan={p} />)}
-                  {service !== "counselling" &&
-                    packages.map((p) => (
-                      <PlanCard key={`${p.courseId}|${p.studentId}`} pkg={p} />
-                    ))}
+                  <div
+                    className={cn(
+                      view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
+                    )}
+                  >
+                    {service !== "tutoring" &&
+                      admissionsPlans.map((p) => (
+                        <AdmissionsCard key={p.id} plan={p} compact={view === "grid"} />
+                      ))}
+                    {service !== "counselling" &&
+                      packages.map((p) => (
+                        <PlanCard
+                          key={`${p.courseId}|${p.studentId}`}
+                          pkg={p}
+                          compact={view === "grid"}
+                        />
+                      ))}
+                  </div>
                 </div>
               )
             ) : tab === "payments" ? (
@@ -363,14 +405,14 @@ export function ParentBilling() {
  * side, which is the same fact told twice and subtracted once. How far through
  * they are is the only part worth reading, so that is all it says now.
  */
-function PlanCard({ pkg }: { pkg: CoursePackage }) {
+function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
   const total = Math.max(pkg.slotsPurchased, 1);
   const done = (pkg.slotsCompleted / total) * 100;
 
   return (
     // Gold for tutoring, teal for counselling. One glance says which of the two
     // services a row belongs to, which a list mixing both otherwise does not.
-    <article className="rounded-xl border border-[#CAA25F] bg-card p-5">
+    <article className={cn("rounded-xl border border-[#CAA25F] bg-card", compact ? "p-4" : "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <StackedAvatars
@@ -424,7 +466,7 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
  * there so a parent can see where they stand before asking for one more round,
  * not because anything is about to be cut off.
  */
-function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
+function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boolean }) {
   const [booking, setBooking] = useState(false);
   const { data: usage } = useQuery({
     queryKey: ["admissions-usage", plan.studentId],
@@ -443,7 +485,7 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
   const hasBooked = (advising?.used ?? 0) > 0;
 
   return (
-    <article className="rounded-xl border border-[#1099A1] bg-card p-5">
+    <article className={cn("rounded-xl border border-[#1099A1] bg-card", compact ? "p-4" : "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <StackedAvatars
@@ -483,8 +525,17 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
       </div>
 
       {usage && usage.lines.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-3">
-          <dl className="flex flex-wrap gap-x-8 gap-y-2">
+        <div
+          className={cn(
+            "mt-4 gap-4 border-t border-border pt-3",
+            compact
+              ? "flex flex-col items-stretch"
+              : "flex flex-wrap items-end justify-between"
+          )}
+        >
+          {/* Two columns rather than one line when the card is half as wide:
+              four quota lines side by side would each be a few characters. */}
+          <dl className={cn(compact ? "grid grid-cols-2 gap-x-4 gap-y-2" : "flex flex-wrap gap-x-8 gap-y-2")}>
             {usage.lines.map((l) => (
               <div key={l.label}>
                 <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
@@ -506,7 +557,10 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
             <Button
               onClick={() => setBooking(true)}
               disabled={remaining <= 0 && !hasBooked}
-              className="h-9 shrink-0 gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50"
+              className={cn(
+                "h-9 gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50",
+                compact ? "w-full" : "shrink-0"
+              )}
             >
               <CalendarPlus size={15} />
               {hasBooked ? "Change slots" : "Choose slots"}
