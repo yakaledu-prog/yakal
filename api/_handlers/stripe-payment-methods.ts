@@ -43,6 +43,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const key = pm.card?.fingerprint || pm.id;
       const isDefault = pm.id === defaultPm;
       const existing = byFingerprint.get(key);
+      // The same card added twice was still added once, so this is the earliest
+      // of the duplicates rather than whichever one wins the collapse. Taking
+      // the kept one would move "added" forward every time Checkout mints a
+      // fresh PaymentMethod for a card the parent has been paying with for
+      // months.
+      const addedAt = Math.min(existing?.addedAt ?? pm.created, pm.created);
       if (!existing || isDefault) {
         byFingerprint.set(key, {
           id: pm.id,
@@ -51,7 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           exp_month: pm.card?.exp_month ?? null,
           exp_year: pm.card?.exp_year ?? null,
           isDefault,
+          addedAt,
         });
+      } else {
+        existing.addedAt = addedAt;
       }
     }
 

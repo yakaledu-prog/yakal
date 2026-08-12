@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X , ChevronLeft, ChevronDown, List, LayoutGrid, Plus } from "lucide-react";
+import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X, ChevronLeft, ChevronDown, List, LayoutGrid, Plus } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
@@ -308,194 +308,194 @@ export function ParentBilling() {
         </div>
 
         <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto", detailClass)}>
-            {isLoading ? (
-              <Spinner />
-            ) : tab === "plans" ? (
-              planCount === 0 ? (
-                <Empty
-                  title="No plans yet"
-                  body="A plan appears here once you book a course or start college counselling for one of your children."
-                  action={<AddPlanMenu childId={childId} />}
-                />
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2 pb-1">
-                    {/* Only worth offering when there is something to sift. With
+          {isLoading ? (
+            <Spinner />
+          ) : tab === "plans" ? (
+            planCount === 0 ? (
+              <Empty
+                title="No plans yet"
+                body="A plan appears here once you book a course or start college counselling for one of your children."
+                action={<AddPlanMenu childId={childId} />}
+              />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  {/* Only worth offering when there is something to sift. With
                         one of each it is three buttons standing over two rows.
                         The count is what makes them worth the width: it says
                         what is behind the filter before you spend a click. */}
-                    {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => {
-                      const on = service === f.id;
-                      const count = serviceCount[f.id];
-                      return (
-                        <button
-                          key={f.id}
-                          onClick={() => setService(on ? "all" : f.id)}
-                          aria-pressed={on}
-                          disabled={count === 0 && !on}
-                          className={cn(
-                            "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
-                            on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
-                            // All is the resting state and has no colour of its
-                            // own, so it gets a grey ring rather than shouting
-                            // louder than a real filter.
-                            on && !f.dot && "border-black/25 text-foreground/70 dark:border-white/30"
-                          )}
-                          style={on && f.dot ? { borderColor: f.dot } : undefined}
-                        >
-                          {f.dot && (
-                            <span
-                              className="h-2 w-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: f.dot }}
-                            />
-                          )}
-                          {f.label}
+                  {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => {
+                    const on = service === f.id;
+                    const count = serviceCount[f.id];
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setService(on ? "all" : f.id)}
+                        aria-pressed={on}
+                        disabled={count === 0 && !on}
+                        className={cn(
+                          "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+                          on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
+                          // All is the resting state and has no colour of its
+                          // own, so it gets a grey ring rather than shouting
+                          // louder than a real filter.
+                          on && !f.dot && "border-black/25 text-foreground/70 dark:border-white/30"
+                        )}
+                        style={on && f.dot ? { borderColor: f.dot } : undefined}
+                      >
+                        {f.dot && (
                           <span
-                            className={cn(
-                              "rounded-full px-1.5 text-[11px] font-medium",
-                              !f.dot && "bg-black/[0.07] text-foreground/70 dark:bg-white/10 dark:text-white/70"
-                            )}
-                            style={f.dot ? { backgroundColor: tint(f.dot), color: f.dot } : undefined}
-                          >
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: f.dot }}
+                          />
+                        )}
+                        {f.label}
+                        <span
+                          className={cn(
+                            "rounded-full px-1.5 text-[11px] font-medium",
+                            !f.dot && "bg-black/[0.07] text-foreground/70 dark:bg-white/10 dark:text-white/70"
+                          )}
+                          style={f.dot ? { backgroundColor: tint(f.dot), color: f.dot } : undefined}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
 
-                    {/* Its own full-width line below md, ends apart, because the
+                  {/* Its own full-width line below md, ends apart, because the
                         chips above have already wrapped and leaving these two
                         huddled against the right edge only looked like the row
                         had run out of room. */}
-                    <div className="flex w-full shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
-                      {/* Both of these need more than one card to mean
+                  <div className="flex shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
+                    {/* Both of these need more than one card to mean
                           anything, but neither needs one of each service. */}
-                      {planCount > 1 && (
-                        <>
-                          <Dropdown
-                            value={status}
-                            onChange={setStatus}
-                            options={[
-                              { value: "all", label: `All (${activeCount + finishedCount})` },
-                              { value: "active", label: `Active (${activeCount})` },
-                              { value: "completed", label: `Completed (${finishedCount})` },
-                            ]}
-                            size="sm"
-                            ariaLabel="Filter by status"
-                            className="w-[140px]"
-                            buttonClassName="text-foreground/70"
-                          />
+                    {planCount > 1 && (
+                      <>
+                        <Dropdown
+                          value={status}
+                          onChange={setStatus}
+                          options={[
+                            { value: "all", label: `All (${activeCount + finishedCount})` },
+                            { value: "active", label: `Active (${activeCount})` },
+                            { value: "completed", label: `Completed (${finishedCount})` },
+                          ]}
+                          size="sm"
+                          ariaLabel="Filter by status"
+                          className="w-[140px]"
+                          buttonClassName="text-foreground/70"
+                        />
 
-                          {/* The same control as the admin lists. Two togglers
+                        {/* The same control as the admin lists. Two togglers
                               doing the same job should not look like two
                               different components.
 
                               Gone below md, where it has nothing to switch: one
                               column is all that fits either way, so the cards
                               just use the denser layout there. */}
-                          <div className="hidden rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329] md:flex">
-                            {([
-                              ["list", List, "One per row"],
-                              ["grid", LayoutGrid, "Two per row"],
-                            ] as const).map(([mode, Icon, title]) => (
-                              <button
-                                key={mode}
-                                type="button"
-                                onClick={() => setView(mode)}
-                                aria-label={title}
-                                aria-pressed={view === mode}
-                                title={title}
-                                className={cn(
-                                  "rounded-md p-1.5 transition-colors",
-                                  view === mode
-                                    ? "bg-white shadow-sm dark:bg-[#202c33]"
-                                    : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
-                                )}
-                              >
-                                <Icon size={18} />
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                        <div className="hidden rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329] md:flex">
+                          {([
+                            ["list", List, "One per row"],
+                            ["grid", LayoutGrid, "Two per row"],
+                          ] as const).map(([mode, Icon, title]) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setView(mode)}
+                              aria-label={title}
+                              aria-pressed={view === mode}
+                              title={title}
+                              className={cn(
+                                "rounded-md p-1.5 transition-colors",
+                                view === mode
+                                  ? "bg-white shadow-sm dark:bg-[#202c33]"
+                                  : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
+                              )}
+                            >
+                              <Icon size={18} />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
 
-                      <AddPlanMenu childId={childId} />
-                    </div>
+                    <AddPlanMenu childId={childId} />
                   </div>
+                </div>
 
-                  {shownCount === 0 ? (
-                    <p className="py-16 text-center text-[13.5px] text-muted-foreground">
-                      Nothing here with those filters.
-                    </p>
-                  ) : (
-                    <div
+                {shownCount === 0 ? (
+                  <p className="py-16 text-center text-[13.5px] text-muted-foreground">
+                    Nothing here with those filters.
+                  </p>
+                ) : (
+                  <div
+                    className={cn(
+                      view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
+                    )}
+                  >
+                    {shownAdmissions.map((p) => (
+                      <AdmissionsCard key={p.id} plan={p} compact={view === "grid"} />
+                    ))}
+                    {shownPackages.map((p) => (
+                      <PlanCard
+                        key={`${p.courseId}|${p.studentId}`}
+                        pkg={p}
+                        compact={view === "grid"}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          ) : tab === "payments" ? (
+            invoices.length === 0 ? (
+              <Empty title="Nothing yet" body="Payments appear here once you have made one." />
+            ) : (
+              <ul className="divide-y divide-border">
+                {invoices.map((i) => (
+                  <li key={i.id} className="flex items-center gap-4 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] text-foreground">{i.description}</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {i.studentName ?? "You"}
+                        {" - "}
+                        {new Date(i.createdAt).toLocaleDateString(undefined, {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <span
                       className={cn(
-                        view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
+                        "text-[12.5px] font-medium capitalize",
+                        i.status === "paid"
+                          ? "text-[#1099A1]"
+                          : "text-[#8a6a2a] dark:text-[#CAA25F]"
                       )}
                     >
-                      {shownAdmissions.map((p) => (
-                        <AdmissionsCard key={p.id} plan={p} compact={view === "grid"} />
-                      ))}
-                      {shownPackages.map((p) => (
-                        <PlanCard
-                          key={`${p.courseId}|${p.studentId}`}
-                          pkg={p}
-                          compact={view === "grid"}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            ) : tab === "payments" ? (
-              invoices.length === 0 ? (
-                <Empty title="Nothing yet" body="Payments appear here once you have made one." />
-              ) : (
-                <ul className="divide-y divide-border">
-                  {invoices.map((i) => (
-                    <li key={i.id} className="flex items-center gap-4 py-3.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[14px] text-foreground">{i.description}</p>
-                        <p className="text-[12px] text-muted-foreground">
-                          {i.studentName ?? "You"}
-                          {" - "}
-                          {new Date(i.createdAt).toLocaleDateString(undefined, {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[12.5px] font-medium capitalize",
-                          i.status === "paid"
-                            ? "text-[#1099A1]"
-                            : "text-[#8a6a2a] dark:text-[#CAA25F]"
-                        )}
+                      {i.status}
+                    </span>
+                    <span className="w-24 text-right text-[14px] text-foreground">
+                      <Money cents={i.amountCents} />
+                    </span>
+                    {i.status === "open" && (
+                      <Button
+                        size="sm"
+                        onClick={() => pay([i.id], i.id)}
+                        disabled={busy !== null}
+                        className="h-8 shrink-0 bg-[#1099A1] px-4 text-[12px] text-white hover:bg-[#0d7f86]"
                       >
-                        {i.status}
-                      </span>
-                      <span className="w-24 text-right text-[14px] text-foreground">
-                        <Money cents={i.amountCents} />
-                      </span>
-                      {i.status === "open" && (
-                        <Button
-                          size="sm"
-                          onClick={() => pay([i.id], i.id)}
-                          disabled={busy !== null}
-                          className="h-8 shrink-0 bg-[#1099A1] px-4 text-[12px] text-white hover:bg-[#0d7f86]"
-                        >
-                          {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )
-            ) : (
-              <Methods cards={cards} isLoading={cardsLoading} busy={busy} onPortal={portal} />
-            )}
+                        {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : (
+            <Methods cards={cards} isLoading={cardsLoading} busy={busy} onPortal={portal} />
+          )}
         </div>
       </div>
     </PageWrapper>
@@ -1030,27 +1030,37 @@ function Methods({
             <li key={card.id} className="flex items-center gap-4 p-5">
               <CardMark brand={card.brand} />
               <div className="min-w-0 flex-1">
-                {/* The scheme's name went with the logo: printing "Visa" beside
-                    the Visa mark says it twice. What is left is the only part
-                    that tells two cards apart. */}
-                <p className="text-[15px] font-medium tracking-wide text-foreground">
-                  <span aria-hidden="true">**** </span>
-                  <span className="sr-only">Card ending </span>
-                  {card.last4}
-                </p>
-                {card.exp_month && card.exp_year && (
-                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                    Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <p className="text-[15px] font-medium text-foreground">
+                    <span className="capitalize">{card.brand}</span> ending in {card.last4}
                   </p>
-                )}
+                  {card.addedAt && (
+                    <p className="text-[12.5px] text-muted-foreground">
+                      Added{" "}
+                      {new Date(card.addedAt * 1000).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+
+                {/* Under the card itself rather than trailing the digits, where
+                    it read as part of the number. */}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3">
+                  {card.exp_month && card.exp_year && (
+                    <p className="text-[12.5px] text-muted-foreground">
+                      Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                    </p>
+                  )}
+                  {card.isDefault && (
+                    <span className="ml-auto flex items-center gap-1 text-[12.5px] text-[#1099A1]">
+                      <Check size={14} /> Default
+                    </span>
+                  )}
+                </div>
               </div>
-              {/* At the end of the row rather than trailing the digits, where it
-                  read as part of the number. */}
-              {card.isDefault && (
-                <span className="flex shrink-0 items-center gap-1 text-[12.5px] text-[#1099A1]">
-                  <Check size={14} /> Default
-                </span>
-              )}
             </li>
           ))}
         </ul>
