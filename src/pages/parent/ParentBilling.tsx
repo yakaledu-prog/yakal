@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft, List, LayoutGrid } from "lucide-react";
+import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft, ChevronDown, List, LayoutGrid, Plus, Search } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
@@ -45,9 +46,11 @@ import { useMasterDetail } from "@/hooks/useMasterDetail";
 //
 // Tabs keep each answer whole, and the sidebar scopes all three to one child.
 //
-// There is no add-slots or go-monthly here. Slots are chosen on the course
-// page, against the tutor's calendar, because that is where you can see what
-// is free. A button here would only send you there.
+// There is no add-slots or go-monthly here, and Add a plan is a link rather
+// than a checkout. Tutoring is priced per session against a tutor's calendar
+// and counselling is a tier, so both are bought on their own pages, where you
+// can see what you are choosing. This page only saves the parent from going
+// looking for them.
 // ============================================================
 
 const TABS = [
@@ -63,7 +66,25 @@ const SERVICE_FILTERS = [
   { id: "tutoring", label: "Tutoring", dot: "#CAA25F" },
 ] as const;
 
+/** The chip's own colour behind its count, the way the testimonial filters do it. */
+const tint = (hex: string, alpha = 0.16) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+};
+
 type ServiceFilter = (typeof SERVICE_FILTERS)[number]["id"];
+
+type StatusFilter = "all" | "active" | "completed";
+
+/**
+ * A course is finished when every session bought has happened.
+ *
+ * Counselling has no equivalent here: getAdmissionsPlans only asks for plans
+ * with status 'active', so an ended one never reaches this page and is never
+ * something Completed could hide.
+ */
+const isFinished = (p: CoursePackage) =>
+  p.slotsPurchased > 0 && p.slotsCompleted >= p.slotsPurchased;
 
 export function ParentBilling() {
   const { user } = useAuth();
@@ -72,6 +93,8 @@ export function ParentBilling() {
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
   const [service, setService] = useState<ServiceFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [q, setQ] = useState("");
   // Two per row on a wide screen. Only the layout changes: the same card,
   // with its quota lines wrapped rather than strung across one line.
   const [view, setView] = useState<"list" | "grid">("list");
@@ -143,6 +166,40 @@ export function ParentBilling() {
   const planCount = packages.length + admissionsPlans.length;
   const open = invoices.filter((i) => i.status === "open");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
+
+  // The three filters compose in the order they are read: search, then
+  // service, then status. Each control counts what reaches it, so a chip or a
+  // dropdown never offers a number the list underneath cannot produce.
+  const term = q.trim().toLowerCase();
+  const hit = (...fields: (string | null | undefined)[]) =>
+    !term || fields.some((f) => f?.toLowerCase().includes(term));
+
+  const foundAdmissions = admissionsPlans.filter((p) =>
+    hit(`${p.tier.name} college counselling`, p.studentName)
+  );
+  const foundPackages = packages.filter((p) =>
+    hit(p.courseTitle, p.subject, p.studentName, p.tutorName)
+  );
+
+  const serviceCount: Record<ServiceFilter, number> = {
+    all: foundAdmissions.length + foundPackages.length,
+    counselling: foundAdmissions.length,
+    tutoring: foundPackages.length,
+  };
+
+  const byService = {
+    admissions: service === "tutoring" ? [] : foundAdmissions,
+    packages: service === "counselling" ? [] : foundPackages,
+  };
+  const finishedCount = byService.packages.filter(isFinished).length;
+  const activeCount =
+    byService.admissions.length + byService.packages.length - finishedCount;
+
+  const shownAdmissions = status === "completed" ? [] : byService.admissions;
+  const shownPackages = byService.packages.filter((p) =>
+    status === "all" ? true : status === "completed" ? isFinished(p) : !isFinished(p)
+  );
+  const shownCount = shownAdmissions.length + shownPackages.length;
 
   // Coming back from Stripe Checkout. The webhook is the backstop; confirming
   // on return is what makes the page correct before the parent has to reload.
@@ -262,85 +319,147 @@ export function ParentBilling() {
             {isLoading ? (
               <Spinner />
             ) : tab === "plans" ? (
-              packages.length === 0 && admissionsPlans.length === 0 ? (
+              planCount === 0 ? (
                 <Empty
                   title="No plans yet"
                   body="A plan appears here once you book a course or start college counselling for one of your children."
+                  action={<AddPlanMenu childId={childId} />}
                 />
               ) : (
                 <div className="space-y-3">
-                  {/* Only worth offering when there is something to sift. With
-                      one of each it is three buttons standing over two rows. */}
-                  {/* The toggler shows whenever there is more than one card,
-                      even when the filters do not: two plans is already enough
-                      for the denser layout to be worth having. */}
-                  {(admissionsPlans.length + packages.length > 1 ||
-                    (admissionsPlans.length > 0 && packages.length > 0)) && (
-                    <div className="flex flex-wrap items-center gap-2 pb-1">
-                      {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => (
+                  <div className="flex flex-wrap items-center gap-2 pb-1">
+                    {planCount > 1 && (
+                      <div className="relative min-w-[170px] flex-1 sm:max-w-[260px]">
+                        <Search
+                          size={16}
+                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        />
+                        <input
+                          value={q}
+                          onChange={(e) => setQ(e.target.value)}
+                          placeholder="Search course, child or tutor..."
+                          className="h-9 w-full rounded-full border border-border bg-background pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-[#1099A1]"
+                        />
+                      </div>
+                    )}
+
+                    {/* Only worth offering when there is something to sift. With
+                        one of each it is three buttons standing over two rows.
+                        The count is what makes them worth the width: it says
+                        what is behind the filter before you spend a click. */}
+                    {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => {
+                      const on = service === f.id;
+                      const count = serviceCount[f.id];
+                      return (
                         <button
                           key={f.id}
-                          onClick={() => setService(f.id)}
+                          onClick={() => setService(on ? "all" : f.id)}
+                          aria-pressed={on}
+                          disabled={count === 0 && !on}
                           className={cn(
-                            "rounded-lg border px-3 py-1.5 text-[13px] transition-colors",
-                            service === f.id
-                              ? "border-transparent bg-foreground text-background"
-                              : "border-border text-muted-foreground hover:text-foreground"
+                            "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+                            on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
+                            // All is the resting state and has no colour of its
+                            // own, so it gets a grey ring rather than shouting
+                            // louder than a real filter.
+                            on && !f.dot && "border-black/25 text-foreground/70 dark:border-white/30"
                           )}
+                          style={on && f.dot ? { borderColor: f.dot } : undefined}
                         >
                           {f.dot && (
                             <span
-                              className="mr-2 inline-block h-2 w-2 rounded-full align-middle"
+                              className="h-2 w-2 shrink-0 rounded-full"
                               style={{ backgroundColor: f.dot }}
                             />
                           )}
                           {f.label}
-                        </button>
-                      ))}
-
-                      <div className="ml-auto flex items-center gap-1 rounded-lg border border-border p-0.5">
-                        {([
-                          ["list", List, "One per row"],
-                          ["grid", LayoutGrid, "Two per row"],
-                        ] as const).map(([mode, Icon, title]) => (
-                          <button
-                            key={mode}
-                            onClick={() => setView(mode)}
-                            aria-label={title}
-                            aria-pressed={view === mode}
-                            title={title}
+                          <span
                             className={cn(
-                              "rounded-md p-1.5 transition-colors",
-                              view === mode
-                                ? "bg-foreground text-background"
-                                : "text-muted-foreground hover:text-foreground"
+                              "rounded-full px-1.5 text-[11px] font-medium",
+                              !f.dot && "bg-black/[0.07] text-foreground/70 dark:bg-white/10 dark:text-white/70"
                             )}
+                            style={f.dot ? { backgroundColor: tint(f.dot), color: f.dot } : undefined}
                           >
-                            <Icon size={15} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
 
-                  <div
-                    className={cn(
-                      view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
-                    )}
-                  >
-                    {service !== "tutoring" &&
-                      admissionsPlans.map((p) => (
+                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                      {/* Both of these need more than one card to mean
+                          anything, but neither needs one of each service. */}
+                      {planCount > 1 && (
+                        <>
+                          <Dropdown
+                            value={status}
+                            onChange={setStatus}
+                            options={[
+                              { value: "all", label: `All (${activeCount + finishedCount})` },
+                              { value: "active", label: `Active (${activeCount})` },
+                              { value: "completed", label: `Completed (${finishedCount})` },
+                            ]}
+                            size="sm"
+                            ariaLabel="Filter by status"
+                            className="w-[140px]"
+                            buttonClassName="text-foreground/70"
+                          />
+
+                          {/* The same control as the admin lists. Two togglers
+                              doing the same job should not look like two
+                              different components. */}
+                          <div className="flex rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329]">
+                            {([
+                              ["list", List, "One per row"],
+                              ["grid", LayoutGrid, "Two per row"],
+                            ] as const).map(([mode, Icon, title]) => (
+                              <button
+                                key={mode}
+                                type="button"
+                                onClick={() => setView(mode)}
+                                aria-label={title}
+                                aria-pressed={view === mode}
+                                title={title}
+                                className={cn(
+                                  "rounded-md p-1.5 transition-colors",
+                                  view === mode
+                                    ? "bg-white shadow-sm dark:bg-[#202c33]"
+                                    : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
+                                )}
+                              >
+                                <Icon size={18} />
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <AddPlanMenu childId={childId} />
+                    </div>
+                  </div>
+
+                  {shownCount === 0 ? (
+                    <p className="py-16 text-center text-[13.5px] text-muted-foreground">
+                      {q ? "Nothing matches that." : "Nothing here with those filters."}
+                    </p>
+                  ) : (
+                    <div
+                      className={cn(
+                        view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
+                      )}
+                    >
+                      {shownAdmissions.map((p) => (
                         <AdmissionsCard key={p.id} plan={p} compact={view === "grid"} />
                       ))}
-                    {service !== "counselling" &&
-                      packages.map((p) => (
+                      {shownPackages.map((p) => (
                         <PlanCard
                           key={`${p.courseId}|${p.studentId}`}
                           pkg={p}
                           compact={view === "grid"}
                         />
                       ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )
             ) : tab === "payments" ? (
@@ -399,6 +518,74 @@ export function ParentBilling() {
 }
 
 /**
+ * Where a new plan is started from.
+ *
+ * A link, not a checkout. Tutoring is priced per session against a tutor's
+ * calendar and counselling is a tier, so neither can be bought from a list of
+ * what you already have; both pages already exist and both already accept a
+ * preselected child, so this carries the one in the sidebar across rather than
+ * asking for it again.
+ */
+function AddPlanMenu({ childId }: { childId: string | null }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const forChild = childId ? `?student=${childId}` : "";
+  const items = [
+    { label: "Book tutoring", hint: "Browse courses and pick a tutor", to: `/parent/courses${forChild}` },
+    { label: "College counselling", hint: "Compare the tiers", to: `/parent/admissions${forChild}` },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <Button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="h-9 gap-1.5 px-3.5 text-[13px]"
+      >
+        <Plus size={16} /> Add a plan
+        <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
+      </Button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-30 mt-1.5 w-[230px] overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
+        >
+          {items.map((item) => (
+            <button
+              key={item.to}
+              role="menuitem"
+              onClick={() => navigate(item.to)}
+              className="block w-full px-3.5 py-2.5 text-left transition-colors hover:bg-muted/60"
+            >
+              <span className="block text-[13.5px] font-medium text-foreground">{item.label}</span>
+              <span className="mt-0.5 block text-[12px] text-muted-foreground">{item.hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * One course, for one child, with the tutor teaching it.
  *
  * It used to say "3 of 3 sessions still to come" and "0 completed" side by
@@ -413,28 +600,34 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
     // Gold for tutoring, teal for counselling. One glance says which of the two
     // services a row belongs to, which a list mixing both otherwise does not.
     <article className={cn("rounded-xl border border-[#CAA25F] bg-card", compact ? "p-4" : "p-5")}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <StackedAvatars
-            className="pt-0.5"
-            people={[
-              { id: pkg.studentId, name: pkg.studentName, avatarUrl: pkg.studentAvatarUrl },
-              pkg.tutorName
-                ? { id: pkg.tutorId ?? undefined, name: pkg.tutorName, avatarUrl: pkg.tutorAvatarUrl }
-                : null,
-            ]}
-          />
-          <div className="min-w-0">
-            <h3 className="text-[16px] font-medium text-foreground">{pkg.courseTitle}</h3>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              {pkg.studentName}
-              {pkg.tutorName && ` with ${pkg.tutorName}`}
-            </p>
-          </div>
+      <div className="flex min-w-0 items-start gap-3">
+        <StackedAvatars
+          className="pt-0.5"
+          people={[
+            { id: pkg.studentId, name: pkg.studentName, avatarUrl: pkg.studentAvatarUrl },
+            pkg.tutorName
+              ? { id: pkg.tutorId ?? undefined, name: pkg.tutorName, avatarUrl: pkg.tutorAvatarUrl }
+              : null,
+          ]}
+        />
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-medium text-foreground">{pkg.courseTitle}</h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {pkg.studentName}
+            {pkg.tutorName && ` with ${pkg.tutorName}`}
+          </p>
         </div>
-        <p className="text-[13px] text-muted-foreground">
+      </div>
+
+      {/* Its own row rather than floated against the title: the amount used to
+          wrap onto a line of its own anyway the moment a name ran long, which
+          left it sitting under the avatars looking accidental. The subject
+          fills the left, since a course has no start date to put there. */}
+      <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
+        <span className="truncate">{pkg.subject || "Tutoring"}</span>
+        <span className="shrink-0">
           <Money cents={pkg.totalPaidCents} /> paid
-        </p>
+        </span>
       </div>
 
       <div className="mt-4">
@@ -486,42 +679,48 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
 
   return (
     <article className={cn("rounded-xl border border-[#1099A1] bg-card", compact ? "p-4" : "p-5")}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <StackedAvatars
-            className="pt-0.5"
-            people={[
-              people?.student && {
-                id: people.student.id,
-                name: people.student.fullName,
-                avatarUrl: people.student.avatarUrl,
-              },
-              people?.counselor && {
-                id: people.counselor.id,
-                name: people.counselor.fullName,
-                avatarUrl: people.counselor.avatarUrl,
-              },
-            ]}
-          />
-          <div className="min-w-0">
-            <h3 className="text-[16px] font-medium text-foreground">
-              {plan.tier.name} college counselling
-            </h3>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              {plan.studentName}
-              {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
-              {" - since "}
-              {new Date(plan.startedAt).toLocaleDateString(undefined, {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-          </div>
+      <div className="flex min-w-0 items-start gap-3">
+        <StackedAvatars
+          className="pt-0.5"
+          people={[
+            people?.student && {
+              id: people.student.id,
+              name: people.student.fullName,
+              avatarUrl: people.student.avatarUrl,
+            },
+            people?.counselor && {
+              id: people.counselor.id,
+              name: people.counselor.fullName,
+              avatarUrl: people.counselor.avatarUrl,
+            },
+          ]}
+        />
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-medium text-foreground">
+            {plan.tier.name} college counselling
+          </h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {plan.studentName}
+            {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
+          </p>
         </div>
-        <p className="text-[13px] text-muted-foreground">
+      </div>
+
+      {/* Since and paid, one row, ends apart. Both used to hang off the title
+          line, where the date pushed the name into wrapping and the amount
+          dropped onto a line of its own. */}
+      <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
+        <span className="truncate">
+          {"since "}
+          {new Date(plan.startedAt).toLocaleDateString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+        <span className="shrink-0">
           <Money cents={plan.tier.priceCents} /> paid
-        </p>
+        </span>
       </div>
 
       {usage && usage.lines.length > 0 && (
