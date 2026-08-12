@@ -16,7 +16,7 @@ import { supabase } from "@/lib/supabase";
 export interface SettingField {
   key: string;
   label: string;
-  /** What it does, in the admin form. */
+  /** A few words beside the label. The placeholder carries the example. */
   hint: string;
   placeholder: string;
   type?: "url" | "email" | "text";
@@ -32,33 +32,33 @@ export const SETTING_FIELDS: SettingField[] = [
   {
     key: "booking_url",
     label: "Booking link",
-    hint: "Where every Book a session button on the public site goes. Blank hides nothing, but the buttons will do nothing.",
+    hint: "Every Book a session button",
     placeholder: "https://calendly.com/yakal/intro-call",
     type: "url",
   },
   {
     key: "contact_email",
     label: "Contact email",
-    hint: "Printed in the footer and used as the mailto address.",
+    hint: "Footer, and the mailto link",
     placeholder: "hello@yakal.me",
     type: "email",
   },
   {
     key: "contact_phone",
     label: "Contact phone",
-    hint: "Printed in the footer.",
+    hint: "Footer",
     placeholder: "+251 91 100 0000",
   },
   {
     key: "contact_address",
     label: "Address",
-    hint: "Printed in the footer.",
+    hint: "Footer",
     placeholder: "Bole, Addis Ababa, Ethiopia",
   },
   {
     key: "email_from",
     label: "Sender address",
-    hint: "Who transactional email comes from. Must be on a domain verified with the mail provider, or nothing is delivered.",
+    hint: "Must be a verified domain",
     placeholder: "Yakal Education Services <noreply@yakal.me>",
   },
 ];

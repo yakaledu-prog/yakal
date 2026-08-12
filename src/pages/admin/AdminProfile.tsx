@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Mail, Phone, LogOut, SquarePenIcon, X, Users, Wallet, UserCheck } from "lucide-react";
-import { getAdminDashboard, getAllInvoices } from "@/services/adminService";
+import { Mail, Phone, LogOut, SquarePenIcon, X } from "lucide-react";
+import { getAllInvoices } from "@/services/adminService";
 import { money } from "@/services/billingService";
 
 function fmtDate(d?: string | null) {
@@ -43,6 +43,13 @@ export function AdminProfile() {
   const [savingSettings, setSavingSettings] = useState(false);
   const settings: SiteSettings = { ...(savedSettings ?? {}), ...edits };
 
+  // Something to save means an edit that differs from what is stored. Typing a
+  // value and typing it back leaves the button inactive, which is correct:
+  // there is nothing to write.
+  const dirty = Object.entries(edits).some(
+    ([k, v]) => v.trim() !== (savedSettings?.[k] ?? "").trim()
+  );
+
   async function saveSiteSettings() {
     if (!user) return;
     setSavingSettings(true);
@@ -57,7 +64,6 @@ export function AdminProfile() {
   const [name, setName] = useState(profile?.full_name || "");
   const [saving, setSaving] = useState(false);
 
-  const { data: dash } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getAdminDashboard });
   const { data: invoices = [] } = useQuery({ queryKey: ["admin-invoices"], queryFn: getAllInvoices });
 
   const saveName = async () => {
@@ -70,12 +76,6 @@ export function AdminProfile() {
     toast.success("Profile saved.");
     setEditOpen(false);
   };
-
-  const stats = [
-    { label: "Total Users", value: dash?.totalUsers ?? "-", icon: <Users size={18} /> },
-    { label: "Revenue", value: dash ? money(dash.revenueCents) : "-", icon: <Wallet size={18} /> },
-    { label: "Pending Approvals", value: dash?.pendingApprovals ?? "-", icon: <UserCheck size={18} /> },
-  ];
 
   const activity = invoices.slice(0, 6);
 
@@ -112,13 +112,11 @@ export function AdminProfile() {
             </div>
           </div>
 
-          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 mt-10">
-            {stats.map((s) => (
-              <div key={s.label} className="p-6 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 text-white/80 mb-2 uppercase text-[12px] font-bold tracking-wider">{s.icon} {s.label}</div>
-                <div className="text-3xl font-black tracking-tight">{s.value}</div>
-              </div>
-            ))}
+          {/* Contact sits with the rest of who this person is, rather than in
+              a column of its own below. The body is the settings form now. */}
+          <div className="relative z-10 mt-8 flex flex-wrap gap-x-14 gap-y-5 border-t border-white/20 px-6 py-6 md:px-10 lg:px-12">
+            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
+            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
           </div>
         </div>
 
@@ -128,26 +126,18 @@ export function AdminProfile() {
               The dark mode toggle is gone: it is in the topbar and in the
               sidebar already, and it was the only thing in this column. */}
           <div className="w-full shrink-0 space-y-6 lg:w-[380px]">
-            <h3 className="mb-4 text-[18px] font-bold text-[#111] dark:text-white">Contact &amp; Details</h3>
-            <div className="flex flex-col gap-6">
-              <DetailRow icon={<Mail size={20} />} label="Email" value={user?.email || "-"} />
-              <DetailRow icon={<Phone size={20} />} label="Phone Number" value={profile?.phone || "-"} />
-            </div>
-
-            <div className="border-t border-border pt-6">
+            <div>
               <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Site settings</h3>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Public details and the booking link. Saved straight away, no deploy needed.
-              </p>
 
               <div className="mt-5 space-y-4">
                 {SETTING_FIELDS.map((f) => (
                   <div key={f.key}>
                     <label
                       htmlFor={`setting-${f.key}`}
-                      className="mb-1.5 block text-[13px] font-medium text-foreground"
+                      className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-medium text-foreground"
                     >
                       {f.label}
+                      <span className="font-normal text-[12px] text-muted-foreground">{f.hint}</span>
                     </label>
                     <input
                       id={`setting-${f.key}`}
@@ -157,18 +147,23 @@ export function AdminProfile() {
                       placeholder={f.placeholder}
                       className="h-11 w-full rounded-lg border border-border bg-background px-3 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
                     />
-                    <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{f.hint}</p>
                   </div>
                 ))}
 
-                <button
-                  onClick={() => void saveSiteSettings()}
-                  disabled={savingSettings}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
-                >
-                  {savingSettings && <Loader2 size={14} className="animate-spin" />}
-                  Save settings
-                </button>
+                {/* The button or the sentence, never both: a disabled button
+                    beside "all changes saved" says the same thing twice. */}
+                {dirty || savingSettings ? (
+                  <button
+                    onClick={() => void saveSiteSettings()}
+                    disabled={savingSettings}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+                  >
+                    {savingSettings && <Loader2 size={14} className="animate-spin" />}
+                    {savingSettings ? "Saving..." : "Save settings"}
+                  </button>
+                ) : (
+                  <p className="text-[12.5px] text-muted-foreground">All changes saved.</p>
+                )}
               </div>
             </div>
           </div>
@@ -239,13 +234,25 @@ export function AdminProfile() {
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+/**
+ * One labelled fact in the teal banner. Module level: a component declared
+ * inside the page body is a new type on every render, so React rebuilds it.
+ */
+function HeaderFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
   return (
-    <div className="flex items-start gap-4">
-      <div className="shrink-0 mt-0.5 text-[#54656f] dark:text-[#aebac1]">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">{label}</p>
-        <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{value}</p>
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="shrink-0 text-white/70">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
+        <p className="truncate text-[14px] text-white">{value || "Not set"}</p>
       </div>
     </div>
   );
