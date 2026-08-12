@@ -1,12 +1,19 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import {
+  getSettings,
+  saveSettings,
+  SETTING_FIELDS,
+  type SiteSettings,
+} from "@/services/settingsService";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Mail, Phone, LogOut, SquarePenIcon, X, Users, Wallet, UserCheck, Moon, Sun } from "lucide-react";
+import { Mail, Phone, LogOut, SquarePenIcon, X, Users, Wallet, UserCheck } from "lucide-react";
 import { getAdminDashboard, getAllInvoices } from "@/services/adminService";
 import { money } from "@/services/billingService";
 
@@ -19,19 +26,39 @@ function fmtDate(d?: string | null) {
 
 export function AdminProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
+  const qc = useQueryClient();
+
+  // Values the business owns, edited here rather than in an environment
+  // variable that needs a redeploy to take effect.
+  const { data: savedSettings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: getSettings,
+    staleTime: Infinity,
+  });
+  // Only what has been typed, rather than a copy of the query. Mirroring the
+  // whole thing into state needs an effect to seed it, which the compiler
+  // rules count as a cascading render, and it goes stale the moment the query
+  // refetches underneath.
+  const [edits, setEdits] = useState<SiteSettings>({});
+  const [savingSettings, setSavingSettings] = useState(false);
+  const settings: SiteSettings = { ...(savedSettings ?? {}), ...edits };
+
+  async function saveSiteSettings() {
+    if (!user) return;
+    setSavingSettings(true);
+    const res = await saveSettings(settings, user.id);
+    setSavingSettings(false);
+    if (!res.success) return toast.error(res.error ?? "Could not save those.");
+    toast.success("Settings saved.");
+    setEdits({});
+    qc.invalidateQueries({ queryKey: ["site-settings"] });
+  }
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name || "");
   const [saving, setSaving] = useState(false);
-  const [isDark, setIsDark] = useState(document.documentElement.classList.contains("dark"));
 
   const { data: dash } = useQuery({ queryKey: ["admin-dashboard"], queryFn: getAdminDashboard });
   const { data: invoices = [] } = useQuery({ queryKey: ["admin-invoices"], queryFn: getAllInvoices });
-
-  const toggleTheme = async () => {
-    const dark = document.documentElement.classList.toggle("dark");
-    setIsDark(dark);
-    if (user?.id) await supabase.from("profiles").update({ theme: dark ? "dark" : "light" }).eq("id", user.id);
-  };
 
   const saveName = async () => {
     if (!user?.id || !name.trim()) return;
@@ -97,24 +124,51 @@ export function AdminProfile() {
 
         {/* Lower content */}
         <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px] flex flex-col lg:flex-row gap-10">
-          {/* Contact & Details */}
-          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Contact &amp; Details</h3>
+          {/* Contact, then the things this admin can change about the site.
+              The dark mode toggle is gone: it is in the topbar and in the
+              sidebar already, and it was the only thing in this column. */}
+          <div className="w-full shrink-0 space-y-6 lg:w-[380px]">
+            <h3 className="mb-4 text-[18px] font-bold text-[#111] dark:text-white">Contact &amp; Details</h3>
             <div className="flex flex-col gap-6">
               <DetailRow icon={<Mail size={20} />} label="Email" value={user?.email || "-"} />
               <DetailRow icon={<Phone size={20} />} label="Phone Number" value={profile?.phone || "-"} />
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 mt-0.5 text-[#54656f] dark:text-[#aebac1]">{isDark ? <Moon size={20} /> : <Sun size={20} />}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium mb-0.5 uppercase tracking-wide">Appearance</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-semibold text-[#111] dark:text-white">Dark mode</p>
-                    <button onClick={toggleTheme}
-                      className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors", isDark ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}>
-                      <span className={cn("inline-block h-4 w-4 transform rounded-full bg-white transition-transform", isDark ? "translate-x-6" : "translate-x-1")} />
-                    </button>
+            </div>
+
+            <div className="border-t border-border pt-6">
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Site settings</h3>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Public details and the booking link. Saved straight away, no deploy needed.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                {SETTING_FIELDS.map((f) => (
+                  <div key={f.key}>
+                    <label
+                      htmlFor={`setting-${f.key}`}
+                      className="mb-1.5 block text-[13px] font-medium text-foreground"
+                    >
+                      {f.label}
+                    </label>
+                    <input
+                      id={`setting-${f.key}`}
+                      type={f.type === "email" ? "email" : "text"}
+                      value={settings[f.key] ?? ""}
+                      onChange={(e) => setEdits((d) => ({ ...d, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder}
+                      className="h-11 w-full rounded-lg border border-border bg-background px-3 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+                    />
+                    <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{f.hint}</p>
                   </div>
-                </div>
+                ))}
+
+                <button
+                  onClick={() => void saveSiteSettings()}
+                  disabled={savingSettings}
+                  className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+                >
+                  {savingSettings && <Loader2 size={14} className="animate-spin" />}
+                  Save settings
+                </button>
               </div>
             </div>
           </div>

@@ -20,9 +20,10 @@ const socials = [
   { href: "https://www.linkedin.com/company/106175583/", label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 ];
 import { useNavigate } from "react-router-dom";
-import { CONTACT } from "@/config/links";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { subscribeToNewsletter } from "@/services/newsletterService";
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
+  const { contact: CONTACT } = useSiteSettings();
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 

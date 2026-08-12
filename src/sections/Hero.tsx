@@ -1,8 +1,10 @@
 import Navbar from "@/components/Navbar";
-import { openBooking } from "@/config/links";
+import { useSiteSettings, openBookingUrl } from "@/hooks/useSiteSettings";
 import imgHeader1 from "@/assets/images/landing-page/hero-cover.jpg";
 
 export default function Hero({ onNav }: { onNav: (id: string) => void }) {
+  const { bookingUrl } = useSiteSettings();
+
   return (
     <div id="home" className="relative rounded-[20px] md:rounded-[30px] rounded-t-none w-full max-w-[1440px]">
       <div className="absolute inset-0 pointer-events-none rounded-[20px] md:rounded-[30px] rounded-t-none">
@@ -24,7 +26,7 @@ export default function Hero({ onNav }: { onNav: (id: string) => void }) {
           <p className="text-white/90 text-[16px] md:text-[18px] leading-[26px] md:leading-[30px] mb-[32px] md:mb-[48px] max-w-[550px]">
             One-on-one academic support designed to help students excel in Math, Science, and SAT prep with flexible online and in-person options tailored to every learning style.
           </p>
-          <button onClick={openBooking} className="btn-shimmer px-[25px] md:px-[35px] py-[12px] md:py-[15px] rounded-[500px] text-white text-[14px] md:text-[16px] uppercase shadow-lg hover:opacity-90 transition-opacity">
+          <button onClick={() => openBookingUrl(bookingUrl)} className="btn-shimmer px-[25px] md:px-[35px] py-[12px] md:py-[15px] rounded-[500px] text-white text-[14px] md:text-[16px] uppercase shadow-lg hover:opacity-90 transition-opacity">
             Book a Free Consultation
           </button>
         </div>

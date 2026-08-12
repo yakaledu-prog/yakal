@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { openBooking } from "@/config/links";
+import { useSiteSettings, openBookingUrl } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 
@@ -22,6 +22,7 @@ import { getTiers, monthlyCents, tierShade, type AdmissionsTier } from "@/servic
 
 export default function CounsellingTiers(_props: { scrollTo?: (id: string) => void }) {
   const navigate = useNavigate();
+  const { bookingUrl } = useSiteSettings();
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: ["admissions-tiers"],
     queryFn: getTiers,
@@ -63,7 +64,7 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
         <p className="mt-8 text-center text-[13.5px] text-[#54656f]">
           Not sure which one fits?{" "}
           <button
-            onClick={openBooking}
+            onClick={() => openBookingUrl(bookingUrl)}
             className="font-semibold text-[#1099A1] underline-offset-4 hover:underline"
           >
             Talk to us first
@@ -148,7 +149,7 @@ function TierCard({
           className="mt-6 rounded-xl p-4 text-[13px] leading-relaxed text-[#54656f]"
           style={{ backgroundColor: `${shade}14` }}
         >
-          <span>Fits: </span>
+          <span className="font-semibold">Fits: </span>
           {tier.fits}
         </p>
       )}
@@ -164,10 +165,10 @@ function TierCard({
         onClick={onEnquire}
         style={tier.isRecommended ? undefined : { borderColor: shade, color: shade }}
         className={cn(
-          "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold transition-colors",
+          "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold origin-bottom transition-all ease-in-out",
           tier.isRecommended
             ? "bg-[#1099A1] text-white hover:bg-[#0d7f86]"
-            : "border-2 hover:bg-black/[0.03]"
+            : "border-2 hover:opacity-80"
         )}
       >
         Get started
