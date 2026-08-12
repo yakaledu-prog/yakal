@@ -49,6 +49,8 @@ export interface SavedCard {
   exp_month: number | null;
   exp_year: number | null;
   isDefault: boolean;
+  /** Stripe's created stamp, in seconds. Absent on cards saved before this. */
+  addedAt?: number;
 }
 
 export async function getPaymentMethods(): Promise<SavedCard[]> {
