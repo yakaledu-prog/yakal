@@ -79,12 +79,14 @@ export function AdminProfile() {
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
           </svg>
 
-          <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          {/* Centred on a phone: stacked and left aligned, the avatar sat in
+              a wide empty band and read as misplaced rather than as a column. */}
+          <div className="relative z-10 flex flex-col items-stretch justify-between gap-6 px-6 md:flex-row md:items-center md:px-10 lg:px-12">
+            <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:text-left">
               <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20 shrink-0">
                 <img src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`} alt={profile?.full_name || "Admin"} className="w-full h-full object-cover" />
               </div>
-              <div className="flex flex-col min-w-0">
+              <div className="flex min-w-0 flex-col items-center md:items-start">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">{profile?.full_name || "Administrator"}</h1>
                 <p className="text-white/80 text-[14px] mt-3 max-w-xl">{profile?.bio || "Platform administrator overseeing users, courses, and billing."}</p>
               </div>
@@ -104,7 +106,7 @@ export function AdminProfile() {
 
           {/* Contact sits with the rest of who this person is, rather than in
               a column of its own below. The body is the settings form now. */}
-          <div className="relative z-10 mt-8 flex flex-wrap gap-x-14 gap-y-5 border-t border-white/20 px-6 py-6 md:px-10 lg:px-12">
+          <div className="relative z-10 mt-8 flex flex-wrap justify-center gap-x-14 gap-y-5 border-t border-white/20 px-6 py-6 md:justify-start md:px-10 lg:px-12">
             <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
             <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
           </div>
