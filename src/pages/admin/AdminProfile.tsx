@@ -7,22 +7,14 @@ import {
   getSettings,
   saveSettings,
   SETTING_FIELDS,
+  SETTING_COLUMNS,
+  type SettingField,
   type SiteSettings,
 } from "@/services/settingsService";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Mail, Phone, LogOut, SquarePenIcon, X } from "lucide-react";
-import { getAllInvoices } from "@/services/adminService";
-import { money } from "@/services/billingService";
-
-function fmtDate(d?: string | null) {
-  if (!d) return { day: "", mon: "" };
-  const dt = new Date(d.includes("T") ? d : d + "T00:00:00");
-  if (isNaN(dt.getTime())) return { day: "", mon: "" };
-  return { day: dt.toLocaleDateString(undefined, { day: "2-digit" }), mon: dt.toLocaleDateString(undefined, { month: "short" }).toUpperCase() };
-}
 
 export function AdminProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -64,7 +56,6 @@ export function AdminProfile() {
   const [name, setName] = useState(profile?.full_name || "");
   const [saving, setSaving] = useState(false);
 
-  const { data: invoices = [] } = useQuery({ queryKey: ["admin-invoices"], queryFn: getAllInvoices });
 
   const saveName = async () => {
     if (!user?.id || !name.trim()) return;
@@ -77,7 +68,6 @@ export function AdminProfile() {
     setEditOpen(false);
   };
 
-  const activity = invoices.slice(0, 6);
 
   return (
     <PageWrapper>
@@ -120,82 +110,55 @@ export function AdminProfile() {
           </div>
         </div>
 
-        {/* Lower content */}
-        <div className="p-6 md:p-10 lg:p-12 mx-auto w-full max-w-[1400px] flex flex-col lg:flex-row gap-10">
-          {/* Contact, then the things this admin can change about the site.
-              The dark mode toggle is gone: it is in the topbar and in the
-              sidebar already, and it was the only thing in this column. */}
-          <div className="w-full shrink-0 space-y-6 lg:w-[380px]">
-            <div>
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Site settings</h3>
-
-              <div className="mt-5 space-y-4">
-                {SETTING_FIELDS.map((f) => (
-                  <div key={f.key}>
-                    <label
-                      htmlFor={`setting-${f.key}`}
-                      className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px] font-medium text-foreground"
-                    >
-                      {f.label}
-                      <span className="font-normal text-[12px] text-muted-foreground">{f.hint}</span>
-                    </label>
-                    <input
-                      id={`setting-${f.key}`}
-                      type={f.type === "email" ? "email" : "text"}
-                      value={settings[f.key] ?? ""}
-                      onChange={(e) => setEdits((d) => ({ ...d, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                      className="h-11 w-full rounded-lg border border-border bg-background px-3 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
-                    />
-                  </div>
+        {/* The whole body is the settings. Recent activity was a shorter copy
+            of the billing page, and this is the only screen where these can be
+            changed at all. */}
+        <div className="mx-auto w-full max-w-[1400px] p-6 md:p-10 lg:p-12">
+          {/* Two independent stacks, not a grid. A grid aligns rows, so a
+              group with one field left a hole beside one with three. Which
+              group sits where is declared in SETTING_COLUMNS. */}
+          <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
+            {SETTING_COLUMNS.map((groups, col) => (
+              <div key={col} className="space-y-8">
+                {groups.map((group, i) => (
+                  /* A rule between groups, not before the first: on a phone
+                     the columns stack, so one group ran straight into the
+                     next with only a heading to separate them. */
+                  <section key={group} className={i > 0 ? "border-t border-border pt-8" : undefined}>
+                    <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {group}
+                    </h3>
+                    <div className="space-y-4">
+                      {SETTING_FIELDS.filter((f) => f.group === group).map((f) => (
+                        <SettingInput
+                          key={f.key}
+                          field={f}
+                          value={settings[f.key] ?? ""}
+                          saved={(savedSettings?.[f.key] ?? "").trim()}
+                          onChange={(v) => setEdits((d) => ({ ...d, [f.key]: v }))}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 ))}
-
-                {/* The button or the sentence, never both: a disabled button
-                    beside "all changes saved" says the same thing twice. */}
-                {dirty || savingSettings ? (
-                  <button
-                    onClick={() => void saveSiteSettings()}
-                    disabled={savingSettings}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
-                  >
-                    {savingSettings && <Loader2 size={14} className="animate-spin" />}
-                    {savingSettings ? "Saving..." : "Save settings"}
-                  </button>
-                ) : (
-                  <p className="text-[12.5px] text-muted-foreground">All changes saved.</p>
-                )}
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Recent Activity (recent invoices) */}
-          <div className="flex-1 w-full space-y-6">
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-4">Recent Activity</h3>
-            {activity.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground py-4">No billing activity yet.</p>
+          <div className="mt-10 border-t border-border pt-6">
+            {/* The button or the sentence, never both: a disabled button beside
+                "all changes saved" says the same thing twice. */}
+            {dirty || savingSettings ? (
+              <button
+                onClick={() => void saveSiteSettings()}
+                disabled={savingSettings}
+                className="flex items-center gap-1.5 rounded-lg bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              >
+                {savingSettings && <Loader2 size={14} className="animate-spin" />}
+                {savingSettings ? "Saving..." : "Save settings"}
+              </button>
             ) : (
-              <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-                {activity.map((inv) => {
-                  const d = fmtDate(inv.paid_at || inv.created_at);
-                  const paid = inv.status === "paid";
-                  return (
-                    <div key={inv.id} className="flex flex-col sm:flex-row items-start sm:items-center py-6 gap-6 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4 rounded-xl">
-                      <div className="flex flex-col items-center justify-center shrink-0 w-12 text-[#1099A1]">
-                        <span className="text-[20px] font-bold leading-none mb-0.5">{d.day}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{d.mon}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-[15px] font-bold text-[#111] dark:text-white truncate mb-1">{inv.description}</h4>
-                        <p className="text-[13px] text-[#54656f] dark:text-[#aebac1]">{inv.parent_name} - {money(inv.amount_cents, inv.currency)}</p>
-                      </div>
-                      <div className="flex items-center gap-4 shrink-0">
-                        <span className={cn("text-[14px] font-bold capitalize", paid ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>{inv.status}</span>
-                        <span className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1] w-20 text-right capitalize">{inv.kind}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <p className="text-[12.5px] text-muted-foreground">All changes saved.</p>
             )}
           </div>
         </div>
@@ -231,6 +194,76 @@ export function AdminProfile() {
         </div>
       )}
     </PageWrapper>
+  );
+}
+
+
+/**
+ * One setting.
+ *
+ * A saved link or address shows as the thing it is: clickable, with an x to
+ * clear it and type another. Reading a URL back out of a text box to check it
+ * is right is the sort of small friction that stops somebody checking.
+ */
+function SettingInput({
+  field,
+  value,
+  saved,
+  onChange,
+}: {
+  field: SettingField;
+  value: string;
+  saved: string;
+  onChange: (v: string) => void;
+}) {
+  const isLink = field.type === "url" || field.type === "email";
+  // Only what is stored shows as a link. A half-typed URL is not one yet.
+  const showPreview = isLink && !!saved && value.trim() === saved;
+
+  const href = field.type === "email" ? `mailto:${saved}` : saved;
+
+  return (
+    <div>
+      <label
+        htmlFor={`setting-${field.key}`}
+        className="mb-1.5 block text-[13px] font-medium text-foreground"
+      >
+        {field.label}
+        <span className="font-normal text-muted-foreground"> ({field.hint})</span>
+      </label>
+
+      {showPreview ? (
+        <div className="flex h-11 items-center gap-2 rounded-lg border border-border px-3">
+          <a
+            href={href}
+            target={field.type === "url" ? "_blank" : undefined}
+            rel="noopener noreferrer"
+            className="min-w-0 flex-1 truncate text-[14px] text-[#1099A1] underline-offset-2 hover:underline"
+          >
+            {saved}
+          </a>
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label={`Clear ${field.label}`}
+            title="Change"
+            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      ) : (
+        <input
+          id={`setting-${field.key}`}
+          type={field.type === "email" ? "email" : field.type === "tel" ? "tel" : "text"}
+          inputMode={field.type === "url" ? "url" : undefined}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className="h-11 w-full rounded-lg border border-border bg-background px-3 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+        />
+      )}
+    </div>
   );
 }
 

@@ -26,6 +26,12 @@ export function useSiteSettings() {
       phone: data?.contact_phone?.trim() || CONTACT.phone,
       address: data?.contact_address?.trim() || CONTACT.address,
     },
+    /** Blank ones are dropped: an icon linking nowhere is worse than no icon. */
+    social: {
+      instagram: data?.social_instagram?.trim() ?? "",
+      x: data?.social_x?.trim() ?? "",
+      linkedin: data?.social_linkedin?.trim() ?? "",
+    },
   };
 }
 

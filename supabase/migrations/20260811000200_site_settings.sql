@@ -51,5 +51,9 @@ INSERT INTO public.site_settings (key, value) VALUES
   ('contact_email', ''),
   ('contact_phone', ''),
   ('contact_address', ''),
-  ('email_from', '')
+  ('contact_form_email', ''),
+  ('email_from', ''),
+  ('social_instagram', ''),
+  ('social_x', ''),
+  ('social_linkedin', '')
 ON CONFLICT (key) DO NOTHING;

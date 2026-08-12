@@ -19,7 +19,9 @@ export interface SettingField {
   /** A few words beside the label. The placeholder carries the example. */
   hint: string;
   placeholder: string;
-  type?: "url" | "email" | "text";
+  type?: "url" | "email" | "tel" | "text";
+  /** Grouped under this in the form. */
+  group: "Public site" | "Contact" | "Email" | "Social";
 }
 
 /**
@@ -32,36 +34,87 @@ export const SETTING_FIELDS: SettingField[] = [
   {
     key: "booking_url",
     label: "Booking link",
-    hint: "Every Book a session button",
+    hint: "every Book a session button",
     placeholder: "https://calendly.com/yakal/intro-call",
     type: "url",
+    group: "Public site",
   },
   {
     key: "contact_email",
     label: "Contact email",
-    hint: "Footer, and the mailto link",
+    hint: "footer, and the mailto link",
     placeholder: "hello@yakal.me",
     type: "email",
+    group: "Contact",
   },
   {
     key: "contact_phone",
     label: "Contact phone",
-    hint: "Footer",
+    hint: "footer",
     placeholder: "+251 91 100 0000",
+    type: "tel",
+    group: "Contact",
   },
   {
     key: "contact_address",
     label: "Address",
-    hint: "Footer",
+    hint: "footer",
     placeholder: "Bole, Addis Ababa, Ethiopia",
+    group: "Contact",
+  },
+  {
+    key: "contact_form_email",
+    label: "Contact form inbox",
+    hint: "where the website form is delivered",
+    placeholder: "hello@yakal.me",
+    type: "email",
+    group: "Email",
   },
   {
     key: "email_from",
     label: "Sender address",
-    hint: "Must be a verified domain",
+    hint: "must be a verified domain",
     placeholder: "Yakal Education Services <noreply@yakal.me>",
+    group: "Email",
+  },
+  {
+    key: "social_instagram",
+    label: "Instagram",
+    hint: "footer icon, hidden when blank",
+    placeholder: "https://www.instagram.com/yakaledu/",
+    type: "url",
+    group: "Social",
+  },
+  {
+    key: "social_x",
+    label: "X",
+    hint: "footer icon, hidden when blank",
+    placeholder: "https://x.com/yakaleducation",
+    type: "url",
+    group: "Social",
+  },
+  {
+    key: "social_linkedin",
+    label: "LinkedIn",
+    hint: "footer icon, hidden when blank",
+    placeholder: "https://www.linkedin.com/company/yakal/",
+    type: "url",
+    group: "Social",
   },
 ];
+
+/**
+ * Which column each group sits in, and in what order.
+ *
+ * Declared rather than balanced by field count: the pairing is editorial. How
+ * the business is reached and how it writes back go first, on the left, since
+ * those are the five somebody comes here to change; the booking link and the
+ * social accounts follow.
+ */
+export const SETTING_COLUMNS: readonly (readonly string[])[] = [
+  ["Contact", "Email"],
+  ["Public site", "Social"],
+] as const;
 
 export type SiteSettings = Record<string, string>;
 
