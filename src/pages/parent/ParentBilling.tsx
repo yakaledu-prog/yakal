@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft, ChevronDown, List, LayoutGrid, Plus, Search } from "lucide-react";
+import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X , ChevronLeft, ChevronDown, List, LayoutGrid, Plus } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
@@ -94,7 +94,6 @@ export function ParentBilling() {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
   const [service, setService] = useState<ServiceFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [q, setQ] = useState("");
   // Two per row on a wide screen. Only the layout changes: the same card,
   // with its quota lines wrapped rather than strung across one line.
   const [view, setView] = useState<"list" | "grid">("list");
@@ -167,29 +166,18 @@ export function ParentBilling() {
   const open = invoices.filter((i) => i.status === "open");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
 
-  // The three filters compose in the order they are read: search, then
-  // service, then status. Each control counts what reaches it, so a chip or a
-  // dropdown never offers a number the list underneath cannot produce.
-  const term = q.trim().toLowerCase();
-  const hit = (...fields: (string | null | undefined)[]) =>
-    !term || fields.some((f) => f?.toLowerCase().includes(term));
-
-  const foundAdmissions = admissionsPlans.filter((p) =>
-    hit(`${p.tier.name} college counselling`, p.studentName)
-  );
-  const foundPackages = packages.filter((p) =>
-    hit(p.courseTitle, p.subject, p.studentName, p.tutorName)
-  );
-
+  // The two filters compose in the order they are read: service, then status.
+  // Each control counts what reaches it, so the status dropdown never offers a
+  // number the list underneath cannot produce.
   const serviceCount: Record<ServiceFilter, number> = {
-    all: foundAdmissions.length + foundPackages.length,
-    counselling: foundAdmissions.length,
-    tutoring: foundPackages.length,
+    all: planCount,
+    counselling: admissionsPlans.length,
+    tutoring: packages.length,
   };
 
   const byService = {
-    admissions: service === "tutoring" ? [] : foundAdmissions,
-    packages: service === "counselling" ? [] : foundPackages,
+    admissions: service === "tutoring" ? [] : admissionsPlans,
+    packages: service === "counselling" ? [] : packages,
   };
   const finishedCount = byService.packages.filter(isFinished).length;
   const activeCount =
@@ -266,7 +254,11 @@ export function ParentBilling() {
           list of names with no heading explaining what they were a list of.
           A grid keeps one DOM order and moves the rail into its own column at
           md, rather than rendering it twice. */}
-      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+      {/* content-start, or a short tab floats. Below md the rows are implicit
+          and auto-sized, and a grid distributes its leftover height across
+          those, which left a single saved card sitting halfway down the page
+          with the header pushed away from it. */}
+      <div className="grid h-full min-h-0 grid-cols-1 content-start overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
         <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
           <BillingHeader
             subtitle={
@@ -328,21 +320,6 @@ export function ParentBilling() {
               ) : (
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2 pb-1">
-                    {planCount > 1 && (
-                      <div className="relative min-w-[170px] flex-1 sm:max-w-[260px]">
-                        <Search
-                          size={16}
-                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        />
-                        <input
-                          value={q}
-                          onChange={(e) => setQ(e.target.value)}
-                          placeholder="Search course, child or tutor..."
-                          className="h-9 w-full rounded-full border border-border bg-background pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-[#1099A1]"
-                        />
-                      </div>
-                    )}
-
                     {/* Only worth offering when there is something to sift. With
                         one of each it is three buttons standing over two rows.
                         The count is what makes them worth the width: it says
@@ -386,7 +363,11 @@ export function ParentBilling() {
                       );
                     })}
 
-                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                    {/* Its own full-width line below md, ends apart, because the
+                        chips above have already wrapped and leaving these two
+                        huddled against the right edge only looked like the row
+                        had run out of room. */}
+                    <div className="flex w-full shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
                       {/* Both of these need more than one card to mean
                           anything, but neither needs one of each service. */}
                       {planCount > 1 && (
@@ -407,8 +388,12 @@ export function ParentBilling() {
 
                           {/* The same control as the admin lists. Two togglers
                               doing the same job should not look like two
-                              different components. */}
-                          <div className="flex rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329]">
+                              different components.
+
+                              Gone below md, where it has nothing to switch: one
+                              column is all that fits either way, so the cards
+                              just use the denser layout there. */}
+                          <div className="hidden rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329] md:flex">
                             {([
                               ["list", List, "One per row"],
                               ["grid", LayoutGrid, "Two per row"],
@@ -440,7 +425,7 @@ export function ParentBilling() {
 
                   {shownCount === 0 ? (
                     <p className="py-16 text-center text-[13.5px] text-muted-foreground">
-                      {q ? "Nothing matches that." : "Nothing here with those filters."}
+                      Nothing here with those filters.
                     </p>
                   ) : (
                     <div
@@ -585,6 +570,10 @@ function AddPlanMenu({ childId }: { childId: string | null }) {
   );
 }
 
+// The dense layout is the base and the roomy one is an md override, in both
+// cards below. The toggler only exists from md up, so a phone always gets the
+// dense card whatever `compact` says, rather than four quota columns in 360px.
+
 /**
  * One course, for one child, with the tutor teaching it.
  *
@@ -599,7 +588,7 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
   return (
     // Gold for tutoring, teal for counselling. One glance says which of the two
     // services a row belongs to, which a list mixing both otherwise does not.
-    <article className={cn("rounded-xl border border-[#CAA25F] bg-card", compact ? "p-4" : "p-5")}>
+    <article className={cn("rounded-xl border border-[#CAA25F] bg-card p-4", !compact && "md:p-5")}>
       <div className="flex min-w-0 items-start gap-3">
         <StackedAvatars
           className="pt-0.5"
@@ -678,7 +667,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
   const hasBooked = (advising?.used ?? 0) > 0;
 
   return (
-    <article className={cn("rounded-xl border border-[#1099A1] bg-card", compact ? "p-4" : "p-5")}>
+    <article className={cn("rounded-xl border border-[#1099A1] bg-card p-4", !compact && "md:p-5")}>
       <div className="flex min-w-0 items-start gap-3">
         <StackedAvatars
           className="pt-0.5"
@@ -726,15 +715,18 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
       {usage && usage.lines.length > 0 && (
         <div
           className={cn(
-            "mt-4 gap-4 border-t border-border pt-3",
-            compact
-              ? "flex flex-col items-stretch"
-              : "flex flex-wrap items-end justify-between"
+            "mt-4 flex flex-col items-stretch gap-4 border-t border-border pt-3",
+            !compact && "md:flex-row md:flex-wrap md:items-end md:justify-between"
           )}
         >
           {/* Two columns rather than one line when the card is half as wide:
               four quota lines side by side would each be a few characters. */}
-          <dl className={cn(compact ? "grid grid-cols-2 gap-x-4 gap-y-2" : "flex flex-wrap gap-x-8 gap-y-2")}>
+          <dl
+            className={cn(
+              "grid grid-cols-2 gap-x-4 gap-y-2",
+              !compact && "md:flex md:flex-wrap md:gap-x-8"
+            )}
+          >
             {usage.lines.map((l) => (
               <div key={l.label}>
                 <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
@@ -757,8 +749,8 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
               onClick={() => setBooking(true)}
               disabled={remaining <= 0 && !hasBooked}
               className={cn(
-                "h-9 gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50",
-                compact ? "w-full" : "shrink-0"
+                "h-9 w-full gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50",
+                !compact && "md:w-auto md:shrink-0"
               )}
             >
               <CalendarPlus size={15} />
@@ -968,6 +960,43 @@ function BookAdvisingDialog({
   );
 }
 
+/**
+ * The scheme's mark, at the size it reads at on the card itself.
+ *
+ * Visa's own artwork, so its blue and gold are Visa's rather than ours and the
+ * palette rule does not reach it. Every other scheme falls back to its name in
+ * a box: showing this mark for a Mastercard would be a lie about which card is
+ * on file, and a wrong logo is worse than no logo.
+ */
+function CardMark({ brand }: { brand: string }) {
+  if (brand.toLowerCase() !== "visa") {
+    return (
+      <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-bold uppercase text-muted-foreground">
+        {brand}
+      </span>
+    );
+  }
+
+  return (
+    // Cropped to the artwork. The source viewBox is 48 square around a card
+    // that is 42 by 30, so at any height a third of the box was empty.
+    <svg viewBox="3 9 42 30" className="h-10 w-14 shrink-0" role="img" aria-label="Visa">
+      <path
+        fill="#1565C0"
+        d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"
+      />
+      <path
+        fill="#FFF"
+        d="M15.186 19l-2.626 7.832c0 0-.667-3.313-.733-3.729-1.495-3.411-3.701-3.221-3.701-3.221L10.726 30v-.002h3.161L18.258 19H15.186zM17.689 30L20.56 30 22.296 19 19.389 19zM38.008 19h-3.021l-4.71 11h2.852l.588-1.571h3.596L37.619 30h2.613L38.008 19zM34.513 26.328l1.563-4.157.818 4.157H34.513zM26.369 22.206c0-.606.498-1.057 1.926-1.057.928 0 1.991.674 1.991.674l.466-2.309c0 0-1.358-.515-2.691-.515-3.019 0-4.576 1.444-4.576 3.272 0 3.306 3.979 2.853 3.979 4.551 0 .291-.231.964-1.888.964-1.662 0-2.759-.609-2.759-.609l-.495 2.216c0 0 1.063.606 3.117.606 2.059 0 4.915-1.54 4.915-3.752C30.354 23.586 26.369 23.394 26.369 22.206z"
+      />
+      <path
+        fill="#FFC107"
+        d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"
+      />
+    </svg>
+  );
+}
+
 function Methods({
   cards,
   isLoading,
@@ -998,23 +1027,30 @@ function Methods({
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {cards.map((card) => (
-            <li key={card.id} className="flex items-center gap-3 p-4">
-              <span className="flex h-8 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-bold uppercase text-muted-foreground">
-                {card.brand}
-              </span>
+            <li key={card.id} className="flex items-center gap-4 p-5">
+              <CardMark brand={card.brand} />
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 text-[14px] font-medium text-foreground">
-                  <span className="capitalize">{card.brand}</span> ....{card.last4}
-                  {card.isDefault && (
-                    <span className="text-[11.5px] font-medium text-[#1099A1]">Default</span>
-                  )}
+                {/* The scheme's name went with the logo: printing "Visa" beside
+                    the Visa mark says it twice. What is left is the only part
+                    that tells two cards apart. */}
+                <p className="text-[15px] font-medium tracking-wide text-foreground">
+                  <span aria-hidden="true">**** </span>
+                  <span className="sr-only">Card ending </span>
+                  {card.last4}
                 </p>
                 {card.exp_month && card.exp_year && (
-                  <p className="text-[12px] text-muted-foreground">
+                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
                     Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
                   </p>
                 )}
               </div>
+              {/* At the end of the row rather than trailing the digits, where it
+                  read as part of the number. */}
+              {card.isDefault && (
+                <span className="flex shrink-0 items-center gap-1 text-[12.5px] text-[#1099A1]">
+                  <Check size={14} /> Default
+                </span>
+              )}
             </li>
           ))}
         </ul>
