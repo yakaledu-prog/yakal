@@ -244,17 +244,31 @@ adding a screen, prefer an empty state over a plausible number.
   Shown only when written now, and editable, which it was not: the edit dialog
   only saved the name while the page displayed a bio.
 
-- [ ] **`/tutor/session/:id` is entirely static.** `TutorSessionDetail` takes
+- [x] **`/tutor/session/:id` and `/student/session/:id` were entirely static.** `TutorSessionDetail` takes
   no props, runs no query and never reads its own route parameter. Every word
   is hardcoded: "AP Calculus AB", "Today at 4:00 PM", a tutor called "Dr. Alex"
   from "Mathematics Dept." with a pravatar face, plus the agenda and the
   homework. **It is routed**, so a tutor opening any session sees the same
   invented one. Needs the session read by id, the way
-  `StudentSessionDetail` and `CounselorSessionDetail` should also be checked
-  for: both carry the same "Dr. Alex" card.
+  Both routes are **deleted**. Nothing linked to them: every Join in the app
+  goes to `/meeting/:id`, which is a real page. They were routes with no way
+  in, rendering a fabricated session.
 
-- [ ] **`StudentCourseCatalogDetail` has a hardcoded tutor** with a pravatar
-  avatar.
+  `CounselorSessionDetail` was the same mock but **is** reachable, at
+  `/counselor/meeting/:id`, so it was rebuilt on `getSessionById` instead.
+
+- [x] **`StudentCourseCatalogDetail` was an invented course**, not just a
+  hardcoded tutor: "Avery M.", a picsum thumbnail, a five-module syllabus,
+  three reviews from people who do not exist and a Preply certification. It
+  called `useParams()` and threw the result away. Deleted: nothing linked to
+  it, and students do not browse or buy courses, parents do.
+
+- [ ] **`StudentHome` has the same invented feed the parent home had.**
+  "Dr. Alex graded your ..." wrapped around real homework titles.
+
+- [ ] **`StudentCalendar` is a hardcoded fortnight**: AP Calculus AB and
+  Physics Lab Review with Dr. Alex, on dates computed from today so they
+  always look current.
 
 
 ## Notes

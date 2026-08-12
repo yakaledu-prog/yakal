@@ -78,7 +78,6 @@ const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) 
 const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
 const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
 const StudentCollegeList = lazy(() => import("../pages/student/StudentCollegeList").then((m) => ({ default: m.StudentCollegeList })));
-const StudentCourseCatalogDetail = lazy(() => import("../pages/student/StudentCourseCatalogDetail").then((m) => ({ default: m.StudentCourseCatalogDetail })));
 const StudentCourseDashboard = lazy(() => import("../pages/student/StudentCourseDashboard").then((m) => ({ default: m.StudentCourseDashboard })));
 const StudentCourseMessages = lazy(() => import("../pages/student/StudentCourseMessages").then((m) => ({ default: m.StudentCourseMessages })));
 const StudentCourseSessions = lazy(() => import("../pages/student/StudentCourseSessions").then((m) => ({ default: m.StudentCourseSessions })));
@@ -93,7 +92,6 @@ const StudentMessages = lazy(() => import("../pages/student/StudentMessages").th
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
 const StudentRoadmap = lazy(() => import("../pages/student/StudentRoadmap").then((m) => ({ default: m.StudentRoadmap })));
-const StudentSessionDetail = lazy(() => import("../pages/student/StudentSessionDetail").then((m) => ({ default: m.StudentSessionDetail })));
 const StudentSessions = lazy(() => import("../pages/student/StudentSessions").then((m) => ({ default: m.StudentSessions })));
 const TermsConditionsPage = lazy(() => import("../pages/shared/TermsConditionsPage").then((m) => ({ default: m.TermsConditionsPage })));
 const TrackerPreview = lazy(() => import("../pages/preview/TrackerPreview").then((m) => ({ default: m.TrackerPreview })));
@@ -107,7 +105,6 @@ const TutorMeeting = lazy(() => import("../pages/tutor/TutorMeeting").then((m) =
 const TutorMessages = lazy(() => import("../pages/tutor/TutorMessages").then((m) => ({ default: m.TutorMessages })));
 const TutorNotifications = lazy(() => import("../pages/tutor/TutorNotifications").then((m) => ({ default: m.TutorNotifications })));
 const TutorProfile = lazy(() => import("../pages/tutor/TutorProfile").then((m) => ({ default: m.TutorProfile })));
-const TutorSessionDetail = lazy(() => import("../pages/tutor/TutorSessionDetail").then((m) => ({ default: m.TutorSessionDetail })));
 const TutorSessions = lazy(() => import("../pages/tutor/TutorSessions").then((m) => ({ default: m.TutorSessions })));
 const TutorStudents = lazy(() => import("../pages/tutor/TutorStudents").then((m) => ({ default: m.TutorStudents })));
 
@@ -378,7 +375,6 @@ const router = createBrowserRouter([
           { path: "students", element: <TutorStudents /> },
           { path: "students/:id", element: <TutorStudents /> },
           { path: "sessions", element: <TutorSessions /> },
-          { path: "session/:id", element: <TutorSessionDetail /> },
           { path: "meeting/:sessionId", element: <TutorMeeting /> },
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
@@ -437,7 +433,6 @@ const router = createBrowserRouter([
               { path: "messages", element: <StudentCourseMessages /> },
             ]
           },
-          { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "roadmap", element: <StudentRoadmap /> },
           { path: "diagnostics", element: <StudentDiagnostics /> },
@@ -445,7 +440,6 @@ const router = createBrowserRouter([
           { path: "college-list", element: <StudentCollegeList /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
-          { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "profile", element: <StudentProfile /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "meeting/:sessionId", element: <StudentMeeting /> },
