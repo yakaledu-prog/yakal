@@ -98,7 +98,7 @@ export function ParentProfile() {
                     used to, and dropping them keeps this inside the height the
                     avatar already takes instead of adding two lines to the
                     header. */}
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 md:justify-start">
+                <div className="mt-2.5 flex flex-col items-center gap-1 md:items-start">
                   <HeaderFact icon={<Mail size={14} />} value={user?.email} />
                   <HeaderFact icon={<Phone size={14} />} value={profile?.phone} />
                 </div>
