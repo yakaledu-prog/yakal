@@ -141,17 +141,14 @@ function TierCard({
       </ul>
 
       {/* A wash of the tier's shade rather than the flat grey, so the panel
-          belongs to this card and not to all three. Kept faint: the sentence
-          inside it has to stay readable, so the colour is in the fill and the
-          label, and the words stay dark. */}
+          belongs to this card and not to all three. Kept faint, and only in
+          the fill: the sentence inside has to stay readable. */}
       {tier.fits && (
         <p
           className="mt-6 rounded-xl p-4 text-[13px] leading-relaxed text-[#54656f]"
           style={{ backgroundColor: `${shade}14` }}
         >
-          <span className="font-semibold" style={{ color: shade }}>
-            Fits:{" "}
-          </span>
+          <span>Fits: </span>
           {tier.fits}
         </p>
       )}

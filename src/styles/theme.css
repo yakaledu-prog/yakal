@@ -164,6 +164,23 @@
 
   html {
     font-size: var(--font-size);
+    /*
+     * Applies to the browser's own hash jump as well as scrollIntoView, which
+     * is the point: clicking a nav link scrolled smoothly and then the URL
+     * update made the browser jump to the same place instantly, so the
+     * animation was cut off halfway.
+     *
+     * Not inherited, so the dashboards' own overflow containers keep their
+     * default behaviour. Anything that needs to arrive instantly, like landing
+     * on a page that already has a hash, passes behavior: "auto" explicitly.
+     */
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   h1 {
