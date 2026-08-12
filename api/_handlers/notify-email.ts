@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Templates carry app-relative paths, since the notification uses the
         // same field to route inside the app. An inbox needs the whole URL.
         cta: email.cta
-          ? { label: email.cta.label, url: `${appBaseUrl()}${email.cta.url}` }
+          ? { label: email.cta.label, url: `${appBaseUrl(req)}${email.cta.url}` }
           : undefined,
         footer: email.footer ?? undefined,
         recipientName: person.full_name?.split(' ')[0],
