@@ -132,11 +132,29 @@ export function useSpeaker(voice: SpeechSynthesisVoice | null) {
 }
 
 /**
+ * How long a pause is allowed before a question counts as finished.
+ *
+ * Long enough to think mid-sentence, short enough that finishing a question
+ * does not feel like waiting for a machine to notice.
+ */
+const SILENCE_MS = 1400;
+
+/**
  * Listening.
  *
+ * `continuous` is on, and that is the fix for being cut off mid-question.
+ * With it off the engine ends the session at the first pause it considers a
+ * sentence boundary, which is any breath in the middle of "what does the, um,
+ * Premier tier include" - and it ends the whole turn, not just the phrase.
+ *
+ * So the engine now stays open and the pause is timed here instead. Every
+ * final phrase is appended, and a turn is only sent after SILENCE_MS with
+ * nothing new. That keeps tap-to-talk, rather than making people hold a button
+ * down while they think.
+ *
  * `interimResults` is on so the panel can show words as they are said. Only
- * the final transcript is sent: interim text is a guess the engine revises,
- * and sending it would ask the model about a sentence nobody finished.
+ * final text is ever sent: interim text is a guess the engine revises, and
+ * sending it would ask the model about a sentence nobody finished.
  */
 export function useListener({
   onFinal,
@@ -164,9 +182,26 @@ export function useListener({
     interimCb.current = onInterim;
   });
 
+  // The phrases heard so far this turn, and the timer that decides the turn is
+  // over. Refs rather than state: they change on every syllable and nothing
+  // renders from them directly.
+  const heard = useRef("");
+  const silence = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const clearSilence = () => {
+    if (silence.current) clearTimeout(silence.current);
+    silence.current = undefined;
+  };
+
   const stop = useCallback(() => {
+    clearSilence();
     ref.current?.stop();
     setListening(false);
+    // Anything already said still counts. Tapping stop mid-question should
+    // send the question, not bin it.
+    const pending = heard.current.trim();
+    heard.current = "";
+    if (pending) finalCb.current(pending);
   }, []);
 
   const start = useCallback(() => {
@@ -175,20 +210,37 @@ export function useListener({
 
     // A previous session that has not fully ended will throw on start().
     ref.current?.abort();
+    clearSilence();
+    heard.current = "";
 
     const rec = new Ctor();
     rec.lang = navigator.language?.startsWith("en") ? navigator.language : "en-US";
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
+
+    const armSilence = () => {
+      clearSilence();
+      silence.current = setTimeout(() => {
+        const question = heard.current.trim();
+        heard.current = "";
+        rec.stop();
+        setListening(false);
+        if (question) finalCb.current(question);
+      }, SILENCE_MS);
+    };
 
     rec.onresult = (e: any) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const result = e.results[i];
-        if (result.isFinal) finalCb.current(String(result[0].transcript).trim());
+        if (result.isFinal) heard.current = `${heard.current} ${String(result[0].transcript)}`.trim();
         else interim += result[0].transcript;
       }
-      if (interim) interimCb.current(interim.trim());
+      // Both kinds of result mean somebody is still talking, so both push the
+      // deadline out. Timing only the final ones would cut off anyone with a
+      // long sentence, which is the bug this replaced.
+      armSilence();
+      interimCb.current(`${heard.current} ${interim}`.trim());
     };
 
     rec.onerror = (e: any) => {
@@ -203,7 +255,10 @@ export function useListener({
       setListening(false);
     };
 
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      clearSilence();
+      setListening(false);
+    };
 
     ref.current = rec;
     setError(null);
@@ -215,7 +270,13 @@ export function useListener({
     }
   }, []);
 
-  useEffect(() => () => ref.current?.abort(), []);
+  useEffect(
+    () => () => {
+      if (silence.current) clearTimeout(silence.current);
+      ref.current?.abort();
+    },
+    []
+  );
 
   return { start, stop, listening, error };
 }

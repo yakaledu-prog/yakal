@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Mic, Send, Keyboard, Square, Loader2, BotMessageSquareIcon } from "lucide-react";
+import { X, Mic, Send, Keyboard, Square, BotMessageSquareIcon } from "lucide-react";
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -20,13 +20,75 @@ import { speechSupported, takeSentences, useListener, useSpeaker, useVoices } fr
 
 type Phase = "idle" | "listening" | "thinking" | "speaking";
 
-/** The last thing the assistant said. Array.at is above this project's target. */
-function lastModelText(turns: AssistantTurn[]): string {
+/**
+ * The classic three dots.
+ *
+ * A spinner says "loading", which is what a page does. Dots say "writing",
+ * which is what this is, and they sit on the same line the answer will appear
+ * on so nothing jumps when it does.
+ */
+function TypingDots() {
+  return (
+    <span className="flex items-center gap-1 py-1" aria-label="Thinking">
+      {[0, 160, 320].map((delay) => (
+        <span
+          key={delay}
+          className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#54656f]"
+          style={{ animationDelay: `${delay}ms`, animationDuration: "1s" }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The answer, revealed at a readable pace.
+ *
+ * The stream was already a stream: tokens are painted as they land. The
+ * trouble is that a lite model finishes a short answer about 100ms after it
+ * starts one, so "streaming" looked like the paragraph appearing at once.
+ *
+ * This paces the reveal just behind the arrival and catches up proportionally,
+ * so a fast answer reads as typed and a slow one is never held back. It only
+ * exists while an answer is in flight; the finished turn renders as plain text.
+ */
+function StreamingText({ text }: { text: string }) {
+  const [shown, setShown] = useState("");
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setShown((prev) => {
+        // A new answer never starts with the old one, so this is the reset.
+        if (!text.startsWith(prev)) return text;
+        if (prev.length >= text.length) return prev;
+        // Proportional, so the gap closes rather than growing on a long answer.
+        const step = Math.max(2, Math.ceil((text.length - prev.length) / 6));
+        return text.slice(0, prev.length + step);
+      });
+    }, 16);
+    return () => clearInterval(id);
+  }, [text]);
+
+  return (
+    <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
+      {shown}
+      {shown.length < text.length && (
+        <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#1099A1]" />
+      )}
+    </p>
+  );
+}
+
+/** The last thing either side said. Array.at is above this project's target. */
+function lastOf(turns: AssistantTurn[], role: "user" | "model"): string {
   for (let i = turns.length - 1; i >= 0; i--) {
-    if (turns[i].role === "model") return turns[i].text;
+    if (turns[i].role === role) return turns[i].text;
   }
   return "";
 }
+
+const lastModelText = (turns: AssistantTurn[]) => lastOf(turns, "model");
+const lastUserText = (turns: AssistantTurn[]) => lastOf(turns, "user");
 
 export function LandingAssistant() {
   const [open, setOpen] = useState(false);
@@ -38,6 +100,10 @@ export function LandingAssistant() {
   const [error, setError] = useState<string | null>(null);
   const [interim, setInterim] = useState("");
   const [voiceId, setVoiceId] = useState<string>("");
+  // Whether the microphone has been used yet, which is what retires the voice
+  // picker. Not derived from the transcript: switching to voice with a typed
+  // conversation behind you should still let you choose a voice first.
+  const [started, setStarted] = useState(false);
 
   const abortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -151,15 +217,15 @@ export function LandingAssistant() {
 
   return (
     <div className="fixed bottom-5 right-5 z-[100] flex max-h-[min(620px,calc(100vh-2.5rem))] w-[min(390px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
-      <header className="flex items-center gap-1 border-b border-black/5 px-4 py-3">
+      <header className="flex items-center gap-1.5 border-b border-black/5 px-4 py-3">
         {/* <span className="relative flex h-2 w-2">
           {phase !== "idle" && (
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#97CE9D] opacity-75" />
           )}
           <span className="relative inline-flex h-2 w-2 rounded-full bg-[#97CE9D]" />
         </span> */}
-        <BotMessageSquareIcon size={24} className="text-[#1099A1] p-0" />
-        <p className="flex-1 text-[14px] font-medium text-[#111]">Ask Yakal</p>
+        <BotMessageSquareIcon size={16} className="text-[#1099A1] p-0" />
+        <p className="flex-1 text-[14px] font-medium text-[#1099A1]">Ask Yakal</p>
 
         {canTalk && (
           <button
@@ -184,13 +250,16 @@ export function LandingAssistant() {
         <VoicePanel
           phase={phase}
           interim={interim}
-          lastAnswer={streaming || lastModelText(turns)}
+          spokenQuestion={lastUserText(turns)}
+          answer={streaming || lastModelText(turns)}
+          started={started}
           error={error ?? listener.error}
           voices={voices}
           voiceId={voice?.voiceURI ?? ""}
           onVoice={setVoiceId}
           onStart={() => {
             stopSpeaking();
+            setStarted(true);
             listener.start();
           }}
           onStop={stopEverything}
@@ -221,12 +290,8 @@ export function LandingAssistant() {
             {turns.map((t, i) => (
               <Bubble key={i} role={t.role} text={t.text} />
             ))}
-            {streaming && <Bubble role="model" text={streaming} />}
-            {busy && !streaming && (
-              <div className="flex items-center gap-2 text-[13px] text-[#54656f]">
-                <Loader2 size={14} className="animate-spin" /> Thinking
-              </div>
-            )}
+            {streaming && <StreamingText text={streaming} />}
+            {busy && !streaming && <TypingDots />}
             {error && <p className="text-[13px] text-[#CAA25F]">{error}</p>}
           </div>
 
@@ -293,7 +358,9 @@ function Bubble({ role, text }: { role: "user" | "model"; text: string }) {
 function VoicePanel({
   phase,
   interim,
-  lastAnswer,
+  spokenQuestion,
+  answer,
+  started,
   error,
   voices,
   voiceId,
@@ -302,8 +369,14 @@ function VoicePanel({
   onStop,
 }: {
   phase: Phase;
+  /** What is being said right now, before the engine has committed to it. */
   interim: string;
-  lastAnswer: string;
+  /** The last thing the visitor asked out loud. */
+  spokenQuestion: string;
+  /** The answer, streaming or finished. */
+  answer: string;
+  /** Whether the microphone has been used yet this session. */
+  started: boolean;
   error: string | null;
   voices: SpeechSynthesisVoice[];
   voiceId: string;
@@ -367,16 +440,29 @@ function VoicePanel({
 
         <p className="text-[13px] text-[#54656f]">{CAPTION[phase]}</p>
 
-        {/* One line of context, not a transcript. The written conversation is
-            still there when you switch back to typing. */}
-        <p className="line-clamp-4 min-h-[3rem] text-center text-[13.5px] leading-relaxed text-[#111]">
-          {interim || lastAnswer}
-        </p>
+        {/* The conversation as it happens, teal for the person and plain for
+            the assistant, so who said what is readable without labels. Only
+            the last exchange: this is a glance, and the full transcript is
+            waiting under the keyboard button. */}
+        <div className="min-h-[4.5rem] w-full space-y-2 overflow-y-auto text-center">
+          {spokenQuestion && (
+            <p className="text-[13.5px] leading-relaxed text-[#1099A1]">{spokenQuestion}</p>
+          )}
+          {interim && (
+            <p className="text-[13.5px] leading-relaxed text-[#1099A1]/60">{interim}</p>
+          )}
+          {answer && (
+            <p className="line-clamp-5 text-[13.5px] leading-relaxed text-[#111]">{answer}</p>
+          )}
+        </div>
 
         {error && <p className="text-center text-[13px] text-[#CAA25F]">{error}</p>}
       </div>
 
-      {voices.length > 1 && (
+      {/* Gone once the conversation starts. Choosing a voice is a thing you do
+          before you begin, and a dropdown under a live transcript is a control
+          competing with the thing it was set up for. */}
+      {!started && voices.length > 1 && (
         <Dropdown
           value={voiceId}
           onChange={onVoice}
