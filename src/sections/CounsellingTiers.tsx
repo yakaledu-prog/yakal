@@ -131,7 +131,10 @@ function TierCard({
       <ul className="mt-6 flex-1 space-y-3">
         {tier.features.map((f, i) => (
           <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#111]">
-            <Check size={16} className="mt-0.5 shrink-0 text-[#97CE9D]" />
+            {/* The tier's own shade. Safe here where teal is not: a tick is
+                decorative and the sentence beside it carries the meaning, so
+                low contrast costs nothing to read. */}
+            <Check size={16} className="mt-0.5 shrink-0" style={{ color: shade }} />
             <span className="leading-snug">{f}</span>
           </li>
         ))}
@@ -144,13 +147,21 @@ function TierCard({
         </p>
       )}
 
+      {/* Border and label both take the tier's shade, so the card is one
+          colour from its top edge to its call to action.
+          Worth knowing: against white these measure 1.81:1 for Essential,
+          2.37:1 for Elite and 3.45:1 for Premier, where readable body text
+          wants 4.5:1. The palette is three colours and two of them are light,
+          so this is the cost of matching rather than a mistake to fix later.
+          The button is large and bold, which is the only thing carrying it. */}
       <button
         onClick={onEnquire}
+        style={tier.isRecommended ? undefined : { borderColor: shade, color: shade }}
         className={cn(
           "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold transition-colors",
           tier.isRecommended
             ? "bg-[#1099A1] text-white hover:bg-[#0d7f86]"
-            : "border border-[#1099A1] text-[#1099A1] hover:bg-[#1099A1]/5"
+            : "border-2 hover:bg-black/[0.03]"
         )}
       >
         Get started
