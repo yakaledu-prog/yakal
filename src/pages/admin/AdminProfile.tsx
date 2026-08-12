@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -55,7 +55,6 @@ export function AdminProfile() {
   }
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name || "");
-  const [bio, setBio] = useState(profile?.bio || "");
   const [saving, setSaving] = useState(false);
 
 
@@ -64,7 +63,7 @@ export function AdminProfile() {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: name.trim(), bio: bio.trim() || null })
+      .update({ full_name: name.trim() })
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -78,7 +77,7 @@ export function AdminProfile() {
     <PageWrapper>
       <div className="flex flex-col min-h-0 bg-background overflow-y-auto">
         {/* Teal header */}
-        <div className="bg-[#1099A1] text-white pt-8 md:pt-12 relative overflow-hidden shrink-0">
+        <div className="relative shrink-0 overflow-hidden bg-[#1099A1] py-8 text-white md:py-12">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -93,17 +92,24 @@ export function AdminProfile() {
               </div>
               <div className="flex min-w-0 flex-col items-center md:items-start">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">{profile?.full_name || "Administrator"}</h1>
-                {/* Only when written. The fallback described every admin as
-                    overseeing users, courses and billing whether or not they
-                    had said anything about themselves. */}
-                {profile?.bio && (
-                  <p className="mt-3 max-w-xl text-[14px] text-white/80">{profile.bio}</p>
-                )}
+                {/* Contact rather than a bio. An administrator is not
+                    browsed by anybody, so a sentence about themselves had no
+                    reader; how to reach them does. */}
+                <div className="mt-3 flex flex-col items-center gap-1.5 md:items-start">
+                  <span className="flex items-center gap-1.5 text-[14px] text-white/80">
+                    <Mail size={14} className="shrink-0 text-white/60" />
+                    {user?.email}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[14px] text-white/80">
+                    <Phone size={14} className="shrink-0 text-white/60" />
+                    {profile?.phone || "No phone set"}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
-              <button onClick={() => { setName(profile?.full_name || ""); setBio(profile?.bio || ""); setEditOpen(true); }}
+              <button onClick={() => { setName(profile?.full_name || ""); setEditOpen(true); }}
                 className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto">
                 <SquarePenIcon size={16} /> Edit Profile
               </button>
@@ -113,19 +119,12 @@ export function AdminProfile() {
               </button>
             </div>
           </div>
-
-          {/* Contact sits with the rest of who this person is, rather than in
-              a column of its own below. The body is the settings form now. */}
-          <div className="relative z-10 mt-8 flex flex-wrap justify-center gap-x-14 gap-y-5 border-t border-white/20 px-6 py-6 md:justify-start md:px-10 lg:px-12">
-            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
-            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
-          </div>
         </div>
 
         {/* The whole body is the settings. Recent activity was a shorter copy
             of the billing page, and this is the only screen where these can be
             changed at all. */}
-        <div className="mx-auto w-full max-w-[1400px] p-6 md:p-10 lg:p-12">
+        <div className="mx-auto w-full max-w-[1400px] p-6 pb-16 md:p-10 md:pb-20 lg:p-12 lg:pb-20">
           {/* Two independent stacks, not a grid. A grid aligns rows, so a
               group with one field left a hole beside one with three. Which
               group sits where is declared in SETTING_COLUMNS. */}
@@ -189,16 +188,6 @@ export function AdminProfile() {
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Full Name</label>
                 <input value={name} onChange={(e) => setName(e.target.value)}
                   className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-[#111] dark:text-white focus:outline-none focus:border-primary" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">About you</label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={3}
-                  placeholder="Shown under your name on this page."
-                  className="w-full resize-y rounded-lg border border-[#e9edef] bg-white px-3 py-2.5 leading-relaxed text-[#111] focus:border-primary focus:outline-none dark:border-[#2a3942] dark:bg-[#111b21] dark:text-white"
-                />
               </div>
               <div className="space-y-2">
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Email Address</label>
@@ -289,26 +278,3 @@ function SettingInput({
   );
 }
 
-/**
- * One labelled fact in the teal banner. Module level: a component declared
- * inside the page body is a new type on every render, so React rebuilds it.
- */
-function HeaderFact({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: string | null;
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <span className="shrink-0 text-white/70">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
-        <p className="truncate text-[14px] text-white">{value || "Not set"}</p>
-      </div>
-    </div>
-  );
-}
