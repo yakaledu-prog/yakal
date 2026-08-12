@@ -140,9 +140,18 @@ function TierCard({
         ))}
       </ul>
 
+      {/* A wash of the tier's shade rather than the flat grey, so the panel
+          belongs to this card and not to all three. Kept faint: the sentence
+          inside it has to stay readable, so the colour is in the fill and the
+          rule, and the words stay dark. */}
       {tier.fits && (
-        <p className="mt-6 rounded-xl bg-[#f8f9fa] p-4 text-[13px] leading-relaxed text-[#54656f]">
-          <span className="font-semibold text-[#111]">Fits: </span>
+        <p
+          className="mt-6 rounded-xl border-l-2 p-4 text-[13px] leading-relaxed text-[#54656f]"
+          style={{ backgroundColor: `${shade}14`, borderColor: shade }}
+        >
+          <span className="font-semibold" style={{ color: shade }}>
+            Fits:{" "}
+          </span>
           {tier.fits}
         </p>
       )}
