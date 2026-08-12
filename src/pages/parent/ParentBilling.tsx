@@ -367,7 +367,7 @@ export function ParentBilling() {
                         chips above have already wrapped and leaving these two
                         huddled against the right edge only looked like the row
                         had run out of room. */}
-                  <div className="flex shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
+                  <div className="flex w-full shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
                     {/* Both of these need more than one card to mean
                           anything, but neither needs one of each service. */}
                     {planCount > 1 && (
