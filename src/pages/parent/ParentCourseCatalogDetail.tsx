@@ -67,10 +67,17 @@ function ChildPicker({
   options,
   value,
   onChange,
+  /**
+   * Opens upward. The checkout bar is stuck to the bottom of the screen, so a
+   * panel below the button opens into the edge and the last child is the one
+   * you cannot see, which is the one you might be buying for.
+   */
+  up = false,
 }: {
   options: LinkedChild[];
   value: string | null;
   onChange: (id: string) => void;
+  up?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -118,7 +125,12 @@ function ChildPicker({
       {open && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full mt-1 z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg animate-in fade-in slide-in-from-top-2 duration-200"
+          className={cn(
+            "absolute left-0 right-0 z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg animate-in fade-in duration-200",
+            up
+              ? "bottom-full mb-1 slide-in-from-bottom-2"
+              : "top-full mt-1 slide-in-from-top-2"
+          )}
         >
           {options.map((c) => {
             const active = c.id === selected?.id;
@@ -369,11 +381,22 @@ export function ParentCourseCatalogDetail() {
   const conflictAt = (date: Date, hour: number) =>
     conflicts?.byKey.get(slotKey(isoDay(date), `${String(hour).padStart(2, "0")}:00`)) ?? null;
 
-  // Switching child changes what clashes, so picks made for the previous one
-  // are not carried over onto a calendar they may no longer fit.
+  // Switching child changes what clashes, so picks that no longer fit are
+  // dropped against the new child's calendar.
+  //
+  // Only those. Emptying the selection outright meant the checkout bar vanished
+  // the moment you used the child picker inside it, taking the picks with it,
+  // and the picker is the one control in there you have to touch. Anything that
+  // survives the filter is still bookable, and handleBookSlot asks the server
+  // again with the money about to move, so a stale grid cannot get through.
   useEffect(() => {
-    setSelectedSlots([]);
-  }, [bookingFor?.id]);
+    if (!conflicts) return;
+    setSelectedSlots((prev) =>
+      prev.filter(
+        (s) => !conflicts.byKey.has(slotKey(s.iso, `${String(s.hour).padStart(2, "0")}:00`))
+      )
+    );
+  }, [conflicts]);
 
   const getModeClasses = (mode: number, isSelected: boolean) => {
     if (isSelected) return "bg-[#1099A1] text-white border border-[#1099A1]";
@@ -801,6 +824,7 @@ export function ParentCourseCatalogDetail() {
                                 options={children}
                                 value={bookingFor?.id ?? null}
                                 onChange={setChildId}
+                                up
                               />
                             )}
                           </div>
