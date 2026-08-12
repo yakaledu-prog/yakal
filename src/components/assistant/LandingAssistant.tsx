@@ -21,6 +21,43 @@ import { speechSupported, takeSentences, useListener, useSpeaker, useVoices } fr
 type Phase = "idle" | "listening" | "thinking" | "speaking";
 
 /**
+ * Turns addresses and links in an answer into things you can click.
+ *
+ * The assistant is told to hand out the contact address, and a plain-text
+ * address on a phone is a thing you have to memorise and retype. Done at
+ * render rather than by asking the model for markdown: markdown would have to
+ * be parsed, it would be read aloud by the speech voice as punctuation, and a
+ * model that emits links sometimes emits broken ones.
+ */
+const LINKABLE = /([\w.+-]+@[\w-]+\.[\w.-]+[\w])|(https?:\/\/[^\s<>()]+[^\s<>().,])/g;
+
+function linkify(text: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+
+  for (const m of text.matchAll(LINKABLE)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+
+    const [match, email] = m;
+    out.push(
+      <a
+        key={`${at}-${match}`}
+        href={email ? `mailto:${email}` : match}
+        {...(email ? {} : { target: "_blank", rel: "noreferrer noopener" })}
+        className="text-[#1099A1] underline underline-offset-2 hover:text-[#0d7f86]"
+      >
+        {match}
+      </a>
+    );
+    last = at + match.length;
+  }
+
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/**
  * The classic three dots.
  *
  * A spinner says "loading", which is what a page does. Dots say "writing",
@@ -71,7 +108,7 @@ function StreamingText({ text }: { text: string }) {
 
   return (
     <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
-      {shown}
+      {linkify(shown)}
       {shown.length < text.length && (
         <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#1099A1]" />
       )}
@@ -90,6 +127,32 @@ function lastOf(turns: AssistantTurn[], role: "user" | "model"): string {
 const lastModelText = (turns: AssistantTurn[]) => lastOf(turns, "model");
 const lastUserText = (turns: AssistantTurn[]) => lastOf(turns, "user");
 
+/**
+ * Everything before the exchange now on screen.
+ *
+ * The voice panel shows the current question and answer at full strength and
+ * these faded behind them, so it drops the trailing question and, if there is
+ * one, the answer to it.
+ */
+function pastTurns(turns: AssistantTurn[]): AssistantTurn[] {
+  let keep = turns.length;
+  if (keep > 0 && turns[keep - 1].role === "model") keep -= 1;
+  if (keep > 0 && turns[keep - 1].role === "user") keep -= 1;
+  return turns.slice(0, keep);
+}
+
+/**
+ * Grows the composer to fit what has been typed.
+ *
+ * Height is reset to auto first, or scrollHeight only ever reports the taller
+ * of the two and the box grows but never shrinks when a line is deleted. The
+ * cap is in CSS as max-h-32 so the overflow scrolls past it.
+ */
+function grow(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 export function LandingAssistant() {
   const [open, setOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
@@ -107,6 +170,7 @@ export function LandingAssistant() {
 
   const abortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   // What has been said aloud already, so the speaker is fed whole sentences
   // once each while the tokens keep arriving.
   const spokenRef = useRef("");
@@ -127,6 +191,9 @@ export function LandingAssistant() {
       const next: AssistantTurn[] = [...turns, { role: "user", text: question }];
       setTurns(next);
       setDraft("");
+      // The box keeps whatever inline height it grew to, so clearing the text
+      // is not enough to shrink it back.
+      if (composerRef.current) composerRef.current.style.height = "auto";
       setInterim("");
       setStreaming("");
       setError(null);
@@ -252,6 +319,7 @@ export function LandingAssistant() {
           interim={interim}
           spokenQuestion={lastUserText(turns)}
           answer={streaming || lastModelText(turns)}
+          history={pastTurns(turns)}
           started={started}
           error={error ?? listener.error}
           voices={voices}
@@ -300,29 +368,41 @@ export function LandingAssistant() {
               e.preventDefault();
               send(draft, false);
             }}
-            className="flex items-end gap-2 border-t border-black/5 px-3 py-3"
+            className="border-t border-black/5 px-3 py-3"
           >
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send(draft, false);
-                }
-              }}
-              rows={1}
-              placeholder="Ask about tutoring or admissions"
-              className="max-h-28 min-h-[38px] flex-1 resize-none rounded-lg border border-black/10 px-3 py-2 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
-            />
-            <button
-              type="submit"
-              disabled={!draft.trim() || busy}
-              aria-label="Send"
-              className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg bg-[#1099A1] text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
-            >
-              <Send size={16} />
-            </button>
+            {/* One box that grows, with the button inside it. The button used
+                to sit outside on its own, which meant a second line pushed the
+                field taller while the button stayed pinned to the bottom of a
+                row that no longer matched it. */}
+            <div className="relative rounded-xl border border-black/10 transition-colors focus-within:border-[#1099A1]">
+              <textarea
+                ref={composerRef}
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  grow(e.currentTarget);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(draft, false);
+                  }
+                }}
+                rows={1}
+                placeholder="Ask about tutoring or admissions"
+                // pr-10 keeps every line clear of the button rather than only
+                // the last one, so the right edge stays straight as it wraps.
+                className="block max-h-32 w-full resize-none overflow-y-auto bg-transparent py-2.5 pl-3 pr-10 text-[13.5px] leading-relaxed outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!draft.trim() || busy}
+                aria-label="Send"
+                className="absolute bottom-1.5 right-1.5 p-1.5 text-[#1099A1] transition-colors hover:text-[#0d7f86] disabled:text-[#54656f]/40"
+              >
+                <Send size={17} />
+              </button>
+            </div>
           </form>
         </>
       )}
@@ -342,7 +422,7 @@ function Bubble({ role, text }: { role: "user" | "model"; text: string }) {
   // wrapping it in a second bubble makes a short answer look like a receipt.
   return (
     <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
-      {text}
+      {linkify(text)}
     </p>
   );
 }
@@ -360,6 +440,7 @@ function VoicePanel({
   interim,
   spokenQuestion,
   answer,
+  history,
   started,
   error,
   voices,
@@ -375,6 +456,8 @@ function VoicePanel({
   spokenQuestion: string;
   /** The answer, streaming or finished. */
   answer: string;
+  /** Everything before the current exchange, oldest first. */
+  history: AssistantTurn[];
   /** Whether the microphone has been used yet this session. */
   started: boolean;
   error: string | null;
@@ -392,6 +475,13 @@ function VoicePanel({
   };
 
   const busy = phase !== "idle";
+
+  // Keep the newest exchange in view as the faded history grows above it.
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [history.length, spokenQuestion, answer]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6">
@@ -441,18 +531,32 @@ function VoicePanel({
         <p className="text-[13px] text-[#54656f]">{CAPTION[phase]}</p>
 
         {/* The conversation as it happens, teal for the person and plain for
-            the assistant, so who said what is readable without labels. Only
-            the last exchange: this is a glance, and the full transcript is
+            the assistant, so who said what is readable without labels.
+            Everything before the current exchange is faded: it is context for
+            where you are, not something to read, and the full transcript is
             waiting under the keyboard button. */}
-        <div className="min-h-[4.5rem] w-full space-y-2 overflow-y-auto text-center">
+        <div
+          ref={transcriptRef}
+          className="min-h-[4.5rem] w-full flex-1 space-y-2 overflow-y-auto text-center"
+        >
+          {history.map((t, i) => (
+            <p
+              key={i}
+              className={cn(
+                "text-[13px] leading-relaxed opacity-35",
+                t.role === "user" ? "text-[#1099A1]" : "text-[#111]"
+              )}
+            >
+              {t.text}
+            </p>
+          ))}
+
           {spokenQuestion && (
             <p className="text-[13.5px] leading-relaxed text-[#1099A1]">{spokenQuestion}</p>
           )}
-          {interim && (
-            <p className="text-[13.5px] leading-relaxed text-[#1099A1]/60">{interim}</p>
-          )}
+          {interim && <p className="text-[13.5px] leading-relaxed text-[#1099A1]/50">{interim}</p>}
           {answer && (
-            <p className="line-clamp-5 text-[13.5px] leading-relaxed text-[#111]">{answer}</p>
+            <p className="text-[13.5px] leading-relaxed text-[#111]">{linkify(answer)}</p>
           )}
         </div>
 
