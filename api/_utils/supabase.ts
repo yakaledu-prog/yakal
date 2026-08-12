@@ -104,6 +104,12 @@ export function getUserClient(req: any): SupabaseClient {
  * the same origin, so the request already carries the right host: we fall back
  * to that. Plain localhost stays only as the last resort for a context with no
  * request and no env (local scripts).
+ *
+ * Pass `req` only where the resulting URL goes back to the same person who
+ * made the request, which is every Stripe and Connect redirect. Do not pass it
+ * for anything that ends up in an email to somebody else: Host is client
+ * controlled, so a crafted header would put an attacker's domain into a link
+ * a third party receives. See emailBaseUrl below.
  */
 export function appBaseUrl(req?: {
   headers: Record<string, string | string[] | undefined>;
@@ -121,4 +127,17 @@ export function appBaseUrl(req?: {
     }
   }
   return 'http://localhost:5173';
+}
+
+/**
+ * The origin for links inside an email.
+ *
+ * Configured only, never taken from the request. An email goes to somebody who
+ * did not make the request, and Host is set by whoever made it, so trusting it
+ * here would let one signed-in user put their own domain into a link that
+ * lands in another user's inbox. Unset, the link is a dead localhost URL:
+ * broken, which is noticed and fixed, rather than dangerous, which is not.
+ */
+export function emailBaseUrl(): string {
+  return (process.env.APP_BASE_URL?.trim().replace(/\/+$/, '')) || 'http://localhost:5173';
 }

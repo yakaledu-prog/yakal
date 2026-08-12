@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase.js';
+import { getServiceClient, requireUser, emailBaseUrl } from '../_utils/supabase.js';
 import { sendEmail, layout } from '../_utils/email.js';
 import { TEMPLATES } from '../../src/lib/notifications/templates/index.js';
 
@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  await requireUser(req);
+  const caller = await requireUser(req);
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body ?? {};
   const { userId, template, vars } = body as {
@@ -38,6 +38,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!entry) return res.status(400).json({ error: `No template named ${String(template)}.` });
 
   const db = getServiceClient();
+
+  /**
+   * Only send where a notification for that person already exists.
+   *
+   * requireUser alone proved somebody was signed in, not that they had any
+   * business emailing the recipient: any account could have posted any
+   * template to any user id. The in-app row is written first, under RLS, by
+   * whoever is entitled to write it, so requiring a matching row from the last
+   * minute makes this endpoint the email half of something already authorised
+   * rather than an independent way to send mail.
+   */
+  const { data: raised } = await db
+    .from('notifications')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('template', template)
+    .gte('created_at', new Date(Date.now() - 60_000).toISOString())
+    .limit(1);
+
+  if (!raised?.length) {
+    console.warn(`notify-email refused: no recent ${String(template)} for ${userId} (caller ${caller.id})`);
+    return res.status(403).json({ error: 'No matching notification to send.' });
+  }
   const { data: person } = await db
     .from('profiles')
     .select('email, full_name')
@@ -68,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Templates carry app-relative paths, since the notification uses the
         // same field to route inside the app. An inbox needs the whole URL.
         cta: email.cta
-          ? { label: email.cta.label, url: `${appBaseUrl(req)}${email.cta.url}` }
+          ? { label: email.cta.label, url: `${emailBaseUrl()}${email.cta.url}` }
           : undefined,
         footer: email.footer ?? undefined,
         recipientName: person.full_name?.split(' ')[0],
