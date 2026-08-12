@@ -1,11 +1,12 @@
 import { ArrowRight } from "lucide-react";
-import { openBooking } from "@/config/links";
+import { useSiteSettings, openBookingUrl } from "@/hooks/useSiteSettings";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import imgPrograms1 from "@/assets/images/landing-page/book-session.webp";
 import imgPrograms3 from "@/assets/images/landing-page/parent-resources.webp";
 
 export default function ParentResources() {
+  const { bookingUrl } = useSiteSettings();
   const navigate = useNavigate();
 
   return (
@@ -29,7 +30,7 @@ export default function ParentResources() {
             title="Book a free session"
             body="Schedule a one-on-one tutoring session with our expert instructors. Choose the time, subject, and learning mode that works best for your student."
             cta="Book a free session"
-            onCta={openBooking}
+            onCta={() => openBookingUrl(bookingUrl)}
             image={imgPrograms1}
             imageAlt="Book a session"
             imageSide="right"

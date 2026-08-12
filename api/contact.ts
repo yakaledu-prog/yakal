@@ -38,9 +38,19 @@ export default async function handler(req: any, res: any) {
     }
 
     // 2. Send Email via Resend
-    const destinationEmail = process.env.VITE_CONTACT_DESTINATION_EMAIL;
+    // The settings row first, so an admin can redirect the form on their own
+    // page, then the environment variable it used to be.
+    const { data: setting } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'contact_form_email')
+      .maybeSingle();
+
+    const destinationEmail =
+      (setting?.value ?? '').trim() || process.env.VITE_CONTACT_DESTINATION_EMAIL;
+
     if (!destinationEmail) {
-      throw new Error('VITE_CONTACT_DESTINATION_EMAIL is not configured');
+      throw new Error('No contact form inbox is set, in settings or the environment.');
     }
 
     const { error: emailError } = await resend.emails.send({

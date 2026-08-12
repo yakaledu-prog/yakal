@@ -10,6 +10,7 @@ import { getStudentSessions } from "@/services/sessions";
 import { getApplication, upsertApplication, type CollegeApplication } from "@/services/collegeService";
 import { gradYearFromGrade } from "@/config/admissionsCalendar";
 import { toast } from "sonner";
+import { dicebearUrl } from "@/utils/avatar";
 import { supabase } from "@/lib/supabase";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import { GRADE_LEVELS } from "@/config/grades";
@@ -199,7 +200,7 @@ export function StudentProfile() {
               <div className="relative group cursor-pointer shrink-0">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
-                    src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
+                    src={profile?.avatar_url || dicebearUrl(profile?.full_name || "student")}
                     alt={profile?.full_name || "User"}
                     className="w-full h-full object-cover"
                   />
@@ -296,7 +297,7 @@ export function StudentProfile() {
                 <div className="relative group cursor-pointer">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                     <img
-                      src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
+                      src={profile?.avatar_url || dicebearUrl(profile?.full_name || "student")}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />

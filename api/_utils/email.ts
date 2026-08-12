@@ -30,7 +30,46 @@ export interface EmailInput {
 
 export type EmailResult = { sent: boolean; provider: "resend" | "smtp" | "none"; error?: string };
 
-const FROM = process.env.EMAIL_FROM || "Yakal Education Services <onboarding@resend.dev>";
+const FALLBACK_FROM = "Yakal Education Services <onboarding@resend.dev>";
+
+/**
+ * Who mail comes from.
+ *
+ * The settings row first, so an admin can change it on their own page without
+ * a redeploy, then EMAIL_FROM, then the provider's sandbox sender. Cached for
+ * the life of the process: this is read on every send and it changes about
+ * once a year.
+ *
+ * Read through the service client because the sender is not something an
+ * anonymous reader needs, and a failure here must not stop the email: it falls
+ * through to the environment, which is where it lived before.
+ */
+let cachedFrom: string | null = null;
+
+async function from(): Promise<string> {
+  if (cachedFrom) return cachedFrom;
+
+  try {
+    const { getServiceClient } = await import('./supabase.js');
+    const { data } = await getServiceClient()
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'email_from')
+      .maybeSingle();
+
+    const configured = (data?.value ?? '').trim();
+    if (configured) {
+      cachedFrom = configured;
+      return configured;
+    }
+  } catch (e) {
+    console.warn('Could not read email_from from settings, using the environment.', e);
+  }
+
+  const fallback = process.env.EMAIL_FROM || FALLBACK_FROM;
+  cachedFrom = fallback;
+  return fallback;
+}
 
 function provider(): "resend" | "smtp" {
   const isProduction =
@@ -47,12 +86,13 @@ export async function sendEmail(input: EmailInput): Promise<EmailResult> {
   if (recipients.length === 0) return { sent: false, provider: "none", error: "No recipient" };
 
   const which = provider();
+  const sender = await from();
 
   try {
     if (which === "resend") {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const { error } = await resend.emails.send({
-        from: FROM,
+        from: sender,
         to: recipients,
         subject: input.subject,
         html: input.html,
@@ -74,7 +114,7 @@ export async function sendEmail(input: EmailInput): Promise<EmailResult> {
     });
 
     await transport.sendMail({
-      from: FROM,
+      from: sender,
       to: recipients.join(", "),
       subject: input.subject,
       html: input.html,

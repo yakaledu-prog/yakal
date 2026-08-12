@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { openBooking } from "@/config/links";
+import { useSiteSettings, openBookingUrl } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 
@@ -22,6 +22,7 @@ import { getTiers, monthlyCents, tierShade, type AdmissionsTier } from "@/servic
 
 export default function CounsellingTiers(_props: { scrollTo?: (id: string) => void }) {
   const navigate = useNavigate();
+  const { bookingUrl } = useSiteSettings();
   const { data: tiers = [], isLoading } = useQuery({
     queryKey: ["admissions-tiers"],
     queryFn: getTiers,
@@ -63,7 +64,7 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
         <p className="mt-8 text-center text-[13.5px] text-[#54656f]">
           Not sure which one fits?{" "}
           <button
-            onClick={openBooking}
+            onClick={() => openBookingUrl(bookingUrl)}
             className="font-semibold text-[#1099A1] underline-offset-4 hover:underline"
           >
             Talk to us first
@@ -131,26 +132,43 @@ function TierCard({
       <ul className="mt-6 flex-1 space-y-3">
         {tier.features.map((f, i) => (
           <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#111]">
-            <Check size={16} className="mt-0.5 shrink-0 text-[#97CE9D]" />
+            {/* The tier's own shade. Safe here where teal is not: a tick is
+                decorative and the sentence beside it carries the meaning, so
+                low contrast costs nothing to read. */}
+            <Check size={16} className="mt-0.5 shrink-0" style={{ color: shade }} />
             <span className="leading-snug">{f}</span>
           </li>
         ))}
       </ul>
 
+      {/* A wash of the tier's shade rather than the flat grey, so the panel
+          belongs to this card and not to all three. Kept faint, and only in
+          the fill: the sentence inside has to stay readable. */}
       {tier.fits && (
-        <p className="mt-6 rounded-xl bg-[#f8f9fa] p-4 text-[13px] leading-relaxed text-[#54656f]">
-          <span className="font-semibold text-[#111]">Fits: </span>
+        <p
+          className="mt-6 rounded-xl p-4 text-[13px] leading-relaxed text-[#54656f]"
+          style={{ backgroundColor: `${shade}14` }}
+        >
+          <span className="font-semibold">Fits: </span>
           {tier.fits}
         </p>
       )}
 
+      {/* Border and label both take the tier's shade, so the card is one
+          colour from its top edge to its call to action.
+          Worth knowing: against white these measure 1.81:1 for Essential,
+          2.37:1 for Elite and 3.45:1 for Premier, where readable body text
+          wants 4.5:1. The palette is three colours and two of them are light,
+          so this is the cost of matching rather than a mistake to fix later.
+          The button is large and bold, which is the only thing carrying it. */}
       <button
         onClick={onEnquire}
+        style={tier.isRecommended ? undefined : { borderColor: shade, color: shade }}
         className={cn(
-          "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold transition-colors",
+          "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold origin-bottom transition-all ease-in-out",
           tier.isRecommended
             ? "bg-[#1099A1] text-white hover:bg-[#0d7f86]"
-            : "border border-[#1099A1] text-[#1099A1] hover:bg-[#1099A1]/5"
+            : "border-2 hover:opacity-80"
         )}
       >
         Get started

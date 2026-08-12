@@ -209,3 +209,27 @@ export async function cancelSession(id: string) {
   const { error } = await supabase.from("sessions").update({ status: "cancelled" }).eq("id", id);
   return !error;
 }
+
+/**
+ * One session, with the student on it.
+ *
+ * The detail page used to render a fixed mock: "AP Calculus AB", "Today at
+ * 4:00 PM", a counselor called Dr. Alex. It never read its own route
+ * parameter, so every session opened the same invented one.
+ */
+export async function getSessionById(id: string): Promise<SessionRow | null> {
+  const { data, error } = await supabase.from("sessions").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+
+  const { data: student } = await supabase
+    .from("profiles")
+    .select("full_name, avatar_url")
+    .eq("id", data.student_id)
+    .maybeSingle();
+
+  return {
+    ...(data as SessionRow),
+    student_name: student?.full_name ?? "Student",
+    student_avatar: student?.avatar_url ?? undefined,
+  };
+}

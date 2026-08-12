@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { openBooking } from "@/config/links";
+import { useSiteSettings, openBookingUrl } from "@/hooks/useSiteSettings";
 import Reveal from "@/components/Reveal";
 import { Users, ArrowRight, CheckCircle2, UserCircle2, GraduationCap, Compass, Rocket, Crown } from "lucide-react";
 
@@ -77,6 +77,7 @@ function getRoleIcon(type: string) {
 }
 
 export default function Services() {
+  const { bookingUrl } = useSiteSettings();
   return (
     <section id="services" className="w-full bg-white pt-[20px] md:pt-[40px] pb-[20px] md:pb-[40px]">
       <div className="max-w-[1440px] mx-auto px-[24px] md:px-[73px]">
@@ -171,7 +172,7 @@ export default function Services() {
 
                 {/* CTAs */}
                 <div className="flex flex-wrap gap-3 mt-auto">
-                  <button onClick={openBooking} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
+                  <button onClick={() => openBookingUrl(bookingUrl)} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
                     {svc.primaryCta} <ArrowRight size={16} />
                   </button>
                   {/* Applying is a sign-up, so it goes where signing up happens

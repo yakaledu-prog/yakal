@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getBilling } from "@/services/packageService";
 import { money } from "@/services/billingService";
 import { toast } from "sonner";
+import { dicebearUrl } from "@/utils/avatar";
 
 /**
  * One labelled fact in the teal banner. Module level: a component declared
@@ -81,7 +82,7 @@ export function ParentProfile() {
               <div className="relative group cursor-pointer shrink-0">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
-                    src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
+                    src={profile?.avatar_url || dicebearUrl(profile?.full_name || "parent")}
                     alt={profile?.full_name || "User"}
                     className="w-full h-full object-cover"
                   />
@@ -193,7 +194,7 @@ export function ParentProfile() {
                 <div className="relative group cursor-pointer">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                     <img
-                      src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
+                      src={profile?.avatar_url || dicebearUrl(profile?.full_name || "parent")}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />
