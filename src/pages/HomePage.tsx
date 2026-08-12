@@ -13,6 +13,7 @@ import Faq from "@/sections/Faq";
 import Blog from "@/sections/Blog";
 import Contact from "@/sections/Contact";
 import Footer from "@/sections/Footer";
+import { LandingAssistant } from "@/components/assistant/LandingAssistant";
 import type { Page } from "@/types";
 
 export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
@@ -85,6 +86,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
       <Faq scrollTo={scrollTo} />
       <Contact />
       <Footer scrollTo={scrollTo} />
+
+      {/* Here rather than in a shared layout: it answers questions a visitor
+          has, and a signed-in parent asking "when is my next session" would get
+          "I cannot see that", which is worse than no button at all. */}
+      <LandingAssistant />
     </div>
   );
 }

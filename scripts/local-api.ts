@@ -17,6 +17,7 @@ import notifyHandler from '../api/notify.ts';
 import devUserHandler from '../api/dev-user.ts';
 import invitesHandler from '../api/invites.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
+import aiHandler from '../api/ai.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,6 +54,7 @@ app.all('/api/contact', createVercelHandler(contactHandler));
 app.all('/api/invites', createVercelHandler(invitesHandler));
 app.all('/api/newsletter', createVercelHandler(newsletterHandler));
 app.all('/api/notify', createVercelHandler(notifyHandler));
+app.all('/api/ai', createVercelHandler(aiHandler));
 // Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
 app.all('/api/dev-user', createVercelHandler(devUserHandler));
 
