@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getPost, createPost, updatePost } from "@/services/cmsService";
+import {
+  BLOG_CATEGORIES,
+  getPost,
+  createPost,
+  updatePost,
+  type BlogCategory,
+} from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import { Loader2, Image as ImageIcon, Save, CloudUploadIcon, ImageMinusIcon, Repeat2Icon, CheckCheckIcon } from "lucide-react";
@@ -9,6 +15,14 @@ import { ImageUpload } from "@/components/ui/ImageUpload";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { broadcastPost } from "@/services/newsletterService";
 import { cn } from "@/utils/cn";
+import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
+
+type CategorySelection = BlogCategory | "";
+
+const categoryOptions: DropdownOption<CategorySelection>[] = [
+  { value: "", label: "No category" },
+  ...BLOG_CATEGORIES.map((category) => ({ value: category, label: category })),
+];
 
 export function AdminPostEditor() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +34,7 @@ export function AdminPostEditor() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [category, setCategory] = useState<CategorySelection>("");
   const [status, setStatus] = useState<"draft" | "published">("draft");
 
   const [isLoading, setIsLoading] = useState(!isNew);
@@ -36,6 +51,7 @@ export function AdminPostEditor() {
     title: "",
     content: "",
     thumbnailUrl: "",
+    category: "" as CategorySelection,
     status: "draft",
   });
 
@@ -50,6 +66,7 @@ export function AdminPostEditor() {
         setTitle(post.title);
         setContent(post.content);
         setThumbnailUrl(post.thumbnail_url || "");
+        setCategory(post.category || "");
         setStatus(post.status);
         setSentAt(post.newsletter_sent_at);
         if (post.thumbnail_url) setShowCoverUpload(true);
@@ -57,6 +74,7 @@ export function AdminPostEditor() {
           title: post.title,
           content: post.content,
           thumbnailUrl: post.thumbnail_url || "",
+          category: post.category || "",
           status: post.status,
         });
       } else {
@@ -71,6 +89,7 @@ export function AdminPostEditor() {
     title !== originalData.title ||
     content !== originalData.content ||
     thumbnailUrl !== originalData.thumbnailUrl ||
+    category !== originalData.category ||
     status !== originalData.status;
 
   async function sendNewsletter(postId: string) {
@@ -97,13 +116,14 @@ export function AdminPostEditor() {
           title,
           content,
           thumbnail_url: thumbnailUrl || null,
+          category: category || null,
           status: saveStatus,
         });
         if (!res.success) throw new Error(res.error);
         toast.success(saveStatus === "published" ? "Post published!" : "Draft saved.");
         navigate(`/admin/posts/${res.data}/edit`, { replace: true });
         setStatus(saveStatus);
-        setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
+        setOriginalData({ title, content, thumbnailUrl, category, status: saveStatus });
         // Asked, not assumed. Publishing and mailing the list are different
         // decisions, and only one of them can be taken back.
         if (saveStatus === "published" && res.data) setAskBroadcast(res.data);
@@ -112,12 +132,13 @@ export function AdminPostEditor() {
           title,
           content,
           thumbnail_url: thumbnailUrl || null,
+          category: category || null,
           status: saveStatus,
         });
         if (!res.success) throw new Error(res.error);
         toast.success(saveStatus === "published" ? "Post updated & published!" : "Draft updated.");
         setStatus(saveStatus);
-        setOriginalData({ title, content, thumbnailUrl, status: saveStatus });
+        setOriginalData({ title, content, thumbnailUrl, category, status: saveStatus });
         // Only if it has never gone out. Editing a post that was already
         // mailed must not offer to mail it again.
         if (saveStatus === "published" && !sentAt) setAskBroadcast(id);
@@ -256,6 +277,19 @@ export function AdminPostEditor() {
             placeholder="Post Title..."
             className="w-full text-4xl sm:text-5xl font-black bg-transparent outline-none placeholder:text-gray-300 dark:placeholder:text-[#2a3942] text-[#111] dark:text-white mb-8"
           />
+
+          <div className="mb-8 w-full max-w-[220px]">
+            <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              Category
+            </label>
+            <Dropdown<CategorySelection>
+              value={category}
+              onChange={setCategory}
+              options={categoryOptions}
+              ariaLabel="Blog category"
+              placeholder="No category"
+            />
+          </div>
 
           {/* BlockNote Editor */}
           <div className="w-full -mx-12">
