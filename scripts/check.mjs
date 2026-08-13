@@ -21,6 +21,9 @@ const PURE = [
   ['api-esm-load.ts', 'every function loads as ESM'],
   ['classroom-mapping.ts', 'Google courseWork maps to our shape'],
   ['notification-templates.ts', 'every notification template renders'],
+  ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
+  ['support-chat-request.ts', 'support requests ignore client role claims'],
+  ['support-rate-limit.ts', 'support quota and concurrency limits'],
 ];
 
 /** Needs the local Supabase. Skipped when it is not answering. */

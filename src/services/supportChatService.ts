@@ -10,11 +10,9 @@ export type SupportChatMessage = {
 type SupportChatResponse = { reply?: string; error?: string; code?: string };
 
 export async function sendSupportMessage(
-  role: SupportChatRole,
   messages: SupportChatMessage[],
 ): Promise<SupportChatResponse> {
   return authedPost<SupportChatResponse>('/api/support-chat', {
-    role,
     messages: messages.slice(-12).map(({ role: messageRole, content }) => ({
       role: messageRole,
       content,

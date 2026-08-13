@@ -18,6 +18,14 @@ general documentation, not live account state. Existing restrictions still
 apply: Yali cannot inspect private data or change accounts, bookings, payments,
 messages, or documents.
 
+The browser role is used only for local suggestions. The endpoint verifies the
+session, reads the caller's role from `profiles` under that user's RLS context,
+and builds the prompt from the server-derived role. Each user is limited to ten
+requests per ten minutes and two simultaneous requests in the single Render
+process. These counters protect quota rather than record billing, so they reset
+on a deploy and must move to shared storage before production scales beyond one
+process.
+
 ## Maintaining it
 
 The application source remains authoritative. When a flow changes:

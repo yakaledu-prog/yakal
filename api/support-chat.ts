@@ -1,13 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireUser } from './_utils/supabase.js';
+import { getUserClient, requireUser } from './_utils/supabase.js';
 import { selectSupportKnowledge, type SupportRole } from './_utils/support-knowledge.js';
+import { supportRateLimiter } from './_utils/support-rate-limit.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 1_200;
 const MAX_TOTAL_LENGTH = 6_000;
-const ROLES = new Set(['parent', 'student', 'tutor', 'counselor']);
+const ROLES = new Set<SupportRole>(['parent', 'student', 'tutor', 'counselor']);
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -24,10 +25,9 @@ export function buildGroqMessages(role: SupportRole, messages: ChatMessage[]) {
   ];
 }
 
-function parseRequest(body: unknown): { role: string; messages: ChatMessage[] } | null {
+export function parseRequest(body: unknown): { messages: ChatMessage[] } | null {
   if (!body || typeof body !== 'object') return null;
-  const candidate = body as { role?: unknown; messages?: unknown };
-  if (typeof candidate.role !== 'string' || !ROLES.has(candidate.role)) return null;
+  const candidate = body as { messages?: unknown };
   if (!Array.isArray(candidate.messages) || candidate.messages.length < 1 || candidate.messages.length > MAX_MESSAGES) {
     return null;
   }
@@ -48,7 +48,13 @@ function parseRequest(body: unknown): { role: string; messages: ChatMessage[] } 
   }
 
   if (messages.at(-1)?.role !== 'user') return null;
-  return { role: candidate.role, messages };
+  return { messages };
+}
+
+export function asSupportRole(role: unknown): SupportRole | null {
+  return typeof role === 'string' && ROLES.has(role as SupportRole)
+    ? role as SupportRole
+    : null;
 }
 
 function systemPrompt(role: string): string {
@@ -80,10 +86,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid chat request.' });
   }
 
+  let user: Awaited<ReturnType<typeof requireUser>>;
   try {
-    await requireUser(req);
+    user = await requireUser(req);
   } catch {
     return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+  }
+
+  // The browser uses the role for suggestions, but it does not get to choose
+  // the server prompt. Read the authenticated profile through its own RLS
+  // context so a modified request cannot impersonate another dashboard role.
+  const db = getUserClient(req);
+  const { data: profile, error: profileError } = await db
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (profileError) {
+    console.error('Support profile lookup failed:', profileError.message);
+    return res.status(500).json({ error: 'AI support could not verify your account. Please try again.' });
+  }
+  const role = asSupportRole(profile?.role);
+  if (!role) {
+    return res.status(403).json({ error: 'AI support is not available for this account role.' });
+  }
+
+  const quota = supportRateLimiter.acquire(user.id);
+  if (!quota.allowed) {
+    res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+    return res.status(429).json({
+      error: 'You have reached the support chat limit. Please wait a little before trying again.',
+      code: 'support_rate_limited',
+    });
   }
 
   try {
@@ -97,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         model: MODEL,
         temperature: 0.4,
         max_completion_tokens: 500,
-        messages: buildGroqMessages(parsed.role as SupportRole, parsed.messages),
+        messages: buildGroqMessages(role, parsed.messages),
       }),
       signal: AbortSignal.timeout(20_000),
     });
@@ -119,5 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: unknown) {
     console.error('Groq support request failed:', error);
     return res.status(502).json({ error: 'AI support is temporarily unavailable. Please try again.' });
+  } finally {
+    quota.release();
   }
 }

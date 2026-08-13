@@ -93,7 +93,7 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
     setError('');
     setIsLoading(true);
 
-    const result = await sendSupportMessage(role, nextMessages);
+    const result = await sendSupportMessage(nextMessages);
     if (result.error || !result.reply) {
       setError(result.error || 'I could not answer that just now. Please try again.');
     } else {
