@@ -79,7 +79,8 @@
   --popover-foreground: oklch(0.985 0 0);
   /* --primary: #1099a1; */
   /* --primary: #319fa5; */
-  --primary: #008991;
+  /* --primary: #319fa5; */
+  --primary: #007880;
   --primary-foreground: #ffffff;
   /* Darker again than the dark-mode primary, so hover still reads as pressed
      rather than as a different button. */
