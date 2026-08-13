@@ -380,6 +380,20 @@ export async function deleteUser(id: string): Promise<Result> {
   return { success: true };
 }
 
+// Bring a soft-deleted user back. Setting status to 'active' is what the
+// auth-ban trigger (migration 20260813000100) watches for: it lifts the
+// sign-in ban, so the person can log in again with their existing account and
+// history. rejection_reason is cleared too, so a user deleted after a
+// rejection does not come back still carrying it.
+export async function restoreUser(id: string): Promise<Result> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "active", rejection_reason: null })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function getAdminUserDetails(id: string, role: string): Promise<Result & { data?: UserDetails }> {
   try {
     const { data: profileData, error: profileError } = await supabase
