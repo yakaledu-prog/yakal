@@ -59,7 +59,7 @@ export function ConfirmDialog({
       onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}
     >
       <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-5 py-4 text-white">
+        <header className="relative overflow-hidden bg-primary px-5 py-4 text-white">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[55%] text-white/10"
             viewBox="0 0 400 200"
@@ -118,7 +118,7 @@ export function ConfirmDialog({
               "inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[14px] font-semibold text-white transition-colors disabled:opacity-60",
               destructive
                 ? "bg-[#d4183d] hover:bg-[#b31333]"
-                : "bg-[#1099A1] hover:bg-[#0d848b]"
+                : "bg-primary hover:bg-primary-hover"
             )}
           >
             {busy && <Loader2 size={14} className="animate-spin" />}

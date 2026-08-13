@@ -10,9 +10,9 @@ import { formatTime } from "./format";
  * flight, one tick once it is stored, two once the recipient has read it.
  */
 export function StatusTick({ msg }: { msg: ChatMessage }) {
-  if (msg.failed) return <AlertCircle size={12} className="text-[#CAA25F]" />;
+  if (msg.failed) return <AlertCircle size={12} className="text-secondary" />;
   if (msg.pending) return <Clock size={12} className="opacity-60" />;
-  if (msg.isRead) return <CheckCheck size={12} className="text-[#97CE9D]" />;
+  if (msg.isRead) return <CheckCheck size={12} className="text-tertiary" />;
   return <Check size={12} />;
 }
 
@@ -144,16 +144,16 @@ export function MessageBubble({
         className={cn(
           "relative max-w-[75%] md:max-w-[65%] px-3 pt-2 pb-1 rounded-md text-[14.5px] leading-relaxed shadow-sm",
           isMe
-            ? "bg-[#1099A1] text-white border-b-[3px] border-[#087b82] rounded-br-sm"
+            ? "bg-primary text-white border-b-[3px] border-[#087b82] rounded-br-sm"
             : "bg-white dark:bg-[#1f3a3d] text-[#111] dark:text-[#e2e8f0] border-b-[3px] border-black/10 dark:border-black/30 rounded-bl-sm",
-          msg.failed && "opacity-70 ring-1 ring-[#CAA25F]",
+          msg.failed && "opacity-70 ring-1 ring-secondary",
           // Marked rather than hidden or redacted. A parent has to read the
           // words to judge them, and the whole point is that they can.
-          report && "ring-2 ring-[#CAA25F]"
+          report && "ring-2 ring-secondary"
         )}
       >
         {!isMe && contact && !isConsecutive && (
-          <div className="text-[13px] font-semibold text-[#1099A1] mb-0.5 leading-tight">
+          <div className="text-[13px] font-semibold text-primary mb-0.5 leading-tight">
             {contact.name}
           </div>
         )}
@@ -161,7 +161,7 @@ export function MessageBubble({
         {/* Why it was picked out, above the message itself: a parent scrolling
             a long thread needs to know before they read, not after. */}
         {report && (
-          <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-semibold text-[#CAA25F]">
+          <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-semibold text-secondary">
             <Flag size={11} fill="currentColor" />
             {report.label}
           </div>
@@ -178,7 +178,7 @@ export function MessageBubble({
             {attachment.type === "audio" && <AudioPlayer url={attachment.url} isMe={isMe} />}
             {attachment.type === "file" && (
               <div className="flex items-center gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-md min-w-[200px]">
-                <div className="p-2 bg-[#1099A1] text-white rounded-full">
+                <div className="p-2 bg-primary text-white rounded-full">
                   <FileText size={20} />
                 </div>
                 <div className="overflow-hidden flex-1">

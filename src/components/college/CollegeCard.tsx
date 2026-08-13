@@ -13,8 +13,8 @@ import { FitBar } from "./FitBar";
 // Solid fills, not tints. The chip sits on top of a photograph whose brightness
 // we do not control, so a translucent wash is unreadable half the time.
 const FIT_CHIP: Record<Fit, string> = {
-  reach: "bg-[#CAA25F] text-white",
-  target: "bg-[#1099A1] text-white",
+  reach: "bg-secondary text-white",
+  target: "bg-primary text-white",
   safety: "bg-[#3f4a52] text-white",
   unknown: "bg-black/55 text-white",
 };
@@ -117,7 +117,7 @@ export function CollegeCard({
               "inline-flex shrink-0 items-center gap-1 rounded-sm px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
               isAdded
                 ? "border border-[#e9edef] text-[#0d757b] dark:border-[#2a3942] dark:text-[#5fc9cf]"
-                : "bg-[#1099A1] text-white hover:bg-[#0d848b]"
+                : "bg-primary text-white hover:bg-primary-hover"
             )}
           >
             {isAdded ? <Check size={13} /> : <Plus size={13} />}

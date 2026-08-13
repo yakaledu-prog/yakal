@@ -139,7 +139,7 @@ export function NotificationsScreen({
   return (
     <PageWrapper className="!p-0 h-full overflow-hidden">
       <div className="flex flex-col h-full min-h-0 bg-background">
-        <div className="bg-[#1099A1] text-white pt-6 px-6 pb-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 px-6 pb-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg
             className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none"
             viewBox="0 0 400 200" preserveAspectRatio="none" fill="none" aria-hidden="true"
@@ -177,7 +177,7 @@ export function NotificationsScreen({
                   className={cn(
                     "flex-1 py-3 text-[13px] font-medium capitalize border-b-2 transition-colors",
                     activeTab === t
-                      ? "border-[#1099A1] text-[#1099A1]"
+                      ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -189,7 +189,7 @@ export function NotificationsScreen({
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-[12.5px] text-[#1099A1] font-medium px-4 py-2 text-left hover:bg-muted/30 border-b border-border/60 transition-colors"
+                className="text-[12.5px] text-primary font-medium px-4 py-2 text-left hover:bg-muted/30 border-b border-border/60 transition-colors"
               >
                 Mark all as read
               </button>
@@ -198,7 +198,7 @@ export function NotificationsScreen({
             <div className="flex-1 overflow-y-auto min-h-0">
               {isLoading ? (
                 <div className="flex justify-center py-10">
-                  <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+                  <Loader2 className="animate-spin text-primary" size={22} />
                 </div>
               ) : visible.length === 0 ? (
                 <div className="text-center py-12 px-6">
@@ -324,7 +324,7 @@ export function NotificationsScreen({
                         {detail.action && (
                           <Link
                             to={detail.action.url}
-                            className="mt-5 inline-flex items-center gap-1.5 bg-[#1099A1] px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                            className="mt-5 inline-flex items-center gap-1.5 bg-primary px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
                           >
                             {detail.action.label}
                             <ArrowRight size={15} />

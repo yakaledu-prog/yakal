@@ -57,7 +57,7 @@ export function ParentProfile() {
         {/* Teal Header */}
         {/* The bottom padding lived on the contact row. That row is part of the
             name column now, so the header carries its own. */}
-        <div className="bg-[#1099A1] text-white pt-8 pb-8 md:pt-12 md:pb-10 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-8 pb-8 md:pt-12 md:pb-10 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -121,7 +121,7 @@ export function ParentProfile() {
               </button>
               <button
                 onClick={() => signOut()}
-                className="flex items-center justify-center gap-2 !bg-[#97CE9D]/40 border border-[#97CE9D]/40 hover:!bg-[#CAA25F]/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto"
+                className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto"
               >
                 <LogOut size={16} /> Log Out
               </button>
@@ -144,7 +144,7 @@ export function ParentProfile() {
                 const paid = new Date(p.paidAt!);
                 return (
                   <div key={p.id} className="flex items-center gap-6 py-5">
-                    <div className="flex w-12 shrink-0 flex-col items-center justify-center text-[#1099A1]">
+                    <div className="flex w-12 shrink-0 flex-col items-center justify-center text-primary">
                       <span className="mb-0.5 text-[20px] font-bold leading-none">{paid.getDate()}</span>
                       <span className="text-[10px] font-bold uppercase tracking-widest">
                         {paid.toLocaleDateString(undefined, { month: "short" })}
@@ -238,7 +238,7 @@ export function ParentProfile() {
                   toast.success("Profile saved!");
                   setEditOpen(false);
                 }}
-                className="h-10 px-6 bg-[#1099A1] hover:bg-[#1099A1]/90 text-white font-bold"
+                className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold"
               >
                 Save Changes
               </Button>

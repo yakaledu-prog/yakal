@@ -155,7 +155,7 @@ export function AdminAdmissions() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search tiers, descriptions or features..."
-                className="h-10 w-full rounded-xl border border-[#e9edef] bg-transparent pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1] dark:border-[#2a3942]"
+                className="h-10 w-full rounded-xl border border-[#e9edef] bg-transparent pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-primary dark:border-[#2a3942]"
               />
             </div>
 
@@ -205,7 +205,7 @@ export function AdminAdmissions() {
 
           {isLoading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : shown.length === 0 ? (
             <p className="text-center py-16 text-[14px] text-muted-foreground">
@@ -245,8 +245,8 @@ export function AdminAdmissions() {
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <h3 className="text-[20px] font-bold text-[#111] dark:text-white">{t.name}</h3>
                         {t.isRecommended && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#1099A1]">
-                            <Star size={12} className="fill-[#1099A1]" /> Most chosen
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                            <Star size={12} className="fill-primary" /> Most chosen
                           </span>
                         )}
                         {!t.isActive && (
@@ -312,7 +312,7 @@ export function AdminAdmissions() {
                           <button
                             type="button"
                             onClick={() => openEdit(t)}
-                            className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
+                            className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary dark:border-[#2a3942]"
                           >
                             <Pencil size={14} /> Edit
                           </button>
@@ -355,7 +355,7 @@ export function AdminAdmissions() {
                     <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 border-t border-[#e9edef] dark:border-[#2a3942] pt-4">
                       {t.features.map((f, i) => (
                         <li key={i} className="flex items-start gap-2 text-[13px] text-[#111] dark:text-white">
-                          <Check size={14} className="mt-0.5 shrink-0 text-[#97CE9D]" />
+                          <Check size={14} className="mt-0.5 shrink-0 text-tertiary" />
                           <span className="leading-snug">{f}</span>
                         </li>
                       ))}
@@ -441,7 +441,7 @@ function ToggleChip({
       className={cn(
         "hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12.5px] font-medium border transition-colors",
         active
-          ? "border-[#1099A1] text-[#1099A1] bg-[#1099A1]/5"
+          ? "border-primary text-primary bg-primary/5"
           : "border-gray-300 dark:border-gray-700 text-muted-foreground hover:text-[#111] dark:hover:text-white"
       )}
       title={`Toggle ${label.toLowerCase()}`}
@@ -449,7 +449,7 @@ function ToggleChip({
       <span
         className={cn(
           "w-2 h-2 rounded-full",
-          active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-600"
+          active ? "bg-primary" : "bg-gray-300 dark:bg-gray-600"
         )}
       />
       {label}
@@ -501,7 +501,7 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
       <span className="text-[12.5px] text-muted-foreground">
         {people.length} {people.length === 1 ? "student" : "students"}
       </span>
-      <span className="ml-auto flex items-center gap-1 text-[12.5px] text-[#1099A1]">
+      <span className="ml-auto flex items-center gap-1 text-[12.5px] text-primary">
         <Users size={13} /> View all
       </span>
     </button>
@@ -609,7 +609,7 @@ function CardMenu({
         onClick={() => setOpen((o) => !o)}
         aria-label={`Actions for ${tier.name}`}
         aria-expanded={open}
-        className="rounded-lg border border-[#e9edef] p-2 text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942]"
+        className="rounded-lg border border-[#e9edef] p-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary dark:border-[#2a3942]"
       >
         <MoreVertical size={15} />
       </button>
@@ -622,7 +622,7 @@ function CardMenu({
             className={item}
           >
             Recommended
-            {tier.isRecommended && <Check size={14} className="shrink-0 text-[#1099A1]" />}
+            {tier.isRecommended && <Check size={14} className="shrink-0 text-primary" />}
           </button>
           <button
             type="button"
@@ -630,7 +630,7 @@ function CardMenu({
             className={item}
           >
             {tier.isActive ? "Visible to families" : "Hidden"}
-            {tier.isActive && <Check size={14} className="shrink-0 text-[#1099A1]" />}
+            {tier.isActive && <Check size={14} className="shrink-0 text-primary" />}
           </button>
           <div className="my-1 h-px bg-[#e9edef] dark:bg-[#2a3942]" />
           <button type="button" onClick={() => { onEdit(); setOpen(false); }} className={item}>

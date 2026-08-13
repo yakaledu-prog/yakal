@@ -28,7 +28,7 @@ export function CounselorSessionDetail() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -39,7 +39,7 @@ export function CounselorSessionDetail() {
         <p className="text-[15px] font-medium text-foreground">That session no longer exists.</p>
         <button
           onClick={() => navigate("/counselor/sessions")}
-          className="mt-3 text-[13.5px] text-[#1099A1] hover:underline"
+          className="mt-3 text-[13.5px] text-primary hover:underline"
         >
           Back to sessions
         </button>
@@ -72,7 +72,7 @@ export function CounselorSessionDetail() {
           <p
             className={cn(
               "mb-1 text-[12px] font-semibold uppercase tracking-wider",
-              session.status === "cancelled" ? "text-[#CAA25F]" : "text-[#1099A1]"
+              session.status === "cancelled" ? "text-secondary" : "text-primary"
             )}
           >
             {STATUS[session.status] ?? session.status}
@@ -95,7 +95,7 @@ export function CounselorSessionDetail() {
         {session.status === "upcoming" && (
           <Button
             onClick={() => navigate(`/counselor/meeting/${session.id}`)}
-            className="gap-2 bg-[#1099A1] text-white hover:bg-[#0d7f86]"
+            className="gap-2 bg-primary text-white hover:bg-primary-hover"
           >
             <Video size={18} /> Join meeting
           </Button>

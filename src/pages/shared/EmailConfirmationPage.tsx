@@ -60,8 +60,8 @@ export function EmailConfirmationPage() {
 
           {/* Icon Illustration */}
           <div className="relative mb-8 mt-2">
-            <div className="w-24 h-24 bg-[#1099A1]/10 rounded-full flex items-center justify-center">
-              <Mail className="w-12 h-12 text-[#1099A1]" strokeWidth={1.5} />
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
+              <Mail className="w-12 h-12 text-primary" strokeWidth={1.5} />
             </div>
             {/* Subtle decorative elements */}
             <div className="absolute -bottom-2 -left-4 w-8 h-1 bg-[#e9edef] dark:bg-[#2a3942] rounded-full" />
@@ -74,7 +74,7 @@ export function EmailConfirmationPage() {
           </h1>
 
           <p className="text-[15px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-10 max-w-[400px]">
-            We've sent a confirmation link to <a href={`mailto:${email}`} className="text-[#1099A1] font-medium hover:underline">{email || "your email address"}</a>. Click the link in that email to verify your address and finish setting up your account.
+            We've sent a confirmation link to <a href={`mailto:${email}`} className="text-primary font-medium hover:underline">{email || "your email address"}</a>. Click the link in that email to verify your address and finish setting up your account.
           </p>
 
           <div className="w-full h-px bg-[#e9edef] dark:bg-[#2a3942] mb-6" />
@@ -84,7 +84,7 @@ export function EmailConfirmationPage() {
             <button
               onClick={handleResend}
               disabled={resending || !email}
-              className="text-[#1099A1] font-semibold hover:underline disabled:opacity-50"
+              className="text-primary font-semibold hover:underline disabled:opacity-50"
             >
               {resending ? "Sending..." : "Resend it"}
             </button>

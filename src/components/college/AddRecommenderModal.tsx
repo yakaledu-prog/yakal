@@ -15,7 +15,7 @@ export interface NewRecommender {
 }
 
 const input =
-  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
+  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 export function AddRecommenderModal({
   open,
@@ -70,7 +70,7 @@ export function AddRecommenderModal({
       onMouseDown={(e) => e.target === e.currentTarget && !saving && onClose()}
     >
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-5 py-4 text-white">
+        <header className="relative overflow-hidden bg-primary px-5 py-4 text-white">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[55%] text-white/10"
             viewBox="0 0 400 200"
@@ -176,7 +176,7 @@ export function AddRecommenderModal({
             onClick={submit}
             disabled={!name.trim() || saving}
             className={cn(
-              "inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-50"
+              "inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             )}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}

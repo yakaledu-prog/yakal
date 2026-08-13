@@ -125,7 +125,7 @@ export function InfoHint({
           setOpen((o) => !o);
         }}
         className={cn(
-          "inline-grid place-items-center align-middle text-[#c2c7d0] transition-colors hover:text-[#1099A1] focus:text-[#1099A1] focus:outline-none dark:text-[#5a6b75]",
+          "inline-grid place-items-center align-middle text-[#c2c7d0] transition-colors hover:text-primary focus:text-primary focus:outline-none dark:text-[#5a6b75]",
           className
         )}
       >

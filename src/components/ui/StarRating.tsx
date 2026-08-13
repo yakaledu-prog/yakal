@@ -32,7 +32,7 @@ export function StarRating({
 
   return (
     <span className={cn("flex items-center gap-1", className)}>
-      <Star size={size} className="shrink-0 text-[#CAA25F]" fill="currentColor" strokeWidth={0} />
+      <Star size={size} className="shrink-0 text-secondary" fill="currentColor" strokeWidth={0} />
       <span className="text-[13px] font-medium text-foreground">{average.toFixed(1)}</span>
       <span className="text-[12.5px] text-muted-foreground">
         ({count})

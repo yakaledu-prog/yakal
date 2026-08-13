@@ -62,30 +62,30 @@ export default function Contact() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px] md:gap-[32px]">
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">First Name*</label>
-                <input name="firstName" required type="text" placeholder="First name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="firstName" required type="text" placeholder="First name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition" />
               </div>
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Last Name*</label>
-                <input name="lastName" required type="text" placeholder="Last name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="lastName" required type="text" placeholder="Last name" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition" />
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px] md:gap-[32px]">
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Email Address*</label>
-                <input name="email" required type="email" placeholder="Email address" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="email" required type="email" placeholder="Email address" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition" />
               </div>
               <div>
                 <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Phone</label>
-                <input name="phone" type="tel" placeholder="Phone number" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+                <input name="phone" type="tel" placeholder="Phone number" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition" />
               </div>
             </div>
             <div>
               <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Subject</label>
-              <input name="subject" type="text" placeholder="Write your subject" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition" />
+              <input name="subject" type="text" placeholder="Write your subject" className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[19px] rounded-[500px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition" />
             </div>
             <div>
               <label className="block text-[15px] md:text-[18px] font-semibold mb-[10px] md:mb-[16px]">Message*</label>
-              <textarea name="message" required placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-[#1099a1] transition resize-none"></textarea>
+              <textarea name="message" required placeholder="Write your messages" rows={5} className="w-full px-[20px] md:px-[26px] py-[14px] md:py-[16px] rounded-[16px] border border-[#d9d9d9] bg-white text-[15px] outline-none focus:border-primary transition resize-none"></textarea>
             </div>
             <button type="submit" className="btn-shimmer px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase shadow-lg hover:opacity-90 transition-opacity mx-auto block">
               Submit Now

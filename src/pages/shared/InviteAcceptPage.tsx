@@ -68,7 +68,7 @@ export function InviteAcceptPage() {
 
         {showSpinner ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin text-[#1099A1]" />
+            <Loader2 className="animate-spin text-primary" />
           </div>
         ) : accepted ? (
           <Success onContinue={() => navigate("/student")} />
@@ -123,13 +123,13 @@ function Valid({
         {intro}
         <a
           href={loginHref("signup")}
-          className="mt-2 block h-12 rounded-xl bg-[#1099A1] text-center text-[15px] font-bold leading-[48px] text-white hover:bg-[#0d7f86]"
+          className="mt-2 block h-12 rounded-xl bg-primary text-center text-[15px] font-bold leading-[48px] text-white hover:bg-primary-hover"
         >
           Create my account
         </a>
         <a
           href={loginHref("login")}
-          className="mt-3 block h-12 rounded-xl border border-[#1099A1] text-center text-[15px] font-semibold leading-[46px] text-[#1099A1] hover:bg-[#1099A1]/5"
+          className="mt-3 block h-12 rounded-xl border border-primary text-center text-[15px] font-semibold leading-[46px] text-primary hover:bg-primary/5"
         >
           I already have an account
         </a>
@@ -169,7 +169,7 @@ function Valid({
       <button
         onClick={onAccept}
         disabled={accepting}
-        className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1099A1] text-[15px] font-bold text-white hover:bg-[#0d7f86] disabled:opacity-60"
+        className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover disabled:opacity-60"
       >
         {accepting ? <Loader2 size={16} className="animate-spin" /> : <Check size={17} />}
         Accept invitation
@@ -181,7 +181,7 @@ function Valid({
 function Success({ onContinue }: { onContinue: () => void }) {
   return (
     <div className="text-center">
-      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#97CE9D]/20 text-[#1099A1]">
+      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-tertiary/20 text-primary">
         <Check size={28} />
       </div>
       <h1 className="text-[22px] font-bold text-[#111] dark:text-white">You are all set</h1>
@@ -190,7 +190,7 @@ function Success({ onContinue }: { onContinue: () => void }) {
       </p>
       <button
         onClick={onContinue}
-        className="mt-2 h-12 w-full rounded-xl bg-[#1099A1] text-[15px] font-bold text-white hover:bg-[#0d7f86]"
+        className="mt-2 h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
       >
         Go to my dashboard
       </button>
@@ -242,7 +242,7 @@ function Notice({
 }) {
   return (
     <div className="text-center">
-      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#CAA25F]/15 text-[#CAA25F]">
+      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-secondary/15 text-secondary">
         <AlertCircle size={28} />
       </div>
       <h1 className="text-[20px] font-bold text-[#111] dark:text-white">{title}</h1>
@@ -250,14 +250,14 @@ function Notice({
       {cta ? (
         <Link
           to={cta.href}
-          className="mt-5 inline-block h-11 rounded-xl bg-[#1099A1] px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-[#0d7f86]"
+          className="mt-5 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-primary-hover"
         >
           {cta.label}
         </Link>
       ) : (
         <Link
           to="/"
-          className="mt-5 inline-block text-[13.5px] font-medium text-[#1099A1] hover:underline"
+          className="mt-5 inline-block text-[13.5px] font-medium text-primary hover:underline"
         >
           Go to the homepage
         </Link>

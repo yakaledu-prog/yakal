@@ -39,7 +39,7 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
     <section id="counselling" className="w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
       <Reveal>
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[13px] font-bold uppercase tracking-[0.2em] text-[#1099A1]">
+          <p className="text-[13px] font-bold uppercase tracking-[0.2em] text-primary">
             College admissions
           </p>
           <h2 className="mt-3 text-[30px] font-bold leading-tight text-[#111] md:text-[40px]">
@@ -65,7 +65,7 @@ export default function CounsellingTiers(_props: { scrollTo?: (id: string) => vo
           Not sure which one fits?{" "}
           <button
             onClick={() => openBookingUrl(bookingUrl)}
-            className="font-semibold text-[#1099A1] underline-offset-4 hover:underline"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
           >
             Talk to us first
           </button>
@@ -167,7 +167,7 @@ function TierCard({
         className={cn(
           "mt-6 h-12 w-full rounded-xl text-[14.5px] font-semibold origin-bottom transition-all ease-in-out",
           tier.isRecommended
-            ? "bg-[#1099A1] text-white hover:bg-[#0d7f86]"
+            ? "bg-primary text-white hover:bg-primary-hover"
             : "border-2 hover:opacity-80"
         )}
       >

@@ -70,7 +70,7 @@ export function StudentCourseDashboard() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -97,8 +97,8 @@ export function StudentCourseDashboard() {
         )}
       >
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
             <input
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
@@ -118,10 +118,10 @@ export function StudentCourseDashboard() {
                 onClick={openDetail}
                 className={cn(
                   "w-full flex flex-col p-4 text-left border-l-2 transition-colors",
-                  isActive ? "bg-[#1099A1]/5 border-l-[#1099A1]" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                  isActive ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                 )}
               >
-                <p className={cn("text-[14px] font-semibold truncate", isActive ? "text-[#1099A1]" : "text-[#111] dark:text-white")}>{c.title}</p>
+                <p className={cn("text-[14px] font-semibold truncate", isActive ? "text-primary" : "text-[#111] dark:text-white")}>{c.title}</p>
                 <p className="text-[12px] text-muted-foreground truncate mt-0.5">{c.subject} • {c.progress}% done</p>
               </Link>
             );
@@ -137,7 +137,7 @@ export function StudentCourseDashboard() {
         )}
       >
         {/* Massive Teal Header */}
-        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />

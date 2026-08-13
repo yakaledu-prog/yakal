@@ -187,7 +187,7 @@ function ApplyDialog({
           <button
             onClick={onSubmit}
             disabled={busy}
-            className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             Send application
@@ -289,7 +289,7 @@ export function TutorCourseCatalog() {
   return (
     <PageWrapper className="!p-0">
       <div className="min-h-screen flex-1 bg-background pb-12 dark:bg-[#111b21]">
-        <div className="relative overflow-hidden bg-[#1099A1] px-4 pt-6 text-white md:px-8 md:pt-8">
+        <div className="relative overflow-hidden bg-primary px-4 pt-6 text-white md:px-8 md:pt-8">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -323,7 +323,7 @@ export function TutorCourseCatalog() {
                     aria-pressed={view === v}
                     className={cn(
                       "rounded-md p-1.5 transition-colors",
-                      view === v ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20"
+                      view === v ? "bg-white text-primary shadow-sm" : "text-white hover:bg-white/20"
                     )}
                   >
                     <Icon size={16} />
@@ -412,7 +412,7 @@ export function TutorCourseCatalog() {
         <div className="mx-auto w-full max-w-[1440px] p-4 md:p-8">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
                     ) : visible.length === 0 ? (
             <Empty
@@ -462,14 +462,14 @@ export function TutorCourseCatalog() {
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="grid h-full w-full place-items-center bg-[#1099A1]/10 text-[#1099A1]">
+                      <div className="grid h-full w-full place-items-center bg-primary/10 text-primary">
                         <BookOpen size={28} />
                       </div>
                     )}
                   </div>
 
                   <div className="flex flex-1 flex-col p-4">
-                    <p className="text-[12px] font-medium uppercase tracking-wider text-[#1099A1]">
+                    <p className="text-[12px] font-medium uppercase tracking-wider text-primary">
                       {course.subject}
                     </p>
                     <h3 className="mt-1 text-[16px] font-semibold text-foreground">
@@ -512,17 +512,17 @@ export function TutorCourseCatalog() {
                           used to disappear from the list, which looked like
                           the click had failed. */}
                       {course.myApplication?.status === "pending" ? (
-                        <span className="flex items-center gap-1.5 rounded-xl bg-[#CAA25F]/15 px-3 py-2 text-[12.5px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+                        <span className="flex items-center gap-1.5 rounded-xl bg-secondary/15 px-3 py-2 text-[12.5px] font-medium text-[#8a6a2a] dark:text-secondary">
                           <Clock size={13} /> Applied
                         </span>
                       ) : course.myApplication?.status === "accepted" ? (
-                        <span className="flex items-center gap-1.5 rounded-xl bg-[#1099A1]/12 px-3 py-2 text-[12.5px] font-medium text-[#1099A1]">
+                        <span className="flex items-center gap-1.5 rounded-xl bg-primary/12 px-3 py-2 text-[12.5px] font-medium text-primary">
                           <Check size={13} /> Accepted
                         </span>
                       ) : (
                         <button
                           onClick={() => setApplying(course)}
-                          className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+                          className="rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
                         >
                           {course.myApplication?.status === "rejected" ? "Apply again" : "Apply"}
                         </button>

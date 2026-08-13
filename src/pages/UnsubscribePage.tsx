@@ -31,7 +31,7 @@ export default function UnsubscribePage() {
       <div className="w-full max-w-md text-center">
         {state === "working" && (
           <>
-            <Loader2 className="mx-auto animate-spin text-[#1099A1]" />
+            <Loader2 className="mx-auto animate-spin text-primary" />
             <p className="mt-4 text-[14px] text-muted-foreground">Removing you from the list...</p>
           </>
         )}
@@ -56,7 +56,7 @@ export default function UnsubscribePage() {
           </>
         )}
 
-        <Link to="/" className="mt-6 inline-block text-[14px] text-[#1099A1] hover:text-[#0d7f86]">
+        <Link to="/" className="mt-6 inline-block text-[14px] text-primary hover:text-primary-hover">
           Back to Yakal
         </Link>
       </div>

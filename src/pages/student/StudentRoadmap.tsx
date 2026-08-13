@@ -107,7 +107,7 @@ export function StudentRoadmap({
     <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
       {/* Header */}
       {!embedded ? (
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white p-6 md:p-10 !pb-0 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -200,7 +200,7 @@ export function StudentRoadmap({
                 className={cn(
                   "whitespace-nowrap border-b-[3px] py-3 text-[14px] flex items-center gap-2 transition-colors",
                   tab === t.id
-                    ? "border-[#1099A1] font-normal text-[#111] dark:text-white"
+                    ? "border-primary font-normal text-[#111] dark:text-white"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -215,7 +215,7 @@ export function StudentRoadmap({
       {/* Main Content */}
       <div className={cn("mx-auto p-6 md:p-10")}>
         {isLoading ? (
-          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
         ) : (
           <>
             {tab === "timeline" && (
@@ -248,10 +248,10 @@ export function StudentRoadmap({
                       className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors"
                     >
                       <div>
-                        <p className="font-semibold text-[#1099A1] group-hover:underline text-[14px]">{r.title}</p>
+                        <p className="font-semibold text-primary group-hover:underline text-[14px]">{r.title}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
                         {due && (
-                          <p className="text-[12.5px] text-[#CAA25F] mt-1.5">
+                          <p className="text-[12.5px] text-secondary mt-1.5">
                             {due.label}{" "}
                             {due.date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
                             {" \u00b7 "}

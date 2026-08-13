@@ -384,7 +384,7 @@ function NavLeaf({
         {/* Collapsed there is no room for the number, but hiding it entirely
             meant a collapsed sidebar silently swallowed every unread count. */}
         {!isLocked && !sidebarOpen && item.badge !== undefined && item.badge > 0 && (
-          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#1099A1] ring-2 ring-card dark:ring-[#111b21]" />
+          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card dark:ring-[#111b21]" />
         )}
       </div>
       {sidebarOpen && (
@@ -395,7 +395,7 @@ function NavLeaf({
           {isLocked ? (
             <Lock size={14} className="ml-auto text-muted-foreground opacity-70" />
           ) : item.badge !== undefined && item.badge > 0 ? (
-            <span className="ml-auto min-w-[20px] rounded-full bg-[#1099A1] px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+            <span className="ml-auto min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
               {item.badge}
             </span>
           ) : null}

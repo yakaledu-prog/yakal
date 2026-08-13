@@ -107,7 +107,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
             <button
               type="submit"
               disabled={saving}
-              className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap disabled:opacity-60"
+              className="bg-primary px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap disabled:opacity-60"
             >
               {saving ? "Adding..." : "Subscribe"}
             </button>

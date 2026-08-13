@@ -101,7 +101,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
       >
         <Bell size={20} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#CAA25F] px-1 text-[10px] font-semibold leading-none text-white">
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-semibold leading-none text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -118,7 +118,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
                   await markAllNotificationsRead(user!.id);
                   void queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
                 }}
-                className="text-[12.5px] font-medium text-[#1099A1] hover:underline"
+                className="text-[12.5px] font-medium text-primary hover:underline"
               >
                 Mark all read
               </button>
@@ -138,7 +138,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
                   onClick={() => openOne(n.id)}
                   className={cn(
                     "flex w-full gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-0 hover:bg-muted/40",
-                    !n.isRead && "bg-[#1099A1]/5"
+                    !n.isRead && "bg-primary/5"
                   )}
                 >
                   {/* Unread is a dot rather than a colour on the text, so a
@@ -146,7 +146,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
                   <span
                     className={cn(
                       "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                      n.isRead ? "bg-transparent" : "bg-[#1099A1]"
+                      n.isRead ? "bg-transparent" : "bg-primary"
                     )}
                   />
                   <span className="min-w-0 flex-1">
@@ -171,7 +171,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
               setOpen(false);
               navigate(`${basePath}/notifications`);
             }}
-            className="w-full border-t border-border px-4 py-3 text-center text-[13px] font-medium text-[#1099A1] transition-colors hover:bg-muted/40"
+            className="w-full border-t border-border px-4 py-3 text-center text-[13px] font-medium text-primary transition-colors hover:bg-muted/40"
           >
             View all
           </button>

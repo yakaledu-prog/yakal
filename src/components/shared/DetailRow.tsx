@@ -73,7 +73,7 @@ export function DetailRow({
         <p className="text-[12px] text-muted-foreground font-medium mb-0.5">{label}</p>
 
         {href ? (
-          <a href={href} className={cn(body, "text-[#1099A1] hover:underline")}>
+          <a href={href} className={cn(body, "text-primary hover:underline")}>
             {value}
           </a>
         ) : copy ? (
@@ -90,12 +90,12 @@ export function DetailRow({
             title="Copy to clipboard"
             className={cn(
               body,
-              "group flex items-center gap-1.5 text-foreground transition-colors hover:text-[#1099A1]"
+              "group flex items-center gap-1.5 text-foreground transition-colors hover:text-primary"
             )}
           >
             {value}
             {copied ? (
-              <Check size={13} className="text-[#1099A1]" />
+              <Check size={13} className="text-primary" />
             ) : (
               <Copy size={13} className="opacity-0 transition-opacity group-hover:opacity-60" />
             )}

@@ -66,7 +66,7 @@ export function ChildSidebar({
         className={cn(
           "flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors",
           activeId === null
-            ? "border-l-[#1099A1] bg-[#1099A1]/5"
+            ? "border-l-primary bg-primary/5"
             : "border-l-transparent hover:bg-muted/40"
         )}
       >
@@ -77,7 +77,7 @@ export function ChildSidebar({
           <span
             className={cn(
               "block text-[14px] font-medium",
-              activeId === null ? "text-[#1099A1]" : "text-foreground"
+              activeId === null ? "text-primary" : "text-foreground"
             )}
           >
             All children
@@ -97,7 +97,7 @@ export function ChildSidebar({
             onClick={() => onSelect(c.id)}
             className={cn(
               "flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors",
-              active ? "border-l-[#1099A1] bg-[#1099A1]/5" : "border-l-transparent hover:bg-muted/40"
+              active ? "border-l-primary bg-primary/5" : "border-l-transparent hover:bg-muted/40"
             )}
           >
             <img
@@ -109,7 +109,7 @@ export function ChildSidebar({
               <span
                 className={cn(
                   "block truncate text-[14px] font-medium",
-                  active ? "text-[#1099A1]" : "text-foreground"
+                  active ? "text-primary" : "text-foreground"
                 )}
               >
                 {c.full_name}
@@ -160,8 +160,8 @@ export function SlotMeter({ pkg, className }: { pkg: CoursePackage; className?: 
         </p>
       </div>
       <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-        <div className="bg-[#1099A1]" style={{ width: `${done}%` }} title="Completed" />
-        <div className="bg-[#97CE9D]" style={{ width: `${booked}%` }} title="Still to come" />
+        <div className="bg-primary" style={{ width: `${done}%` }} title="Completed" />
+        <div className="bg-tertiary" style={{ width: `${booked}%` }} title="Still to come" />
       </div>
     </div>
   );
@@ -174,7 +174,7 @@ export function Money({ cents }: { cents: number }) {
 export function Spinner() {
   return (
     <div className="flex justify-center py-20">
-      <Loader2 className="animate-spin text-[#1099A1]" />
+      <Loader2 className="animate-spin text-primary" />
     </div>
   );
 }
@@ -216,7 +216,7 @@ export function PackageActions({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={onAddSlots}
-        className={cn(base, "bg-[#1099A1] font-semibold text-white hover:bg-[#0d7f86]")}
+        className={cn(base, "bg-primary font-semibold text-white hover:bg-primary-hover")}
       >
         Add slots
       </button>
@@ -224,7 +224,7 @@ export function PackageActions({
         <button
           className={cn(
             base,
-            "border border-[#CAA25F] font-medium text-[#8a6a2a] hover:bg-[#CAA25F]/10 dark:text-[#CAA25F]"
+            "border border-secondary font-medium text-[#8a6a2a] hover:bg-secondary/10 dark:text-secondary"
           )}
         >
           Go monthly
@@ -249,7 +249,7 @@ export function BillingHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-8 md:pt-8">
+    <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-8 md:pt-8">
       <svg
         className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
         viewBox="0 0 400 200"
@@ -373,14 +373,14 @@ export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
           const isToday = day.toDateString() === new Date().toDateString();
           return (
             <div key={di} className="text-center">
-              <div className="mb-2 border-b-2 border-[#CAA25F] pb-2">
+              <div className="mb-2 border-b-2 border-secondary pb-2">
                 <p className="text-[11px] font-bold uppercase text-muted-foreground">
                   {day.toLocaleDateString(undefined, { weekday: "short" })}
                 </p>
                 <p
                   className={cn(
                     "mt-0.5 text-[16px]",
-                    isToday ? "font-bold text-[#1099A1]" : "text-foreground"
+                    isToday ? "font-bold text-primary" : "text-foreground"
                   )}
                 >
                   {day.getDate()}
@@ -403,9 +403,9 @@ export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
                       className={cn(
                         "rounded py-2 text-[12.5px] font-bold",
                         s.status === "completed"
-                          ? "bg-[#1099A1] text-white"
+                          ? "bg-primary text-white"
                           : s.status === "upcoming"
-                            ? "bg-[#1099A1]/10 text-[#1099A1]"
+                            ? "bg-primary/10 text-primary"
                             : "bg-muted text-muted-foreground line-through"
                       )}
                     >
@@ -421,10 +421,10 @@ export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-[#1099A1]" /> Completed
+          <span className="h-3 w-3 rounded-sm bg-primary" /> Completed
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm bg-[#1099A1]/10" /> Still to come
+          <span className="h-3 w-3 rounded-sm bg-primary/10" /> Still to come
         </span>
       </div>
     </div>
@@ -516,7 +516,7 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
             <div className="grid grid-cols-7 gap-2 pb-4">
               {days.map((day, di) => (
                 <div key={di} className="text-center">
-                  <div className="mb-2 border-b-2 border-[#CAA25F] pb-2">
+                  <div className="mb-2 border-b-2 border-secondary pb-2">
                     <p className="text-[11px] font-bold uppercase text-muted-foreground">
                       {day.toLocaleDateString(undefined, { weekday: "short" })}
                     </p>
@@ -556,8 +556,8 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
                               already
                                 ? "cursor-not-allowed bg-muted text-muted-foreground"
                                 : on
-                                  ? "bg-[#1099A1] text-white"
-                                  : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
+                                  ? "bg-primary text-white"
+                                  : "bg-primary/10 text-primary hover:bg-primary/20"
                             )}
                           >
                             {label}
@@ -595,7 +595,7 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
             </button>
             <button
               disabled={picked.length === 0}
-              className="rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {picked.length === 0 ? "Pay" : <>Pay <Money cents={unit * picked.length} /></>}
             </button>

@@ -45,7 +45,7 @@ export function StudentCourseMessages() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+        <Loader2 className="animate-spin text-primary" size={22} />
       </div>
     );
   }

@@ -33,22 +33,22 @@ export function TermsConditionsPage() {
         <div className="flex-1 w-full p-6 md:p-12 lg:p-16 md:overflow-y-auto">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl text-[#111] dark:text-[#d1d5db]">
             
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2 mt-0">1. Acceptance of Terms</h3>
+            <h3 className="text-xl font-bold text-primary mb-2 mt-0">1. Acceptance of Terms</h3>
             <p className="mb-8">
               By accessing and using Yakal Education Services, you accept and agree to be bound by the terms and provision of this agreement.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">2. Use of Service</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">2. Use of Service</h3>
             <p className="mb-8">
               Our service provides educational resources and tutoring. You agree to use the service for its intended purpose and not for any unlawful activity.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">3. User Accounts</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">3. User Accounts</h3>
             <p className="mb-8">
               Users are responsible for maintaining the confidentiality of their account information, including passwords. Any activities that occur under your account are your responsibility.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">4. Modifications to Service</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">4. Modifications to Service</h3>
             <p className="mb-8">
               We reserve the right to modify or discontinue, temporarily or permanently, the service with or without notice.
             </p>

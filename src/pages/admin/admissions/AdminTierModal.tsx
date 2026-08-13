@@ -181,7 +181,7 @@ export function AdminTierModal({
   // beside every other dialog.
   const inputCls = "bg-transparent border !border-[#e9edef] dark:!border-[#2a3942]";
   const areaCls =
-    "w-full rounded-md border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-3 py-2 text-sm text-[#111] dark:text-white outline-none transition-colors focus:border-[#1099A1]";
+    "w-full rounded-md border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-3 py-2 text-sm text-[#111] dark:text-white outline-none transition-colors focus:border-primary";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -206,14 +206,14 @@ export function AdminTierModal({
                   className={cn(
                     "flex items-center gap-2 border-b-2 px-1 pb-3 pr-5 text-[13.5px] transition-colors",
                     active
-                      ? "border-[#1099A1] text-[#111] dark:text-white"
+                      ? "border-primary text-[#111] dark:text-white"
                       : "border-transparent text-muted-foreground hover:text-[#111] dark:hover:text-white"
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-medium",
-                      active ? "bg-[#1099A1] text-white" : "bg-[#e9edef] text-muted-foreground dark:bg-[#2a3942]"
+                      active ? "bg-primary text-white" : "bg-[#e9edef] text-muted-foreground dark:bg-[#2a3942]"
                     )}
                   >
                     {n}
@@ -484,7 +484,7 @@ function ToggleRow({
         onClick={() => onChange(!value)}
         className={cn(
           "w-10 h-5 rounded-full relative transition-colors shrink-0 mt-0.5",
-          value ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700"
+          value ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
         )}
         title={value ? `Turn off ${label.toLowerCase()}` : `Turn on ${label.toLowerCase()}`}
       >

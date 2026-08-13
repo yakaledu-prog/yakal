@@ -106,8 +106,8 @@ export function CounselorSessions() {
       >
         {/* Search bar */}
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
             <input
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
@@ -158,7 +158,7 @@ export function CounselorSessions() {
         )}
       >
         {/* Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -296,7 +296,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold flex items-center gap-2">
+          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-2">
             {isUpcoming && <CheckCheck size={16} />} <span>{saving ? "Saving..." : isUpcoming ? "Mark As Done" : "Save Notes"}</span>
           </Button>
         </div>

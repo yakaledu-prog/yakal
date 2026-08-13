@@ -66,7 +66,7 @@ function DocumentGlyph({ label }: { label: string }) {
           <path d="M11 38h13" />
         </g>
       </svg>
-      <span className="absolute -bottom-1 left-0 rounded bg-[#1099A1] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
+      <span className="absolute -bottom-1 left-0 rounded bg-primary px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
         {label}
       </span>
     </span>
@@ -127,14 +127,14 @@ export function ResumePanel({
         onClick={() => input.current?.click()}
         disabled={busy}
         className={cn(
-          "flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-border p-6 text-center transition-colors hover:border-[#1099A1] hover:bg-muted/30 disabled:opacity-50",
+          "flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-border p-6 text-center transition-colors hover:border-primary hover:bg-muted/30 disabled:opacity-50",
           className
         )}
       >
         {busy ? (
-          <Loader2 size={22} className="animate-spin text-[#1099A1]" />
+          <Loader2 size={22} className="animate-spin text-primary" />
         ) : (
-          <Upload size={22} className="text-[#1099A1]" />
+          <Upload size={22} className="text-primary" />
         )}
         <span className="text-[14px] font-medium text-foreground">Upload your resume</span>
         <span className="text-[12.5px] text-muted-foreground">PDF or Word document</span>
@@ -170,7 +170,7 @@ export function ResumePanel({
         </div>
 
         {busy || opening ? (
-          <Loader2 size={16} className="animate-spin text-[#1099A1]" />
+          <Loader2 size={16} className="animate-spin text-primary" />
         ) : (
           <button
             type="button"

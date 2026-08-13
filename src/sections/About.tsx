@@ -61,7 +61,7 @@ export default function About() {
 
             {steps.map((step, idx) => (
               <Reveal key={idx} delay={idx * 200} className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-[56px] h-[56px] rounded-full bg-[#1099A1] text-white flex items-center justify-center text-[24px] font-bold mb-[24px] shadow-sm ring-[8px] ring-white">
+                <div className="w-[56px] h-[56px] rounded-full bg-primary text-white flex items-center justify-center text-[24px] font-bold mb-[24px] shadow-sm ring-[8px] ring-white">
                   {step.num}
                 </div>
                 <h3 className="text-[22px] font-medium mb-[12px] text-[#111]">{step.title}</h3>

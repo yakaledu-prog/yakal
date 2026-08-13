@@ -69,7 +69,7 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
 const STEPS = ["College", "Deadline", "Your take"];
 
 const input =
-  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
+  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 export function AddCollegeModal({
   addLabel = "Add to my list",
@@ -334,7 +334,7 @@ export function AddCollegeModal({
                     type="button"
                     onClick={() => manualName.trim() && setStep(1)}
                     disabled={!manualName.trim()}
-                    className="mt-2 h-11 w-full rounded-xl bg-[#1099A1] text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
+                    className="mt-2 h-11 w-full rounded-xl bg-primary text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     Continue
                   </button>
@@ -457,7 +457,7 @@ export function AddCollegeModal({
                 className={cn(
                   "flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] transition-colors",
                   chosenTargets.length
-                    ? "border-[#1099A1] text-[#1099A1]"
+                    ? "border-primary text-primary"
                     : "border-[#e9edef] text-[#54656f] dark:border-[#2a3942] dark:text-[#aebac1]"
                 )}
               >
@@ -506,7 +506,7 @@ export function AddCollegeModal({
                             }
                             className={cn(
                               "flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors",
-                              on ? "bg-[#1099A1]/10" : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+                              on ? "bg-primary/10" : "hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
                             )}
                           >
                             <img
@@ -520,7 +520,7 @@ export function AddCollegeModal({
                                 <span className="block truncate text-[11.5px] text-[#717182]">{t.subtitle}</span>
                               )}
                             </span>
-                            {on && <Check size={15} className="shrink-0 text-[#1099A1]" />}
+                            {on && <Check size={15} className="shrink-0 text-primary" />}
                           </button>
                         </li>
                       );
@@ -551,7 +551,7 @@ export function AddCollegeModal({
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={!name}
-              className="h-10 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-40"
+              className="h-10 rounded-xl bg-primary px-5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               Next
             </button>
@@ -560,7 +560,7 @@ export function AddCollegeModal({
               type="button"
               onClick={submit}
               disabled={saving || !name || (!!targets?.length && !selectedTargets?.length)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-60"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
               {addLabel}
@@ -666,7 +666,7 @@ function CollegePanel({ college }: { college: College }) {
               className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3 py-2.5 dark:border-[#2a3942] dark:bg-[#111b21]"
             >
               <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="text-[#1099A1]">{r.icon}</span>
+                <span className="text-primary">{r.icon}</span>
                 <span className="truncate">{r.label}</span>
                 <InfoHint text={r.hint} size={11} />
               </span>

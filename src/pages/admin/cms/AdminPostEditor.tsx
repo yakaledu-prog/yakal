@@ -174,7 +174,7 @@ export function AdminPostEditor() {
         <button
           onClick={() => saveRef.current("published")}
           disabled={isSaving || (status === "published" && !hasChanges)}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-[#1099A1] transition-all hover:font-bold disabled:opacity-40 disabled:hover:font-medium"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-primary transition-all hover:font-bold disabled:opacity-40 disabled:hover:font-medium"
         >
           {status === "published" ? hasChanges ? <Repeat2Icon strokeWidth={2} size={15} /> : <CheckCheckIcon strokeWidth={2} size={15} /> : <CloudUploadIcon size={15} />}
           {status === "published" ? hasChanges ? "Update" : "Published" : "Publish"}

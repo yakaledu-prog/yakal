@@ -16,7 +16,7 @@ export default function TestimonialCarousel({ items }: { items: Testimonial[] })
             </div>
             <div>
               <p className="text-[16px] font-medium">{t.name}</p>
-              <p className="text-[#1099a1] text-[13px]">{t.role}</p>
+              <p className="text-primary text-[13px]">{t.role}</p>
             </div>
           </div>
         </div>

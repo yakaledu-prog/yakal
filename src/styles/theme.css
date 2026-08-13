@@ -15,10 +15,22 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: var(--surface);
   --popover-foreground: oklch(0.145 0 0);
+  /* The three brand colours, and nothing else is one.
+     Teal #1099A1, green #97CE9D, gold #CAA25F. */
   --primary: #1099a1;
   --primary-foreground: #ffffff;
+  /* The deep teal every primary button darkens to on hover. Two shades were in
+     use, #0d7f86 and #0d848b, close enough that nobody noticed and far enough
+     apart that two buttons side by side did not match. One now. */
+  --primary-hover: #0d7f86;
   --secondary: #CAA25F;
   --secondary-foreground: #ffffff;
+  /* The third brand colour. It had no token at all, which is why every use of
+     it was a literal. Named tertiary rather than accent or success because
+     --accent is already a neutral grey here, and the green is used for
+     presence dots and progress as often as for anything that succeeded. */
+  --tertiary: #97CE9D;
+  --tertiary-foreground: #0b141a;
   --muted: #ececf0;
   --muted-foreground: #717182;
   --accent: #e9ebef;
@@ -69,8 +81,13 @@
   /* --primary: #319fa5; */
   --primary: #008991;
   --primary-foreground: #ffffff;
+  /* Darker again than the dark-mode primary, so hover still reads as pressed
+     rather than as a different button. */
+  --primary-hover: #00757c;
   --secondary: #CAA25F;
   --secondary-foreground: #ffffff;
+  --tertiary: #97CE9D;
+  --tertiary-foreground: #0b141a;
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
@@ -113,8 +130,11 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);

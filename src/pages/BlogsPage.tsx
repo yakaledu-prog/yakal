@@ -55,7 +55,7 @@ export default function BlogsPage() {
         <div className="px-6 pt-8 pb-8 border-b border-[#eaecf0]">
           <button
             onClick={() => navigate("/#blog")}
-            className="flex items-center gap-2 text-[#54656f] hover:text-[#1099a1] transition-colors text-[13px] font-medium mb-6"
+            className="flex items-center gap-2 text-[#54656f] hover:text-primary transition-colors text-[13px] font-medium mb-6"
           >
             <ArrowLeft size={16} strokeWidth={2.5} />
             <span>Back</span>
@@ -73,7 +73,7 @@ export default function BlogsPage() {
 
           {loading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-[#1099a1]" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : blogs.length === 0 ? (
             <p className="text-[#4a4a4a] text-[16px] md:text-[18px]">No published blogs yet.</p>
@@ -92,11 +92,11 @@ export default function BlogsPage() {
                       <div className="w-1 h-1 bg-[#4a4a4a] rounded-full"></div>
                       <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
                     </div>
-                    <h4 className="text-[20px] md:text-[22px] font-bold leading-tight mb-3 group-hover:text-[#1099a1] transition-colors line-clamp-2">{blog.title}</h4>
+                    <h4 className="text-[20px] md:text-[22px] font-bold leading-tight mb-3 group-hover:text-primary transition-colors line-clamp-2">{blog.title}</h4>
                     <p className="text-[#54656f] text-[14px] leading-relaxed line-clamp-3 mb-5">
                       {blog.content.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim()}
                     </p>
-                    <span className="text-[13px] -mt-2 font-bold text-[#1099A1] uppercase tracking-wider inline-flex items-center gap-0.5 transition-all opacity-90 group-hover:opacity-100">
+                    <span className="text-[13px] -mt-2 font-bold text-primary uppercase tracking-wider inline-flex items-center gap-0.5 transition-all opacity-90 group-hover:opacity-100">
                       <span className="group-hover:italic transition duration-500 ease-in-out">Read more...</span>
                       <ArrowRightIcon size={12} strokeWidth={3} className="text-[16px] leading-none group-hover:translate-x-1 transition-transform" />
                     </span>

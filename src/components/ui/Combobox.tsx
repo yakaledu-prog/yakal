@@ -111,7 +111,7 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
-          className="w-full rounded-xl border border-border bg-background px-3 py-2.5 pr-9 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+          className="w-full rounded-xl border border-border bg-background px-3 py-2.5 pr-9 text-[14px] outline-none transition-colors focus:border-primary"
         />
         <button
           type="button"
@@ -153,7 +153,7 @@ export function Combobox({
                     <span className="block truncate text-[12px] text-muted-foreground">{item.hint}</span>
                   )}
                 </span>
-                {item.label === value && <Check size={14} className="shrink-0 text-[#1099A1]" />}
+                {item.label === value && <Check size={14} className="shrink-0 text-primary" />}
               </button>
             ))
           )}

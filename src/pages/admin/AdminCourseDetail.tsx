@@ -51,7 +51,7 @@ export function AdminCourseDetail() {
     .sort((a, b) => (pendingCounts[b.id] ?? 0) - (pendingCounts[a.id] ?? 0));
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-[#1099A1] border-t-transparent rounded-full" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" /></div>;
   }
 
   if (!course) {
@@ -80,13 +80,13 @@ export function AdminCourseDetail() {
               where you move between courses, so leaving them belongs here. */}
           <button
             onClick={() => navigate("/admin/courses")}
-            className="mb-2 flex items-center gap-1 px-2 text-[13px] font-medium text-[#1099A1] transition-colors hover:underline"
+            className="mb-2 flex items-center gap-1 px-2 text-[13px] font-medium text-primary transition-colors hover:underline"
           >
             <ChevronLeft size={15} /> Back to Courses
           </button>
 
-          <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition focus-within:border-[#1099A1]">
-            <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
+          <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition focus-within:border-primary">
+            <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-primary" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -106,14 +106,14 @@ export function AdminCourseDetail() {
                 className={cn(
                   "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
                   active
-                    ? "border-l-[#1099A1] bg-[#1099A1]/5"
+                    ? "border-l-primary bg-primary/5"
                     : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                 )}
               >
                 {c.thumbnail_url ? (
                   <img src={c.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
                 ) : (
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#1099A1]/10 text-[#1099A1]">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                     <BookOpen size={18} />
                   </div>
                 )}
@@ -121,7 +121,7 @@ export function AdminCourseDetail() {
                   <p
                     className={cn(
                       "truncate text-[14px] font-semibold",
-                      active ? "text-[#1099A1]" : "text-[#111] dark:text-white"
+                      active ? "text-primary" : "text-[#111] dark:text-white"
                     )}
                   >
                     {c.title}
@@ -129,7 +129,7 @@ export function AdminCourseDetail() {
                   <p className="truncate text-[12px] text-muted-foreground">
                     {c.subject}
                     {pendingCounts[c.id] ? (
-                      <span className="ml-1.5 font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+                      <span className="ml-1.5 font-medium text-[#8a6a2a] dark:text-secondary">
                         {pendingCounts[c.id]} waiting
                       </span>
                     ) : null}
@@ -149,7 +149,7 @@ export function AdminCourseDetail() {
         )}
       >
         {/* Header Banner */}
-        <div className="w-full bg-[#1099A1] text-white pt-8 px-6 md:px-10 relative overflow-hidden">
+        <div className="w-full bg-primary text-white pt-8 px-6 md:px-10 relative overflow-hidden">
           {/* Subtle background decoration */}
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 

@@ -28,10 +28,10 @@ export function EmptyChatWelcome({ name }: { name: string }) {
     <div className="h-full flex items-center justify-center">
       <div className="flex flex-col items-center gap-4 bg-white/85 dark:bg-[#182229]/85 backdrop-blur rounded-2xl px-8 py-7 max-w-xs text-center select-none">
         <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
-          <rect x="8" y="14" width="54" height="36" rx="12" className="fill-[#1099A1]/10 stroke-[#1099A1]" strokeWidth="2" />
-          <circle cx="25" cy="32" r="3" className="fill-[#1099A1] animate-pulse" />
-          <circle cx="35" cy="32" r="3" className="fill-[#1099A1] animate-pulse [animation-delay:300ms]" />
-          <circle cx="45" cy="32" r="3" className="fill-[#1099A1] animate-pulse [animation-delay:600ms]" />
+          <rect x="8" y="14" width="54" height="36" rx="12" className="fill-primary/10 stroke-primary" strokeWidth="2" />
+          <circle cx="25" cy="32" r="3" className="fill-primary animate-pulse" />
+          <circle cx="35" cy="32" r="3" className="fill-primary animate-pulse [animation-delay:300ms]" />
+          <circle cx="45" cy="32" r="3" className="fill-primary animate-pulse [animation-delay:600ms]" />
           <rect x="40" y="54" width="40" height="26" rx="10" className="fill-transparent stroke-[#8696a0]" strokeWidth="2" strokeDasharray="4 4" />
         </svg>
         <div>
@@ -362,7 +362,7 @@ export function ChatBody({
               onClick={onOpenContactInfo}
               title="Contact info"
               aria-label="Contact info"
-              className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+              className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-primary transition-colors shrink-0"
             >
               <Info size={20} />
             </button>
@@ -375,8 +375,8 @@ export function ChatBody({
               className={cn(
                 "p-2 transition-colors shrink-0",
                 isFlagged || unreportedConcern
-                  ? "text-[#CAA25F]"
-                  : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]",
+                  ? "text-secondary"
+                  : "text-[#54656f] dark:text-[#aebac1] hover:text-secondary",
                 unreportedConcern && "concern-pulse"
               )}
             >
@@ -393,7 +393,7 @@ export function ChatBody({
             >
               <span
                 tabIndex={0}
-                className="cursor-help text-[12.5px] text-[#667781] underline decoration-dotted underline-offset-4 outline-none focus-visible:text-[#1099A1] dark:text-[#8696a0]"
+                className="cursor-help text-[12.5px] text-[#667781] underline decoration-dotted underline-offset-4 outline-none focus-visible:text-primary dark:text-[#8696a0]"
               >
                 {readOnlyNotice ?? "This conversation is read only."}
               </span>
@@ -417,7 +417,7 @@ export function ChatBody({
                 <button
                   onClick={onExpand}
                   title="Open in Messages"
-                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-primary transition-colors shrink-0"
                 >
                   <ExternalLink size={22} />
                 </button>
@@ -427,7 +427,7 @@ export function ChatBody({
                   onClick={onOpenContactInfo}
                   title="Contact info"
                   aria-label="Contact info"
-                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors shrink-0"
+                  className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-primary transition-colors shrink-0"
                 >
                   <Info size={22} />
                 </button>
@@ -440,8 +440,8 @@ export function ChatBody({
                   className={cn(
                     "p-2 transition-colors shrink-0",
                     isFlagged || unreportedConcern
-                      ? "text-[#CAA25F]"
-                      : "text-[#54656f] dark:text-[#aebac1] hover:text-[#CAA25F]",
+                      ? "text-secondary"
+                      : "text-[#54656f] dark:text-[#aebac1] hover:text-secondary",
                     unreportedConcern && "concern-pulse"
                   )}
                 >
@@ -453,7 +453,7 @@ export function ChatBody({
                 title="Emoji"
                 className={cn(
                   "p-2 transition-colors",
-                  showEmojiPicker ? "text-[#1099A1]" : "text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1]"
+                  showEmojiPicker ? "text-primary" : "text-[#54656f] dark:text-[#aebac1] hover:text-primary"
                 )}
               >
                 <Smile size={22} />
@@ -461,7 +461,7 @@ export function ChatBody({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 title="Attach"
-                className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-[#1099A1] transition-colors"
+                className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-primary transition-colors"
               >
                 <Paperclip size={22} />
               </button>
@@ -485,7 +485,7 @@ export function ChatBody({
                 <button
                   onClick={() => void submit()}
                   title="Send"
-                  className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
+                  className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover active:scale-95 transition-all shrink-0"
                 >
                   <Send size={18} className="-ml-0.5 mt-0.5" />
                 </button>
@@ -493,7 +493,7 @@ export function ChatBody({
                 <button
                   onClick={() => void startRecording()}
                   title="Record a voice note"
-                  className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] transition-colors shrink-0"
+                  className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover transition-colors shrink-0"
                 >
                   <Mic size={20} />
                 </button>
@@ -504,14 +504,14 @@ export function ChatBody({
               <button
                 onClick={cancelRecording}
                 title="Discard"
-                className="p-2 text-[#CAA25F] hover:bg-[#CAA25F]/10 rounded-full transition-colors"
+                className="p-2 text-secondary hover:bg-secondary/10 rounded-full transition-colors"
               >
                 <Trash2 size={22} />
               </button>
 
               <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-2.5 h-2.5 bg-[#CAA25F] rounded-full animate-pulse" />
+                  <div className="w-2.5 h-2.5 bg-secondary rounded-full animate-pulse" />
                   <span className="text-[#111] dark:text-white font-medium text-[15px]">
                     {Math.floor(recordingSeconds / 60)}:
                     {(recordingSeconds % 60).toString().padStart(2, "0")}
@@ -534,7 +534,7 @@ export function ChatBody({
               <button
                 onClick={sendRecording}
                 title="Send voice note"
-                className="w-[42px] h-[42px] rounded-full bg-[#1099A1] flex items-center justify-center text-white hover:bg-[#0d7f86] active:scale-95 transition-all shrink-0"
+                className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover active:scale-95 transition-all shrink-0"
               >
                 <Send size={18} className="-ml-0.5 mt-0.5" />
               </button>

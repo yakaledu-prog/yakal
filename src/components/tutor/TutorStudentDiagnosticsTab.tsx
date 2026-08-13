@@ -43,7 +43,7 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
               </div>
               <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#1099A1] rounded-full"
+                  className="h-full bg-primary rounded-full"
                   style={{ width: `${(result.score / result.total) * 100}%` }}
                 />
               </div>
@@ -57,7 +57,7 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
           {isCompleted && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-[#1099A1] hover:bg-[#1099A1]/10 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0"
+              className="text-primary hover:bg-primary/10 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0"
               title="Toggle AI Guide"
             >
               {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -67,9 +67,9 @@ function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: D
       </div>
 
       {expanded && isCompleted && (
-        <div className="mt-4 mx-2 p-4 bg-[#f8f9fa] dark:bg-[#182329] border-l-2 border-[#1099A1] rounded-r-lg">
+        <div className="mt-4 mx-2 p-4 bg-[#f8f9fa] dark:bg-[#182329] border-l-2 border-primary rounded-r-lg">
           <div className="flex items-center gap-2 mb-2">
-            <Lightbulb size={16} className="text-[#CAA25F]" />
+            <Lightbulb size={16} className="text-secondary" />
             <span className="text-[13px] font-bold text-[#111] dark:text-white uppercase tracking-wider">AI Teaching Guide</span>
           </div>
           <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">

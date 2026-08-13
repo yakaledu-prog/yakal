@@ -96,8 +96,8 @@ export function AdminSubscribers() {
 
         <div className="mx-auto w-full space-y-5 p-6 md:p-10">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border px-3 py-2.5 transition-colors focus-within:border-[#1099A1]">
-              <Search size={17} className="shrink-0 text-muted-foreground group-focus-within:text-[#1099A1]" />
+            <div className="group flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border px-3 py-2.5 transition-colors focus-within:border-primary">
+              <Search size={17} className="shrink-0 text-muted-foreground group-focus-within:text-primary" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -115,7 +115,7 @@ export function AdminSubscribers() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : shown.length === 0 ? (
             <p className="py-20 text-center text-muted-foreground">

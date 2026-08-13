@@ -206,7 +206,7 @@ export function StudentExploreUniversities({
   if (isLoading) {
     return (
       <PageWrapper className="grid place-items-center">
-        <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+        <Loader2 className="animate-spin text-primary" size={22} />
       </PageWrapper>
     );
   }
@@ -275,7 +275,7 @@ export function StudentExploreUniversities({
 
       <PageWrapper className="hidden min-w-0 !p-0 md:flex md:flex-col">
         {/* Matches the Course Catalog banner so the two catalogs read as one product. */}
-        <div className="relative shrink-0 overflow-hidden bg-[#1099A1] px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
+        <div className="relative shrink-0 overflow-hidden bg-primary px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -329,7 +329,7 @@ export function StudentExploreUniversities({
                       className={cn(
                         "rounded-md p-1.5 transition-colors",
                         view === v
-                          ? "bg-white text-[#1099A1] shadow-sm"
+                          ? "bg-white text-primary shadow-sm"
                           : "text-white hover:bg-white/20"
                       )}
                     >
@@ -370,7 +370,7 @@ export function StudentExploreUniversities({
               <button
                 type="button"
                 onClick={() => setFilters(EMPTY_FILTERS)}
-                className="mt-3 rounded-sm bg-[#1099A1] px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-[#0d848b]"
+                className="mt-3 rounded-sm bg-primary px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-primary-hover"
               >
                 Clear all filters
               </button>
@@ -514,7 +514,7 @@ function CollegeTable({
                       "rounded-sm px-2 py-1 text-[12px] font-semibold",
                       added
                         ? "text-muted-foreground"
-                        : "bg-[#1099A1] text-white hover:bg-[#0d848b]"
+                        : "bg-primary text-white hover:bg-primary-hover"
                     )}
                   >
                     {added ? "Added" : "Add"}

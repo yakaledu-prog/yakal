@@ -70,9 +70,9 @@ interface DevProfile {
 function StatusPill({ status }: { status: string }) {
   const tone =
     status === "active"
-      ? "bg-[#97CE9D]/25 text-[#2d7a54] dark:text-[#97CE9D]"
+      ? "bg-tertiary/25 text-[#2d7a54] dark:text-tertiary"
       : status === "pending"
-        ? "bg-[#CAA25F]/20 text-[#8a6a2a] dark:text-[#CAA25F]"
+        ? "bg-secondary/20 text-[#8a6a2a] dark:text-secondary"
         : "bg-[#8696a0]/20 text-[#54656f] dark:text-[#aebac1]";
   return (
     <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize", tone)}>
@@ -191,13 +191,13 @@ export function DevConsole() {
             <span
               className={cn(
                 "px-2.5 py-1 rounded-full text-[12px] font-semibold",
-                BACKEND === "local" ? "bg-[#1099A1] text-white" : "bg-[#CAA25F] text-[#111]"
+                BACKEND === "local" ? "bg-primary text-white" : "bg-secondary text-[#111]"
               )}
             >
               backend: {BACKEND}
             </span>
             {BACKEND === "remote" && (
-              <span className="text-[12px] text-[#CAA25F]">
+              <span className="text-[12px] text-secondary">
                 Careful, these actions change the hosted project.
               </span>
             )}
@@ -239,7 +239,7 @@ export function DevConsole() {
 
           {isLoading ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+              <Loader2 className="animate-spin text-primary" size={22} />
             </div>
           ) : (
             <ul className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
@@ -258,7 +258,7 @@ export function DevConsole() {
                         <span className="text-[14px] font-medium truncate">{p.full_name}</span>
                         <StatusPill status={p.status} />
                         {!p.is_onboarded && (
-                          <span className="text-[11px] text-[#CAA25F] font-medium">
+                          <span className="text-[11px] text-secondary font-medium">
                             onboarding pending
                           </span>
                         )}
@@ -272,7 +272,7 @@ export function DevConsole() {
                       <button
                         onClick={() => p.email && signInAs(p.email)}
                         disabled={isBusy}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1099A1] text-white text-[12px] font-medium hover:bg-[#0d7f86] disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-medium hover:bg-primary-hover disabled:opacity-50 transition-colors"
                       >
                         {isBusy ? <Loader2 size={13} className="animate-spin" /> : <LogIn size={13} />}
                         Sign in
@@ -292,7 +292,7 @@ export function DevConsole() {
                               className={cn(
                                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium border",
                                 on
-                                  ? "border-[#1099A1] bg-[#1099A1]/10 text-[#1099A1]"
+                                  ? "border-primary bg-primary/10 text-primary"
                                   : "border-[#e9edef] dark:border-[#2a3942] text-[#667781] dark:text-[#8696a0]"
                               )}
                             >
@@ -363,7 +363,7 @@ export function DevConsole() {
                         onClick={() => setConfirmDelete(p)}
                         disabled={isBusy}
                         title="Delete this account"
-                        className="p-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#CAA25F] hover:bg-[#CAA25F]/10 disabled:opacity-50 transition-colors"
+                        className="p-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-secondary hover:bg-secondary/10 disabled:opacity-50 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -439,7 +439,7 @@ npm run demo clean                     drop leftover test accounts`}
               <button
                 onClick={() => deleteAccount(confirmDelete)}
                 disabled={busy === confirmDelete.id}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-[#CAA25F] text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-secondary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {busy === confirmDelete.id ? (
                   <Loader2 size={14} className="animate-spin" />

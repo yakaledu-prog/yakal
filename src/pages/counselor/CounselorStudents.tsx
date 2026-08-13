@@ -59,8 +59,8 @@ export function CounselorStudents() {
       >
         
         <div className="students-list__search px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
             <input
               autoFocus
               type="text"
@@ -74,7 +74,7 @@ export function CounselorStudents() {
 
         <div className="students-list__content flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
           {loading ? (
-            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center">
               <Users className="mx-auto mb-3 opacity-30" size={32} />
@@ -122,7 +122,7 @@ export function CounselorStudents() {
         {activeId ? (
           detailLoading ? (
             <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="animate-spin text-[#1099A1] w-8 h-8" />
+              <Loader2 className="animate-spin text-primary w-8 h-8" />
             </div>
           ) : profile ? (
             <div className="flex-1 overflow-y-auto px-4 md:px-8 pt-4 md:pt-8 custom-scrollbar">
@@ -164,7 +164,7 @@ function StudentDetailView({ profile, studentId, onBack }: { profile: any, stude
 
   return (
     <div className="flex flex-col h-full pb-10">
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 relative overflow-hidden shrink-0">
+      <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 relative overflow-hidden shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
           <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
           <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />

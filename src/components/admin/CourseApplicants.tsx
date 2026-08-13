@@ -29,8 +29,8 @@ import {
 // ============================================================
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Waiting", className: "text-[#8a6a2a] dark:text-[#CAA25F]" },
-  accepted: { label: "Teaching this course", className: "text-[#1099A1]" },
+  pending: { label: "Waiting", className: "text-[#8a6a2a] dark:text-secondary" },
+  accepted: { label: "Teaching this course", className: "text-primary" },
   rejected: { label: "Not accepted", className: "text-muted-foreground" },
   withdrawn: { label: "Withdrawn", className: "text-muted-foreground" },
 };
@@ -103,7 +103,7 @@ export function CourseApplicants({
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -115,7 +115,7 @@ export function CourseApplicants({
   return (
     <div className="animate-in fade-in duration-300">
       {show === "assigned" && !assignedTutorId && (
-        <p className="mb-6 text-[13px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+        <p className="mb-6 text-[13px] font-medium text-[#8a6a2a] dark:text-secondary">
           No tutor assigned yet
         </p>
       )}
@@ -135,7 +135,7 @@ export function CourseApplicants({
               className={cn(
                 "rounded-2xl border bg-white p-5 dark:bg-[#182329]",
                 a.status === "accepted"
-                  ? "border-[#1099A1]/40"
+                  ? "border-primary/40"
                   : "border-[#e9edef] dark:border-[#2a3942]",
                 a.status === "rejected" || a.status === "withdrawn" ? "opacity-60" : ""
               )}
@@ -156,7 +156,7 @@ export function CourseApplicants({
                     )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted-foreground">
                       {a.tutor.hourlyRate != null && (
-                        <span className="font-medium text-[#1099A1]">
+                        <span className="font-medium text-primary">
                           {money(a.tutor.hourlyRate * 100)}/hr
                         </span>
                       )}
@@ -218,7 +218,7 @@ export function CourseApplicants({
                           ? "This course already has a tutor. Unassign them first."
                           : undefined
                       }
-                      className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                     >
                       {busyId === a.id ? (
                         <Loader2 size={14} className="animate-spin" />

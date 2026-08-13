@@ -54,7 +54,7 @@ export default function Blog() {
               </p>
               <button
                 onClick={() => navigate(`/post/${featured.id}`)}
-                className="bg-[#1099a1] px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto md:mx-0 block"
+                className="bg-primary px-[40px] md:px-[60px] py-[14px] md:py-[15px] rounded-[500px] text-white text-[16px] md:text-[18px] uppercase hover:bg-[#0d7d84] transition mx-auto md:mx-0 block"
               >
                 Read the Article
               </button>
@@ -83,7 +83,7 @@ export default function Blog() {
               </p>
               <button
                 onClick={() => navigate(`/post/${blog.id}`)}
-                className="text-[#1099a1] text-[15px] md:text-[18px] uppercase font-medium hover:underline bg-transparent border-none cursor-pointer px-2"
+                className="text-primary text-[15px] md:text-[18px] uppercase font-medium hover:underline bg-transparent border-none cursor-pointer px-2"
               >
                 Learn More
               </button>
@@ -95,7 +95,7 @@ export default function Blog() {
       <div className="mt-[40px] md:mt-[60px] flex justify-center">
         <button
           onClick={() => navigate("/posts")}
-          className="text-[#1099a1] font-medium text-[16px] md:text-[18px] uppercase hover:underline"
+          className="text-primary font-medium text-[16px] md:text-[18px] uppercase hover:underline"
         >
           View All Blogs &rarr;
         </button>

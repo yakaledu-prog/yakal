@@ -24,9 +24,9 @@ type Tab = "overview" | "list" | "essays" | "academics" | "recs" | "tasks";
 
 const tierLabel: Record<SchoolTier, string> = { dream: "Dream", target: "Target", safety: "Safety" };
 const tierColor: Record<SchoolTier, string> = {
-  dream: "bg-[#CAA25F]/15 text-[#8a6a2a]",
-  target: "bg-[#1099A1]/10 text-[#1099A1]",
-  safety: "bg-[#97CE9D]/25 text-[#2d7a54]",
+  dream: "bg-secondary/15 text-[#8a6a2a]",
+  target: "bg-primary/10 text-primary",
+  safety: "bg-tertiary/25 text-[#2d7a54]",
 };
 
 function fmtDate(d?: string | null) {
@@ -107,7 +107,7 @@ export function CollegeProfilePanel({
       {renderHeader ? (
         renderHeader(tabsNode)
       ) : (
-        <div className="bg-[#1099A1] text-white px-6 pt-6 md:px-10 md:pt-10">
+        <div className="bg-primary text-white px-6 pt-6 md:px-10 md:pt-10">
           <div className="">{tabsNode}</div>
         </div>
       )}
@@ -135,9 +135,9 @@ type TabProps = {
 
 const card = "bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl";
 const field =
-  "w-full bg-white dark:bg-[#1a2730] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-2 text-[14px] text-[#111] dark:text-white outline-none focus:border-[#1099A1]";
+  "w-full bg-white dark:bg-[#1a2730] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-2 text-[14px] text-[#111] dark:text-white outline-none focus:border-primary";
 const btnPrimary =
-  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1099A1] text-white text-[13px] font-semibold hover:bg-[#0d848b] transition-colors disabled:opacity-60";
+  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-white text-[13px] font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60";
 
 // --- Overview -----------------------------------------------
 function OverviewTab({ data, readOnly, canEditNotes, studentId, run }: TabProps & { canEditNotes: boolean }) {
@@ -319,7 +319,7 @@ function SchoolRow({ school, readOnly, run }: { school: CollegeListItem; readOnl
                 disabled={readOnly}
                 onClick={() => run(toggleRequirement(r.id, !r.is_complete))}
                 className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0",
-                  r.is_complete ? "bg-[#1099A1] border-[#1099A1] text-white" : "border-[#8696a0]")}
+                  r.is_complete ? "bg-primary border-primary text-white" : "border-[#8696a0]")}
               >
                 {r.is_complete && <Check size={11} />}
               </button>
@@ -521,7 +521,7 @@ function TasksTab({ data, readOnly, studentId, run }: TabProps) {
               disabled={readOnly}
               onClick={() => run(updateTask(t.id, { status: t.status === "done" ? "todo" : "done" }))}
               className={cn("w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
-                t.status === "done" ? "bg-[#1099A1] border-[#1099A1] text-white" : "border-[#8696a0]")}
+                t.status === "done" ? "bg-primary border-primary text-white" : "border-[#8696a0]")}
             >
               {t.status === "done" && <Check size={13} />}
             </button>

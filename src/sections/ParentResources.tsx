@@ -92,7 +92,7 @@ function FeatureRow({
       </div>
 
       <div className="flex w-full flex-col items-center text-center md:flex-1 md:max-w-[520px] md:items-start md:text-left">
-        <span className="mb-[14px] text-[13px] font-semibold uppercase tracking-[0.18em] text-[#1099a1]">
+        <span className="mb-[14px] text-[13px] font-semibold uppercase tracking-[0.18em] text-primary">
           {eyebrow}
         </span>
         <h3 className="mb-[16px] text-[36px] md:text-[52px] font-medium leading-[44px] md:leading-[60px]">

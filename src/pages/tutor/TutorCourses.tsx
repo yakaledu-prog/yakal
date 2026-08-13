@@ -74,8 +74,8 @@ export function TutorCourses() {
       >
         {/* Search bar */}
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -150,7 +150,7 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
   return (
     <div className={cn("flex flex-col h-full", activeTab !== 'students' && "pb-10")}>
       {/* Massive Integrated Header */}
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
+      <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 relative overflow-hidden shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
           <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
           <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -209,9 +209,9 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
                           className="rounded-none text-[10px] font-medium px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                        <span className="font-medium text-[#111] dark:text-[#e9edef] flex items-center gap-1.5"><Users size={14} className="text-[#1099A1]" /> {s.student_name}</span>
-                        <span className="flex items-center gap-1.5"><Calendar size={14} className="text-[#1099A1]" />{fmtDate(s.date)}</span>
-                        <span className="flex items-center gap-1.5"><Clock size={14} className="text-[#1099A1]" />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
+                        <span className="font-medium text-[#111] dark:text-[#e9edef] flex items-center gap-1.5"><Users size={14} className="text-primary" /> {s.student_name}</span>
+                        <span className="flex items-center gap-1.5"><Calendar size={14} className="text-primary" />{fmtDate(s.date)}</span>
+                        <span className="flex items-center gap-1.5"><Clock size={14} className="text-primary" />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
                       </div>
                     </div>
                   </div>

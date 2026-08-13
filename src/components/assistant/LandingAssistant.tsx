@@ -45,7 +45,7 @@ function linkify(text: string): React.ReactNode[] {
         key={`${at}-${match}`}
         href={email ? `mailto:${email}` : match}
         {...(email ? {} : { target: "_blank", rel: "noreferrer noopener" })}
-        className="text-[#1099A1] underline underline-offset-2 hover:text-[#0d7f86]"
+        className="text-primary underline underline-offset-2 hover:text-primary-hover"
       >
         {match}
       </a>
@@ -110,7 +110,7 @@ function StreamingText({ text }: { text: string }) {
     <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
       {linkify(shown)}
       {shown.length < text.length && (
-        <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#1099A1]" />
+        <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-primary" />
       )}
     </p>
   );
@@ -275,7 +275,7 @@ export function LandingAssistant() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Ask about Yakal"
-        className="fixed bottom-5 right-5 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#1099A1] text-white shadow-lg transition-colors hover:bg-[#0d7f86]"
+        className="fixed bottom-5 right-5 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-colors hover:bg-primary-hover"
       >
         <BotMessageSquareIcon size={24} />
       </button>
@@ -287,19 +287,19 @@ export function LandingAssistant() {
       <header className="flex items-center gap-1.5 border-b border-black/5 px-4 py-3">
         {/* <span className="relative flex h-2 w-2">
           {phase !== "idle" && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#97CE9D] opacity-75" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tertiary opacity-75" />
           )}
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#97CE9D]" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-tertiary" />
         </span> */}
-        <BotMessageSquareIcon size={16} className="text-[#1099A1] p-0" />
-        <p className="flex-1 text-[14px] font-medium text-[#1099A1]">Ask Yakal</p>
+        <BotMessageSquareIcon size={16} className="text-primary p-0" />
+        <p className="flex-1 text-[14px] font-medium text-primary">Ask Yakal</p>
 
         {canTalk && (
           <button
             onClick={() => (voiceMode ? leaveVoice() : setVoiceMode(true))}
             aria-label={voiceMode ? "Switch to typing" : "Switch to voice"}
             title={voiceMode ? "Type instead" : "Talk instead"}
-            className="text-[#54656f] transition-colors hover:text-[#1099A1]"
+            className="text-[#54656f] transition-colors hover:text-primary"
           >
             {voiceMode ? <Keyboard size={18} /> : <Mic size={18} />}
           </button>
@@ -346,7 +346,7 @@ export function LandingAssistant() {
                     <button
                       key={s}
                       onClick={() => send(s, false)}
-                      className="block w-full rounded-lg border border-black/10 px-3 py-2 text-left text-[13px] text-[#111] transition-colors hover:border-[#1099A1] hover:text-[#1099A1]"
+                      className="block w-full rounded-lg border border-black/10 px-3 py-2 text-left text-[13px] text-[#111] transition-colors hover:border-primary hover:text-primary"
                     >
                       {s}
                     </button>
@@ -360,7 +360,7 @@ export function LandingAssistant() {
             ))}
             {streaming && <StreamingText text={streaming} />}
             {busy && !streaming && <TypingDots />}
-            {error && <p className="text-[13px] text-[#CAA25F]">{error}</p>}
+            {error && <p className="text-[13px] text-secondary">{error}</p>}
           </div>
 
           <form
@@ -374,7 +374,7 @@ export function LandingAssistant() {
                 to sit outside on its own, which meant a second line pushed the
                 field taller while the button stayed pinned to the bottom of a
                 row that no longer matched it. */}
-            <div className="relative rounded-xl border border-black/10 transition-colors focus-within:border-[#1099A1]">
+            <div className="relative rounded-xl border border-black/10 transition-colors focus-within:border-primary">
               <textarea
                 ref={composerRef}
                 value={draft}
@@ -398,7 +398,7 @@ export function LandingAssistant() {
                 type="submit"
                 disabled={!draft.trim() || busy}
                 aria-label="Send"
-                className="absolute bottom-1.5 right-1.5 p-1.5 text-[#1099A1] transition-colors hover:text-[#0d7f86] disabled:text-[#54656f]/40"
+                className="absolute bottom-1.5 right-1.5 p-1.5 text-primary transition-colors hover:text-primary-hover disabled:text-[#54656f]/40"
               >
                 <Send size={17} />
               </button>
@@ -413,7 +413,7 @@ export function LandingAssistant() {
 function Bubble({ role, text }: { role: "user" | "model"; text: string }) {
   if (role === "user") {
     return (
-      <p className="ml-auto max-w-[85%] rounded-lg bg-[#1099A1] px-3 py-2 text-[13.5px] leading-relaxed text-white">
+      <p className="ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-[13.5px] leading-relaxed text-white">
         {text}
       </p>
     );
@@ -493,18 +493,18 @@ function VoicePanel({
         >
           {phase === "listening" && (
             <>
-              <span className="absolute h-full w-full animate-ping rounded-full bg-[#1099A1]/20" />
-              <span className="absolute h-[80%] w-[80%] animate-pulse rounded-full bg-[#1099A1]/15" />
+              <span className="absolute h-full w-full animate-ping rounded-full bg-primary/20" />
+              <span className="absolute h-[80%] w-[80%] animate-pulse rounded-full bg-primary/15" />
             </>
           )}
           {phase === "thinking" && (
-            <span className="absolute h-full w-full animate-spin rounded-full border-2 border-transparent border-t-[#1099A1] border-r-[#97CE9D]" />
+            <span className="absolute h-full w-full animate-spin rounded-full border-2 border-transparent border-t-primary border-r-tertiary" />
           )}
 
           <span
             className={cn(
               "relative flex h-20 w-20 items-center justify-center rounded-full transition-colors",
-              busy ? "bg-[#1099A1]" : "bg-[#1099A1]/10"
+              busy ? "bg-primary" : "bg-primary/10"
             )}
           >
             {phase === "speaking" ? (
@@ -523,7 +523,7 @@ function VoicePanel({
             ) : busy ? (
               <Square size={22} className="text-white" fill="currentColor" />
             ) : (
-              <Mic size={26} className="text-[#1099A1]" />
+              <Mic size={26} className="text-primary" />
             )}
           </span>
         </button>
@@ -544,7 +544,7 @@ function VoicePanel({
               key={i}
               className={cn(
                 "text-[13px] leading-relaxed opacity-35",
-                t.role === "user" ? "text-[#1099A1]" : "text-[#111]"
+                t.role === "user" ? "text-primary" : "text-[#111]"
               )}
             >
               {t.text}
@@ -552,15 +552,15 @@ function VoicePanel({
           ))}
 
           {spokenQuestion && (
-            <p className="text-[13.5px] leading-relaxed text-[#1099A1]">{spokenQuestion}</p>
+            <p className="text-[13.5px] leading-relaxed text-primary">{spokenQuestion}</p>
           )}
-          {interim && <p className="text-[13.5px] leading-relaxed text-[#1099A1]/50">{interim}</p>}
+          {interim && <p className="text-[13.5px] leading-relaxed text-primary/50">{interim}</p>}
           {answer && (
             <p className="text-[13.5px] leading-relaxed text-[#111]">{linkify(answer)}</p>
           )}
         </div>
 
-        {error && <p className="text-center text-[13px] text-[#CAA25F]">{error}</p>}
+        {error && <p className="text-center text-[13px] text-secondary">{error}</p>}
       </div>
 
       {/* Gone once the conversation starts. Choosing a voice is a thing you do

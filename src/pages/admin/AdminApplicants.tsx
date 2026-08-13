@@ -28,7 +28,7 @@ const TABS: { key: Tab; label: string }[] = [
 function Detail({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <span className="flex items-center gap-1.5 text-[13px] text-[#667781] dark:text-[#8696a0]">
-      <span className="text-[#1099A1] shrink-0">{icon}</span>
+      <span className="text-primary shrink-0">{icon}</span>
       {children}
     </span>
   );
@@ -60,7 +60,7 @@ function RejectDialog({
           rows={3}
           autoFocus
           placeholder="Reason for rejection"
-          className="w-full mt-3 px-3 py-2.5 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white outline-none focus:border-[#1099A1] transition-colors resize-none"
+          className="w-full mt-3 px-3 py-2.5 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white outline-none focus:border-primary transition-colors resize-none"
         />
         <div className="flex justify-end gap-2 mt-4">
           <button
@@ -71,7 +71,7 @@ function RejectDialog({
           </button>
           <button
             onClick={() => onConfirm(reason)}
-            className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-[#CAA25F] text-white hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-secondary text-white hover:opacity-90 transition-opacity"
           >
             Reject application
           </button>
@@ -136,7 +136,7 @@ export function AdminApplicants() {
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-background">
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden">
+      <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden">
         <svg
           className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none"
           viewBox="0 0 400 200" preserveAspectRatio="none" fill="none" aria-hidden="true"
@@ -174,7 +174,7 @@ export function AdminApplicants() {
       <div className="p-4 md:p-8 max-w-4xl">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="animate-spin text-[#1099A1]" size={24} />
+            <Loader2 className="animate-spin text-primary" size={24} />
           </div>
         ) : applicants.length === 0 ? (
           <div className="text-center py-16">
@@ -206,7 +206,7 @@ export function AdminApplicants() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-[15px] font-semibold text-foreground">{a.full_name}</h2>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#1099A1]/10 text-[#1099A1]">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                           {a.role}
                         </span>
                         <span className="text-[12px] text-muted-foreground">
@@ -232,7 +232,7 @@ export function AdminApplicants() {
                       </div>
 
                       {a.status === "rejected" && a.rejection_reason && (
-                        <p className="text-[13px] text-[#8a6a2a] dark:text-[#CAA25F] mt-2.5">
+                        <p className="text-[13px] text-[#8a6a2a] dark:text-secondary mt-2.5">
                           Rejected: {a.rejection_reason}
                         </p>
                       )}
@@ -247,7 +247,7 @@ export function AdminApplicants() {
                       className={cn(
                         "mt-3 flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium border transition-colors",
                         a.resume_url
-                          ? "border-[#1099A1]/30 text-[#1099A1] hover:bg-[#1099A1]/10"
+                          ? "border-primary/30 text-primary hover:bg-primary/10"
                           : "border-border text-muted-foreground cursor-not-allowed"
                       )}
                     >
@@ -268,7 +268,7 @@ export function AdminApplicants() {
                         <button
                           onClick={() => decide(a, true)}
                           disabled={isBusy}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-[#1099A1] text-white hover:bg-[#0d7f86] disabled:opacity-50 transition-colors"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
                         >
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                           Approve
