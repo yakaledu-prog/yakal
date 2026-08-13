@@ -17,6 +17,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Nothing external. These must always pass. */
 const PURE = [
+  ['api-route-parity.mjs', 'development and production mount every API route'],
   ['api-dispatch.ts', 'the ?action= router'],
   ['api-esm-load.ts', 'every function loads as ESM'],
   ['classroom-mapping.ts', 'Google courseWork maps to our shape'],
@@ -66,7 +67,11 @@ async function main() {
 
   console.log('\nChecks that need nothing\n');
   for (const [file, label] of PURE) {
-    if (!run('npx', ['tsx', join('scripts/verify', file)], label)) failed++;
+    const command = file.endsWith('.mjs') ? 'node' : 'npx';
+    const args = file.endsWith('.mjs')
+      ? [join('scripts/verify', file)]
+      : ['tsx', join('scripts/verify', file)];
+    if (!run(command, args, label)) failed++;
   }
 
   const up = await databaseIsUp();
