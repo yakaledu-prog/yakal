@@ -179,11 +179,21 @@ export function Spinner() {
   );
 }
 
-export function Empty({ title, body }: { title: string; body: string }) {
+export function Empty({
+  title,
+  body,
+  /** The way out of the empty state, when there is one. */
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="py-20 text-center">
       <p className="text-[15px] font-medium text-foreground">{title}</p>
       <p className="mx-auto mt-1 max-w-sm text-[13px] text-muted-foreground">{body}</p>
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
 }

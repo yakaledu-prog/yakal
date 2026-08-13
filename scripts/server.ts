@@ -25,8 +25,11 @@ import googleHandler from '../api/google.js';
 import contactHandler from '../api/contact.js';
 import newsletterHandler from '../api/newsletter.js';
 import notifyHandler from '../api/notify.js';
+import invitesHandler from '../api/invites.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
+import aiHandler from '../api/ai.js';
+import supportChatHandler from '../api/support-chat.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../dist');
@@ -68,9 +71,20 @@ const routes = {
   '/api/contact': contactHandler,
   '/api/newsletter': newsletterHandler,
   '/api/notify': notifyHandler,
+  '/api/ai': aiHandler,
+  // Sends a child's invitation email. Vercel routes api/invites.ts on its own,
+  // but this single-process host has to mount every endpoint by hand, and this
+  // one was missed - so a parent's invite 404'd in production while working in
+  // dev, where local-api.ts does have it.
+  //
+  // That has now happened twice, invites and then the assistant. A new file in
+  // api/ needs mounting in BOTH scripts/local-api.ts and here, or it works
+  // perfectly all the way through review and 404s the moment it ships.
+  '/api/invites': invitesHandler,
   // Refuses on its own whenever VERCEL_ENV or NODE_ENV is production, so it is
   // mounted unconditionally and guarded where the guard belongs.
   '/api/dev-user': devUserHandler,
+  '/api/support-chat': supportChatHandler,
 } as const;
 
 for (const [path, handler] of Object.entries(routes)) {

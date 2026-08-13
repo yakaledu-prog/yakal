@@ -6,7 +6,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Clock, Loader2, Trash2, Link2, Check, Mail, ChevronRight, PackagePlusIcon, SquarePenIcon, GraduationCap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBilling, type CoursePackage } from "@/services/packageService";
-import type { AdmissionsPlan } from "@/services/admissionsService";
+import { tierShade, type AdmissionsPlan } from "@/services/admissionsService";
 import {
   getLinkedChildren,
   getChildServices,
@@ -158,19 +158,15 @@ function CourseCard({ course }: { course: CoursePackage }) {
 }
 
 /**
- * The three tiers, in brand colours, ordered the way the tiers are.
+ * The tier's colour, from admissionsService.
  *
- * Used for the word in the row and for the band above the courses, so the two
- * cannot end up disagreeing about which colour Premier is.
+ * This used to be a second map keyed by name here, which disagreed with the
+ * one on the counselling page: Premier was gold in this table and teal on the
+ * page selling it. One definition, keyed by the tier's own sortOrder, so the
+ * two cannot drift again.
  */
-const TIER_COLOUR: Record<string, string> = {
-  essential: "#97CE9D",
-  premier: "#CAA25F",
-  elite: "#1099A1",
-};
-
-function tierColour(tier: string | null | undefined): string {
-  return TIER_COLOUR[(tier ?? "").trim().toLowerCase()] ?? "#1099A1";
+function tierColour(tier: { sortOrder?: number } | null | undefined): string {
+  return tierShade(tier?.sortOrder ?? 0);
 }
 
 /**
@@ -195,7 +191,7 @@ function PlanCell({ plan }: { plan: AdmissionsPlan | null | undefined }) {
         </span>
         <span
           className="block truncate text-[13px] font-medium"
-          style={{ color: tierColour(plan.tier.name) }}
+          style={{ color: tierColour(plan.tier) }}
         >
           {plan.tier.name}
         </span>
@@ -622,7 +618,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                             {plans?.get(c.id) && (
                               <div
                                 className="flex items-center justify-between gap-3 border-b pb-2"
-                                style={{ borderColor: `${tierColour(plans.get(c.id)!.tier.name)}50` }}
+                                style={{ borderColor: `${tierColour(plans.get(c.id)!.tier)}50` }}
                               >
                                 <PlanCell plan={plans.get(c.id)} />
                                 {/* Here rather than on the row, because here

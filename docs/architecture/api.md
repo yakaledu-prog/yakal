@@ -1,6 +1,6 @@
 # The serverless layer
 
-Seven functions in `api/`. They exist only for work that needs a secret the
+Functions in `api/` exist only for work that needs a secret the
 browser must not hold. Everything else goes straight from the browser to
 Supabase.
 
@@ -12,6 +12,7 @@ Supabase.
 | `google.ts` | token, drive, classroom | acts as the Yakal Google account |
 | `zoom.ts` | signature, meetings | signs with the Zoom secret |
 | `contact.ts` | - | Resend API key |
+| `support-chat.ts` | - | Groq API key; authenticated, bounded support conversations |
 | `dev-user.ts` | - | service role, disabled in production |
 
 ---

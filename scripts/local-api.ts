@@ -4,7 +4,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 
-// The same seven entry points Vercel deploys, imported the same way, so a
+// The same entry points Vercel deploys, imported the same way, so a
 // route that works here works there. The grouped ones dispatch on ?action=;
 // see api/_handlers/README.md for why they are grouped at all.
 import stripeHandler from '../api/stripe.ts';
@@ -17,6 +17,8 @@ import notifyHandler from '../api/notify.ts';
 import devUserHandler from '../api/dev-user.ts';
 import invitesHandler from '../api/invites.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
+import aiHandler from '../api/ai.ts';
+import supportChatHandler from '../api/support-chat.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,8 +55,10 @@ app.all('/api/contact', createVercelHandler(contactHandler));
 app.all('/api/invites', createVercelHandler(invitesHandler));
 app.all('/api/newsletter', createVercelHandler(newsletterHandler));
 app.all('/api/notify', createVercelHandler(notifyHandler));
+app.all('/api/ai', createVercelHandler(aiHandler));
 // Developer console only. Refuses unless DEV_TOOLS_ENABLED=true.
 app.all('/api/dev-user', createVercelHandler(devUserHandler));
+app.all('/api/support-chat', createVercelHandler(supportChatHandler));
 
 const PORT = 3001;
 app.listen(PORT, () => {

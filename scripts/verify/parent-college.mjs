@@ -38,7 +38,7 @@ const parent = await signIn('parent@yakal.com');
 await parent.goto(`${BASE}/parent/college-list`, { waitUntil: 'domcontentloaded' });
 await parent.waitForTimeout(3500);
 const listText = await parent.locator('body').innerText();
-pass('college list shows the seeded colleges', /Massachusetts Institute of Technology/.test(listText) && /Addis Ababa University/.test(listText));
+pass('college list shows the seeded colleges', /Massachusetts Institute of Technology/.test(listText) && /University of Cape Town/.test(listText));
 pass('no invented Harvard row', !/Harvard University/.test(listText));
 pass('no Add School button for a parent', !(await parent.getByRole('button', { name: /Add School/i }).isVisible().catch(() => false)));
 pass('no per-row status dropdown', (await parent.getByRole('button', { name: /^Status for /i }).count()) === 0);

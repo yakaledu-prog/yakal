@@ -13,14 +13,24 @@ const quickLinks = [
 
 // The LinkedIn link is the public company page, not the /admin/dashboard URL
 // the page owner sees: that one only opens for admins and leaks the admin path.
-const socials = [
-  { href: "https://www.instagram.com/yakaledu/", label: "Instagram", icon: <Instagram size={15} strokeWidth={2} /> },
-  { href: "https://x.com/yakaleducation", label: "X", icon: <XIcon size={14} /> },
-  { href: "https://www.linkedin.com/company/106175583/", label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
-];
+/** The icons. The addresses come from settings, so they are editable. */
+const SOCIAL_ICONS = {
+  instagram: { label: "Instagram", icon: <Instagram size={15} strokeWidth={2} /> },
+  x: { label: "X", icon: <XIcon size={14} /> },
+  linkedin: { label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
+} as const;
 import { useNavigate } from "react-router-dom";
-import { CONTACT } from "@/config/links";
+// Contact and social addresses come from admin-editable site settings (kept
+// from main), while the newsletter box is the branch's standalone
+// NewsletterSignup component - so the old inline email state and
+// subscribeToNewsletter are gone.
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
+  const { contact: CONTACT, social } = useSiteSettings();
+
+  const socials = (Object.keys(SOCIAL_ICONS) as (keyof typeof SOCIAL_ICONS)[])
+    .map((k) => ({ ...SOCIAL_ICONS[k], href: social[k] }))
+    .filter((s) => s.href);
   const navigate = useNavigate();
 
   return (

@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CalendarPlus, CreditCard, ExternalLink, Loader2, X , ChevronLeft } from "lucide-react";
+import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X, ChevronLeft, ChevronDown, List, LayoutGrid, Plus } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
@@ -45,9 +46,11 @@ import { useMasterDetail } from "@/hooks/useMasterDetail";
 //
 // Tabs keep each answer whole, and the sidebar scopes all three to one child.
 //
-// There is no add-slots or go-monthly here. Slots are chosen on the course
-// page, against the tutor's calendar, because that is where you can see what
-// is free. A button here would only send you there.
+// There is no add-slots or go-monthly here, and Add a plan is a link rather
+// than a checkout. Tutoring is priced per session against a tutor's calendar
+// and counselling is a tier, so both are bought on their own pages, where you
+// can see what you are choosing. This page only saves the parent from going
+// looking for them.
 // ============================================================
 
 const TABS = [
@@ -63,7 +66,25 @@ const SERVICE_FILTERS = [
   { id: "tutoring", label: "Tutoring", dot: "#CAA25F" },
 ] as const;
 
+/** The chip's own colour behind its count, the way the testimonial filters do it. */
+const tint = (hex: string, alpha = 0.16) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+};
+
 type ServiceFilter = (typeof SERVICE_FILTERS)[number]["id"];
+
+type StatusFilter = "all" | "active" | "completed";
+
+/**
+ * A course is finished when every session bought has happened.
+ *
+ * Counselling has no equivalent here: getAdmissionsPlans only asks for plans
+ * with status 'active', so an ended one never reaches this page and is never
+ * something Completed could hide.
+ */
+const isFinished = (p: CoursePackage) =>
+  p.slotsPurchased > 0 && p.slotsCompleted >= p.slotsPurchased;
 
 export function ParentBilling() {
   const { user } = useAuth();
@@ -72,6 +93,10 @@ export function ParentBilling() {
   const [childId, setChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("plans");
   const [service, setService] = useState<ServiceFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  // Two per row on a wide screen. Only the layout changes: the same card,
+  // with its quota lines wrapped rather than strung across one line.
+  const [view, setView] = useState<"list" | "grid">("list");
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data: children = [] } = useQuery({
@@ -141,6 +166,29 @@ export function ParentBilling() {
   const open = invoices.filter((i) => i.status === "open");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
 
+  // The two filters compose in the order they are read: service, then status.
+  // Each control counts what reaches it, so the status dropdown never offers a
+  // number the list underneath cannot produce.
+  const serviceCount: Record<ServiceFilter, number> = {
+    all: planCount,
+    counselling: admissionsPlans.length,
+    tutoring: packages.length,
+  };
+
+  const byService = {
+    admissions: service === "tutoring" ? [] : admissionsPlans,
+    packages: service === "counselling" ? [] : packages,
+  };
+  const finishedCount = byService.packages.filter(isFinished).length;
+  const activeCount =
+    byService.admissions.length + byService.packages.length - finishedCount;
+
+  const shownAdmissions = status === "completed" ? [] : byService.admissions;
+  const shownPackages = byService.packages.filter((p) =>
+    status === "all" ? true : status === "completed" ? isFinished(p) : !isFinished(p)
+  );
+  const shownCount = shownAdmissions.length + shownPackages.length;
+
   // Coming back from Stripe Checkout. The webhook is the backstop; confirming
   // on return is what makes the page correct before the parent has to reload.
   useEffect(() => {
@@ -206,7 +254,11 @@ export function ParentBilling() {
           list of names with no heading explaining what they were a list of.
           A grid keeps one DOM order and moves the rail into its own column at
           md, rather than rendering it twice. */}
-      <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
+      {/* content-start, or a short tab floats. Below md the rows are implicit
+          and auto-sized, and a grid distributes its leftover height across
+          those, which left a single saved card sitting halfway down the page
+          with the header pushed away from it. */}
+      <div className="grid h-full min-h-0 grid-cols-1 content-start overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
         <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
           <BillingHeader
             subtitle={
@@ -256,105 +308,271 @@ export function ParentBilling() {
         </div>
 
         <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto", detailClass)}>
-            {isLoading ? (
-              <Spinner />
-            ) : tab === "plans" ? (
-              packages.length === 0 && admissionsPlans.length === 0 ? (
-                <Empty
-                  title="No plans yet"
-                  body="A plan appears here once you book a course or start college counselling for one of your children."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {/* Only worth offering when there is something to sift. With
-                      one of each it is three buttons standing over two rows. */}
-                  {admissionsPlans.length > 0 && packages.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pb-1">
-                      {SERVICE_FILTERS.map((f) => (
-                        <button
-                          key={f.id}
-                          onClick={() => setService(f.id)}
-                          className={cn(
-                            "rounded-lg border px-3 py-1.5 text-[13px] transition-colors",
-                            service === f.id
-                              ? "border-transparent bg-foreground text-background"
-                              : "border-border text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {f.dot && (
-                            <span
-                              className="mr-2 inline-block h-2 w-2 rounded-full align-middle"
-                              style={{ backgroundColor: f.dot }}
-                            />
-                          )}
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {service !== "tutoring" &&
-                    admissionsPlans.map((p) => <AdmissionsCard key={p.id} plan={p} />)}
-                  {service !== "counselling" &&
-                    packages.map((p) => (
-                      <PlanCard key={`${p.courseId}|${p.studentId}`} pkg={p} />
-                    ))}
-                </div>
-              )
-            ) : tab === "payments" ? (
-              invoices.length === 0 ? (
-                <Empty title="Nothing yet" body="Payments appear here once you have made one." />
-              ) : (
-                <ul className="divide-y divide-border">
-                  {invoices.map((i) => (
-                    <li key={i.id} className="flex items-center gap-4 py-3.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[14px] text-foreground">{i.description}</p>
-                        <p className="text-[12px] text-muted-foreground">
-                          {i.studentName ?? "You"}
-                          {" - "}
-                          {new Date(i.createdAt).toLocaleDateString(undefined, {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[12.5px] font-medium capitalize",
-                          i.status === "paid"
-                            ? "text-[#1099A1]"
-                            : "text-[#8a6a2a] dark:text-[#CAA25F]"
-                        )}
-                      >
-                        {i.status}
-                      </span>
-                      <span className="w-24 text-right text-[14px] text-foreground">
-                        <Money cents={i.amountCents} />
-                      </span>
-                      {i.status === "open" && (
-                        <Button
-                          size="sm"
-                          onClick={() => pay([i.id], i.id)}
-                          disabled={busy !== null}
-                          className="h-8 shrink-0 bg-[#1099A1] px-4 text-[12px] text-white hover:bg-[#0d7f86]"
-                        >
-                          {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
-                        </Button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )
+          {isLoading ? (
+            <Spinner />
+          ) : tab === "plans" ? (
+            planCount === 0 ? (
+              <Empty
+                title="No plans yet"
+                body="A plan appears here once you book a course or start college counselling for one of your children."
+                action={<AddPlanMenu childId={childId} />}
+              />
             ) : (
-              <Methods cards={cards} isLoading={cardsLoading} busy={busy} onPortal={portal} />
-            )}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  {/* Only worth offering when there is something to sift. With
+                        one of each it is three buttons standing over two rows.
+                        The count is what makes them worth the width: it says
+                        what is behind the filter before you spend a click. */}
+                  {admissionsPlans.length > 0 && packages.length > 0 && SERVICE_FILTERS.map((f) => {
+                    const on = service === f.id;
+                    const count = serviceCount[f.id];
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setService(on ? "all" : f.id)}
+                        aria-pressed={on}
+                        disabled={count === 0 && !on}
+                        className={cn(
+                          "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors disabled:opacity-40",
+                          on ? "font-medium" : "border-border text-muted-foreground hover:text-foreground",
+                          // All is the resting state and has no colour of its
+                          // own, so it gets a grey ring rather than shouting
+                          // louder than a real filter.
+                          on && !f.dot && "border-black/25 text-foreground/70 dark:border-white/30"
+                        )}
+                        style={on && f.dot ? { borderColor: f.dot } : undefined}
+                      >
+                        {f.dot && (
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: f.dot }}
+                          />
+                        )}
+                        {f.label}
+                        <span
+                          className={cn(
+                            "rounded-full px-1.5 text-[11px] font-medium",
+                            !f.dot && "bg-black/[0.07] text-foreground/70 dark:bg-white/10 dark:text-white/70"
+                          )}
+                          style={f.dot ? { backgroundColor: tint(f.dot), color: f.dot } : undefined}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  {/* Its own full-width line below md, ends apart, because the
+                        chips above have already wrapped and leaving these two
+                        huddled against the right edge only looked like the row
+                        had run out of room. */}
+                  <div className="flex w-full shrink-0 items-center justify-between gap-2 md:ml-auto md:w-auto md:justify-normal">
+                    {/* Both of these need more than one card to mean
+                          anything, but neither needs one of each service. */}
+                    {planCount > 1 && (
+                      <>
+                        <Dropdown
+                          value={status}
+                          onChange={setStatus}
+                          options={[
+                            { value: "all", label: `All (${activeCount + finishedCount})` },
+                            { value: "active", label: `Active (${activeCount})` },
+                            { value: "completed", label: `Completed (${finishedCount})` },
+                          ]}
+                          size="sm"
+                          ariaLabel="Filter by status"
+                          className="w-[140px]"
+                          buttonClassName="text-foreground/70"
+                        />
+
+                        {/* The same control as the admin lists. Two togglers
+                              doing the same job should not look like two
+                              different components.
+
+                              Gone below md, where it has nothing to switch: one
+                              column is all that fits either way, so the cards
+                              just use the denser layout there. */}
+                        <div className="hidden rounded-lg border border-[#e9edef] bg-gray-100 p-1 dark:border-[#2a3942] dark:bg-[#182329] md:flex">
+                          {([
+                            ["list", List, "One per row"],
+                            ["grid", LayoutGrid, "Two per row"],
+                          ] as const).map(([mode, Icon, title]) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setView(mode)}
+                              aria-label={title}
+                              aria-pressed={view === mode}
+                              title={title}
+                              className={cn(
+                                "rounded-md p-1.5 transition-colors",
+                                view === mode
+                                  ? "bg-white shadow-sm dark:bg-[#202c33]"
+                                  : "text-muted-foreground hover:text-[#111] dark:hover:text-white"
+                              )}
+                            >
+                              <Icon size={18} />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    <AddPlanMenu childId={childId} />
+                  </div>
+                </div>
+
+                {shownCount === 0 ? (
+                  <p className="py-16 text-center text-[13.5px] text-muted-foreground">
+                    Nothing here with those filters.
+                  </p>
+                ) : (
+                  <div
+                    className={cn(
+                      view === "grid" ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "space-y-3"
+                    )}
+                  >
+                    {shownAdmissions.map((p) => (
+                      <AdmissionsCard key={p.id} plan={p} compact={view === "grid"} />
+                    ))}
+                    {shownPackages.map((p) => (
+                      <PlanCard
+                        key={`${p.courseId}|${p.studentId}`}
+                        pkg={p}
+                        compact={view === "grid"}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          ) : tab === "payments" ? (
+            invoices.length === 0 ? (
+              <Empty title="Nothing yet" body="Payments appear here once you have made one." />
+            ) : (
+              <ul className="divide-y divide-border">
+                {invoices.map((i) => (
+                  <li key={i.id} className="flex items-center gap-4 py-3.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] text-foreground">{i.description}</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {i.studentName ?? "You"}
+                        {" - "}
+                        {new Date(i.createdAt).toLocaleDateString(undefined, {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-[12.5px] font-medium capitalize",
+                        i.status === "paid"
+                          ? "text-[#1099A1]"
+                          : "text-[#8a6a2a] dark:text-[#CAA25F]"
+                      )}
+                    >
+                      {i.status}
+                    </span>
+                    <span className="w-24 text-right text-[14px] text-foreground">
+                      <Money cents={i.amountCents} />
+                    </span>
+                    {i.status === "open" && (
+                      <Button
+                        size="sm"
+                        onClick={() => pay([i.id], i.id)}
+                        disabled={busy !== null}
+                        className="h-8 shrink-0 bg-[#1099A1] px-4 text-[12px] text-white hover:bg-[#0d7f86]"
+                      >
+                        {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : (
+            <Methods cards={cards} isLoading={cardsLoading} busy={busy} onPortal={portal} />
+          )}
         </div>
       </div>
     </PageWrapper>
   );
 }
+
+/**
+ * Where a new plan is started from.
+ *
+ * A link, not a checkout. Tutoring is priced per session against a tutor's
+ * calendar and counselling is a tier, so neither can be bought from a list of
+ * what you already have; both pages already exist and both already accept a
+ * preselected child, so this carries the one in the sidebar across rather than
+ * asking for it again.
+ */
+function AddPlanMenu({ childId }: { childId: string | null }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const forChild = childId ? `?student=${childId}` : "";
+  const items = [
+    { label: "Book tutoring", hint: "Browse courses and pick a tutor", to: `/parent/courses${forChild}` },
+    { label: "College counselling", hint: "Compare the tiers", to: `/parent/admissions${forChild}` },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <Button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="h-9 gap-1.5 px-3.5 text-[13px]"
+      >
+        <Plus size={16} /> Add a plan
+        <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
+      </Button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 z-30 mt-1.5 w-[230px] overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
+        >
+          {items.map((item) => (
+            <button
+              key={item.to}
+              role="menuitem"
+              onClick={() => navigate(item.to)}
+              className="block w-full px-3.5 py-2.5 text-left transition-colors hover:bg-muted/60"
+            >
+              <span className="block text-[13.5px] font-medium text-foreground">{item.label}</span>
+              <span className="mt-0.5 block text-[12px] text-muted-foreground">{item.hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The dense layout is the base and the roomy one is an md override, in both
+// cards below. The toggler only exists from md up, so a phone always gets the
+// dense card whatever `compact` says, rather than four quota columns in 360px.
 
 /**
  * One course, for one child, with the tutor teaching it.
@@ -363,36 +581,42 @@ export function ParentBilling() {
  * side, which is the same fact told twice and subtracted once. How far through
  * they are is the only part worth reading, so that is all it says now.
  */
-function PlanCard({ pkg }: { pkg: CoursePackage }) {
+function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
   const total = Math.max(pkg.slotsPurchased, 1);
   const done = (pkg.slotsCompleted / total) * 100;
 
   return (
     // Gold for tutoring, teal for counselling. One glance says which of the two
     // services a row belongs to, which a list mixing both otherwise does not.
-    <article className="rounded-xl border border-[#CAA25F] bg-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <StackedAvatars
-            className="pt-0.5"
-            people={[
-              { id: pkg.studentId, name: pkg.studentName, avatarUrl: pkg.studentAvatarUrl },
-              pkg.tutorName
-                ? { id: pkg.tutorId ?? undefined, name: pkg.tutorName, avatarUrl: pkg.tutorAvatarUrl }
-                : null,
-            ]}
-          />
-          <div className="min-w-0">
-            <h3 className="text-[16px] font-medium text-foreground">{pkg.courseTitle}</h3>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              {pkg.studentName}
-              {pkg.tutorName && ` with ${pkg.tutorName}`}
-            </p>
-          </div>
+    <article className={cn("rounded-xl border border-[#CAA25F] bg-card p-4", !compact && "md:p-5")}>
+      <div className="flex min-w-0 items-start gap-3">
+        <StackedAvatars
+          className="pt-0.5"
+          people={[
+            { id: pkg.studentId, name: pkg.studentName, avatarUrl: pkg.studentAvatarUrl },
+            pkg.tutorName
+              ? { id: pkg.tutorId ?? undefined, name: pkg.tutorName, avatarUrl: pkg.tutorAvatarUrl }
+              : null,
+          ]}
+        />
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-medium text-foreground">{pkg.courseTitle}</h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {pkg.studentName}
+            {pkg.tutorName && ` with ${pkg.tutorName}`}
+          </p>
         </div>
-        <p className="text-[13px] text-muted-foreground">
+      </div>
+
+      {/* Its own row rather than floated against the title: the amount used to
+          wrap onto a line of its own anyway the moment a name ran long, which
+          left it sitting under the avatars looking accidental. The subject
+          fills the left, since a course has no start date to put there. */}
+      <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
+        <span className="truncate">{pkg.subject || "Tutoring"}</span>
+        <span className="shrink-0">
           <Money cents={pkg.totalPaidCents} /> paid
-        </p>
+        </span>
       </div>
 
       <div className="mt-4">
@@ -424,7 +648,7 @@ function PlanCard({ pkg }: { pkg: CoursePackage }) {
  * there so a parent can see where they stand before asking for one more round,
  * not because anything is about to be cut off.
  */
-function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
+function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boolean }) {
   const [booking, setBooking] = useState(false);
   const { data: usage } = useQuery({
     queryKey: ["admissions-usage", plan.studentId],
@@ -443,48 +667,66 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
   const hasBooked = (advising?.used ?? 0) > 0;
 
   return (
-    <article className="rounded-xl border border-[#1099A1] bg-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <StackedAvatars
-            className="pt-0.5"
-            people={[
-              people?.student && {
-                id: people.student.id,
-                name: people.student.fullName,
-                avatarUrl: people.student.avatarUrl,
-              },
-              people?.counselor && {
-                id: people.counselor.id,
-                name: people.counselor.fullName,
-                avatarUrl: people.counselor.avatarUrl,
-              },
-            ]}
-          />
-          <div className="min-w-0">
-            <h3 className="text-[16px] font-medium text-foreground">
-              {plan.tier.name} college counselling
-            </h3>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              {plan.studentName}
-              {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
-              {" - since "}
-              {new Date(plan.startedAt).toLocaleDateString(undefined, {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-          </div>
+    <article className={cn("rounded-xl border border-[#1099A1] bg-card p-4", !compact && "md:p-5")}>
+      <div className="flex min-w-0 items-start gap-3">
+        <StackedAvatars
+          className="pt-0.5"
+          people={[
+            people?.student && {
+              id: people.student.id,
+              name: people.student.fullName,
+              avatarUrl: people.student.avatarUrl,
+            },
+            people?.counselor && {
+              id: people.counselor.id,
+              name: people.counselor.fullName,
+              avatarUrl: people.counselor.avatarUrl,
+            },
+          ]}
+        />
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-medium text-foreground">
+            {plan.tier.name} college counselling
+          </h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            {plan.studentName}
+            {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
+          </p>
         </div>
-        <p className="text-[13px] text-muted-foreground">
+      </div>
+
+      {/* Since and paid, one row, ends apart. Both used to hang off the title
+          line, where the date pushed the name into wrapping and the amount
+          dropped onto a line of its own. */}
+      <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
+        <span className="truncate">
+          {"since "}
+          {new Date(plan.startedAt).toLocaleDateString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+        <span className="shrink-0">
           <Money cents={plan.tier.priceCents} /> paid
-        </p>
+        </span>
       </div>
 
       {usage && usage.lines.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-3">
-          <dl className="flex flex-wrap gap-x-8 gap-y-2">
+        <div
+          className={cn(
+            "mt-4 flex flex-col items-stretch gap-4 border-t border-border pt-3",
+            !compact && "md:flex-row md:flex-wrap md:items-end md:justify-between"
+          )}
+        >
+          {/* Two columns rather than one line when the card is half as wide:
+              four quota lines side by side would each be a few characters. */}
+          <dl
+            className={cn(
+              "grid grid-cols-2 gap-x-4 gap-y-2",
+              !compact && "md:flex md:flex-wrap md:gap-x-8"
+            )}
+          >
             {usage.lines.map((l) => (
               <div key={l.label}>
                 <dt className="text-[12px] text-muted-foreground">{l.label}</dt>
@@ -506,7 +748,10 @@ function AdmissionsCard({ plan }: { plan: AdmissionsPlan }) {
             <Button
               onClick={() => setBooking(true)}
               disabled={remaining <= 0 && !hasBooked}
-              className="h-9 shrink-0 gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50"
+              className={cn(
+                "h-9 w-full gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50",
+                !compact && "md:w-auto md:shrink-0"
+              )}
             >
               <CalendarPlus size={15} />
               {hasBooked ? "Change slots" : "Choose slots"}
@@ -715,6 +960,43 @@ function BookAdvisingDialog({
   );
 }
 
+/**
+ * The scheme's mark, at the size it reads at on the card itself.
+ *
+ * Visa's own artwork, so its blue and gold are Visa's rather than ours and the
+ * palette rule does not reach it. Every other scheme falls back to its name in
+ * a box: showing this mark for a Mastercard would be a lie about which card is
+ * on file, and a wrong logo is worse than no logo.
+ */
+function CardMark({ brand }: { brand: string }) {
+  if (brand.toLowerCase() !== "visa") {
+    return (
+      <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-bold uppercase text-muted-foreground">
+        {brand}
+      </span>
+    );
+  }
+
+  return (
+    // Cropped to the artwork. The source viewBox is 48 square around a card
+    // that is 42 by 30, so at any height a third of the box was empty.
+    <svg viewBox="3 9 42 30" className="h-10 w-14 shrink-0" role="img" aria-label="Visa">
+      <path
+        fill="#1565C0"
+        d="M45,35c0,2.209-1.791,4-4,4H7c-2.209,0-4-1.791-4-4V13c0-2.209,1.791-4,4-4h34c2.209,0,4,1.791,4,4V35z"
+      />
+      <path
+        fill="#FFF"
+        d="M15.186 19l-2.626 7.832c0 0-.667-3.313-.733-3.729-1.495-3.411-3.701-3.221-3.701-3.221L10.726 30v-.002h3.161L18.258 19H15.186zM17.689 30L20.56 30 22.296 19 19.389 19zM38.008 19h-3.021l-4.71 11h2.852l.588-1.571h3.596L37.619 30h2.613L38.008 19zM34.513 26.328l1.563-4.157.818 4.157H34.513zM26.369 22.206c0-.606.498-1.057 1.926-1.057.928 0 1.991.674 1.991.674l.466-2.309c0 0-1.358-.515-2.691-.515-3.019 0-4.576 1.444-4.576 3.272 0 3.306 3.979 2.853 3.979 4.551 0 .291-.231.964-1.888.964-1.662 0-2.759-.609-2.759-.609l-.495 2.216c0 0 1.063.606 3.117.606 2.059 0 4.915-1.54 4.915-3.752C30.354 23.586 26.369 23.394 26.369 22.206z"
+      />
+      <path
+        fill="#FFC107"
+        d="M12.212,24.945l-0.966-4.748c0,0-0.437-1.029-1.573-1.029c-1.136,0-4.44,0-4.44,0S10.894,20.84,12.212,24.945z"
+      />
+    </svg>
+  );
+}
+
 function Methods({
   cards,
   isLoading,
@@ -745,22 +1027,39 @@ function Methods({
       ) : (
         <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {cards.map((card) => (
-            <li key={card.id} className="flex items-center gap-3 p-4">
-              <span className="flex h-8 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-bold uppercase text-muted-foreground">
-                {card.brand}
-              </span>
+            <li key={card.id} className="flex items-center gap-4 p-5">
+              <CardMark brand={card.brand} />
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 text-[14px] font-medium text-foreground">
-                  <span className="capitalize">{card.brand}</span> ....{card.last4}
-                  {card.isDefault && (
-                    <span className="text-[11.5px] font-medium text-[#1099A1]">Default</span>
-                  )}
-                </p>
-                {card.exp_month && card.exp_year && (
-                  <p className="text-[12px] text-muted-foreground">
-                    Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <p className="text-[15px] font-medium text-foreground">
+                    <span className="capitalize">{card.brand}</span> ending in {card.last4}
                   </p>
-                )}
+                  {card.addedAt && (
+                    <p className="text-[12.5px] text-muted-foreground">
+                      Added{" "}
+                      {new Date(card.addedAt * 1000).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+
+                {/* Under the card itself rather than trailing the digits, where
+                    it read as part of the number. */}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3">
+                  {card.exp_month && card.exp_year && (
+                    <p className="text-[12.5px] text-muted-foreground">
+                      Expires {String(card.exp_month).padStart(2, "0")}/{card.exp_year}
+                    </p>
+                  )}
+                  {card.isDefault && (
+                    <span className="ml-auto flex items-center gap-1 text-[12.5px] text-[#1099A1]">
+                      <Check size={14} /> Default
+                    </span>
+                  )}
+                </div>
               </div>
             </li>
           ))}

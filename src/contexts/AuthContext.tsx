@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { applyTheme } from "@/lib/theme";
 import { useLastSeenHeartbeat } from "@/hooks/usePresence";
@@ -109,6 +110,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (data && !error) {
+        // An admin disabled this account. New sign-ins are already refused at
+        // the auth layer (migration 20260813000100 bans the account and drops
+        // its sessions), but an access token minted before the delete stays
+        // valid until it expires. This ends that session the moment its profile
+        // is read, so a browser left open on a now-deleted account is booted
+        // rather than left working.
+        if (data.status === "deleted" || data.status === "suspended") {
+          toast.error("This account has been deactivated. Contact Yakal if this is a mistake.");
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          return null;
+        }
+
         setProfile(data as Profile);
 
         // The profile is how the choice travels between machines, so on sign

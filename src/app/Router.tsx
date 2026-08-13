@@ -3,6 +3,9 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, use
 import { Loader2 } from "lucide-react";
 
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { SupportAssistant } from "@/components/support/SupportAssistant";
+import type { SupportChatRole } from "@/services/supportChatService";
+import { IdleTimeout } from "@/components/shared/IdleTimeout";
 import { Toaster } from "sonner";
 
 // ============================================================
@@ -77,7 +80,6 @@ const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) 
 const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
 const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
 const StudentCollegeList = lazy(() => import("../pages/student/StudentCollegeList").then((m) => ({ default: m.StudentCollegeList })));
-const StudentCourseCatalogDetail = lazy(() => import("../pages/student/StudentCourseCatalogDetail").then((m) => ({ default: m.StudentCourseCatalogDetail })));
 const StudentCourseDashboard = lazy(() => import("../pages/student/StudentCourseDashboard").then((m) => ({ default: m.StudentCourseDashboard })));
 const StudentCourseMessages = lazy(() => import("../pages/student/StudentCourseMessages").then((m) => ({ default: m.StudentCourseMessages })));
 const StudentCourseSessions = lazy(() => import("../pages/student/StudentCourseSessions").then((m) => ({ default: m.StudentCourseSessions })));
@@ -92,7 +94,6 @@ const StudentMessages = lazy(() => import("../pages/student/StudentMessages").th
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
 const StudentRoadmap = lazy(() => import("../pages/student/StudentRoadmap").then((m) => ({ default: m.StudentRoadmap })));
-const StudentSessionDetail = lazy(() => import("../pages/student/StudentSessionDetail").then((m) => ({ default: m.StudentSessionDetail })));
 const StudentSessions = lazy(() => import("../pages/student/StudentSessions").then((m) => ({ default: m.StudentSessions })));
 const TermsConditionsPage = lazy(() => import("../pages/shared/TermsConditionsPage").then((m) => ({ default: m.TermsConditionsPage })));
 const TrackerPreview = lazy(() => import("../pages/preview/TrackerPreview").then((m) => ({ default: m.TrackerPreview })));
@@ -106,7 +107,6 @@ const TutorMeeting = lazy(() => import("../pages/tutor/TutorMeeting").then((m) =
 const TutorMessages = lazy(() => import("../pages/tutor/TutorMessages").then((m) => ({ default: m.TutorMessages })));
 const TutorNotifications = lazy(() => import("../pages/tutor/TutorNotifications").then((m) => ({ default: m.TutorNotifications })));
 const TutorProfile = lazy(() => import("../pages/tutor/TutorProfile").then((m) => ({ default: m.TutorProfile })));
-const TutorSessionDetail = lazy(() => import("../pages/tutor/TutorSessionDetail").then((m) => ({ default: m.TutorSessionDetail })));
 const TutorSessions = lazy(() => import("../pages/tutor/TutorSessions").then((m) => ({ default: m.TutorSessions })));
 const TutorStudents = lazy(() => import("../pages/tutor/TutorStudents").then((m) => ({ default: m.TutorStudents })));
 
@@ -215,9 +215,15 @@ const previewRoutes = DEV_PREVIEW
   ]
   : [];
 
+const SUPPORT_ROLES: SupportChatRole[] = ['parent', 'student', 'tutor', 'counselor'];
+
 function AppRootLayout() {
   const location = useLocation();
+  const { user, profile } = useAuth();
   const isAdmin = location.pathname.startsWith('/admin');
+  const supportRole = profile && SUPPORT_ROLES.includes(profile.role as SupportChatRole)
+    ? profile.role as SupportChatRole
+    : null;
   return (
     <>
       <Toaster
@@ -232,10 +238,16 @@ function AppRootLayout() {
         }}
       />
       <Outlet />
+      {/* Signs an idle session out to /login. Here, under both AuthProvider and
+          the router, so it runs on every authenticated screen regardless of role. */}
+      <IdleTimeout />
       {/* Here rather than on one page: it should be offerable to a visitor
           reading the landing page and to somebody already signed in, and it
           hides itself once the app is installed. */}
       <InstallPrompt />
+      {user && supportRole && location.pathname.startsWith(`/${supportRole}`) && (
+        <SupportAssistant role={supportRole} userId={user.id} />
+      )}
     </>
   );
 }
@@ -374,7 +386,6 @@ const router = createBrowserRouter([
           { path: "students", element: <TutorStudents /> },
           { path: "students/:id", element: <TutorStudents /> },
           { path: "sessions", element: <TutorSessions /> },
-          { path: "session/:id", element: <TutorSessionDetail /> },
           { path: "meeting/:sessionId", element: <TutorMeeting /> },
           { path: "calendar", element: <TutorCalendar /> },
           { path: "courses", element: <TutorCourses /> },
@@ -433,7 +444,6 @@ const router = createBrowserRouter([
               { path: "messages", element: <StudentCourseMessages /> },
             ]
           },
-          { path: "session/:id", element: <StudentSessionDetail /> },
           { path: "messages", element: <StudentMessages /> },
           { path: "roadmap", element: <StudentRoadmap /> },
           { path: "diagnostics", element: <StudentDiagnostics /> },
@@ -441,7 +451,6 @@ const router = createBrowserRouter([
           { path: "college-list", element: <StudentCollegeList /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
-          { path: "courses/:courseId", element: <StudentCourseCatalogDetail /> },
           { path: "profile", element: <StudentProfile /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "meeting/:sessionId", element: <StudentMeeting /> },

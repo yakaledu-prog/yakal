@@ -781,17 +781,6 @@ export const COLLEGE_PROFILES: SeedCollegeProfile[] = [
         whySchool: "Best engineering faculty on the continent, and a shorter flight home.",
         completed: ["Application", "Transcript", "Test scores"],
       },
-      {
-        name: "Addis Ababa University",
-        unitid: null,
-        tier: "safety",
-        status: "submitted",
-        deadlineInDays: -20,
-        deadlineRound: "rolling",
-        suppEssayCount: 0,
-        whySchool: "Home, and a course I would be glad to take.",
-        completed: ["Application", "Transcript", "Test scores"],
-      },
     ],
     essays: [
       {

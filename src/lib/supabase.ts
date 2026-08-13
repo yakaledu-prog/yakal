@@ -101,4 +101,23 @@ if (import.meta.env.DEV) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Keep the session in sessionStorage rather than localStorage, so closing
+    // the tab or the browser ends it. The dashboard holds billing and payment
+    // details, and a token that outlives the tab on a shared machine is exactly
+    // the exposure we do not want. sessionStorage is also per-tab, so a session
+    // never silently travels into a newly opened tab; the walked-away-but-tab-
+    // still-open case is covered separately by the inactivity sign-out in
+    // components/shared/IdleTimeout.
+    //
+    // Guarded for the verify scripts, which import this module under plain Node
+    // where there is no window: they fall back to Supabase's in-memory store.
+    storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+    // Kept on: the Google sign-in and the password-reset link both hand the
+    // session back in the URL for the client to pick up.
+    detectSessionInUrl: true,
+  },
+})

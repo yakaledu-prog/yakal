@@ -230,6 +230,47 @@ adding a screen, prefer an empty state over a plausible number.
   unread conversations and paid invoices. Every figure now belongs to somebody.
 
 
+## Avatars and fabricated people (2026-08-11)
+
+- [x] **`i.pravatar.cc` was the avatar fallback across the app.** A user with
+  no photograph was given a **photograph of a real-looking stranger**, fetched
+  from a third party, different per account. It is a placeholder service for
+  design mockups, it puts user ids in a third party's logs, and the rest of the
+  app already uses `dicebearUrl`. Replaced on the admin, parent and student
+  profiles and in the sidebar.
+
+- [x] **The admin bio had a fabricated fallback.** Every admin without one was
+  described as "Platform administrator overseeing users, courses, and billing."
+  Shown only when written now, and editable, which it was not: the edit dialog
+  only saved the name while the page displayed a bio.
+
+- [x] **`/tutor/session/:id` and `/student/session/:id` were entirely static.** `TutorSessionDetail` takes
+  no props, runs no query and never reads its own route parameter. Every word
+  is hardcoded: "AP Calculus AB", "Today at 4:00 PM", a tutor called "Dr. Alex"
+  from "Mathematics Dept." with a pravatar face, plus the agenda and the
+  homework. **It is routed**, so a tutor opening any session sees the same
+  invented one. Needs the session read by id, the way
+  Both routes are **deleted**. Nothing linked to them: every Join in the app
+  goes to `/meeting/:id`, which is a real page. They were routes with no way
+  in, rendering a fabricated session.
+
+  `CounselorSessionDetail` was the same mock but **is** reachable, at
+  `/counselor/meeting/:id`, so it was rebuilt on `getSessionById` instead.
+
+- [x] **`StudentCourseCatalogDetail` was an invented course**, not just a
+  hardcoded tutor: "Avery M.", a picsum thumbnail, a five-module syllabus,
+  three reviews from people who do not exist and a Preply certification. It
+  called `useParams()` and threw the result away. Deleted: nothing linked to
+  it, and students do not browse or buy courses, parents do.
+
+- [ ] **`StudentHome` has the same invented feed the parent home had.**
+  "Dr. Alex graded your ..." wrapped around real homework titles.
+
+- [ ] **`StudentCalendar` is a hardcoded fortnight**: AP Calculus AB and
+  Physics Lab Review with Dr. Alex, on dates computed from today so they
+  always look current.
+
+
 ## Notes
 
 - `.env` holds live credentials for both the hosted project and the local
