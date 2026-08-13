@@ -29,6 +29,7 @@ import invitesHandler from '../api/invites.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
 import aiHandler from '../api/ai.js';
+import supportChatHandler from '../api/support-chat.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../dist');
@@ -83,6 +84,7 @@ const routes = {
   // Refuses on its own whenever VERCEL_ENV or NODE_ENV is production, so it is
   // mounted unconditionally and guarded where the guard belongs.
   '/api/dev-user': devUserHandler,
+  '/api/support-chat': supportChatHandler,
 } as const;
 
 for (const [path, handler] of Object.entries(routes)) {
