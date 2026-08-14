@@ -50,23 +50,18 @@ type Phase = "idle" | "listening" | "thinking" | "speaking";
 /**
  * The ground behind the conversation.
  *
- * Two layers. A wash falling from the top gives the panel some depth so it
- * does not read as a flat cut-out, and a dot grid over it gives the texture.
+ * A dot grid was tried first and read as graph paper: at any strength faint
+ * enough not to compete with the text it vanished, and at any strength you
+ * could see it, it patterned the whole panel.
  *
- * Both are mixed from the primary token rather than written as literals, so
- * they follow the theme into dark mode instead of becoming a fourth colour.
- * The first attempt was eight percent, which measured fine and disappeared
- * entirely on a real screen; visible is the point of having it at all.
+ * A wash has no such tension. It falls from the top, where the conversation
+ * begins, and is gone by the composer, so the drawer has depth without
+ * anything to look at. Mixed from the primary token rather than written as a
+ * literal, so it follows the theme into dark mode.
  */
-const DOT_GRID: React.CSSProperties = {
-  backgroundImage: [
-    "radial-gradient(115% 55% at 50% 0%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 72%)",
-    "radial-gradient(color-mix(in oklab, var(--primary) 26%, transparent) 1.3px, transparent 1.3px)",
-  ].join(", "),
-  backgroundSize: "100% 100%, 20px 20px",
-  // No background-attachment: the default already anchors both layers to the
-  // element's own box, so the texture stays put while the conversation scrolls
-  // over it. "fixed" would anchor them to the viewport instead.
+const DRAWER_GROUND: React.CSSProperties = {
+  backgroundImage:
+    "linear-gradient(to bottom, color-mix(in oklab, var(--primary) 10%, transparent), transparent 55%)",
 };
 
 export function SupportDrawer({
@@ -443,7 +438,7 @@ export function SupportDrawer({
           <>
             <div
               ref={scrollRef}
-              style={DOT_GRID}
+              style={DRAWER_GROUND}
               className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
             >
               {messages.length === 0 && (
@@ -662,7 +657,7 @@ function VoicePane({
 
   return (
     <div
-      style={DOT_GRID}
+      style={DRAWER_GROUND}
       className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6"
     >
       <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-6">
