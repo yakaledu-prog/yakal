@@ -1,10 +1,20 @@
 import { supabase } from "@/lib/supabase";
 
+export const BLOG_CATEGORIES = [
+  "Study Skills",
+  "Admissions",
+  "Parent Guide",
+  "Yakal News",
+] as const;
+
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
+
 export interface BlogPost {
   id: string;
   title: string;
   content: string; // HTML
   thumbnail_url: string | null;
+  category: BlogCategory | null;
   read_time_minutes: number;
   status: "draft" | "published";
   /** When the newsletter for this post went out. Null means never. */
