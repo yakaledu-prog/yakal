@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, Mic, Send, Keyboard, Square, ChevronLeft, Plus, History, ChevronDown } from "lucide-react";
+import { X, Mic, Send, Keyboard, Square, ChevronLeft, Plus, PanelLeft, ChevronDown, MessageSquare } from "lucide-react";
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -45,6 +45,20 @@ import {
 
 type Phase = "idle" | "listening" | "thinking" | "speaking";
 
+/**
+ * The faint dot grid behind the conversation.
+ *
+ * Built from the primary token rather than a literal, so it follows the theme
+ * into dark mode instead of becoming a fourth colour. Kept at eight percent
+ * and eighteen pixels apart: enough to read as a surface rather than a blank
+ * panel, far too faint to compete with the text sitting on it.
+ */
+const DOT_GRID: React.CSSProperties = {
+  backgroundImage:
+    "radial-gradient(color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px)",
+  backgroundSize: "18px 18px",
+};
+
 export function SupportDrawer({
   role,
   userId,
@@ -81,7 +95,6 @@ export function SupportDrawer({
   const abortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  const historyRef = useRef<HTMLDivElement>(null);
   const spokenRef = useRef("");
 
   const voices = useVoices();
@@ -182,16 +195,10 @@ export function SupportDrawer({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, streaming, open]);
 
-  // The history menu closes on a click anywhere else, or it stays open behind
-  // the conversation and swallows the next message tapped.
-  useEffect(() => {
-    if (!historyOpen) return;
-    const away = (e: MouseEvent) => {
-      if (!historyRef.current?.contains(e.target as Node)) setHistoryOpen(false);
-    };
-    document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
-  }, [historyOpen]);
+  // No outside-click handler: the rail has a scrim of its own, and a mousedown
+  // listener alongside it made the toggle button unable to close the rail.
+  // Mousedown closed it, then the click that followed toggled it straight back
+  // open again.
 
   // Escape closes, matching every other overlay in the app.
   useEffect(() => {
@@ -252,7 +259,7 @@ export function SupportDrawer({
         role="dialog"
         aria-label="AI support"
         className={cn(
-          "fixed inset-0 z-[96] flex flex-col bg-card",
+          "fixed inset-0 z-[96] flex flex-col overflow-hidden bg-card",
           "md:inset-y-0 md:left-auto md:right-0 md:w-[400px] md:border-l md:border-border md:shadow-2xl"
         )}
       >
@@ -267,103 +274,23 @@ export function SupportDrawer({
             <ChevronLeft size={20} />
           </button>
 
-          {/* Top left, as the way back into an earlier conversation. A menu
-              rather than a permanent rail: at 400px a list of chats beside the
-              chat would leave neither enough room. */}
-          <div ref={historyRef} className="relative shrink-0">
-            <button
-              onClick={() => setHistoryOpen((o) => !o)}
-              aria-haspopup="menu"
-              aria-expanded={historyOpen}
-              aria-label="Earlier chats"
-              title="Earlier chats"
-              className="flex items-center gap-0.5 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-            >
-              <History size={18} />
-              <ChevronDown
-                size={13}
-                className={cn("transition-transform", historyOpen && "rotate-180")}
-              />
-            </button>
-
-            {historyOpen && (
-              <div
-                role="menu"
-                className="absolute left-0 top-full z-10 mt-1 max-h-72 w-[260px] overflow-y-auto rounded-xl border border-border bg-card py-1 shadow-lg"
-              >
-                {past.length === 0 ? (
-                  <p className="px-3 py-2.5 text-[12.5px] text-muted-foreground">
-                    Nothing earlier yet.
-                  </p>
-                ) : (
-                  past.map((s) => (
-                    <button
-                      key={s.id}
-                      role="menuitem"
-                      onClick={() => {
-                        stopEverything();
-                        setActiveId(s.id);
-                        setHistoryOpen(false);
-                      }}
-                      className={cn(
-                        "block w-full px-3 py-2 text-left transition-colors hover:bg-muted/60",
-                        s.id === activeId && "bg-primary/5"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "block truncate text-[13px]",
-                          s.id === activeId ? "font-medium text-primary" : "text-foreground"
-                        )}
-                      >
-                        {s.title}
-                      </span>
-                      <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
-                        {new Date(s.updatedAt).toLocaleTimeString(undefined, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
+          {/* Opens the rail. Left of the title, because that is where the way
+              back to an earlier conversation belongs. */}
+          <button
+            onClick={() => setHistoryOpen((o) => !o)}
+            aria-expanded={historyOpen}
+            aria-label="Chats"
+            title="Chats"
+            className={cn(
+              "shrink-0 rounded-lg p-1.5 transition-colors hover:bg-muted/60",
+              historyOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
-          </div>
+          >
+            <PanelLeft size={18} />
+          </button>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-foreground">Yali</p>
-            <p className="text-[12px] text-muted-foreground">
-              Yakal support, for how things work
-            </p>
-          </div>
+          <p className="min-w-0 flex-1 text-[14px] font-medium text-foreground">Yali</p>
 
-          {/* Only when the open chat has something in it, or this makes a
-              second empty conversation indistinguishable from the first. */}
-          {messages.length > 0 && (
-            <button
-              onClick={startNewChat}
-              aria-label="New chat"
-              title="New chat"
-              className="text-muted-foreground transition-colors hover:text-primary"
-            >
-              <Plus size={18} />
-            </button>
-          )}
-
-          {canTalk && (
-            <button
-              onClick={() => {
-                stopEverything();
-                setVoiceMode((v) => !v);
-              }}
-              aria-label={voiceMode ? "Switch to typing" : "Switch to voice"}
-              title={voiceMode ? "Type instead" : "Talk instead"}
-              className="text-muted-foreground transition-colors hover:text-primary"
-            >
-              {voiceMode ? <Keyboard size={18} /> : <Mic size={18} />}
-            </button>
-          )}
           <button
             onClick={close}
             aria-label="Close support"
@@ -372,6 +299,80 @@ export function SupportDrawer({
             <X size={18} />
           </button>
         </header>
+
+        {/* Full height inside the drawer, over the conversation rather than
+            beside it: at 400px there is no room for two columns, and on a
+            phone the drawer is already the whole window. */}
+        {historyOpen && (
+          <>
+            <div
+              onClick={() => setHistoryOpen(false)}
+              aria-hidden
+              className="absolute inset-0 z-20 bg-black/20"
+            />
+            <div
+              className="absolute inset-y-0 left-0 z-30 flex w-[260px] max-w-[80%] flex-col border-r border-border bg-card shadow-xl"
+            >
+              <div className="border-b border-border p-2">
+                <button
+                  onClick={startNewChat}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  <Plus size={16} /> New chat
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-2">
+                {past.length === 0 ? (
+                  <p className="px-3 py-2 text-[12.5px] text-muted-foreground">
+                    Nothing earlier yet.
+                  </p>
+                ) : (
+                  past.map((session) => (
+                    <button
+                      key={session.id}
+                      onClick={() => {
+                        stopEverything();
+                        setActiveId(session.id);
+                        setHistoryOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left transition-colors",
+                        session.id === activeId ? "bg-primary/10" : "hover:bg-muted/60"
+                      )}
+                    >
+                      <MessageSquare
+                        size={14}
+                        className={cn(
+                          "mt-0.5 shrink-0",
+                          session.id === activeId ? "text-primary" : "text-muted-foreground"
+                        )}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "block truncate text-[13px]",
+                            session.id === activeId
+                              ? "font-medium text-primary"
+                              : "text-foreground"
+                          )}
+                        >
+                          {session.title}
+                        </span>
+                        <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                          {new Date(session.updatedAt).toLocaleTimeString(undefined, {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {voiceMode ? (
           <VoicePane
@@ -390,10 +391,18 @@ export function SupportDrawer({
               listener.start();
             }}
             onStop={stopEverything}
+            onType={() => {
+              stopEverything();
+              setVoiceMode(false);
+            }}
           />
         ) : (
           <>
-            <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            <div
+              ref={scrollRef}
+              style={DOT_GRID}
+              className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
+            >
               {messages.length === 0 && (
                 <div className="space-y-3">
                   <p className="text-[13.5px] leading-relaxed text-muted-foreground">
@@ -504,14 +513,33 @@ export function SupportDrawer({
                   placeholder="Ask how something works"
                   className="block max-h-32 w-full resize-none overflow-y-auto bg-transparent py-2.5 pl-3 pr-10 text-[13.5px] leading-relaxed outline-none"
                 />
-                <button
-                  type="submit"
-                  disabled={!draft.trim() || busy}
-                  aria-label="Send"
-                  className="absolute bottom-1.5 right-1.5 p-1.5 text-primary transition-colors hover:text-primary-hover disabled:text-muted-foreground/40"
-                >
-                  <Send size={17} />
-                </button>
+                {/* Both live in the box, so the two ways of asking sit
+                    together instead of one being a header control and the
+                    other a composer one. */}
+                <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5">
+                  {canTalk && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopEverything();
+                        setVoiceMode(true);
+                      }}
+                      aria-label="Talk instead"
+                      title="Talk instead"
+                      className="p-1.5 text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      <Mic size={17} />
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={!draft.trim() || busy}
+                    aria-label="Send"
+                    className="p-1.5 text-primary transition-colors hover:text-primary-hover disabled:text-muted-foreground/40"
+                  >
+                    <Send size={17} />
+                  </button>
+                </div>
               </div>
             </form>
           </>
@@ -555,6 +583,7 @@ function VoicePane({
   onVoice,
   onStart,
   onStop,
+  onType,
 }: {
   phase: Phase;
   interim: string;
@@ -567,6 +596,7 @@ function VoicePane({
   onVoice: (id: string) => void;
   onStart: () => void;
   onStop: () => void;
+  onType: () => void;
 }) {
   const CAPTION: Record<Phase, string> = {
     idle: "Tap to talk",
@@ -587,7 +617,10 @@ function VoicePane({
   }, [history.length, question, answer]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6">
+    <div
+      style={DOT_GRID}
+      className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6"
+    >
       <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-6">
         <button
           onClick={busy ? onStop : onStart}
@@ -632,6 +665,13 @@ function VoicePane({
         </button>
 
         <p className="text-[13px] text-muted-foreground">{CAPTION[phase]}</p>
+
+        <button
+          onClick={onType}
+          className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Keyboard size={14} /> Type instead
+        </button>
 
         {/* Teal for the person, plain for the assistant, and everything before
             the current exchange faded: context for where you are, not
