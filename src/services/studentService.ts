@@ -187,6 +187,9 @@ export interface CourseAssignmentRow {
   grade: number | null;
   isSubmitted: boolean;
   link: string | null;
+  /** The Classroom courseWork id this row mirrors, so the reader can dedupe a
+   *  mirrored row against the live read-through entry instead of matching URLs. */
+  externalId: string | null;
 }
 
 export async function getCourseAssignments(
@@ -196,7 +199,7 @@ export async function getCourseAssignments(
   const [{ data: rows, error }, { data: course }] = await Promise.all([
     supabase
       .from("assignments")
-      .select("id, title, description, materials, due_date, max_points, template_url")
+      .select("id, title, description, materials, due_date, max_points, template_url, external_id")
       .eq("course_id", courseId)
       .order("due_date", { ascending: true }),
     supabase.from("courses").select("google_classroom_url").eq("id", courseId).maybeSingle(),
@@ -231,6 +234,7 @@ export async function getCourseAssignments(
       isSubmitted: !!submission,
       // The assignment's own template first, then the class it belongs to.
       link: r.template_url || course?.google_classroom_url || null,
+      externalId: r.external_id ?? null,
     };
   });
 }

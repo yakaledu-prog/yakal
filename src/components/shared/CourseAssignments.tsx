@@ -31,6 +31,9 @@ import { groupCourseWorkByTopic } from "@/utils/courseWorkTopics";
 export interface LocalAssignment extends AssignmentItem {
   /** The Classroom page the sync wrote back, when it has run for this row. */
   classroomUrl?: string | null;
+  /** The Classroom courseWork id this native row mirrors, for de-duping against
+   *  the live read-through entry. Null on a purely Yakal-authored row. */
+  externalId?: string | null;
 }
 
 export function CourseAssignments({
@@ -38,11 +41,19 @@ export function CourseAssignments({
   localAssignments,
   isLoading = false,
   emptyText = "No work set on this course yet.",
+  onTurnIn,
+  onUnsubmit,
+  busyId,
 }: {
   courseId: string;
   localAssignments: LocalAssignment[];
   isLoading?: boolean;
   emptyText?: string;
+  /** Given, the student can turn work in from here. Omit for a read-only view. */
+  onTurnIn?: (assignment: AssignmentItem) => void;
+  onUnsubmit?: (assignment: AssignmentItem) => void;
+  /** The assignment id whose turn-in is mid-flight, so its control can wait. */
+  busyId?: string | null;
 }) {
   const {
     data,
@@ -55,16 +66,30 @@ export function CourseAssignments({
     retry: false,
   });
 
-  const classroom = data?.assignments ?? [];
+  const classroom = useMemo(() => data?.assignments ?? [], [data]);
 
   const merged = useMemo(() => {
-    const fromClassroom = new Set(classroom.map((a) => a.link).filter(Boolean));
-    // A local row the sync has already pushed is the same piece of work as the
-    // Classroom entry it created, so only one of them belongs in the list.
-    const localOnly = localAssignments.filter(
-      (a) => !a.classroomUrl || !fromClassroom.has(a.classroomUrl)
+    // The read-through carries the live definition (title, topic, materials); the
+    // mirrored native row carries the stable id a submission points at and this
+    // student's own grade and turn-in. Matched by external_id, one piece of work
+    // becomes one row: the Classroom definition, overlaid with the native id and
+    // progress. (This replaces the old URL match, which the P2 mirror broke by
+    // giving every Classroom item a native twin.)
+    const localByExternal = new Map(
+      localAssignments.filter((a) => a.externalId).map((a) => [a.externalId, a])
     );
-    return [...classroom, ...localOnly].map((a, i) => ({ ...a, index: i + 1 }));
+    const overlaid = classroom.map((c) => {
+      const local = localByExternal.get(c.id);
+      return local
+        ? { ...c, id: local.id, grade: local.grade, isSubmitted: local.isSubmitted }
+        : c;
+    });
+    const fromClassroom = new Set(classroom.map((c) => c.id));
+    // Purely Yakal-authored rows: not a mirror of any Classroom item.
+    const localOnly = localAssignments.filter(
+      (a) => !a.externalId || !fromClassroom.has(a.externalId)
+    );
+    return [...overlaid, ...localOnly].map((a, i) => ({ ...a, index: i + 1 }));
   }, [classroom, localAssignments]);
 
   // The work grouped under its Classroom topic. Null when the class groups
@@ -112,12 +137,24 @@ export function CourseAssignments({
           {sections.map((s) => (
             <section key={s.id}>
               <h4 className="mb-3 text-[15px] font-semibold text-foreground">{s.name}</h4>
-              <AssignmentList assignments={s.items} emptyText="" />
+              <AssignmentList
+                assignments={s.items}
+                emptyText=""
+                onTurnIn={onTurnIn}
+                onUnsubmit={onUnsubmit}
+                busyId={busyId}
+              />
             </section>
           ))}
         </div>
       ) : (
-        <AssignmentList assignments={merged} emptyText={emptyText} />
+        <AssignmentList
+          assignments={merged}
+          emptyText={emptyText}
+          onTurnIn={onTurnIn}
+          onUnsubmit={onUnsubmit}
+          busyId={busyId}
+        />
       )}
     </div>
   );

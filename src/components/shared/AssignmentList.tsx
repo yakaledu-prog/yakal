@@ -113,6 +113,9 @@ export function AssignmentList({
   submittersById,
   /** Given, the submitter row becomes a way into the detail. */
   onOpenSubmissions,
+  onTurnIn,
+  onUnsubmit,
+  busyId,
   className,
 }: {
   assignments: AssignmentItem[];
@@ -120,6 +123,11 @@ export function AssignmentList({
   emptyText?: string;
   submittersById?: Record<string, AssignmentSubmitter[]>;
   onOpenSubmissions?: (assignment: AssignmentItem) => void;
+  /** Given, a student can turn work in from the card. Omit for a read-only list. */
+  onTurnIn?: (assignment: AssignmentItem) => void;
+  onUnsubmit?: (assignment: AssignmentItem) => void;
+  /** The assignment whose turn-in is mid-flight, so its button can wait. */
+  busyId?: string | null;
   className?: string;
 }) {
   // The first one is open and the rest are closed, so the page opens on
@@ -299,6 +307,43 @@ export function AssignmentList({
                         View submissions
                       </button>
                     )}
+                  </div>
+                )}
+
+                {/* The student's own turn-in. Only when a caller wants it (the
+                    task page), so every other list stays read only. Once a grade
+                    is on it, it is a record: no turning in or undoing from here. */}
+                {onTurnIn && (
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <span className="text-[13px] text-muted-foreground">
+                      {a.grade != null
+                        ? "Marked"
+                        : a.isSubmitted
+                          ? "Turned in, waiting to be marked"
+                          : "Not turned in yet"}
+                    </span>
+                    {a.grade == null &&
+                      (a.isSubmitted ? (
+                        onUnsubmit && (
+                          <button
+                            type="button"
+                            disabled={busyId === a.id}
+                            onClick={() => onUnsubmit(a)}
+                            className="text-[13px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+                          >
+                            Undo turn-in
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busyId === a.id}
+                          onClick={() => onTurnIn(a)}
+                          className="rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+                        >
+                          {busyId === a.id ? "Turning in..." : "Turn in"}
+                        </button>
+                      ))}
                   </div>
                 )}
               </div>
