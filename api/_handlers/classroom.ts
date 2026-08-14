@@ -4,6 +4,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { classroom_v1, auth as googleAuth } from '@googleapis/classroom';
 
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
+import { assignmentUpsertRows } from '../_utils/classroom-rows.js';
 
 /**
  * Google Classroom, read through an account Yakal controls.
@@ -156,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: course } = await db
       .from('courses')
-      .select('google_classroom_url')
+      .select('google_classroom_url, tutor_id')
       .eq('id', courseId)
       .maybeSingle();
 
@@ -204,6 +205,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // the teacher filed it under no topic.
         topicId: w.topicId ? String(w.topicId) : null,
       }));
+
+    // Mirror the Classroom definitions into native assignments, keyed by
+    // external_id, so a native submission and grade have a stable row to attach
+    // to (P2, docs/architecture/google-classroom.md). Best-effort and
+    // idempotent: a write failure here must not stop the reader seeing the work,
+    // and running it again on the next view changes nothing.
+    //
+    // Only for a course with a tutor: assignments.tutor_id is not null, and a
+    // class with no tutor has nobody to grade a submission anyway. The work
+    // still shows through the live read above; it just gets no native row yet.
+    if (assignments.length > 0 && course?.tutor_id) {
+      const rows = assignmentUpsertRows(courseId, course.tutor_id, assignments, topics);
+      const { error: upsertErr } = await db
+        .from('assignments')
+        .upsert(rows, { onConflict: 'course_id,external_id' });
+      if (upsertErr) console.error('classroom: could not mirror assignments:', upsertErr.message);
+    }
 
     return res.status(200).json({ assignments, topics, linked: true });
   } catch (err: any) {
