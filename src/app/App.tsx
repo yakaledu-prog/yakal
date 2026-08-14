@@ -4,6 +4,33 @@ import SubjectPage from "@/pages/SubjectPage";
 import type { Page } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import { FullPageLoader } from "@/components/ui/FullPageLoader";
+
+/**
+ * Whether a session is likely to resolve, answered synchronously.
+ *
+ * Supabase keeps its token in sessionStorage under sb-<ref>-auth-token. Auth
+ * resolves asynchronously, so without this check there are only two options
+ * and both are wrong: paint the landing page and let a signed-in user watch it
+ * get replaced by their dashboard, or hold every first-time visitor behind a
+ * loading screen on a marketing page.
+ *
+ * Reading the key costs nothing and separates the two cases. A visitor gets
+ * the landing page immediately; somebody with a session waits a moment and
+ * lands where they belong.
+ */
+function hasStoredSession(): boolean {
+  try {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith("sb-") && key.endsWith("-auth-token")) return true;
+    }
+  } catch {
+    // Private mode. Fall through to the landing page, which is the safe half:
+    // the worst case is the flash this exists to remove.
+  }
+  return false;
+}
 
 export default function App() {
   const [page, setPage] = useState<Page>({ type: "home" });
@@ -21,6 +48,9 @@ export default function App() {
       });
     }
   }, [page]);
+
+  // Held back only for somebody who is probably signed in.
+  if (loading && hasStoredSession()) return <FullPageLoader />;
 
   if (!loading && user) {
     if (profile && profile.is_onboarded) {

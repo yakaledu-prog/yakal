@@ -115,6 +115,7 @@ import App from "./App";
 import { AuthPage } from "../pages/shared/AuthPage";
 import { NotFoundPage } from "../pages/shared/NotFoundPage";
 import BlogsPage from "../pages/BlogsPage";
+import { FullPageLoader } from "@/components/ui/FullPageLoader";
 import BlogPage from "../pages/BlogPage";
 import UnsubscribePage from "../pages/UnsubscribePage";
 
@@ -141,9 +142,7 @@ function ProtectedRoute() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-muted/20">Loading...</div>;
-  }
+  if (loading) return <FullPageLoader />;
 
   if (!user) {
     return <Navigate to="/login" replace />;
