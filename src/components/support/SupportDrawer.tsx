@@ -54,14 +54,17 @@ type Phase = "idle" | "listening" | "thinking" | "speaking";
  * enough not to compete with the text it vanished, and at any strength you
  * could see it, it patterned the whole panel.
  *
- * A wash has no such tension. It falls from the top, where the conversation
- * begins, and is gone by the composer, so the drawer has depth without
- * anything to look at. Mixed from the primary token rather than written as a
- * literal, so it follows the theme into dark mode.
+ * A wash has no such tension. It sits on the whole card rather than on the
+ * scrolling list, which is what stops it ending in a hard line wherever the
+ * conversation happens to run out. Everything above it is transparent, so it
+ * carries through the header and the composer as one surface.
+ *
+ * Mixed from the primary token rather than written as a literal, so it follows
+ * the theme into dark mode.
  */
 const DRAWER_GROUND: React.CSSProperties = {
   backgroundImage:
-    "linear-gradient(to bottom, color-mix(in oklab, var(--primary) 10%, transparent), transparent 55%)",
+    "linear-gradient(to bottom, color-mix(in oklab, var(--primary) 12%, transparent), transparent 70%)",
 };
 
 export function SupportDrawer({
@@ -270,12 +273,13 @@ export function SupportDrawer({
       <aside
         role="dialog"
         aria-label="AI support"
+        style={DRAWER_GROUND}
         className={cn(
           "fixed inset-0 z-[96] flex flex-col overflow-hidden bg-card",
           "md:inset-y-0 md:left-auto md:right-0 md:w-[400px] md:border-l md:border-border md:shadow-2xl"
         )}
       >
-        <header className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <header className="flex items-center gap-2 border-b-0 border-border px-4 py-3">
           {/* A back arrow on a phone, where this is a page, and a close cross on
               a desktop, where it is a panel beside one. */}
           <button
@@ -436,11 +440,7 @@ export function SupportDrawer({
           />
         ) : (
           <>
-            <div
-              ref={scrollRef}
-              style={DRAWER_GROUND}
-              className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
-            >
+            <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
               {messages.length === 0 && (
                 <div className="flex h-full flex-col items-center justify-center px-2 text-center">
                   <img
@@ -656,10 +656,7 @@ function VoicePane({
   }, [history.length, question, answer]);
 
   return (
-    <div
-      style={DRAWER_GROUND}
-      className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6"
-    >
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-between px-5 py-6">
       <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-6">
         <button
           onClick={busy ? onStop : onStart}

@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/ui/NotificationBell";
 import { InstallButton } from "@/components/pwa/InstallPrompt";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { LockedOverlay } from "@/components/shared/LockedOverlay";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   Search,
   ChevronRight,
@@ -17,7 +18,7 @@ import {
   Menu,
   Lock,
   ChevronDown,
-  Sparkles
+  BotMessageSquareIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { SupportDrawer } from "@/components/support/SupportDrawer";
@@ -77,8 +78,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const decorated = useMemo(() => {
     const countFor = (href?: string) =>
       href?.endsWith("/notifications") ? badges.notifications
-      : href?.endsWith("/messages") ? badges.messages
-      : undefined;
+        : href?.endsWith("/messages") ? badges.messages
+          : undefined;
     const apply = (item: NavItem): NavItem => ({
       ...item,
       badge: countFor(item.href) ?? item.badge,
@@ -96,6 +97,14 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         // hand reaches for to dismiss it.
         e.preventDefault();
         setSearchOpen((wasOpen) => !wasOpen);
+      }
+      // Cmd/Ctrl+/ for the assistant, the conventional help key and unclaimed
+      // by every major browser. K belongs to the palette, and J was the first
+      // choice until it turned out to open the downloads page in Chrome, Edge
+      // and Firefox alike.
+      if (e.key === '/' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSupportOpen((wasOpen) => !wasOpen);
       }
       if (e.key === 'Escape') {
         setSearchOpen(false);
@@ -321,14 +330,27 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 the content underneath, so it should not be sitting on top of
                 it while closed. */}
             {supportRole && (
-              <button
-                onClick={() => setSupportOpen(true)}
-                aria-label="Ask AI support"
-                title="Ask Yali"
-                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+              <Tooltip
+                side="bottom"
+                width={150}
+                content={
+                  <span className="flex items-center gap-2">
+                    Ask Yali
+                    <kbd className="rounded border border-white/25 px-1 py-0.5 text-[10px] leading-none">
+                      {isMac ? "\u2318" : "Ctrl"} /
+                    </kbd>
+                  </span>
+                }
               >
-                <Sparkles size={20} />
-              </button>
+                <button
+                  onClick={() => setSupportOpen((o) => !o)}
+                  aria-label="Ask AI support"
+                  aria-keyshortcuts={isMac ? "Meta+/" : "Control+/"}
+                  className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+                >
+                  <BotMessageSquareIcon size={20} />
+                </button>
+              </Tooltip>
             )}
             <ThemeToggle />
             <NotificationBell basePath={basePath} />
