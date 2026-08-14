@@ -111,6 +111,53 @@ export type Reader =
   | { kind: 'learner'; email: string | null }
   | { kind: 'denied' };
 
+/** One raw Classroom submission, in the terms the assignment list uses. */
+export function readSubmission(s: any) {
+  return {
+    courseWorkId: String(s?.courseWorkId ?? ''),
+    userId: String(s?.userId ?? ''),
+    // TURNED_IN is waiting to be marked, RETURNED has been marked and handed
+    // back. Both mean the student did the work, which is the question the list
+    // is answering. NEW and CREATED do not.
+    isSubmitted: s?.state === 'TURNED_IN' || s?.state === 'RETURNED',
+    // assignedGrade is the mark the student can see in Classroom. draftGrade is
+    // the tutor's working note on a paper they have not handed back, so showing
+    // it here would tell a student a result that has not been given yet.
+    grade: typeof s?.assignedGrade === 'number' ? s.assignedGrade : null,
+    late: !!s?.late,
+  };
+}
+
+export type Submission = ReturnType<typeof readSubmission>;
+
+/**
+ * Who has turned in each piece of work, keyed by assignment id.
+ *
+ * Only for staff. A learner is told about their own submission and nothing
+ * about anybody else's, which is why this takes the whole class's submissions
+ * and the learner path never calls it.
+ *
+ * A submitter missing from the roster is still counted. Classroom keeps the
+ * submission when a student leaves the class, and dropping them would quietly
+ * reduce a count a tutor may have already acted on.
+ */
+export function submittersByWork(
+  submissions: Submission[],
+  roster: Map<string, { name: string; avatarUrl: string | null }>
+): Record<string, { id: string; name: string; avatarUrl: string | null }[]> {
+  const byWork: Record<string, { id: string; name: string; avatarUrl: string | null }[]> = {};
+  for (const s of submissions) {
+    if (!s.isSubmitted || !s.courseWorkId) continue;
+    const person = roster.get(s.userId);
+    (byWork[s.courseWorkId] ??= []).push({
+      id: s.userId,
+      name: person?.name ?? 'Student',
+      avatarUrl: person?.avatarUrl ?? null,
+    });
+  }
+  return byWork;
+}
+
 async function readerFor(db: any, userId: string, courseId: string): Promise<Reader> {
   const { data: profile } = await db
     .from('profiles')
@@ -176,6 +223,60 @@ async function readerFor(db: any, userId: string, courseId: string): Promise<Rea
 function readDueDate(due: any): string | null {
   if (!due?.year || !due?.month || !due?.day) return null;
   return `${due.year}-${String(due.month).padStart(2, '0')}-${String(due.day).padStart(2, '0')}`;
+}
+
+/**
+ * Every submission on the class, or one person's.
+ *
+ * courseWorkId '-' is Classroom's wildcard: it answers for all the coursework
+ * in the course at once. Asking per assignment would be one round trip per row
+ * on the page, which for a term of work is slower than the whole rest of the
+ * request put together.
+ *
+ * Capped rather than paged to exhaustion. Without a userId this is every
+ * student times every assignment, so a large class multiplies fast. Six pages
+ * is 600 submissions, well past anything here, and a class that somehow
+ * exceeded it would lose the tail of a list rather than hang the request.
+ */
+async function listSubmissions(
+  classroom: classroom_v1.Classroom,
+  classId: string,
+  userId?: string
+): Promise<Submission[]> {
+  const rows: Submission[] = [];
+  let pageToken: string | undefined;
+
+  for (let page = 0; page < 6; page++) {
+    const res = await classroom.courses.courseWork.studentSubmissions.list({
+      courseId: classId,
+      courseWorkId: '-',
+      pageSize: 100,
+      ...(pageToken ? { pageToken } : {}),
+      ...(userId ? { userId } : {}),
+    });
+    rows.push(...((res.data.studentSubmissions ?? []) as any[]).map(readSubmission));
+    pageToken = res.data.nextPageToken ?? undefined;
+    if (!pageToken) break;
+  }
+  return rows;
+}
+
+/** The class roster as Google id to name, so a submission can be given a face. */
+async function fetchRoster(
+  classroom: classroom_v1.Classroom,
+  classId: string
+): Promise<Map<string, { name: string; avatarUrl: string | null }>> {
+  const res = await classroom.courses.students.list({ courseId: classId, pageSize: 200 });
+  const roster = new Map<string, { name: string; avatarUrl: string | null }>();
+  for (const s of (res.data.students ?? []) as any[]) {
+    const photo = s.profile?.photoUrl ?? null;
+    roster.set(String(s.userId), {
+      name: s.profile?.name?.fullName ?? 'Student',
+      // Classroom returns these protocol relative, as //lh3.googleusercontent...
+      avatarUrl: photo ? (photo.startsWith('//') ? `https:${photo}` : photo) : null,
+    });
+  }
+  return roster;
 }
 
 /** A material's title and link, whichever of the kinds it is. */
@@ -255,6 +356,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const visibleTo = (w: any) => isVisibleTo(w, reader, readerGoogleId);
 
+    // What has actually been handed in. A learner is asked about only
+    // themselves, so Google filters it and no other student's row is ever in
+    // the response to filter out here.
+    //
+    // Both of these degrade to nothing rather than failing the request. The
+    // list of work is the point of the page; whether it has been turned in is
+    // the useful extra, and losing the extra should not lose the point.
+    let submissions: Submission[] = [];
+    let roster = new Map<string, { name: string; avatarUrl: string | null }>();
+    if (reader.kind === 'staff') {
+      [submissions, roster] = await Promise.all([
+        listSubmissions(classroom, classId).catch(() => []),
+        fetchRoster(classroom, classId).catch(() => new Map()),
+      ]);
+    } else if (readerGoogleId) {
+      submissions = await listSubmissions(classroom, classId, readerGoogleId).catch(() => []);
+    }
+
+    // A learner has at most one submission per assignment, so this is a lookup
+    // rather than a list.
+    const mine = new Map(submissions.map((s) => [s.courseWorkId, s]));
+
     // Published only. A draft is the teacher's business, and this endpoint
     // answers to students.
     const assignments = work
@@ -272,9 +395,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // The unit this work belongs to, matched to a topic id above. Null when
         // the teacher filed it under no topic.
         topicId: w.topicId ? String(w.topicId) : null,
+        // This reader's own state. Undefined for staff, who are shown who
+        // turned it in instead; a teacher has no submission of their own.
+        isSubmitted: reader.kind === 'staff' ? undefined : !!mine.get(String(w.id))?.isSubmitted,
+        grade: reader.kind === 'staff' ? undefined : mine.get(String(w.id))?.grade ?? null,
+        late: reader.kind === 'staff' ? undefined : !!mine.get(String(w.id))?.late,
       }));
 
-    return res.status(200).json({ assignments, topics, linked: true });
+    // Only when the class has students. An empty roster means nobody has been
+    // invited yet, and reporting "nobody has turned this in" for a class with
+    // nobody in it says something about Yakal rather than about the students.
+    const submitters =
+      reader.kind === 'staff' && roster.size > 0
+        ? submittersByWork(submissions, roster)
+        : undefined;
+
+    return res.status(200).json({ assignments, topics, submitters, linked: true });
   } catch (err: any) {
     console.error('classroom error:', err);
     const raw = err?.message || 'Server error';

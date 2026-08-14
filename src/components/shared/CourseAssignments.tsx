@@ -75,6 +75,11 @@ export function CourseAssignments({
     [data?.topics, merged]
   );
 
+  // Only a tutor or admin is sent this, and only for a class that has students
+  // on it. Undefined leaves the submitter row off entirely, which is what a
+  // student and a parent see: their own state is on the assignment itself.
+  const submitters = data?.submitters;
+
   if (isLoading || classroomLoading) {
     // Reading a class from Google is slower than a database read, and long
     // enough that a bare spinner leaves somebody wondering whether anything is
@@ -90,7 +95,7 @@ export function CourseAssignments({
   return (
     <div className="animate-in fade-in duration-300">
       {data?.invalidLink && (
-        <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
+        <p className="mb-4 flex items-center gap-2 text-[13px] text-secondary">
           <TriangleAlert size={14} />
           That Google Classroom link is not a class URL, so nothing can be read from it.
         </p>
@@ -100,7 +105,7 @@ export function CourseAssignments({
           an empty list says the teacher set nothing, which is a different and
           much more reassuring claim than the truth. */}
       {error != null && (
-        <p className="mb-4 flex items-center gap-2 text-[13px]" style={{ color: "#CAA25F" }}>
+        <p className="mb-4 flex items-center gap-2 text-[13px] text-secondary">
           <TriangleAlert size={14} />
           Google Classroom could not be reached, so anything set there is missing from this
           list.
@@ -112,12 +117,12 @@ export function CourseAssignments({
           {sections.map((s) => (
             <section key={s.id}>
               <h4 className="mb-3 text-[15px] font-semibold text-foreground">{s.name}</h4>
-              <AssignmentList assignments={s.items} emptyText="" />
+              <AssignmentList assignments={s.items} emptyText="" submittersById={submitters} />
             </section>
           ))}
         </div>
       ) : (
-        <AssignmentList assignments={merged} emptyText={emptyText} />
+        <AssignmentList assignments={merged} emptyText={emptyText} submittersById={submitters} />
       )}
     </div>
   );

@@ -28,6 +28,10 @@ export interface CourseWorkResult {
   linked: boolean;
   /** True when it has one, but the stored URL is not a class link. */
   invalidLink?: boolean;
+  /** Who has turned each assignment in, keyed by its id. Staff only, and only
+   *  once the class has students; a learner is told about their own work and
+   *  nothing about anybody else's. */
+  submitters?: Record<string, { id: string; name: string; avatarUrl: string | null }[]>;
 }
 
 /** The work set on a Yakal course, for anyone entitled to read it. */
@@ -39,5 +43,6 @@ export async function getCourseWorkFor(courseId: string): Promise<CourseWorkResu
     topics: ((res as any).topics ?? []) as ClassroomTopic[],
     linked: !!(res as any).linked,
     invalidLink: !!(res as any).invalidLink,
+    submitters: (res as any).submitters ?? undefined,
   };
 }

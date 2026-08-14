@@ -119,6 +119,10 @@ export interface ClassroomAssignment {
   link: string | null;
   /** The Classroom topic this work is filed under, or null for none. */
   topicId: string | null;
+  /** This reader's own submission. All undefined for staff, who have none. */
+  isSubmitted?: boolean;
+  grade?: number | null;
+  late?: boolean;
 }
 
 /** A Classroom topic: the class's own grouping of work into units. */

@@ -22,6 +22,7 @@ const PURE = [
   ['api-esm-load.ts', 'every function loads as ESM'],
   ['classroom-mapping.ts', 'Google courseWork maps to our shape'],
   ['classroom-visibility.ts', 'individual coursework does not leak between students'],
+  ['classroom-submissions.ts', 'submission state, and no draft grade shown as a result'],
   ['notification-templates.ts', 'every notification template renders'],
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
