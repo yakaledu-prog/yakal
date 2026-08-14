@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { mergeRosterIds } from "@/utils/tutorRoster";
 
 export interface SessionRow {
   id: string;
@@ -77,7 +78,10 @@ export async function getTutorSessionsFull(tutorId: string): Promise<SessionRow[
 }
 
 export async function getTutorDashboard(tutorId: string): Promise<TutorDashboard> {
-  const sessions = await getTutorSessionsFull(tutorId);
+  const [sessions, enrolledIds] = await Promise.all([
+    getTutorSessionsFull(tutorId),
+    getEnrolledStudentIds(tutorId),
+  ]);
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const today = sessions.filter((s) => s.date === todayStr && s.status === "upcoming");
@@ -87,7 +91,7 @@ export async function getTutorDashboard(tutorId: string): Promise<TutorDashboard
     .sort((a, b) => (a.date + a.start_time).localeCompare(b.date + b.start_time));
   const next = upcomingSorted[0] ?? null;
 
-  const activeStudents = new Set(sessions.map((s) => s.student_id)).size;
+  const activeStudents = mergeRosterIds(enrolledIds, sessions.map((s) => s.student_id)).length;
   const upcoming = sessions.filter((s) => s.status === "upcoming").length;
   const completed = sessions.filter((s) => s.status === "completed").length;
 
@@ -144,12 +148,34 @@ export interface TutorStudent {
   subjects: string[];
 }
 
-/** Distinct students who have booked this tutor, with per-student aggregates. */
-export async function getTutorStudents(tutorId: string): Promise<TutorStudent[]> {
-  const sessions = await getTutorSessionsFull(tutorId);
-  if (sessions.length === 0) return [];
+/** Active enrolments on courses assigned to this tutor. */
+async function getEnrolledStudentIds(tutorId: string, courseId?: string): Promise<string[]> {
+  let coursesQuery = supabase.from("courses").select("id").eq("tutor_id", tutorId);
+  if (courseId) coursesQuery = coursesQuery.eq("id", courseId);
 
-  const ids = [...new Set(sessions.map((s) => s.student_id))];
+  const { data: courses, error: courseError } = await coursesQuery;
+  if (courseError) throw courseError;
+  const courseIds = (courses ?? []).map((course) => course.id);
+  if (courseIds.length === 0) return [];
+
+  const { data: enrolments, error } = await supabase
+    .from("enrolments")
+    .select("student_id")
+    .in("course_id", courseIds)
+    .eq("status", "active");
+  if (error) throw error;
+  return [...new Set((enrolments ?? []).map((row) => row.student_id))];
+}
+
+/** Enrolled students plus legacy students who only have booked sessions. */
+export async function getTutorStudents(tutorId: string): Promise<TutorStudent[]> {
+  const [sessions, enrolledIds] = await Promise.all([
+    getTutorSessionsFull(tutorId),
+    getEnrolledStudentIds(tutorId),
+  ]);
+
+  const ids = mergeRosterIds(enrolledIds, sessions.map((s) => s.student_id));
+  if (ids.length === 0) return [];
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, full_name, avatar_url, email")
@@ -230,24 +256,29 @@ export interface CourseWorkspace {
 
 /** Everything for one course's tabbed detail view. */
 export async function getCourseWorkspace(courseId: string, tutorId: string): Promise<CourseWorkspace> {
-  const [{ data: course }, allSessions, allAssignments] = await Promise.all([
+  const [{ data: course }, allSessions, allAssignments, enrolledIds] = await Promise.all([
     supabase.from("courses").select("*").eq("id", courseId).single(),
     getTutorSessionsFull(tutorId),
     getTutorAssignments(tutorId),
+    getEnrolledStudentIds(tutorId, courseId),
   ]);
 
   const sessions = allSessions.filter((s) => s.course_id === courseId);
   const assignments = allAssignments.filter((a) => a.course_id === courseId);
 
-  const ids = [...new Set(sessions.map((s) => s.student_id))];
+  const ids = mergeRosterIds(enrolledIds, sessions.map((s) => s.student_id));
+  const { data: profiles } = ids.length
+    ? await supabase.from("profiles").select("id, full_name, avatar_url, email").in("id", ids)
+    : { data: [] };
   const students: TutorStudent[] = ids.map((id) => {
     const mine = sessions.filter((s) => s.student_id === id);
+    const profile = profiles?.find((row) => row.id === id);
     const dates = mine.map((s) => s.date).sort();
     return {
       id,
-      full_name: mine[0]?.student_name || "Student",
-      avatar_url: mine[0]?.student_avatar ?? null,
-      email: null,
+      full_name: profile?.full_name || mine[0]?.student_name || "Student",
+      avatar_url: profile?.avatar_url ?? mine[0]?.student_avatar ?? null,
+      email: profile?.email ?? null,
       sessionCount: mine.length,
       completedCount: mine.filter((s) => s.status === "completed").length,
       lastDate: dates[dates.length - 1] ?? null,

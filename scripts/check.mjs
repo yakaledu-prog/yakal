@@ -21,6 +21,7 @@ const PURE = [
   ['api-dispatch.ts', 'the ?action= router'],
   ['api-esm-load.ts', 'every function loads as ESM'],
   ['classroom-mapping.ts', 'Google courseWork maps to our shape'],
+  ['tutor-roster.ts', 'tutor and student course rosters stay aligned'],
   ['notification-templates.ts', 'every notification template renders'],
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
