@@ -26,6 +26,7 @@ const PURE = [
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
+  ['submission-progress.ts', 'course progress rolls up a student submissions'],
 ];
 
 /** Needs the local Supabase. Skipped when it is not answering. */
