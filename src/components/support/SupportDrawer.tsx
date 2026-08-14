@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, Mic, Send, Keyboard, Square, ChevronLeft, Plus, PanelLeft, ChevronDown, MessageSquare } from "lucide-react";
+import { X, Mic, Send, Keyboard, Square, ChevronLeft, SquarePen, PanelLeft, ChevronDown, BotMessageSquareIcon, MessagesSquareIcon } from "lucide-react";
+
+import helloImg from "@/assets/images/hello.png";
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -46,30 +48,43 @@ import {
 type Phase = "idle" | "listening" | "thinking" | "speaking";
 
 /**
- * The faint dot grid behind the conversation.
+ * The ground behind the conversation.
  *
- * Built from the primary token rather than a literal, so it follows the theme
- * into dark mode instead of becoming a fourth colour. Kept at eight percent
- * and eighteen pixels apart: enough to read as a surface rather than a blank
- * panel, far too faint to compete with the text sitting on it.
+ * Two layers. A wash falling from the top gives the panel some depth so it
+ * does not read as a flat cut-out, and a dot grid over it gives the texture.
+ *
+ * Both are mixed from the primary token rather than written as literals, so
+ * they follow the theme into dark mode instead of becoming a fourth colour.
+ * The first attempt was eight percent, which measured fine and disappeared
+ * entirely on a real screen; visible is the point of having it at all.
  */
 const DOT_GRID: React.CSSProperties = {
-  backgroundImage:
-    "radial-gradient(color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px)",
-  backgroundSize: "18px 18px",
+  backgroundImage: [
+    "radial-gradient(115% 55% at 50% 0%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 72%)",
+    "radial-gradient(color-mix(in oklab, var(--primary) 26%, transparent) 1.3px, transparent 1.3px)",
+  ].join(", "),
+  backgroundSize: "100% 100%, 20px 20px",
+  // No background-attachment: the default already anchors both layers to the
+  // element's own box, so the texture stays put while the conversation scrolls
+  // over it. "fixed" would anchor them to the viewport instead.
 };
 
 export function SupportDrawer({
   role,
   userId,
+  userName,
   open,
   onClose,
 }: {
   role: SupportChatRole;
   userId: string;
+  /** Only for the greeting. Absent is fine; it just goes unnamed. */
+  userName?: string | null;
   open: boolean;
   onClose: () => void;
 }) {
+  // First name only. "Hello Tigist Worku, I am Yali" reads like a form letter.
+  const firstName = userName?.trim().split(/\s+/)[0] ?? "";
   const [sessions, setSessions] = useState<SupportSession[]>(() => {
     const stored = loadSessions(userId);
     return stored.length > 0 ? stored : [newSession()];
@@ -82,7 +97,7 @@ export function SupportDrawer({
   // Collapsed once a conversation is under way: the openers are scaffolding
   // for an empty drawer, and pinned above the composer they would push the
   // answer being read off the top.
-  const [tipsOpen, setTipsOpen] = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(() => sessions[0].messages.length === 0);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState("");
   const [busy, setBusy] = useState(false);
@@ -115,9 +130,9 @@ export function SupportDrawer({
         prev.map((s) =>
           s.id === activeId
             ? (() => {
-                const next = update(s.messages);
-                return { ...s, messages: next, title: titleFor(next), updatedAt: Date.now() };
-              })()
+              const next = update(s.messages);
+              return { ...s, messages: next, title: titleFor(next), updatedAt: Date.now() };
+            })()
             : s
         )
       );
@@ -238,7 +253,9 @@ export function SupportDrawer({
   const startNewChat = () => {
     stopEverything();
     setHistoryOpen(false);
-    setTipsOpen(false);
+    // Open again for a fresh chat, which is the one time they are scaffolding
+    // rather than clutter.
+    setTipsOpen(true);
     if (messages.length === 0) return;
     const fresh = newSession();
     setSessions((prev) => [fresh, ...prev]);
@@ -274,22 +291,29 @@ export function SupportDrawer({
             <ChevronLeft size={20} />
           </button>
 
-          {/* Opens the rail. Left of the title, because that is where the way
-              back to an earlier conversation belongs. */}
+          {/* Toggle and new chat sit together on the left, the way every
+              chat app puts them, and the title moves into the rail: a panel
+              this narrow does not need to name itself twice. */}
           <button
             onClick={() => setHistoryOpen((o) => !o)}
             aria-expanded={historyOpen}
             aria-label="Chats"
             title="Chats"
-            className={cn(
-              "shrink-0 rounded-lg p-1.5 transition-colors hover:bg-muted/60",
-              historyOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           >
             <PanelLeft size={18} />
           </button>
 
-          <p className="min-w-0 flex-1 text-[14px] font-medium text-foreground">Yali</p>
+          <button
+            onClick={startNewChat}
+            aria-label="New chat"
+            title="New chat"
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            <SquarePen size={18} />
+          </button>
+
+          <span className="min-w-0 flex-1" />
 
           <button
             onClick={close}
@@ -313,14 +337,33 @@ export function SupportDrawer({
             <div
               className="absolute inset-y-0 left-0 z-30 flex w-[260px] max-w-[80%] flex-col border-r border-border bg-card shadow-xl"
             >
-              <div className="border-b border-border p-2">
+              {/* The name lives here rather than in the main header, so the
+                  conversation itself is not topped by a label you have already
+                  read a hundred times. */}
+              <div className="flex items-center gap-2 px-4 py-3 justify-between   ">
+                <div className="flex items-center justify-start text-primary gap-1 text-[12.5px] ">
+                  <BotMessageSquareIcon className="" strokeWidth={2} size={16} />
+                  <p className="flex-1 font-semibold tracking-wider">Yali Chatbot</p>
+                </div>
                 <button
-                  onClick={startNewChat}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-medium text-primary transition-colors hover:bg-primary/10"
+                  onClick={() => setHistoryOpen(false)}
+                  aria-label="Hide chats"
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 >
-                  <Plus size={16} /> New chat
+                  <PanelLeft size={18} />
                 </button>
               </div>
+
+              <div className="px-2 pb-2">
+                <button
+                  onClick={startNewChat}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-medium text-foreground transition-colors hover:bg-muted/60"
+                >
+                  <SquarePen size={16} /> New chat
+                </button>
+              </div>
+
+              <div className="mx-4 border-t border-border" />
 
               <div className="min-h-0 flex-1 overflow-y-auto p-2">
                 {past.length === 0 ? (
@@ -341,7 +384,7 @@ export function SupportDrawer({
                         session.id === activeId ? "bg-primary/10" : "hover:bg-muted/60"
                       )}
                     >
-                      <MessageSquare
+                      <MessagesSquareIcon
                         size={14}
                         className={cn(
                           "mt-0.5 shrink-0",
@@ -404,22 +447,22 @@ export function SupportDrawer({
               className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4"
             >
               {messages.length === 0 && (
-                <div className="space-y-3">
-                  <p className="text-[13.5px] leading-relaxed text-muted-foreground">
-                    I can explain how Yakal works for you. I cannot see your account, your
-                    schedule or your grades, so for those go to the page itself.
+                <div className="flex h-full flex-col items-center justify-center px-2 text-center">
+                  <img
+                    src={helloImg}
+                    alt=""
+                    className="mb-4 h-28 w-28 object-contain"
+                    // Decorative, and the largest thing in the drawer: nothing
+                    // above the fold waits on it.
+                    loading="lazy"
+                  />
+                  <h2 className="text-[19px] font-medium text-foreground">
+                    {firstName ? `Hello ${firstName}, I am Yali` : "Hello, I am Yali"}
+                  </h2>
+                  <p className="mt-2 max-w-[280px] text-[13.5px] leading-relaxed text-muted-foreground">
+                    Ask me how anything on Yakal works. I cannot see your account, your
+                    schedule or your grades, so for those the page itself is the place.
                   </p>
-                  <div className="space-y-1.5">
-                    {SUPPORT_STARTERS[role].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => send(s, false)}
-                        className="block w-full rounded-lg border border-border px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:border-primary hover:text-primary"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -454,39 +497,40 @@ export function SupportDrawer({
             {/* Still offered once the conversation has started, but folded
                 away: useful when you have run out of things to ask, noise
                 while you are reading an answer. */}
-            {messages.length > 0 && (
-              <div className="border-t border-border px-3 pt-2">
-                <button
-                  onClick={() => setTipsOpen((o) => !o)}
-                  aria-expanded={tipsOpen}
-                  className="flex w-full items-center gap-1 py-1 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <ChevronDown
-                    size={14}
-                    className={cn("transition-transform", !tipsOpen && "-rotate-90")}
-                  />
-                  Suggestions
-                </button>
+            {/* Offered whether or not the conversation has started. Open on a
+                fresh chat, where they are scaffolding, and collapsed once
+                there is an answer to read. */}
+            <div className="border-t border-border px-3 pt-2">
+              <button
+                onClick={() => setTipsOpen((o) => !o)}
+                aria-expanded={tipsOpen}
+                className="flex w-full items-center gap-1 py-1 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown
+                  size={14}
+                  className={cn("transition-transform", !tipsOpen && "-rotate-90")}
+                />
+                Suggestions
+              </button>
 
-                {tipsOpen && (
-                  <div className="space-y-1.5 pb-2 pt-1">
-                    {SUPPORT_STARTERS[role].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          setTipsOpen(false);
-                          send(s, false);
-                        }}
-                        disabled={busy}
-                        className="block w-full rounded-lg border border-border px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              {tipsOpen && (
+                <div className="space-y-1.5 pb-2 pt-1">
+                  {SUPPORT_STARTERS[role].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setTipsOpen(false);
+                        send(s, false);
+                      }}
+                      disabled={busy}
+                      className="block w-full rounded-lg border border-border px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <form
               onSubmit={(e) => {

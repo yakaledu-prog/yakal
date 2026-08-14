@@ -368,6 +368,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           <SupportDrawer
             role={supportRole}
             userId={user.id}
+            userName={profile?.full_name}
             open={supportOpen}
             onClose={() => setSupportOpen(false)}
           />
