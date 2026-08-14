@@ -125,6 +125,22 @@ const generated = generatedData as {
 
 export const USERS: SeedUser[] = [
   {
+    // The real operations mailbox, seeded as a second admin so the Google
+    // Classroom and Drive integrations can be exercised against the account
+    // that actually owns them. admin@yakal.com stays: it is what every demo
+    // login and verification suite signs in as.
+    //
+    // This is a Supabase row and nothing more. Seeding it does not contact
+    // Google, and cannot touch anything in that mailbox or its Drive.
+    id: "6f1c3a20-4d7e-4a6b-9c2f-7b83e5d41a09",
+    email: "yakaledu@gmail.com",
+    fullName: "Yakal Education",
+    role: "admin",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 5,
+  },
+  {
     id: "82b1793a-db13-49ee-a81a-9e02a5cb51fd",
     email: "admin@yakal.com",
     lastSeenMinutesAgo: 2880,
