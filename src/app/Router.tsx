@@ -3,8 +3,6 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, use
 import { Loader2 } from "lucide-react";
 
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { SupportAssistant } from "@/components/support/SupportAssistant";
-import type { SupportChatRole } from "@/services/supportChatService";
 import { IdleTimeout } from "@/components/shared/IdleTimeout";
 import { Toaster } from "sonner";
 
@@ -216,15 +214,10 @@ const previewRoutes = DEV_PREVIEW
   ]
   : [];
 
-const SUPPORT_ROLES: SupportChatRole[] = ['parent', 'student', 'tutor', 'counselor'];
 
 function AppRootLayout() {
   const location = useLocation();
-  const { user, profile } = useAuth();
   const isAdmin = location.pathname.startsWith('/admin');
-  const supportRole = profile && SUPPORT_ROLES.includes(profile.role as SupportChatRole)
-    ? profile.role as SupportChatRole
-    : null;
   return (
     <>
       <Toaster
@@ -246,9 +239,6 @@ function AppRootLayout() {
           reading the landing page and to somebody already signed in, and it
           hides itself once the app is installed. */}
       <InstallPrompt />
-      {user && supportRole && location.pathname.startsWith(`/${supportRole}`) && (
-        <SupportAssistant role={supportRole} userId={user.id} />
-      )}
     </>
   );
 }

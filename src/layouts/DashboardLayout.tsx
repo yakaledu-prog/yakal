@@ -16,9 +16,12 @@ import {
   Sun,
   Menu,
   Lock,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+import { SupportDrawer } from "@/components/support/SupportDrawer";
+import { SUPPORT_ROLES, type SupportChatRole } from "@/services/supportChatService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
@@ -52,12 +55,20 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
   const badges = useNavBadges();
+
+  // Yali answers about how the app works for a given role, so an account
+  // whose role it has no guide for is offered nothing rather than a assistant
+  // that has to say "not for you" to everything.
+  const supportRole = SUPPORT_ROLES.includes(profile?.role as SupportChatRole)
+    ? (profile!.role as SupportChatRole)
+    : null;
 
   // Applied here rather than in each role's layout, because all five build the
   // same two links and would otherwise each have to remember to ask for the
@@ -305,6 +316,20 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             </button>
 
             {topbarActions}
+            {/* Beside the other topbar controls rather than floating over the
+                bottom right of the page. The questions it answers are about
+                the content underneath, so it should not be sitting on top of
+                it while closed. */}
+            {supportRole && (
+              <button
+                onClick={() => setSupportOpen(true)}
+                aria-label="Ask AI support"
+                title="Ask Yali"
+                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+              >
+                <Sparkles size={20} />
+              </button>
+            )}
             <ThemeToggle />
             <NotificationBell basePath={basePath} />
           </div>
@@ -332,6 +357,19 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             navItems={flattenNav(navItems).filter((i) => i.href) as { name: string; href: string; icon: React.ReactNode }[]}
             onToggleSidebar={() => setSidebarOpen((o) => !o)}
             onClose={() => setSearchOpen(false)}
+          />
+        )}
+
+        {/* Here rather than in the router, so the topbar button and the drawer
+            share one piece of state without a context to carry it between
+            them. Mounted only when open, so a signed-in user who never asks
+            pays nothing for it. */}
+        {supportRole && user && supportOpen && (
+          <SupportDrawer
+            role={supportRole}
+            userId={user.id}
+            open={supportOpen}
+            onClose={() => setSupportOpen(false)}
           />
         )}
       </main>

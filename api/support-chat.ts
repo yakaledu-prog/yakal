@@ -25,6 +25,39 @@ export function buildGroqMessages(role: SupportRole, messages: ChatMessage[]) {
   ];
 }
 
+/**
+ * The text carried by one SSE frame from Groq, or empty for anything else.
+ *
+ * Exported so scripts/verify can pin it. This is the same parsing that, done
+ * wrong for the landing assistant, silently swallowed every answer: the frames
+ * arrived with CRLF line endings, the split matched nothing, and the visitor
+ * got "I did not catch that" for a reply the model had written in full. It is
+ * worth a test rather than a second discovery in production.
+ *
+ * Frames that are keepalives, the [DONE] sentinel, role-only openers or
+ * malformed JSON all yield nothing, which is not an error.
+ */
+export function deltaFromFrame(frame: string): string {
+  const line = frame
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .find((l) => l.startsWith('data: '));
+  if (!line) return '';
+
+  const payload = line.slice(6).trim();
+  if (!payload || payload === '[DONE]') return '';
+
+  try {
+    const parsed = JSON.parse(payload) as {
+      choices?: Array<{ delta?: { content?: unknown } }>;
+    };
+    const text = parsed.choices?.[0]?.delta?.content;
+    return typeof text === 'string' ? text : '';
+  } catch {
+    return '';
+  }
+}
+
 export function parseRequest(body: unknown): { messages: ChatMessage[] } | null {
   if (!body || typeof body !== 'object') return null;
   const candidate = body as { messages?: unknown };
@@ -120,6 +153,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // Everything above answers as JSON, because it can still fail with a status
+  // code the browser will read. From here the response is a stream, so a
+  // failure has to travel down it instead.
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  const send = (event: string, data: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
   try {
     const upstream = await fetch(GROQ_URL, {
       method: 'POST',
@@ -132,27 +177,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         temperature: 0.4,
         max_completion_tokens: 500,
         messages: buildGroqMessages(role, parsed.messages),
+        // Groq speaks the OpenAI wire format, so this is deltas in
+        // choices[0].delta.content and a literal [DONE] sentinel at the end.
+        stream: true,
       }),
       signal: AbortSignal.timeout(20_000),
     });
 
-    if (!upstream.ok) {
-      console.error('Groq support request failed:', upstream.status, await upstream.text());
-      return res.status(502).json({ error: 'AI support is temporarily unavailable. Please try again.' });
+    if (!upstream.ok || !upstream.body) {
+      console.error('Groq support request failed:', upstream.status, await upstream.text().catch(() => ''));
+      send('error', { message: 'AI support is temporarily unavailable. Please try again.' });
+      return res.end();
     }
 
-    const data = await upstream.json() as {
-      choices?: Array<{ message?: { content?: unknown } }>;
-    };
-    const reply = data.choices?.[0]?.message?.content;
-    if (typeof reply !== 'string' || !reply.trim()) {
-      return res.status(502).json({ error: 'AI support returned an empty response. Please try again.' });
+    const reader = upstream.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let answered = false;
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Normalised, because the frame separator is CRLF CRLF on some hops and
+      // splitting on a bare blank line then matches nothing at all. That
+      // exact bug cost the landing assistant every one of its answers.
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() ?? '';
+
+      for (const frame of frames) {
+        const text = deltaFromFrame(frame);
+        if (text) {
+          answered = true;
+          send('token', { text });
+        }
+      }
     }
 
-    return res.status(200).json({ reply: reply.trim() });
+    if (!answered) {
+      send('error', { message: 'AI support returned an empty response. Please try again.' });
+      return res.end();
+    }
+
+    send('done', {});
+    return res.end();
   } catch (error: unknown) {
     console.error('Groq support request failed:', error);
-    return res.status(502).json({ error: 'AI support is temporarily unavailable. Please try again.' });
+    send('error', { message: 'AI support is temporarily unavailable. Please try again.' });
+    return res.end();
   } finally {
     quota.release();
   }

@@ -20,7 +20,12 @@ import { supabase } from "@/lib/supabase";
 /** Refresh with this much of the token's life left, in seconds. */
 const REFRESH_MARGIN = 60;
 
-async function accessToken(forceRefresh = false): Promise<string | null> {
+/**
+ * Exported for the streaming callers, which cannot use authedPost: that reads
+ * the whole body before returning, so a token would not surface until the
+ * model had finished writing. They repeat the same one-retry dance instead.
+ */
+export async function accessToken(forceRefresh = false): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   const session = data.session;
   if (!session) return null;
