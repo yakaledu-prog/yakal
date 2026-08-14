@@ -17,7 +17,7 @@ export interface NewEssay {
 }
 
 const input =
-  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
+  "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
 
 /**
  * Adding an essay, as a modal rather than a panel that pushed the list down.
@@ -202,7 +202,7 @@ export function AddEssayModal({
             type="button"
             onClick={submit}
             disabled={!title.trim() || saving}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b] disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Add essay

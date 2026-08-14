@@ -79,7 +79,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-        <Banknote size={18} className="text-[#1099A1]" />
+        <Banknote size={18} className="text-primary" />
         <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Payments to you</h3>
         {yearTotal && yearTotal.count > 0 && (
           <span className="ml-auto text-[13px] text-muted-foreground">
@@ -89,8 +89,8 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
       </div>
 
       {status && !status.payoutsEnabled && (
-        <div className="rounded-xl border border-[#CAA25F]/50 bg-[#CAA25F]/10 p-4">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-[#8a6a2a] dark:text-[#CAA25F]">
+        <div className="rounded-xl border border-secondary/50 bg-secondary/10 p-4">
+          <p className="flex items-center gap-2 text-[14px] font-semibold text-[#8a6a2a] dark:text-secondary">
             <ShieldCheck size={16} />
             {status.accountId ? "Finish connecting your bank" : "Connect your bank"}
           </p>
@@ -102,7 +102,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
           <button
             onClick={() => void connect()}
             disabled={busy}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
             {status.accountId ? "Carry on" : "Connect with Stripe"}
@@ -112,7 +112,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
 
       {isLoading ? (
         <div className="flex justify-center py-10">
-          <Loader2 className="animate-spin text-[#1099A1]" />
+          <Loader2 className="animate-spin text-primary" />
         </div>
       ) : payouts.length === 0 ? (
         <p className="py-10 text-center text-[13.5px] text-muted-foreground">
@@ -160,7 +160,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
                   href={p.receiptUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 text-[12.5px] font-medium text-[#1099A1] hover:underline"
+                  className="shrink-0 text-[12.5px] font-medium text-primary hover:underline"
                 >
                   Receipt
                 </a>

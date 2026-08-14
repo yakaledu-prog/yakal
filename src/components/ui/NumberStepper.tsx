@@ -34,7 +34,7 @@ export function NumberStepper({
   return (
     <div
       className={cn(
-        "inline-flex h-11 items-center gap-1 rounded-xl border border-[#e9edef] bg-white p-1 transition-colors focus-within:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32]",
+        "inline-flex h-11 items-center gap-1 rounded-xl border border-[#e9edef] bg-white p-1 transition-colors focus-within:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32]",
         className
       )}
     >

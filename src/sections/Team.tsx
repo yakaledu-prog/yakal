@@ -79,14 +79,14 @@ function TeamCard({
       </div>
       <div className="p-[16px] md:p-[20px] text-center flex flex-col flex-grow">
         <h4 className="text-[16px] md:text-[18px] font-bold mb-[6px] md:mb-[8px] text-[#111]">{member.name}</h4>
-        <p className="text-[#1099A1] font-medium text-[12px] md:text-[14px] mb-2">{member.subjects}</p>
+        <p className="text-primary font-medium text-[12px] md:text-[14px] mb-2">{member.subjects}</p>
 
         {/* Only for tutors, and only once somebody has rated them. The founders
             carry no rating, and an unrated tutor shows nothing rather than an
             empty row of stars, which reads as a bad score. */}
         {member.averageStars != null && (member.ratingCount ?? 0) > 0 && (
           <div className="mb-3 flex items-center justify-center gap-1.5">
-            <Star size={14} className="text-[#CAA25F]" fill="currentColor" strokeWidth={0} />
+            <Star size={14} className="text-secondary" fill="currentColor" strokeWidth={0} />
             <span className="text-[13px] font-semibold text-[#111]">{member.averageStars.toFixed(1)}</span>
             <span className="text-[12px] text-[#667781]">({member.ratingCount})</span>
           </div>
@@ -107,7 +107,7 @@ function TeamCard({
         <div className="mt-auto pt-2">
           <button
             onClick={() => (controlled ? onToggle?.() : setOwnExpanded(!ownExpanded))}
-            className="flex items-center justify-center gap-[6px] w-full text-[13px] md:text-[14px] font-semibold text-[#54656f] hover:text-[#1099A1] transition-colors py-2 rounded-lg bg-gray-50 hover:bg-[#1099a1]/5"
+            className="flex items-center justify-center gap-[6px] w-full text-[13px] md:text-[14px] font-semibold text-[#54656f] hover:text-primary transition-colors py-2 rounded-lg bg-gray-50 hover:bg-primary/5"
           >
             {isOpen ? "Show Less" : "Read Full Bio"}
             <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />

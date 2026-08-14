@@ -438,6 +438,14 @@ export const COURSES: SeedCourse[] = [
   },
 ];
 
+export const ENROLMENTS: { course: string; student: string; purchasedBy: string }[] = [
+  {
+    course: "K-12 Mathematics",
+    student: "student@yakal.com",
+    purchasedBy: "parent@yakal.com",
+  },
+];
+
 // Generated courses join the catalog with no tutor, which is the state a real
 // one starts in: an admin creates it and tutors apply.
 COURSES.push(
@@ -779,17 +787,6 @@ export const COLLEGE_PROFILES: SeedCollegeProfile[] = [
         deadlineRound: "rd",
         suppEssayCount: 0,
         whySchool: "Best engineering faculty on the continent, and a shorter flight home.",
-        completed: ["Application", "Transcript", "Test scores"],
-      },
-      {
-        name: "Addis Ababa University",
-        unitid: null,
-        tier: "safety",
-        status: "submitted",
-        deadlineInDays: -20,
-        deadlineRound: "rolling",
-        suppEssayCount: 0,
-        whySchool: "Home, and a course I would be glad to take.",
         completed: ["Application", "Transcript", "Test scores"],
       },
     ],

@@ -121,8 +121,8 @@ export function StudentDiagnostics() {
       >
         {/* Search bar */}
         <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21]">
-          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-            <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+          <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+            <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
             <input
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
@@ -166,7 +166,7 @@ export function StudentDiagnostics() {
         )}
       >
         {/* Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -234,15 +234,15 @@ export function StudentDiagnostics() {
           ) : activeTestResult ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden flex flex-col">
-                <div className="bg-[#1099A1]/5 px-6 py-8 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
-                  <CheckCircle2 size={48} className="text-[#1099A1] mb-4" />
+                <div className="bg-primary/5 px-6 py-8 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
+                  <CheckCircle2 size={48} className="text-primary mb-4" />
                   <h3 className="text-xl font-bold text-[#111] dark:text-white mb-1">Test Completed</h3>
                   <p className="text-muted-foreground text-sm max-w-md">You have completed the {activeTest.title} diagnostic test. Your tutor has been notified of your result.</p>
                 </div>
                 <div className="px-6 py-6 flex items-center justify-center">
-                  <div className="bg-[#1099A1]/10 rounded-xl px-8 py-5 border border-[#1099A1]/20 flex flex-col items-center">
+                  <div className="bg-primary/10 rounded-xl px-8 py-5 border border-primary/20 flex flex-col items-center">
                     <span className="text-sm font-semibold text-[#888] uppercase tracking-wide block mb-2">Score</span>
-                    <span className="text-3xl font-bold text-[#1099A1]">
+                    <span className="text-3xl font-bold text-primary">
                       {activeTestResult.score} / {activeTestResult.total}
                     </span>
                   </div>
@@ -273,8 +273,8 @@ export function StudentDiagnostics() {
                               key={i}
                               onClick={() => setAnswers({ ...answers, [q.id]: i })}
                               className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${answers[q.id] === i
-                                ? 'border-[#1099A1] bg-[#1099A1]/5'
-                                : 'border-[#e9edef] hover:border-[#1099A1]/30 hover:bg-gray-50'
+                                ? 'border-primary bg-primary/5'
+                                : 'border-[#e9edef] hover:border-primary/30 hover:bg-gray-50'
                                 }`}
                             >
                               <span className="text-sm font-medium">{opt}</span>
@@ -292,7 +292,7 @@ export function StudentDiagnostics() {
                           </Button>
                           {isLast ? (
                             <Button
-                              className="bg-[#1099A1] hover:bg-[#0d848b]"
+                              className="bg-primary hover:bg-primary-hover"
                               disabled={answers[q.id] === undefined || submitting}
                               onClick={submitTest}
                             >
@@ -300,7 +300,7 @@ export function StudentDiagnostics() {
                             </Button>
                           ) : (
                             <Button
-                              className="bg-[#1099A1] hover:bg-[#0d848b]"
+                              className="bg-primary hover:bg-primary-hover"
                               disabled={answers[q.id] === undefined}
                               onClick={() => setCurrentQuestionIndex(i => i + 1)}
                             >

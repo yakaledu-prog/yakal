@@ -159,9 +159,9 @@ function ManualSteps() {
       {steps.map((step, i) => (
         <li key={step} className="flex items-center gap-2">
           {i === 0 ? (
-            <Share size={15} className="shrink-0 text-[#1099A1]" />
+            <Share size={15} className="shrink-0 text-primary" />
           ) : (
-            <SquarePlus size={15} className="shrink-0 text-[#1099A1]" />
+            <SquarePlus size={15} className="shrink-0 text-primary" />
           )}
           {step}
         </li>
@@ -202,7 +202,7 @@ export function InstallButton({
         className={cn(
           // Outlined and worded. A bare download glyph in a row of icons is a
           // guess, and nobody guesses at something they were not looking for.
-          "flex items-center gap-1.5 rounded-lg border border-[#1099A1]/40 font-medium text-[#1099A1] transition-colors hover:border-[#1099A1] hover:bg-[#1099A1]/5",
+          "flex items-center gap-1.5 rounded-lg border border-primary/40 font-medium text-primary transition-colors hover:border-primary hover:bg-primary/5",
           compact ? "px-2.5 py-1.5 text-[12.5px]" : "px-3.5 py-2 text-[13.5px]",
           className
         )}
@@ -305,7 +305,7 @@ export function InstallPrompt({ className }: { className?: string }) {
         <button
           type="button"
           onClick={() => (canInstall ? void install() : setShowSteps(true))}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1099A1] py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
         >
           <Download size={16} />
           {canInstall ? "Install" : "How to install"}

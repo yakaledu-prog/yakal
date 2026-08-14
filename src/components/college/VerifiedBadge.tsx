@@ -28,7 +28,7 @@ const CONFIG: Record<
   verified: {
     icon: BadgeCheck,
     label: "Verified",
-    className: "text-[#1099A1]",
+    className: "text-primary",
     title: "Checked by your counselor against the school's own page",
   },
   catalog: {
@@ -40,7 +40,7 @@ const CONFIG: Record<
   unverified: {
     icon: CircleDashed,
     label: "Not verified",
-    className: "text-[#CAA25F]",
+    className: "text-secondary",
     title: "Entered by you. Your counselor has not checked it yet.",
   },
   // Pending and needs_attention deliberately share BadgeCheck's shape. Three
@@ -53,7 +53,7 @@ const CONFIG: Record<
     label: "Pending review",
     // Brand gold, the same weight as any other "needs a human" state. Grey
     // read as disabled, which is the opposite of something awaiting action.
-    className: "text-[#CAA25F]",
+    className: "text-secondary",
     title: "Uploaded. Your counselor has not reviewed it yet.",
   },
   needs_attention: {

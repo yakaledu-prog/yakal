@@ -99,17 +99,17 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full h-full flex flex-col items-center justify-center p-6 text-muted-foreground hover:text-[#1099A1] transition-colors"
+          className="w-full h-full flex flex-col items-center justify-center p-6 text-muted-foreground hover:text-primary transition-colors"
         >
           {isUploading ? (
             <>
-              <Loader2 className="w-8 h-8 mb-2 animate-spin text-[#1099A1]" />
+              <Loader2 className="w-8 h-8 mb-2 animate-spin text-primary" />
               <span className="text-[13px] font-medium text-[#111] dark:text-white">Uploading...</span>
             </>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-full bg-[#1099A1]/10 flex items-center justify-center mb-3">
-                <ImageIcon className="w-6 h-6 text-[#1099A1]" />
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <ImageIcon className="w-6 h-6 text-primary" />
               </div>
               <span className="text-[14px] font-semibold text-[#111] dark:text-white mb-1">Click to upload</span>
               <span className="text-[12px]">SVG, PNG, JPG or GIF (max. 5MB)</span>

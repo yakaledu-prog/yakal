@@ -81,19 +81,19 @@ export function TestingPlan() {
                     <span
                       className={cn(
                         "h-1.5 rounded-full",
-                        sat ? "bg-[#1099A1]" : "bg-[#f3f3f5] dark:bg-[#1c2a32]"
+                        sat ? "bg-primary" : "bg-[#f3f3f5] dark:bg-[#1c2a32]"
                       )}
                     />
                     <span
                       className={cn(
                         "h-1.5 rounded-full",
-                        act ? "bg-[#CAA25F]" : "bg-[#f3f3f5] dark:bg-[#1c2a32]"
+                        act ? "bg-secondary" : "bg-[#f3f3f5] dark:bg-[#1c2a32]"
                       )}
                     />
                   </div>
 
                   {now && (
-                    <span className="text-[10px] text-[#1099A1]">now</span>
+                    <span className="text-[10px] text-primary">now</span>
                   )}
                 </div>
               );
@@ -102,11 +102,11 @@ export function TestingPlan() {
 
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
             <span className="inline-flex items-center gap-1.5 text-[12px] text-[#54656f] dark:text-[#aebac1]">
-              <span className="h-1.5 w-6 rounded-full bg-[#1099A1]" />
+              <span className="h-1.5 w-6 rounded-full bg-primary" />
               SAT
             </span>
             <span className="inline-flex items-center gap-1.5 text-[12px] text-[#54656f] dark:text-[#aebac1]">
-              <span className="h-1.5 w-6 rounded-full bg-[#CAA25F]" />
+              <span className="h-1.5 w-6 rounded-full bg-secondary" />
               ACT
             </span>
             <p className="text-[12px] text-[#717182]">
@@ -139,8 +139,8 @@ export function TestingPlan() {
                       className={cn(
                         "rounded-full px-2 py-0.5 text-[11px]",
                         t === "SAT"
-                          ? "bg-[#1099A1]/10 text-[#0d757b] dark:text-[#5fc9cf]"
-                          : "bg-[#CAA25F]/15 text-[#8a6a2f] dark:text-[#e0c48a]"
+                          ? "bg-primary/10 text-[#0d757b] dark:text-[#5fc9cf]"
+                          : "bg-secondary/15 text-[#8a6a2f] dark:text-[#e0c48a]"
                       )}
                     >
                       {t}

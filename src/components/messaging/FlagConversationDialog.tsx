@@ -213,10 +213,10 @@ export function FlagConversationDialog({
                   className={cn(
                     "flex items-center gap-1.5 rounded-lg text-[13px] font-normal transition-colors",
                     step === s.n
-                      ? "text-[#1099A1]"
+                      ? "text-primary"
                       : cn(
                         "text-muted-foreground",
-                        (s.n === 1 || picked) && "hover:text-[#1099A1]"
+                        (s.n === 1 || picked) && "hover:text-primary"
                       )
                   )}
                 >
@@ -224,9 +224,9 @@ export function FlagConversationDialog({
                     className={cn(
                       "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-normal transition-colors",
                       step === s.n
-                        ? "bg-[#1099A1] text-white"
+                        ? "bg-primary text-white"
                         : step > s.n
-                          ? "bg-[#1099A1]/15 text-[#1099A1]"
+                          ? "bg-primary/15 text-primary"
                           : "bg-muted text-muted-foreground"
                     )}
                   >
@@ -235,7 +235,7 @@ export function FlagConversationDialog({
                   {s.label}
                 </button>
                 {i < STEPS.length - 1 && (
-                  <span className={cn("h-px w-5", step > s.n ? "bg-[#1099A1]/40" : "bg-border")} />
+                  <span className={cn("h-px w-5", step > s.n ? "bg-primary/40" : "bg-border")} />
                 )}
               </li>
             ))}
@@ -280,22 +280,22 @@ export function FlagConversationDialog({
                     className={cn(
                       "relative block max-w-full rounded-xl px-3 pb-5 pt-2 text-[13.5px] leading-snug shadow-sm",
                       onRight
-                        ? "rounded-br-sm bg-[#1099A1] text-white"
+                        ? "rounded-br-sm bg-primary text-white"
                         : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
                       // Gold marks what the scan found, teal marks what is
                       // going in the report. A caught message keeps the gold:
                       // it is the reason the dialog is open, and the tint
                       // behind it already says it is picked.
                       caught
-                        ? "ring-2 ring-[#CAA25F]"
-                        : on && "ring-2 ring-[#1099A1] ring-offset-1 ring-offset-background"
+                        ? "ring-2 ring-secondary"
+                        : on && "ring-2 ring-primary ring-offset-1 ring-offset-background"
                     )}
                   >
                     {caught && !done && (
                       // Why the system picked this one, said plainly: somebody
                       // about to put their name to a report is entitled to know
                       // what they are agreeing with.
-                      <span className="mb-1 flex items-center gap-1.5 text-[11px] text-[#CAA25F]">
+                      <span className="mb-1 flex items-center gap-1.5 text-[11px] text-secondary">
                         <Flag size={10} fill="currentColor" />
                         {describeReport(caught)}
                       </span>
@@ -338,7 +338,7 @@ export function FlagConversationDialog({
                       // at the end of a line is not.
                       "flex items-end gap-2 rounded-2xl p-1.5 transition-colors",
                       onRight ? "flex-row-reverse" : "flex-row",
-                      on && "bg-[#1099A1]/15"
+                      on && "bg-primary/15"
                     )}
                   >
                     {avatar}
@@ -355,7 +355,7 @@ export function FlagConversationDialog({
                           disabled={busy}
                           title="Withdraw this report"
                           aria-label="Withdraw this report"
-                          className="shrink-0 rounded-full p-1.5 text-[#CAA25F] transition-colors hover:bg-[#CAA25F]/15 disabled:opacity-50"
+                          className="shrink-0 rounded-full p-1.5 text-secondary transition-colors hover:bg-secondary/15 disabled:opacity-50"
                         >
                           <Undo2 size={14} />
                         </button>
@@ -396,14 +396,14 @@ export function FlagConversationDialog({
                     className={cn(
                       "w-full rounded-xl border px-3.5 py-2.5 text-left transition-colors",
                       reasons.includes(r.value)
-                        ? "border-[#1099A1] bg-[#1099A1]/5"
+                        ? "border-primary bg-primary/5"
                         : "border-border hover:bg-muted/40"
                     )}
                   >
                     <p
                       className={cn(
                         "flex items-center gap-1.5 text-[13.5px] font-semibold",
-                        reasons.includes(r.value) ? "text-[#1099A1]" : "text-foreground"
+                        reasons.includes(r.value) ? "text-primary" : "text-foreground"
                       )}
                     >
                       {reasons.includes(r.value) && <Check size={13} strokeWidth={3} />}
@@ -419,7 +419,7 @@ export function FlagConversationDialog({
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
                 placeholder="Anything else the team should know (optional)"
-                className="mt-3 w-full resize-none rounded-xl border border-border bg-transparent px-3.5 py-2.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-[#1099A1]"
+                className="mt-3 w-full resize-none rounded-xl border border-border bg-transparent px-3.5 py-2.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
               />
             </div>
           )}
@@ -446,7 +446,7 @@ export function FlagConversationDialog({
                   setGeneral((v) => !v);
                   setSelected([]);
                 }}
-                className="h-4 w-4 shrink-0 accent-[#1099A1]"
+                className="h-4 w-4 shrink-0 accent-primary"
               />
               Whole conversation
               {generalReport && <span className="text-muted-foreground">(reported)</span>}
@@ -468,7 +468,7 @@ export function FlagConversationDialog({
             <button
               onClick={() => setStep(2)}
               disabled={!picked}
-              className="rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               Next
             </button>
@@ -476,7 +476,7 @@ export function FlagConversationDialog({
             <button
               onClick={() => void submit()}
               disabled={busy || reasons.length === 0 || !picked}
-              className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
               Send report

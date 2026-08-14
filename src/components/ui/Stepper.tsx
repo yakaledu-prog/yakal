@@ -49,8 +49,8 @@ export function Stepper({
               <span
                 className={cn(
                   "grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-normal transition-colors",
-                  done && "bg-[#1099A1] text-white",
-                  active && "bg-[#1099A1] text-white",
+                  done && "bg-primary text-white",
+                  active && "bg-primary text-white",
                   !done && !active && "bg-[#ececf0] text-[#a8adb8] dark:bg-[#243239]"
                 )}
               >
@@ -75,7 +75,7 @@ export function Stepper({
                 aria-hidden
                 className={cn(
                   "mt-3 h-px min-w-[12px] flex-1 transition-colors",
-                  done ? "bg-[#1099A1]" : "bg-[#e9edef] dark:bg-[#2a3942]"
+                  done ? "bg-primary" : "bg-[#e9edef] dark:bg-[#2a3942]"
                 )}
               />
             )}

@@ -211,7 +211,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
               </button>
               <button
                 onClick={() => setToolMode(3)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-[#CAA25F]" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-sm transition-colors", toolMode === 3 ? "bg-white dark:bg-[#2a3942] text-secondary" : "text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5")}
               >
                 <Layers size={14} /> <span className="hidden sm:inline">Both</span>
               </button>

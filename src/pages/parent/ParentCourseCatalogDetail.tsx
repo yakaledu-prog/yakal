@@ -67,10 +67,17 @@ function ChildPicker({
   options,
   value,
   onChange,
+  /**
+   * Opens upward. The checkout bar is stuck to the bottom of the screen, so a
+   * panel below the button opens into the edge and the last child is the one
+   * you cannot see, which is the one you might be buying for.
+   */
+  up = false,
 }: {
   options: LinkedChild[];
   value: string | null;
   onChange: (id: string) => void;
+  up?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -99,7 +106,7 @@ function ChildPicker({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="w-full h-12 flex items-center gap-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-2.5 text-left hover:border-[#1099A1] transition-colors"
+        className="w-full h-12 flex items-center gap-2 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#111b21] px-2.5 text-left hover:border-primary transition-colors"
       >
         <img
           src={selected?.avatar_url || dicebearUrl(selected?.full_name ?? "Yakal")}
@@ -118,7 +125,12 @@ function ChildPicker({
       {open && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full mt-1 z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg animate-in fade-in slide-in-from-top-2 duration-200"
+          className={cn(
+            "absolute left-0 right-0 z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-xl shadow-lg animate-in fade-in duration-200",
+            up
+              ? "bottom-full mb-1 slide-in-from-bottom-2"
+              : "top-full mt-1 slide-in-from-top-2"
+          )}
         >
           {options.map((c) => {
             const active = c.id === selected?.id;
@@ -134,7 +146,7 @@ function ChildPicker({
                 }}
                 className={cn(
                   "w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
-                  active ? "bg-[#1099A1]/10" : "hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
+                  active ? "bg-primary/10" : "hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                 )}
               >
                 <img
@@ -145,7 +157,7 @@ function ChildPicker({
                 <span
                   className={cn(
                     "flex-1 min-w-0 truncate text-[14px] font-medium",
-                    active ? "text-[#1099A1]" : "text-[#111] dark:text-white"
+                    active ? "text-primary" : "text-[#111] dark:text-white"
                   )}
                 >
                   {c.full_name}
@@ -369,14 +381,25 @@ export function ParentCourseCatalogDetail() {
   const conflictAt = (date: Date, hour: number) =>
     conflicts?.byKey.get(slotKey(isoDay(date), `${String(hour).padStart(2, "0")}:00`)) ?? null;
 
-  // Switching child changes what clashes, so picks made for the previous one
-  // are not carried over onto a calendar they may no longer fit.
+  // Switching child changes what clashes, so picks that no longer fit are
+  // dropped against the new child's calendar.
+  //
+  // Only those. Emptying the selection outright meant the checkout bar vanished
+  // the moment you used the child picker inside it, taking the picks with it,
+  // and the picker is the one control in there you have to touch. Anything that
+  // survives the filter is still bookable, and handleBookSlot asks the server
+  // again with the money about to move, so a stale grid cannot get through.
   useEffect(() => {
-    setSelectedSlots([]);
-  }, [bookingFor?.id]);
+    if (!conflicts) return;
+    setSelectedSlots((prev) =>
+      prev.filter(
+        (s) => !conflicts.byKey.has(slotKey(s.iso, `${String(s.hour).padStart(2, "0")}:00`))
+      )
+    );
+  }, [conflicts]);
 
   const getModeClasses = (mode: number, isSelected: boolean) => {
-    if (isSelected) return "bg-[#1099A1] text-white border border-[#1099A1]";
+    if (isSelected) return "bg-primary text-white border border-primary";
     if (mode === 1) return "bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/50 hover:bg-cyan-100 dark:hover:bg-cyan-900/40";
     if (mode === 2) return "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 hover:bg-orange-100 dark:hover:bg-orange-900/40";
     if (mode === 3) return "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 hover:bg-purple-100 dark:hover:bg-purple-900/40";
@@ -484,7 +507,7 @@ export function ParentCourseCatalogDetail() {
         {/* Dynamic Header Section */}
         {!selectedTutorId ? (
           /* Course Overview Header */
-          <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+          <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
             <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
               <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
               <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -527,7 +550,7 @@ export function ParentCourseCatalogDetail() {
           </div>
         ) : (
           /* Tutor Profile Header */
-          <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 relative overflow-hidden shrink-0">
+          <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 relative overflow-hidden shrink-0">
             <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
               <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
               <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -565,7 +588,7 @@ export function ParentCourseCatalogDetail() {
                         nobody has rated says so rather than showing zero. */}
                     {rating?.averageStars != null ? (
                       <div className="flex items-center gap-1.5 text-[15px]">
-                        <Star size={16} className="text-[#CAA25F]" fill="currentColor" strokeWidth={0} />
+                        <Star size={16} className="text-secondary" fill="currentColor" strokeWidth={0} />
                         <span className="font-semibold text-white">{rating.averageStars.toFixed(1)}</span>
                         <span className="text-white/70">
                           ({rating.ratingCount} {rating.ratingCount === 1 ? "rating" : "ratings"})
@@ -648,7 +671,7 @@ export function ParentCourseCatalogDetail() {
                       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* <div className="flex items-center justify-between">
                         <h3 className="text-xl font-bold">Book a session with {selectedTutor?.name}</h3>
-                        <div className="text-xl font-bold text-[#1099A1]">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
+                        <div className="text-xl font-bold text-primary">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
                       </div> */}
 
                         {(
@@ -700,7 +723,7 @@ export function ParentCourseCatalogDetail() {
                               <div className="grid grid-cols-7 gap-2">
                                 {weekDays.map((day, dIndex) => (
                                   <div key={dIndex} className="text-center">
-                                    <div className="pb-3 mb-3 border-b-2 border-[#CAA25F]">
+                                    <div className="pb-3 mb-3 border-b-2 border-secondary">
                                       <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                                       <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
                                     </div>
@@ -784,7 +807,7 @@ export function ParentCourseCatalogDetail() {
                               <Button
                                 onClick={handleBookSlot}
                                 disabled={isBooking || children.length === 0}
-                                className="shrink-0 bg-[#1099A1] hover:bg-[#0d848b] text-white px-6 !h-11 text-[15px] font-bold rounded-xl transition-all"
+                                className="shrink-0 bg-primary hover:bg-primary-hover text-white px-6 !h-11 text-[15px] font-bold rounded-xl transition-all"
                               >
                                 {isBooking ? "Booking..." : "Checkout"}
                               </Button>
@@ -795,12 +818,13 @@ export function ParentCourseCatalogDetail() {
                                 buying for the wrong one is the expensive
                                 mistake. */}
                             {children.length === 0 ? (
-                              <p className="text-[13px] font-medium text-[#CAA25F]">No children linked yet.</p>
+                              <p className="text-[13px] font-medium text-secondary">No children linked yet.</p>
                             ) : (
                               <ChildPicker
                                 options={children}
                                 value={bookingFor?.id ?? null}
                                 onChange={setChildId}
+                                up
                               />
                             )}
                           </div>
@@ -864,8 +888,8 @@ export function ParentCourseCatalogDetail() {
                                     size={14}
                                     className={
                                       i <= review.stars
-                                        ? "fill-[#CAA25F] text-[#CAA25F]"
-                                        : "fill-transparent text-[#CAA25F]/40"
+                                        ? "fill-secondary text-secondary"
+                                        : "fill-transparent text-secondary/40"
                                     }
                                   />
                                 ))}
@@ -929,7 +953,7 @@ export function ParentCourseCatalogDetail() {
                         <div className="flex items-center justify-between gap-3 mb-4">
                           <div className="min-w-0 flex-1">
                             {children.length === 0 ? (
-                              <p className="text-[13px] font-medium text-[#CAA25F]">
+                              <p className="text-[13px] font-medium text-secondary">
                                 No children linked yet.
                               </p>
                             ) : (
@@ -954,7 +978,7 @@ export function ParentCourseCatalogDetail() {
                         <Button
                           onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
                           disabled={isBooking || children.length === 0}
-                          className="w-full !h-14 bg-[#1099A1] hover:bg-[#0d848b] text-white text-[16px] font-bold rounded-xl transition-all"
+                          className="w-full !h-14 bg-primary hover:bg-primary-hover text-white text-[16px] font-bold rounded-xl transition-all"
                         >
                           {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
                         </Button>

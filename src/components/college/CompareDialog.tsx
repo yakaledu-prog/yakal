@@ -126,7 +126,7 @@ export function CompareDialog({
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-5 py-4 text-white">
+        <header className="relative overflow-hidden bg-primary px-5 py-4 text-white">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[45%] text-white/10"
             viewBox="0 0 400 200"
@@ -156,13 +156,18 @@ export function CompareDialog({
 
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-10 bg-white dark:bg-[#111b21]">
-              <tr className="border-b border-[#e9edef] dark:border-[#2a3942]">
-                <th className="sticky left-0 z-20 bg-white px-4 py-3 text-left text-[12px] font-medium text-[#717182] dark:bg-[#111b21]" />
+            {/* Teal, so the names read as the rest of the header rather than as
+                a first row of the table. They stay table cells: the alignment
+                with the column underneath is the whole point of a comparison,
+                and a flex row in the header above would have to guess at
+                widths the table decides. */}
+            <thead className="sticky top-0 z-10 bg-primary text-white">
+              <tr>
+                <th className="sticky left-0 z-20 bg-primary px-4 py-3" />
                 {rows.map((r) => (
                   <th
                     key={r.item.id}
-                    className="min-w-[150px] px-4 py-3 text-left text-[13px] font-medium text-[#111] dark:text-white"
+                    className="min-w-[150px] px-4 py-3 text-left text-[13px] font-medium"
                   >
                     {r.item.school_name}
                   </th>
@@ -184,7 +189,7 @@ export function CompareDialog({
                       className={cn(
                         "px-4 py-2.5 text-[13px] tabular-nums",
                         a.highlight?.(r)
-                          ? "font-semibold text-[#1099A1]"
+                          ? "font-semibold text-primary"
                           : "text-[#111] dark:text-white"
                       )}
                     >

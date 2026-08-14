@@ -110,7 +110,7 @@ export function RecordPayoutModal({
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder={referenceLabel(method)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-[14px] outline-none focus:border-[#1099A1]"
+            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-[14px] outline-none focus:border-primary"
           />
         </label>
 
@@ -121,7 +121,7 @@ export function RecordPayoutModal({
             value={paidOn}
             max={today()}
             onChange={(e) => setPaidOn(e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-[14px] outline-none focus:border-[#1099A1]"
+            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-[14px] outline-none focus:border-primary"
           />
         </label>
 
@@ -131,7 +131,7 @@ export function RecordPayoutModal({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"
-            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-[14px] outline-none focus:border-[#1099A1]"
+            className="mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-[14px] outline-none focus:border-primary"
           />
         </label>
 
@@ -145,7 +145,7 @@ export function RecordPayoutModal({
           <button
             onClick={() => void save()}
             disabled={busy || !reference.trim()}
-            className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             Record it

@@ -115,7 +115,7 @@ export function Billing2() {
                           <p
                             className={cn(
                               "text-[12.5px] font-medium",
-                              p.recurring ? "text-[#1099A1]" : "text-muted-foreground"
+                              p.recurring ? "text-primary" : "text-muted-foreground"
                             )}
                           >
                             {p.recurring ? "Monthly" : "One-off"}

@@ -86,12 +86,13 @@ export function TutorHome() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Command Banner */}
-        <div className="bg-[#1099A1] text-white">
+        <div className="bg-primary text-white">
           <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
 
             {/* Top row: Welcome + Quick Actions */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Teaching Hub</p>
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
                   {today.length > 0
@@ -133,7 +134,7 @@ export function TutorHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><Wallet size={20} className="text-[#1099A1]" /> Earnings</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><Wallet size={20} className="text-primary" /> Earnings</h2>
               <button onClick={() => navigate("/tutor/earnings")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
@@ -143,7 +144,7 @@ export function TutorHome() {
             <div className="grid grid-cols-3 gap-4 border-b border-border/50 pb-6">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Not requested</p>
-                <p className="mt-1 text-2xl font-bold text-[#CAA25F]">{money(totals.unclaimed)}</p>
+                <p className="mt-1 text-2xl font-bold text-secondary">{money(totals.unclaimed)}</p>
               </div>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Awaiting</p>
@@ -151,7 +152,7 @@ export function TutorHome() {
               </div>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Paid</p>
-                <p className="mt-1 text-2xl font-bold text-[#1099A1]">{money(totals.paid)}</p>
+                <p className="mt-1 text-2xl font-bold text-primary">{money(totals.paid)}</p>
               </div>
             </div>
 
@@ -185,7 +186,7 @@ export function TutorHome() {
                 <button
                   type="button"
                   onClick={() => navigate("/tutor/earnings")}
-                  className="mt-2 h-11 w-full rounded-md bg-[#1099A1] text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+                  className="mt-2 h-11 w-full rounded-md bg-primary text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Request payment for {unclaimed.length}{" "}
                   {unclaimed.length === 1 ? "session" : "sessions"}
@@ -197,7 +198,7 @@ export function TutorHome() {
           {/* Right: Vertical Agenda */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Sessions</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-primary" /> Sessions</h2>
               <button onClick={() => navigate("/tutor/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
@@ -240,7 +241,7 @@ function IntegratedStat({ label, value, alert }: { label: string; value: string 
       <div className="inline-flex flex-col items-center">
         <div className="flex items-center gap-2 mb-1">
           <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
-          {alert && <div className="w-2 h-2 rounded-full bg-[#CAA25F]" title="Requires Attention" />}
+          {alert && <div className="w-2 h-2 rounded-full bg-secondary" title="Requires Attention" />}
         </div>
         <p className="text-3xl font-bold">{value}</p>
       </div>

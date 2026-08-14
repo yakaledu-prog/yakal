@@ -99,7 +99,7 @@ export function RecommendersPanel({
         </p>
 
         {missing > 0 && recommendations.length > 0 && (
-          <span className="text-[13px] text-[#CAA25F]">
+          <span className="text-[13px] text-secondary">
             {missing} more teacher{missing === 1 ? "" : "s"} typically expected
           </span>
         )}
@@ -110,7 +110,7 @@ export function RecommendersPanel({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#1099A1] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
           >
             <Plus size={15} />
             Add recommender
@@ -119,7 +119,7 @@ export function RecommendersPanel({
       </div>
 
       {chase && (
-        <div className="flex items-start gap-2 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 p-3">
+        <div className="flex items-start gap-2 rounded-xl border border-secondary/40 bg-secondary/10 p-3">
           <AlertTriangle
             size={15}
             className="mt-0.5 shrink-0 text-[#8a6a2f] dark:text-[#e0c48a]"
@@ -199,7 +199,7 @@ function RecommenderCard({
           className={cn(
             "grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-medium",
             submitted
-              ? "bg-[#1099A1]/12 text-[#0d757b] dark:text-[#5fc9cf]"
+              ? "bg-primary/12 text-[#0d757b] dark:text-[#5fc9cf]"
               : "bg-[#f3f3f5] text-[#717182] dark:bg-[#1c2a32]"
           )}
         >
@@ -229,7 +229,7 @@ function RecommenderCard({
             {/* Three weeks is the courtesy window teachers expect, so how long
                 ago you asked is the fact that decides whether to nudge. */}
             {askedDays !== null && !submitted && (
-              <span className={cn(askedDays >= 21 && "text-[#CAA25F]")}>
+              <span className={cn(askedDays >= 21 && "text-secondary")}>
                 {" · asked "}
                 {askedDays === 0 ? "today" : `${askedDays} days ago`}
               </span>
@@ -248,7 +248,7 @@ function RecommenderCard({
                   className={cn(
                     "grid h-5 w-5 place-items-center rounded-full text-[10px] transition-colors",
                     reached
-                      ? "bg-[#1099A1] text-white"
+                      ? "bg-primary text-white"
                       : "bg-[#f3f3f5] text-[#a8adb8] dark:bg-[#1c2a32]"
                   )}
                 >
@@ -259,7 +259,7 @@ function RecommenderCard({
                     aria-hidden
                     className={cn(
                       "h-px w-4",
-                      rank > i ? "bg-[#1099A1]" : "bg-[#e9edef] dark:bg-[#2a3942]"
+                      rank > i ? "bg-primary" : "bg-[#e9edef] dark:bg-[#2a3942]"
                     )}
                   />
                 )}
@@ -277,7 +277,7 @@ function RecommenderCard({
           className="w-[190px] shrink-0"
           buttonClassName={cn(
             "font-normal",
-            submitted && "border-[#1099A1]/40 font-medium text-[#1099A1]"
+            submitted && "border-primary/40 font-medium text-primary"
           )}
           ariaLabel={`Status for ${rec.recommender_name}`}
         />
@@ -289,7 +289,7 @@ function RecommenderCard({
             {rec.recommender_email ? (
               <a
                 href={`mailto:${rec.recommender_email}`}
-                className="inline-flex items-center gap-1 hover:text-[#1099A1]"
+                className="inline-flex items-center gap-1 hover:text-primary"
               >
                 <Mail size={12} />
                 {rec.recommender_email}

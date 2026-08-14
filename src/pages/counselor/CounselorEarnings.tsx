@@ -60,7 +60,7 @@ export function CounselorEarnings() {
     <PageWrapper>
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
           {/* Subtle Background Texture/Graph */}
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -139,7 +139,7 @@ export function CounselorEarnings() {
                 {summary.activity.slice(0, 20).map((a) => (
                   <div key={a.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
                     <div className="flex items-center gap-6 min-w-0">
-                      <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-[#1099A1]/10 items-center justify-center text-[#1099A1]">
+                      <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-primary/10 items-center justify-center text-primary">
                         <Database size={18} />
                       </div>
                       <div className="min-w-0">
@@ -149,7 +149,7 @@ export function CounselorEarnings() {
                         </p>
                       </div>
                     </div>
-                    <span className="text-[15px] font-bold text-[#1099A1] whitespace-nowrap">+{money(a.amount)}</span>
+                    <span className="text-[15px] font-bold text-primary whitespace-nowrap">+{money(a.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -157,7 +157,7 @@ export function CounselorEarnings() {
           </div>
 
           <div className="mt-8 flex items-start gap-2.5 bg-muted/30 px-4 py-3 rounded-lg text-[13px] text-muted-foreground">
-            <Info size={16} className="mt-0.5 shrink-0 text-[#1099A1]" />
+            <Info size={16} className="mt-0.5 shrink-0 text-primary" />
             <span>Earnings are estimated from your completed sessions at your current rate of {money(rate)}. Payments are settled separately.</span>
           </div>
 

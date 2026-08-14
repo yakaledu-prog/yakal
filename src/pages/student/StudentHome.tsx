@@ -67,7 +67,7 @@ export function StudentHome() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Command Banner */}
-        <div className="bg-[#1099A1] text-white">
+        <div className="bg-primary text-white">
           <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
 
             {/* Top row: Welcome + Quick Actions */}
@@ -113,7 +113,7 @@ export function StudentHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-[#1099A1]" /> Activity Feed</h2>
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-primary" /> Activity Feed</h2>
             </div>
             <div className="space-y-0">
               <FeedItem text={`You submitted ${data.homeworkDue[0]?.title || 'Homework'}`} time="2 hours ago" />
@@ -125,7 +125,7 @@ export function StudentHome() {
           {/* Right: Vertical Agenda */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-[#1099A1]" /> Agenda</h2>
+              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-primary" /> Agenda</h2>
               <button onClick={() => navigate("/student/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
@@ -242,7 +242,7 @@ function IntegratedStat({ label, value, alert }: { label: string; value: string 
       <div className="inline-flex flex-col items-center">
         <div className="flex items-center gap-2 mb-1">
           <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider">{label}</p>
-          {alert && <div className="w-2 h-2 rounded-full bg-[#CAA25F]" title="Requires Attention" />}
+          {alert && <div className="w-2 h-2 rounded-full bg-secondary" title="Requires Attention" />}
         </div>
         <p className="text-3xl font-bold">{value}</p>
       </div>
@@ -254,7 +254,7 @@ function FeedItem({ text, time }: { text: string; time: string }) {
   return (
     <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
       <div className="flex items-center gap-4">
-        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-[#1099A1] transition-colors" />
+        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-primary transition-colors" />
         <p className="text-[14px] md:text-[15px] font-medium text-foreground">{text}</p>
       </div>
       <span className="text-[12px] md:text-[13px] text-muted-foreground mt-2 sm:mt-0">{time}</span>

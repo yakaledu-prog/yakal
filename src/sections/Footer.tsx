@@ -1,8 +1,12 @@
-import { useState } from "react";
 import { Instagram, Linkedin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { XIcon } from "@/components/icons/XIcon";
-import { toast } from "sonner";
 import logo from "@/assets/images/logo.webp";
+import NewsletterSignup from "@/components/NewsletterSignup";
+// Contact and social addresses come from admin-editable site settings, while
+// the newsletter box is the standalone NewsletterSignup component, so the old
+// inline email state and subscribeToNewsletter are gone.
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const quickLinks = [
   { label: "Home", id: "home" },
@@ -20,36 +24,14 @@ const SOCIAL_ICONS = {
   x: { label: "X", icon: <XIcon size={14} /> },
   linkedin: { label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 } as const;
-import { useNavigate } from "react-router-dom";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { subscribeToNewsletter } from "@/services/newsletterService";
+
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const { contact: CONTACT, social } = useSiteSettings();
 
   const socials = (Object.keys(SOCIAL_ICONS) as (keyof typeof SOCIAL_ICONS)[])
     .map((k) => ({ ...SOCIAL_ICONS[k], href: social[k] }))
     .filter((s) => s.href);
-  const [email, setEmail] = useState("");
   const navigate = useNavigate();
-
-  const [saving, setSaving] = useState(false);
-
-  // This used to congratulate you and throw the address away, so everyone who
-  // signed up since launch was lost. It writes to the list now.
-  async function handleSubscribe(e: React.FormEvent) {
-    e.preventDefault();
-    const value = email.trim();
-    if (!value) {
-      toast.error("Please enter your email address.");
-      return;
-    }
-    setSaving(true);
-    const res = await subscribeToNewsletter(value);
-    setSaving(false);
-    if (res.error) return toast.error(res.error);
-    toast.success("Thanks for joining our newsletter. Check your inbox.");
-    setEmail("");
-  }
 
   return (
     <footer id="footer" className="bg-black text-white rounded-[20px] rounded-b-none md:rounded-[30px] px-[24px] md:px-[73px] py-[40px] pt-[20px] pb-[20px] md:py-[60px] md:pb-[20px] w-full max-w-[1440px]">
@@ -96,22 +78,7 @@ export default function Footer({ scrollTo }: { scrollTo: (id: string) => void })
 
         <div className="col-span-2 md:col-span-2 md:ml-18">
           <h4 className="text-[16px] md:text-[20px] font-semibold mb-[16px] md:mb-[24px]">Subscribe Our Newsletter</h4>
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-[10px]">
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 px-[14px] py-[12px] rounded-[500px] bg-[rgba(255,255,255,0.2)] border-none text-white placeholder:text-[rgba(255,255,255,0.75)] text-[14px] outline-none focus:bg-[rgba(255,255,255,0.28)] transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[#1099a1] px-[20px] py-[12px] rounded-[500px] uppercase hover:bg-[#0d7d84] transition text-[14px] whitespace-nowrap disabled:opacity-60"
-            >
-              {saving ? "Adding..." : "Subscribe"}
-            </button>
-          </form>
+          <NewsletterSignup />
         </div>
       </div>
 

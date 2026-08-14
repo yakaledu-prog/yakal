@@ -148,7 +148,7 @@ export function Billing4() {
                                 : `${p.courseId}|${p.studentId}`
                             )
                           }
-                          className="flex items-center gap-1 text-[13px] font-medium text-[#1099A1] hover:underline"
+                          className="flex items-center gap-1 text-[13px] font-medium text-primary hover:underline"
                         >
                           {openPlan === `${p.courseId}|${p.studentId}` ? "Hide" : "Show"} sessions
                           <ChevronDown
@@ -192,7 +192,7 @@ export function Billing4() {
                       <span
                         className={cn(
                           "text-[12.5px] font-medium capitalize",
-                          i.status === "paid" ? "text-[#1099A1]" : "text-[#8a6a2a] dark:text-[#CAA25F]"
+                          i.status === "paid" ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
                         )}
                       >
                         {i.status}

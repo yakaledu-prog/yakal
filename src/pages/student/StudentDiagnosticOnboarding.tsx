@@ -101,7 +101,7 @@ export function StudentDiagnosticOnboarding() {
     <div className="h-screen flex-grow flex flex-col bg-[#f8f9fa] dark:bg-[#111b21] overflow-hidden font-sans">
 
       {/* Header with SVG Pattern */}
-      <div className="bg-[#1099A1] text-white pt-6 px-6 md:pt-10 md:px-10 pb-0 relative shrink-0">
+      <div className="bg-primary text-white pt-6 px-6 md:pt-10 md:px-10 pb-0 relative shrink-0">
         <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
           <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
           <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -145,7 +145,7 @@ export function StudentDiagnosticOnboarding() {
                   return (
                     <div
                       key={t.id}
-                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors ${isActive ? 'border-[#1099A1] text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
+                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors ${isActive ? 'border-primary text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
                     >
                       {t.title}
                     </div>
@@ -157,7 +157,7 @@ export function StudentDiagnosticOnboarding() {
             {/* Inner progress bar for questions */}
             {/* <div className="h-0.5 w-full bg-[#f0f0f0] dark:bg-[#1a2329]">
               <div
-                className="h-full bg-[#1099A1] transition-all duration-300"
+                className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${((currentQuestionIndex) / activeTest.questions.length) * 100}%` }}
               />
             </div> */}
@@ -177,8 +177,8 @@ export function StudentDiagnosticOnboarding() {
                       key={i}
                       onClick={() => setAnswers({ ...answers, [q.id]: i })}
                       className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${isSelected
-                        ? 'border-[#1099A1] bg-[#1099A1]/5 dark:bg-[#1099A1]/10 text-[#111] dark:text-white'
-                        : 'border-[#e9edef] dark:border-[#2a3942] text-[#555] dark:text-[#ccc] hover:border-[#1099A1]/30 hover:bg-gray-50 dark:hover:bg-[#1a2329]'
+                        ? 'border-primary bg-primary/5 dark:bg-primary/10 text-[#111] dark:text-white'
+                        : 'border-[#e9edef] dark:border-[#2a3942] text-[#555] dark:text-[#ccc] hover:border-primary/30 hover:bg-gray-50 dark:hover:bg-[#1a2329]'
                         }`}
                     >
                       <span className="text-[15px] font-medium">{opt}</span>
@@ -203,7 +203,7 @@ export function StudentDiagnosticOnboarding() {
                 </Button>
                 {isLastQuestion ? (
                   <Button
-                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    className="bg-primary hover:bg-primary-hover text-white px-8"
                     disabled={answers[q.id] === undefined || submitting}
                     onClick={submitCurrentTest}
                   >
@@ -211,7 +211,7 @@ export function StudentDiagnosticOnboarding() {
                   </Button>
                 ) : (
                   <Button
-                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    className="bg-primary hover:bg-primary-hover text-white px-8"
                     disabled={answers[q.id] === undefined}
                     onClick={() => setCurrentQuestionIndex(i => i + 1)}
                   >
@@ -235,9 +235,9 @@ export function StudentDiagnosticOnboarding() {
               <div
                 key={i}
                 className={`h-2 flex-1 rounded-full transition-colors ${i < currentTestIndex
-                  ? "bg-[#1099A1]"
+                  ? "bg-primary"
                   : i === currentTestIndex
-                    ? "bg-[#1099A1]/60"
+                    ? "bg-primary/60"
                     : "bg-[#e9edef] dark:bg-[#2a3942]"
                   }`}
               />

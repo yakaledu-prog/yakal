@@ -13,6 +13,7 @@ Read in this order. Each one assumes the ones above it.
 | [api.md](api.md) | The serverless layer, and the two constraints that shaped it |
 | [integrations.md](integrations.md) | Stripe, Google, Zoom, email, realtime |
 | [gotchas.md](gotchas.md) | Things that cost days. Read before debugging anything |
+| [google-classroom.md](google-classroom.md) | Design for finishing the Classroom integration (topics, progress, workspace) |
 
 Two more live one level up in `docs/`:
 

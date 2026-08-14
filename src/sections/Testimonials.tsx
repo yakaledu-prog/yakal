@@ -42,7 +42,7 @@ export default function Testimonials() {
       : fallback;
 
   return (
-    <div className="bg-[#1099a1] rounded-[20px] md:rounded-[30px] py-[48px] md:py-[100px] px-[24px] md:px-[55px] w-full max-w-[1440px] overflow-hidden">
+    <div className="bg-primary rounded-[20px] md:rounded-[30px] py-[48px] md:py-[100px] px-[24px] md:px-[55px] w-full max-w-[1440px] overflow-hidden">
       <div className="max-w-[1290px] mx-auto">
         <div className="flex flex-col items-start gap-[24px] mb-[40px] md:mb-[70px]">
           <h2 className="text-white text-[32px] md:text-[56px] font-medium leading-[40px] md:leading-[66px]">
@@ -68,7 +68,7 @@ export default function Testimonials() {
                   </div>
                   <div>
                     <p className="text-[18px] font-medium">{testimonial.name}</p>
-                    <p className="text-[#1099a1] text-[14px]">{testimonial.role}</p>
+                    <p className="text-primary text-[14px]">{testimonial.role}</p>
                   </div>
                 </div>
               </div>

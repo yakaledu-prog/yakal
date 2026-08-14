@@ -127,7 +127,7 @@ export function StudentCalendar() {
               key={index}
               className={cn(
                 "min-h-[140px] p-2 border-r border-b border-[#e9edef] dark:border-[#2a3942] relative group",
-                !day ? "bg-[#f9fafb] dark:bg-[#202c33]" : isToday(day) ? "bg-[#CAA25F]/10 text-white" : "bg-white dark:bg-[#111b21] hover:bg-[#f9fafb] dark:hover:bg-[#202c33]",
+                !day ? "bg-[#f9fafb] dark:bg-[#202c33]" : isToday(day) ? "bg-secondary/10 text-white" : "bg-white dark:bg-[#111b21] hover:bg-[#f9fafb] dark:hover:bg-[#202c33]",
                 index % 7 === 6 ? "border-r-0" : "",
                 index >= getDaysArray().length - 7 ? "border-b-0" : ""
               )}
@@ -137,15 +137,15 @@ export function StudentCalendar() {
                   <div className="text-right mb-1">
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
-                      isToday(day) ? "bg-[#CAA25F]/85 text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
+                      isToday(day) ? "bg-secondary/85 text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
                     )}>
                       {day}
                     </span>
                   </div>
                   <div className="space-y-1">
                     {getSessionsForDay(day).map(session => (
-                      // <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-[#1099A1]/10 dark:hover:bg-white/5 cursor-pointer">
-                      <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-[#1099A1]/10 dark:hover:bg-white/5 cursor-pointer">
+                      // <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-primary/10 dark:hover:bg-white/5 cursor-pointer">
+                      <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded bg-primary/10 dark:hover:bg-white/5 cursor-pointer">
                         <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate">
                           {formatTime(session.startTime)} {session.subject}
                         </span>
@@ -174,7 +174,7 @@ export function StudentCalendar() {
             {weekDays.map((day, index) => (
               <div key={index} className="text-center py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
                 <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">{weekdays[index]}</div>
-                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-[#1099A1] font-bold" : "text-[#111] dark:text-white")}>
+                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-primary font-bold" : "text-[#111] dark:text-white")}>
                   {day.date}
                 </div>
               </div>
@@ -193,7 +193,7 @@ export function StudentCalendar() {
                   return (
                     <div key={dayIdx} className="h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1">
                       {sessions.map(s => (
-                        <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-[#1099A1]/15 transition-colors">
+                        <div key={s.id} className="bg-primary/10 text-primary border border-primary/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-primary/15 transition-colors">
                           {formatTime(s.startTime)} {s.subject}
                         </div>
                       ))}
@@ -229,9 +229,9 @@ export function StudentCalendar() {
                 </div>
                 <div className="p-2 min-h-[60px]">
                   {sessions.map(s => (
-                    <div key={s.id} className="bg-[#1099A1]/10 text-[#1099A1] border border-[#1099A1]/20 rounded-md p-3 text-[13px] hover:bg-[#1099A1]/15 transition-colors cursor-pointer w-full max-w-md">
+                    <div key={s.id} className="bg-primary/10 text-primary border border-primary/20 rounded-md p-3 text-[13px] hover:bg-primary/15 transition-colors cursor-pointer w-full max-w-md">
                       <div className="font-bold">{s.subject}</div>
-                      <div className="text-[#1099A1]/80 mt-1 flex items-center gap-2 text-[12px]">
+                      <div className="text-primary/80 mt-1 flex items-center gap-2 text-[12px]">
                         <span>{formatTime(s.startTime)}</span>
                         <span>•</span>
                         <span>{s.tutorName}</span>
@@ -251,7 +251,7 @@ export function StudentCalendar() {
     <PageWrapper className="!p-0">
       <div className="flex flex-col w-full min-h-screen bg-background dark:bg-[#111b21]">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-2 md:pl-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-2 md:pl-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
           {/* Subtle Background Texture/Graph */}
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -277,19 +277,19 @@ export function StudentCalendar() {
 
             <div className="w-fit mx-auto flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('day')}
               >
                 Daily
               </button>
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('week')}
               >
                 Weekly
               </button>
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-[#1099A1]' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('month')}
               >
                 Monthly

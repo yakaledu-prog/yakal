@@ -1,5 +1,5 @@
 import { authedPost } from "@/lib/authedFetch";
-import type { ClassroomAssignment } from "./classroomService";
+import type { ClassroomAssignment, ClassroomTopic } from "./classroomService";
 
 // ============================================================
 // Reading a class without anybody signing into Google.
@@ -21,6 +21,9 @@ import type { ClassroomAssignment } from "./classroomService";
 
 export interface CourseWorkResult {
   assignments: ClassroomAssignment[];
+  /** The class's topics, in the order Google returned them. Empty for a class
+   *  that groups nothing, in which case the reader shows a flat list. */
+  topics: ClassroomTopic[];
   /** False when the course has no Google Classroom attached. */
   linked: boolean;
   /** True when it has one, but the stored URL is not a class link. */
@@ -33,6 +36,7 @@ export async function getCourseWorkFor(courseId: string): Promise<CourseWorkResu
   if ((res as any).error) throw new Error((res as any).error);
   return {
     assignments: ((res as any).assignments ?? []) as ClassroomAssignment[],
+    topics: ((res as any).topics ?? []) as ClassroomTopic[],
     linked: !!(res as any).linked,
     invalidLink: !!(res as any).invalidLink,
   };

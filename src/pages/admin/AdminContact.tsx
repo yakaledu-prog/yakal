@@ -39,7 +39,7 @@ export function AdminContact() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] flex flex-col">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white p-6 md:p-10 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -70,14 +70,14 @@ export function AdminContact() {
               {(["inbox", "unread", "archived"] as Tab[]).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
                   className={cn("flex-1 py-3 text-[13px] font-semibold capitalize border-b-2 transition-colors",
-                    tab === t ? "border-[#1099A1] text-[#1099A1]" : "border-transparent text-muted-foreground hover:text-foreground")}>
+                    tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
                   {t}
                 </button>
               ))}
             </div>
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
               ) : filtered.length === 0 ? (
                 <p className="p-8 text-center text-[13px] text-muted-foreground">Nothing here.</p>
               ) : (
@@ -109,12 +109,12 @@ export function AdminContact() {
 
                   {/* Sender row */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#1099A1]/15 text-[#1099A1] flex items-center justify-center font-bold text-[15px] shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-[15px] shrink-0">
                       {(active.first_name?.[0] || "?").toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold text-[#111] dark:text-white leading-tight">{active.first_name} {active.last_name}</p>
-                      <a href={`mailto:${active.email}`} className="text-[12px] text-muted-foreground hover:text-[#1099A1]">{active.email}</a>
+                      <a href={`mailto:${active.email}`} className="text-[12px] text-muted-foreground hover:text-primary">{active.email}</a>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 justify-center">
                       {active.phone && (
@@ -138,7 +138,7 @@ export function AdminContact() {
                   <div className="flex items-center justify-end gap-1 px-6 py-2.5 border-t border-[#e9edef] dark:border-[#2a3942]">
                     {/* {isNew(active) && ( */}
                     <button onClick={() => handle(active.id)} title="Mark handled"
-                      className="p-2 rounded-md text-muted-foreground hover:text-[#1099A1] hover:bg-muted transition-colors">
+                      className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors">
                       <Archive size={18} />
                     </button>
                     <button onClick={() => handle(active.id)} title="Mark handled"

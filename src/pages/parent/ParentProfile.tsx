@@ -14,23 +14,12 @@ import { dicebearUrl } from "@/utils/avatar";
  * One labelled fact in the teal banner. Module level: a component declared
  * inside the page body is a new type every render, so React rebuilds it.
  */
-function HeaderFact({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: string | null;
-}) {
+function HeaderFact({ icon, value }: { icon: React.ReactNode; value?: string | null }) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
+    <span className="flex min-w-0 items-center gap-2 text-[13.5px] text-white/85">
       <span className="shrink-0 text-white/70">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
-        <p className="truncate text-[14px] text-white">{value || "Not set"}</p>
-      </div>
-    </div>
+      <span className="truncate">{value || "Not set"}</span>
+    </span>
   );
 }
 
@@ -66,7 +55,9 @@ export function ParentProfile() {
     <PageWrapper>
       <div className="flex flex-col min-h-0 bg-background overflow-y-auto">
         {/* Teal Header */}
-        <div className="bg-[#1099A1] text-white pt-8 md:pt-12 relative overflow-hidden shrink-0">
+        {/* The bottom padding lived on the contact row. That row is part of the
+            name column now, so the header carries its own. */}
+        <div className="bg-primary text-white pt-8 pb-8 md:pt-12 md:pb-10 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -77,8 +68,12 @@ export function ParentProfile() {
 
           <div className="relative z-10 px-6 md:px-10 lg:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             {/* Centred on a phone: stacked and left aligned, the avatar sat
-                in a wide empty band and read as misplaced. */}
-            <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:text-left">
+                in a wide empty band and read as misplaced.
+
+                w-full is what makes that centring visible. The row above is
+                items-start below md, so this group was only as wide as its own
+                content and items-center was centring it against itself. */}
+            <div className="flex w-full flex-col items-center gap-6 text-center md:w-auto md:flex-row md:items-center md:text-left">
               <div className="relative group cursor-pointer shrink-0">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden border-2 border-white/20 bg-black/20">
                   <img
@@ -97,6 +92,17 @@ export function ParentProfile() {
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight truncate">
                   {profile?.full_name || "Parent"}
                 </h1>
+
+                {/* Under the name rather than in a band of its own below the
+                    avatar. The icon carries what the EMAIL and PHONE labels
+                    used to, and dropping them keeps this inside the height the
+                    avatar already takes instead of adding two lines to the
+                    header. */}
+                <div className="mt-2.5 flex flex-col items-center gap-1 md:items-start">
+                  <HeaderFact icon={<Mail size={14} />} value={user?.email} />
+                  <HeaderFact icon={<Phone size={14} />} value={profile?.phone} />
+                </div>
+
                 {/* Only when written. The fallback named two children who do
                     not exist, so every parent without a bio read as the parent
                     of Brooklyn and Austin. */}
@@ -115,20 +121,13 @@ export function ParentProfile() {
               </button>
               <button
                 onClick={() => signOut()}
-                className="flex items-center justify-center gap-2 !bg-[#97CE9D]/40 border border-[#97CE9D]/40 hover:!bg-[#CAA25F]/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto"
+                className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto"
               >
                 <LogOut size={16} /> Log Out
               </button>
             </div>
           </div>
 
-          {/* Contact, where the stat cards were. Those counted children and
-              courses, which the pages for children and courses already say,
-              and one of them was a date nothing calculated. */}
-          <div className="relative z-10 mt-10 flex flex-wrap justify-center gap-x-14 gap-y-5 px-6 pb-8 md:justify-start md:px-10 lg:px-12">
-            <HeaderFact icon={<Mail size={15} />} label="Email" value={user?.email} />
-            <HeaderFact icon={<Phone size={15} />} label="Phone" value={profile?.phone} />
-          </div>
         </div>
 
         {/* Lower Content */}
@@ -145,7 +144,7 @@ export function ParentProfile() {
                 const paid = new Date(p.paidAt!);
                 return (
                   <div key={p.id} className="flex items-center gap-6 py-5">
-                    <div className="flex w-12 shrink-0 flex-col items-center justify-center text-[#1099A1]">
+                    <div className="flex w-12 shrink-0 flex-col items-center justify-center text-primary">
                       <span className="mb-0.5 text-[20px] font-bold leading-none">{paid.getDate()}</span>
                       <span className="text-[10px] font-bold uppercase tracking-widest">
                         {paid.toLocaleDateString(undefined, { month: "short" })}
@@ -239,7 +238,7 @@ export function ParentProfile() {
                   toast.success("Profile saved!");
                   setEditOpen(false);
                 }}
-                className="h-10 px-6 bg-[#1099A1] hover:bg-[#1099A1]/90 text-white font-bold"
+                className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold"
               >
                 Save Changes
               </Button>

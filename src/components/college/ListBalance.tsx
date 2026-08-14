@@ -9,8 +9,8 @@ export interface BalanceCounts {
 }
 
 const SEGMENTS: { key: SchoolTier; label: string; bar: string; dot: string }[] = [
-  { key: "dream", label: "Reach", bar: "bg-[#CAA25F]", dot: "bg-[#CAA25F]" },
-  { key: "target", label: "Target", bar: "bg-[#1099A1]", dot: "bg-[#1099A1]" },
+  { key: "dream", label: "Reach", bar: "bg-secondary", dot: "bg-secondary" },
+  { key: "target", label: "Target", bar: "bg-primary", dot: "bg-primary" },
   { key: "safety", label: "Safety", bar: "bg-[#8a97a0]", dot: "bg-[#8a97a0]" },
 ];
 
@@ -136,7 +136,7 @@ export function ListBalance({
               href={advice.help.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-[#1099A1] hover:underline"
+              className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
             >
               {advice.help.label}
               <ExternalLink size={11} />

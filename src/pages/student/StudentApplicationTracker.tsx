@@ -390,7 +390,7 @@ export function StudentApplicationTracker({
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
         {!forcedTab && (
           !embedded ? (
-            <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+            <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -446,7 +446,7 @@ export function StudentApplicationTracker({
                   className={cn(
                     "whitespace-nowrap border-b-[3px] py-3 text-[14px] transition-colors",
                     tab === t.id
-                      ? "border-[#1099A1] font-semibold text-[#111] dark:text-white"
+                      ? "border-primary font-semibold text-[#111] dark:text-white"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -461,7 +461,7 @@ export function StudentApplicationTracker({
         <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10")}>
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : schools.length === 0 && tab === "requirements" ? (
             <div className="rounded-xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
@@ -476,7 +476,7 @@ export function StudentApplicationTracker({
               {canEdit && (
                 <Link
                   to="/student/college-list"
-                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
                 >
                   Go to my list
                 </Link>
@@ -496,7 +496,7 @@ export function StudentApplicationTracker({
                         value={reqQuery}
                         onChange={(e) => setReqQuery(e.target.value)}
                         placeholder="Search colleges"
-                        className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
+                        className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
                       />
                     </div>
 
@@ -521,7 +521,7 @@ export function StudentApplicationTracker({
                           className={cn(
                             "px-2 py-1.5 transition-colors",
                             reqView === v
-                              ? "bg-[#1099A1] text-white"
+                              ? "bg-primary text-white"
                               : "text-[#717182] hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
                           )}
                         >

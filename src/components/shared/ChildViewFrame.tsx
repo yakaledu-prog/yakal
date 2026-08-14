@@ -114,7 +114,7 @@ export function ChildViewFrame({
       <div className="grid min-h-full grid-cols-1 bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] dark:bg-[#111b21]">
         <div className="md:col-start-2 md:row-start-1">
         {chrome ? (
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -169,7 +169,7 @@ export function ChildViewFrame({
         <div className={cn("pb-12 md:row-start-2", linked.length > 1 ? "md:col-start-2" : "md:col-span-2")}>
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-[#1099A1]" />
+            <Loader2 className="animate-spin text-primary" />
           </div>
         ) : !child ? (
           <Empty
@@ -180,7 +180,7 @@ export function ChildViewFrame({
           />
         ) : !allowed ? (
           <Empty
-            icon={<Lock size={40} className="text-[#1099A1]" />}
+            icon={<Lock size={40} className="text-primary" />}
             title="College admissions is not switched on"
             body={`${child.name} is not opted into the admissions service, so there is nothing to show here yet.`}
             action={{ to: "/parent/children", label: "Manage services" }}
@@ -215,7 +215,7 @@ function Empty({
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#717182]">{body}</p>
         <Link
           to={action.to}
-          className="mt-5 inline-flex h-10 items-center rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+          className="mt-5 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
         >
           {action.label}
         </Link>

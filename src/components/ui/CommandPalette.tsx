@@ -314,11 +314,11 @@ export function CommandPalette({
                       onClick={() => choose(entry)}
                       className={cn(
                         "flex w-full items-center gap-3 rounded px-3 py-2.5 text-left transition-colors",
-                        selected ? "bg-[#1099A1]/10" : "hover:bg-muted/50"
+                        selected ? "bg-primary/10" : "hover:bg-muted/50"
                       )}
                     >
                       <span
-                        className={cn("shrink-0", selected ? "text-[#1099A1]" : "text-muted-foreground")}
+                        className={cn("shrink-0", selected ? "text-primary" : "text-muted-foreground")}
                       >
                         {entry.icon}
                       </span>
@@ -326,7 +326,7 @@ export function CommandPalette({
                         <span
                           className={cn(
                             "block truncate text-[14.5px] font-medium",
-                            selected ? "text-[#1099A1]" : "text-foreground"
+                            selected ? "text-primary" : "text-foreground"
                           )}
                         >
                           {entry.label}
@@ -336,7 +336,7 @@ export function CommandPalette({
                         </span> */}
                       </span>
                       {selected ? (
-                        <span className="hidden md:flex lg:flex shrink-0 items-center rounded-md border border-[#1099A1]/40 px-1.5 py-1 text-[#1099A1]">
+                        <span className="hidden md:flex lg:flex shrink-0 items-center rounded-md border border-primary/40 px-1.5 py-1 text-primary">
                           <CornerDownLeft size={13} />
                         </span>
                       ) : (
@@ -398,7 +398,7 @@ function Chip({
       className={cn(
         "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors",
         active
-          ? "bg-[#1099A1]/10 text-[#1099A1]"
+          ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
         count === 0 && "opacity-40"
       )}

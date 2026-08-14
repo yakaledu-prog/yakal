@@ -188,7 +188,7 @@ export function AuthPage() {
           </div>
 
           {notice && (
-            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 px-3.5 py-3 text-[13px] text-[#8a6d34] dark:text-[#e0c48a]">
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-secondary/40 bg-secondary/10 px-3.5 py-3 text-[13px] text-[#8a6d34] dark:text-[#e0c48a]">
               <Info size={16} className="mt-0.5 shrink-0" />
               <span>{notice}</span>
             </div>
@@ -209,7 +209,7 @@ export function AuthPage() {
                       className={cn(
                         "py-3 border rounded-xl flex flex-col items-center gap-1 transition-colors",
                         selectedRole === role
-                          ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1] dark:bg-[#1099A1]/10"
+                          ? "border-primary bg-primary/5 text-primary dark:bg-primary/10"
                           : "border-[#e9edef] dark:border-[#2a3942] text-[#54656f] dark:text-[#aebac1] hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
                       )}
                     >
@@ -230,7 +230,7 @@ export function AuthPage() {
                     placeholder="Your name"
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                    className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-primary transition-colors"
                   />
                 </div>
 
@@ -243,7 +243,7 @@ export function AuthPage() {
                       placeholder="e.g. +1 234 567 8900"
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                      className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
                 )}
@@ -259,7 +259,7 @@ export function AuthPage() {
                 placeholder="you@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
@@ -271,7 +271,7 @@ export function AuthPage() {
                 placeholder={mode === 'signup' ? "Choose a password" : "••••••••"}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-[#1099A1] transition-colors"
+                className="w-full px-4 py-3 bg-transparent border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[14px] text-[#111] dark:text-white focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
@@ -279,7 +279,7 @@ export function AuthPage() {
               <div className="text-right">
                 <Link
                   to="/forgot-password"
-                  className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                  className="text-[13px] font-medium text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -288,7 +288,7 @@ export function AuthPage() {
 
             <Button
               type="submit"
-              className="w-full h-12 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[15px] font-bold mt-2"
+              className="w-full h-12 bg-primary hover:bg-primary-hover text-white rounded-xl text-[15px] font-bold mt-2"
               disabled={loading}
             >
               {loading ? "Please wait..." : (mode === "login" ? "Log in" : "Create account")}

@@ -73,7 +73,7 @@ export function AdminBilling() {
           {/* Tutor payouts */}
           <div>
             <div className="flex items-center gap-2 border-b border-border/50 pb-3 mb-4">
-              <Wallet size={18} className="text-[#1099A1]" />
+              <Wallet size={18} className="text-primary" />
               <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Tutor payouts</h3>
             </div>
             {payouts.length === 0 ? (
@@ -87,7 +87,7 @@ export function AdminBilling() {
                       <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.tutor_name}</p>
                       <p className="text-[12px] text-muted-foreground truncate">{p.description} - from {p.parent_name}</p>
                     </div>
-                    <span className="text-[15px] font-bold text-[#1099A1] w-24 text-right">{money(p.payout_cents, p.currency)}</span>
+                    <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.payout_cents, p.currency)}</span>
                     {/* Two ways to settle, and which one is offered is not a
                         choice: a tutor Stripe has not cleared cannot receive a
                         transfer, so for them the only honest option is to pay
@@ -96,7 +96,7 @@ export function AdminBilling() {
                       <button
                         onClick={() => void payByTransfer(p)}
                         disabled={busyId === p.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b] shrink-0 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover shrink-0 disabled:opacity-50"
                       >
                         {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                         Pay via Stripe
@@ -104,7 +104,7 @@ export function AdminBilling() {
                     ) : (
                       <button
                         onClick={() => setRecording(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#1099A1] text-[#1099A1] text-[12px] font-semibold hover:bg-[#1099A1]/10 shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-[12px] font-semibold hover:bg-primary/10 shrink-0"
                         title="This tutor has not connected a bank. Record how you paid them."
                       >
                         Record payment
@@ -122,7 +122,7 @@ export function AdminBilling() {
               <ScrollTextIcon size={18} className="text-primary" /> <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Invoices</h3>
             </div>
             {isLoading ? (
-              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+              <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
             ) : invoices.length === 0 ? (
               <p className="text-center py-16 text-[14px] text-muted-foreground">No invoices yet.</p>
             ) : (
@@ -132,7 +132,7 @@ export function AdminBilling() {
                   return (
                     <div key={inv.id} className="flex items-center gap-4 p-4">
                       <div className={cn("hidden sm:flex w-10 h-10 rounded-full items-center justify-center shrink-0",
-                        paid ? "bg-[#97CE9D]/20 text-[#7d8f69]" : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400")}>
+                        paid ? "bg-tertiary/20 text-[#7d8f69]" : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400")}>
                         {paid ? <CheckCircle2 size={18} /> : <Clock size={16} />}
                       </div>
                       <div className="flex-1 min-w-0">

@@ -26,7 +26,7 @@ export function MessagesPageHeader({
   return (
     <div
       className={cn(
-        "bg-[#1099A1] text-white pt-6 px-6 pb-6 md:pt-8 md:px-8 md:pb-8 relative overflow-hidden shrink-0",
+        "bg-primary text-white pt-6 px-6 pb-6 md:pt-8 md:px-8 md:pb-8 relative overflow-hidden shrink-0",
         className
       )}
     >

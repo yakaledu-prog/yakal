@@ -3,6 +3,8 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, use
 import { Loader2 } from "lucide-react";
 
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { SupportAssistant } from "@/components/support/SupportAssistant";
+import type { SupportChatRole } from "@/services/supportChatService";
 import { IdleTimeout } from "@/components/shared/IdleTimeout";
 import { Toaster } from "sonner";
 
@@ -88,6 +90,7 @@ const StudentExploreUniversities = lazy(() => import("../pages/student/StudentEx
 const StudentHome = lazy(() => import("../pages/student/StudentHome").then((m) => ({ default: m.StudentHome })));
 const StudentLayout = lazy(() => import("../pages/student/StudentLayout").then((m) => ({ default: m.StudentLayout })));
 const StudentMeeting = lazy(() => import("../pages/student/StudentMeeting").then((m) => ({ default: m.StudentMeeting })));
+const StudentMyLearning = lazy(() => import("../pages/student/StudentMyLearning").then((m) => ({ default: m.StudentMyLearning })));
 const StudentMessages = lazy(() => import("../pages/student/StudentMessages").then((m) => ({ default: m.StudentMessages })));
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
@@ -213,9 +216,15 @@ const previewRoutes = DEV_PREVIEW
   ]
   : [];
 
+const SUPPORT_ROLES: SupportChatRole[] = ['parent', 'student', 'tutor', 'counselor'];
+
 function AppRootLayout() {
   const location = useLocation();
+  const { user, profile } = useAuth();
   const isAdmin = location.pathname.startsWith('/admin');
+  const supportRole = profile && SUPPORT_ROLES.includes(profile.role as SupportChatRole)
+    ? profile.role as SupportChatRole
+    : null;
   return (
     <>
       <Toaster
@@ -224,7 +233,7 @@ function AppRootLayout() {
         toastOptions={{
           classNames: {
             success: '!bg-[#1099A1aa] !border-none !text-white',
-            warning: '!bg-[#CAA25F] !border-none !text-white',
+            warning: '!bg-secondary !border-none !text-white',
             error: '!bg-[#ef4444] !border-none !text-white'
           }
         }}
@@ -237,6 +246,9 @@ function AppRootLayout() {
           reading the landing page and to somebody already signed in, and it
           hides itself once the app is installed. */}
       <InstallPrompt />
+      {user && supportRole && location.pathname.startsWith(`/${supportRole}`) && (
+        <SupportAssistant role={supportRole} userId={user.id} />
+      )}
     </>
   );
 }
@@ -422,7 +434,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "my-learning", element: <StudentCourseDashboard /> },
+          { path: "my-learning", element: <StudentMyLearning /> },
           {
             path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,
@@ -464,7 +476,7 @@ const router = createBrowserRouter([
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+      <Loader2 className="animate-spin text-primary" size={22} />
     </div>
   );
 }

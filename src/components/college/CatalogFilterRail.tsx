@@ -103,7 +103,7 @@ export function CatalogFilterRail({
             value={filters.query}
             onChange={(e) => set("query", e.target.value)}
             placeholder={`Search ${totalCount ? totalCount.toLocaleString() : ""} universities`.replace("  ", " ")}
-            className="w-full rounded-sm border border-[#e9edef] bg-[#f3f3f5] py-2 pl-8 pr-7 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32]"
+            className="w-full rounded-sm border border-[#e9edef] bg-[#f3f3f5] py-2 pl-8 pr-7 text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32]"
           />
           {filters.query && (
             <button
@@ -143,7 +143,7 @@ export function CatalogFilterRail({
               // blob with no moving part: a control that looked broken rather
               // than unavailable.
               fitEnabled && hasProfile
-                ? "bg-[#1099A1]"
+                ? "bg-primary"
                 : "bg-[#cbced4] dark:bg-[#2a3942]",
               hasProfile ? "cursor-pointer" : "cursor-not-allowed opacity-60"
             )}
@@ -300,7 +300,7 @@ export function CatalogFilterRail({
             <button
               type="button"
               onClick={() => onChange({ ...EMPTY_FILTERS, query: filters.query })}
-              className="text-[12px] font-semibold text-[#1099A1] hover:underline"
+              className="text-[12px] font-semibold text-primary hover:underline"
             >
               Clear {activeCount}
             </button>
@@ -364,7 +364,7 @@ function Chip({
       className={cn(
         "rounded-sm border px-2 py-1 text-[12px] transition-colors",
         active
-          ? "border-[#1099A1] bg-[#1099A1]/10 font-semibold text-[#0d757b] dark:text-[#5fc9cf]"
+          ? "border-primary bg-primary/10 font-semibold text-[#0d757b] dark:text-[#5fc9cf]"
           : "border-[#e9edef] text-foreground/80 hover:border-[#cbd5d8] dark:border-[#2a3942] dark:hover:border-[#3a4a52]"
       )}
     >
@@ -399,7 +399,7 @@ function StatePicker({
       <button
         type="button"
         onClick={() => setShowAll(!showAll)}
-        className="mt-2 text-[12px] font-semibold text-[#1099A1] hover:underline"
+        className="mt-2 text-[12px] font-semibold text-primary hover:underline"
       >
         {showAll ? "Show fewer" : `Show all ${states.length} states`}
       </button>

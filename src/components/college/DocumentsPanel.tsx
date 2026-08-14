@@ -170,7 +170,7 @@ export function DocumentsPanel({
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -182,7 +182,7 @@ export function DocumentsPanel({
     return (
       <div className="rounded-xl border border-[#e9edef] p-6 dark:border-[#2a3942]">
         <div className="flex items-start gap-2">
-          <AlertCircle size={16} className="mt-0.5 shrink-0 text-[#CAA25F]" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-secondary" />
           <div>
             <p className="text-[14px] text-[#111] dark:text-white">
               {setupNeeded ? "Document storage is not set up yet" : "Could not load documents"}
@@ -232,7 +232,7 @@ export function DocumentsPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents"
-            className="h-9 w-full rounded-xl border border-[#e9edef] bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#182229]"
+            className="h-9 w-full rounded-xl border border-[#e9edef] bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-primary dark:border-[#2a3942] dark:bg-[#182229]"
           />
         </div>
         <span className="text-[13px] tabular-nums text-[#a8adb8]">
@@ -243,7 +243,7 @@ export function DocumentsPanel({
             href={data.folderUrl}
             target="_blank"
             rel="noreferrer"
-            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-[#1099A1] hover:underline"
+            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-primary hover:underline"
           >
             Open in Drive
             <ExternalLink size={12} />
@@ -406,14 +406,14 @@ function SlotCard({
       className={cn(
         "rounded-xl border p-3 transition-colors",
         over
-          ? "border-[#1099A1] bg-[#1099A1]/5"
+          ? "border-primary bg-primary/5"
           : filled
             ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
             : // A still-missing essential is tinted the whole way round. Enough
             // to pull the eye first, not enough to read as an error: no
             // mid-year report in September is normal, not a mistake.
             slot.required
-              ? "border-[#1099A1]/35 dark:border-[#1099A1]/40"
+              ? "border-primary/35 dark:border-primary/40"
               : "border border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
@@ -457,8 +457,8 @@ function SlotCard({
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors disabled:opacity-50",
               filled
-                ? "text-[#54656f] hover:text-[#1099A1] dark:text-[#aebac1]"
-                : "bg-[#1099A1] text-white hover:bg-[#0d848b]"
+                ? "text-[#54656f] hover:text-primary dark:text-[#aebac1]"
+                : "bg-primary text-white hover:bg-primary-hover"
             )}
           >
             {busy ? (
@@ -585,7 +585,7 @@ function FileRow({
             href={file.webViewLink}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 text-[12px] font-medium text-[#1099A1] underline active:scale-95 transition ease-in-out hover:opacity-85"
+            className="shrink-0 text-[12px] font-medium text-primary underline active:scale-95 transition ease-in-out hover:opacity-85"
           >
             Open
           </a>
@@ -597,7 +597,7 @@ function FileRow({
               type="button"
               onClick={() => onReview(file, "verified")}
               disabled={verdict === "verified"}
-              className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-40"
+              className="rounded-lg px-2 py-1 text-[12px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"
             >
               Verify
             </button>

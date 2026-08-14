@@ -138,7 +138,7 @@ export function AvailabilityPicker({
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -189,7 +189,7 @@ export function AvailabilityPicker({
 
           return (
             <div key={dIndex} className="text-center">
-              <div className="mb-3 border-b-2 border-[#CAA25F] pb-3">
+              <div className="mb-3 border-b-2 border-secondary pb-3">
                 <div className="text-[12px] font-bold uppercase text-muted-foreground">
                   {day.toLocaleDateString("en-US", { weekday: "short" })}
                 </div>
@@ -231,12 +231,12 @@ export function AvailabilityPicker({
                         className={cn(
                           "w-full rounded py-2 text-[13px] font-semibold transition-colors",
                           current
-                            ? "cursor-default border border-[#CAA25F] bg-[#CAA25F]/10 text-[#CAA25F]"
+                            ? "cursor-default border border-secondary bg-secondary/10 text-secondary"
                             : taken
                               ? "cursor-not-allowed border border-border bg-muted text-muted-foreground line-through"
                               : isSelected
-                                ? "border border-[#1099A1] bg-[#1099A1] text-white"
-                                : "border border-[#1099A1]/30 text-[#1099A1] hover:bg-[#1099A1]/10"
+                                ? "border border-primary bg-primary text-white"
+                                : "border border-primary/30 text-primary hover:bg-primary/10"
                         )}
                       >
                         {hourLabel(hour)}
@@ -258,7 +258,7 @@ export function AvailabilityPicker({
       {!multiple && selected.length > 1 && (
         // Guarded rather than assumed: a caller that forgets to replace instead
         // of append would otherwise silently book several.
-        <p className="mt-4 text-[13px] text-[#CAA25F]">Only one time can be chosen here.</p>
+        <p className="mt-4 text-[13px] text-secondary">Only one time can be chosen here.</p>
       )}
     </div>
   );

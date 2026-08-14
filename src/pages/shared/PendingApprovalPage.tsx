@@ -116,13 +116,13 @@ export function PendingApprovalPage({
             <div
               className={
                 "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 " +
-                (rejected ? "bg-red-500/10" : "bg-[#1099A1]/10")
+                (rejected ? "bg-red-500/10" : "bg-primary/10")
               }
             >
               {rejected ? (
                 <XCircle className="text-red-500" size={30} />
               ) : (
-                <Clock className="text-[#1099A1]" size={30} />
+                <Clock className="text-primary" size={30} />
               )}
             </div>
 
@@ -159,7 +159,7 @@ export function PendingApprovalPage({
               <Button
                 onClick={handleCheckStatus}
                 disabled={checking}
-                className="w-full h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold flex items-center justify-center gap-2"
+                className="w-full h-11 bg-primary hover:bg-primary-hover text-white rounded-xl text-[14px] font-bold flex items-center justify-center gap-2"
               >
                 {checking && <Loader2 size={15} className="animate-spin" />}
                 {checking ? "Checking…" : "Check status"}

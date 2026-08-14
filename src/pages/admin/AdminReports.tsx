@@ -59,8 +59,8 @@ function when(date: Date): string {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  open: "text-[#8a6a2a] dark:text-[#CAA25F]",
-  reviewed: "text-[#1099A1]",
+  open: "text-[#8a6a2a] dark:text-secondary",
+  reviewed: "text-primary",
   dismissed: "text-muted-foreground",
 };
 const STATUS_LABEL: Record<string, string> = {
@@ -173,7 +173,7 @@ export function AdminReports() {
                   setPage(1);
                 }}
                 placeholder="Search reports by keyword"
-                className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-[#1099A1]"
+                className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13.5px] outline-none transition-colors focus:border-primary"
               />
             </div>
 
@@ -200,7 +200,7 @@ export function AdminReports() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : visible.length === 0 ? (
             <p className="py-20 text-center text-[14px] text-muted-foreground">
@@ -235,7 +235,7 @@ export function AdminReports() {
                         <Person person={f.subject} role={f.subject?.role} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[12.5px] text-[#8a6a2a] dark:text-[#CAA25F]">
+                        <span className="text-[12.5px] text-[#8a6a2a] dark:text-secondary">
                           {f.reasons.map((r) => REASON_LABEL[r] ?? r).join(", ")}
                         </span>
                       </td>
@@ -287,7 +287,7 @@ export function AdminReports() {
                       className={cn(
                         "h-8 min-w-8 rounded-lg border px-2 text-[12.5px] transition-colors",
                         n === current
-                          ? "border-[#1099A1] font-semibold text-[#1099A1]"
+                          ? "border-primary font-semibold text-primary"
                           : "border-border hover:bg-muted/60"
                       )}
                     >
@@ -399,7 +399,7 @@ function ReviewDialog({
         >
           {isLoading ? (
             <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : messages.length === 0 ? (
             <p className="py-6 text-center text-[13px] text-[#667781] dark:text-[#8696a0]">
@@ -428,15 +428,15 @@ function ReviewDialog({
                     className={cn(
                       "relative max-w-[78%] rounded-xl px-3 pb-5 pt-2 shadow-sm",
                       onRight
-                        ? "rounded-br-sm bg-[#1099A1] text-white"
+                        ? "rounded-br-sm bg-primary text-white"
                         : "rounded-bl-sm bg-white text-[#111] dark:bg-[#202c33] dark:text-white",
                       // The message the complaint is actually about. Gold means
                       // the same thing here as it does in the parent's view.
-                      (m.isFlagged || autoCaught?.has(m.id)) && "ring-2 ring-[#CAA25F]"
+                      (m.isFlagged || autoCaught?.has(m.id)) && "ring-2 ring-secondary"
                     )}
                   >
                     {!onRight && (
-                      <p className="mb-0.5 text-[12.5px] font-semibold leading-tight text-[#1099A1]">
+                      <p className="mb-0.5 text-[12.5px] font-semibold leading-tight text-primary">
                         {m.senderName}
                       </p>
                     )}
@@ -445,7 +445,7 @@ function ReviewDialog({
                       // complaint the system agrees with is worth reading
                       // before one it never saw, and the report alone does not
                       // say which this is.
-                      <p className="mb-1 flex items-center gap-1.5 text-[11px] text-[#CAA25F]">
+                      <p className="mb-1 flex items-center gap-1.5 text-[11px] text-secondary">
                         <Flag size={10} fill="currentColor" />
                         {m.isFlagged ? "Reported" : "Picked up automatically"}
                         {m.isFlagged && autoCaught?.has(m.id) && " - picked up automatically"}
@@ -472,7 +472,7 @@ function ReviewDialog({
             <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
               Report tags
             </p>
-            <p className="text-[13px] text-[#8a6a2a] dark:text-[#CAA25F]">
+            <p className="text-[13px] text-[#8a6a2a] dark:text-secondary">
               {flag.reasons.map((r) => REASON_LABEL[r] ?? r).join(", ")}
             </p>
           </div>
@@ -524,7 +524,7 @@ function ReviewDialog({
                 </button>
                 <button
                   onClick={() => onDecide(flag, "reviewed")}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#0d7f86]"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
                 >
                   <Check size={15} /> Mark actioned
                 </button>

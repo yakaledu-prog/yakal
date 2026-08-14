@@ -63,8 +63,8 @@ function Row({
         // selected, only deeper, because it is still the row worth reading.
         isFlagged
           ? isActive
-            ? "bg-[#CAA25F]/20"
-            : "bg-[#CAA25F]/10 hover:bg-[#CAA25F]/15"
+            ? "bg-secondary/20"
+            : "bg-secondary/10 hover:bg-secondary/15"
           : isActive
             ? "bg-[#f0f2f5] dark:bg-[#2a3942]"
             : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
@@ -74,7 +74,7 @@ function Row({
       <div className="relative shrink-0">
         <img src={avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
         {isOnline && (
-          <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#97CE9D] border-2 border-white dark:border-[#111b21] rounded-full" />
+          <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-tertiary border-2 border-white dark:border-[#111b21] rounded-full" />
         )}
       </div>
 
@@ -98,16 +98,16 @@ function Row({
             {isFlagged && (
               <MessageCircleWarning
                 size={15}
-                className="concern-pulse text-[#CAA25F]"
+                className="concern-pulse text-secondary"
                 aria-label="Something here needs a look"
               />
             )}
-            {busy && <Loader2 size={13} className="animate-spin text-[#1099A1]" />}
+            {busy && <Loader2 size={13} className="animate-spin text-primary" />}
             {timestamp && (
               <span
                 className={cn(
                   "text-[12px]",
-                  unreadCount ? "text-[#1099A1] font-semibold" : "text-[#667781] dark:text-[#8696a0]"
+                  unreadCount ? "text-primary font-semibold" : "text-[#667781] dark:text-[#8696a0]"
                 )}
               >
                 {timestamp}
@@ -117,19 +117,19 @@ function Row({
         </div>
 
         {subtitle && (
-          <p className="text-[12px] text-[#1099A1] font-medium truncate mb-0.5">{subtitle}</p>
+          <p className="text-[12px] text-primary font-medium truncate mb-0.5">{subtitle}</p>
         )}
 
         <div className="flex items-center justify-between gap-2">
           {/* Typing wins over the last message: it is the newer fact, and it
               is what you would look at the row to find out. */}
           {isTyping ? (
-            <span className="text-[13px] truncate flex-1 text-[#1099A1] font-medium flex items-center gap-1.5">
+            <span className="text-[13px] truncate flex-1 text-primary font-medium flex items-center gap-1.5">
               <span className="flex items-center gap-[3px]" aria-hidden="true">
                 {[0, 150, 300].map((delay) => (
                   <span
                     key={delay}
-                    className="w-1 h-1 rounded-full bg-[#1099A1] animate-bounce"
+                    className="w-1 h-1 rounded-full bg-primary animate-bounce"
                     style={{ animationDelay: `${delay}ms` }}
                   />
                 ))}
@@ -141,7 +141,7 @@ function Row({
               className={cn(
                 "text-[13px] truncate flex-1",
                 previewIsPrompt
-                  ? "text-[#1099A1] font-medium"
+                  ? "text-primary font-medium"
                   : previewUnread
                     ? "text-[#111] dark:text-[#e9edef] font-semibold"
                     : "text-[#667781] dark:text-[#8696a0]"
@@ -151,7 +151,7 @@ function Row({
             </span>
           )}
           {!!unreadCount && (
-            <span className="min-w-[20px] h-5 px-1.5 bg-[#1099A1] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none shrink-0">
+            <span className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none shrink-0">
               {unreadCount}
             </span>
           )}
@@ -211,8 +211,8 @@ export function ConversationList({
   return (
     <div className={cn("flex flex-col min-h-0 bg-white dark:bg-[#111b21]", className)}>
       <div className="px-3 py-3 border-b border-[#e9edef] dark:border-[#2a3942] shrink-0">
-        <div className="flex items-center gap-2 border-b-2 border-[#1099A1] px-2 py-2">
-          <Search size={18} className="text-[#1099A1] shrink-0" />
+        <div className="flex items-center gap-2 border-b-2 border-primary px-2 py-2">
+          <Search size={18} className="text-primary shrink-0" />
           <input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -228,7 +228,7 @@ export function ConversationList({
       <div className="flex-1 overflow-y-auto min-h-0">
         {isLoading && (
           <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+            <Loader2 className="animate-spin text-primary" size={22} />
           </div>
         )}
 

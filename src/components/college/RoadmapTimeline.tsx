@@ -168,13 +168,13 @@ export function RoadmapTimeline({
             className={cn(
               "rounded-full px-3 py-1.5 text-[13px] transition-colors",
               g === grade
-                ? "bg-[#1099A1] font-medium text-white"
+                ? "bg-primary font-medium text-white"
                 : "bg-[#f3f3f5] text-[#54656f] hover:bg-[#ececf0] dark:bg-[#1c2a32] dark:text-[#aebac1]"
             )}
           >
             Grade {g}
             {g === derived && (
-              <span className={cn("ml-1.5", g === grade ? "text-white/70" : "text-[#1099A1]")}>
+              <span className={cn("ml-1.5", g === grade ? "text-white/70" : "text-primary")}>
                 {subjectName ?? "you"}
               </span>
             )}
@@ -209,7 +209,7 @@ export function RoadmapTimeline({
                 className={cn(
                   "absolute -left-6 top-1 h-[15px] w-[15px] rounded-full border-2",
                   here
-                    ? "border-[#1099A1] bg-[#1099A1]"
+                    ? "border-primary bg-primary"
                     : "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21]"
                 )}
               />
@@ -226,7 +226,7 @@ export function RoadmapTimeline({
                   {t}
                 </h4>
                 {here && (
-                  <span className="rounded-full bg-[#1099A1]/10 px-2 py-0.5 text-[11px] font-medium text-[#0d757b] dark:text-[#5fc9cf]">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-[#0d757b] dark:text-[#5fc9cf]">
                     {subjectName ? `${subjectName} is here` : "you are here"}
                   </span>
                 )}
@@ -239,7 +239,7 @@ export function RoadmapTimeline({
                     className={cn(
                       "rounded-xl border p-3",
                       here
-                        ? "border-[#1099A1]/25 bg-white dark:bg-[#182229]"
+                        ? "border-primary/25 bg-white dark:bg-[#182229]"
                         : "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
                     )}
                   >
@@ -248,7 +248,7 @@ export function RoadmapTimeline({
                         {task.title}
                       </span>
                       {task.testing && (
-                        <span className="rounded-full bg-[#CAA25F]/15 px-2 py-0.5 text-[11px] text-[#8a6a2f] dark:text-[#e0c48a]">
+                        <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[11px] text-[#8a6a2f] dark:text-[#e0c48a]">
                           testing
                         </span>
                       )}

@@ -46,14 +46,14 @@ export function StudentDiagnosticOnboardingPreview() {
                 <div key={cat} className={`flex gap-4 ${isActiveCat ? 'opacity-100' : isPastCat ? 'opacity-60' : 'opacity-40'}`}>
                   <div className="flex flex-col items-center">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${
-                      isActiveCat ? 'border-[#1099A1] bg-[#1099A1] text-white' : 
-                      isPastCat ? 'border-[#1099A1] bg-transparent text-[#1099A1]' : 
+                      isActiveCat ? 'border-primary bg-primary text-white' : 
+                      isPastCat ? 'border-primary bg-transparent text-primary' : 
                       'border-white/30 bg-transparent text-transparent'
                     }`}>
                       {isPastCat && <span className="text-[10px] font-bold">✓</span>}
                     </div>
                     {idx < categories.length - 1 && (
-                      <div className={`w-0.5 h-full my-2 ${isPastCat ? 'bg-[#1099A1]/50' : 'bg-white/10'}`} />
+                      <div className={`w-0.5 h-full my-2 ${isPastCat ? 'bg-primary/50' : 'bg-white/10'}`} />
                     )}
                   </div>
                   <div className="flex-1 pb-4">
@@ -66,7 +66,7 @@ export function StudentDiagnosticOnboardingPreview() {
                         
                         return (
                           <div key={t.id} className="flex items-center justify-between group">
-                            <span className={`text-[13px] ${isCurrent ? 'text-[#1099A1] font-bold' : isDone ? 'text-white/60' : 'text-white/40'}`}>
+                            <span className={`text-[13px] ${isCurrent ? 'text-primary font-bold' : isDone ? 'text-white/60' : 'text-white/40'}`}>
                               {t.title}
                             </span>
                           </div>
@@ -87,20 +87,20 @@ export function StudentDiagnosticOnboardingPreview() {
           <div className="max-w-2xl mx-auto h-full flex flex-col">
             
             <div className="mb-8">
-              <span className="text-[13px] font-bold text-[#1099A1] uppercase tracking-widest">{activeTest.categoryName}</span>
+              <span className="text-[13px] font-bold text-primary uppercase tracking-widest">{activeTest.categoryName}</span>
               <h2 className="text-3xl font-bold text-[#111] dark:text-white mt-1">{activeTest.title}</h2>
             </div>
 
             <div className="bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-2xl shadow-sm flex flex-col overflow-hidden flex-1 min-h-[400px]">
               <div className="h-1.5 w-full bg-[#f0f0f0] dark:bg-[#1a2329]">
                 <div 
-                  className="h-full bg-[#CAA25F] transition-all duration-300"
+                  className="h-full bg-secondary transition-all duration-300"
                   style={{ width: `${((currentQuestionIndex) / activeTest.questions.length) * 100}%` }}
                 />
               </div>
               
               <div className="p-8 flex-1 overflow-y-auto">
-                <span className="text-sm font-semibold text-[#CAA25F] mb-3 block">
+                <span className="text-sm font-semibold text-secondary mb-3 block">
                   Question {currentQuestionIndex + 1} of {activeTest.questions.length}
                 </span>
                 <h3 className="text-xl font-bold text-[#111] dark:text-white mb-8 leading-relaxed">
@@ -116,8 +116,8 @@ export function StudentDiagnosticOnboardingPreview() {
                         onClick={() => setAnswers({ ...answers, [q.id]: i })}
                         className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${
                           isSelected 
-                            ? 'border-[#CAA25F] bg-[#CAA25F]/5 dark:bg-[#CAA25F]/10 text-[#111] dark:text-white' 
-                            : 'border-[#e9edef] dark:border-[#2a3942] text-[#555] dark:text-[#ccc] hover:border-[#CAA25F]/30 hover:bg-gray-50 dark:hover:bg-[#1a2329]'
+                            ? 'border-secondary bg-secondary/5 dark:bg-secondary/10 text-[#111] dark:text-white' 
+                            : 'border-[#e9edef] dark:border-[#2a3942] text-[#555] dark:text-[#ccc] hover:border-secondary/30 hover:bg-gray-50 dark:hover:bg-[#1a2329]'
                         }`}
                       >
                         <span className="text-[15px] font-medium">{opt}</span>
@@ -139,7 +139,7 @@ export function StudentDiagnosticOnboardingPreview() {
                 
                 {isLastQuestion ? (
                   <Button 
-                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    className="bg-primary hover:bg-primary-hover text-white px-8"
                     disabled={answers[q.id] === undefined}
                     onClick={() => {
                       if (!isLastTest) {
@@ -155,7 +155,7 @@ export function StudentDiagnosticOnboardingPreview() {
                   </Button>
                 ) : (
                   <Button 
-                    className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-8"
+                    className="bg-primary hover:bg-primary-hover text-white px-8"
                     disabled={answers[q.id] === undefined}
                     onClick={() => setCurrentQuestionIndex(i => i + 1)}
                   >
@@ -174,7 +174,7 @@ export function StudentDiagnosticOnboardingPreview() {
             <span className="text-sm font-bold text-muted-foreground">Overall Progress</span>
             <div className="flex-1 max-w-md h-2 bg-[#f0f0f0] dark:bg-[#1a2329] rounded-full overflow-hidden">
               <div 
-                className="h-full bg-[#1099A1] transition-all duration-300" 
+                className="h-full bg-primary transition-all duration-300" 
                 style={{ width: `${(currentTestIndex / diagnosticTests.length) * 100}%` }} 
               />
             </div>

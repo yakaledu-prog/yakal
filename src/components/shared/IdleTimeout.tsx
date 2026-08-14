@@ -19,7 +19,13 @@ import { supabase } from "@/lib/supabase";
 // even from a public page a signed-in user happens to be on.
 // ============================================================
 
-const IDLE_LIMIT_MS = 3 * 60 * 1000; // three minutes
+const IDLE_LIMIT_MS = 15 * 60 * 1000;
+
+// Said in the toast, so the message cannot drift from the limit. It did: the
+// timeout moved from three minutes to fifteen and the toast still told people
+// three, which is the sort of thing that gets reported as a bug in the timer.
+const IDLE_LIMIT_MINUTES = Math.round(IDLE_LIMIT_MS / 60_000);
+const IDLE_LIMIT_LABEL = `${IDLE_LIMIT_MINUTES} ${IDLE_LIMIT_MINUTES === 1 ? "minute" : "minutes"}`;
 
 // Written on activity so every open tab shares one clock. Without it a second
 // tab left idle would sign the whole session out from under a tab you are
@@ -59,7 +65,7 @@ export function IdleTimeout() {
       signingOut = true;
       // Toaster lives in the always-mounted root layout, so this survives the
       // navigation and explains the sudden trip to the login screen.
-      toast.info("Signed out after 3 minutes of inactivity.");
+      toast.info(`Signed out after ${IDLE_LIMIT_LABEL} of inactivity.`);
       await supabase.auth.signOut();
       navigate("/login", { replace: true });
     };
@@ -72,8 +78,8 @@ export function IdleTimeout() {
         return;
       }
       // Re-measure against the wall clock rather than trusting one long timer:
-      // a background tab throttles setTimeout, so a single 3-minute timer can
-      // fire late. Rescheduling for the time actually left keeps it honest.
+      // a background tab throttles setTimeout, so a single long timer can fire
+      // late. Rescheduling for the time actually left keeps it honest.
       timer = setTimeout(arm, remaining);
     };
 

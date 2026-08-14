@@ -104,7 +104,13 @@ bundle at build time. `VITE_SUPABASE_ANON_KEY` is fine and intended;
 
 - **No em dashes, no emoji.** Plain ASCII in code, UI, commit messages.
 - **Brand colours only: `#1099A1`, `#97CE9D`, `#CAA25F`.** Do not invent an
-  accent. `#0d7f86` is the deep-teal hover shade already in use.
+  accent. **Write them as tokens, not hexes:** `bg-primary`, `bg-secondary`,
+  `bg-tertiary`, and `hover:bg-primary-hover` for the deep teal. Opacity works
+  as usual, `bg-primary/10`. The values live in `src/styles/theme.css` and
+  differ between light and dark, so a literal hex is a place the theme cannot
+  reach. Three files keep literals on purpose and say why: `utils/confetti.ts`
+  (canvas), `lib/supabase.ts` (console `%c`), and `services/admissionsService.ts`
+  (`TIER_SHADES` is parsed as hex to derive tints).
 - **Never `<select>`.** Use `components/ui/Dropdown` or `SelectMenu`.
 - **Prefer plain coloured text over tinted capsules** for status.
 - **Do not redesign UI that was not asked about.** Change data and flow; leave

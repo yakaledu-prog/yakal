@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getUsers, approveUser, rejectUser, deleteUser, type AdminUser } from "@/services/adminService";
+import { getUsers, approveUser, rejectUser, deleteUser, restoreUser, type AdminUser } from "@/services/adminService";
 import { dicebearUrl } from "@/utils/avatar";
-import { Search, Loader2, Check, X, Eye, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Loader2, Check, X, Eye, Trash2, RotateCcw, ArrowUp, ArrowDown } from "lucide-react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { cn } from "@/utils/cn";
 import { AdminUserViewModalTabbed } from "./AdminUserViewModalTabbed";
@@ -114,6 +114,13 @@ export function AdminUsers() {
     setUserToDelete(null);
   }
 
+  async function handleRestore(u: AdminUser) {
+    const res = await restoreUser(u.id);
+    if (!res.success) return toast.error(res.error || "Restore failed.");
+    toast.success("User restored. They can sign in again.");
+    qc.invalidateQueries({ queryKey: ["admin-users", role] });
+  }
+
   function handleView(u: AdminUser) {
     setSelectedUser(u);
     setIsViewModalOpen(true);
@@ -147,7 +154,7 @@ export function AdminUsers() {
                   onClick={() => setRole(r)}
                   className={cn(
                     "px-3.5 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors",
-                    role === r ? "bg-[#1099A1] text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                    role === r ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                   )}
                 >
                   {r}
@@ -160,13 +167,13 @@ export function AdminUsers() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search name or email"
-                className="pl-9 pr-3 h-10 w-full sm:w-64 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[14px] outline-none focus:border-[#1099A1]"
+                className="pl-9 pr-3 h-10 w-full sm:w-64 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[14px] outline-none focus:border-primary"
               />
             </div>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
           ) : (
             /* A real table, because an admin scanning fifty accounts is
                comparing rows, and a stack of cards makes every comparison a
@@ -217,7 +224,7 @@ export function AdminUsers() {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-[13px] capitalize text-[#1099A1]">{u.role}</td>
+                      <td className="px-4 py-3 text-[13px] capitalize text-primary">{u.role}</td>
 
                       <td className="px-4 py-3">
                         <span
@@ -251,11 +258,11 @@ export function AdminUsers() {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && (
+                          {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && u.status !== "deleted" && (
                             <button
                               onClick={() => act(u, true)}
                               title="Approve"
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#97CE9D]/15 hover:text-[#1099A1]"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-tertiary/15 hover:text-primary"
                             >
                               <Check size={16} />
                             </button>
@@ -272,17 +279,27 @@ export function AdminUsers() {
                           <button
                             onClick={() => handleView(u)}
                             title="View details"
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#1099A1]/10 hover:text-[#1099A1]"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                           >
                             <Eye size={16} />
                           </button>
-                          <button
-                            onClick={() => setUserToDelete(u)}
-                            title="Delete user"
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {u.status === "deleted" ? (
+                            <button
+                              onClick={() => handleRestore(u)}
+                              title="Restore user"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-tertiary/15 hover:text-primary"
+                            >
+                              <RotateCcw size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUserToDelete(u)}
+                              title="Delete user"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

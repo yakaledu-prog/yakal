@@ -4,14 +4,14 @@ import { cn } from "@/utils/cn";
 // Shared visual tokens for the floating-label fields (teal brand accent).
 const fieldBase =
   "peer w-full rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-4 text-[14px] text-[#111] dark:text-white " +
-  "focus:outline-none focus:border-[#1099A1] focus:ring-2 focus:ring-[#1099A1]/15 transition-all placeholder-transparent";
+  "focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all placeholder-transparent";
 
 // Floated (small, top) label. Extra top padding on the field gives the
 // requested gap between the label and the value.
 const labelBase =
   "pointer-events-none absolute left-4 text-[#54656f] dark:text-[#aebac1] transition-all duration-200 " +
   "top-1/2 -translate-y-1/2 text-[14px] " +
-  "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-[#1099A1] peer-focus:font-medium " +
+  "peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-primary peer-focus:font-medium " +
   "peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px]";
 
 interface FloatingInputProps extends InputHTMLAttributes<HTMLInputElement> {

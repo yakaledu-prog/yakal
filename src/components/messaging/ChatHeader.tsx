@@ -51,7 +51,7 @@ export function ChatHeader({
   return (
     <div
       className={cn(
-        "bg-[#1099A1] text-white px-4 py-4 md:px-8 md:py-5 relative overflow-hidden shrink-0",
+        "bg-primary text-white px-4 py-4 md:px-8 md:py-5 relative overflow-hidden shrink-0",
         className
       )}
     >
@@ -98,7 +98,7 @@ export function ChatHeader({
               className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover ring-2 ring-white/30"
             />
             {contact.isOnline && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#97CE9D] border-2 border-[#1099A1] rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-tertiary border-2 border-primary rounded-full" />
             )}
           </span>
 

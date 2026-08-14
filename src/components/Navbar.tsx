@@ -43,7 +43,7 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
         ))}
       </nav>
 
-      <Link to="/login" className="hidden md:block shrink-0 whitespace-nowrap bg-[#1099a1] px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
+      <Link to="/login" className="hidden md:block shrink-0 whitespace-nowrap bg-primary px-[24px] py-[8px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[14px]">
         Get Started
       </Link>
 
@@ -74,11 +74,11 @@ export default function Navbar({ onNav }: { onNav: (id: string) => void }) {
           </button>
 
           {links.map((l) => (
-            <button key={l.id} onClick={() => handleNav(l.id)} className="text-white text-[18px] py-[12px] text-center border-none bg-transparent cursor-pointer border-b border-white/10 last:border-0 hover:text-[#1099a1] transition">
+            <button key={l.id} onClick={() => handleNav(l.id)} className="text-white text-[18px] py-[12px] text-center border-none bg-transparent cursor-pointer border-b border-white/10 last:border-0 hover:text-primary transition">
               {l.label}
             </button>
           ))}
-          <Link to="/login" className="mt-[12px] bg-[#1099a1] px-[24px] py-[12px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[16px] text-center">
+          <Link to="/login" className="mt-[12px] bg-primary px-[24px] py-[12px] rounded-[500px] text-white uppercase hover:bg-[#0d7d84] transition text-[16px] text-center">
             Get Started
           </Link>
         </div>

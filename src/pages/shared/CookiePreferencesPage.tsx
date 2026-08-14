@@ -33,22 +33,22 @@ export function CookiePreferencesPage() {
         <div className="flex-1 w-full p-6 md:p-12 lg:p-16 md:overflow-y-auto">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl text-[#111] dark:text-[#d1d5db]">
             
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2 mt-0">1. What Are Cookies?</h3>
+            <h3 className="text-xl font-bold text-primary mb-2 mt-0">1. What Are Cookies?</h3>
             <p className="mb-8">
               Cookies are small data files stored on your hard drive or in device memory that help us improve our services and your experience, see which areas and features of our services are popular, and count visits.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">2. Types of Cookies We Use</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">2. Types of Cookies We Use</h3>
             <p className="mb-8">
               We use both essential cookies, which are required for the operation of our platform, and analytics cookies, which help us understand how users interact with our site.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">3. Managing Your Cookies</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">3. Managing Your Cookies</h3>
             <p className="mb-8">
               Most web browsers are set to accept cookies by default. If you prefer, you can usually choose to set your browser to remove or reject browser cookies.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">4. Changes to This Policy</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">4. Changes to This Policy</h3>
             <p className="mb-8">
               We may update this policy from time to time to reflect changes in technology, regulation, or our business practices.
             </p>

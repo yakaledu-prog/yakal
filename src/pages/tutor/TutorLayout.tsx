@@ -3,7 +3,7 @@ import { Home, Calendar, Bell, Users, Library, History, MessagesSquare, Wallet ,
 
 export function TutorLayout() {
   const navItems = [
-    { name: "Home", href: "/tutor", icon: <Home size={20} /> },
+    { name: "Teaching Hub", href: "/tutor", icon: <Home size={20} /> },
     { name: "Students", href: "/tutor/students", icon: <Users size={20} /> },
     { name: "Sessions", href: "/tutor/sessions", icon: <History size={20} /> },
     { name: "Calendar", href: "/tutor/calendar", icon: <Calendar size={20} /> },

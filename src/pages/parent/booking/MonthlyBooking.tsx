@@ -98,7 +98,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
   return (
     <PageWrapper className="!p-0">
       <div className="min-h-full bg-background pb-12">
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-8 md:pt-8">
+        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-8 md:pt-8">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[40%] text-white/5"
             viewBox="0 0 400 200"
@@ -154,7 +154,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
             )}
 
             {mode === "weekly" && (
-              <p className="mb-4 rounded-xl border border-[#CAA25F]/40 bg-[#CAA25F]/10 px-4 py-2.5 text-[13px] text-[#8a6a2a] dark:text-[#CAA25F]">
+              <p className="mb-4 rounded-xl border border-secondary/40 bg-secondary/10 px-4 py-2.5 text-[13px] text-[#8a6a2a] dark:text-secondary">
                 Anything you pick here happens every week for the next four weeks.
               </p>
             )}
@@ -162,7 +162,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
             <div className="grid grid-cols-7 gap-2">
               {(mode === "weekly" ? weeks[0] : visibleWeek).map((day, di) => (
                 <div key={di} className="text-center">
-                  <div className="mb-2 border-b-2 border-[#CAA25F] pb-2">
+                  <div className="mb-2 border-b-2 border-secondary pb-2">
                     <p className="text-[11px] font-bold uppercase text-muted-foreground">
                       {WEEKDAYS[di]}
                     </p>
@@ -193,8 +193,8 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
                           className={cn(
                             "w-full rounded py-2 text-[12.5px] font-bold transition-colors",
                             on
-                              ? "bg-[#1099A1] text-white"
-                              : "bg-[#1099A1]/10 text-[#1099A1] hover:bg-[#1099A1]/20"
+                              ? "bg-primary text-white"
+                              : "bg-primary/10 text-primary hover:bg-primary/20"
                           )}
                         >
                           {hourLabel(h)}
@@ -265,7 +265,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
 
             <button
               disabled={lessonsPerMonth === 0}
-              className="mt-4 w-full rounded-xl bg-[#1099A1] py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              className="mt-4 w-full rounded-xl bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {mode === "weekly" ? "Start monthly plan" : "Pay for these lessons"}
             </button>

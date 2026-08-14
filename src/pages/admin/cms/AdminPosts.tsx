@@ -79,13 +79,13 @@ export function AdminPosts() {
                 placeholder="Search posts..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-full text-[13px] focus:outline-none focus:border-[#1099A1] transition-colors"
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-full text-[13px] focus:outline-none focus:border-primary transition-colors"
               />
             </div>
             <div className="flex-1" />
             <Link
               to="/admin/posts/new"
-              className="flex items-center gap-2 bg-[#1099A1] hover:bg-[#0d848b] text-white px-5 py-2.5 rounded-full text-[13px] font-bold transition-colors w-full md:w-auto justify-center"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-full text-[13px] font-bold transition-colors w-full md:w-auto justify-center"
             >
               <Plus size={16} /> New Post
             </Link>
@@ -93,7 +93,7 @@ export function AdminPosts() {
 
           {isLoading ? (
             <div className="p-12 flex flex-col items-center justify-center bg-white dark:bg-[#111b21] rounded-2xl border border-[#e9edef] dark:border-[#2a3942]">
-              <Loader2 className="w-8 h-8 animate-spin text-[#1099A1]" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="mt-4 text-[13px] text-muted-foreground font-medium">Loading posts...</p>
             </div>
           ) : filtered.length === 0 ? (
@@ -167,7 +167,7 @@ function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => 
       <div className="absolute top-4 right-4 z-30 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-[-10px] group-hover:translate-y-0">
         <Link
           to={`/admin/posts/${post.id}/edit`}
-          className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-[#1099A1]/50 hover:scale-110 transition-all ease-in-out duration-200"
+          className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-primary/50 hover:scale-110 transition-all ease-in-out duration-200"
           title="Edit Post"
         >
           <Edit2 size={16} />
@@ -178,7 +178,7 @@ function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => 
         {post.status === "published" && !post.newsletter_sent_at && (
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSend(); }}
-            className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-[#1099A1]/50 hover:scale-110 transition-all ease-in-out duration-200"
+            className="w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-primary/50 hover:scale-110 transition-all ease-in-out duration-200"
             title="Send to newsletter subscribers"
           >
             <Send size={16} />
@@ -215,7 +215,7 @@ function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => 
           {excerpt}
         </p>
 
-        <span className="text-[13px] -mt-4 font-bold text-[#1099A1] uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
+        <span className="text-[13px] -mt-4 font-bold text-primary uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
           Read more... <span className="text-[16px] leading-none group-hover:translate-x-1 transition-transform">&rarr;</span>
         </span>
       </Link>

@@ -22,17 +22,17 @@ const CONFIG: Record<
   drafting: {
     icon: FilePen,
     label: "Drafting",
-    className: "text-[#1099A1]",
+    className: "text-primary",
   },
   in_review: {
     icon: Hourglass,
     label: "With counselor",
-    className: "text-[#CAA25F]",
+    className: "text-secondary",
   },
   done: {
     icon: BadgeCheck,
     label: "Done",
-    className: "text-[#1099A1]",
+    className: "text-primary",
   },
 };
 

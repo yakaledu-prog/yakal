@@ -30,7 +30,7 @@ export function AdminHeader({
   hideSubtitleOnMobile?: boolean;
 }) {
   return (
-    <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 relative overflow-hidden shrink-0">
+    <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-10 relative overflow-hidden shrink-0">
       <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
         <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
         <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
