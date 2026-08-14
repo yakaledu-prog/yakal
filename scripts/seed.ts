@@ -25,6 +25,7 @@ import {
   CONVERSATIONS,
   REVIEWS,
   COURSES,
+  ENROLMENTS,
   DEMO_PASSWORD,
   PARENT_LINKS,
   USERS,
@@ -314,7 +315,48 @@ async function seedCourses() {
   }
 }
 
-// ---------- 5b. coursework ----------
+// ---------- 5b. enrolments ----------
+
+async function seedEnrolments() {
+  step("Enrolments");
+
+  for (const enrolment of ENROLMENTS) {
+    const { data: course, error: courseErr } = await db
+      .from("courses")
+      .select("id")
+      .eq("title", enrolment.course)
+      .maybeSingle();
+    if (courseErr) fail("reading courses for enrolments", courseErr);
+    if (!course) {
+      warn(`skipped ${enrolment.student}: no course called ${enrolment.course}`);
+      continue;
+    }
+
+    const studentId = idFor(enrolment.student);
+    const row = {
+      course_id: course.id,
+      student_id: studentId,
+      purchased_by: idFor(enrolment.purchasedBy),
+      status: "active",
+    };
+    const { data: existing, error: findErr } = await db
+      .from("enrolments")
+      .select("id")
+      .eq("course_id", course.id)
+      .eq("student_id", studentId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (findErr) fail("reading enrolments", findErr);
+
+    const { error } = existing
+      ? await db.from("enrolments").update(row).eq("id", existing.id)
+      : await db.from("enrolments").insert(row);
+    if (error) fail(`writing enrolment for ${enrolment.student}`, error);
+    ok(`${enrolment.student} in ${enrolment.course}`);
+  }
+}
+
+// ---------- 5c. coursework ----------
 
 /**
  * The work set on each course, and the one submission that has been marked.
@@ -865,6 +907,7 @@ async function main() {
   await seedParentLinks();
   await seedAvailability();
   await seedCourses();
+  await seedEnrolments();
   await seedAssignments();
   await seedConversations();
   await seedCollegeProfiles();
