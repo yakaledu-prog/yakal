@@ -262,6 +262,63 @@ export const USERS: SeedUser[] = [
     isOnboarded: true,
     phone: "+251911000005",
   },
+
+  // ----------------------------------------------------------
+  // One reachable account per role, on Gmail plus addressing.
+  //
+  // Everything above is a @yakal.com address that goes nowhere, which is fine
+  // for clicking around and useless for the half of this product that is
+  // email: the invite a parent sends a child, a booking confirmation, a
+  // password reset. Those could only be read in Mailpit, so nothing ever
+  // proved that a real inbox receives them, renders them, and does not file
+  // them as spam.
+  //
+  // binyam2537+student@gmail.com and friends all deliver to the one inbox, and
+  // the tag says which role it was sent to.
+  //
+  // These are Gmail aliases, not Google accounts. Google resolves the alias to
+  // the same account, so they cannot be separate members of a Google Classroom
+  // and are no use for testing a roster. That needs real Google accounts. What
+  // they do prove is that our own mail arrives.
+  //
+  // Deliberately not linked to each other, and nothing is bought for them. The
+  // invite and the checkout are the flows worth exercising, and seeding the
+  // result of a flow is a way of never running it.
+  // ----------------------------------------------------------
+  {
+    id: "0a4d8e11-6c93-4f52-b0a7-1d5f9c72e480",
+    email: "binyam2537+parent@gmail.com",
+    fullName: "Binyam (parent)",
+    role: "parent",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 30,
+  },
+  {
+    id: "3c7b2f05-8a14-4d69-9e3b-6f80a5c14d27",
+    email: "binyam2537+student@gmail.com",
+    fullName: "Binyam (student)",
+    role: "student",
+    status: "active",
+    isOnboarded: true,
+    gradeLevel: "Grade 11",
+    lastSeenMinutesAgo: 30,
+  },
+  {
+    id: "b58e0c73-2d41-4a96-8b17-c0e35f9a7612",
+    email: "binyam2537+tutor@gmail.com",
+    fullName: "Binyam (tutor)",
+    role: "tutor",
+    status: "active",
+    isOnboarded: true,
+    // A tutor with no rate would be a tutor nobody can book. The rate is the
+    // admin's to set, here and everywhere else.
+    subjects: ["Mathematics"],
+    hourlyRate: 450,
+    rateCurrency: "ETB",
+    acceptingStudents: true,
+    lastSeenMinutesAgo: 30,
+  },
 ];
 
 // The generated people, given the same shape as the hand-written ones. No
