@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 import {
   summarizeProgress,
   type CourseProgress,
@@ -92,6 +93,27 @@ export async function gradeSubmission(
     .maybeSingle();
   if (error) return { success: false, error: error.message };
   return { success: true, assignmentId: data?.assignment_id, studentId: data?.student_id };
+}
+
+/**
+ * Push a grade a tutor just gave back to the linked Google Classroom (P4).
+ *
+ * Best-effort by design: gradeSubmission already saved the native grade, and
+ * this is a courtesy for tutors who also keep a Classroom gradebook. It can only
+ * reach a student who is a member of the Google class, so the server may answer
+ * written:false with a reason (not linked, student not on the roster, missing
+ * scope) - never something a caller should treat as the grade failing.
+ */
+export async function writeGradeToClassroom(
+  submissionId: string
+): Promise<{ written: boolean; reason?: string }> {
+  try {
+    const res = await authedPost("/api/google?action=grade", { submissionId });
+    if ((res as any).error) return { written: false, reason: (res as any).error };
+    return { written: !!(res as any).written, reason: (res as any).reason };
+  } catch (err: any) {
+    return { written: false, reason: err?.message ?? "Could not reach Classroom" };
+  }
 }
 
 /** One student's progress across a course, for the dashboard rollup. */

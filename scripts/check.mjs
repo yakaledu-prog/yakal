@@ -27,6 +27,7 @@ const PURE = [
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
   ['submission-progress.ts', 'course progress rolls up a student submissions'],
+  ['classroom-grade-target.ts', 'grade write-back targets the roster-matched submission'],
 ];
 
 /** Needs the local Supabase. Skipped when it is not answering. */
