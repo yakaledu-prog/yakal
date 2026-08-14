@@ -367,6 +367,7 @@ export const COURSES: SeedCourse[] = [
     title: "K-12 Mathematics",
     subject: "Mathematics",
     classroomUrl: "https://classroom.google.com/c/ODcwNjI3MzQ5NDc2",
+    tutor: "tutor@yakal.com",
     description:
       "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
     thumbnailUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&q=80",
