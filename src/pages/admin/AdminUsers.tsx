@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getUsers, approveUser, rejectUser, deleteUser, type AdminUser } from "@/services/adminService";
+import { getUsers, approveUser, rejectUser, deleteUser, restoreUser, type AdminUser } from "@/services/adminService";
 import { dicebearUrl } from "@/utils/avatar";
-import { Search, Loader2, Check, X, Eye, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Loader2, Check, X, Eye, Trash2, RotateCcw, ArrowUp, ArrowDown } from "lucide-react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { cn } from "@/utils/cn";
 import { AdminUserViewModalTabbed } from "./AdminUserViewModalTabbed";
@@ -112,6 +112,13 @@ export function AdminUsers() {
     toast.success("User deleted.");
     qc.invalidateQueries({ queryKey: ["admin-users", role] });
     setUserToDelete(null);
+  }
+
+  async function handleRestore(u: AdminUser) {
+    const res = await restoreUser(u.id);
+    if (!res.success) return toast.error(res.error || "Restore failed.");
+    toast.success("User restored. They can sign in again.");
+    qc.invalidateQueries({ queryKey: ["admin-users", role] });
   }
 
   function handleView(u: AdminUser) {
@@ -251,7 +258,7 @@ export function AdminUsers() {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
-                          {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && (
+                          {(u.role === "tutor" || u.role === "counselor") && u.status !== "active" && u.status !== "deleted" && (
                             <button
                               onClick={() => act(u, true)}
                               title="Approve"
@@ -276,13 +283,23 @@ export function AdminUsers() {
                           >
                             <Eye size={16} />
                           </button>
-                          <button
-                            onClick={() => setUserToDelete(u)}
-                            title="Delete user"
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {u.status === "deleted" ? (
+                            <button
+                              onClick={() => handleRestore(u)}
+                              title="Restore user"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#97CE9D]/15 hover:text-[#1099A1]"
+                            >
+                              <RotateCcw size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUserToDelete(u)}
+                              title="Delete user"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

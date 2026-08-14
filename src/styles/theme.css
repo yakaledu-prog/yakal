@@ -77,9 +77,9 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: var(--surface-raised);
   --popover-foreground: oklch(0.985 0 0);
-  /* --primary: #1099a1; */
-  /* --primary: #319fa5; */
-  /* --primary: #319fa5; */
+  /* The light teal is too bright on a dark page. Candidates tried, kept as a
+     record so the next person does not walk the same path:
+     #1099a1, #319fa5, #008991. */
   --primary: #007880;
   --primary-foreground: #ffffff;
   /* Darker again than the dark-mode primary, so hover still reads as pressed
