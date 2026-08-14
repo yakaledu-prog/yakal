@@ -8,6 +8,7 @@ import {
   systemPrompt,
   type PublicTier,
 } from '../_utils/assistant.js';
+import { createSupportRateLimiter } from '../_utils/support-rate-limit.js';
 
 // ============================================================
 // The landing page assistant.
@@ -80,6 +81,23 @@ async function getTiers(): Promise<PublicTier[]> {
   return tiers;
 }
 
+// This endpoint is public and unauthenticated, so it is rate limited by client
+// IP rather than by user id: there is no session to key on, and without a limit
+// a script could stream the model without bound and run up the bill. It borrows
+// the support assistant's limiter (a separate instance, so the buckets do not
+// mix) - per-process, which is fine for the single Render instance and would
+// move to shared storage before running more than one. A shared NAT is one
+// bucket, so the cap is set well above what a page of co-located visitors would
+// reach between them.
+const rateLimiter = createSupportRateLimiter({ maxRequests: 20, maxConcurrent: 2 });
+
+/** Client IP from the proxy headers Render and Vercel set, socket as a fallback. */
+function clientIp(req: VercelRequest): string {
+  const fwd = req.headers['x-forwarded-for'];
+  const first = (Array.isArray(fwd) ? fwd[0] : fwd ?? '').split(',')[0].trim();
+  return first || req.socket?.remoteAddress || 'unknown';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -92,6 +110,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     turns = readTurns((req.body as any)?.messages);
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
+  }
+
+  // Checked before the SSE stream opens, so a rejection is a plain 429 the
+  // browser can read, not an error frame inside a stream it already accepted.
+  const quota = rateLimiter.acquire(clientIp(req));
+  if (!quota.allowed) {
+    res.setHeader('Retry-After', String(quota.retryAfterSeconds));
+    return res.status(429).json({
+      error: 'You are sending messages too quickly. Please wait a moment and try again.',
+      code: 'assistant_rate_limited',
+    });
   }
 
   const [tiers, contactEmail] = await Promise.all([getTiers(), getContactEmail()]);
@@ -206,6 +235,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // than as a status code the browser will never look at again.
     send('error', { message: 'The assistant is unavailable right now.' });
     res.end();
+  } finally {
+    // Free the concurrency slot whether the stream finished, errored, or the
+    // upstream fetch threw. Without this a dropped connection would count
+    // against the caller until the window rolled over.
+    quota.release();
   }
 }
 
