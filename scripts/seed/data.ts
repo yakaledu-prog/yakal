@@ -273,13 +273,20 @@ export const USERS: SeedUser[] = [
   // proved that a real inbox receives them, renders them, and does not file
   // them as spam.
   //
-  // binyam2537+student@gmail.com and friends all deliver to the one inbox, and
+  // binyam2537+parent@gmail.com and friends all deliver to the one inbox, and
   // the tag says which role it was sent to.
   //
-  // These are Gmail aliases, not Google accounts. Google resolves the alias to
-  // the same account, so they cannot be separate members of a Google Classroom
-  // and are no use for testing a roster. That needs real Google accounts. What
-  // they do prove is that our own mail arrives.
+  // An alias is not a Google account, so it proves our mail arrives and
+  // nothing more. Where Google itself has to recognise the person, the account
+  // has to be real, and real ones are scarce. They are spent like this:
+  //
+  //   yakaledu@gmail.com      owns the classes and holds the refresh token
+  //   binyammamo01@gmail.com  the one student on a roster
+  //   binyam2537@gmail.com    kept free for the co-teacher call
+  //
+  // A parent never needs one. They read their child's class through our
+  // server, as that child, so no parent will ever touch Google. That is what
+  // keeps this affordable at any number of families.
   //
   // Deliberately not linked to each other, and nothing is bought for them. The
   // invite and the checkout are the flows worth exercising, and seeding the
@@ -295,8 +302,24 @@ export const USERS: SeedUser[] = [
     lastSeenMinutesAgo: 30,
   },
   {
-    id: "3c7b2f05-8a14-4d69-9e3b-6f80a5c14d27",
-    email: "binyam2537+student@gmail.com",
+    // The one real Google account spent on a student, and it has to be a real
+    // one rather than an alias.
+    //
+    // api/_handlers/classroom.ts resolves a learner's Classroom identity by
+    // handing this exact address to courses.students.get. Google resolves a
+    // plus alias back to the account behind it, so a +student address either
+    // matches nobody or matches the wrong person, and the learner is treated
+    // as unplaceable: excluded from individually assigned work, and with no
+    // submissions of their own to read.
+    //
+    // The student slot is where the scarce account belongs. Staff are never
+    // looked up in Classroom, so a tutor's address does not have to be a
+    // Google account for anything we read; and submissions exist only for
+    // students, so this is the only fixture that can exercise them at all.
+    // One is enough: the read path for the fiftieth student is the same code
+    // with a different id.
+    id: "d1f6a94c-3b25-4e08-9a71-5c8043bd2e6f",
+    email: "binyammamo01@gmail.com",
     fullName: "Binyam (student)",
     role: "student",
     status: "active",
