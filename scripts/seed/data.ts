@@ -438,6 +438,14 @@ export const COURSES: SeedCourse[] = [
   },
 ];
 
+export const ENROLMENTS: { course: string; student: string; purchasedBy: string }[] = [
+  {
+    course: "K-12 Mathematics",
+    student: "student@yakal.com",
+    purchasedBy: "parent@yakal.com",
+  },
+];
+
 // Generated courses join the catalog with no tutor, which is the state a real
 // one starts in: an admin creates it and tutors apply.
 COURSES.push(
