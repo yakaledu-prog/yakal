@@ -7,4 +7,7 @@ export default dispatch({
   'token': () => import('./_handlers/google-token.js'),
   'drive': () => import('./_handlers/drive.js'),
   'classroom': () => import('./_handlers/classroom.js'),
+  // Writes a tutor's Yakal grade back to the linked class (P4). Best-effort;
+  // the native grade is the record.
+  'grade': () => import('./_handlers/classroom-grade.js'),
 });
