@@ -307,7 +307,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted sm:flex"
+              className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 pr-4.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted sm:flex"
             >
               <Search size={15} />
               <span className="pr-6">Search pages</span>
@@ -348,7 +348,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                   aria-keyshortcuts={isMac ? "Meta+/" : "Control+/"}
                   className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
                 >
-                  <BotMessageSquareIcon size={20} />
+                  <BotMessageSquareIcon size={21} />
                 </button>
               </Tooltip>
             )}
