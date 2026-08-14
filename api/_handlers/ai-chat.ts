@@ -92,10 +92,37 @@ async function getTiers(): Promise<PublicTier[]> {
 const rateLimiter = createSupportRateLimiter({ maxRequests: 20, maxConcurrent: 2 });
 
 /** Client IP from the proxy headers Render and Vercel set, socket as a fallback. */
-function clientIp(req: VercelRequest): string {
-  const fwd = req.headers['x-forwarded-for'];
-  const first = (Array.isArray(fwd) ? fwd[0] : fwd ?? '').split(',')[0].trim();
-  return first || req.socket?.remoteAddress || 'unknown';
+/**
+ * How many proxies sit in front of this process. Render is one.
+ *
+ * Set it higher only if another trusted hop is added in front, e.g. Cloudflare.
+ * Too high and the key becomes a forgeable value again; too low and everyone
+ * behind the same proxy shares a bucket.
+ */
+const TRUSTED_PROXY_HOPS = Math.max(1, Number(process.env.TRUSTED_PROXY_HOPS) || 1);
+
+/**
+ * The caller's address, counted from the right.
+ *
+ * This used to take the leftmost value of X-Forwarded-For, which is the one
+ * the client can write. Proxies append rather than replace, so a request
+ * carrying "X-Forwarded-For: 9.9.9.9" arrives as "9.9.9.9, <real ip>" and the
+ * leftmost entry is whatever the caller made up. Rotating it per request
+ * bypassed the rate limit completely, on the one endpoint that is public,
+ * unauthenticated, and spending an API key.
+ *
+ * Every hop appends the peer it actually observed, so the trustworthy entry is
+ * TRUSTED_PROXY_HOPS from the end. Anything to the left of that is hearsay.
+ */
+export function clientIp(req: VercelRequest): string {
+  const raw = req.headers['x-forwarded-for'];
+  const chain = (Array.isArray(raw) ? raw.join(',') : raw ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const trusted = chain[chain.length - TRUSTED_PROXY_HOPS];
+  return trusted || req.socket?.remoteAddress || 'unknown';
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
