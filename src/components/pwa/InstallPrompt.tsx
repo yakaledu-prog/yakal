@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useLocation } from "react-router-dom";
 import { Download, Share, SquarePlus, X } from "lucide-react";
 
 import { cn } from "@/utils/cn";
@@ -248,8 +249,21 @@ export function InstallButton({
   );
 }
 
+/**
+ * Where the floating offer stays out of the way.
+ *
+ * Signing in, signing up and onboarding are the three moments somebody is
+ * already being asked to trust the site with something. A card sliding up over
+ * the form at exactly that moment reads as a permission grab rather than an
+ * offer, and it covers the fields it lands on.
+ *
+ * The install button in the topbar is unaffected: that one is asked for.
+ */
+const QUIET_PATHS = ["/login", "/signup", "/onboarding", "/reset-password", "/forgot-password", "/invite"];
+
 export function InstallPrompt({ className }: { className?: string }) {
   const { installed, canInstall, install } = useInstallPrompt();
+  const { pathname } = useLocation();
   const [dismissed, setDismissed] = useState(() => snoozed());
   const [showSteps, setShowSteps] = useState(false);
   const [shown, setShown] = useState(false);
@@ -267,6 +281,7 @@ export function InstallPrompt({ className }: { className?: string }) {
   // does, so waiting for it meant the offer was usually absent. Without an
   // event the button opens directions instead.
   if (installed || dismissed) return null;
+  if (QUIET_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, String(Date.now()));

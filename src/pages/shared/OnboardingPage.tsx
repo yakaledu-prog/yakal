@@ -220,7 +220,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       setCvFile(file);
       toast.success("CV uploaded.");
     } catch (err: any) {
-      toast.error(err.message || "Could not upload your CV. Please try again.");
+      toast.error(err.message || "Could not upload your resume. Please try again.");
     } finally {
       setUploadingCv(false);
     }
@@ -246,7 +246,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
       // filled in later, but there is no version of being approved to teach
       // that does not involve somebody reading a CV first.
       if ((role === "tutor" || role === "counselor") && step === 2 && !cvUrl && !cvFile) {
-        return toast.error("Please upload your CV before proceeding.");
+        return toast.error("Please upload your resume before proceeding.");
       }
       setStep(step + 1);
       return;
@@ -476,7 +476,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                       <FileUp size={32} className="text-primary mb-2" />
                     )}
                     <h3 className="text-[#111] dark:text-white font-semibold text-[15px] mb-1">
-                      Upload your CV / Resume
+                      Upload your resume
                     </h3>
                     <p className="text-[#54656f] dark:text-[#aebac1] text-[13px]">
                       PDF, DOCX, or Image (Max 5MB)
