@@ -5,6 +5,7 @@ import { TriangleAlert } from "lucide-react";
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
 import { LoadingPanel } from "@/components/shared/Spinner";
 import { getCourseWorkFor } from "@/services/courseWork";
+import { groupCourseWorkByTopic } from "@/utils/courseWorkTopics";
 
 // ============================================================
 // The work set on a course, wherever it was written.
@@ -66,6 +67,14 @@ export function CourseAssignments({
     return [...classroom, ...localOnly].map((a, i) => ({ ...a, index: i + 1 }));
   }, [classroom, localAssignments]);
 
+  // The work grouped under its Classroom topic. Null when the class groups
+  // nothing, in which case the render falls back to the flat merged list, so a
+  // class that uses no topics reads exactly as it did before.
+  const sections = useMemo(
+    () => groupCourseWorkByTopic(merged, data?.topics ?? []),
+    [data?.topics, merged]
+  );
+
   if (isLoading || classroomLoading) {
     // Reading a class from Google is slower than a database read, and long
     // enough that a bare spinner leaves somebody wondering whether anything is
@@ -98,7 +107,18 @@ export function CourseAssignments({
         </p>
       )}
 
-      <AssignmentList assignments={merged} emptyText={emptyText} />
+      {sections && sections.length > 0 ? (
+        <div className="space-y-8">
+          {sections.map((s) => (
+            <section key={s.id}>
+              <h4 className="mb-3 text-[15px] font-semibold text-foreground">{s.name}</h4>
+              <AssignmentList assignments={s.items} emptyText="" />
+            </section>
+          ))}
+        </div>
+      ) : (
+        <AssignmentList assignments={merged} emptyText={emptyText} />
+      )}
     </div>
   );
 }

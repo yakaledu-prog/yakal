@@ -92,6 +92,7 @@ export function TutorHome() {
             {/* Top row: Welcome + Quick Actions */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
+                <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Teaching Hub</p>
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
                   {today.length > 0

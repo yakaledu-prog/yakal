@@ -161,20 +161,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     const classUrl = course?.google_classroom_url ?? null;
-    if (!classUrl) return res.status(200).json({ assignments: [], linked: false });
+    if (!classUrl) return res.status(200).json({ assignments: [], topics: [], linked: false });
 
     const classId = courseIdFromUrl(classUrl);
     if (!classId) {
-      return res.status(200).json({ assignments: [], linked: true, invalidLink: true });
+      return res.status(200).json({ assignments: [], topics: [], linked: true, invalidLink: true });
     }
 
     const classroom = classroomClient();
-    const { data } = await classroom.courses.courseWork.list({
-      courseId: classId,
-      pageSize: 100,
-    });
+    // Work and topics together. Topics are the class's own grouping of the work
+    // into units; a class that uses none returns an empty list and the reader
+    // falls back to a flat list. A topics failure must not lose the assignments,
+    // so it degrades to no grouping rather than failing the whole request.
+    const [workRes, topicRes] = await Promise.all([
+      classroom.courses.courseWork.list({ courseId: classId, pageSize: 100 }),
+      classroom.courses.topics
+        .list({ courseId: classId, pageSize: 100 })
+        .catch(() => ({ data: { topic: [] } })),
+    ]);
 
-    const work = data.courseWork ?? [];
+    const topics = (((topicRes as any)?.data?.topic ?? []) as any[]).map((t) => ({
+      id: String(t.topicId),
+      name: t.name ?? 'Untitled topic',
+    }));
+
+    const work = workRes.data.courseWork ?? [];
 
     // Published only. A draft is the teacher's business, and this endpoint
     // answers to students.
@@ -189,9 +200,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         dueDate: readDueDate(w.dueDate),
         maxPoints: typeof w.maxPoints === 'number' ? w.maxPoints : null,
         link: w.alternateLink ?? null,
+        // The unit this work belongs to, matched to a topic id above. Null when
+        // the teacher filed it under no topic.
+        topicId: w.topicId ? String(w.topicId) : null,
       }));
 
-    return res.status(200).json({ assignments, linked: true });
+    return res.status(200).json({ assignments, topics, linked: true });
   } catch (err: any) {
     console.error('classroom error:', err);
     const raw = err?.message || 'Server error';

@@ -117,6 +117,14 @@ export interface ClassroomAssignment {
   dueDate: string | null;
   maxPoints: number | null;
   link: string | null;
+  /** The Classroom topic this work is filed under, or null for none. */
+  topicId: string | null;
+}
+
+/** A Classroom topic: the class's own grouping of work into units. */
+export interface ClassroomTopic {
+  id: string;
+  name: string;
 }
 
 export interface ClassroomSubmission {
@@ -174,6 +182,7 @@ export async function getCourseAssignments(
       dueDate: readDueDate(w.dueDate),
       maxPoints: typeof w.maxPoints === "number" ? w.maxPoints : null,
       link: w.alternateLink ?? null,
+      topicId: w.topicId ? String(w.topicId) : null,
     }));
 }
 

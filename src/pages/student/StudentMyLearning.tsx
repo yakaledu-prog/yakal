@@ -1,191 +1,128 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PageWrapper } from "@/components/ui/PageWrapper";
-import { Badge } from "@/components/ui/Badge";
+import { ArrowRight, BookOpen, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Search, LayoutGrid, List, Loader2, BookOpen } from "lucide-react";
-import { cn } from "@/utils/cn";
+
+import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
+import { getStudentSessions } from "@/services/sessions";
 import { getStudentCourses } from "@/services/studentService";
+
+function formatDate(value: string | Date) {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export function StudentMyLearning() {
   const { user } = useAuth();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
-  const [query, setQuery] = useState("");
-
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: courses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ["student-courses", user?.id],
     queryFn: () => getStudentCourses(user!.id),
     enabled: !!user?.id,
   });
+  const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
+    queryKey: ["student-sessions", user?.id],
+    queryFn: async () => (await getStudentSessions(user!.id)).data ?? [],
+    enabled: !!user?.id,
+  });
 
-  const visible = useMemo(
-    () =>
-      courses.filter((c) =>
-        `${c.title} ${c.subject}`.toLowerCase().includes(query.trim().toLowerCase())
-      ),
-    [courses, query]
+  const nextSession = useMemo(() => {
+    const now = new Date().toISOString().slice(0, 10);
+    return sessions
+      .filter((session) => session.status === "upcoming" && session.date >= now)
+      .sort((a, b) => `${a.date}${a.start_time}`.localeCompare(`${b.date}${b.start_time}`))[0];
+  }, [sessions]);
+  const nextDue = useMemo(
+    () => courses.filter((course) => course.nextDue).sort(
+      (a, b) => a.nextDue!.getTime() - b.nextDue!.getTime()
+    )[0],
+    [courses]
   );
+
+  if (coursesLoading || sessionsLoading) {
+    return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin text-[#1099A1]" /></div>;
+  }
 
   return (
     <PageWrapper className="!p-0">
-      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
+      <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
+        <header className="bg-[#1099A1] px-5 py-7 text-white md:px-10 md:py-10">
+          <div className="mx-auto max-w-[1440px]">
+            <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Student workspace</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">My Learning</h1>
+            <p className="mt-2 max-w-xl text-[15px] text-white/80">Your next session, upcoming work and courses in one place.</p>
+          </div>
+        </header>
 
-          <div className="relative z-10 max-w-[1440px] mx-auto flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div className="space-y-1">
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">My Learning</h1>
-                <p className="text-white/80 text-[15px] pt-1">
-                  Track your progress and continue where you left off
-                </p>
+        <main className="mx-auto max-w-[1440px] space-y-8 p-4 md:p-8">
+          <section className="grid gap-4 md:grid-cols-2">
+            <article className="border-t-[3px] border-[#97CE9D] bg-white p-5 dark:bg-[#111b21]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Next session</p>
+              {nextSession ? (
+                <>
+                  <h2 className="mt-3 text-xl font-medium text-foreground">{nextSession.subject}</h2>
+                  <p className="mt-1 text-[14px] text-muted-foreground">
+                    {formatDate(`${nextSession.date}T00:00:00`)} at {nextSession.start_time.slice(0, 5)} with {nextSession.tutor_name}
+                  </p>
+                  <Link
+                    to={nextSession.course_id ? `/student/my-learning/${nextSession.course_id}/sessions` : "/student/sessions"}
+                    className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#1099A1] px-5 text-[14px] font-semibold text-white hover:bg-[#0d7f86]"
+                  >
+                    View session <ArrowRight size={16} />
+                  </Link>
+                </>
+              ) : <p className="mt-3 text-[14px] text-muted-foreground">No upcoming session is booked.</p>}
+            </article>
+
+            <article className="border-t-[3px] border-[#CAA25F] bg-white p-5 dark:bg-[#111b21]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Next due</p>
+              {nextDue ? (
+                <>
+                  <h2 className="mt-3 text-xl font-medium text-foreground">{nextDue.title}</h2>
+                  <p className="mt-1 text-[14px] text-muted-foreground">Work due {formatDate(nextDue.nextDue!)}</p>
+                  <Link to={`/student/my-learning/${nextDue.id}/tasks`} className="mt-5 inline-flex min-h-11 items-center gap-2 text-[14px] font-semibold text-[#1099A1] hover:text-[#0d7f86]">
+                    View assignments <ArrowRight size={16} />
+                  </Link>
+                </>
+              ) : <p className="mt-3 text-[14px] text-muted-foreground">You are caught up on dated assignments.</p>}
+            </article>
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-end justify-between border-b border-border pb-3">
+              <div>
+                <h2 className="text-lg font-medium text-foreground">Your courses</h2>
+                <p className="mt-1 text-[13px] text-muted-foreground">Open a course for assignments, sessions and messages.</p>
               </div>
+              <span className="text-[13px] text-muted-foreground">{courses.length} active</span>
             </div>
 
-            {/* Controls Row inside header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/20">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
-                  >
-                    <LayoutGrid size={16} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
-
-                <div className="relative flex-1 sm:w-[300px]">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-white/60" />
-                  </div>
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search enrolled courses..."
-                    className="pl-9 pr-3 py-2 h-9 bg-black/10 text-white placeholder:text-white/60 border border-white/20 rounded-lg focus:outline-none focus:border-white w-full text-[13px]"
-                  />
-                </div>
+            {courses.length === 0 ? (
+              <div className="py-16 text-center">
+                <BookOpen className="mx-auto text-muted-foreground" />
+                <p className="mt-3 text-[14px] text-muted-foreground">Courses appear here after enrollment.</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1440px] mx-auto p-4 md:p-8 w-full h-full">
-
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-[#1099A1]" size={26} />
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="text-center py-20">
-            <BookOpen size={40} className="mx-auto text-[#aebac1] mb-3" />
-            <p className="text-[15px] font-semibold text-foreground">
-              {query ? "No course matches that" : "No courses yet"}
-            </p>
-            <p className="text-[13px] text-muted-foreground mt-1 max-w-sm mx-auto">
-              {query
-                ? "Try a different search."
-                : "Courses appear here once a session has been booked for you."}
-            </p>
-          </div>
-        ) : (
-        /* Course List/Grid */
-        <div className={cn(
-          "grid gap-4",
-          viewMode === "grid"
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            : "grid-cols-1"
-        )}>
-          {visible.map(course => (
-            <Link
-              key={course.id}
-              to={`/student/my-learning/${course.id}`}
-              className={cn(
-                "group bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-[16px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/50 flex flex-col",
-                viewMode === "list" ? "sm:flex-row" : ""
-              )}
-            >
-              {/* Thumbnail */}
-              <div className={cn(
-                "relative overflow-hidden shrink-0 border-[#e9edef] dark:border-[#2a3942]",
-                viewMode === "grid" ? "w-full aspect-video border-b" : "w-full sm:w-[280px] aspect-video sm:h-full sm:border-r"
-              )}>
-                <img
-                  src={course.thumbnailUrl ?? ""}
-                  alt={course.title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+            ) : (
+              <div className="divide-y divide-border">
+                {courses.map((course) => (
+                  <Link key={course.id} to={`/student/my-learning/${course.id}/tasks`} className="group flex min-h-[76px] items-center gap-4 py-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#1099A1]/10 text-[#1099A1]">
+                      <BookOpen size={19} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-[15px] font-medium text-foreground group-hover:text-[#1099A1]">{course.title}</h3>
+                      <p className="mt-1 truncate text-[12px] text-muted-foreground">{course.subject}{course.tutorName ? ` · ${course.tutorName}` : ""}</p>
+                    </div>
+                    <div className="hidden text-right sm:block">
+                      <p className="text-[13px] text-foreground">{course.completed}/{course.total} complete</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{course.progress}%</p>
+                    </div>
+                    <ArrowRight size={17} className="shrink-0 text-muted-foreground group-hover:text-[#1099A1]" />
+                  </Link>
+                ))}
               </div>
-
-              {/* Info */}
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <h3 className="text-[18px] font-bold text-[#111] dark:text-white group-hover:text-primary transition-colors line-clamp-2">
-                    {course.title}
-                  </h3>
-                  <Badge variant={course.status === 'Done' ? 'success' : course.status === 'In progress' ? 'secondary' : 'outline'} className="rounded-sm text-[11px] font-semibold px-2 py-0.5 uppercase tracking-wider shrink-0 mt-1">
-                    {course.status}
-                  </Badge>
-                </div>
-
-                <div className="text-[13px] text-[#54656f] dark:text-[#aebac1] mb-6 flex flex-wrap gap-x-4 gap-y-1">
-                  <span>
-                    <span className="font-semibold text-[#111] dark:text-[#e9edef]">Subject:</span> {course.subject}
-                  </span>
-                  {course.tutorName && (
-                    <span>
-                      <span className="font-semibold text-[#111] dark:text-[#e9edef]">Tutor:</span> {course.tutorName}
-                    </span>
-                  )}
-                </div>
-
-                {/* Deadline & Progress */}
-                <div className="mt-auto w-full flex flex-col gap-2">
-                  <div className="flex justify-between text-[12px] font-semibold">
-                    <span className="text-[#54656f] dark:text-[#aebac1]">
-                      {course.nextDue
-                        ? `Next due ${course.nextDue.toLocaleDateString(undefined, { day: "numeric", month: "short" })}`
-                        : course.total === 0
-                          ? "No assignments yet"
-                          : "All caught up"}
-                    </span>
-                    <span className="text-[#111] dark:text-white">
-                      {course.completed}/{course.total} - {course.progress}%
-                    </span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="h-2 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
-                    <div
-                      className="h-full transition-all"
-                      style={{
-                        width: `${course.progress}%`,
-                        backgroundColor: course.progress === 100 ? '#38A169' : '#1099A1'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-        )}
-        </div>
+            )}
+          </section>
+        </main>
       </div>
     </PageWrapper>
   );

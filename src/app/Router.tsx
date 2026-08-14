@@ -90,6 +90,7 @@ const StudentExploreUniversities = lazy(() => import("../pages/student/StudentEx
 const StudentHome = lazy(() => import("../pages/student/StudentHome").then((m) => ({ default: m.StudentHome })));
 const StudentLayout = lazy(() => import("../pages/student/StudentLayout").then((m) => ({ default: m.StudentLayout })));
 const StudentMeeting = lazy(() => import("../pages/student/StudentMeeting").then((m) => ({ default: m.StudentMeeting })));
+const StudentMyLearning = lazy(() => import("../pages/student/StudentMyLearning").then((m) => ({ default: m.StudentMyLearning })));
 const StudentMessages = lazy(() => import("../pages/student/StudentMessages").then((m) => ({ default: m.StudentMessages })));
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
@@ -433,7 +434,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <StudentHome /> },
           { path: "calendar", element: <StudentCalendar /> },
-          { path: "my-learning", element: <StudentCourseDashboard /> },
+          { path: "my-learning", element: <StudentMyLearning /> },
           {
             path: "my-learning/:courseId",
             element: <StudentCourseDashboard />,
