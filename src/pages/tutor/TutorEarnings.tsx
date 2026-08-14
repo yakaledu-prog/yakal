@@ -55,7 +55,7 @@ function StatusCell({
         type="button"
         disabled={busy !== null}
         onClick={onRequest}
-        className="h-9 rounded-md border border-[#1099A1] px-4 text-[13.5px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10 disabled:opacity-60"
+        className="h-9 rounded-md border border-primary px-4 text-[13.5px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
       >
         {busy === row.sessionId ? "Requesting..." : "Request payment"}
       </button>
@@ -65,7 +65,7 @@ function StatusCell({
   if (row.payoutStatus === "paid") {
     return (
       <div className="text-right">
-        <p className="text-[13.5px] font-medium text-[#1099A1]">Paid</p>
+        <p className="text-[13.5px] font-medium text-primary">Paid</p>
         <p className="text-[12px] text-muted-foreground">
           {row.method ? methodLabel(row.method) : "-"}
           {row.reference ? ` · ${row.reference}` : ""}
@@ -76,7 +76,7 @@ function StatusCell({
 
   return (
     <div className="text-right">
-      <p className="text-[13.5px] font-medium text-[#CAA25F]">Awaiting payment</p>
+      <p className="text-[13.5px] font-medium text-secondary">Awaiting payment</p>
       <p className="text-[12px] text-muted-foreground">
         {row.requestedAt
           ? `Asked ${new Date(row.requestedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
@@ -172,7 +172,7 @@ export function TutorEarnings() {
   return (
     <PageWrapper>
       <div className="min-h-screen flex-1 bg-background pb-12 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-10">
+        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -221,7 +221,7 @@ export function TutorEarnings() {
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
           {connect && !connect.payoutsEnabled && (
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-[#CAA25F] bg-muted/30 px-5 py-4">
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-muted/30 px-5 py-4">
               <p className="text-[14px] text-foreground">
                 Connect your bank and finished sessions pay out to you straight away. Until then an
                 admin pays them by hand.
@@ -235,7 +235,7 @@ export function TutorEarnings() {
                   setConnecting(false);
                   if (result.error) toast.error(result.error);
                 }}
-                className="h-10 shrink-0 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="h-10 shrink-0 rounded-md bg-primary px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {connecting ? "Opening..." : connect.accountId ? "Finish connecting" : "Connect bank"}
               </button>
@@ -243,7 +243,7 @@ export function TutorEarnings() {
           )}
 
           <div className="mb-12 flex flex-wrap items-center gap-6 md:gap-8">
-            <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-[#1099A1]">
+            <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-primary">
               <Search size={16} className="shrink-0 text-muted-foreground" />
               <input
                 value={search}
@@ -267,7 +267,7 @@ export function TutorEarnings() {
                 type="button"
                 disabled={busy !== null}
                 onClick={() => request(pending.map((r) => r.sessionId))}
-                className="h-10 rounded-md bg-[#1099A1] px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="h-10 rounded-md bg-primary px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {busy === "all" ? "Requesting..." : `Request all ${pending.length}`}
               </button>
@@ -276,7 +276,7 @@ export function TutorEarnings() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : visible.length === 0 ? (
             <p className="py-20 text-center text-[14px] text-muted-foreground">

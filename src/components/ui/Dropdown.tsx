@@ -160,7 +160,7 @@ export function Dropdown<T extends string = string>({
         )
       : cn(
           "border-[#e9edef] bg-white text-[#111] hover:border-[#cbd5d8] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white",
-          open && "border-[#1099A1]"
+          open && "border-primary"
         );
 
   return (
@@ -225,7 +225,7 @@ export function Dropdown<T extends string = string>({
                   "flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-[13px] transition-colors",
                   i === active && "bg-[#f8f9fa] dark:bg-[#111b21]",
                   isSelected
-                    ? "font-semibold text-[#1099A1]"
+                    ? "font-semibold text-primary"
                     : "text-[#111] dark:text-white"
                 )}
               >

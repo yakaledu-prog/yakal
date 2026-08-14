@@ -74,7 +74,7 @@ function ServiceCell({
         <Link
           to={addHref}
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-[#1099A1] hover:underline"
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-primary hover:underline"
         >
           {addIcon} {addLabel}
         </Link>
@@ -368,7 +368,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           two read as one thing: what you type, and what typing it does. */}
       <div className="rounded-lg border border-border p-4">
         <div className="relative flex flex-col items-stretch gap-3 sm:flex-row">
-          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border px-3.5 transition-colors focus-within:border-[#1099A1]">
+          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-border px-3.5 transition-colors focus-within:border-primary">
             <Mail size={17} className="shrink-0 text-muted-foreground" />
             <input
               type="email"
@@ -424,7 +424,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
           <button
             onClick={sendInvite}
             disabled={adding || !email.trim()}
-            className="shrink-0 rounded-lg bg-[#1099A1] px-7 !py-2.5 !h-fit text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-primary px-7 !py-2.5 !h-fit text-[15px] font-medium tracking-wide text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {adding ? <Loader2 size={15} className="animate-spin mx-auto" /> : "Send invitation"}
           </button>
@@ -468,7 +468,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       throws the invitation away. */}
                   <button
                     onClick={() => copyLink(inv.id, inv.token)}
-                    className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[#1099A1] transition-colors hover:text-[#0d7f86]"
+                    className="inline-flex items-center gap-1 text-[12.5px] font-medium text-primary transition-colors hover:text-primary-hover"
                   >
                     {copiedId === inv.id ? (
                       <>
@@ -483,7 +483,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                   <button
                     onClick={() => resend(inv.id)}
                     disabled={busyKey === `${inv.id}:resend`}
-                    className="text-[12.5px] font-medium text-[#CAA25F] transition-colors hover:text-[#CAA25F]/80 disabled:opacity-50"
+                    className="text-[12.5px] font-medium text-secondary transition-colors hover:text-secondary/80 disabled:opacity-50"
                   >
                     {busyKey === `${inv.id}:resend` ? "Sending..." : "Resend"}
                   </button>
@@ -504,7 +504,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
       <div>
         {isLoading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="animate-spin text-[#1099A1]" size={20} />
+            <Loader2 className="animate-spin text-primary" size={20} />
           </div>
         ) : children.length === 0 && pending.length === 0 ? (
           <p className="text-[13px] text-muted-foreground py-4">
@@ -601,7 +601,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                             }}
                             disabled={busyKey === `${c.id}:unlink`}
                             title={`Remove ${c.full_name}`}
-                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-secondary disabled:opacity-50"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -630,7 +630,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                                   to={SERVICES[1].buyHref(c.id)}
                                   onClick={(e) => e.stopPropagation()}
                                   title="Change this plan"
-                                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#1099A1]"
+                                  className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-primary"
                                 >
                                   <SquarePenIcon size={15} />
                                 </Link>
@@ -650,7 +650,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                             <Link
                               to={SERVICES[0].buyHref(c.id)}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-3 py-1.5 text-muted-foreground transition-colors hover:text-[#1099A1]"
+                              className="flex items-center gap-3 py-1.5 text-muted-foreground transition-colors hover:text-primary"
                             >
                               <span className="grid h-8 shrink-0 place-items-center">
                                 <PackagePlusIcon size={14} />
@@ -682,7 +682,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                       </div>
                     </td>
                     <td colSpan={SERVICES.length} className="py-3 text-center">
-                      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#8a6a2a] dark:text-[#CAA25F]">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#8a6a2a] dark:text-secondary">
                         <Clock size={13} />
                         {p.status === "rejected" ? "Declined" : "Waiting to accept"}
                       </span>
@@ -692,7 +692,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                         onClick={() => setToRemove({ id: p.student_id, name: p.full_name })}
                         disabled={busyKey === `${p.student_id}:unlink`}
                         title="Withdraw the request"
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-[#CAA25F] disabled:opacity-50"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-secondary disabled:opacity-50"
                       >
                         <Trash2 size={16} />
                       </button>

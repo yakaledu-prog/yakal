@@ -147,7 +147,7 @@ export function EssaysPanel({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search essays"
-            className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-[#1099A1] dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
+            className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
           />
         </div>
 
@@ -165,7 +165,7 @@ export function EssaysPanel({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#1099A1] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
           >
             <Plus size={15} />
             Add essay
@@ -290,7 +290,7 @@ function RailItem({
       className={cn(
         "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors",
         active
-          ? "bg-[#1099A1]/10 text-[#0d757b] dark:text-[#5fc9cf]"
+          ? "bg-primary/10 text-[#0d757b] dark:text-[#5fc9cf]"
           : "text-[#54656f] hover:bg-[#f3f3f5] dark:text-[#aebac1] dark:hover:bg-[#1c2a32]"
       )}
     >
@@ -302,11 +302,11 @@ function RailItem({
         className={cn(
           "shrink-0 text-[11px] tabular-nums",
           unknown
-            ? "text-[#CAA25F]"
+            ? "text-secondary"
             : owed > 0
-              ? "text-[#CAA25F]"
+              ? "text-secondary"
               : complete
-                ? "text-[#1099A1]"
+                ? "text-primary"
                 : "text-[#a8adb8]"
         )}
         title={
@@ -449,7 +449,7 @@ function EssayRow({
                     : due.tone === "late"
                       ? "font-medium text-[#d4183d]"
                       : due.tone === "soon"
-                        ? "font-medium text-[#CAA25F]"
+                        ? "font-medium text-secondary"
                         : "text-[#717182]"
                 )}
               >
@@ -476,7 +476,7 @@ function EssayRow({
               "font-normal",
               // Finished should read as finished wherever it appears, not only
               // on the title.
-              done && "border-[#1099A1]/40 font-medium text-[#1099A1]"
+              done && "border-primary/40 font-medium text-primary"
             )}
             ariaLabel={`Status for ${essay.title}`}
           />
@@ -486,7 +486,7 @@ function EssayRow({
               href={essay.drive_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-[#1099A1] hover:text-[#1099A1] dark:border-[#2a3942] dark:text-[#aebac1]"
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-primary hover:text-primary dark:border-[#2a3942] dark:text-[#aebac1]"
             >
               Open doc
               <ExternalLink size={11} />
@@ -496,7 +496,7 @@ function EssayRow({
               type="button"
               onClick={() => onCreateDoc(essay)}
               disabled={creating}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-[#1099A1] hover:text-[#1099A1] disabled:opacity-50 dark:border-[#2a3942] dark:text-[#aebac1]"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-primary hover:text-primary disabled:opacity-50 dark:border-[#2a3942] dark:text-[#aebac1]"
             >
               {creating && <Loader2 size={11} className="animate-spin" />}
               Create doc
@@ -536,7 +536,7 @@ function EssayRow({
           </div>
 
           {essay.status === "in_review" && (
-            <p className="text-[12px] text-[#CAA25F]">
+            <p className="text-[12px] text-secondary">
               With your counselor. You will get a note when they have read it.
             </p>
           )}
@@ -551,7 +551,7 @@ function EssayRow({
               <button
                 type="button"
                 onClick={() => onAskReview(essay)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/10"
               >
                 <UserPen size={13} />
                 Ask for review
@@ -579,7 +579,7 @@ function EssayRow({
         <div
           className={cn(
             "h-full transition-[width] duration-300",
-            over && !done ? "bg-[#d4183d]" : done ? "bg-[#1099A1]" : "bg-[#1099A1]/60"
+            over && !done ? "bg-[#d4183d]" : done ? "bg-primary" : "bg-primary/60"
           )}
           style={{ width: `${Math.round((over ? 1 : progress) * 100)}%` }}
         />
@@ -634,7 +634,7 @@ function EmptyScope({
           <button
             type="button"
             onClick={() => onSetSuppCount(school.id, count ?? 0)}
-            className="h-11 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+            className="h-11 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
           >
             Save
           </button>
@@ -653,7 +653,7 @@ function EmptyScope({
         <button
           type="button"
           onClick={() => onSetSuppCount(school.id, null)}
-          className="mt-2 text-[12px] font-medium text-[#1099A1] hover:underline"
+          className="mt-2 text-[12px] font-medium text-primary hover:underline"
         >
           That is not right
         </button>

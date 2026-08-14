@@ -152,7 +152,7 @@ export function SessionList({
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -183,7 +183,7 @@ export function SessionList({
               <div className={cn("flex min-w-0 items-center gap-4", !compact && "md:flex-1")}>
                 {/* Date, as its own column so the eye can run down it */}
                 <div className="w-12 shrink-0 text-center">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-[#1099A1]">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-primary">
                     {start.toLocaleDateString(undefined, { month: "short" })}
                   </p>
                   <p className="text-[24px] font-medium leading-none tabular-nums text-foreground">
@@ -218,9 +218,9 @@ export function SessionList({
                     className={cn(
                       "flex items-center gap-1.5 text-[13.5px] font-medium",
                       isAwaitingConfirmation(s)
-                        ? "text-[#CAA25F]"
+                        ? "text-secondary"
                         : upcoming
-                          ? "text-[#1099A1]"
+                          ? "text-primary"
                           : "text-muted-foreground"
                     )}
                   >
@@ -239,7 +239,7 @@ export function SessionList({
                   <div className="w-20 shrink-0 text-right">
                     {s.rating != null ? (
                       <span className="inline-flex items-center gap-1 text-[13.5px] text-foreground">
-                        <Star size={14} className="fill-[#CAA25F] text-[#CAA25F]" />
+                        <Star size={14} className="fill-secondary text-secondary" />
                         {s.rating.toFixed(1)}
                       </span>
                     ) : onRate ? (
@@ -249,7 +249,7 @@ export function SessionList({
                       <button
                         type="button"
                         onClick={() => onRate(s)}
-                        className="text-[12.5px] font-medium text-[#1099A1] hover:underline"
+                        className="text-[12.5px] font-medium text-primary hover:underline"
                       >
                         Rate
                       </button>
@@ -335,7 +335,7 @@ export function UpcomingSessions({
             <button
               type="button"
               onClick={() => onJoin(s)}
-              className="h-10 rounded-md bg-[#1099A1] px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+              className="h-10 rounded-md bg-primary px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
             >
               Join
             </button>
@@ -351,7 +351,7 @@ export function UpcomingSessions({
             <button
               type="button"
               onClick={() => onReschedule(s)}
-              className="h-10 rounded-md border border-[#1099A1] px-5 text-[14px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+              className="h-10 rounded-md border border-primary px-5 text-[14px] font-medium text-primary transition-colors hover:bg-primary/10"
             >
               Reschedule
             </button>

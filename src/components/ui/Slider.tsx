@@ -48,16 +48,16 @@ export function Slider({
         "[&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4",
         "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full",
         "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white",
-        "[&::-webkit-slider-thumb]:bg-[#1099A1] [&::-webkit-slider-thumb]:shadow-md",
+        "[&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md",
         "[&::-webkit-slider-thumb]:transition-transform",
         "[&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:active:scale-95",
         "dark:[&::-webkit-slider-thumb]:border-[#202c33]",
         // Firefox
         "[&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4",
         "[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2",
-        "[&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#1099A1]",
+        "[&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-primary",
         "[&::-moz-range-thumb]:shadow-md dark:[&::-moz-range-thumb]:border-[#202c33]",
-        "focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-[#1099A1]/30",
+        "focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-primary/30",
         className
       )}
     />

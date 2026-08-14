@@ -347,7 +347,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
   if (!isPreview && !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21]">
-        <Loader2 className="animate-spin text-[#1099A1]" size={26} />
+        <Loader2 className="animate-spin text-primary" size={26} />
       </div>
     );
   }
@@ -407,7 +407,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 <div key={s} className="flex items-center gap-2 flex-1 last:flex-none">
                   <div className={cn(
                     "w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold z-10",
-                    step === i + 1 ? "bg-[#1099A1] text-white" : step > i + 1 ? "bg-[#1099A1] text-white" : "bg-[#e9edef] dark:bg-[#2a3942] text-[#54656f] dark:text-[#aebac1]"
+                    step === i + 1 ? "bg-primary text-white" : step > i + 1 ? "bg-primary text-white" : "bg-[#e9edef] dark:bg-[#2a3942] text-[#54656f] dark:text-[#aebac1]"
                   )}>
                     {step > i + 1 ? <Check size={14} /> : i + 1}
                   </div>
@@ -429,7 +429,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                 <div className="flex flex-col items-center mb-2">
                   <div className="relative group">
                     <img src={avatarUrl} alt="Avatar" className="w-24 h-24 rounded-full object-cover border border-[#e9edef] dark:border-[#2a3942] shadow-inner bg-white" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 p-2 bg-[#1099A1] text-white rounded-full shadow-lg hover:bg-[#0d848b] transition">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg hover:bg-primary-hover transition">
                       {uploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                     </button>
                   </div>
@@ -471,9 +471,9 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   <div className="p-6 border-2 border-dashed border-[#e9edef] dark:border-[#2a3942] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] dark:bg-[#1a2329] hover:bg-[#f1f3f5] dark:hover:bg-[#202c33] transition-colors cursor-pointer"
                     onClick={() => cvInputRef.current?.click()}>
                     {uploadingCv ? (
-                      <Loader2 size={32} className="animate-spin text-[#1099A1] mb-2" />
+                      <Loader2 size={32} className="animate-spin text-primary mb-2" />
                     ) : (
-                      <FileUp size={32} className="text-[#1099A1] mb-2" />
+                      <FileUp size={32} className="text-primary mb-2" />
                     )}
                     <h3 className="text-[#111] dark:text-white font-semibold text-[15px] mb-1">
                       Upload your CV / Resume
@@ -489,7 +489,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   {cvFile && (
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-[#202c33] border border-[#e9edef] dark:border-[#2a3942] rounded-lg">
                       <div className="flex items-center gap-3 overflow-hidden">
-                        <FileText size={18} className="text-[#1099A1] flex-shrink-0" />
+                        <FileText size={18} className="text-primary flex-shrink-0" />
                         <span className="text-[13px] text-[#111] dark:text-white truncate font-medium">
                           {cvFile.name}
                         </span>
@@ -509,7 +509,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                     <p className="text-[13px] font-medium text-[#111] dark:text-white">
                       Subjects you teach
                       {subjects.length > 0 && (
-                        <span className="text-[#1099A1] font-semibold"> · {subjects.length}</span>
+                        <span className="text-primary font-semibold"> · {subjects.length}</span>
                       )}
                     </p>
                   </div>
@@ -524,8 +524,8 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                           className={cn(
                             "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
                             active
-                              ? "border-[#1099A1] ring-2 ring-[#1099A1]/30"
-                              : "border-[#e9edef] dark:border-[#2a3942] hover:border-[#1099A1]/50"
+                              ? "border-primary ring-2 ring-primary/30"
+                              : "border-[#e9edef] dark:border-[#2a3942] hover:border-primary/50"
                           )}
                         >
                           <img
@@ -542,7 +542,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                             {s}
                           </span>
                           {active && (
-                            <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-[#1099A1] text-white flex items-center justify-center">
+                            <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center">
                               <Check size={13} />
                             </span>
                           )}
@@ -600,7 +600,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                       value={intendedMajor}
                       onChange={(e) => setIntendedMajor(e.target.value)}
                       placeholder="e.g. Computer Science"
-                      className="h-11 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-3.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+                      className="h-11 rounded-xl border border-[#e9edef] dark:border-[#2a3942] bg-transparent px-3.5 text-[14px] outline-none transition-colors focus:border-primary"
                     />
                   </div>
                 </div>
@@ -617,10 +617,10 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                         onClick={() => setTheme("light")}
                         className={cn("flex flex-col items-center gap-3 transition-all", theme === "light" ? "opacity-100" : "opacity-60 hover:opacity-100")}
                       >
-                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#f3f4f6]", theme === "light" ? "border-[#1099A1] ring-2 ring-[#1099A1]/20 shadow-md" : "border-[#e5e7eb]")}>
+                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#f3f4f6]", theme === "light" ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-[#e5e7eb]")}>
                           <div className="h-8 bg-white border-b border-[#e5e7eb] flex items-center px-3 justify-between">
                             <div className="w-10 h-2.5 rounded-full bg-[#111]" />
-                            <div className="w-4 h-4 rounded-full bg-[#1099A1]" />
+                            <div className="w-4 h-4 rounded-full bg-primary" />
                           </div>
                           <div className="flex-1 bg-white p-3 flex flex-col gap-2">
                             <div className="w-full h-8 rounded-lg border border-[#e5e7eb]" />
@@ -638,7 +638,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                         onClick={() => setTheme("dark")}
                         className={cn("flex flex-col items-center gap-3 transition-all", theme === "dark" ? "opacity-100" : "opacity-85 hover:opacity-100")}
                       >
-                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#111827]", theme === "dark" ? "border-[#1099A1] ring-2 ring-[#1099A1]/20 shadow-md" : "border-[#1f2937]")}>
+                        <div className={cn("w-full aspect-[4/3] rounded-[16px] border-2 overflow-hidden flex flex-col bg-[#111827]", theme === "dark" ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-[#1f2937]")}>
                           <div className="h-8 bg-[#1f2937] border-b border-[#374151] flex items-center px-3 justify-between">
                             <div className="w-10 h-2.5 rounded-full bg-[#d1d5db]" />
                             <div className="w-4 h-4 rounded-full bg-[#ef4444]" />
@@ -667,7 +667,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                   {/* Top Input Area (No white card) */}
                   <div className="flex flex-col sm:flex-row gap-3">
                     {/* Embedded Input and Selector */}
-                    <div className="flex-1 flex items-center rounded-[12px] border border-[#e9edef] dark:border-[#2a3942] bg-transparent focus-within:border-[#1099A1] focus-within:ring-2 focus-within:ring-[#1099A1]/15 transition-all overflow-hidden h-14">
+                    <div className="flex-1 flex items-center rounded-[12px] border border-[#e9edef] dark:border-[#2a3942] bg-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all overflow-hidden h-14">
                       <div className="relative flex-1 h-full">
                         <input
                           type="email"
@@ -698,7 +698,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                         type="button"
                         onClick={handleAddChild}
                         disabled={!newChildEmail.includes('@') || !newChildServiceType}
-                        className="bg-[#1099A1] hover:bg-[#0d848b] text-white px-5 rounded-[12px] font-medium m-2"
+                        className="bg-primary hover:bg-primary-hover text-white px-5 rounded-[12px] font-medium m-2"
                       >
                         Add
                       </Button>
@@ -738,21 +738,21 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
                                     <button
                                       type="button"
                                       onClick={() => toggleChildService(idx, 'tutoring')}
-                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('tutoring') ? "bg-white dark:bg-[#202c33] text-[#1099A1]" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
+                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('tutoring') ? "bg-white dark:bg-[#202c33] text-primary" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
                                     >
                                       Tutoring
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => toggleChildService(idx, 'admissions')}
-                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('admissions') ? "bg-white dark:bg-[#202c33] text-[#1099A1]" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
+                                      className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-md transition-all", child.services.includes('admissions') ? "bg-white dark:bg-[#202c33] text-primary" : "text-[#54656f]/50 italic dark:text-[#aebac1] hover:text-[#111] dark:hover:text-white")}
                                     >
                                       Admissions
                                     </button>
                                   </div>
                                 </div>
                                 {/* {!exists && (
-                                  <button type="button" onClick={() => toast.success("Invite sent!")} className="text-[13px] font-bold text-[#1099A1] hover:underline ml-2">Invite</button>
+                                  <button type="button" onClick={() => toast.success("Invite sent!")} className="text-[13px] font-bold text-primary hover:underline ml-2">Invite</button>
                                 )} */}
                                 <button type="button" onClick={() => handleRemoveChild(idx)} className="p-2 text-[#8696a0] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 ml-1" title="Remove">
                                   <Trash size={16} />
@@ -808,7 +808,7 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
                 <Button
                   type="submit"
-                  className="px-8 h-11 bg-[#1099A1] hover:bg-[#0d848b] text-white rounded-xl text-[14px] font-bold"
+                  className="px-8 h-11 bg-primary hover:bg-primary-hover text-white rounded-xl text-[14px] font-bold"
                   disabled={loading}
                 >
                   {loading ? "Saving..." : isLastStep ? "Complete Setup" : "Next"}

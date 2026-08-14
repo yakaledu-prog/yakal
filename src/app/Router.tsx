@@ -232,7 +232,7 @@ function AppRootLayout() {
         toastOptions={{
           classNames: {
             success: '!bg-[#1099A1aa] !border-none !text-white',
-            warning: '!bg-[#CAA25F] !border-none !text-white',
+            warning: '!bg-secondary !border-none !text-white',
             error: '!bg-[#ef4444] !border-none !text-white'
           }
         }}
@@ -475,7 +475,7 @@ const router = createBrowserRouter([
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+      <Loader2 className="animate-spin text-primary" size={22} />
     </div>
   );
 }

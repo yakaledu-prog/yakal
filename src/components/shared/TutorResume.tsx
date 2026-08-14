@@ -72,14 +72,14 @@ function Section({
   return (
     <section>
       <div className="mb-5 flex items-end justify-between border-b border-border pb-2">
-        <span className="inline-flex items-center gap-2 border-b-2 border-[#1099A1] pb-2 text-[16px] font-bold text-foreground">
+        <span className="inline-flex items-center gap-2 border-b-2 border-primary pb-2 text-[16px] font-bold text-foreground">
           {icon} {title}
         </span>
         {onAdd && (
           <button
             type="button"
             onClick={onAdd}
-            className="pb-2 text-[13px] font-medium text-[#1099A1] transition-colors hover:underline"
+            className="pb-2 text-[13px] font-medium text-primary transition-colors hover:underline"
           >
             {addLabel}
           </button>
@@ -120,7 +120,7 @@ function Entry({
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 self-start text-[13px] text-muted-foreground opacity-0 transition-opacity hover:text-[#CAA25F] focus:opacity-100 group-hover:opacity-100"
+          className="shrink-0 self-start text-[13px] text-muted-foreground opacity-0 transition-opacity hover:text-secondary focus:opacity-100 group-hover:opacity-100"
         >
           Remove
         </button>
@@ -254,7 +254,7 @@ export function TutorResume({
                   <button
                     type="button"
                     onClick={() => onRemove("languages", i)}
-                    className="text-[13px] text-muted-foreground opacity-0 transition-opacity hover:text-[#CAA25F] focus:opacity-100 group-hover:opacity-100"
+                    className="text-[13px] text-muted-foreground opacity-0 transition-opacity hover:text-secondary focus:opacity-100 group-hover:opacity-100"
                   >
                     Remove
                   </button>

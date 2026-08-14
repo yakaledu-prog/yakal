@@ -73,7 +73,7 @@ function Field({
 }) {
   const body = (
     <>
-      <div className="w-9 h-9 rounded-full bg-[#1099A1]/10 text-[#1099A1] flex items-center justify-center shrink-0">
+      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
         {icon}
       </div>
       <div className="min-w-0">
@@ -81,7 +81,7 @@ function Field({
         <p
           className={cn(
             "text-[13.5px] break-words",
-            href ? "text-[#1099A1] hover:underline" : "text-[#111] dark:text-white"
+            href ? "text-primary hover:underline" : "text-[#111] dark:text-white"
           )}
         >
           {value}
@@ -108,7 +108,7 @@ function AvailabilityBlock({ tutorId }: { tutorId: string }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-5">
-        <Loader2 className="animate-spin text-[#1099A1]" size={18} />
+        <Loader2 className="animate-spin text-primary" size={18} />
       </div>
     );
   }
@@ -119,7 +119,7 @@ function AvailabilityBlock({ tutorId }: { tutorId: string }) {
   return (
     <div className="px-4 py-4">
       <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[#8696a0] mb-3">
-        <CalendarClock size={13} className="text-[#1099A1]" />
+        <CalendarClock size={13} className="text-primary" />
         Weekly availability
       </p>
 
@@ -142,7 +142,7 @@ function AvailabilityBlock({ tutorId }: { tutorId: string }) {
                     {slots.map((slot) => (
                       <span
                         key={slot}
-                        className="px-2 py-0.5 rounded-md bg-[#97CE9D]/25 text-[#1099A1] dark:text-[#97CE9D] text-[12px] font-medium"
+                        className="px-2 py-0.5 rounded-md bg-tertiary/25 text-primary dark:text-tertiary text-[12px] font-medium"
                       >
                         {slot}
                       </span>
@@ -218,7 +218,7 @@ export function ContactInfoPanel({
 
       {isLoading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="animate-spin text-[#1099A1]" size={20} />
+          <Loader2 className="animate-spin text-primary" size={20} />
         </div>
       ) : (
         <div className="pt-4 divide-y divide-[#e9edef] dark:divide-[#2a3942]">

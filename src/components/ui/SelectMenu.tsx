@@ -37,8 +37,8 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
         onClick={() => setOpen((o) => !o)}
         className={cn(
           "w-full h-14 rounded-xl border bg-transparent pl-4 pr-10 pt-6 pb-1.5 text-left text-[14px] transition-all",
-          "focus:outline-none focus:ring-2 focus:ring-[#1099A1]/15",
-          open ? "border-[#1099A1] ring-2 ring-[#1099A1]/15" : "border-[#e9edef] dark:border-[#2a3942]",
+          "focus:outline-none focus:ring-2 focus:ring-primary/15",
+          open ? "border-primary ring-2 ring-primary/15" : "border-[#e9edef] dark:border-[#2a3942]",
           filled ? "text-[#111] dark:text-white" : "text-transparent"
         )}
       >
@@ -49,7 +49,7 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
         className={cn(
           "pointer-events-none absolute left-4 transition-all duration-200",
           filled || open
-            ? "top-2 text-[11px] font-medium text-[#1099A1]"
+            ? "top-2 text-[11px] font-medium text-primary"
             : "top-1/2 -translate-y-1/2 text-[14px] text-[#54656f] dark:text-[#aebac1]"
         )}
       >
@@ -79,7 +79,7 @@ export function SelectMenu({ label, value, onChange, options, className }: Selec
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-2.5 text-[14px] text-left transition-colors",
                   active
-                    ? "text-[#1099A1] font-medium bg-[#1099A1]/5"
+                    ? "text-primary font-medium bg-primary/5"
                     : "text-[#111] dark:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"
                 )}
               >

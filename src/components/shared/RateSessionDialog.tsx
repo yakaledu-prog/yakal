@@ -110,7 +110,7 @@ export function RateSessionDialog({
           />
           <div className="min-w-0">
             <p className="truncate text-[17px] font-bold text-foreground">{tutorName}</p>
-            {subject && <p className="truncate text-[14px] text-[#1099A1]">{subject}</p>}
+            {subject && <p className="truncate text-[14px] text-primary">{subject}</p>}
             {startsAt && endsAt && (
               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -149,8 +149,8 @@ export function RateSessionDialog({
                   strokeWidth={1.5}
                   className={
                     n <= shown
-                      ? "fill-[#CAA25F] text-[#CAA25F]"
-                      : "fill-transparent text-[#CAA25F]"
+                      ? "fill-secondary text-secondary"
+                      : "fill-transparent text-secondary"
                   }
                 />
               </button>
@@ -172,7 +172,7 @@ export function RateSessionDialog({
               onChange={(e) => setComment(e.target.value)}
               rows={3}
               placeholder="Share a quick note about the session (optional)"
-              className="w-full resize-none rounded-xl border border-border bg-transparent py-3 pl-10 pr-3.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-[#1099A1]"
+              className="w-full resize-none rounded-xl border border-border bg-transparent py-3 pl-10 pr-3.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
             />
           </div>
         </div>

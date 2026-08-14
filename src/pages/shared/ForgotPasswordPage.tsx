@@ -53,7 +53,7 @@ export function ForgotPasswordPage() {
 
         {sent ? (
           <div className="text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#97CE9D]/20 text-[#1099A1]">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-tertiary/20 text-primary">
               <MailCheck size={28} />
             </div>
             <h1 className="text-[22px] font-bold text-[#111] dark:text-white">Check your email</h1>
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
             </p>
             <Link
               to="/login"
-              className="mt-6 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-[#1099A1] hover:underline"
+              className="mt-6 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-primary hover:underline"
             >
               <ArrowLeft size={15} /> Back to log in
             </Link>
@@ -89,14 +89,14 @@ export function ForgotPasswordPage() {
                   placeholder="you@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-[#1099A1] focus:outline-none dark:border-[#2a3942] dark:text-white"
+                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-primary focus:outline-none dark:border-[#2a3942] dark:text-white"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="h-12 w-full rounded-xl bg-[#1099A1] text-[15px] font-bold text-white hover:bg-[#0d848b]"
+                className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
               >
                 {loading ? <Loader2 size={16} className="mx-auto animate-spin" /> : "Send reset link"}
               </Button>

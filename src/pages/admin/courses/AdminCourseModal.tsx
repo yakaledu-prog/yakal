@@ -180,7 +180,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
               >
                 <div className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-sm group-hover:opacity-80",
-                  step >= s.num ? "bg-[#1099A1] text-white" : "bg-[#f1f1f1] dark:bg-[#202c33] text-muted-foreground border border-[#e9edef] dark:border-[#2a3942]"
+                  step >= s.num ? "bg-primary text-white" : "bg-[#f1f1f1] dark:bg-[#202c33] text-muted-foreground border border-[#e9edef] dark:border-[#2a3942]"
                 )}>
                   {s.num}
                   {/* <s.icon size={16} /> */}

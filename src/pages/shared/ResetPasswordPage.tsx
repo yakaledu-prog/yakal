@@ -88,11 +88,11 @@ export function ResetPasswordPage() {
 
         {status === "checking" ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin text-[#1099A1]" />
+            <Loader2 className="animate-spin text-primary" />
           </div>
         ) : status === "invalid" ? (
           <div className="text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#CAA25F]/15 text-[#CAA25F]">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-secondary/15 text-secondary">
               <AlertCircle size={28} />
             </div>
             <h1 className="text-[20px] font-bold text-[#111] dark:text-white">Link expired</h1>
@@ -101,14 +101,14 @@ export function ResetPasswordPage() {
             </p>
             <Link
               to="/forgot-password"
-              className="mt-6 inline-block h-11 rounded-xl bg-[#1099A1] px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-[#0d848b]"
+              className="mt-6 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-primary-hover"
             >
               Request a new link
             </Link>
           </div>
         ) : done ? (
           <div className="text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[#97CE9D]/20 text-[#1099A1]">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-tertiary/20 text-primary">
               <CheckCircle2 size={28} />
             </div>
             <h1 className="text-[22px] font-bold text-[#111] dark:text-white">Password updated</h1>
@@ -117,14 +117,14 @@ export function ResetPasswordPage() {
             </p>
             <button
               onClick={() => navigate("/")}
-              className="mt-6 h-12 w-full rounded-xl bg-[#1099A1] text-[15px] font-bold text-white hover:bg-[#0d848b]"
+              className="mt-6 h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
             >
               Continue
             </button>
           </div>
         ) : (
           <>
-            <div className="mb-2 flex justify-center text-[#1099A1]">
+            <div className="mb-2 flex justify-center text-primary">
               <Lock size={32} strokeWidth={1.5} />
             </div>
             <h1 className="text-center text-[22px] font-bold text-[#111] dark:text-white">
@@ -146,7 +146,7 @@ export function ResetPasswordPage() {
                   placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-[#1099A1] focus:outline-none dark:border-[#2a3942] dark:text-white"
+                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-primary focus:outline-none dark:border-[#2a3942] dark:text-white"
                 />
               </div>
               <div>
@@ -159,7 +159,7 @@ export function ResetPasswordPage() {
                   placeholder="Re-enter it"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-[#1099A1] focus:outline-none dark:border-[#2a3942] dark:text-white"
+                  className="w-full rounded-xl border border-[#e9edef] bg-transparent px-4 py-3 text-[14px] text-[#111] transition-colors focus:border-primary focus:outline-none dark:border-[#2a3942] dark:text-white"
                 />
               </div>
 
@@ -168,7 +168,7 @@ export function ResetPasswordPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full rounded-xl bg-[#1099A1] text-[15px] font-bold text-white hover:bg-[#0d848b]"
+                className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
               >
                 {loading ? <Loader2 size={16} className="mx-auto animate-spin" /> : "Update password"}
               </Button>

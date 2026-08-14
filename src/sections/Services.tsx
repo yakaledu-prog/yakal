@@ -83,7 +83,7 @@ export default function Services() {
       <div className="max-w-[1440px] mx-auto px-[24px] md:px-[73px]">
         {/* Header */}
         <Reveal className="mb-[40px] md:mb-[60px] text-center">
-          <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-[#1099A1]">
+          <p className="text-[14px] font-bold uppercase tracking-[2px] mb-4 text-primary">
             What We Offer
           </p>
           <h2 className="text-[36px] md:text-[56px] font-semibold leading-[44px] md:leading-[64px] text-[#111]">
@@ -106,12 +106,12 @@ export default function Services() {
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 {/* Dark teal gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#1099A1]/80 via-[#0a4246]/80 to-[#051e20]/95 mix-blend-multiply" />
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-[#0a4246]/80 to-[#051e20]/95 mix-blend-multiply" />
               </div>
 
               {/* Content Top */}
               <div className="relative z-10">
-                {/* <span className="inline-block bg-[#1099A1] text-white text-[12px] font-bold uppercase tracking-[1px] px-4 py-1.5 rounded-[500px] mb-6">
+                {/* <span className="inline-block bg-primary text-white text-[12px] font-bold uppercase tracking-[1px] px-4 py-1.5 rounded-[500px] mb-6">
                   {svc.badge}
                 </span> */}
                 <h3 className="text-[40px] md:text-[56px] font-semibold leading-[1.1] mb-6 text-white whitespace-pre-line">
@@ -172,7 +172,7 @@ export default function Services() {
 
                 {/* CTAs */}
                 <div className="flex flex-wrap gap-3 mt-auto">
-                  <button onClick={() => openBookingUrl(bookingUrl)} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1099A1] text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
+                  <button onClick={() => openBookingUrl(bookingUrl)} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-[8px] text-[14px] font-semibold transition-all shadow-sm hover:bg-[#0c7a81] w-full sm:w-auto">
                     {svc.primaryCta} <ArrowRight size={16} />
                   </button>
                   {/* Applying is a sign-up, so it goes where signing up happens

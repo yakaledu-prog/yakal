@@ -113,7 +113,7 @@ function EditDialog({
   }
 
   const field =
-    "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]";
+    "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-primary";
   const label = "mb-1.5 block text-[13px] text-muted-foreground";
   const preview = form.avatar_url?.trim() || dicebearUrl(form.name || "Yakal");
 
@@ -146,7 +146,7 @@ function EditDialog({
                   type="button"
                   onClick={() => fileInput.current?.click()}
                   disabled={uploading}
-                  className="flex min-h-[76px] flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground disabled:opacity-60"
+                  className="flex min-h-[76px] flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground disabled:opacity-60"
                 >
                   {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                   {uploading ? "Uploading" : "Upload photo"}
@@ -210,7 +210,7 @@ function EditDialog({
                   aria-hidden
                   className={cn(
                     "pointer-events-none absolute bottom-2.5 right-3 text-[12px] text-muted-foreground",
-                    form.quote.length >= QUOTE_LIMIT && "text-[#CAA25F]"
+                    form.quote.length >= QUOTE_LIMIT && "text-secondary"
                   )}
                 >
                   {form.quote.length} / {QUOTE_LIMIT}
@@ -227,7 +227,7 @@ function EditDialog({
             <span className={label}>Live preview</span>
             <div className="flex flex-1 items-start rounded-2xl bg-muted/40 p-5 dark:bg-white/5">
               <div className="w-full rounded-2xl bg-white p-6 shadow-sm">
-                <QuoteIcon size={30} className="mb-3 text-[#1099A1]" fill="currentColor" strokeWidth={0} />
+                <QuoteIcon size={30} className="mb-3 text-primary" fill="currentColor" strokeWidth={0} />
                 <p className="text-[14.5px] font-light leading-[1.9] text-[#4a4a4a]">
                   {form.quote.trim() || PLACEHOLDER_QUOTE}
                 </p>
@@ -235,7 +235,7 @@ function EditDialog({
                   <img src={preview} alt="" className="h-11 w-11 shrink-0 rounded-full bg-[#f3f3f3] object-cover" />
                   <div className="min-w-0">
                     <p className="truncate text-[14px] font-medium text-black">{form.name.trim() || "Their name"}</p>
-                    <p className="truncate text-[12.5px] text-[#1099a1]">{form.role.trim() || "Their role"}</p>
+                    <p className="truncate text-[12.5px] text-primary">{form.role.trim() || "Their role"}</p>
                   </div>
                 </div>
               </div>
@@ -254,7 +254,7 @@ function EditDialog({
               onClick={() => set("published", !form.published)}
               className={cn(
                 "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                form.published ? "bg-[#1099A1]" : "bg-muted-foreground/30"
+                form.published ? "bg-primary" : "bg-muted-foreground/30"
               )}
             >
               <span
@@ -274,7 +274,7 @@ function EditDialog({
             <button
               onClick={submit}
               disabled={busy || uploading}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-primary-hover disabled:opacity-50"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               {/* One flex item, or the button's gap lands between the two
@@ -486,7 +486,7 @@ export function AdminTestimonials() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search name, role or quote..."
-                className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-10 text-[13.5px] outline-none transition-colors focus:border-[#1099A1] lg:pr-3"
+                className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-10 text-[13.5px] outline-none transition-colors focus:border-primary lg:pr-3"
               />
               {/* On a phone this is the visibility filter. The dropdown beside
                   it would push the Add button onto its own line, and the three
@@ -499,7 +499,7 @@ export function AdminTestimonials() {
                   aria-expanded={filtersOpen}
                   className={cn(
                     "rounded-lg p-1.5 transition-colors",
-                    visibility !== "all" ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+                    visibility !== "all" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <SlidersHorizontal size={16} />
@@ -520,7 +520,7 @@ export function AdminTestimonials() {
                         )}
                       >
                         {o.label}
-                        {visibility === o.value && <Check size={14} className="text-[#1099A1]" />}
+                        {visibility === o.value && <Check size={14} className="text-primary" />}
                       </button>
                     ))}
                   </div>
@@ -543,7 +543,7 @@ export function AdminTestimonials() {
 
             <button
               onClick={() => setEditing(null)}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-[#0d7f86]"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-primary-hover"
             >
               <MessageCirclePlus size={16} /> Add testimonial
             </button>

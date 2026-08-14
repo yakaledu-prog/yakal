@@ -91,7 +91,7 @@ export function TrackerPreview() {
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-lg px-3 py-1.5 text-[13px] ${
-              tab === t ? "bg-[#1099A1] text-white" : "bg-[#f3f3f5]"
+              tab === t ? "bg-primary text-white" : "bg-[#f3f3f5]"
             }`}
           >
             {t}

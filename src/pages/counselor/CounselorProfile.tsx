@@ -105,7 +105,7 @@ export function CounselorProfile() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white p-6 md:p-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white p-6 md:p-10 pb-0 md:pb-0 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -138,7 +138,7 @@ export function CounselorProfile() {
                   <Edit2 size={16} /> Edit Profile
                 </button>
                 <button onClick={() => signOut()}
-                  className="flex items-center justify-center gap-2 !bg-[#97CE9D]/40 border border-[#97CE9D]/40 hover:!bg-[#CAA25F]/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
+                  className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
                   <LogOut size={16} /> Log Out
                 </button>
               </div>
@@ -311,7 +311,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] sticky bottom-0">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={save} disabled={saving} className="h-10 px-6 bg-[#1099A1] hover:bg-[#0d848b] text-white font-bold">{saving ? "Saving..." : "Save Changes"}</Button>
+          <Button onClick={save} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary-hover text-white font-bold">{saving ? "Saving..." : "Save Changes"}</Button>
         </div>
       </div>
     </div>

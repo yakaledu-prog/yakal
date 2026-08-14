@@ -330,7 +330,7 @@ export function ProposalPage() {
           {/* One Time Fee */}
           <div className="mb-6">
             <div className="text-xs font-semibold text-[#54656f] uppercase tracking-wider mb-1">One-Time Project Fee</div>
-            <div className="text-4xl font-black text-[#1099A1]">${estimatedDevPrice}</div>
+            <div className="text-4xl font-black text-primary">${estimatedDevPrice}</div>
             <div className="text-xs text-[#54656f] mt-1 flex justify-between">
               <span>Base MVP: ${BASE_PRICE}</span>
               <span>Custom Dev: +${estimatedDevPrice - BASE_PRICE}</span>
@@ -352,12 +352,12 @@ export function ProposalPage() {
         {/* Progress Bar */}
         <div className="p-6 border-b border-[#e9edef] bg-[#f0faf0]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-[#1099A1]">Decisions Made</span>
-            <span className="text-sm font-bold text-[#1099A1]">{completedDecisions} / {totalDecisions}</span>
+            <span className="text-sm font-semibold text-primary">Decisions Made</span>
+            <span className="text-sm font-bold text-primary">{completedDecisions} / {totalDecisions}</span>
           </div>
           <div className="h-2 w-full bg-[#e9edef] rounded-full overflow-hidden">
             <div 
-              className="h-full bg-[#1099A1] transition-all duration-500 ease-in-out" 
+              className="h-full bg-primary transition-all duration-500 ease-in-out" 
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -374,13 +374,13 @@ export function ProposalPage() {
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-md text-left text-sm font-medium transition-colors",
                 activeSection === section.id 
-                  ? "bg-[#1099A1] text-white" 
-                  : "text-[#54656f] hover:bg-[#f0faf0] hover:text-[#1099A1]"
+                  ? "bg-primary text-white" 
+                  : "text-[#54656f] hover:bg-[#f0faf0] hover:text-primary"
               )}
             >
               <span className={cn(
                 "opacity-70",
-                activeSection === section.id ? "text-white" : "text-[#1099A1]"
+                activeSection === section.id ? "text-white" : "text-primary"
               )}>
                 {section.icon}
               </span>
@@ -388,7 +388,7 @@ export function ProposalPage() {
               
               {/* Checkmark if section has a completed choice */}
               {isCompleted ? (
-                <CheckCircle2 size={14} className={cn("ml-auto", activeSection === section.id ? "text-white" : "text-[#1099A1]")} />
+                <CheckCircle2 size={14} className={cn("ml-auto", activeSection === section.id ? "text-white" : "text-primary")} />
                ) : null}
             </button>
           )})}
@@ -400,7 +400,7 @@ export function ProposalPage() {
         
         {/* Header Section */}
         <div className="mb-10 pb-6 border-b border-[#e9edef]">
-          <h1 className="text-4xl font-bold text-[#1099A1] mb-2">Scope Builder</h1>
+          <h1 className="text-4xl font-bold text-primary mb-2">Scope Builder</h1>
           <p className="text-lg text-[#54656f]">Review the proposal and finalize your decisions.</p>
         </div>
 
@@ -410,7 +410,7 @@ export function ProposalPage() {
           ref={el => sectionRefs.current['overview'] = el}
           className="mb-16 scroll-mt-10 bg-white p-8 rounded-xl shadow-sm border border-[#e9edef]"
         >
-          <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl mb-6">
+          <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl mb-6">
             <FileText size={24} />
           </div>
           <h2 className="text-3xl font-bold mb-6 text-[#111]">1. Project Overview</h2>
@@ -425,7 +425,7 @@ export function ProposalPage() {
             
             <div className="bg-[#f8f9fa] p-5 rounded-lg border border-[#e9edef] my-6">
               <h4 className="font-semibold text-[#111] flex items-center gap-2 mb-3">
-                <CheckCircle2 size={18} className="text-[#1099A1]" /> Progressive Web App (PWA)
+                <CheckCircle2 size={18} className="text-primary" /> Progressive Web App (PWA)
               </h4>
               <p className="text-sm">
                 The web application will be built as a Progressive Web App (PWA). Users can "Install" the app directly from their mobile Safari or Chrome browser to their home screen. It will look and feel like a native app (icon on home screen, fullscreen window) without the high cost and 30% revenue sharing requirements of the Apple App Store and Google Play Store.
@@ -434,7 +434,7 @@ export function ProposalPage() {
 
             <div className="bg-[#fff9e6] p-5 rounded-lg border border-[#f0e6cc] my-6">
               <h4 className="font-semibold text-[#111] flex items-center gap-2 mb-3">
-                <AlertCircle size={18} className="text-[#CAA25F]" /> File Storage Strategy
+                <AlertCircle size={18} className="text-secondary" /> File Storage Strategy
               </h4>
               <p className="text-sm text-[#8c7335]">
                 To avoid expensive, recurring AWS/Cloud storage costs in Phase 1, <strong>all large files (PDFs, Videos, Worksheets) will be managed via Google Drive links</strong>. Tutors will upload files to their own Google Drive and paste the shareable URL into the platform. There is no native file upload feature, ensuring your server costs remain incredibly low.
@@ -449,7 +449,7 @@ export function ProposalPage() {
           ref={el => sectionRefs.current['portals'] = el}
           className="mb-16 scroll-mt-10 bg-white p-8 rounded-xl shadow-sm border border-[#e9edef]"
         >
-          <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl mb-6">
+          <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl mb-6">
             <LayoutDashboard size={24} />
           </div>
           <h2 className="text-3xl font-bold mb-6 text-[#111]">2. User Portals</h2>
@@ -458,7 +458,7 @@ export function ProposalPage() {
             <div>
               <h3 className="text-xl font-bold text-[#111] mb-3 border-b border-[#e9edef] pb-2">Public Landing Page</h3>
               <p className="mb-2">The marketing face of the platform. Sections include Hero, Why Join Us, Subjects, About, and Contact.</p>
-              <p className="text-sm font-medium text-[#1099A1] bg-[#f0faf0] inline-block px-3 py-1 rounded-md">Built statically for high performance (No CMS included in Base MVP).</p>
+              <p className="text-sm font-medium text-primary bg-[#f0faf0] inline-block px-3 py-1 rounded-md">Built statically for high performance (No CMS included in Base MVP).</p>
             </div>
 
             <div>
@@ -493,12 +493,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Key size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">3. Authentication Method</h2>
             </div>
-            {choices.auth && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.auth && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How will users create accounts and log into the system?</p>
@@ -536,12 +536,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Users size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">4. Who can be tutor</h2>
             </div>
-            {choices.onboarding && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.onboarding && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How do tutors join the platform and start accepting students? This determines the quality control mechanisms we need to build into the Admin dashboard.</p>
@@ -572,12 +572,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Code2 size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">5. Course Creation</h2>
             </div>
-            {choices.courses && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.courses && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">Who is responsible for defining the courses taught on the platform?</p>
@@ -608,12 +608,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <CalendarClock size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">6. Session Booking Flow</h2>
             </div>
-            {choices.booking && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.booking && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How do students actually book a tutor?</p>
@@ -644,12 +644,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <CreditCard size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">7. Payment Strategy</h2>
             </div>
-            {choices.paymentMode && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.paymentMode && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">
@@ -690,8 +690,8 @@ export function ProposalPage() {
                 className={cn(
                   "px-4 py-2 border rounded-md text-sm font-medium transition-colors",
                   choices.gateways.includes(gateway)
-                    ? "bg-[#1099A1] border-[#1099A1] text-white"
-                    : "bg-white border-[#e9edef] text-[#54656f] hover:border-[#1099A1]"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-white border-[#e9edef] text-[#54656f] hover:border-primary"
                 )}
               >
                 {gateway} {choices.gateways.includes(gateway) && <Check size={14} className="inline ml-1"/>}
@@ -708,12 +708,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <PieChart size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">8. Revenue Split (Commission)</h2>
             </div>
-            {choices.commission && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.commission && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How does the platform make money from tutors? Automated percentage splits require advanced payment APIs.</p>
@@ -744,12 +744,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Video size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">9. Video Conferencing</h2>
             </div>
-            {choices.video && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.video && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">A critical decision is how online tutoring sessions are hosted.</p>
@@ -770,12 +770,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Film size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">10. Session Recordings</h2>
             </div>
-            {choices.recordings && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.recordings && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How are session video recordings handled and stored for students to review later?</p>
@@ -813,12 +813,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Star size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">11. Review & Rating System</h2>
             </div>
-            {choices.reviews && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.reviews && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -854,12 +854,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <HelpCircle size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">12. Customer Support</h2>
             </div>
-            {choices.support && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.support && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -895,12 +895,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Languages size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">13. Localization (Languages)</h2>
             </div>
-            {choices.language && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.language && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -929,12 +929,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Bell size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">14. Notification Strategy</h2>
             </div>
-            {choices.notifications && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.notifications && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -970,12 +970,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <BarChart size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">15. Admin Analytics Dashboard</h2>
             </div>
-            {choices.analytics && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.analytics && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1004,12 +1004,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <ShieldAlert size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">16. Refund Policy Engine</h2>
             </div>
-            {choices.refunds && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.refunds && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1038,12 +1038,12 @@ export function ProposalPage() {
         >
            <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Server size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">17. Infrastructure</h2>
             </div>
-            {choices.infrastructure && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.infrastructure && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1079,12 +1079,12 @@ export function ProposalPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-[#1099A1] rounded-xl">
+              <div className="inline-flex items-center justify-center p-3 bg-[#f0faf0] text-primary rounded-xl">
                 <Globe size={24} />
               </div>
               <h2 className="text-3xl font-bold text-[#111]">18. Domain & Branding</h2>
             </div>
-            {choices.domainExt && <span className="bg-[#1099A1] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.domainExt && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="bg-[#fff0f0] p-4 rounded-lg border border-[#fcd5d5] mb-6">
@@ -1111,7 +1111,7 @@ export function ProposalPage() {
           className="mb-16 scroll-mt-10 bg-[#f8f9fa] p-8 rounded-xl border border-[#e9edef]"
         >
           <div className="flex items-center gap-4 mb-6">
-            <div className="inline-flex items-center justify-center p-3 bg-[#1099A1] text-white rounded-xl">
+            <div className="inline-flex items-center justify-center p-3 bg-primary text-white rounded-xl">
               <CheckSquare size={24} />
             </div>
             <h2 className="text-3xl font-bold text-[#111]">Final Scope Summary</h2>
@@ -1127,7 +1127,7 @@ export function ProposalPage() {
             </pre>
             <button 
               onClick={handleCopy}
-              className="absolute top-4 right-4 bg-[#1099A1] hover:bg-[#0e868d] text-white px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2 transition-colors shadow-sm"
+              className="absolute top-4 right-4 bg-primary hover:bg-[#0e868d] text-white px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2 transition-colors shadow-sm"
             >
               <Copy size={16} /> Copy to Clipboard
             </button>
@@ -1159,15 +1159,15 @@ function SelectionCard({
       className={cn(
         "p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 h-full flex flex-col",
         selected 
-          ? "border-[#1099A1] bg-[#f0faf0] shadow-sm" 
-          : "border-[#e9edef] bg-white hover:border-[#97CE9D]"
+          ? "border-primary bg-[#f0faf0] shadow-sm" 
+          : "border-[#e9edef] bg-white hover:border-tertiary"
       )}
     >
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-bold text-[#111] pr-4">{title}</h4>
         <div className={cn(
           "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-          selected ? "border-[#1099A1] bg-[#1099A1]" : "border-[#aebac1]"
+          selected ? "border-primary bg-primary" : "border-[#aebac1]"
         )}>
           {selected && <Check size={12} className="text-white" />}
         </div>
@@ -1181,7 +1181,7 @@ function SelectionCard({
             <span className="text-[#54656f] font-medium">Dev Fee:</span>
             <span className={cn(
               "font-semibold px-2 py-0.5 rounded",
-              selected ? "bg-[#1099A1]/10 text-[#1099A1]" : "bg-[#f8f9fa] text-[#54656f]"
+              selected ? "bg-primary/10 text-primary" : "bg-[#f8f9fa] text-[#54656f]"
             )}>
               {costBreakdown.devCost === 0 ? "Included" : `+$${costBreakdown.devCost}`}
             </span>

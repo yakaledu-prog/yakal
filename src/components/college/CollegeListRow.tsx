@@ -92,7 +92,7 @@ export function CollegeListRow({
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="shrink-0 text-[#a8adb8] transition-colors hover:text-[#1099A1]"
+              className="shrink-0 text-[#a8adb8] transition-colors hover:text-primary"
               aria-label="Open admissions page"
             >
               <ExternalLink size={12} />

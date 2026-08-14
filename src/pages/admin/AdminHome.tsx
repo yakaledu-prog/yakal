@@ -43,7 +43,7 @@ export function AdminHome() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Welcome banner */}
-        <div className="bg-[#1099A1] text-white relative overflow-hidden">
+        <div className="bg-primary text-white relative overflow-hidden">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -87,13 +87,13 @@ export function AdminHome() {
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
               <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
-                <UserCheck size={20} className="text-[#1099A1]" /> Pending approvals
+                <UserCheck size={20} className="text-primary" /> Pending approvals
               </h2>
               <button onClick={() => navigate("/admin/users?role=tutor")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
             {isLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-primary" /></div>
             ) : pending.length === 0 ? (
               <p className="text-muted-foreground text-[14px] py-4">No tutors or counselors awaiting approval.</p>
             ) : (
@@ -105,7 +105,7 @@ export function AdminHome() {
                       <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{u.full_name}</p>
                       <p className="text-[12px] text-muted-foreground truncate capitalize">{u.role}{u.email ? ` - ${u.email}` : ""}</p>
                     </div>
-                    <button onClick={() => act(u.id, true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1099A1] text-white text-[12px] font-semibold hover:bg-[#0d848b]">
+                    <button onClick={() => act(u.id, true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover">
                       <Check size={14} /> Approve
                     </button>
                     <button onClick={() => act(u.id, false)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[12px] font-semibold hover:bg-[#c0392b]/5">
@@ -121,7 +121,7 @@ export function AdminHome() {
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
               <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
-                <Users size={20} className="text-[#1099A1]" /> Users by role
+                <Users size={20} className="text-primary" /> Users by role
               </h2>
             </div>
             <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
@@ -131,7 +131,7 @@ export function AdminHome() {
                   onClick={() => navigate(`/admin/users?role=${role}`)}
                   className="w-full flex items-center gap-3 p-4 text-left hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors"
                 >
-                  <span className="w-8 h-8 rounded-lg bg-[#1099A1]/10 text-[#1099A1] flex items-center justify-center">{meta.icon}</span>
+                  <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{meta.icon}</span>
                   <span className="flex-1 text-[14px] font-medium text-[#111] dark:text-white">{meta.label}</span>
                   <span className={cn("text-[15px] font-bold", (dash?.usersByRole[role] ?? 0) > 0 ? "text-[#111] dark:text-white" : "text-muted-foreground")}>
                     {dash?.usersByRole[role] ?? 0}

@@ -129,7 +129,7 @@ export function MobileExplore({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:hidden">
-      <header className="relative shrink-0 overflow-hidden bg-[#1099A1] px-5 pb-5 pt-6 text-white">
+      <header className="relative shrink-0 overflow-hidden bg-primary px-5 pb-5 pt-6 text-white">
         <svg
           className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5"
           viewBox="0 0 400 200"
@@ -168,7 +168,7 @@ export function MobileExplore({
           one school among nineteen hundred. The filter button lives inside it
           rather than beside it, and sort sits at the end. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-4 py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border px-3 transition-colors focus-within:border-[#1099A1]">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border px-3 transition-colors focus-within:border-primary">
           <Search size={16} className="shrink-0 text-muted-foreground" />
           <input
             value={filters.query}
@@ -182,7 +182,7 @@ export function MobileExplore({
             aria-label="Filters"
             className={cn(
               "-mr-1 flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 transition-colors",
-              activeFilters > 0 ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+              activeFilters > 0 ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <SlidersHorizontal size={15} />
@@ -220,7 +220,7 @@ export function MobileExplore({
               className={cn(
                 "flex-1 border-b-[3px] px-2 py-3 text-[13.5px] transition-colors",
                 tab === t.id
-                  ? "border-[#1099A1] font-semibold text-[#1099A1]"
+                  ? "border-primary font-semibold text-primary"
                   : "border-transparent text-muted-foreground",
                 disabled && "opacity-40"
               )}
@@ -256,7 +256,7 @@ export function MobileExplore({
               <button
                 type="button"
                 onClick={() => onFiltersChange(EMPTY_FILTERS)}
-                className="mt-4 rounded-lg bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white"
+                className="mt-4 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-white"
               >
                 Clear all filters
               </button>
@@ -310,7 +310,7 @@ export function MobileExplore({
                   <button
                     type="button"
                     onClick={() => onFiltersChange(EMPTY_FILTERS)}
-                    className="text-[13px] font-medium text-[#1099A1]"
+                    className="text-[13px] font-medium text-primary"
                   >
                     Clear all
                   </button>
@@ -343,7 +343,7 @@ export function MobileExplore({
               <button
                 type="button"
                 onClick={() => setSheetOpen(false)}
-                className="w-full rounded-lg bg-[#1099A1] py-3 text-[14px] font-semibold text-white"
+                className="w-full rounded-lg bg-primary py-3 text-[14px] font-semibold text-white"
               >
                 Show {resultCount.toLocaleString()}{" "}
                 {resultCount === 1 ? "university" : "universities"}
@@ -445,7 +445,7 @@ function MobileCollegeCard({
               title={isSaved ? "Saved" : "Save"}
               className={cn(
                 "-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 transition-colors",
-                isSaved ? "text-[#1099A1]" : "text-muted-foreground hover:text-foreground"
+                isSaved ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Bookmark size={17} fill={isSaved ? "currentColor" : "none"} />
@@ -485,7 +485,7 @@ function MobileCollegeCard({
               "shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors",
               isAdded
                 ? "border border-border text-muted-foreground"
-                : "bg-[#1099A1] text-white"
+                : "bg-primary text-white"
             )}
           >
             {isAdded ? "Added" : "Add"}

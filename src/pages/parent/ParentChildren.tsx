@@ -92,8 +92,8 @@ export function ParentChildren() {
           )}
         >
           <div className="px-3 pt-5 pb-2 border-b border-[#e9edef] dark:border-[#2a3942]">
-            <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-[#1099A1] px-2 py-2 transition ease-in-out">
-              <Search size={18} className="text-[#697780] group-focus-within:text-[#1099A1] shrink-0" />
+            <div className="flex items-center gap-2 border-b-2 border-transparent group focus-within:border-primary px-2 py-2 transition ease-in-out">
+              <Search size={18} className="text-[#697780] group-focus-within:text-primary shrink-0" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -106,7 +106,7 @@ export function ParentChildren() {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+                <Loader2 className="animate-spin text-primary" size={22} />
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-10 px-4">
@@ -143,7 +143,7 @@ export function ParentChildren() {
               <div className="p-3">
                 <button
                   onClick={() => setManaging(true)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#1099A1]/50 text-[#1099A1] text-[13.5px] font-semibold hover:bg-[#1099A1]/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-primary/50 text-primary text-[13.5px] font-semibold hover:bg-primary/5 transition-colors"
                 >
                   <UserPlus size={15} /> Add child
                 </button>
@@ -271,7 +271,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Massive Integrated Header with Inline Stats */}
-      <div className={cn("bg-[#1099A1] text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0", activeTab !== 'messages' ? "mb-8" : "mb-0")}>
+      <div className={cn("bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0", activeTab !== 'messages' ? "mb-8" : "mb-0")}>
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="flex items-center gap-3 min-w-0">
             {/* Only the phone needs this: on desktop the list is still beside
@@ -353,7 +353,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
           <div className="space-y-6">
             {!hasAdmissions ? (
               <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-xl dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-muted/10 animate-in fade-in zoom-in-95">
-                <div className="w-16 h-16 bg-[#1099A1]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1099A1]">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
                   <Lock size={32} />
                 </div>
                 <h3 className="text-xl font-bold mb-2">College Admissions Locked</h3>

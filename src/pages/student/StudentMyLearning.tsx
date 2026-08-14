@@ -31,7 +31,7 @@ export function StudentMyLearning() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Header */}
-        <div className="bg-[#1099A1] text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
+        <div className="bg-primary text-white pt-6 md:pt-10 px-6 md:px-10 pb-6 md:pb-8 relative overflow-hidden shrink-0">
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -56,13 +56,13 @@ export function StudentMyLearning() {
                 <div className="flex bg-black/10 p-1 rounded-lg border border-white/20 shrink-0">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
+                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-primary shadow-sm" : "text-white hover:bg-white/20")}
                   >
                     <LayoutGrid size={16} />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-[#1099A1] shadow-sm" : "text-white hover:bg-white/20")}
+                    className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-primary shadow-sm" : "text-white hover:bg-white/20")}
                   >
                     <List size={16} />
                   </button>
@@ -89,7 +89,7 @@ export function StudentMyLearning() {
 
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-[#1099A1]" size={26} />
+            <Loader2 className="animate-spin text-primary" size={26} />
           </div>
         ) : visible.length === 0 ? (
           <div className="text-center py-20">

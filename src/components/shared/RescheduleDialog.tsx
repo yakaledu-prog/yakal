@@ -124,7 +124,7 @@ export function RescheduleDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Clashing appointment, sorry"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-primary"
             />
           </div>
         )}

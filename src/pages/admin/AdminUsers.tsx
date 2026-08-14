@@ -154,7 +154,7 @@ export function AdminUsers() {
                   onClick={() => setRole(r)}
                   className={cn(
                     "px-3.5 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors",
-                    role === r ? "bg-[#1099A1] text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                    role === r ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                   )}
                 >
                   {r}
@@ -167,13 +167,13 @@ export function AdminUsers() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search name or email"
-                className="pl-9 pr-3 h-10 w-full sm:w-64 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[14px] outline-none focus:border-[#1099A1]"
+                className="pl-9 pr-3 h-10 w-full sm:w-64 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg text-[14px] outline-none focus:border-primary"
               />
             </div>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
           ) : (
             /* A real table, because an admin scanning fifty accounts is
                comparing rows, and a stack of cards makes every comparison a
@@ -224,7 +224,7 @@ export function AdminUsers() {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-[13px] capitalize text-[#1099A1]">{u.role}</td>
+                      <td className="px-4 py-3 text-[13px] capitalize text-primary">{u.role}</td>
 
                       <td className="px-4 py-3">
                         <span
@@ -262,7 +262,7 @@ export function AdminUsers() {
                             <button
                               onClick={() => act(u, true)}
                               title="Approve"
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#97CE9D]/15 hover:text-[#1099A1]"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-tertiary/15 hover:text-primary"
                             >
                               <Check size={16} />
                             </button>
@@ -279,7 +279,7 @@ export function AdminUsers() {
                           <button
                             onClick={() => handleView(u)}
                             title="View details"
-                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#1099A1]/10 hover:text-[#1099A1]"
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                           >
                             <Eye size={16} />
                           </button>

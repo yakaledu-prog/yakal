@@ -64,7 +64,7 @@ export function FitBar({
         />
         {marker !== null && (
           <div
-            className="absolute -top-0.5 h-2.5 w-0.5 rounded-sm bg-[#1099A1]"
+            className="absolute -top-0.5 h-2.5 w-0.5 rounded-sm bg-primary"
             style={{ left: `calc(${marker * 100}% - 1px)` }}
             title={`Your SAT: ${sat}`}
           />

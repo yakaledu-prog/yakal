@@ -25,7 +25,7 @@ export function MoneyInput({ label, value, onChange, currency, onCurrencyChange 
     <div
       className={cn(
         "relative h-14 rounded-xl border bg-transparent transition-all",
-        focused ? "border-[#1099A1] ring-2 ring-[#1099A1]/15" : "border-[#e9edef] dark:border-[#2a3942]"
+        focused ? "border-primary ring-2 ring-primary/15" : "border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
       {/* Label: centered when empty, floats up on focus/value */}
@@ -33,7 +33,7 @@ export function MoneyInput({ label, value, onChange, currency, onCurrencyChange 
         className={cn(
           "pointer-events-none absolute transition-all duration-200",
           float
-            ? "left-11 top-2 text-[11px] font-medium text-[#1099A1]"
+            ? "left-11 top-2 text-[11px] font-medium text-primary"
             : "left-4 top-1/2 -translate-y-1/2 text-[14px] text-[#54656f] dark:text-[#aebac1]"
         )}
       >
@@ -68,7 +68,7 @@ export function MoneyInput({ label, value, onChange, currency, onCurrencyChange 
             className={cn(
               "px-2.5 py-1 text-[12px] font-semibold rounded-md transition-colors",
               currency === c
-                ? "bg-white dark:bg-[#202c33] text-[#1099A1] shadow-sm"
+                ? "bg-white dark:bg-[#202c33] text-primary shadow-sm"
                 : "text-[#54656f] dark:text-[#aebac1]"
             )}
           >

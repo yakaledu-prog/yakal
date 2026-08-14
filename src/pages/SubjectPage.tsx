@@ -52,9 +52,9 @@ export default function SubjectPage({
                       "px-[18px] py-[10px] text-[14px] md:text-[15px] active:scale-90 font-semibold rounded-full transition-all ease-in-out duration-500 border",
                       activeTabIndex === idx
                         // ? "bg-[#111] text-white border-[#111] shadow-sm"
-                        ? "bg-[#97CE9D] text-white border-none shadow-sm"
+                        ? "bg-tertiary text-white border-none shadow-sm"
                         // : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-[#111] hover:text-[#111]"
-                        : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-[#97CE9D] hover:text-[#97CE9D]"
+                        : "bg-transparent text-[#54656f] border-[#e9edef] hover:border-tertiary hover:text-tertiary"
                     )}
                   >
                     {detail.title}
@@ -75,7 +75,7 @@ export default function SubjectPage({
                   <ul className="space-y-[14px]">
                     {activeDetail.learn.map((item, i) => (
                       <li key={i} className="flex items-start gap-[12px] text-[15px] md:text-[16px] leading-[26px] text-[#4a4a4a] max-w-[650px]">
-                        <span className="mt-[4px] text-[#1099a1] shrink-0 font-bold text-[20px] leading-none">&#8226;</span>
+                        <span className="mt-[4px] text-primary shrink-0 font-bold text-[20px] leading-none">&#8226;</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -84,7 +84,7 @@ export default function SubjectPage({
               )}
             </div>
 
-            <button className="bg-[#1099a1] px-[32px] md:px-[40px] py-[16px] rounded-full text-white text-[15px] md:text-[16px] font-bold hover:bg-[#0d848b] transition-colors shadow-sm">
+            <button className="bg-primary px-[32px] md:px-[40px] py-[16px] rounded-full text-white text-[15px] md:text-[16px] font-bold hover:bg-primary-hover transition-colors shadow-sm">
               Book Your Free Session
             </button>
           </div>

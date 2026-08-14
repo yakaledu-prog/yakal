@@ -1,7 +1,12 @@
 import { Instagram, Linkedin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { XIcon } from "@/components/icons/XIcon";
 import logo from "@/assets/images/logo.webp";
 import NewsletterSignup from "@/components/NewsletterSignup";
+// Contact and social addresses come from admin-editable site settings, while
+// the newsletter box is the standalone NewsletterSignup component, so the old
+// inline email state and subscribeToNewsletter are gone.
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const quickLinks = [
   { label: "Home", id: "home" },
@@ -19,12 +24,7 @@ const SOCIAL_ICONS = {
   x: { label: "X", icon: <XIcon size={14} /> },
   linkedin: { label: "LinkedIn", icon: <Linkedin size={15} strokeWidth={2} /> },
 } as const;
-import { useNavigate } from "react-router-dom";
-// Contact and social addresses come from admin-editable site settings (kept
-// from main), while the newsletter box is the branch's standalone
-// NewsletterSignup component - so the old inline email state and
-// subscribeToNewsletter are gone.
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+
 export default function Footer({ scrollTo }: { scrollTo: (id: string) => void }) {
   const { contact: CONTACT, social } = useSiteSettings();
 

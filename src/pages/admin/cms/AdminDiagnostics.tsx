@@ -74,7 +74,7 @@ function slugify(title: string): string {
 }
 
 const field =
-  "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-[#1099A1]";
+  "w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] outline-none transition-colors focus:border-primary";
 const label = "mb-1.5 block text-[13px] text-muted-foreground";
 
 /**
@@ -150,8 +150,8 @@ function QuestionEditor({
               className={cn(
                 "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors",
                 question.correctAnswer === i
-                  ? "border-[#97CE9D] bg-[#97CE9D] text-white"
-                  : "border-border text-transparent hover:border-[#97CE9D]"
+                  ? "border-tertiary bg-tertiary text-white"
+                  : "border-border text-transparent hover:border-tertiary"
               )}
             >
               <Check size={13} />
@@ -177,7 +177,7 @@ function QuestionEditor({
         <button
           type="button"
           onClick={addOption}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[12.5px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[12.5px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
         >
           <Plus size={14} /> Add option
         </button>
@@ -319,13 +319,13 @@ function EditDialog({
                   onClick={() => setStep(n)}
                   className={cn(
                     "flex items-center gap-2 border-b-2 px-1 pb-3 pr-5 text-[13.5px] transition-colors",
-                    active ? "border-[#1099A1] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                    active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-medium",
-                      active ? "bg-[#1099A1] text-white" : "bg-muted text-muted-foreground"
+                      active ? "bg-primary text-white" : "bg-muted text-muted-foreground"
                     )}
                   >
                     {n}
@@ -387,7 +387,7 @@ function EditDialog({
               <button
                 type="button"
                 onClick={() => set("questions", [...form.questions, BLANK_QUESTION(form.questions.length + 1)])}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
               >
                 <Plus size={15} /> Add question
               </button>
@@ -397,7 +397,7 @@ function EditDialog({
               <button
                 type="button"
                 onClick={openJson}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
               >
                 <Braces size={15} /> Paste JSON
               </button>
@@ -424,7 +424,7 @@ function EditDialog({
                     <button
                       type="button"
                       onClick={applyJson}
-                      className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-[#0d7f86]"
+                      className="rounded-xl bg-primary px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-primary-hover"
                     >
                       Load questions
                     </button>
@@ -432,7 +432,7 @@ function EditDialog({
                 }
               />
               {jsonError && (
-                <p className="flex items-start gap-1.5 text-[12.5px] text-[#CAA25F]">
+                <p className="flex items-start gap-1.5 text-[12.5px] text-secondary">
                   <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                   {jsonError}
                 </p>
@@ -471,7 +471,7 @@ function EditDialog({
             {step === 1 ? (
               <button
                 onClick={() => setStep(2)}
-                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86]"
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-primary-hover"
               >
                 Next
               </button>
@@ -482,14 +482,14 @@ function EditDialog({
                 <button
                   onClick={() => { const d = collect(false); if (d) onSave(d, false); }}
                   disabled={busy}
-                  className="flex items-center gap-1.5 rounded-xl border border-[#97CE9D] bg-[#97CE9D]/15 px-4 py-2.5 text-[13.5px] font-normal text-foreground transition-colors hover:bg-[#97CE9D]/30 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl border border-tertiary bg-tertiary/15 px-4 py-2.5 text-[13.5px] font-normal text-foreground transition-colors hover:bg-tertiary/30 disabled:opacity-50"
                 >
                   <Save size={14} /> Save draft
                 </button>
                 <button
                   onClick={() => { const d = collect(true); if (d) onSave(d, true); }}
                   disabled={busy}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-[#0d7f86] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-normal text-white hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   {initial?.published ? "Save and keep live" : "Publish"}
@@ -627,14 +627,14 @@ function AddQuestionsDialog({
               <button
                 type="button"
                 onClick={() => setQuestions([...questions, BLANK_QUESTION(test.questions.length + questions.length + 1)])}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
               >
                 <Plus size={15} /> Add question
               </button>
               <button
                 type="button"
                 onClick={openJson}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
               >
                 <Braces size={15} /> Paste JSON
               </button>
@@ -658,7 +658,7 @@ function AddQuestionsDialog({
                     <button
                       type="button"
                       onClick={applyJson}
-                      className="rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-[#0d7f86]"
+                      className="rounded-xl bg-primary px-4 py-2 text-[13px] font-normal text-white shadow-lg transition-colors hover:bg-primary-hover"
                     >
                       Load questions
                     </button>
@@ -666,7 +666,7 @@ function AddQuestionsDialog({
                 }
               />
               {jsonError && (
-                <p className="flex items-start gap-1.5 text-[12.5px] text-[#CAA25F]">
+                <p className="flex items-start gap-1.5 text-[12.5px] text-secondary">
                   <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                   {jsonError}
                 </p>
@@ -685,7 +685,7 @@ function AddQuestionsDialog({
           <button
             onClick={() => onAdd(usable)}
             disabled={busy || usable.length === 0}
-            className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Add {usable.length || ""} question{usable.length === 1 ? "" : "s"}
@@ -848,8 +848,8 @@ export function AdminDiagnostics() {
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background md:flex-row md:overflow-hidden dark:bg-[#111b21]">
         <aside className={cn("w-full flex-col border-b border-[#e9edef] md:h-full md:w-[300px] md:shrink-0 md:border-b-0 md:border-r dark:border-[#2a3942]", listClass)}>
           <div className="border-b border-[#e9edef] bg-white px-3 pb-2 pt-5 dark:border-[#2a3942] dark:bg-[#111b21]">
-            <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition ease-in-out focus-within:border-[#1099A1]">
-              <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-[#1099A1]" />
+            <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition ease-in-out focus-within:border-primary">
+              <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-primary" />
               <input
                 value={filterText}
                 onChange={(e) => setFilterText(e.target.value)}
@@ -862,7 +862,7 @@ export function AdminDiagnostics() {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="animate-spin text-[#1099A1]" />
+                <Loader2 className="animate-spin text-primary" />
               </div>
             ) : shown.length === 0 ? (
               <p className="px-4 py-8 text-center text-[13px] text-muted-foreground">
@@ -877,7 +877,7 @@ export function AdminDiagnostics() {
                     className={cn(
                       "flex items-center gap-2 border-l-2 pr-2 transition-colors",
                       active
-                        ? "border-l-[#1099A1] bg-[#1099A1]/5"
+                        ? "border-l-primary bg-primary/5"
                         : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                     )}
                   >
@@ -885,7 +885,7 @@ export function AdminDiagnostics() {
                       onClick={() => { setSubject(name); setTestId(null); openDetail(); }}
                       className="min-w-0 flex-1 p-4 text-left"
                     >
-                      <p className={cn("truncate text-[14px] font-semibold", active ? "text-[#1099A1]" : "text-[#111] dark:text-white")}>
+                      <p className={cn("truncate text-[14px] font-semibold", active ? "text-primary" : "text-[#111] dark:text-white")}>
                         {name}
                       </p>
                       <p className="truncate text-[12px] text-muted-foreground">
@@ -922,7 +922,7 @@ export function AdminDiagnostics() {
           <div className="border-t border-[#e9edef] p-3 dark:border-[#2a3942]">
             <button
               onClick={() => { setPresetSubject(null); setEditing(null); }}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
             >
               <Plus size={15} /> New diagnostic
             </button>
@@ -1023,7 +1023,7 @@ export function AdminDiagnostics() {
                                 className={cn(
                                   "flex items-center justify-between gap-3 rounded-xl border px-4 py-3.5 text-[14px]",
                                   correct
-                                    ? "border-[#1099A1] bg-[#1099A1]/5 text-[#1099A1]"
+                                    ? "border-primary bg-primary/5 text-primary"
                                     : "border-border text-foreground"
                                 )}
                               >
@@ -1052,7 +1052,7 @@ export function AdminDiagnostics() {
 
                   <button
                     onClick={() => setAdding(activeTest)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-[#1099A1] hover:text-foreground"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-3 text-[13px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
                   >
                     <Plus size={15} /> Add a question
                   </button>
@@ -1120,7 +1120,7 @@ export function AdminDiagnostics() {
               <button
                 onClick={() => void confirmRename()}
                 disabled={busy || !renaming.to.trim()}
-                className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-normal text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 Rename

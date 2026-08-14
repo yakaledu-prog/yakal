@@ -100,7 +100,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
     if (isLoading) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-10">
-          <Loader2 className="w-8 h-8 animate-spin text-[#1099A1]" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="mt-4 text-[13px] text-muted-foreground">Loading details...</p>
         </div>
       );
@@ -199,7 +199,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                   </div>
                   <div className="text-right">
                     <p className={cn("text-[11px] font-semibold uppercase",
-                      s.status === "completed" ? "text-[#1099A1]" :
+                      s.status === "completed" ? "text-primary" :
                         s.status === "cancelled" ? "text-red-500" : "text-muted-foreground"
                     )}>
                       {s.status}
@@ -269,7 +269,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                   <p className="text-[13px] font-semibold text-[#111] dark:text-white capitalize">{item.title}</p>
                   <span className={cn(
                     "text-[11px] font-semibold uppercase",
-                    item.is_active ? "text-[#1099A1]" : "text-muted-foreground"
+                    item.is_active ? "text-primary" : "text-muted-foreground"
                   )}>
                     {item.is_active ? "Active" : "Inactive"}
                   </span>
@@ -294,7 +294,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
           <X size={20} />
         </button>
 
-        <div className="relative pt-6 bg-[#1099A1] shrink-0 rounded-t-2xl">
+        <div className="relative pt-6 bg-primary shrink-0 rounded-t-2xl">
           <svg className="absolute right-0 bottom-0 h-full w-[60%] md:w-[40%] text-white/10 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
             <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
@@ -308,7 +308,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
               src={user.avatar_url || dicebearUrl(user.full_name)}
               alt={user.full_name}
               className={cn(
-                "w-16 h-16 rounded-full border-2 border-[#1099A1] shadow-inner bg-white object-cover shrink-0 self-start mt-1",
+                "w-16 h-16 rounded-full border-2 border-primary shadow-inner bg-white object-cover shrink-0 self-start mt-1",
                 user.status !== "active" && "grayscale opacity-70"
               )}
             />

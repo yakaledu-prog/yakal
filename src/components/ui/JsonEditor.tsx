@@ -81,10 +81,10 @@ function tokenize(src: string): Token[] {
 }
 
 const COLOUR: Record<string, string> = {
-  key: "text-[#97CE9D]",
-  string: "text-[#CAA25F]",
-  number: "text-[#1099A1]",
-  keyword: "text-[#1099A1]",
+  key: "text-tertiary",
+  string: "text-secondary",
+  number: "text-primary",
+  keyword: "text-primary",
   punct: "text-white/45",
   plain: "text-white/80",
 };
@@ -148,7 +148,7 @@ export function JsonEditor({
           SHARED,
           "absolute inset-0 resize-none overflow-auto bg-transparent text-transparent caret-white outline-none",
           // The selection has to stay visible through transparent text.
-          "selection:bg-[#1099A1]/40 selection:text-transparent"
+          "selection:bg-primary/40 selection:text-transparent"
         )}
       />
       </div>

@@ -154,12 +154,12 @@ function Cell({ cell, onClick }: { cell: ReqCell; onClick?: () => void }) {
         className={cn(
           "relative grid h-7 w-7 place-items-center overflow-hidden rounded-md border transition-colors",
           status === "done"
-            ? "border-[#1099A1] bg-[#1099A1] text-white"
+            ? "border-primary bg-primary text-white"
             : status === "partial"
-              ? "border-[#1099A1] text-[#1099A1]"
+              ? "border-primary text-primary"
               : cn(
                 "border-[#dfe3e6] text-transparent dark:border-[#3a4a52]",
-                onClick && "group-hover:border-[#1099A1]"
+                onClick && "group-hover:border-primary"
               ),
           // A dashed edge marks a value the system worked out, so a student can
           // tell at a glance which ticks are theirs and which are ours. On a
@@ -174,7 +174,7 @@ function Cell({ cell, onClick }: { cell: ReqCell; onClick?: () => void }) {
         {status === "partial" && (
           <span
             aria-hidden
-            className="absolute inset-x-0 bottom-0 bg-[#1099A1]/20"
+            className="absolute inset-x-0 bottom-0 bg-primary/20"
             style={{ height: `${Math.round(pct * 100)}%` }}
           />
         )}
@@ -193,13 +193,13 @@ function Legend() {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-[#717182]">
       <span className="inline-flex items-center gap-1.5">
-        <span className="grid h-4 w-4 place-items-center rounded border border-[#1099A1] bg-[#1099A1] text-white">
+        <span className="grid h-4 w-4 place-items-center rounded border border-primary bg-primary text-white">
           <Check size={10} strokeWidth={3} />
         </span>
         Done
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-4 w-4 rounded border border-dashed border-[#1099A1]" />
+        <span className="h-4 w-4 rounded border border-dashed border-primary" />
         Filled in from your profile
       </span>
       <span className="inline-flex items-center gap-1.5">

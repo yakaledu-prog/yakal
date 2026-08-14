@@ -290,7 +290,7 @@ export function ZoomMeeting({
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => setAttempt((a) => a + 1)}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-[#1099A1] text-white rounded-lg font-semibold text-[14px] hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg font-semibold text-[14px] hover:opacity-90 transition-opacity"
             >
               <RefreshCw size={15} /> Try again
             </button>
@@ -304,7 +304,7 @@ export function ZoomMeeting({
         </div>
       ) : (
         <>
-          <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-[#1099A1]" />
+          <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-primary" />
           <p className="text-[14px] text-[#aebac1]">
             {status.phase === 'loading-sdk'
               ? 'Loading the Zoom meeting client…'

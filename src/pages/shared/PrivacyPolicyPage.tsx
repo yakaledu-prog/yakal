@@ -33,22 +33,22 @@ export function PrivacyPolicyPage() {
         <div className="flex-1 w-full p-6 md:p-12 lg:p-16 md:overflow-y-auto">
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl text-[#111] dark:text-[#d1d5db]">
             
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2 mt-0">1. Information We Collect</h3>
+            <h3 className="text-xl font-bold text-primary mb-2 mt-0">1. Information We Collect</h3>
             <p className="mb-8">
               We collect information you provide directly to us, such as when you create or modify your account, request on-demand services, contact customer support, or otherwise communicate with us.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">2. How We Use Information</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">2. How We Use Information</h3>
             <p className="mb-8">
               We use the information we collect to provide, maintain, and improve our services. This includes using the information to personalize your experience and send you related information.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">3. Sharing of Information</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">3. Sharing of Information</h3>
             <p className="mb-8">
               We may share the information we collect about you with vendors, consultants, marketing partners, and other service providers who need access to such information to carry out work on our behalf.
             </p>
 
-            <h3 className="text-xl font-bold text-[#1099A1] mb-2">4. Data Security</h3>
+            <h3 className="text-xl font-bold text-primary mb-2">4. Data Security</h3>
             <p className="mb-8">
               We take reasonable measures to help protect information about you from loss, theft, misuse and unauthorized access, disclosure, alteration and destruction.
             </p>

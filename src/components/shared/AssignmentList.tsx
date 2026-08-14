@@ -136,7 +136,7 @@ export function AssignmentList({
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="animate-spin text-[#1099A1]" />
+        <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
@@ -159,7 +159,7 @@ export function AssignmentList({
             key={a.id}
             className={cn(
               "overflow-hidden rounded border",
-              done ? "border-[#1099A1]/30" : "border-border"
+              done ? "border-primary/30" : "border-border"
             )}
           >
             <header
@@ -167,7 +167,7 @@ export function AssignmentList({
                 "flex flex-wrap items-center gap-3 px-4 py-3",
                 open && "border-b",
                 done
-                  ? "border-[#1099A1]/30 bg-[#1099A1]/10"
+                  ? "border-primary/30 bg-primary/10"
                   : "border-border bg-muted/40"
               )}
             >
@@ -201,7 +201,7 @@ export function AssignmentList({
                       </span>
                     )}
                     {a.grade != null && (
-                      <span className="text-[#1099A1]">
+                      <span className="text-primary">
                         {a.grade}
                         {a.maxPoints != null && ` / ${a.maxPoints}`}
                       </span>
@@ -215,7 +215,7 @@ export function AssignmentList({
                   href={a.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-[#1099A1] transition-colors hover:text-[#0d848b]"
+                  className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-primary transition-colors hover:text-primary-hover"
                 >
                   <ExternalLink size={16} /> Open in Google Classroom
                 </a>
@@ -243,7 +243,7 @@ export function AssignmentList({
                             href={m.link ?? "#"}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center text-[14px] font-medium text-[#1099A1] hover:underline"
+                            className="flex items-center text-[14px] font-medium text-primary hover:underline"
                           >
                             <Paperclip size={15} className="mr-2 text-muted-foreground" />
                             {m.title}
@@ -271,11 +271,11 @@ export function AssignmentList({
                 {/* A student's grade and a tutor's roster of submitters are the
                   same slot: what happened to this assignment. */}
                 {a.grade != null && (
-                  <div className="flex items-center justify-between border-t border-[#1099A1]/30 pt-3">
+                  <div className="flex items-center justify-between border-t border-primary/30 pt-3">
                     <span className="text-[13px] uppercase tracking-wider text-muted-foreground">
                       Grade
                     </span>
-                    <span className="text-[15px] text-[#1099A1]">
+                    <span className="text-[15px] text-primary">
                       {a.grade}
                       {a.maxPoints != null && ` / ${a.maxPoints}`}
                     </span>
@@ -294,7 +294,7 @@ export function AssignmentList({
                       <button
                         type="button"
                         onClick={() => onOpenSubmissions(a)}
-                        className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                        className="text-[13px] font-medium text-primary hover:underline"
                       >
                         View submissions
                       </button>

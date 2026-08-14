@@ -145,7 +145,7 @@ export function CounselorHome() {
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
         {/* Massive Integrated Command Banner */}
-        <div className="bg-[#1099A1] text-white relative overflow-hidden">
+        <div className="bg-primary text-white relative overflow-hidden">
           {/* Subtle SVG Background Pattern */}
           <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
@@ -189,7 +189,7 @@ export function CounselorHome() {
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
               <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
-                <CalendarClock size={20} className="text-[#1099A1]" /> Upcoming Deadlines
+                <CalendarClock size={20} className="text-primary" /> Upcoming Deadlines
               </h2>
             </div>
 
@@ -226,7 +226,7 @@ export function CounselorHome() {
                               </div>
                             </div>
                             <div className="flex flex-col items-end shrink-0">
-                              <span className={cn("text-[14px] font-bold", isUrgent ? "text-red-500" : "text-[#1099A1]")}>
+                              <span className={cn("text-[14px] font-bold", isUrgent ? "text-red-500" : "text-primary")}>
                                 {fmtDate(d.deadline)}
                               </span>
                               {isUrgent && (
@@ -242,7 +242,7 @@ export function CounselorHome() {
                             <div className="mt-4">
                               <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
                                 {(expandedReqs[d.id] ? d.requirements : d.requirements.slice(0, 2)).map((r, ri) => (
-                                  <span key={ri} className={cn("inline-flex items-center text-[11px] px-2.5 py-1.5 rounded-md font-medium border truncate", r.is_complete ? "bg-[#1099A1]/10 text-[#1099A1] border-[#1099A1]/20" : "bg-transparent text-muted-foreground border-border")}>
+                                  <span key={ri} className={cn("inline-flex items-center text-[11px] px-2.5 py-1.5 rounded-md font-medium border truncate", r.is_complete ? "bg-primary/10 text-primary border-primary/20" : "bg-transparent text-muted-foreground border-border")}>
                                     {r.is_complete && <Check size={12} className="mr-1.5 shrink-0" />}
                                     <span className="truncate">{r.label}</span>
                                   </span>
@@ -251,7 +251,7 @@ export function CounselorHome() {
                               {d.requirements.length > 2 && (
                                 <button
                                   onClick={() => setExpandedReqs(prev => ({ ...prev, [d.id]: !prev[d.id] }))}
-                                  className="mt-2 text-[12px] font-medium text-[#1099A1] hover:underline"
+                                  className="mt-2 text-[12px] font-medium text-primary hover:underline"
                                 >
                                   {expandedReqs[d.id] ? "View less" : `View all ${d.requirements.length} requirements`}
                                 </button>
@@ -271,11 +271,11 @@ export function CounselorHome() {
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
               <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
-                <CalendarDays size={20} className="text-[#1099A1]" /> What's next
+                <CalendarDays size={20} className="text-primary" /> What's next
               </h2>
               <button
                 onClick={() => navigate("/counselor/sessions")}
-                className="text-[13px] font-medium text-[#1099A1] hover:underline"
+                className="text-[13px] font-medium text-primary hover:underline"
               >
                 View all
               </button>
@@ -294,7 +294,7 @@ export function CounselorHome() {
                 {activeUpcomingSessions.map((session: any, index) => (
                   <div key={session.id} className="relative flex flex-col py-5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[12px] font-semibold text-[#1099A1] uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="text-[12px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
                         <Video size={14} /> {fmtDate(session.date)} • {session.start_time.slice(0, 5)}
                       </span>
                     </div>
@@ -303,7 +303,7 @@ export function CounselorHome() {
                       {session.student_avatar ? (
                         <img src={session.student_avatar} alt={session.student_name} className="w-6 h-6 rounded-full" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-[#1099A1]/10 flex items-center justify-center text-[10px] font-bold text-[#1099A1]">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
                           {session.student_name?.charAt(0) || "S"}
                         </div>
                       )}
@@ -316,7 +316,7 @@ export function CounselorHome() {
                           href={session.meeting_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 bg-[#1099A1] text-white text-[13px] font-medium rounded-lg hover:bg-[#0d828a] transition-colors"
+                          className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 bg-primary text-white text-[13px] font-medium rounded-lg hover:bg-[#0d828a] transition-colors"
                         >
                           Join Session
                         </a>

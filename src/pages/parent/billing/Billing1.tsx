@@ -156,7 +156,7 @@ export function Billing1() {
                       <span
                         className={cn(
                           "text-[12.5px] font-medium capitalize",
-                          i.status === "paid" ? "text-[#1099A1]" : "text-[#8a6a2a] dark:text-[#CAA25F]"
+                          i.status === "paid" ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
                         )}
                       >
                         {i.status}

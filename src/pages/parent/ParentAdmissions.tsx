@@ -90,7 +90,7 @@ export function ParentAdmissions() {
           read was a list of names with nothing saying what they were for. */}
       <div className="grid h-full min-h-0 grid-cols-1 overflow-y-auto bg-background md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)] md:overflow-hidden">
         <div className={cn("md:order-2 md:col-start-2 md:row-start-1", detailClass)}>
-          <header className="relative overflow-hidden bg-[#1099A1] px-6 py-6 text-white md:px-8 md:py-8">
+          <header className="relative overflow-hidden bg-primary px-6 py-6 text-white md:px-8 md:py-8">
             <svg
               className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
               viewBox="0 0 400 200"
@@ -134,7 +134,7 @@ export function ParentAdmissions() {
         <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8", detailClass)}>
             {isLoading ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-[#1099A1]" />
+                <Loader2 className="animate-spin text-primary" />
               </div>
             ) : tiers.length === 0 ? (
               <p className="py-20 text-center text-[14px] text-muted-foreground">
@@ -206,7 +206,7 @@ export function ParentAdmissions() {
                   void choose(t);
                 }}
                 disabled={!!busy}
-                className="h-11 flex-1 rounded-xl bg-[#1099A1] text-[14px] font-bold text-white hover:bg-[#0d7f86] disabled:opacity-50"
+                className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
               >
                 Continue to payment
               </button>
@@ -278,7 +278,7 @@ function TierCard({
       <ul className="mt-5 flex-1 space-y-2.5">
         {tier.features.map((f, i) => (
           <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-foreground">
-            <Check size={15} className="mt-0.5 shrink-0 text-[#97CE9D]" />
+            <Check size={15} className="mt-0.5 shrink-0 text-tertiary" />
             <span className="leading-snug">{f}</span>
           </li>
         ))}
@@ -298,7 +298,7 @@ function TierCard({
           "mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-colors disabled:opacity-50",
           current
             ? "border border-border text-muted-foreground"
-            : "bg-[#1099A1] text-white hover:bg-[#0d7f86]"
+            : "bg-primary text-white hover:bg-primary-hover"
         )}
       >
         {busy ? (

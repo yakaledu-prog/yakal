@@ -116,7 +116,7 @@ export function ResumeEntryDialog({
                   value={values[f.key] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
                   placeholder={f.placeholder}
-                  className="w-full resize-none rounded-lg border border-border bg-transparent p-3 text-[14px] text-foreground outline-none focus:border-[#1099A1]"
+                  className="w-full resize-none rounded-lg border border-border bg-transparent p-3 text-[14px] text-foreground outline-none focus:border-primary"
                 />
               ) : (
                 <input
@@ -124,7 +124,7 @@ export function ResumeEntryDialog({
                   onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
                   onKeyDown={(e) => e.key === "Enter" && save()}
                   placeholder={f.placeholder}
-                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2.5 text-[14px] text-foreground outline-none focus:border-[#1099A1]"
+                  className="w-full rounded-lg border border-border bg-transparent px-3 py-2.5 text-[14px] text-foreground outline-none focus:border-primary"
                 />
               )}
             </label>

@@ -116,11 +116,11 @@ export function RequirementsCards({
                 buttonClassName={cn(
                   "font-normal",
                   decided === "accepted" || decided === "enrolled"
-                    ? "border-[#1099A1]/40 font-medium text-[#1099A1]"
+                    ? "border-primary/40 font-medium text-primary"
                     : decided === "denied"
                       ? "border-[#d4183d]/30 text-[#d4183d]"
                       : decided === "waitlisted"
-                        ? "border-[#CAA25F]/40 text-[#8a6a2f]"
+                        ? "border-secondary/40 text-[#8a6a2f]"
                         : ""
                 )}
                 ariaLabel={`Decision for ${s.school_name}`}
@@ -136,7 +136,7 @@ export function RequirementsCards({
                 which read as a border that had gone wrong. */}
             <div className="mx-4 mt-3 h-1.5 overflow-hidden rounded-full bg-[#f3f3f5] dark:bg-[#1c2a32]">
               <div
-                className="h-full rounded-full bg-[#1099A1] transition-[width] duration-300"
+                className="h-full rounded-full bg-primary transition-[width] duration-300"
                 style={{ width: `${Math.round(pct * 100)}%` }}
               />
             </div>
@@ -186,9 +186,9 @@ function Chip({ cell, onClick }: { cell: ReqCell; onClick?: () => void }) {
         // No hover affordance for a reader who cannot change it.
         !onClick && "cursor-default",
         status === "done"
-          ? cn("bg-[#1099A1] font-medium text-white", onClick && "hover:bg-[#0d848b]")
+          ? cn("bg-primary font-medium text-white", onClick && "hover:bg-primary-hover")
           : status === "partial"
-            ? cn("bg-[#1099A1]/12 font-medium text-[#0d757b] dark:text-[#5fc9cf]", onClick && "hover:bg-[#1099A1]/20")
+            ? cn("bg-primary/12 font-medium text-[#0d757b] dark:text-[#5fc9cf]", onClick && "hover:bg-primary/20")
             : cn("bg-[#f3f3f5] text-[#54656f] dark:bg-[#1c2a32] dark:text-[#aebac1]", onClick && "hover:bg-[#ececf0]"),
         // A dashed edge marks a value the system worked out rather than one
         // somebody ticked, so a student can tell whose claim it is.

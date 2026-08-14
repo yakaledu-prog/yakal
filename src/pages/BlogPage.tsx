@@ -40,7 +40,7 @@ export default function BlogPage() {
   if (loading) {
     return (
       <div className="bg-white text-[#111827] min-h-screen w-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#1099a1]" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function BlogPage() {
     return (
       <div className="bg-white text-[#111827] min-h-screen w-full flex flex-col items-center justify-center">
         <p className="text-xl font-medium mb-4">Post not found</p>
-        <button onClick={() => navigate("/#blog")} className="text-[#1099a1] hover:underline">Go Back</button>
+        <button onClick={() => navigate("/#blog")} className="text-primary hover:underline">Go Back</button>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function BlogPage() {
       {/* Reading progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent pointer-events-none">
         <div
-          className="h-full bg-[#1099a1] transition-all duration-100"
+          className="h-full bg-primary transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -77,7 +77,7 @@ export default function BlogPage() {
         {blog.thumbnail_url ? (
           <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 w-full h-full bg-[#1099a1]/10" />
+          <div className="absolute inset-0 w-full h-full bg-primary/10" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20" />
 
@@ -107,7 +107,7 @@ export default function BlogPage() {
         {blog.thumbnail_url ? (
           <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 w-full h-full bg-[#1099a1]/10" />
+          <div className="absolute inset-0 w-full h-full bg-primary/10" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30" />
 

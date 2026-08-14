@@ -470,8 +470,8 @@ export function ParentBilling() {
                       className={cn(
                         "text-[12.5px] font-medium capitalize",
                         i.status === "paid"
-                          ? "text-[#1099A1]"
-                          : "text-[#8a6a2a] dark:text-[#CAA25F]"
+                          ? "text-primary"
+                          : "text-[#8a6a2a] dark:text-secondary"
                       )}
                     >
                       {i.status}
@@ -484,7 +484,7 @@ export function ParentBilling() {
                         size="sm"
                         onClick={() => pay([i.id], i.id)}
                         disabled={busy !== null}
-                        className="h-8 shrink-0 bg-[#1099A1] px-4 text-[12px] text-white hover:bg-[#0d7f86]"
+                        className="h-8 shrink-0 bg-primary px-4 text-[12px] text-white hover:bg-primary-hover"
                       >
                         {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
                       </Button>
@@ -588,7 +588,7 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
   return (
     // Gold for tutoring, teal for counselling. One glance says which of the two
     // services a row belongs to, which a list mixing both otherwise does not.
-    <article className={cn("rounded-xl border border-[#CAA25F] bg-card p-4", !compact && "md:p-5")}>
+    <article className={cn("rounded-xl border border-secondary bg-card p-4", !compact && "md:p-5")}>
       <div className="flex min-w-0 items-start gap-3">
         <StackedAvatars
           className="pt-0.5"
@@ -667,7 +667,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
   const hasBooked = (advising?.used ?? 0) > 0;
 
   return (
-    <article className={cn("rounded-xl border border-[#1099A1] bg-card p-4", !compact && "md:p-5")}>
+    <article className={cn("rounded-xl border border-primary bg-card p-4", !compact && "md:p-5")}>
       <div className="flex min-w-0 items-start gap-3">
         <StackedAvatars
           className="pt-0.5"
@@ -749,7 +749,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
               onClick={() => setBooking(true)}
               disabled={remaining <= 0 && !hasBooked}
               className={cn(
-                "h-9 w-full gap-2 bg-[#1099A1] px-4 text-[13px] font-medium text-white hover:bg-[#0d848b] disabled:opacity-50",
+                "h-9 w-full gap-2 bg-primary px-4 text-[13px] font-medium text-white hover:bg-primary-hover disabled:opacity-50",
                 !compact && "md:w-auto md:shrink-0"
               )}
             >
@@ -906,7 +906,7 @@ function BookAdvisingDialog({
                         type="button"
                         onClick={() => void release(session.id)}
                         disabled={releasing === session.id}
-                        className="text-[12.5px] font-medium text-[#1099A1] transition-opacity hover:underline disabled:opacity-50"
+                        className="text-[12.5px] font-medium text-primary transition-opacity hover:underline disabled:opacity-50"
                       >
                         {releasing === session.id ? "Releasing..." : "Release"}
                       </button>
@@ -921,7 +921,7 @@ function BookAdvisingDialog({
 
           {isLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="animate-spin text-[#1099A1]" size={22} />
+              <Loader2 className="animate-spin text-primary" size={22} />
             </div>
           ) : !counselorId ? (
             <p className="py-12 text-center text-[14px] text-muted-foreground">
@@ -946,7 +946,7 @@ function BookAdvisingDialog({
           <Button
             onClick={confirm}
             disabled={picked.length === 0 || saving}
-            className="h-10 bg-[#1099A1] px-5 font-medium text-white hover:bg-[#0d848b] disabled:opacity-50"
+            className="h-10 bg-primary px-5 font-medium text-white hover:bg-primary-hover disabled:opacity-50"
           >
             {saving
               ? "Booking..."
@@ -1055,7 +1055,7 @@ function Methods({
                     </p>
                   )}
                   {card.isDefault && (
-                    <span className="ml-auto flex items-center gap-1 text-[12.5px] text-[#1099A1]">
+                    <span className="ml-auto flex items-center gap-1 text-[12.5px] text-primary">
                       <Check size={14} /> Default
                     </span>
                   )}

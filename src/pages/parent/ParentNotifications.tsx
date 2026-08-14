@@ -101,7 +101,7 @@ function UnlockRequest({
           <button
             onClick={setUp}
             disabled={busy}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-[#1099A1] text-white hover:bg-[#0d7f86] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
           >
             <CreditCard size={14} /> Set up {label}
           </button>

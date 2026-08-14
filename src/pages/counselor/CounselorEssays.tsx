@@ -138,7 +138,7 @@ export function CounselorEssays() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pt-6 text-white md:px-10 md:pt-8">
+        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-8">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -180,7 +180,7 @@ export function CounselorEssays() {
         <div className="p-6 md:p-10">
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : visible.length === 0 ? (
             <p className="py-20 text-center text-[14px] text-muted-foreground">
@@ -253,14 +253,14 @@ function EssayRow({
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px]">
           {due && (
-            <span className={due.urgent ? "font-medium text-[#8a6a2a] dark:text-[#CAA25F]" : "text-muted-foreground"}>
+            <span className={due.urgent ? "font-medium text-[#8a6a2a] dark:text-secondary" : "text-muted-foreground"}>
               {due.text}
             </span>
           )}
           <span
             className={cn(
               "text-muted-foreground",
-              quotaSpent(quota) && "font-medium text-[#8a6a2a] dark:text-[#CAA25F]"
+              quotaSpent(quota) && "font-medium text-[#8a6a2a] dark:text-secondary"
             )}
             title={
               plan
@@ -281,7 +281,7 @@ function EssayRow({
             href={essay.driveUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-[#1099A1] px-3.5 py-2 text-[13px] font-medium text-[#1099A1] transition-colors hover:bg-[#1099A1]/10"
+            className="flex items-center gap-1.5 rounded-xl border border-primary px-3.5 py-2 text-[13px] font-medium text-primary transition-colors hover:bg-primary/10"
           >
             Open <ExternalLink size={14} />
           </a>
@@ -313,7 +313,7 @@ function EssayRow({
             <button
               onClick={() => onAct(essay, "approved")}
               disabled={busy}
-              className="flex items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d7f86] disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Check size={14} /> Finished
             </button>

@@ -231,7 +231,7 @@ export function StudentCollegeList({
     <>
       <div className="min-h-full bg-background pb-12 dark:bg-[#111b21]">
       {!embedded ? (
-        <header className="relative overflow-hidden bg-[#1099A1] px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
+        <header className="relative overflow-hidden bg-primary px-6 pb-6 pt-6 text-white md:px-10 md:pb-8 md:pt-10">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -302,7 +302,7 @@ export function StudentCollegeList({
               {canEdit && (
                 <button
                   onClick={() => setShowAdd(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1099A1] hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
                 >
                   <Plus size={16} /> Add School
                 </button>
@@ -340,7 +340,7 @@ export function StudentCollegeList({
               <button
                 type="button"
                 onClick={() => setShowAdd(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#1099A1] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
               >
                 <Plus size={15} /> Add School
               </button>
@@ -352,7 +352,7 @@ export function StudentCollegeList({
       <div className={cn("mx-auto space-y-6", embedded ? "px-6 py-6" : "p-6 md:p-10")}>
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="animate-spin text-[#1099A1]" />
+              <Loader2 className="animate-spin text-primary" />
             </div>
           ) : schools.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
@@ -367,7 +367,7 @@ export function StudentCollegeList({
               {canEdit && (
                 <a
                   href="/student/explore"
-                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#1099A1] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#0d848b]"
+                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
                 >
                   <Search size={15} />
                   Explore colleges

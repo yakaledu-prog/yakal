@@ -89,7 +89,7 @@ export function AdminCourses() {
                 placeholder="Search courses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 dark:bg-[#182329]/50 border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-[#1099A1] focus:bg-white dark:focus:bg-[#182329] transition-all placeholder:text-muted-foreground/60"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 dark:bg-[#182329]/50 border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white dark:focus:bg-[#182329] transition-all placeholder:text-muted-foreground/60"
               />
             </div>
 
@@ -116,7 +116,7 @@ export function AdminCourses() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-[#1099A1]" /></div>
+            <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
           ) : filteredCourses.length === 0 ? (
             <p className="text-center py-16 text-[14px] text-muted-foreground">No courses found matching "{searchTerm}".</p>
           ) : (
@@ -125,7 +125,7 @@ export function AdminCourses() {
                 <div
                   key={c.id}
                   onClick={() => navigate(`/admin/courses/${c.id}`)}
-                  className={cn("bg-white dark:bg-[#111b21] cursor-pointer rounded-xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-all ring-2 ring-primary/0 hover:ring-primary/30 hover:border-[#1099A1]/30", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}
+                  className={cn("bg-white dark:bg-[#111b21] cursor-pointer rounded-xl border border-[#e9edef] dark:border-[#2a3942] flex overflow-hidden w-full transition-all ring-2 ring-primary/0 hover:ring-primary/30 hover:border-primary/30", viewMode === "grid" ? "flex-col" : "flex-col md:flex-row")}
                 >
                   {/* Thumbnail */}
                   <div className={cn("bg-gray-100 dark:bg-[#202c33] shrink-0 relative", viewMode === "grid" ? "w-full h-[220px]" : "w-full md:w-[28%] lg:w-[25%] h-[200px] md:h-auto")}>
@@ -150,7 +150,7 @@ export function AdminCourses() {
                               e.stopPropagation();
                               toggleActive(c);
                             }}
-                            className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-[#1099A1]" : "bg-gray-300 dark:bg-gray-700")}
+                            className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-primary" : "bg-gray-300 dark:bg-gray-700")}
                             title={c.is_active ? "Deactivate course" : "Activate course"}
                           >
                             <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
@@ -161,7 +161,7 @@ export function AdminCourses() {
                           <div className="text-[18px] md:text-xl font-bold text-[#111] dark:text-white flex items-center gap-1">
                             {c.price_cents != null ? money(c.price_cents) : "—"} <span className="text-[13px] font-normal text-muted-foreground tracking-normal">parent</span>
                           </div>
-                          {c.tutor_payout_cents != null && <div className="text-[13px] font-medium text-[#1099A1]">
+                          {c.tutor_payout_cents != null && <div className="text-[13px] font-medium text-primary">
                             {money(c.tutor_payout_cents)} <span className="text-muted-foreground">tutor</span>
                           </div>}
                         </div>
@@ -184,7 +184,7 @@ export function AdminCourses() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-[13px] text-[#1099A1] hover:underline flex items-center gap-1 font-medium"
+                              className="text-[13px] text-primary hover:underline flex items-center gap-1 font-medium"
                             >
                               <ExternalLink size={13} /> Classroom
                             </a>
@@ -212,7 +212,7 @@ export function AdminCourses() {
                             <img key={i} src={`https://api.dicebear.com/7.x/notionists/svg?seed=tutor${i}`} alt="tutor" className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21] bg-gray-100" />
                           ))}
                         </div>
-                        <span className="text-[14px] text-[#1099A1] font-medium">
+                        <span className="text-[14px] text-primary font-medium">
                           + 9 available tutors
                         </span>
                       </div>

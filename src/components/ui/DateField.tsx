@@ -128,7 +128,7 @@ export function DateField({
         className={cn(
           "flex h-11 w-full items-center gap-2 rounded-xl border bg-white px-3 text-left text-[14px] transition-colors dark:bg-[#1c2a32]",
           open
-            ? "border-[#1099A1]"
+            ? "border-primary"
             : "border-[#e9edef] hover:border-[#cbd5d8] dark:border-[#2a3942]"
         )}
       >
@@ -224,9 +224,9 @@ export function DateField({
                   className={cn(
                     "grid h-8 place-items-center rounded-lg text-[13px] tabular-nums transition-colors",
                     selected && sameDay(d, selected)
-                      ? "bg-[#1099A1] font-semibold text-white"
+                      ? "bg-primary font-semibold text-white"
                       : sameDay(d, today)
-                        ? "font-semibold text-[#1099A1] hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+                        ? "font-semibold text-primary hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
                         : "text-[#111] hover:bg-[#f3f3f5] dark:text-white dark:hover:bg-[#1c2a32]"
                   )}
                 >
