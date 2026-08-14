@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Mic, Send, Keyboard, Square, ChevronLeft } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { X, Mic, Send, Keyboard, Square, ChevronLeft, Plus, History, ChevronDown } from "lucide-react";
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -17,6 +17,14 @@ import {
   type SupportChatMessage,
   type SupportChatRole,
 } from "@/services/supportChatService";
+import {
+  listable,
+  loadSessions,
+  newSession,
+  saveSessions,
+  titleFor,
+  type SupportSession,
+} from "./supportSessions";
 
 // ============================================================
 // Yali, in a drawer.
@@ -35,18 +43,6 @@ import {
 // built for, to save a column nobody is reading while they type a question.
 // ============================================================
 
-const STORAGE_KEY = "yakal-support-chat";
-
-/** Session storage, not local: the transcript should not outlive the tab. */
-function loadHistory(userId: string): SupportChatMessage[] {
-  try {
-    const stored = sessionStorage.getItem(`${STORAGE_KEY}:${userId}`);
-    return stored ? (JSON.parse(stored) as SupportChatMessage[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 type Phase = "idle" | "listening" | "thinking" | "speaking";
 
 export function SupportDrawer({
@@ -60,7 +56,19 @@ export function SupportDrawer({
   open: boolean;
   onClose: () => void;
 }) {
-  const [messages, setMessages] = useState<SupportChatMessage[]>(() => loadHistory(userId));
+  const [sessions, setSessions] = useState<SupportSession[]>(() => {
+    const stored = loadSessions(userId);
+    return stored.length > 0 ? stored : [newSession()];
+  });
+  // Derived from the list above, which has already been initialised: calling
+  // loadSessions a second time would read the same storage twice and could
+  // disagree with it.
+  const [activeId, setActiveId] = useState(() => sessions[0].id);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // Collapsed once a conversation is under way: the openers are scaffolding
+  // for an empty drawer, and pinned above the composer they would push the
+  // answer being read off the top.
+  const [tipsOpen, setTipsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState("");
   const [busy, setBusy] = useState(false);
@@ -73,6 +81,7 @@ export function SupportDrawer({
   const abortRef = useRef<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
   const spokenRef = useRef("");
 
   const voices = useVoices();
@@ -80,14 +89,32 @@ export function SupportDrawer({
   const { speak, cancel: stopSpeaking, speaking } = useSpeaker(voice);
   const [canTalk] = useState(() => speechSupported());
 
+  const active = sessions.find((s) => s.id === activeId) ?? sessions[0];
+  // Memoised: the `?? []` minted a new array every render, which made the
+  // dependencies of everything reading it change on every render too.
+  const messages = useMemo(() => active?.messages ?? [], [active]);
+  const past = listable(sessions);
+
+  /** Writes into the open conversation and leaves the others alone. */
+  const setMessages = useCallback(
+    (update: (prev: SupportChatMessage[]) => SupportChatMessage[]) => {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeId
+            ? (() => {
+                const next = update(s.messages);
+                return { ...s, messages: next, title: titleFor(next), updatedAt: Date.now() };
+              })()
+            : s
+        )
+      );
+    },
+    [activeId]
+  );
+
   useEffect(() => {
-    try {
-      sessionStorage.setItem(`${STORAGE_KEY}:${userId}`, JSON.stringify(messages.slice(-12)));
-    } catch {
-      // Private mode. The conversation still works, it just will not survive a
-      // reload, which is not worth failing the drawer over.
-    }
-  }, [messages, userId]);
+    saveSessions(userId, sessions);
+  }, [sessions, userId]);
 
   const send = useCallback(
     (text: string, spoken: boolean) => {
@@ -98,7 +125,7 @@ export function SupportDrawer({
         ...messages,
         { id: `${Date.now()}-user`, role: "user", content: question },
       ];
-      setMessages(next);
+      setMessages(() => next);
       setDraft("");
       if (composerRef.current) composerRef.current.style.height = "auto";
       setInterim("");
@@ -137,7 +164,7 @@ export function SupportDrawer({
         },
       });
     },
-    [busy, messages, speak]
+    [busy, messages, speak, setMessages]
   );
 
   const listener = useListener({ onFinal: (t) => send(t, true), onInterim: setInterim });
@@ -154,6 +181,17 @@ export function SupportDrawer({
     if (!open) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, streaming, open]);
+
+  // The history menu closes on a click anywhere else, or it stays open behind
+  // the conversation and swallows the next message tapped.
+  useEffect(() => {
+    if (!historyOpen) return;
+    const away = (e: MouseEvent) => {
+      if (!historyRef.current?.contains(e.target as Node)) setHistoryOpen(false);
+    };
+    document.addEventListener("mousedown", away);
+    return () => document.removeEventListener("mousedown", away);
+  }, [historyOpen]);
 
   // Escape closes, matching every other overlay in the app.
   useEffect(() => {
@@ -181,6 +219,23 @@ export function SupportDrawer({
   const close = () => {
     stopEverything();
     onClose();
+  };
+
+  /**
+   * A fresh conversation, reusing an empty one if it is already open.
+   *
+   * Pressing new chat twice should not leave two blank sessions behind, and
+   * the model is sent only the open conversation, so this is also how you drop
+   * context that has stopped being relevant.
+   */
+  const startNewChat = () => {
+    stopEverything();
+    setHistoryOpen(false);
+    setTipsOpen(false);
+    if (messages.length === 0) return;
+    const fresh = newSession();
+    setSessions((prev) => [fresh, ...prev]);
+    setActiveId(fresh.id);
   };
 
   return (
@@ -212,12 +267,89 @@ export function SupportDrawer({
             <ChevronLeft size={20} />
           </button>
 
+          {/* Top left, as the way back into an earlier conversation. A menu
+              rather than a permanent rail: at 400px a list of chats beside the
+              chat would leave neither enough room. */}
+          <div ref={historyRef} className="relative shrink-0">
+            <button
+              onClick={() => setHistoryOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={historyOpen}
+              aria-label="Earlier chats"
+              title="Earlier chats"
+              className="flex items-center gap-0.5 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <History size={18} />
+              <ChevronDown
+                size={13}
+                className={cn("transition-transform", historyOpen && "rotate-180")}
+              />
+            </button>
+
+            {historyOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 top-full z-10 mt-1 max-h-72 w-[260px] overflow-y-auto rounded-xl border border-border bg-card py-1 shadow-lg"
+              >
+                {past.length === 0 ? (
+                  <p className="px-3 py-2.5 text-[12.5px] text-muted-foreground">
+                    Nothing earlier yet.
+                  </p>
+                ) : (
+                  past.map((s) => (
+                    <button
+                      key={s.id}
+                      role="menuitem"
+                      onClick={() => {
+                        stopEverything();
+                        setActiveId(s.id);
+                        setHistoryOpen(false);
+                      }}
+                      className={cn(
+                        "block w-full px-3 py-2 text-left transition-colors hover:bg-muted/60",
+                        s.id === activeId && "bg-primary/5"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "block truncate text-[13px]",
+                          s.id === activeId ? "font-medium text-primary" : "text-foreground"
+                        )}
+                      >
+                        {s.title}
+                      </span>
+                      <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                        {new Date(s.updatedAt).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-foreground">Yali</p>
             <p className="text-[12px] text-muted-foreground">
               Yakal support, for how things work
             </p>
           </div>
+
+          {/* Only when the open chat has something in it, or this makes a
+              second empty conversation indistinguishable from the first. */}
+          {messages.length > 0 && (
+            <button
+              onClick={startNewChat}
+              aria-label="New chat"
+              title="New chat"
+              className="text-muted-foreground transition-colors hover:text-primary"
+            >
+              <Plus size={18} />
+            </button>
+          )}
 
           {canTalk && (
             <button
@@ -310,12 +442,49 @@ export function SupportDrawer({
               {error && <p className="text-[13px] text-secondary">{error}</p>}
             </div>
 
+            {/* Still offered once the conversation has started, but folded
+                away: useful when you have run out of things to ask, noise
+                while you are reading an answer. */}
+            {messages.length > 0 && (
+              <div className="border-t border-border px-3 pt-2">
+                <button
+                  onClick={() => setTipsOpen((o) => !o)}
+                  aria-expanded={tipsOpen}
+                  className="flex w-full items-center gap-1 py-1 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ChevronDown
+                    size={14}
+                    className={cn("transition-transform", !tipsOpen && "-rotate-90")}
+                  />
+                  Suggestions
+                </button>
+
+                {tipsOpen && (
+                  <div className="space-y-1.5 pb-2 pt-1">
+                    {SUPPORT_STARTERS[role].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setTipsOpen(false);
+                          send(s, false);
+                        }}
+                        disabled={busy}
+                        className="block w-full rounded-lg border border-border px-3 py-2 text-left text-[13px] text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 send(draft, false);
               }}
-              className="border-t border-border px-3 py-3"
+              className={cn("px-3 py-3", messages.length === 0 && "border-t border-border")}
             >
               <div className="relative rounded-xl border border-border transition-colors focus-within:border-primary">
                 <textarea
