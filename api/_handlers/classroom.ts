@@ -76,14 +76,49 @@ function classroomClient() {
  * Deliberately explicit rather than "is signed in". The four ways in are the
  * four relationships the product actually has to a course.
  */
-async function mayRead(db: any, userId: string, courseId: string): Promise<boolean> {
+/**
+ * Whether a reader may see one piece of coursework.
+ *
+ * Staff see the class as a teacher does. A learner sees work assigned to
+ * everyone, plus work assigned individually to them.
+ *
+ * The syllabus model does not use individual assignment, so in normal use
+ * every item is ALL_STUDENTS and this changes nothing. It exists because
+ * "assign to specific students" is a button in Classroom's own dialog and a
+ * tutor will eventually press it. Without this, the first time they did, every
+ * student on the course would read that assignment.
+ *
+ * A learner we cannot place in the class is excluded rather than included.
+ * Being unable to prove the work is theirs is exactly the case where showing
+ * it is a leak.
+ */
+export function isVisibleTo(
+  work: { assigneeMode?: string; individualStudentsOptions?: { studentIds?: string[] } },
+  reader: Reader,
+  readerGoogleId: string | null
+): boolean {
+  if (reader.kind === 'staff') return true;
+  if (reader.kind === 'denied') return false;
+  if (work.assigneeMode !== 'INDIVIDUAL_STUDENTS') return true;
+  if (!readerGoogleId) return false;
+  return (work.individualStudentsOptions?.studentIds ?? []).map(String).includes(readerGoogleId);
+}
+
+export type Reader =
+  /** Sees the whole class, the way a teacher does. */
+  | { kind: 'staff' }
+  /** Sees only what is assigned to this person. */
+  | { kind: 'learner'; email: string | null }
+  | { kind: 'denied' };
+
+async function readerFor(db: any, userId: string, courseId: string): Promise<Reader> {
   const { data: profile } = await db
     .from('profiles')
     .select('role')
     .eq('id', userId)
     .maybeSingle();
 
-  if (profile?.role === 'admin') return true;
+  if (profile?.role === 'admin') return { kind: 'staff' };
 
   // The tutor teaching it.
   const { data: course } = await db
@@ -91,7 +126,7 @@ async function mayRead(db: any, userId: string, courseId: string): Promise<boole
     .select('tutor_id')
     .eq('id', courseId)
     .maybeSingle();
-  if (course?.tutor_id && course.tutor_id === userId) return true;
+  if (course?.tutor_id && course.tutor_id === userId) return { kind: 'staff' };
 
   // A student enrolled on it.
   const { count: enrolled } = await db
@@ -99,10 +134,15 @@ async function mayRead(db: any, userId: string, courseId: string): Promise<boole
     .select('id', { count: 'exact', head: true })
     .eq('course_id', courseId)
     .eq('student_id', userId);
-  if ((enrolled ?? 0) > 0) return true;
+  if ((enrolled ?? 0) > 0) {
+    const { data: me } = await db.from('profiles').select('email').eq('id', userId).maybeSingle();
+    return { kind: 'learner', email: me?.email ?? null };
+  }
 
   // A parent of a student enrolled on it. They paid for the course, and being
-  // able to see what was set is most of what they paid for.
+  // able to see what was set is most of what they paid for. They see exactly
+  // what their child sees, which is why they read as a learner rather than as
+  // staff: an assignment set for one child is not the other's to read either.
   const { data: links } = await db
     .from('parent_student_links')
     .select('student_id')
@@ -111,15 +151,25 @@ async function mayRead(db: any, userId: string, courseId: string): Promise<boole
 
   const childIds = (links ?? []).map((l: any) => l.student_id);
   if (childIds.length > 0) {
-    const { count: childEnrolled } = await db
+    const { data: enrolledChild } = await db
       .from('enrolments')
-      .select('id', { count: 'exact', head: true })
+      .select('student_id')
       .eq('course_id', courseId)
-      .in('student_id', childIds);
-    if ((childEnrolled ?? 0) > 0) return true;
+      .in('student_id', childIds)
+      .limit(1)
+      .maybeSingle();
+
+    if (enrolledChild?.student_id) {
+      const { data: child } = await db
+        .from('profiles')
+        .select('email')
+        .eq('id', enrolledChild.student_id)
+        .maybeSingle();
+      return { kind: 'learner', email: child?.email ?? null };
+    }
   }
 
-  return false;
+  return { kind: 'denied' };
 }
 
 /** Classroom sends a due date as three numbers, and omits it when there is none. */
@@ -148,7 +198,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const courseId: string | null = req.body?.courseId ?? null;
     if (!courseId) return res.status(400).json({ error: 'courseId is required' });
 
-    if (!(await mayRead(db, user.id, courseId))) {
+    const reader = await readerFor(db, user.id, courseId);
+    if (reader.kind === 'denied') {
       // Not "forbidden, and here is what exists". Somebody probing course ids
       // learns nothing either way.
       return res.status(403).json({ error: 'Not your course' });
@@ -187,10 +238,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const work = workRes.data.courseWork ?? [];
 
+    // Who this reader is inside Classroom, needed only to decide what an
+    // individually assigned piece of work is visible to.
+    //
+    // Classroom accepts an email address wherever it accepts a userId, so this
+    // is one lookup rather than paging the whole roster. A learner who is not
+    // a member of the class resolves to null, which the filter treats as
+    // "prove it or hide it".
+    let readerGoogleId: string | null = null;
+    if (reader.kind === 'learner' && reader.email) {
+      readerGoogleId = await classroom.courses.students
+        .get({ courseId: classId, userId: reader.email })
+        .then((r: any) => (r?.data?.userId ? String(r.data.userId) : null))
+        .catch(() => null);
+    }
+
+    const visibleTo = (w: any) => isVisibleTo(w, reader, readerGoogleId);
+
     // Published only. A draft is the teacher's business, and this endpoint
     // answers to students.
     const assignments = work
       .filter((w: any) => w.state === 'PUBLISHED')
+      .filter(visibleTo)
       .map((w: any, i: number) => ({
         id: String(w.id),
         index: i + 1,
