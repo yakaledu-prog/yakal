@@ -39,7 +39,7 @@ function loadHistory(userId: string): SupportChatMessage[] {
 function FriendlyAvatar({ small = false }: { small?: boolean }) {
   return (
     <div
-      className={`${small ? 'h-8 w-8' : 'h-11 w-11'} shrink-0 overflow-hidden rounded-full bg-[#97CE9D] shadow-sm`}
+      className={`${small ? 'h-8 w-8' : 'h-11 w-11'} shrink-0 overflow-hidden rounded-full bg-tertiary shadow-sm`}
       aria-hidden="true"
     >
       <svg viewBox="0 0 48 48" role="img">
@@ -122,11 +122,11 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
     <aside className="fixed bottom-5 right-4 z-50 sm:bottom-6 sm:right-6" aria-label="Yakal support assistant">
       {isOpen && (
         <section
-          className={`mb-3 flex w-[calc(100vw-2rem)] max-w-[380px] flex-col overflow-hidden rounded-3xl border border-[#1099A1]/20 bg-background shadow-2xl transition-all ${isMinimized ? 'h-[72px]' : 'h-[min(620px,calc(100vh-7rem))]'}`}
+          className={`mb-3 flex w-[calc(100vw-2rem)] max-w-[380px] flex-col overflow-hidden rounded-3xl border border-primary/20 bg-background shadow-2xl transition-all ${isMinimized ? 'h-[72px]' : 'h-[min(620px,calc(100vh-7rem))]'}`}
           role="dialog"
           aria-label="Chat with Yakal support"
         >
-          <header className="flex min-h-[72px] items-center gap-3 bg-[#1099A1] px-4 text-white">
+          <header className="flex min-h-[72px] items-center gap-3 bg-primary px-4 text-white">
             <FriendlyAvatar small />
             <div className="min-w-0 flex-1">
               <p className="font-semibold">Ask Yakal</p>
@@ -163,13 +163,13 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
                       </p>
                     </div>
                     <div className="space-y-2 text-left">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-[#0d7f86]">Try asking</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary-hover">Try asking</p>
                       {SUGGESTIONS[role].map((suggestion) => (
                         <button
                           key={suggestion}
                           type="button"
                           onClick={() => void submitMessage(suggestion)}
-                          className="block w-full rounded-2xl border border-[#97CE9D] bg-background px-4 py-3 text-left text-sm text-foreground transition hover:border-[#1099A1] hover:bg-[#97CE9D]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1099A1]"
+                          className="block w-full rounded-2xl border border-tertiary bg-background px-4 py-3 text-left text-sm text-foreground transition hover:border-primary hover:bg-tertiary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           {suggestion}
                         </button>
@@ -180,7 +180,7 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
 
                 {messages.map((message) => (
                   <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${message.role === 'user' ? 'rounded-br-md bg-[#1099A1] text-white' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
+                    <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${message.role === 'user' ? 'rounded-br-md bg-primary text-white' : 'rounded-bl-md border border-border bg-background text-foreground'}`}>
                       {message.content}
                     </div>
                   </div>
@@ -188,12 +188,12 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
 
                 {isLoading && (
                   <div className="flex items-center gap-1.5" aria-label="Yali is typing">
-                    {[0, 1, 2].map((dot) => <span key={dot} className="h-2 w-2 animate-pulse rounded-full bg-[#1099A1]" style={{ animationDelay: `${dot * 150}ms` }} />)}
+                    {[0, 1, 2].map((dot) => <span key={dot} className="h-2 w-2 animate-pulse rounded-full bg-primary" style={{ animationDelay: `${dot * 150}ms` }} />)}
                   </div>
                 )}
 
                 {error && (
-                  <div role="alert" className="rounded-2xl border border-[#CAA25F] bg-background px-4 py-3 text-sm text-foreground">
+                  <div role="alert" className="rounded-2xl border border-secondary bg-background px-4 py-3 text-sm text-foreground">
                     {error}
                   </div>
                 )}
@@ -201,7 +201,7 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
               </div>
 
               <form onSubmit={handleSubmit} className="border-t border-border bg-background p-3">
-                <div className="flex items-end gap-2 rounded-2xl border border-border bg-muted/20 p-2 focus-within:border-[#1099A1] focus-within:ring-1 focus-within:ring-[#1099A1]">
+                <div className="flex items-end gap-2 rounded-2xl border border-border bg-muted/20 p-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
                   <textarea
                     ref={inputRef}
                     value={input}
@@ -216,7 +216,7 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1099A1] text-white transition hover:bg-[#0d7f86] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1099A1] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label="Send message"
                   >
                     <Send size={17} />
@@ -232,7 +232,7 @@ export function SupportAssistant({ role, userId }: { role: SupportChatRole; user
       <button
         type="button"
         onClick={() => { setIsOpen((value) => !value); setIsMinimized(false); }}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#1099A1] text-white shadow-xl transition hover:bg-[#0d7f86] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1099A1] focus-visible:ring-offset-2"
+        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         aria-label={isOpen ? 'Close Yakal support' : 'Open Yakal support'}
         aria-expanded={isOpen}
       >

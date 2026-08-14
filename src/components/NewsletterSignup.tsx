@@ -48,13 +48,13 @@ export default function NewsletterSignup({
         className={`min-w-0 flex-1 px-[16px] py-[13px] rounded-[500px] text-[14px] outline-none transition-colors ${
           isDark
             ? "bg-[rgba(255,255,255,0.2)] border-none text-white placeholder:text-[rgba(255,255,255,0.75)] focus:bg-[rgba(255,255,255,0.28)]"
-            : "bg-white border border-black/10 text-[#111827] placeholder:text-[#6b7280] focus:border-[#1099A1]"
+            : "bg-white border border-black/10 text-[#111827] placeholder:text-[#6b7280] focus:border-primary"
         }`}
       />
       <button
         type="submit"
         disabled={saving}
-        className="bg-[#1099A1] px-[22px] py-[13px] rounded-[500px] uppercase hover:bg-[#0d7f86] transition-colors text-white text-[14px] font-medium whitespace-nowrap disabled:opacity-60"
+        className="bg-primary px-[22px] py-[13px] rounded-[500px] uppercase hover:bg-primary-hover transition-colors text-white text-[14px] font-medium whitespace-nowrap disabled:opacity-60"
       >
         {saving ? "Adding..." : "Subscribe"}
       </button>

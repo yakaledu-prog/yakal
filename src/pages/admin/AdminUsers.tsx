@@ -287,7 +287,7 @@ export function AdminUsers() {
                             <button
                               onClick={() => handleRestore(u)}
                               title="Restore user"
-                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-[#97CE9D]/15 hover:text-[#1099A1]"
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-tertiary/15 hover:text-primary"
                             >
                               <RotateCcw size={16} />
                             </button>
