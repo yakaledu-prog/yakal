@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2, X , ChevronLeft } from "lucide-react";
+import { Check, Download, Loader2, Star, X , ChevronLeft } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -207,62 +207,76 @@ export function ParentAdmissions() {
                 With one on the books a gallery is a screen with one card and a
                 decision nobody is making; with none, the plan is bought
                 unassigned and an admin places it, which is what already
-                happened silently. */}
+                happened silently.
+
+                A grid of small cards rather than a list of sentences. This is
+                a comparison, and a rating reads faster as a figure next to a
+                star than as "4.7 from 3 reviews" repeated down a column. */}
             {counselors.length > 1 && (
               <div className="mt-5">
-                <p className="mb-2 text-[13px] font-medium text-foreground">
-                  Who would you like to work with?
-                </p>
-                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                  {counselors.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
-                      className={cn(
-                        "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors",
-                        chosenCounselor?.id === c.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:bg-muted/50"
-                      )}
-                    >
-                      <img
-                        src={c.avatarUrl || dicebearUrl(c.name)}
-                        alt=""
-                        className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-medium text-foreground">
-                          {c.name}
-                        </span>
-                        <span className="block truncate text-[12.5px] text-muted-foreground">
-                          {/* No rating is said plainly. An empty five stars
-                              reads as a bad review rather than no reviews. */}
-                          {c.averageStars != null
-                            ? `${c.averageStars.toFixed(1)} from ${c.ratingCount} ${c.ratingCount === 1 ? "review" : "reviews"}`
-                            : "No reviews yet"}
-                          {c.activePlans > 0 && ` · ${c.activePlans} student${c.activePlans === 1 ? "" : "s"}`}
-                        </span>
-                      </span>
-                      {c.resumeUrl && (
-                        <a
-                          href={c.resumeUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="shrink-0 text-[12.5px] font-medium text-primary hover:underline"
-                        >
-                          CV
-                        </a>
-                      )}
-                    </button>
-                  ))}
+                <p className="mb-2 text-[13px] font-medium text-foreground">Counsellor</p>
+                <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1">
+                  {counselors.map((c) => {
+                    const picked = chosenCounselor?.id === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
+                          }
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-xl border p-3 text-center transition-colors",
+                          picked ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
+                        )}
+                      >
+                        <img
+                          src={c.avatarUrl || dicebearUrl(c.name)}
+                          alt=""
+                          className="mx-auto h-12 w-12 rounded-full bg-muted object-cover"
+                        />
+                        <p className="mt-2 truncate text-[13px] font-medium text-foreground">{c.name}</p>
+                        <p className="mt-0.5 flex items-center justify-center gap-1 text-[12px] text-muted-foreground">
+                          {/* Said in words when there are none. An empty five
+                              stars reads as a bad review rather than no
+                              reviews. */}
+                          {c.averageStars != null ? (
+                            <>
+                              <Star size={11} className="fill-secondary text-secondary" />
+                              {c.averageStars.toFixed(1)}
+                              <span>({c.ratingCount})</span>
+                            </>
+                          ) : (
+                            "New"
+                          )}
+                          <span aria-hidden>·</span>
+                          <span>{c.activePlans}</span>
+                        </p>
+                        {c.resumeUrl && (
+                          <a
+                            href={c.resumeUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+                          >
+                            <Download size={12} /> CV
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="mt-2 text-[12.5px] text-muted-foreground">
-                  {chosenCounselor
-                    ? `${chosenCounselor.name} will be assigned.`
-                    : "Leave this blank and we will match you with whoever has the most room."}
-                </p>
+                {!chosenCounselor && (
+                  <p className="mt-2 text-[12px] text-muted-foreground">
+                    Skip to be matched automatically.
+                  </p>
+                )}
               </div>
             )}
 
