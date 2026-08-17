@@ -1,6 +1,7 @@
 import { sendEmail, layout, appUrl } from "./email.js";
 import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
 import { inviteOnEnrolment } from "../_handlers/classroom-invite.js";
+import { recordCounselorShare } from "./counselor-pay.js";
 
 // ============================================================
 // What happens after a course is paid for.
@@ -279,7 +280,7 @@ async function attachZoomMeetings(
 async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   const { data: tier } = await db
     .from("admissions_tiers")
-    .select("id, name, price_cents, instalment_months")
+    .select("id, name, price_cents, instalment_months, counselor_share_percent")
     .eq("id", invoice.admissions_tier_id)
     .single();
   if (!tier) {
@@ -328,7 +329,7 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
 
   // Granted on the first payment, not the last. The instalments are how the
   // money is collected; the family gets the whole engagement straight away.
-  const { error: planErr } = await db.from("admissions_plans").insert({
+  const { data: plan, error: planErr } = await db.from("admissions_plans").insert({
     student_id: invoice.student_id,
     purchased_by: invoice.parent_id,
     tier_id: tier.id,
@@ -336,12 +337,30 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     counselor_id: counselorId,
     payments_made: 1,
     payments_due: tier.instalment_months ?? 1,
-  });
+  }).select("id").single();
   if (planErr) {
     // The unique index refuses a second active plan, which is a duplicate
     // delivery arriving while the first is still in flight.
     if (planErr.code !== "23505") console.error("fulfil: admissions plan failed:", planErr.message);
     return;
+  }
+
+  // The counsellor's share of this first payment.
+  //
+  // Recorded per payment received rather than once for the engagement: an
+  // instalment plan collects monthly and does not create an invoice row per
+  // month, so paying the whole share here would hand somebody a year up front
+  // for money the platform has not collected. recordInstalment writes the rest
+  // as each arrives.
+  if (plan?.id && counselorId) {
+    await recordCounselorShare(db, {
+      planId: plan.id,
+      counselorId,
+      tierPriceCents: tier.price_cents ?? 0,
+      sharePercent: tier.counselor_share_percent,
+      instalmentMonths: tier.instalment_months ?? 1,
+      instalmentNumber: 1,
+    });
   }
 
   // The workspace the counsellor opens. Created here rather than waiting for

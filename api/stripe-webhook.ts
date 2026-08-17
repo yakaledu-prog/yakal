@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { getStripe } from './_utils/billing.js';
 import { getServiceClient } from './_utils/supabase.js';
 import { fulfilInvoices } from './_utils/fulfil.js';
+import { recordCounselorShare } from './_utils/counselor-pay.js';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.
 export const config = { api: { bodyParser: false } };
@@ -38,9 +39,9 @@ export async function recordInstalment(event: Stripe.Event): Promise<void> {
   const db = getServiceClient();
   const { data: plan } = await db
     .from('admissions_plans')
-    .select(`id, student_id, purchased_by, payments_made, payments_due, status,
+    .select(`id, student_id, purchased_by, payments_made, payments_due, status, counselor_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
-             tier:admissions_tiers (name)`)
+             tier:admissions_tiers (name, price_cents, instalment_months, counselor_share_percent)`)
     .eq('stripe_subscription_id', subscriptionId)
     .maybeSingle();
 
@@ -65,6 +66,22 @@ export async function recordInstalment(event: Stripe.Event): Promise<void> {
         updated_at: new Date().toISOString(),
       })
       .eq('id', plan.id);
+
+    // This month's share for the counsellor. Written per payment received, so
+    // the ledger tracks the money in rather than the promise made, and the
+    // unique index makes a redelivered webhook a no-op rather than a second
+    // month's pay.
+    if (plan.counselor_id) {
+      const tier = (plan as any).tier;
+      await recordCounselorShare(db, {
+        planId: plan.id,
+        counselorId: plan.counselor_id,
+        tierPriceCents: tier?.price_cents ?? 0,
+        sharePercent: tier?.counselor_share_percent,
+        instalmentMonths: tier?.instalment_months ?? plan.payments_due ?? 1,
+        instalmentNumber: made,
+      });
+    }
 
     if (settled) {
       console.log(`instalments complete for plan ${plan.id}: ${made} of ${plan.payments_due}`);
