@@ -89,6 +89,19 @@ try {
   for (const [k, v] of Object.entries(saved)) if (v !== undefined) process.env[k] = v;
 }
 
+// ---- the sandbox sender is a configuration failure, not a recipient one ----
+//
+// Resend's shared onboarding@resend.dev only delivers to the address the Resend
+// account is registered under. Left as the fallback with nothing configured,
+// every invitation to anybody else is refused, and Resend's message names the
+// sender rather than the empty setting that produced it.
+const FALLBACK = "Yakal Education Services <onboarding@resend.dev>";
+check(
+  'the fallback sender is still the shared one, which only reaches the account owner',
+  FALLBACK.includes("onboarding@resend.dev"),
+  true
+);
+
 if (failures > 0) {
   console.error(`\n${failures} failed`);
   process.exit(1);
