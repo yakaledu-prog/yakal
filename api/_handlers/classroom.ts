@@ -91,6 +91,35 @@ export async function membershipOf(
   return { membership: invitedAt ? 'invited' : 'none', googleId: null };
 }
 
+/**
+ * A link an invited student can actually open.
+ *
+ * The plain class URL, https://classroom.google.com/c/<id>, answers "Class not
+ * found" for anybody who is not on the roster yet, which is precisely the
+ * person an Accept invitation button is for. Google's own join link carries the
+ * class code as ?cjc=, and that page offers Join.
+ *
+ * Only ever handed to a student who is already enrolled and paid for. The code
+ * would let anyone holding it join the class, so it does not belong anywhere
+ * more public than that.
+ *
+ * Falls back to the stored URL if the class cannot be read, which is no worse
+ * than what was there before.
+ */
+export async function joinLinkFor(
+  classroom: classroom_v1.Classroom,
+  classId: string,
+  storedUrl: string
+): Promise<string> {
+  const course = await classroom.courses
+    .get({ id: classId })
+    .then((r: any) => r?.data ?? null)
+    .catch(() => null);
+
+  const base = course?.alternateLink ?? storedUrl;
+  return course?.enrollmentCode ? `${base}?cjc=${course.enrollmentCode}` : base;
+}
+
 export function classroomClient() {
   const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
   if (!refreshToken) {
@@ -439,6 +468,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       learnerId = mine?.student_id;
     }
 
+    // Only for somebody who still has to join, and only then, because it costs
+    // a Classroom call and carries the class code.
+    const classLink =
+      membership && membership !== 'joined'
+        ? await joinLinkFor(classroom, classId, classUrl)
+        : undefined;
+
     const visibleTo = (w: any) => isVisibleTo(w, reader, readerGoogleId);
 
     // What has actually been handed in. A learner is asked about only
@@ -506,7 +542,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Who the invitation would be for. A parent reads as their child, so this
       // is the child rather than whoever is signed in.
       learnerId: membership && membership !== 'joined' ? learnerId : undefined,
-      classLink: membership && membership !== 'joined' ? classUrl : undefined,
+      classLink,
       linked: true,
     });
   } catch (err: any) {
