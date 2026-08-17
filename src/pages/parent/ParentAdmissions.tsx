@@ -205,11 +205,11 @@ export function ParentAdmissions() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
             className={cn(
-              "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-card shadow-2xl",
+              "flex max-h-[94vh] w-full flex-col overflow-hidden rounded-2xl bg-card shadow-2xl",
               // Wide enough for two counsellor cards side by side, and wider
               // again for a week of hours. A dialog sized for one paragraph
               // made both of those a column of squeezed thumbnails.
-              step === "slots" ? "max-w-3xl" : counselors.length > 1 ? "max-w-2xl" : "max-w-md"
+              step === "slots" ? "max-w-4xl" : counselors.length > 1 ? "max-w-3xl" : "max-w-md"
             )}
           >
             <div className="overflow-y-auto p-6">
@@ -224,15 +224,37 @@ export function ParentAdmissions() {
               </button>
             </div>
 
-            <p className="text-[14px] leading-relaxed text-foreground">
-              Purchasing <span className="font-semibold">{pendingTier.name} admissions</span> for{" "}
-              <span className="font-semibold">{activeChild.full_name}</span>.
-            </p>
-            <p className="mt-2 text-[14px] text-muted-foreground">
-              {pendingTier.instalmentMonths > 1
-                ? `${money(monthlyCents(pendingTier))}/month for ${pendingTier.instalmentMonths} months (${money(pendingTier.priceCents)} total).`
-                : `${money(pendingTier.priceCents)}, one payment.`}
-            </p>
+            {/* The summary as a card rather than two sentences, so what is
+                being bought and who for is one object to check rather than a
+                paragraph to read. The child's face because buying the right
+                plan for the wrong child is the expensive mistake here. */}
+            <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
+              <img
+                src={activeChild.avatar_url || dicebearUrl(activeChild.full_name)}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-semibold text-foreground">
+                  {pendingTier.name} admissions
+                </p>
+                <p className="truncate text-[13px] text-muted-foreground">
+                  for {activeChild.full_name}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[17px] font-bold leading-tight text-foreground">
+                  {pendingTier.instalmentMonths > 1
+                    ? `${money(monthlyCents(pendingTier))}/month`
+                    : money(pendingTier.priceCents)}
+                </p>
+                <p className="text-[12px] leading-tight text-muted-foreground">
+                  {pendingTier.instalmentMonths > 1
+                    ? `${pendingTier.instalmentMonths} months · ${money(pendingTier.priceCents)}`
+                    : "one payment"}
+                </p>
+              </div>
+            </div>
 
             {/* Choosing the counsellor, but only when there is a choice.
                 With one on the books a gallery is a screen with one card and a
@@ -289,20 +311,15 @@ export function ParentAdmissions() {
                             <p className="truncate text-[15px] font-semibold text-foreground">
                               {c.name}
                             </p>
-                            <p className="truncate text-[12px] text-muted-foreground">
-                              {pendingTier.name}
-                            </p>
                           </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-[17px] font-bold leading-tight text-foreground">
-                              {pendingTier.instalmentMonths > 1
-                                ? money(monthlyCents(pendingTier))
-                                : money(pendingTier.priceCents)}
-                            </p>
-                            <p className="text-[11px] leading-tight text-muted-foreground">
-                              {pendingTier.instalmentMonths > 1 ? "/month" : "one payment"}
-                            </p>
-                          </div>
+                          <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
+                            {pendingTier.instalmentMonths > 1
+                              ? money(monthlyCents(pendingTier))
+                              : money(pendingTier.priceCents)}
+                            <span className="text-[12px] font-normal text-muted-foreground">
+                              {pendingTier.instalmentMonths > 1 ? "/month" : " one payment"}
+                            </span>
+                          </p>
                         </div>
 
                         <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
@@ -324,12 +341,6 @@ export function ParentAdmissions() {
                             {c.activePlans} student{c.activePlans === 1 ? "" : "s"}
                           </span>
                         </p>
-
-                        {c.bio && (
-                          <p className="mt-2 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
-                            {c.bio}
-                          </p>
-                        )}
 
                         {/* Always drawn, disabled when there is no CV on file.
                             Rendered conditionally it simply vanished, which
