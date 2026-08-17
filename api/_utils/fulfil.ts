@@ -312,8 +312,13 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   // through an application; otherwise the counsellor with the fewest live
   // plans. Null when nobody has been hired yet, which leaves the plan
   // unassigned for an admin to place rather than failing the purchase.
-  let counselorId: string | null = null;
-  if (existing) {
+  //
+  // A choice the parent made wins over both. They picked somebody from the
+  // gallery, and quietly handing them to whoever is least busy would make that
+  // screen a decoration. create-invoice has already checked the id is an
+  // active counsellor, so this is a stored decision rather than a request.
+  let counselorId: string | null = invoice.tutor_id ?? null;
+  if (!counselorId && existing) {
     const { data: prior } = await db
       .from("admissions_plans")
       .select("counselor_id")

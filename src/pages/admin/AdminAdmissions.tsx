@@ -510,18 +510,21 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
 }
 
 /**
- * Every tier this student has been on.
+ * Every tier this student has been on, as rows in the same table.
+ *
+ * Sibling rows rather than a panel inside one cell, so the history lands under
+ * the columns it belongs to: the tier where the student is, the counsellor
+ * under counsellor, the dates under started. A nested block would have had to
+ * repeat the headings or leave the reader matching values to columns by eye.
  *
  * A student is on one tier at a time and an upgrade ends the old row rather
- * than overwriting it, so the table is the current arrangement and this is how
- * it got there: what they were on, when it changed, and who was advising them
- * at the time.
+ * than overwriting it, so this is real history and not a derived guess.
  *
  * Loaded when the row is opened, not with the table. A tier with forty families
  * on it would otherwise pull every plan any of them has ever had to draw one
  * screen nobody has asked for yet.
  */
-function PlanHistory({ studentId, studentName }: { studentId: string; studentName: string }) {
+function PlanHistoryRows({ studentId }: { studentId: string }) {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["plan-history", studentId],
     queryFn: () => getPlanHistory(studentId),
@@ -530,57 +533,69 @@ function PlanHistory({ studentId, studentName }: { studentId: string; studentNam
   const when = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "?";
 
+  const shell = "bg-[#f8f9fa] dark:bg-[#182329]";
+
   if (isLoading) {
     return (
-      <div className="flex justify-center py-4">
-        <Loader2 size={16} className="animate-spin text-primary" />
-      </div>
+      <tr className={shell}>
+        <td colSpan={6} className="px-6 py-3">
+          <Loader2 size={15} className="animate-spin text-primary" />
+        </td>
+      </tr>
+    );
+  }
+
+  if (rows.length <= 1) {
+    return (
+      <tr className={cn(shell, "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60")}>
+        <td colSpan={6} className="px-6 py-3 pl-[3.1rem] text-[13px] text-muted-foreground">
+          This is their first plan, so there is nothing before it.
+        </td>
+      </tr>
     );
   }
 
   return (
-    <div>
-      <p className="mb-3 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
-        {studentName}&rsquo;s history
-      </p>
-      {rows.length <= 1 ? (
-        <p className="text-[13px] text-muted-foreground">
-          This is their first plan, so there is nothing before it.
-        </p>
-      ) : (
-        <ol className="space-y-2">
-          {rows.map((r) => (
-            <li key={r.planId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
-              <span className="font-medium text-foreground">{r.tierName}</span>
-              <span className="text-muted-foreground">
-                {when(r.startedAt)}
-                {r.endedAt ? ` to ${when(r.endedAt)}` : " to now"}
-              </span>
-              {r.counselorName && (
-                <span className="text-muted-foreground">with {r.counselorName}</span>
+    <>
+      {rows.map((r, i) => (
+        <tr
+          key={r.planId}
+          className={cn(
+            shell,
+            i === rows.length - 1 && "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60"
+          )}
+        >
+          <td className="px-6 py-2.5 pl-[3.1rem] text-[13px] text-[#111] dark:text-white">
+            {r.tierName}
+          </td>
+          <td className="px-3 py-2.5" />
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
+            {r.counselorName ?? "Not assigned"}
+          </td>
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
+            {when(r.startedAt)}
+            {r.endedAt ? ` to ${when(r.endedAt)}` : " to now"}
+          </td>
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
+            {r.paymentsDue > 1 ? `${r.paymentsMade} of ${r.paymentsDue}` : "Paid in full"}
+          </td>
+          <td className="px-6 py-2.5 text-right">
+            <span
+              className={cn(
+                "text-[13px] capitalize",
+                r.status === "past_due"
+                  ? "text-secondary"
+                  : r.status === "active"
+                    ? "text-primary"
+                    : "text-muted-foreground"
               )}
-              {r.paymentsDue > 1 && (
-                <span className="text-muted-foreground">
-                  {r.paymentsMade} of {r.paymentsDue} paid
-                </span>
-              )}
-              <span
-                className={cn(
-                  "capitalize",
-                  r.status === "past_due"
-                    ? "text-secondary"
-                    : r.status === "active"
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                )}
-              >
-                {r.status.replace("_", " ")}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
+            >
+              {r.status.replace("_", " ")}
+            </span>
+          </td>
+        </tr>
+      ))}
+    </>
   );
 }
 
@@ -747,13 +762,7 @@ function SubscribersModal({
                       </span>
                     </td>
                   </tr>
-                  {openPlan === p.planId && (
-                    <tr className="border-b border-[#e9edef]/60 bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:bg-[#182329]">
-                      <td colSpan={6} className="px-6 py-4">
-                        <PlanHistory studentId={p.studentId} studentName={p.studentName} />
-                      </td>
-                    </tr>
-                  )}
+                  {openPlan === p.planId && <PlanHistoryRows studentId={p.studentId} />}
                   </Fragment>
                 ))}
               </tbody>
