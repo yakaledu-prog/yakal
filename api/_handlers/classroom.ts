@@ -297,22 +297,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = getServiceClient();
 
     const courseId: string | null = req.body?.courseId ?? null;
-    if (!courseId) return res.status(400).json({ error: 'courseId is required' });
-
-    const reader = await readerFor(db, user.id, courseId);
-    if (reader.kind === 'denied') {
-      // Not "forbidden, and here is what exists". Somebody probing course ids
-      // learns nothing either way.
-      return res.status(403).json({ error: 'Not your course' });
+    // Previewing a class by URL, for the admin attaching one to a course. The
+    // course may not exist yet, so there is no entitlement to check against and
+    // no stored URL to read: the URL is the request.
+    const previewUrl: string | null = req.body?.classroomUrl ?? null;
+    if (!courseId && !previewUrl) {
+      return res.status(400).json({ error: 'courseId or classroomUrl is required' });
     }
 
-    const { data: course } = await db
-      .from('courses')
-      .select('google_classroom_url')
-      .eq('id', courseId)
-      .maybeSingle();
+    let reader: Reader;
+    let classUrl: string | null;
 
-    const classUrl = course?.google_classroom_url ?? null;
+    if (previewUrl) {
+      // Admins only, and deliberately stricter than the rest of this file. A
+      // course id is checked against a relationship; a raw URL is not checked
+      // against anything, so this would otherwise let any signed-in user read
+      // any class the operations account can see.
+      const { data: profile } = await db
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profile?.role !== 'admin') {
+        return res.status(403).json({ error: 'Not your course' });
+      }
+      reader = { kind: 'staff' };
+      classUrl = previewUrl;
+    } else {
+      reader = await readerFor(db, user.id, courseId!);
+      if (reader.kind === 'denied') {
+        // Not "forbidden, and here is what exists". Somebody probing course ids
+        // learns nothing either way.
+        return res.status(403).json({ error: 'Not your course' });
+      }
+
+      const { data: course } = await db
+        .from('courses')
+        .select('google_classroom_url')
+        .eq('id', courseId!)
+        .maybeSingle();
+
+      classUrl = course?.google_classroom_url ?? null;
+    }
+
     if (!classUrl) return res.status(200).json({ assignments: [], topics: [], linked: false });
 
     const classId = courseIdFromUrl(classUrl);

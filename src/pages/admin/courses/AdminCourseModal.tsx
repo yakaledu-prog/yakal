@@ -7,14 +7,8 @@ import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
 import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, FileText, PackagePlusIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { useGoogleLogin } from "@react-oauth/google";
-import {
-  CLASSROOM_SCOPES,
-  CLASSROOM_TOKEN_KEY,
-  exchangeGoogleToken,
-  courseIdFromUrl,
-  fetchCourseWork,
-} from "@/services/classroomService";
+import { courseIdFromUrl } from "@/services/classroomService";
+import { previewCourseWork } from "@/services/courseWork";
 
 interface AdminCourseModalProps {
   isOpen: boolean;
@@ -43,7 +37,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     is_active: true,
   });
 
-  const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem(CLASSROOM_TOKEN_KEY));
   const [isFetchingClassroom, setIsFetchingClassroom] = useState(false);
   const [classroomPreview, setClassroomPreview] = useState<any[] | null>(null);
   const [previewLimit, setPreviewLimit] = useState(2);
@@ -78,49 +71,27 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     }
   }, [isOpen, initialData]);
 
-  const loginGoogle = useGoogleLogin({
-    flow: 'auth-code',
-    scope: CLASSROOM_SCOPES,
-    onSuccess: async ({ code }) => {
-      try {
-        const data = await exchangeGoogleToken(code);
-        setClassroomToken(data.access_token);
-        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
-        toast.success("Connected to Google Classroom");
-        handleFetchClassroom(data.access_token);
-      } catch (err: any) {
-        toast.error(err.message || "Failed to connect to Google");
-      }
-    },
-    onError: () => toast.error('Google login failed'),
-  });
-
-  const handleFetchClassroom = async (tokenToUse: string | null = classroomToken) => {
+  // Read through our own server, as the account that owns the classes. This
+  // used to sign the admin into Google in a popup and read Classroom from the
+  // browser, which meant a second OAuth client configuration, a token in
+  // localStorage, and an authorised JavaScript origin per environment. It was
+  // asking a person to authenticate for something the server already does with
+  // its own credential.
+  const handleFetchClassroom = async () => {
     if (!formData.google_classroom_url) {
       return toast.error("Please enter a Google Classroom URL first");
     }
-    const courseId = courseIdFromUrl(formData.google_classroom_url);
-    if (!courseId) {
+    if (!courseIdFromUrl(formData.google_classroom_url)) {
       return toast.error("Invalid Google Classroom URL format. Example: https://classroom.google.com/c/MzUx...");
-    }
-
-    if (!tokenToUse) {
-      loginGoogle();
-      return;
     }
 
     setIsFetchingClassroom(true);
     try {
-      const res = await fetchCourseWork(tokenToUse, courseId);
-      setClassroomPreview(res.courseWork || []);
+      const res = await previewCourseWork(formData.google_classroom_url);
+      setClassroomPreview(res.assignments);
       toast.success("Successfully fetched course details!");
     } catch (error: any) {
-      const msg = error.message || "";
-      toast.error(msg || "Failed to fetch from Google Classroom. Try reconnecting.");
-      if (msg.includes('401') || msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('unauthorized')) {
-        setClassroomToken(null);
-        localStorage.removeItem(CLASSROOM_TOKEN_KEY);
-      }
+      toast.error(error.message || "Failed to fetch from Google Classroom.");
     } finally {
       setIsFetchingClassroom(false);
     }

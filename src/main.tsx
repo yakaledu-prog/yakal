@@ -1,7 +1,6 @@
 
   import { createRoot } from "react-dom/client";
   import { AppRouter } from "./app/Router.tsx";
-  import { GoogleOAuthProvider } from "@react-oauth/google";
   import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
   import "./styles/index.css";
   import { applyTheme, preferredTheme } from "./lib/theme";
@@ -10,7 +9,6 @@
   // way to their own theme.
   applyTheme(preferredTheme());
 
-  const clientId = import.meta.env.VITE_GCP_CLIENT_ID || "";
   // Server state is TanStack Query's job everywhere in this app. Defaults are
   // set once here rather than per call, and one retry covers a dropped
   // connection without making a genuine failure take four seconds to admit it.
@@ -38,11 +36,13 @@
   });
 
   createRoot(document.getElementById("root")!).render(
-    <GoogleOAuthProvider clientId={clientId}>
-      <QueryClientProvider client={queryClient}>
-        <AppRouter />
-      </QueryClientProvider>
-    </GoogleOAuthProvider>
+    // No GoogleOAuthProvider. Nothing in the browser talks to Google any more:
+    // Classroom is read through our own server, as the account that owns the
+    // classes, so there is no popup, no token in localStorage, and no
+    // authorised JavaScript origin to keep in step per environment.
+    <QueryClientProvider client={queryClient}>
+      <AppRouter />
+    </QueryClientProvider>
   );
 
 // The boot screen in index.html covers the gap between the operating system's

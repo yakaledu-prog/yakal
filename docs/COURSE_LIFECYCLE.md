@@ -21,18 +21,19 @@ instead of describing where to go.
 - *Works today:* paste an existing class URL into **Google Classroom URL**.
   **Fetch Details** previews the coursework so you can confirm you attached the
   right class.
-- *To build:* a **Create a Google Classroom** button, so the class does not
-  have to be made by hand first. The server creates it as the operations
-  account and saves the URL back. `courses.create` is covered by the scope we
-  already hold.
-- *To build:* the same button adds the course's tutor as a **co-teacher**, so
-  they can write coursework without an admin doing it for them.
+- *To build:* adding the course's tutor as a **co-teacher** when the course is
+  saved, so they can write coursework without an admin doing it for them.
 
-*To fix:* **Fetch Details** currently signs the admin into Google through a
-browser popup, which is what produces `Error 400: origin_mismatch`. It predates
-the server-side read and is redundant: the server can already read that class.
-Moving it to the server removes the popup, the second OAuth client
-configuration, and the only place anyone has to sign into Google.
+**Creating the class from Yakal was considered and dropped.** `courses.create`
+would work, but it only saves making an empty class by hand, and whoever made
+it still has to go to Classroom to write every assignment. A button that saves
+one click in a tool you then spend an hour in is not worth the code.
+
+*Fixed:* **Fetch Details** used to sign the admin into Google through a browser
+popup, which is where `Error 400: origin_mismatch` came from. It predated the
+server-side read and was redundant, since the server can already read that
+class. It now reads through the server, so nothing in the browser talks to
+Google at all.
 
 ## Stage 2: somebody writes the coursework
 
@@ -103,8 +104,8 @@ email, or the family who changed address.
 
 | | Now | After |
 | --- | --- | --- |
-| Create the Google class | by hand in Classroom | button in the course modal |
-| Add the tutor as co-teacher | by hand in Classroom | automatic |
+| Create the Google class | by hand in Classroom | by hand, deliberately |
+| Add the tutor as co-teacher | by hand in Classroom | automatic on save |
 | Write the coursework | in Classroom | in Classroom, unchanged |
 | Give the student read access | automatic | automatic |
 | Invite the student | by hand in Classroom | automatic on purchase |
@@ -116,12 +117,13 @@ child clicking Join once per class, which Google requires.
 
 ## What to build, in order
 
-1. **Move Fetch Details to the server.** Removes the browser popup and the
-   `origin_mismatch` class of problem. Small, and it deletes code.
+1. ~~Move Fetch Details to the server.~~ **Done.** It removed the browser
+   popup, the token in localStorage, and the whole `origin_mismatch` class of
+   problem, and deleted more code than it added.
 2. **Invite on enrolment**, plus the student's **Join** button and the admin's
    **Students** tab state. This is the stage that removes the most manual work.
-3. **Create a Google Classroom** from the course modal, with the tutor added as
-   co-teacher.
+3. **Add the tutor as co-teacher** when a course with a class attached is
+   saved.
 
 Steps 2 and 3 need `https://www.googleapis.com/auth/classroom.rosters` instead
 of the `.readonly` form we hold now, so they cost one token re-mint, done once
