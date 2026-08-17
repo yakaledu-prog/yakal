@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { classroom_v1 } from '@googleapis/classroom';
 
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
-import { classroomClient, courseIdFromUrl, membershipOf, type Membership } from './classroom.js';
+import { classroomClient, courseIdFromUrl, type Membership } from './classroom.js';
 
 /**
  * Inviting a student to the Google class behind a course.
@@ -21,8 +21,32 @@ import { classroomClient, courseIdFromUrl, membershipOf, type Membership } from 
  * scope was added answers "Request had insufficient authentication scopes".
  */
 
-/** Who may invite somebody to a course's class. */
-async function mayInvite(db: any, userId: string, courseId: string): Promise<boolean> {
+/**
+ * Who may invite somebody to a course's class.
+ *
+ * Staff, and the student themselves. Letting a student send their own is not
+ * an escalation: they are already enrolled, the invitation only offers them the
+ * class their family paid for, and the alternative is a "request an invite"
+ * that lands on somebody's desk and turns a click into a wait. The enrolment
+ * check below is what actually guards this.
+ */
+async function mayInvite(
+  db: any,
+  userId: string,
+  courseId: string,
+  studentId: string
+): Promise<boolean> {
+  // The student themselves, or a parent acting for them.
+  if (userId === studentId) return true;
+
+  const { count: isParent } = await db
+    .from('parent_student_links')
+    .select('id', { count: 'exact', head: true })
+    .eq('parent_id', userId)
+    .eq('student_id', studentId)
+    .eq('status', 'active');
+  if ((isParent ?? 0) > 0) return true;
+
   const { data: profile } = await db
     .from('profiles')
     .select('role')
@@ -41,24 +65,49 @@ async function mayInvite(db: any, userId: string, courseId: string): Promise<boo
 /**
  * Send one invitation, and report where the student now stands.
  *
- * Idempotent by checking first. Classroom rejects a duplicate invitation with
- * ALREADY_EXISTS, and an admin pressing a button twice should see "invited"
- * rather than an error about a state that is the one they wanted.
+ * Idempotent. Classroom rejects a duplicate with ALREADY_EXISTS, and somebody
+ * pressing a button twice should see "invited" rather than an error about the
+ * state they were asking for.
  */
 export async function inviteToClass(
   classroom: classroom_v1.Classroom,
   classId: string,
   email: string
 ): Promise<{ membership: Membership; alreadyThere: boolean }> {
-  const before = await membershipOf(classroom, classId, email);
-  if (before.membership !== 'none') {
-    return { membership: before.membership, alreadyThere: true };
-  }
+  // Already on the roster is the one thing worth checking first, because
+  // inviting somebody who has joined is a genuine error rather than a repeat.
+  const joined = await classroom.courses.students
+    .get({ courseId: classId, userId: email })
+    .then(() => true)
+    .catch(() => false);
+  if (joined) return { membership: 'joined', alreadyThere: true };
 
-  await classroom.invitations.create({
-    requestBody: { courseId: classId, userId: email, role: 'STUDENT' },
-  });
-  return { membership: 'invited', alreadyThere: false };
+  try {
+    await classroom.invitations.create({
+      requestBody: { courseId: classId, userId: email, role: 'STUDENT' },
+    });
+    return { membership: 'invited', alreadyThere: false };
+  } catch (err: any) {
+    // An invitation that already exists is the state we wanted, not a failure.
+    // This is also how an invitation somebody sent by hand inside Classroom
+    // gets recorded on our side: we ask, Google says it is already there, and
+    // the caller stamps the enrolment.
+    if (/already ?exists/i.test(err?.message ?? '')) {
+      return { membership: 'invited', alreadyThere: true };
+    }
+    throw err;
+  }
+}
+
+/** Remember that an invitation is outstanding. Google cannot be asked. */
+async function recordInvite(db: any, courseId: string, studentId: string) {
+  const { error } = await db
+    .from('enrolments')
+    .update({ classroom_invited_at: new Date().toISOString() })
+    .eq('course_id', courseId)
+    .eq('student_id', studentId)
+    .eq('status', 'active');
+  if (error) console.error('could not record a classroom invite:', error.message);
 }
 
 /**
@@ -81,7 +130,8 @@ export async function inviteOnEnrolment(db: any, courseId: string, studentId: st
       : null;
     if (!classId || !student?.email) return;
 
-    await inviteToClass(classroomClient(), classId, student.email);
+    const result = await inviteToClass(classroomClient(), classId, student.email);
+    if (result.membership === 'invited') await recordInvite(db, courseId, studentId);
   } catch (err: any) {
     console.error('classroom invite on enrolment failed:', err?.message ?? err);
   }
@@ -101,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'courseId and studentId are required' });
     }
 
-    if (!(await mayInvite(db, user.id, courseId))) {
+    if (!(await mayInvite(db, user.id, courseId, studentId))) {
       return res.status(403).json({ error: 'Not your course' });
     }
 
@@ -135,6 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const result = await inviteToClass(classroomClient(), classId, student.email);
+    if (result.membership === 'invited') await recordInvite(db, courseId, studentId);
     return res.status(200).json({ ...result, email: student.email });
   } catch (err: any) {
     console.error('classroom-invite error:', err);

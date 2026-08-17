@@ -10,11 +10,13 @@ import { classroomClient, courseIdFromUrl, membershipOf, type Membership } from 
  * answers for whoever is asking and this answers about everybody else. A
  * student must never receive it.
  *
- * One Classroom call per student. Nothing lists invitations by email in bulk:
- * invitations.list returns Google user ids, which are not the addresses we
- * hold, so matching a roster against our own students has to be done per
- * person. Fine for a class of twenty, and capped so a mistake cannot turn one
- * page load into hundreds of requests.
+ * One Classroom call per student, to ask the only question Google answers
+ * reliably: has this person joined. Whether an invitation is outstanding comes
+ * from enrolments.classroom_invited_at, because invitations.list cannot be
+ * filtered by email and returns invitations with no userId on them.
+ *
+ * Fine for a class of twenty, and capped so a mistake cannot turn one page load
+ * into hundreds of requests.
  */
 const MAX_STUDENTS = 60;
 
@@ -43,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: enrolled } = await db
       .from('enrolments')
-      .select('student_id, profiles!enrolments_student_id_fkey (id, email)')
+      .select('student_id, classroom_invited_at, profiles!enrolments_student_id_fkey (id, email)')
       .eq('course_id', courseId)
       .eq('status', 'active')
       .limit(MAX_STUDENTS);
@@ -61,10 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // unknown state reads as "none", which offers Send invite: the worst
         // outcome is Classroom telling us they are already there, which
         // inviteToClass handles rather than erroring.
-        const state = await membershipOf(classroom, classId, email).catch(() => ({
-          membership: 'none' as Membership,
-          googleId: null,
-        }));
+        const state = await membershipOf(classroom, classId, email, r.classroom_invited_at ?? null).catch(
+          () => ({ membership: 'none' as Membership, googleId: null })
+        );
         return { studentId: r.student_id, email, membership: state.membership };
       })
     );

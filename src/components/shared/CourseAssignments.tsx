@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { TriangleAlert } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 
 import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
 import { LoadingPanel } from "@/components/shared/Spinner";
-import { getCourseWorkFor } from "@/services/courseWork";
+import { getCourseWorkFor, sendClassroomInvite } from "@/services/courseWork";
 import { groupCourseWorkByTopic } from "@/utils/courseWorkTopics";
 
 // ============================================================
@@ -80,6 +81,34 @@ export function CourseAssignments({
   // student and a parent see: their own state is on the assignment itself.
   const submitters = data?.submitters;
 
+  // Sending the learner's Classroom invitation.
+  //
+  // learnerId rather than the signed-in user, because a parent reads this page
+  // as their child: pressing this as a parent has to invite the child, and
+  // inviting the parent would be refused for not being enrolled. The server
+  // decides who the learner is and says so.
+  const learnerId = data?.learnerId;
+  const queryClient = useQueryClient();
+  const [inviting, setInviting] = useState(false);
+
+  const requestInvite = async () => {
+    if (!learnerId) return;
+    setInviting(true);
+    try {
+      const res = await sendClassroomInvite(courseId, learnerId);
+      toast.success(
+        res.membership === "joined"
+          ? "You are already in this classroom."
+          : `Invitation sent to ${res.email}. Check your email, then accept it.`
+      );
+      await queryClient.invalidateQueries({ queryKey: ["course-classwork", courseId] });
+    } catch (err: any) {
+      toast.error(err.message || "Could not send that invitation.");
+    } finally {
+      setInviting(false);
+    }
+  };
+
   if (isLoading || classroomLoading) {
     // Reading a class from Google is slower than a database read, and long
     // enough that a bare spinner leaves somebody wondering whether anything is
@@ -112,10 +141,10 @@ export function CourseAssignments({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded border border-primary/30 bg-primary/10 px-4 py-3">
           <p className="text-[13px] text-foreground">
             {data.membership === "invited"
-              ? "You have been invited to this Google Classroom. Join it to turn work in."
-              : "You are not in this Google Classroom yet, so you cannot turn work in. Ask your tutor to invite you."}
+              ? "You have been invited to this Google Classroom. Accept it to turn work in."
+              : "You are not in this Google Classroom yet, so you cannot turn work in."}
           </p>
-          {data.membership === "invited" && data.classLink && (
+          {data.membership === "invited" && data.classLink ? (
             <a
               href={data.classLink}
               target="_blank"
@@ -124,6 +153,20 @@ export function CourseAssignments({
             >
               Accept invitation
             </a>
+          ) : (
+            /* Sends it rather than asking somebody to. The student is already
+               enrolled, so this only offers them the class their family paid
+               for; a "request an invite" would turn a click into a wait on
+               somebody else's inbox. */
+            <button
+              type="button"
+              onClick={requestInvite}
+              disabled={inviting}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
+            >
+              {inviting && <Loader2 size={13} className="animate-spin" />}
+              Send me an invitation
+            </button>
           )}
         </div>
       )}

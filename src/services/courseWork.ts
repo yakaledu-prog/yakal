@@ -37,6 +37,8 @@ export interface CourseWorkResult {
   membership?: "joined" | "invited" | "none";
   /** The class to open, sent only when there is something to do there. */
   classLink?: string;
+  /** Who an invitation would be for: the child, when a parent is reading. */
+  learnerId?: string;
 }
 
 export type ClassroomMembership = "joined" | "invited" | "none";
@@ -91,6 +93,7 @@ async function read(body: { courseId: string } | { classroomUrl: string }): Prom
     invalidLink: !!(res as any).invalidLink,
     submitters: (res as any).submitters ?? undefined,
     membership: (res as any).membership ?? undefined,
+    learnerId: (res as any).learnerId ?? undefined,
     classLink: (res as any).classLink ?? undefined,
   };
 }

@@ -66,25 +66,29 @@ export type Membership = 'joined' | 'invited' | 'none';
 export async function membershipOf(
   classroom: classroom_v1.Classroom,
   classId: string,
-  email: string
+  email: string,
+  /** enrolments.classroom_invited_at. Google cannot answer this, see below. */
+  invitedAt: string | null
 ): Promise<{ membership: Membership; googleId: string | null }> {
-  // Classroom accepts an email wherever it accepts a userId, so this is one
-  // lookup rather than paging the roster.
+  // Joined is Google's to answer, and only Google's. Classroom accepts an
+  // email wherever it accepts a userId, so this is one lookup rather than
+  // paging the roster.
   const googleId = await classroom.courses.students
     .get({ courseId: classId, userId: email })
     .then((r: any) => (r?.data?.userId ? String(r.data.userId) : null))
     .catch(() => null);
   if (googleId) return { membership: 'joined', googleId };
 
-  // Not on the roster. An outstanding invitation is a different state to
-  // never having been asked, and it is the difference between showing a
-  // student a Join button and telling an admin to send one.
-  const invited = await classroom.invitations
-    .list({ courseId: classId, userId: email })
-    .then((r: any) => (r?.data?.invitations ?? []).length > 0)
-    .catch(() => false);
-
-  return { membership: invited ? 'invited' : 'none', googleId: null };
+  // Invited is ours, because Google will not tell us.
+  //
+  // invitations.list({ courseId, userId: email }) returns nothing even with an
+  // invitation outstanding, and listing the class unfiltered returns the
+  // invitation with no userId on it, so there is nothing to match a student
+  // against. It also pages oddly: an empty first page arrives with a
+  // nextPageToken, so "no results" and "no results yet" look identical.
+  //
+  // Recording what we sent is both simpler and more truthful than any of that.
+  return { membership: invitedAt ? 'invited' : 'none', googleId: null };
 }
 
 export function classroomClient() {
@@ -409,10 +413,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // "prove it or hide it".
     let readerGoogleId: string | null = null;
     let membership: Membership | undefined;
-    if (reader.kind === 'learner' && reader.email) {
-      const state = await membershipOf(classroom, classId, reader.email);
+    let learnerId: string | undefined;
+    if (reader.kind === 'learner' && reader.email && courseId) {
+      // The learner's own enrolment, which is where the invitation we sent is
+      // recorded. A parent reads as their child, so this is the child's row.
+      const { data: enrol } = await db
+        .from('enrolments')
+        .select('classroom_invited_at, student_id, profiles!enrolments_student_id_fkey (email)')
+        .eq('course_id', courseId)
+        .eq('status', 'active')
+        .limit(50);
+
+      const mine = ((enrol ?? []) as any[]).find(
+        (r) => (r.profiles?.email ?? '').toLowerCase() === reader.email!.toLowerCase()
+      );
+
+      const state = await membershipOf(
+        classroom,
+        classId,
+        reader.email,
+        mine?.classroom_invited_at ?? null
+      );
       readerGoogleId = state.googleId;
       membership = state.membership;
+      learnerId = mine?.student_id;
     }
 
     const visibleTo = (w: any) => isVisibleTo(w, reader, readerGoogleId);
@@ -479,6 +503,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       topics,
       submitters,
       membership,
+      // Who the invitation would be for. A parent reads as their child, so this
+      // is the child rather than whoever is signed in.
+      learnerId: membership && membership !== 'joined' ? learnerId : undefined,
       classLink: membership && membership !== 'joined' ? classUrl : undefined,
       linked: true,
     });
