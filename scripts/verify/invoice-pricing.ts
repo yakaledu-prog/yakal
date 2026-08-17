@@ -20,7 +20,7 @@ const SERVICE =
 const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
 
 let failures = 0;
-function check(name, ok, detail = '') {
+function check(name: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'ok  ' : 'FAIL'}  ${name}${detail ? '  ' + detail : ''}`);
   if (!ok) failures++;
 }
@@ -53,14 +53,12 @@ if (!course) {
   process.exit(1);
 }
 
-const { data: child } = await admin
-  .from('parent_student_links')
-  .select('student_id')
-  .eq('status', 'active')
-  .limit(1)
-  .maybeSingle();
-
 const { data: parent } = await admin.from('profiles').select('id').eq('email', PARENT).maybeSingle();
+if (!parent) {
+  console.error(`${PARENT} is missing. Run npm run db:seed.`);
+  process.exit(1);
+}
+
 const { data: myChild } = await admin
   .from('parent_student_links')
   .select('student_id')
@@ -68,16 +66,20 @@ const { data: myChild } = await admin
   .eq('status', 'active')
   .limit(1)
   .maybeSingle();
+if (!myChild) {
+  console.error(`${PARENT} has no linked child. Run npm run db:seed.`);
+  process.exit(1);
+}
 
 const handler = (await import('../../api/_handlers/create-invoice.js')).default;
 
-async function call(body) {
-  const req = { method: 'POST', headers: { authorization: `Bearer ${token}` }, body };
+async function call(body: Record<string, unknown>) {
+  const req: any = { method: 'POST', headers: { authorization: `Bearer ${token}` }, body };
   let status = 0;
-  let payload = null;
-  const res = {
-    status(c) { status = c; return res; },
-    json(b) { payload = b; return res; },
+  let payload: any = null;
+  const res: any = {
+    status(c: number) { status = c; return res; },
+    json(b: unknown) { payload = b; return res; },
     end() { return res; },
     setHeader() { return res; },
   };
@@ -110,6 +112,11 @@ if (forged.status !== 200) {
     .select('amount_cents, payout_cents, tutor_id, description')
     .eq('id', forged.payload.invoiceId)
     .single();
+
+  if (!inv) {
+    check('the invoice it reported creating exists', false);
+    process.exit(1);
+  }
 
   const expectedAmount = course.price_cents * booking.length;
   const expectedPayout =

@@ -34,6 +34,9 @@ export interface AdmissionsTier {
   sessionsPerMonth: number | null;
   /** Monthly instalments the total is collected over. 1 is a single payment. */
   instalmentMonths: number;
+  /** Percent of the price paid to the counsellor. Null means nobody has
+   *  decided, which is not the same as zero. */
+  counselorSharePercent: number | null;
   features: string[];
   fits: string | null;
   isRecommended: boolean;
@@ -66,6 +69,8 @@ function toTier(row: any): AdmissionsTier {
     mockInterviewsLimit: row.mock_interviews_limit,
     sessionsPerMonth: row.sessions_per_month,
     instalmentMonths: row.instalment_months ?? 1,
+    counselorSharePercent:
+      row.counselor_share_percent == null ? null : Number(row.counselor_share_percent),
     features: Array.isArray(row.features) ? row.features : [],
     fits: row.fits,
     isRecommended: row.is_recommended,
@@ -77,7 +82,7 @@ function toTier(row: any): AdmissionsTier {
 }
 
 const TIER_FIELDS =
-  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, instalment_months, features, fits, is_recommended, sort_order";
+  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, instalment_months, counselor_share_percent, features, fits, is_recommended, sort_order";
 
 // The admin editor needs is_active as well, because hiding a tier is one of the
 // things it is for. Kept separate so the public getTiers query stays lean.
@@ -157,6 +162,7 @@ export interface TierInput {
   blurb: string | null;
   priceCents: number;
   instalmentMonths: number;
+  counselorSharePercent: number | null;
   psRoundsLimit: number | null;
   suppEssaysLimit: number | null;
   mockInterviewsLimit: number | null;
@@ -177,6 +183,7 @@ function toRow(input: TierInput) {
     blurb: input.blurb,
     price_cents: input.priceCents,
     instalment_months: input.instalmentMonths,
+    counselor_share_percent: input.counselorSharePercent,
     ps_rounds_limit: input.psRoundsLimit,
     supp_essays_limit: input.suppEssaysLimit,
     mock_interviews_limit: input.mockInterviewsLimit,
@@ -248,8 +255,15 @@ export interface TierSubscriber {
   studentAvatar: string | null;
   parentName: string | null;
   parentAvatar: string | null;
+  /** Who is actually doing the work. Null when nobody has been assigned. */
+  counselorId: string | null;
+  counselorName: string | null;
+  counselorAvatar: string | null;
   status: string;
   startedAt: string | null;
+  /** Instalments settled and owed, so a past_due plan explains itself. */
+  paymentsMade: number;
+  paymentsDue: number;
 }
 
 /**
@@ -263,9 +277,10 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
   const { data, error } = await supabase
     .from("admissions_plans")
     .select(
-      `id, tier_id, status, started_at,
+      `id, tier_id, status, started_at, payments_made, payments_due,
        student:profiles!admissions_plans_student_id_fkey(id, full_name, avatar_url),
-       parent:profiles!admissions_plans_purchased_by_fkey(id, full_name, avatar_url)`
+       parent:profiles!admissions_plans_purchased_by_fkey(id, full_name, avatar_url),
+       counselor:profiles!admissions_plans_counselor_id_fkey(id, full_name, avatar_url)`
     )
     .neq("status", "cancelled");
 
@@ -286,8 +301,13 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
       studentAvatar: row.student?.avatar_url ?? null,
       parentName: row.parent?.full_name ?? null,
       parentAvatar: row.parent?.avatar_url ?? null,
+      counselorId: row.counselor?.id ?? null,
+      counselorName: row.counselor?.full_name ?? null,
+      counselorAvatar: row.counselor?.avatar_url ?? null,
       status: row.status,
       startedAt: row.started_at,
+      paymentsMade: row.payments_made ?? 0,
+      paymentsDue: row.payments_due ?? 1,
     });
     byTier.set(row.tier_id, list);
   }

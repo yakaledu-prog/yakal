@@ -4,6 +4,7 @@ import { Loader2, X, Plus, Trash2, Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/utils/cn";
+import { money } from "@/services/billingService";
 import type { AdmissionsTier, TierInput } from "@/services/admissionsService";
 
 interface Props {
@@ -26,6 +27,7 @@ type FormState = {
   fits: string;
   priceDollars: string;
   instalmentMonths: string;
+  counselorSharePercent: string;
   psRoundsLimit: string;
   suppEssaysLimit: string;
   mockInterviewsLimit: string;
@@ -41,6 +43,7 @@ const EMPTY: FormState = {
   fits: "",
   priceDollars: "",
   instalmentMonths: "1",
+  counselorSharePercent: "",
   psRoundsLimit: "",
   suppEssaysLimit: "",
   mockInterviewsLimit: "",
@@ -83,6 +86,8 @@ function initForm(tier: AdmissionsTier | null): FormState {
     fits: tier.fits ?? "",
     priceDollars: centsToDollars(tier.priceCents),
     instalmentMonths: String(tier.instalmentMonths),
+    counselorSharePercent:
+      tier.counselorSharePercent == null ? "" : String(tier.counselorSharePercent),
     psRoundsLimit: quotaToStr(tier.psRoundsLimit),
     suppEssaysLimit: quotaToStr(tier.suppEssaysLimit),
     mockInterviewsLimit: quotaToStr(tier.mockInterviewsLimit),
@@ -160,6 +165,13 @@ export function AdminTierModal({
       fits: form.fits.trim() || null,
       priceCents: Math.round(price * 100),
       instalmentMonths: months,
+      // Blank stays null rather than becoming zero. "Nobody has decided" and
+      // "the counsellor gets nothing" are different answers, and the payout
+      // ledger records which one it was.
+      counselorSharePercent:
+        form.counselorSharePercent.trim() === ""
+          ? null
+          : Math.min(100, Math.max(0, Number(form.counselorSharePercent))),
       psRoundsLimit: quotas.psRoundsLimit as number | null,
       suppEssaysLimit: quotas.suppEssaysLimit as number | null,
       mockInterviewsLimit: quotas.mockInterviewsLimit as number | null,
@@ -174,6 +186,10 @@ export function AdminTierModal({
 
     await onSubmit(input);
   };
+
+  // The price as typed, so the counsellor's share can be shown as money while
+  // it is being decided rather than after it is saved.
+  const priceCentsFromForm = Math.round((parseFloat(form.priceDollars) || 0) * 100);
 
   const labelCls = "block text-[13px] font-medium text-[#111] dark:text-white mb-1.5";
   // The tokens the rest of the admin uses. This was raw tailwind greys with
@@ -304,6 +320,38 @@ export function AdminTierModal({
                   />
                   <p className="mt-1 text-[12px] text-muted-foreground">
                     1 is a single payment. Otherwise the total is split over this many months.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelCls}>Counsellor share (%)</label>
+                  <div className="relative">
+                    <Input
+                      value={form.counselorSharePercent}
+                      onChange={(e) => set("counselorSharePercent", e.target.value)}
+                      placeholder="50"
+                      inputMode="decimal"
+                      className={cn(inputCls, "pr-8")}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                  {/* A share rather than an amount, so it cannot fall out of
+                      step with the price above. What that works out to is
+                      shown here because a percentage of a number on the same
+                      screen is still a sum somebody has to do. */}
+                  <p className="mt-1 text-[12px] text-muted-foreground">
+                    {form.counselorSharePercent.trim() === "" ? (
+                      "Not set. The counsellor is recorded as owed nothing until this has a value."
+                    ) : (
+                      <>
+                        {money(Math.round((priceCentsFromForm * Number(form.counselorSharePercent || 0)) / 100))}{" "}
+                        of {money(priceCentsFromForm)}
+                        {Number(form.instalmentMonths) > 1
+                          ? `, split over ${form.instalmentMonths} payments.`
+                          : ", on the single payment."}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>

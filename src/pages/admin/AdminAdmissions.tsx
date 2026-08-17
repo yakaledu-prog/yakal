@@ -508,7 +508,19 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
   );
 }
 
-/** The same people, with the parent who is paying beside each one. */
+/**
+ * Everyone on a tier, as a table.
+ *
+ * This was a list of names with the paying parent underneath. That answered
+ * "who is on this" and nothing an admin actually opens it to do: who is
+ * advising them, when it started, whether the instalments are up to date, and
+ * how to reach the person who is paying.
+ *
+ * A table because these are records to compare down a column, not cards to
+ * read one at a time. Counsellor is the column that matters most: a plan with
+ * nobody assigned is a family paying for advice from no one, and it was
+ * invisible here.
+ */
 function SubscribersModal({
   tier, people, onClose,
 }: {
@@ -516,6 +528,13 @@ function SubscribersModal({
   people: TierSubscriber[];
   onClose: () => void;
 }) {
+  const unassigned = people.filter((p) => !p.counselorId && p.status === "active").length;
+
+  const started = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+      : "Unknown";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
@@ -523,13 +542,21 @@ function SubscribersModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Students on ${tier.name}`}
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#111b21]"
+        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#111b21]"
       >
         <div className="flex items-center justify-between border-b border-[#e9edef] px-6 py-4 dark:border-[#2a3942]">
           <div>
             <h2 className="text-[17px] font-semibold text-[#111] dark:text-white">{tier.name}</h2>
             <p className="text-[12.5px] text-muted-foreground">
               {people.length} {people.length === 1 ? "student" : "students"}
+              {/* Named here rather than left to be spotted down the column,
+                  because it is the one thing on this screen that needs doing
+                  today. */}
+              {unassigned > 0 && (
+                <span className="text-secondary">
+                  {" "}· {unassigned} with no counsellor
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -541,33 +568,91 @@ function SubscribersModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
-          {people.map((p) => (
-            <div key={p.planId} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-              <img
-                src={p.studentAvatar || dicebearUrl(p.studentName)}
-                alt=""
-                className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">{p.studentName}</p>
-                {/* The parent, because they are who an admin contacts about a
-                    plan: the student consumes it, the parent bought it. */}
-                <p className="truncate text-[12.5px] text-muted-foreground">
-                  {p.parentName ? `Paid by ${p.parentName}` : "No linked parent"}
-                </p>
-              </div>
-              {p.parentAvatar !== undefined && p.parentName && (
-                <img
-                  src={p.parentAvatar || dicebearUrl(p.parentName)}
-                  alt=""
-                  title={p.parentName}
-                  className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
-                />
-              )}
-              <span className="shrink-0 text-[12px] capitalize text-muted-foreground">{p.status}</span>
-            </div>
-          ))}
+        <div className="flex-1 overflow-auto">
+          {people.length === 0 ? (
+            <p className="py-16 text-center text-[14px] text-muted-foreground">
+              Nobody is on this tier yet.
+            </p>
+          ) : (
+            <table className="w-full min-w-[720px]">
+              <thead className="sticky top-0 bg-white dark:bg-[#111b21]">
+                <tr className="border-b border-[#e9edef] text-left text-[12px] uppercase tracking-wider text-muted-foreground dark:border-[#2a3942]">
+                  <th className="px-6 py-3 font-medium">Student</th>
+                  <th className="px-3 py-3 font-medium">Parent</th>
+                  <th className="px-3 py-3 font-medium">Counsellor</th>
+                  <th className="px-3 py-3 font-medium">Started</th>
+                  <th className="px-3 py-3 font-medium">Payments</th>
+                  <th className="px-6 py-3 text-right font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {people.map((p) => (
+                  <tr
+                    key={p.planId}
+                    className="border-b border-[#e9edef]/60 last:border-0 hover:bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:hover:bg-[#182329]"
+                  >
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={p.studentAvatar || dicebearUrl(p.studentName)}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full bg-muted object-cover"
+                        />
+                        <span className="truncate text-[14px] font-medium text-[#111] dark:text-white">
+                          {p.studentName}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-3 py-3 text-[13px] text-muted-foreground">
+                      {p.parentName ?? "No linked parent"}
+                    </td>
+
+                    <td className="px-3 py-3">
+                      {p.counselorName ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={p.counselorAvatar || dicebearUrl(p.counselorName)}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
+                          />
+                          <span className="truncate text-[13px] text-[#111] dark:text-white">
+                            {p.counselorName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[13px] text-secondary">Not assigned</span>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-3 text-[13px] text-muted-foreground">{started(p.startedAt)}</td>
+
+                    <td className="px-3 py-3 text-[13px] text-muted-foreground">
+                      {p.paymentsDue > 1 ? `${p.paymentsMade} of ${p.paymentsDue}` : "Paid in full"}
+                    </td>
+
+                    <td className="px-6 py-3 text-right">
+                      {/* Plain coloured text rather than a capsule: only
+                          past_due is worth the eye, and tinting every row
+                          tells nobody anything. */}
+                      <span
+                        className={cn(
+                          "text-[13px] capitalize",
+                          p.status === "past_due"
+                            ? "text-secondary"
+                            : p.status === "active"
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        )}
+                      >
+                        {p.status.replace("_", " ")}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
