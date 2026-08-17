@@ -84,6 +84,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // identity, tax and bank details, so none of it touches this server.
           dashboard: 'express',
           identity: { country: 'US', entity_type: 'individual' },
+          // Required by v2 for anything holding a Stripe balance, and the
+          // reason the first attempt at this failed. v1 Express decided both
+          // implicitly; v2 makes you say them, which is an improvement.
+          //
+          // application_express is the Express arrangement: Stripe bills the
+          // platform rather than the tutor. losses_collector application means
+          // Yakal carries a negative balance if one ever happens, which is
+          // what Express already did and is not a change.
+          //
+          // requirements_collector belongs here by the SDK's types and is
+          // rejected by the API as an unknown field, so it is deliberately
+          // absent. Stripe collects them, which is what dashboard express
+          // means.
+          defaults: {
+            responsibilities: {
+              fees_collector: 'application_express',
+              losses_collector: 'application',
+            },
+          },
           configuration: {
             recipient: {
               capabilities: { stripe_balance: { stripe_transfers: { requested: true } } },
