@@ -314,6 +314,57 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
   return byTier;
 }
 
+export interface PlanHistoryRow {
+  planId: string;
+  tierName: string;
+  status: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  paymentsMade: number;
+  paymentsDue: number;
+  counselorName: string | null;
+}
+
+/**
+ * Every tier a student has been on, newest first.
+ *
+ * A student is on one tier at a time and an upgrade ends the old row rather
+ * than overwriting it, so this is a real history: what they were on, when it
+ * changed, and who was advising them at the time. The table shows the current
+ * plan; this is what the row opens to.
+ *
+ * Fetched per student on expand rather than joined into the list, because a
+ * tier with forty families on it would otherwise pull every plan any of them
+ * has ever had to draw one screen.
+ */
+export async function getPlanHistory(studentId: string): Promise<PlanHistoryRow[]> {
+  const { data, error } = await supabase
+    .from("admissions_plans")
+    .select(
+      `id, status, started_at, ended_at, payments_made, payments_due,
+       tier:admissions_tiers(name),
+       counselor:profiles!admissions_plans_counselor_id_fkey(full_name)`
+    )
+    .eq("student_id", studentId)
+    .order("started_at", { ascending: false });
+
+  if (error) {
+    console.error("getPlanHistory failed:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as any[]).map((row) => ({
+    planId: row.id,
+    tierName: row.tier?.name ?? "A tier that has since been removed",
+    status: row.status,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    paymentsMade: row.payments_made ?? 0,
+    paymentsDue: row.payments_due ?? 1,
+    counselorName: row.counselor?.full_name ?? null,
+  }));
+}
+
 /**
  * Flip a single flag without opening the editor, for the toggles on the list.
  * Narrow on purpose: only the two booleans a list row shows can be set here.

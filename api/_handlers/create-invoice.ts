@@ -27,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? req.body.kind
       : 'tutoring';
     const studentId: string | null = req.body?.studentId || null;
-    const tutorId: string | null = req.body?.tutorId || null;
     // What this invoice is for. The webhook cannot ask the browser once the
     // payer has been redirected away, and a client-supplied answer at that
     // point is worth nothing, so the intent is recorded up front.
@@ -54,6 +53,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Null unless a course sets it. A tier's counsellor share is its own
     // ledger, see api/_utils/counselor-pay.ts.
     let derivedPayoutCents: number | null = null;
+    // Who gets paid: a course's tutor, or the counsellor a parent chose.
+    let derivedTutorId: string | null = null;
 
     if (admissionsTierId) {
       const { data: tier, error: tierErr } = await db
@@ -70,6 +71,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       finalDescription = `${tier.name} admissions counselling`;
       finalAmountCents = tier.price_cents;
       finalKind = 'admissions';
+
+      // The counsellor the parent picked, if they picked one.
+      //
+      // Checked rather than taken: this decides who a family works with and
+      // who is paid for it, so an unchecked id here would let a request name
+      // any profile at all. An id that does not survive the check is dropped
+      // rather than refused, and fulfilment falls back to assigning the least
+      // loaded counsellor, because a purchase should not fail over a stale
+      // choice from a gallery that has since changed.
+      const requestedCounselorId: string | null = req.body?.counselorId || null;
+      if (requestedCounselorId) {
+        const { data: counselor } = await db
+          .from('profiles')
+          .select('id, role, status')
+          .eq('id', requestedCounselorId)
+          .maybeSingle();
+        if (counselor?.role === 'counselor' && counselor.status === 'active') {
+          derivedTutorId = counselor.id;
+        } else {
+          console.warn(`create-invoice: ignoring counsellor ${requestedCounselorId}, not an active counsellor`);
+        }
+      }
     }
 
     // Buying a course. The same rule as a tier, and it was not being applied.
@@ -83,7 +106,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     //
     // Everything now comes from the course row. The request says which course
     // and which slots; it does not get to say what either is worth.
-    let derivedTutorId: string | null = null;
     if (courseId) {
       const slots = booking?.length ?? 0;
       if (slots < 1) {
@@ -156,7 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // now so a later reprice cannot change what somebody was owed for work
     // already booked.
     const payoutCents = derivedPayoutCents;
-    const payeeId = derivedTutorId ?? (courseId ? null : tutorId);
+    const payeeId = derivedTutorId;
 
     const { data, error } = await db
       .from('invoices')

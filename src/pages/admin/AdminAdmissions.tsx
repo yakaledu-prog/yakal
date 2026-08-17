@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Check, Star, EyeOff, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X, MoreVertical, Search, List, LayoutGrid } from "lucide-react";
@@ -13,6 +13,7 @@ import { money } from "@/services/billingService";
 import {
   getAllTiers,
   getTierSubscribers,
+  getPlanHistory,
   reorderTiers,
   monthlyCents,
   tierShade,
@@ -509,6 +510,81 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
 }
 
 /**
+ * Every tier this student has been on.
+ *
+ * A student is on one tier at a time and an upgrade ends the old row rather
+ * than overwriting it, so the table is the current arrangement and this is how
+ * it got there: what they were on, when it changed, and who was advising them
+ * at the time.
+ *
+ * Loaded when the row is opened, not with the table. A tier with forty families
+ * on it would otherwise pull every plan any of them has ever had to draw one
+ * screen nobody has asked for yet.
+ */
+function PlanHistory({ studentId, studentName }: { studentId: string; studentName: string }) {
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["plan-history", studentId],
+    queryFn: () => getPlanHistory(studentId),
+  });
+
+  const when = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "?";
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 size={16} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="mb-3 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+        {studentName}&rsquo;s history
+      </p>
+      {rows.length <= 1 ? (
+        <p className="text-[13px] text-muted-foreground">
+          This is their first plan, so there is nothing before it.
+        </p>
+      ) : (
+        <ol className="space-y-2">
+          {rows.map((r) => (
+            <li key={r.planId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
+              <span className="font-medium text-foreground">{r.tierName}</span>
+              <span className="text-muted-foreground">
+                {when(r.startedAt)}
+                {r.endedAt ? ` to ${when(r.endedAt)}` : " to now"}
+              </span>
+              {r.counselorName && (
+                <span className="text-muted-foreground">with {r.counselorName}</span>
+              )}
+              {r.paymentsDue > 1 && (
+                <span className="text-muted-foreground">
+                  {r.paymentsMade} of {r.paymentsDue} paid
+                </span>
+              )}
+              <span
+                className={cn(
+                  "capitalize",
+                  r.status === "past_due"
+                    ? "text-secondary"
+                    : r.status === "active"
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                )}
+              >
+                {r.status.replace("_", " ")}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+/**
  * Everyone on a tier, as a table.
  *
  * This was a list of names with the paying parent underneath. That answered
@@ -529,6 +605,7 @@ function SubscribersModal({
   onClose: () => void;
 }) {
   const unassigned = people.filter((p) => !p.counselorId && p.status === "active").length;
+  const [openPlan, setOpenPlan] = useState<string | null>(null);
 
   const started = (iso: string | null) =>
     iso
@@ -577,7 +654,7 @@ function SubscribersModal({
             <table className="w-full min-w-[720px]">
               <thead className="sticky top-0 bg-white dark:bg-[#111b21]">
                 <tr className="border-b border-[#e9edef] text-left text-[12px] uppercase tracking-wider text-muted-foreground dark:border-[#2a3942]">
-                  <th className="px-6 py-3 font-medium">Student</th>
+                  <th className="px-6 py-3 pl-[3.1rem] font-medium">Student</th>
                   <th className="px-3 py-3 font-medium">Parent</th>
                   <th className="px-3 py-3 font-medium">Counsellor</th>
                   <th className="px-3 py-3 font-medium">Started</th>
@@ -587,12 +664,20 @@ function SubscribersModal({
               </thead>
               <tbody>
                 {people.map((p) => (
+                  <Fragment key={p.planId}>
                   <tr
-                    key={p.planId}
-                    className="border-b border-[#e9edef]/60 last:border-0 hover:bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:hover:bg-[#182329]"
+                    onClick={() => setOpenPlan((id) => (id === p.planId ? null : p.planId))}
+                    className="cursor-pointer border-b border-[#e9edef]/60 last:border-0 hover:bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:hover:bg-[#182329]"
                   >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
+                        <ChevronRight
+                          size={15}
+                          className={cn(
+                            "shrink-0 text-muted-foreground transition-transform",
+                            openPlan === p.planId && "rotate-90"
+                          )}
+                        />
                         <img
                           src={p.studentAvatar || dicebearUrl(p.studentName)}
                           alt=""
@@ -604,8 +689,21 @@ function SubscribersModal({
                       </div>
                     </td>
 
-                    <td className="px-3 py-3 text-[13px] text-muted-foreground">
-                      {p.parentName ?? "No linked parent"}
+                    <td className="px-3 py-3">
+                      {p.parentName ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={p.parentAvatar || dicebearUrl(p.parentName)}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
+                          />
+                          <span className="truncate text-[13px] text-[#111] dark:text-white">
+                            {p.parentName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[13px] text-muted-foreground">No linked parent</span>
+                      )}
                     </td>
 
                     <td className="px-3 py-3">
@@ -649,6 +747,14 @@ function SubscribersModal({
                       </span>
                     </td>
                   </tr>
+                  {openPlan === p.planId && (
+                    <tr className="border-b border-[#e9edef]/60 bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:bg-[#182329]">
+                      <td colSpan={6} className="px-6 py-4">
+                        <PlanHistory studentId={p.studentId} studentName={p.studentName} />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
