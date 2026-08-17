@@ -498,17 +498,18 @@ export const COURSES: SeedCourse[] = [
   {
     // The Classroom test course, and the only one wired end to end.
     //
-    // Points at the "testroom" class on the operations account. The URL that
-    // was here decoded to course 870627349476, which that account cannot see,
-    // so every read of it came back "not found for the Yakal Google account"
-    // and looked like a broken integration rather than a stale fixture.
+    // Points at the "yakal" class, id 870627349476, which is what the account
+    // behind GOOGLE_OAUTH_REFRESH_TOKEN can actually see. Worth checking with
+    // a courses.list before assuming a wrong URL here: a class belonging to a
+    // different Google account fails as "not found", exactly like a class that
+    // does not exist, so a stale link reads as a broken integration.
     //
     // There is no admin field for this yet, so changing the class means this
     // line or Supabase Studio.
     title: "K-12 Mathematics",
     subject: "Mathematics",
     tutor: "binyam2537+tutor@gmail.com",
-    classroomUrl: "https://classroom.google.com/c/ODE5OTE1NjYyMzIx",
+    classroomUrl: "https://classroom.google.com/c/ODcwNjI3MzQ5NDc2",
     description:
       "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
     thumbnailUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&q=80",
