@@ -125,6 +125,41 @@ const generated = generatedData as {
 
 export const USERS: SeedUser[] = [
   {
+    // The client's own mailbox, reserved. It is meant to become the account
+    // that owns the classes, but nobody here has its password yet, so it owns
+    // nothing and holds no token. Seeded so the row and its id are already
+    // right when the handover happens.
+    //
+    // A Supabase row and nothing more. Seeding it does not contact Google and
+    // cannot touch that mailbox or its Drive.
+    id: "6f1c3a20-4d7e-4a6b-9c2f-7b83e5d41a09",
+    email: "yakaledu@gmail.com",
+    fullName: "Yakal Education",
+    role: "admin",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 5,
+  },
+  {
+    // The operations account in practice, until the handover.
+    //
+    // GOOGLE_OAUTH_REFRESH_TOKEN was minted from here, so this is the account
+    // that owns the classes the server reads. Admin rather than tutor because
+    // the ops account is the one that creates classes and adds teachers, and
+    // because readerFor gives an admin staff access to every course, which is
+    // what makes the whole read path testable from one login.
+    //
+    // admin@yakal.com stays: it is what every demo login and verification
+    // suite signs in as.
+    id: "b58e0c73-2d41-4a96-8b17-c0e35f9a7612",
+    email: "binyam2537@gmail.com",
+    fullName: "Binyam (ops)",
+    role: "admin",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 5,
+  },
+  {
     id: "82b1793a-db13-49ee-a81a-9e02a5cb51fd",
     email: "admin@yakal.com",
     lastSeenMinutesAgo: 2880,
@@ -246,6 +281,94 @@ export const USERS: SeedUser[] = [
     isOnboarded: true,
     phone: "+251911000005",
   },
+
+  // ----------------------------------------------------------
+  // One reachable account per role, on Gmail plus addressing.
+  //
+  // Everything above is a @yakal.com address that goes nowhere, which is fine
+  // for clicking around and useless for the half of this product that is
+  // email: the invite a parent sends a child, a booking confirmation, a
+  // password reset. Those could only be read in Mailpit, so nothing ever
+  // proved that a real inbox receives them, renders them, and does not file
+  // them as spam.
+  //
+  // binyam2537+parent@gmail.com and friends all deliver to the one inbox, and
+  // the tag says which role it was sent to.
+  //
+  // An alias is not a Google account, so it proves our mail arrives and
+  // nothing more. Where Google itself has to recognise the person, the account
+  // has to be real, and real ones are scarce. They are spent like this:
+  //
+  //   binyam2537@gmail.com    owns the classes and holds the refresh token
+  //   binyammamo01@gmail.com  the one student on a roster
+  //
+  // yakaledu@gmail.com is the client's and nobody here has its password, so
+  // it owns nothing yet. That still leaves a spare for the co-teacher call,
+  // and a tutor needs no Google account before then.
+  //
+  // A parent never needs one. They read their child's class through our
+  // server, as that child, so no parent will ever touch Google. That is what
+  // keeps this affordable at any number of families.
+  //
+  // Deliberately not linked to each other, and nothing is bought for them. The
+  // invite and the checkout are the flows worth exercising, and seeding the
+  // result of a flow is a way of never running it.
+  // ----------------------------------------------------------
+  {
+    id: "0a4d8e11-6c93-4f52-b0a7-1d5f9c72e480",
+    email: "binyam2537+parent@gmail.com",
+    fullName: "Binyam (parent)",
+    role: "parent",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 30,
+  },
+  {
+    // The one real Google account spent on a student, and it has to be a real
+    // one rather than an alias.
+    //
+    // api/_handlers/classroom.ts resolves a learner's Classroom identity by
+    // handing this exact address to courses.students.get. Google resolves a
+    // plus alias back to the account behind it, so a +student address either
+    // matches nobody or matches the wrong person, and the learner is treated
+    // as unplaceable: excluded from individually assigned work, and with no
+    // submissions of their own to read.
+    //
+    // The student slot is where the scarce account belongs. Staff are never
+    // looked up in Classroom, so a tutor's address does not have to be a
+    // Google account for anything we read; and submissions exist only for
+    // students, so this is the only fixture that can exercise them at all.
+    // One is enough: the read path for the fiftieth student is the same code
+    // with a different id.
+    id: "d1f6a94c-3b25-4e08-9a71-5c8043bd2e6f",
+    email: "binyammamo01@gmail.com",
+    fullName: "Binyam (student)",
+    role: "student",
+    status: "active",
+    isOnboarded: true,
+    gradeLevel: "Grade 11",
+    lastSeenMinutesAgo: 30,
+  },
+  {
+    // An alias, deliberately. A tutor needs a real Google account only to be
+    // made a co-teacher so they can write in Classroom; nothing we read ever
+    // looks a staff member up in Google, because readerFor answers staff from
+    // our own database. So this tests the whole tutor read path without
+    // spending one of the three real accounts.
+    id: "c94a71e6-5f38-4b02-a6d1-83e7259bc410",
+    email: "binyam2537+tutor@gmail.com",
+    fullName: "Binyam (tutor)",
+    role: "tutor",
+    status: "active",
+    isOnboarded: true,
+    // A tutor with no rate would be a tutor nobody can book. The rate is the
+    // admin's to set, here and everywhere else.
+    subjects: ["Mathematics"],
+    hourlyRate: 450,
+    rateCurrency: "ETB",
+    acceptingStudents: true,
+    lastSeenMinutesAgo: 30,
+  },
 ];
 
 // The generated people, given the same shape as the hand-written ones. No
@@ -297,6 +420,15 @@ export const PARENT_LINKS: {
   {
     parent: "parent@yakal.com",
     student: "student@yakal.com",
+    services: ["tutoring", "admissions"],
+  },
+  // Linked so the parent's view of the Classroom course can be tested at all:
+  // a parent reads as their child, and without a link there is no child to
+  // read as. The invite flow this pre-empts is still testable any time, since
+  // plus addressing makes a fresh child address free.
+  {
+    parent: "binyam2537+parent@gmail.com",
+    student: "binyammamo01@gmail.com",
     services: ["tutoring", "admissions"],
   },
 ];
@@ -364,8 +496,19 @@ export const COURSES: SeedCourse[] = [
   // that did not exist, so every one of them led to a dead booking page.
   // Seeded now, which also puts them in front of admins and tutors.
   {
+    // The Classroom test course, and the only one wired end to end.
+    //
+    // Points at the "yakal" class, id 870627349476, which is what the account
+    // behind GOOGLE_OAUTH_REFRESH_TOKEN can actually see. Worth checking with
+    // a courses.list before assuming a wrong URL here: a class belonging to a
+    // different Google account fails as "not found", exactly like a class that
+    // does not exist, so a stale link reads as a broken integration.
+    //
+    // The admin course modal has a Google Classroom URL field, so this is
+    // only the seeded default; changing it in the app works too.
     title: "K-12 Mathematics",
     subject: "Mathematics",
+    tutor: "binyam2537+tutor@gmail.com",
     classroomUrl: "https://classroom.google.com/c/ODcwNjI3MzQ5NDc2",
     description:
       "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
@@ -443,6 +586,15 @@ export const ENROLMENTS: { course: string; student: string; purchasedBy: string 
     course: "K-12 Mathematics",
     student: "student@yakal.com",
     purchasedBy: "parent@yakal.com",
+  },
+  // The real student on the Classroom test course. Enrolment is what the read
+  // path checks, so without this row binyammamo01@gmail.com is refused the
+  // class before Google is ever called, and the test looks like a Google
+  // problem rather than a missing fixture.
+  {
+    course: "K-12 Mathematics",
+    student: "binyammamo01@gmail.com",
+    purchasedBy: "binyam2537+parent@gmail.com",
   },
 ];
 

@@ -65,10 +65,13 @@ account. Booking the course is what grants access. The only browser sign-in is
 an admin linking a class, because that is the one moment somebody has to pick
 from their own classes.
 
-The scopes are `drive.file` plus four Classroom scopes.
+The scopes are `drive.file` plus five Classroom scopes.
 `api/_handlers/drive.ts` also declares full `auth/drive`, but only on the
 service-account path, which is unused - see the checklist, because that is a
 restricted scope with real consequences if it ever goes live.
+
+Wiring an account up from nothing, and what each scope is for, is
+`docs/GOOGLE_SETUP.md`.
 
 ## Zoom
 

@@ -198,7 +198,7 @@ export function ParentChildren() {
 
 import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
-import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { StudentCoursework } from "@/components/shared/StudentCoursework";
 import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
 import { getAllAssignments } from "@/services/studentService";
 import { getFlaggedStudentIds } from "@/services/reports";
@@ -220,18 +220,6 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
     enabled: !!child.id,
   });
 
-  const childAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
-    id: a.id,
-    index: i + 1,
-    title: a.title,
-    description: a.description,
-    materials: a.materials,
-    dueDate: a.dueDate,
-    maxPoints: a.maxPoints,
-    link: a.link,
-    grade: a.grade,
-    isSubmitted: a.isSubmitted,
-  }));
 
   // A parent watches rather than attends, so no join and no reschedule here:
   // the rows are there to be read.
@@ -341,10 +329,11 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
         )}
         {activeTab === 'assignments' && (
           // The child's real coursework, on the same cards the student and the
-          // tutor read. What was here was two invented lines about Gatsby and
-          // a physics chapter that nobody had set.
-          <AssignmentList
-            assignments={childAssignments}
+          // tutor read, and now including anything written in Google Classroom
+          // rather than only what is in our own table. A parent reads as their
+          // child, so the grades shown are the child's.
+          <StudentCoursework
+            rows={assignmentRows}
             isLoading={assignmentsLoading}
             emptyText={`Nothing has been set for ${child.name} yet.`}
           />

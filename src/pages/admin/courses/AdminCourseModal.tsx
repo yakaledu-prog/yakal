@@ -7,14 +7,8 @@ import { TipTapEditor } from "@/components/ui/TipTapEditor";
 import { toast } from "sonner";
 import { Loader2, X, ChevronRight, ChevronLeft, GraduationCap, DollarSign, RefreshCw, FileText, PackagePlusIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { useGoogleLogin } from "@react-oauth/google";
-import {
-  CLASSROOM_SCOPES,
-  CLASSROOM_TOKEN_KEY,
-  exchangeGoogleToken,
-  courseIdFromUrl,
-  fetchCourseWork,
-} from "@/services/classroomService";
+import { courseIdFromUrl } from "@/services/classroomService";
+import { previewCourseWork } from "@/services/courseWork";
 
 interface AdminCourseModalProps {
   isOpen: boolean;
@@ -43,7 +37,6 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     is_active: true,
   });
 
-  const [classroomToken, setClassroomToken] = useState<string | null>(localStorage.getItem(CLASSROOM_TOKEN_KEY));
   const [isFetchingClassroom, setIsFetchingClassroom] = useState(false);
   const [classroomPreview, setClassroomPreview] = useState<any[] | null>(null);
   const [previewLimit, setPreviewLimit] = useState(2);
@@ -78,49 +71,27 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     }
   }, [isOpen, initialData]);
 
-  const loginGoogle = useGoogleLogin({
-    flow: 'auth-code',
-    scope: CLASSROOM_SCOPES,
-    onSuccess: async ({ code }) => {
-      try {
-        const data = await exchangeGoogleToken(code);
-        setClassroomToken(data.access_token);
-        localStorage.setItem(CLASSROOM_TOKEN_KEY, data.access_token);
-        toast.success("Connected to Google Classroom");
-        handleFetchClassroom(data.access_token);
-      } catch (err: any) {
-        toast.error(err.message || "Failed to connect to Google");
-      }
-    },
-    onError: () => toast.error('Google login failed'),
-  });
-
-  const handleFetchClassroom = async (tokenToUse: string | null = classroomToken) => {
+  // Read through our own server, as the account that owns the classes. This
+  // used to sign the admin into Google in a popup and read Classroom from the
+  // browser, which meant a second OAuth client configuration, a token in
+  // localStorage, and an authorised JavaScript origin per environment. It was
+  // asking a person to authenticate for something the server already does with
+  // its own credential.
+  const handleFetchClassroom = async () => {
     if (!formData.google_classroom_url) {
       return toast.error("Please enter a Google Classroom URL first");
     }
-    const courseId = courseIdFromUrl(formData.google_classroom_url);
-    if (!courseId) {
+    if (!courseIdFromUrl(formData.google_classroom_url)) {
       return toast.error("Invalid Google Classroom URL format. Example: https://classroom.google.com/c/MzUx...");
-    }
-
-    if (!tokenToUse) {
-      loginGoogle();
-      return;
     }
 
     setIsFetchingClassroom(true);
     try {
-      const res = await fetchCourseWork(tokenToUse, courseId);
-      setClassroomPreview(res.courseWork || []);
+      const res = await previewCourseWork(formData.google_classroom_url);
+      setClassroomPreview(res.assignments);
       toast.success("Successfully fetched course details!");
     } catch (error: any) {
-      const msg = error.message || "";
-      toast.error(msg || "Failed to fetch from Google Classroom. Try reconnecting.");
-      if (msg.includes('401') || msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('unauthorized')) {
-        setClassroomToken(null);
-        localStorage.removeItem(CLASSROOM_TOKEN_KEY);
-      }
+      toast.error(error.message || "Failed to fetch from Google Classroom.");
     } finally {
       setIsFetchingClassroom(false);
     }
@@ -135,6 +106,27 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     const price = parseFloat(formData.price_cents);
     const payout = parseFloat(formData.tutor_payout_cents);
 
+    // Both required, and both above zero.
+    //
+    // These used to save as null when left blank, which looked harmless in the
+    // admin table and was not: the course reached the parent's booking page
+    // priced at $0.00, and Stripe refused the checkout with "Invalid amount".
+    // The parent met the failure, the admin never saw it, and nothing on
+    // either screen said the price was missing.
+    //
+    // Sent back to step 3 rather than only toasted, because the fields being
+    // complained about are on a step the admin may not be looking at.
+    if (!Number.isFinite(price) || price <= 0) {
+      setStep(3);
+      toast.error("Set the parent price. A course priced at zero cannot be checked out.");
+      return;
+    }
+    if (!Number.isFinite(payout) || payout <= 0) {
+      setStep(3);
+      toast.error("Set the tutor payout, so the tutor is paid for this course.");
+      return;
+    }
+
     const patch: Partial<AdminCourse> = {
       title: formData.title,
       subject: formData.subject || "Other",
@@ -142,8 +134,8 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
       is_active: formData.is_active, // We default to true in form state
-      price_cents: Number.isFinite(price) && price >= 0 ? Math.round(price * 100) : null,
-      tutor_payout_cents: Number.isFinite(payout) && payout >= 0 ? Math.round(payout * 100) : null,
+      price_cents: Math.round(price * 100),
+      tutor_payout_cents: Math.round(payout * 100),
     };
 
     await onSubmit(patch);
@@ -307,7 +299,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD)</label>
+                    <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD) <span className="text-secondary">*</span></label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
                       <Input
@@ -320,7 +312,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-medium text-muted-foreground">Tutor Payout (USD)</label>
+                    <label className="text-[13px] font-medium text-muted-foreground">Tutor Payout (USD) <span className="text-secondary">*</span></label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
                       <Input

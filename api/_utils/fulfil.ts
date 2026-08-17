@@ -1,5 +1,6 @@
 import { sendEmail, layout, appUrl } from "./email.js";
 import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
+import { inviteOnEnrolment } from "../_handlers/classroom-invite.js";
 
 // ============================================================
 // What happens after a course is paid for.
@@ -105,6 +106,16 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
   // No child_services write here. Access follows payment: the enrolment row
   // just written is the entitlement, and v_student_entitlements derives
   // tutoring access from it directly. There is no separate permission to set.
+
+  // ---- Google Classroom invitation ----
+  // Awaited so a failure is logged against this fulfilment rather than after
+  // it, but it cannot throw and cannot fail the purchase: the money has moved
+  // and the student already has the course. Reading the coursework needs no
+  // Classroom membership at all, so the worst case is that turning work in
+  // waits until an admin presses Send invite.
+  if (!alreadyEnrolled) {
+    await inviteOnEnrolment(db, course.id, invoice.student_id);
+  }
 
   // ---- sessions ----
   const slots = Array.isArray(invoice.booking) ? invoice.booking : [];

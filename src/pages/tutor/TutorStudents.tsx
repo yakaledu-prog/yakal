@@ -14,7 +14,7 @@ import {
   getTutorStudents, getStudentDetail, getStudentAssignments, StudentDetail,
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { StudentCoursework } from "@/components/shared/StudentCoursework";
 import {
   PastSessions,
   UpcomingSessions,
@@ -188,18 +188,6 @@ function StudentDetailView({
     enabled: !!p?.id,
   });
 
-  const studentAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
-    id: a.id,
-    index: i + 1,
-    title: a.title,
-    description: a.description,
-    materials: a.materials,
-    dueDate: a.dueDate,
-    maxPoints: a.maxPoints,
-    link: a.link,
-    grade: a.grade,
-    isSubmitted: a.isSubmitted,
-  }));
 
   const join = (id: string) => {
     const s = sessions.find((row) => row.id === id);
@@ -339,11 +327,12 @@ function StudentDetailView({
 
         {activeTab === "assignments" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* The same cards the student sees, with their result in the
-                footer. A tutor reading a student's record wants the work and
-                the mark together, not a list of bare submission rows. */}
-            <AssignmentList
-              assignments={studentAssignments}
+            {/* The same cards the student sees, grouped by course, and now
+                including anything written in Google Classroom rather than only
+                what is in our own table. A tutor reads as staff, so each course
+                also shows who has turned in. */}
+            <StudentCoursework
+              rows={assignmentRows}
               isLoading={assignmentsLoading}
               emptyText="Nothing has been set on this student's courses yet."
             />

@@ -37,8 +37,19 @@ const SCOPES = [
   // class; Google refuses coursework.students to anyone else.
   'https://www.googleapis.com/auth/classroom.courses',
   'https://www.googleapis.com/auth/classroom.coursework.students',
-  'https://www.googleapis.com/auth/classroom.rosters.readonly',
+  // rosters, not rosters.readonly. Reading a roster turns a submission's user
+  // id into a name; inviting a student to the class needs the write form, and
+  // it supersedes the readonly one rather than sitting alongside it.
+  'https://www.googleapis.com/auth/classroom.rosters',
   'https://www.googleapis.com/auth/classroom.student-submissions.students.readonly',
+  // Topics are their own scope, and classroom.courses does not cover them.
+  // Without this, courses.topics.list answers "Request had insufficient
+  // authentication scopes" and nothing else breaks: the read-through treats a
+  // topics failure as a class that groups nothing, so the work still lists,
+  // flat. That is the right way to fail and a terrible way to find out, since
+  // grouping simply never appears and the code looks correct. A token minted
+  // before this line was added has to be minted again.
+  'https://www.googleapis.com/auth/classroom.topics.readonly',
 ];
 
 // Minimal .env reader so this runs without pulling in a dependency.

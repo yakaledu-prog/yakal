@@ -178,6 +178,14 @@ export async function getCourseSessions(
 
 export interface CourseAssignmentRow {
   id: string;
+  /** The course this belongs to. Lists that span courses group by it, and the
+   *  Classroom read is per course, so a row without it cannot be read from
+   *  Google at all. */
+  courseId: string;
+  courseTitle: string;
+  /** The Classroom page the sync wrote back, so the same piece of work is not
+   *  listed twice once Google returns it. */
+  classroomUrl: string | null;
   title: string;
   description: string | null;
   materials: { title: string; link: string | null }[];
@@ -199,7 +207,7 @@ export async function getCourseAssignments(
       .select("id, title, description, materials, due_date, max_points, template_url")
       .eq("course_id", courseId)
       .order("due_date", { ascending: true }),
-    supabase.from("courses").select("google_classroom_url").eq("id", courseId).maybeSingle(),
+    supabase.from("courses").select("title, google_classroom_url").eq("id", courseId).maybeSingle(),
   ]);
 
   if (error) {
@@ -222,6 +230,9 @@ export async function getCourseAssignments(
     const submission = byAssignment.get(r.id);
     return {
       id: r.id,
+      courseId,
+      courseTitle: course?.title ?? "This course",
+      classroomUrl: r.template_url ?? null,
       title: r.title,
       description: r.description,
       materials: Array.isArray(r.materials) ? r.materials : [],
