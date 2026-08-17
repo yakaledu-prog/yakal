@@ -504,8 +504,8 @@ export const COURSES: SeedCourse[] = [
     // different Google account fails as "not found", exactly like a class that
     // does not exist, so a stale link reads as a broken integration.
     //
-    // There is no admin field for this yet, so changing the class means this
-    // line or Supabase Studio.
+    // The admin course modal has a Google Classroom URL field, so this is
+    // only the seeded default; changing it in the app works too.
     title: "K-12 Mathematics",
     subject: "Mathematics",
     tutor: "binyam2537+tutor@gmail.com",

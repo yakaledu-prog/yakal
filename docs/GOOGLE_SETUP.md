@@ -131,9 +131,13 @@ Creates a probe file, reads it back, and deletes the file it just created. It
 cannot touch anything that existed beforehand: the only delete is of the id the
 create call returned one line earlier.
 
-For Classroom, start the app and open the `K-12 Mathematics` course, which is
-already pointed at the `testroom` class. See `notes/` or ask for the per-role
-test path.
+For Classroom, follow `docs/CLASSROOM_TESTING.md`. The `K-12 Mathematics`
+course is already pointed at the `yakal` class.
+
+To point a course at a different class, sign in to Yakal as an admin, edit the
+course, and paste the URL into its **Google Classroom URL** field. That is a
+plain text field and needs no Google sign-in; the "Fetch Details" button beside
+it is an optional preview and the only thing that uses the browser popup.
 
 ## Stage 7: publish, so the token stops dying
 
