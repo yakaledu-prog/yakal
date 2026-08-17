@@ -85,6 +85,12 @@ export async function bookAndPay(input: {
    * browser supplies is a price the payer can choose.
    */
   admissionsTierId?: string | null;
+  /**
+   * The counsellor a parent chose for an admissions tier. Checked server side
+   * against being an active counsellor; a stale id is ignored rather than
+   * failing the purchase.
+   */
+  counselorId?: string | null;
 }): Promise<{ error?: string }> {
   const res = await authedPost("/api/stripe?action=create-invoice", input);
   if (res.error) return { error: res.error };

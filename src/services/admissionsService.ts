@@ -565,6 +565,77 @@ export function quotaSpent(line: QuotaLine): boolean {
   return line.limit != null && line.used >= line.limit;
 }
 
+export interface CounselorCard {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  subjects: string[] | null;
+  resumeUrl: string | null;
+  averageStars: number | null;
+  ratingCount: number;
+  /** Families currently on their books, so a parent can see who has room. */
+  activePlans: number;
+}
+
+/**
+ * The counsellors a family can choose between.
+ *
+ * Active ones only: a pending application is somebody an admin has not
+ * approved, and a suspended account is somebody who should not be taking on a
+ * new family.
+ *
+ * Ratings come from the same view a tutor's profile reads. Advising sessions
+ * store the counsellor in sessions.tutor_id, so v_tutor_ratings already covers
+ * them and there is nothing separate to build.
+ */
+export async function getCounselors(): Promise<CounselorCard[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, bio, subjects, resume_url")
+    .eq("role", "counselor")
+    .eq("status", "active")
+    .order("full_name");
+
+  if (error) {
+    console.error("getCounselors failed:", error.message);
+    return [];
+  }
+
+  const rows = data ?? [];
+  const ids = rows.map((r: any) => r.id);
+  if (ids.length === 0) return [];
+
+  // Ratings and current load, both in one round trip each rather than per card.
+  const [{ data: ratings }, { data: plans }] = await Promise.all([
+    supabase.from("v_tutor_ratings").select("tutor_id, average_stars, rating_count").in("tutor_id", ids),
+    supabase.from("admissions_plans").select("counselor_id").eq("status", "active").in("counselor_id", ids),
+  ]);
+
+  const ratingBy = new Map((ratings ?? []).map((r: any) => [r.tutor_id, r]));
+  const loadBy = new Map<string, number>();
+  for (const row of (plans ?? []) as any[]) {
+    loadBy.set(row.counselor_id, (loadBy.get(row.counselor_id) ?? 0) + 1);
+  }
+
+  return rows.map((r: any) => {
+    const rating = ratingBy.get(r.id);
+    return {
+      id: r.id,
+      name: r.full_name ?? "Counsellor",
+      avatarUrl: r.avatar_url ?? null,
+      bio: r.bio ?? null,
+      subjects: r.subjects ?? null,
+      resumeUrl: r.resume_url ?? null,
+      // Null rather than zero when nobody has rated them. Zero would draw an
+      // empty five stars, which reads as a bad review rather than no reviews.
+      averageStars: rating?.average_stars == null ? null : Number(rating.average_stars),
+      ratingCount: rating?.rating_count ?? 0,
+      activePlans: loadBy.get(r.id) ?? 0,
+    };
+  });
+}
+
 /**
  * Buy a tier for a child.
  *
@@ -574,6 +645,8 @@ export function quotaSpent(line: QuotaLine): boolean {
 export async function buyTier(input: {
   tierId: string;
   studentId: string;
+  /** Who the parent picked. Omitted, the server assigns the least loaded. */
+  counselorId?: string | null;
 }): Promise<{ error?: string }> {
   // No amount and no description. Sending a placeholder for the server to
   // overwrite means a stale or half-deployed server rejects it with "Invalid
@@ -582,6 +655,7 @@ export async function buyTier(input: {
     kind: "admissions",
     studentId: input.studentId,
     admissionsTierId: input.tierId,
+    counselorId: input.counselorId ?? null,
   });
 }
 

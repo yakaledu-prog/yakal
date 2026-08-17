@@ -7,10 +7,13 @@ import { Check, Loader2, X , ChevronLeft } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
+import { dicebearUrl } from "@/utils/avatar";
 import { money } from "@/services/billingService";
 import { getLinkedChildren } from "@/services/parentService";
 import {
   buyTier,
+  getCounselors,
+  type CounselorCard,
   getAdmissionsPlans,
   getTiers,
   monthlyCents,
@@ -48,6 +51,14 @@ export function ParentAdmissions() {
   // The tier awaiting confirmation. Buying names the child first, because
   // buying the right plan for the wrong child is the expensive mistake here.
   const [pendingTier, setPendingTier] = useState<AdmissionsTier | null>(null);
+  // Who the parent picked from the gallery. Null means they have not chosen,
+  // and the server assigns the counsellor with the fewest families.
+  const [chosenCounselor, setChosenCounselor] = useState<CounselorCard | null>(null);
+
+  const { data: counselors = [] } = useQuery({
+    queryKey: ["counselors"],
+    queryFn: getCounselors,
+  });
 
   const { data: children = [] } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -73,10 +84,10 @@ export function ParentAdmissions() {
   const activeChild = children.find((c) => c.id === activeChildId) ?? null;
   const currentPlan = activeChildId ? (plans?.get(activeChildId) ?? null) : null;
 
-  async function choose(tier: AdmissionsTier) {
+  async function choose(tier: AdmissionsTier, counselorId: string | null) {
     if (!activeChildId) return toast.error("Choose which child this is for first.");
     setBusy(tier.id);
-    const { error } = await buyTier({ tierId: tier.id, studentId: activeChildId });
+    const { error } = await buyTier({ tierId: tier.id, studentId: activeChildId, counselorId });
     if (error) {
       toast.error(error);
       setBusy(null);
@@ -192,9 +203,72 @@ export function ParentAdmissions() {
                 : `${money(pendingTier.priceCents)}, one payment.`}
             </p>
 
+            {/* Choosing the counsellor, but only when there is a choice.
+                With one on the books a gallery is a screen with one card and a
+                decision nobody is making; with none, the plan is bought
+                unassigned and an admin places it, which is what already
+                happened silently. */}
+            {counselors.length > 1 && (
+              <div className="mt-5">
+                <p className="mb-2 text-[13px] font-medium text-foreground">
+                  Who would you like to work with?
+                </p>
+                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {counselors.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors",
+                        chosenCounselor?.id === c.id
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <img
+                        src={c.avatarUrl || dicebearUrl(c.name)}
+                        alt=""
+                        className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-medium text-foreground">
+                          {c.name}
+                        </span>
+                        <span className="block truncate text-[12.5px] text-muted-foreground">
+                          {/* No rating is said plainly. An empty five stars
+                              reads as a bad review rather than no reviews. */}
+                          {c.averageStars != null
+                            ? `${c.averageStars.toFixed(1)} from ${c.ratingCount} ${c.ratingCount === 1 ? "review" : "reviews"}`
+                            : "No reviews yet"}
+                          {c.activePlans > 0 && ` · ${c.activePlans} student${c.activePlans === 1 ? "" : "s"}`}
+                        </span>
+                      </span>
+                      {c.resumeUrl && (
+                        <a
+                          href={c.resumeUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0 text-[12.5px] font-medium text-primary hover:underline"
+                        >
+                          CV
+                        </a>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[12.5px] text-muted-foreground">
+                  {chosenCounselor
+                    ? `${chosenCounselor.name} will be assigned.`
+                    : "Leave this blank and we will match you with whoever has the most room."}
+                </p>
+              </div>
+            )}
+
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setPendingTier(null)}
+                onClick={() => { setPendingTier(null); setChosenCounselor(null); }}
                 className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
               >
                 Cancel
@@ -202,8 +276,9 @@ export function ParentAdmissions() {
               <button
                 onClick={() => {
                   const t = pendingTier;
+                  const picked = chosenCounselor?.id ?? null;
                   setPendingTier(null);
-                  void choose(t);
+                  void choose(t, picked);
                 }}
                 disabled={!!busy}
                 className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
