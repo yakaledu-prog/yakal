@@ -40,13 +40,33 @@ async function main() {
   // check that hunts for suitable data passes on a database that no longer
   // contains the case it exists to test.
   const PAID = 'student@yakal.com';
+  // Named, for the same reason PAID is. This used to be "the first student who
+  // is not PAID", which on a developer's own database is whichever account
+  // they signed up with while testing. Mine had an enrolment, so the check
+  // reported that a permission row opens a service without payment: a security
+  // failure, from a fixture that had simply paid.
+  //
+  // A check that cries wolf on the machine it runs on every day is worse than
+  // no check, because the next person to see it red assumes it is that again.
+  const UNPAID = 'student2@yakal.com';
 
   const { data: students } = await admin.from('profiles').select('id, full_name, email').eq('role', 'student');
   const student = (students ?? []).find((s) => s.email === PAID);
-  const unpaid = (students ?? []).find((s) => s.email !== PAID);
+  const unpaid = (students ?? []).find((s) => s.email === UNPAID);
 
   if (!student || !unpaid) {
-    console.error(`Needs ${PAID} and one other student. Run npm run db:seed.`);
+    console.error(`Needs ${PAID} and ${UNPAID}. Run npm run db:seed.`);
+    process.exit(1);
+  }
+
+  // The unpaid fixture has to have bought nothing, or this proves nothing at
+  // all. Say so plainly rather than passing a test of the wrong thing.
+  const alreadyEntitled = await effectiveServices(unpaid.id);
+  if (alreadyEntitled.length > 0) {
+    console.error(
+      `${UNPAID} has ${alreadyEntitled.join(', ')}. The unpaid fixture must own nothing; ` +
+        'run npm run db:reset, or point UNPAID at a student who has bought nothing.'
+    );
     process.exit(1);
   }
 
