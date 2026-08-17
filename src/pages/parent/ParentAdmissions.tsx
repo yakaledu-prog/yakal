@@ -8,6 +8,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
+import { AvailabilityPicker, type PickedSlot } from "@/components/shared/AvailabilityPicker";
 import { money } from "@/services/billingService";
 import { getLinkedChildren } from "@/services/parentService";
 import {
@@ -54,6 +55,18 @@ export function ParentAdmissions() {
   // Who the parent picked from the gallery. Null means they have not chosen,
   // and the server assigns the counsellor with the fewest families.
   const [chosenCounselor, setChosenCounselor] = useState<CounselorCard | null>(null);
+  // Picking somebody is a decision about who, and then about when. Choosing a
+  // counsellor and being sent straight to a card form skips the question the
+  // family most wants answered: can they actually meet at a useful hour.
+  const [step, setStep] = useState<"counselor" | "slots">("counselor");
+  const [slots, setSlots] = useState<PickedSlot[]>([]);
+
+  const closePurchase = () => {
+    setPendingTier(null);
+    setChosenCounselor(null);
+    setStep("counselor");
+    setSlots([]);
+  };
 
   const { data: counselors = [] } = useQuery({
     queryKey: ["counselors"],
@@ -84,10 +97,19 @@ export function ParentAdmissions() {
   const activeChild = children.find((c) => c.id === activeChildId) ?? null;
   const currentPlan = activeChildId ? (plans?.get(activeChildId) ?? null) : null;
 
-  async function choose(tier: AdmissionsTier, counselorId: string | null) {
+  async function choose(
+    tier: AdmissionsTier,
+    counselorId: string | null,
+    picked: PickedSlot[]
+  ) {
     if (!activeChildId) return toast.error("Choose which child this is for first.");
     setBusy(tier.id);
-    const { error } = await buyTier({ tierId: tier.id, studentId: activeChildId, counselorId });
+    const { error } = await buyTier({
+      tierId: tier.id,
+      studentId: activeChildId,
+      counselorId,
+      booking: picked.map((s) => ({ date: s.date, startTime: s.startTime, durationMinutes: 60 })),
+    });
     if (error) {
       toast.error(error);
       setBusy(null);
@@ -181,11 +203,20 @@ export function ParentAdmissions() {
           leads with who it is for. */}
       {pendingTier && activeChild && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+          <div
+            className={cn(
+              "flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-card shadow-2xl",
+              // Wide enough for two counsellor cards side by side, and wider
+              // again for a week of hours. A dialog sized for one paragraph
+              // made both of those a column of squeezed thumbnails.
+              step === "slots" ? "max-w-3xl" : counselors.length > 1 ? "max-w-2xl" : "max-w-md"
+            )}
+          >
+            <div className="overflow-y-auto p-6">
             <div className="mb-4 flex items-start justify-between gap-4">
               <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
               <button
-                onClick={() => setPendingTier(null)}
+                onClick={closePurchase}
                 aria-label="Close"
                 className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
               >
@@ -209,95 +240,186 @@ export function ParentAdmissions() {
                 unassigned and an admin places it, which is what already
                 happened silently.
 
-                A grid of small cards rather than a list of sentences. This is
-                a comparison, and a rating reads faster as a figure next to a
-                star than as "4.7 from 3 reviews" repeated down a column. */}
-            {counselors.length > 1 && (
-              <div className="mt-5">
-                <p className="mb-2 text-[13px] font-medium text-foreground">Counsellor</p>
-                <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1">
-                  {counselors.map((c) => {
-                    const picked = chosenCounselor?.id === c.id;
-                    return (
-                      <div
-                        key={c.id}
-                        onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
-                          }
-                        }}
-                        className={cn(
-                          "cursor-pointer rounded-xl border p-3 text-center transition-colors",
-                          picked ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
-                        )}
-                      >
+                Built like the course card: the photograph fills the top edge
+                rather than sitting cropped into a circle, and the price is the
+                large figure with its unit under it. This is the same kind of
+                choice, so it should not need to be learned twice.
+
+                No heading. The cards are people with a Choose action on them,
+                which does not need a label to explain it. */}
+            {step === "counselor" && counselors.length > 1 && (
+              <div className="mt-5 grid max-h-[22rem] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                {counselors.map((c) => {
+                  const picked = chosenCounselor?.id === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
+                        }
+                      }}
+                      className={cn(
+                        "cursor-pointer overflow-hidden rounded-2xl border transition-all",
+                        picked
+                          ? "border-primary ring-2 ring-primary/40"
+                          : "border-border hover:border-primary/40"
+                      )}
+                    >
+                      <div className="relative aspect-[4/3] w-full bg-muted">
                         <img
                           src={c.avatarUrl || dicebearUrl(c.name)}
                           alt=""
-                          className="mx-auto h-12 w-12 rounded-full bg-muted object-cover"
+                          className="h-full w-full object-cover"
                         />
-                        <p className="mt-2 truncate text-[13px] font-medium text-foreground">{c.name}</p>
-                        <p className="mt-0.5 flex items-center justify-center gap-1 text-[12px] text-muted-foreground">
+                        {picked && (
+                          <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                            <Check size={14} strokeWidth={3} />
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-[15px] font-semibold text-foreground">
+                              {c.name}
+                            </p>
+                            <p className="truncate text-[12px] text-muted-foreground">
+                              {pendingTier.name}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[17px] font-bold leading-tight text-foreground">
+                              {pendingTier.instalmentMonths > 1
+                                ? money(monthlyCents(pendingTier))
+                                : money(pendingTier.priceCents)}
+                            </p>
+                            <p className="text-[11px] leading-tight text-muted-foreground">
+                              {pendingTier.instalmentMonths > 1 ? "/month" : "one payment"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
                           {/* Said in words when there are none. An empty five
-                              stars reads as a bad review rather than no
-                              reviews. */}
+                              stars reads as a bad review, not no reviews. */}
                           {c.averageStars != null ? (
                             <>
                               <Star size={11} className="fill-secondary text-secondary" />
-                              {c.averageStars.toFixed(1)}
+                              <span className="font-medium text-foreground">
+                                {c.averageStars.toFixed(1)}
+                              </span>
                               <span>({c.ratingCount})</span>
                             </>
                           ) : (
-                            "New"
+                            <span>No reviews yet</span>
                           )}
                           <span aria-hidden>·</span>
-                          <span>{c.activePlans}</span>
+                          <span>
+                            {c.activePlans} student{c.activePlans === 1 ? "" : "s"}
+                          </span>
                         </p>
-                        {c.resumeUrl && (
-                          <a
-                            href={c.resumeUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
-                          >
-                            <Download size={12} /> CV
-                          </a>
+
+                        {c.bio && (
+                          <p className="mt-2 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
+                            {c.bio}
+                          </p>
                         )}
+
+                        {/* Always drawn, disabled when there is no CV on file.
+                            Rendered conditionally it simply vanished, which
+                            looks identical to the feature not existing. */}
+                        <div className="mt-3 border-t border-border pt-2.5">
+                          {c.resumeUrl ? (
+                            <a
+                              href={c.resumeUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+                            >
+                              <Download size={13} /> Download CV
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                              <Download size={13} /> No CV on file
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-                {!chosenCounselor && (
-                  <p className="mt-2 text-[12px] text-muted-foreground">
-                    Skip to be matched automatically.
-                  </p>
-                )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            <div className="mt-6 flex gap-3">
+            {step === "counselor" && counselors.length > 1 && !chosenCounselor && (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                Skip to be matched automatically.
+              </p>
+            )}
+
+            {/* The same grid the course booking uses, pointed at the
+                counsellor. Advising sessions store them in sessions.tutor_id
+                and availability is keyed the same way, so this needed nothing
+                of its own. */}
+            {step === "slots" && chosenCounselor && (
+              <div className="mt-5">
+                <p className="mb-3 text-[13px] text-muted-foreground">
+                  When would you like to meet {chosenCounselor.name}? These become the first
+                  advising sessions. You can skip this and book later from the plan.
+                </p>
+                <AvailabilityPicker
+                  tutorId={chosenCounselor.id}
+                  studentId={activeChildId}
+                  selected={slots}
+                  multiple
+                  onToggle={(slot) =>
+                    setSlots((cur) =>
+                      cur.some((s) => s.key === slot.key)
+                        ? cur.filter((s) => s.key !== slot.key)
+                        : [...cur, slot]
+                    )
+                  }
+                />
+              </div>
+            )}
+            </div>
+            <div className="flex gap-3 border-t border-border p-6 pt-4">
               <button
-                onClick={() => { setPendingTier(null); setChosenCounselor(null); }}
+                onClick={() => (step === "slots" ? setStep("counselor") : closePurchase())}
                 className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
               >
-                Cancel
+                {step === "slots" ? "Back" : "Cancel"}
               </button>
               <button
                 onClick={() => {
+                  // Chosen somebody and not yet seen their calendar: show it.
+                  // Nobody chosen means no calendar to show, so that path goes
+                  // straight on and an admin assigns afterwards as before.
+                  if (step === "counselor" && chosenCounselor) {
+                    setStep("slots");
+                    return;
+                  }
                   const t = pendingTier;
                   const picked = chosenCounselor?.id ?? null;
-                  setPendingTier(null);
-                  void choose(t, picked);
+                  const chosenSlots = slots;
+                  closePurchase();
+                  void choose(t, picked, chosenSlots);
                 }}
                 disabled={!!busy}
                 className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
               >
-                Continue to payment
+                {step === "counselor" && chosenCounselor
+                  ? "Choose times"
+                  : slots.length > 0
+                    ? `Continue to payment (${slots.length})`
+                    : "Continue to payment"}
               </button>
             </div>
           </div>

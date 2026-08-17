@@ -39,6 +39,25 @@ export function shareForInstalment(
 }
 
 /**
+ * One instalment of the parent's payment, in whole cents.
+ *
+ * The same even split with the remainder on the first, so the months add up to
+ * the price. Recorded rather than derived: a tier can be repriced, and working
+ * an old month out from today's price would restate history.
+ */
+export function paidForInstalment(
+  tierPriceCents: number,
+  instalmentMonths: number,
+  instalmentNumber: number
+): number {
+  if (tierPriceCents <= 0) return 0;
+  const months = Math.max(1, Math.floor(instalmentMonths));
+  const per = Math.floor(tierPriceCents / months);
+  const remainder = tierPriceCents - per * months;
+  return instalmentNumber === 1 ? per + remainder : per;
+}
+
+/**
  * Record one payment's share, once.
  *
  * The unique index on (plan_id, instalment_number) is what makes this safe to
@@ -76,6 +95,13 @@ export async function recordCounselorShare(
     counselor_id: opts.counselorId,
     instalment_number: opts.instalmentNumber,
     amount_cents: amount,
+    // What came in to owe it from, so the two halves of one payment can be
+    // read together later.
+    paid_cents: paidForInstalment(
+      opts.tierPriceCents,
+      opts.instalmentMonths,
+      opts.instalmentNumber
+    ),
     share_percent: opts.sharePercent ?? null,
     note: opts.sharePercent == null ? "No share percent was set on this tier when it was bought." : null,
   });

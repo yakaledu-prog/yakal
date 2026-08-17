@@ -350,6 +350,59 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
+  // ---- the first advising sessions ----
+  //
+  // Chosen from the counsellor's calendar at checkout and created here, because
+  // a session cannot exist before the plan it is booked against does.
+  // book_advising_session is the path once a family is on a plan; it refuses
+  // one that has no active plan, which is every family at the moment they are
+  // paying for it.
+  //
+  // kind 'advising' with no course, matching what book_advising_session writes,
+  // so the counsellor's calendar and the monthly allowance count these the same
+  // as any other.
+  const slots = Array.isArray(invoice.booking) ? invoice.booking : [];
+  if (plan?.id && counselorId && slots.length > 0) {
+    const { data: alreadyThere } = await db
+      .from("sessions")
+      .select("date, start_time")
+      .eq("student_id", invoice.student_id)
+      .eq("tutor_id", counselorId)
+      .eq("kind", "advising");
+
+    const seen = new Set(
+      (alreadyThere ?? []).map((s: any) => `${s.date}|${String(s.start_time).slice(0, 5)}`)
+    );
+
+    // One at a time. An hour can be taken between the checkout page and the
+    // payment landing, and the unique index will refuse that row; as a batch,
+    // one refusal would lose every other session in the same purchase.
+    for (const slot of slots) {
+      if (!slot?.date || !slot?.startTime) continue;
+      if (seen.has(`${slot.date}|${String(slot.startTime).slice(0, 5)}`)) continue;
+
+      const { error: sessionErr } = await db.from("sessions").insert({
+        student_id: invoice.student_id,
+        tutor_id: counselorId,
+        course_id: null,
+        kind: "advising",
+        subject: "College advising",
+        date: slot.date,
+        start_time: slot.startTime,
+        duration_minutes: slot.durationMinutes ?? 60,
+        mode: "online",
+        status: "upcoming",
+      });
+
+      // 23505 is somebody else taking the hour first. The plan is bought and
+      // the family can book another; losing the purchase over it would be far
+      // worse than losing the slot.
+      if (sessionErr && sessionErr.code !== "23505") {
+        console.error("fulfil: advising session failed:", sessionErr.message);
+      }
+    }
+  }
+
   // The counsellor's share of this first payment.
   //
   // Recorded per payment received rather than once for the engagement: an

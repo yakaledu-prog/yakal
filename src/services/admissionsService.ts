@@ -314,55 +314,84 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
   return byTier;
 }
 
-export interface PlanHistoryRow {
-  planId: string;
-  tierName: string;
-  status: string;
-  startedAt: string | null;
-  endedAt: string | null;
-  paymentsMade: number;
-  paymentsDue: number;
-  counselorName: string | null;
+export interface PlanInstalment {
+  id: string;
+  instalmentNumber: number;
+  /** When the payment arrived. */
+  paidAt: string;
+  /** What the parent paid for this month. Null on rows written before the
+   *  column existed, which is different from zero. */
+  paidCents: number | null;
+  /** The counsellor's share of it, and where that payout stands. */
+  counselorCents: number;
+  sharePercent: number | null;
+  payoutStatus: string;
+  note: string | null;
 }
 
 /**
- * Every tier a student has been on, newest first.
+ * Every payment made on one plan, newest first.
  *
- * A student is on one tier at a time and an upgrade ends the old row rather
- * than overwriting it, so this is a real history: what they were on, when it
- * changed, and who was advising them at the time. The table shows the current
- * plan; this is what the row opens to.
+ * One row per month, not per tier. A plan is a single subscription to a single
+ * tier: if a family switched, that is a different plan with its own payments,
+ * and mixing the two into one list made a switch look like something that
+ * happened inside a subscription rather than the end of one.
  *
- * Fetched per student on expand rather than joined into the list, because a
- * tier with forty families on it would otherwise pull every plan any of them
- * has ever had to draw one screen.
+ * counselor_payouts is the only per-month record of an engagement there is.
+ * Plans carry payments_made as a counter and the amounts live in Stripe, so
+ * both halves of each payment, what came in and what the counsellor is owed,
+ * are read from here.
+ *
+ * Fetched on expand rather than joined into the list: a tier with forty
+ * families would otherwise pull every payment any of them has ever made to
+ * draw one screen.
  */
-export async function getPlanHistory(studentId: string): Promise<PlanHistoryRow[]> {
+export async function getPlanInstalments(planId: string): Promise<PlanInstalment[]> {
   const { data, error } = await supabase
-    .from("admissions_plans")
-    .select(
-      `id, status, started_at, ended_at, payments_made, payments_due,
-       tier:admissions_tiers(name),
-       counselor:profiles!admissions_plans_counselor_id_fkey(full_name)`
-    )
-    .eq("student_id", studentId)
-    .order("started_at", { ascending: false });
+    .from("counselor_payouts")
+    .select("id, instalment_number, created_at, paid_cents, amount_cents, share_percent, status, note")
+    .eq("plan_id", planId)
+    .order("instalment_number", { ascending: false });
 
   if (error) {
-    console.error("getPlanHistory failed:", error.message);
+    console.error("getPlanInstalments failed:", error.message);
     return [];
   }
 
   return ((data ?? []) as any[]).map((row) => ({
-    planId: row.id,
-    tierName: row.tier?.name ?? "A tier that has since been removed",
-    status: row.status,
-    startedAt: row.started_at,
-    endedAt: row.ended_at,
-    paymentsMade: row.payments_made ?? 0,
-    paymentsDue: row.payments_due ?? 1,
-    counselorName: row.counselor?.full_name ?? null,
+    id: row.id,
+    instalmentNumber: row.instalment_number ?? 1,
+    paidAt: row.created_at,
+    paidCents: row.paid_cents == null ? null : Number(row.paid_cents),
+    counselorCents: Number(row.amount_cents ?? 0),
+    sharePercent: row.share_percent == null ? null : Number(row.share_percent),
+    payoutStatus: row.status ?? "pending",
+    note: row.note ?? null,
   }));
+}
+
+/**
+ * Total collected per plan, for the column on the table.
+ *
+ * Summed from the payments themselves rather than price times payments_made,
+ * so a repriced tier does not restate what a family has already paid.
+ */
+export async function getPlanTotals(): Promise<Map<string, number>> {
+  const { data, error } = await supabase
+    .from("counselor_payouts")
+    .select("plan_id, paid_cents");
+
+  if (error) {
+    console.error("getPlanTotals failed:", error.message);
+    return new Map();
+  }
+
+  const totals = new Map<string, number>();
+  for (const row of (data ?? []) as any[]) {
+    if (!row.plan_id) continue;
+    totals.set(row.plan_id, (totals.get(row.plan_id) ?? 0) + Number(row.paid_cents ?? 0));
+  }
+  return totals;
 }
 
 /**
@@ -647,6 +676,9 @@ export async function buyTier(input: {
   studentId: string;
   /** Who the parent picked. Omitted, the server assigns the least loaded. */
   counselorId?: string | null;
+  /** First advising sessions, chosen from the counsellor's calendar. Created
+   *  on fulfilment, because a session cannot exist before the plan does. */
+  booking?: { date: string; startTime: string; durationMinutes?: number }[];
 }): Promise<{ error?: string }> {
   // No amount and no description. Sending a placeholder for the server to
   // overwrite means a stale or half-deployed server rejects it with "Invalid
@@ -656,6 +688,7 @@ export async function buyTier(input: {
     studentId: input.studentId,
     admissionsTierId: input.tierId,
     counselorId: input.counselorId ?? null,
+    booking: input.booking && input.booking.length > 0 ? input.booking : undefined,
   });
 }
 

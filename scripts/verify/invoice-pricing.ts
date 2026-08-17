@@ -151,13 +151,20 @@ const noProduct = await call({ description: 'Just give me an invoice', amountCen
 check('an invoice naming no product is refused', noProduct.status === 400, `HTTP ${noProduct.status}`);
 
 // ---- booking for somebody else's child is refused ----
-const { data: stranger } = await admin
-  .from('profiles')
-  .select('id')
-  .eq('role', 'student')
-  .not('id', 'eq', myChild.student_id)
-  .limit(1)
-  .maybeSingle();
+// Somebody who is not any of this parent's children, not merely not the first
+// of them. This parent has several, so "any student that is not myChild" kept
+// picking another one of theirs, which is correctly allowed and made the check
+// look like a hole.
+const { data: mine } = await admin
+  .from('parent_student_links')
+  .select('student_id')
+  .eq('parent_id', parent.id)
+  .eq('status', 'active');
+
+const myIds = new Set((mine ?? []).map((r: any) => r.student_id));
+
+const { data: everyStudent } = await admin.from('profiles').select('id').eq('role', 'student');
+const stranger = (everyStudent ?? []).find((s: any) => !myIds.has(s.id)) ?? null;
 
 if (stranger) {
   const notMine = await call({ courseId: course.id, studentId: stranger.id, booking });

@@ -282,6 +282,27 @@ export const USERS: SeedUser[] = [
     phone: "+251911000005",
   },
 
+  {
+    // The unpaid fixture, and nothing else.
+    //
+    // scripts/verify/service-entitlements.mjs needs a student who has bought
+    // nothing, to prove a permission row alone opens no service. It used to
+    // name student2@yakal.com, who is also a perfectly ordinary demo student:
+    // the first time somebody bought them a tier while testing, the check
+    // started refusing to run.
+    //
+    // Named so nobody buys anything for them. A fixture that doubles as a
+    // demo account is a fixture with an expiry date.
+    id: "e2a7c9b4-1f60-4d83-9a25-7c4e08b1d6f3",
+    email: "unpaid-fixture@yakal.demo",
+    fullName: "Zz Test Fixture (do not buy)",
+    role: "student",
+    status: "active",
+    isOnboarded: true,
+    gradeLevel: "Grade 9",
+    lastSeenMinutesAgo: 100000,
+  },
+
   // ----------------------------------------------------------
   // One reachable account per role, on Gmail plus addressing.
   //

@@ -13,7 +13,8 @@ import { money } from "@/services/billingService";
 import {
   getAllTiers,
   getTierSubscribers,
-  getPlanHistory,
+  getPlanInstalments,
+  getPlanTotals,
   reorderTiers,
   monthlyCents,
   tierShade,
@@ -510,46 +511,45 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
 }
 
 /**
- * Every tier this student has been on, as rows in the same table.
+ * Every payment made on one plan, as rows in the same table.
  *
- * Sibling rows rather than a panel inside one cell, so the history lands under
- * the columns it belongs to: the tier where the student is, the counsellor
- * under counsellor, the dates under started. A nested block would have had to
- * repeat the headings or leave the reader matching values to columns by eye.
+ * One row per month, not per tier. A plan is one subscription to one tier: if a
+ * family switched, that is a different plan with its own payments, and mixing
+ * them made a switch look like something that happened inside a subscription
+ * rather than the end of one.
  *
- * A student is on one tier at a time and an upgrade ends the old row rather
- * than overwriting it, so this is real history and not a derived guess.
- *
- * Loaded when the row is opened, not with the table. A tier with forty families
- * on it would otherwise pull every plan any of them has ever had to draw one
- * screen nobody has asked for yet.
+ * Sibling rows so each value lands under the column it belongs to. The month
+ * sits under the student, what the parent paid under Total, and the
+ * counsellor's share with its payout state under Counsellor, which is where an
+ * admin is looking when they want to know whether somebody has been paid.
  */
-function PlanHistoryRows({ studentId }: { studentId: string }) {
+function PlanInstalmentRows({ planId }: { planId: string }) {
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["plan-history", studentId],
-    queryFn: () => getPlanHistory(studentId),
+    queryKey: ["plan-instalments", planId],
+    queryFn: () => getPlanInstalments(planId),
   });
 
-  const when = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "?";
+  const when = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
   const shell = "bg-[#f8f9fa] dark:bg-[#182329]";
+  const edge = "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60";
 
   if (isLoading) {
     return (
       <tr className={shell}>
-        <td colSpan={6} className="px-6 py-3">
+        <td colSpan={7} className="px-6 py-3">
           <Loader2 size={15} className="animate-spin text-primary" />
         </td>
       </tr>
     );
   }
 
-  if (rows.length <= 1) {
+  if (rows.length === 0) {
     return (
-      <tr className={cn(shell, "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60")}>
-        <td colSpan={6} className="px-6 py-3 pl-[3.1rem] text-[13px] text-muted-foreground">
-          This is their first plan, so there is nothing before it.
+      <tr className={cn(shell, edge)}>
+        <td colSpan={7} className="px-6 py-3 pl-[3.1rem] text-[13px] text-muted-foreground">
+          No payments recorded against this plan yet.
         </td>
       </tr>
     );
@@ -558,41 +558,45 @@ function PlanHistoryRows({ studentId }: { studentId: string }) {
   return (
     <>
       {rows.map((r, i) => (
-        <tr
-          key={r.planId}
-          className={cn(
-            shell,
-            i === rows.length - 1 && "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60"
-          )}
-        >
+        <tr key={r.id} className={cn(shell, i === rows.length - 1 && edge)}>
           <td className="px-6 py-2.5 pl-[3.1rem] text-[13px] text-[#111] dark:text-white">
-            {r.tierName}
+            Payment {r.instalmentNumber}
           </td>
+
           <td className="px-3 py-2.5" />
-          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
-            {r.counselorName ?? "Not assigned"}
-          </td>
-          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
-            {when(r.startedAt)}
-            {r.endedAt ? ` to ${when(r.endedAt)}` : " to now"}
-          </td>
-          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
-            {r.paymentsDue > 1 ? `${r.paymentsMade} of ${r.paymentsDue}` : "Paid in full"}
-          </td>
-          <td className="px-6 py-2.5 text-right">
+
+          {/* The counsellor's share and whether it has been paid, under the
+              counsellor column: that is where somebody looks to answer
+              "have they had this month's money". */}
+          <td className="px-3 py-2.5 text-[13px]">
+            <span className="text-muted-foreground">{money(r.counselorCents)}</span>
+            {r.sharePercent != null && (
+              <span className="text-muted-foreground"> ({r.sharePercent}%)</span>
+            )}
             <span
               className={cn(
-                "text-[13px] capitalize",
-                r.status === "past_due"
-                  ? "text-secondary"
-                  : r.status === "active"
-                    ? "text-primary"
+                "ml-2",
+                r.payoutStatus === "paid"
+                  ? "text-primary"
+                  : r.payoutStatus === "held"
+                    ? "text-secondary"
                     : "text-muted-foreground"
               )}
+              title={r.note ?? undefined}
             >
-              {r.status.replace("_", " ")}
+              {r.payoutStatus}
             </span>
           </td>
+
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">{when(r.paidAt)}</td>
+
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
+            {/* Null means the row predates the column, which is not zero. */}
+            {r.paidCents == null ? "Not recorded" : money(r.paidCents)}
+          </td>
+
+          <td className="px-3 py-2.5" />
+          <td className="px-6 py-2.5" />
         </tr>
       ))}
     </>
@@ -621,6 +625,8 @@ function SubscribersModal({
 }) {
   const unassigned = people.filter((p) => !p.counselorId && p.status === "active").length;
   const [openPlan, setOpenPlan] = useState<string | null>(null);
+
+  const { data: totals } = useQuery({ queryKey: ["plan-totals"], queryFn: getPlanTotals });
 
   const started = (iso: string | null) =>
     iso
@@ -674,6 +680,7 @@ function SubscribersModal({
                   <th className="px-3 py-3 font-medium">Counsellor</th>
                   <th className="px-3 py-3 font-medium">Started</th>
                   <th className="px-3 py-3 font-medium">Payments</th>
+                  <th className="px-3 py-3 font-medium">Total paid</th>
                   <th className="px-6 py-3 text-right font-medium">Status</th>
                 </tr>
               </thead>
@@ -744,6 +751,13 @@ function SubscribersModal({
                       {p.paymentsDue > 1 ? `${p.paymentsMade} of ${p.paymentsDue}` : "Paid in full"}
                     </td>
 
+                    {/* Summed from the payments themselves, not price times
+                        count, so a repriced tier does not restate what a
+                        family has already handed over. */}
+                    <td className="px-3 py-3 text-[13px] text-foreground">
+                      {money(totals?.get(p.planId) ?? 0)}
+                    </td>
+
                     <td className="px-6 py-3 text-right">
                       {/* Plain coloured text rather than a capsule: only
                           past_due is worth the eye, and tinting every row
@@ -762,7 +776,7 @@ function SubscribersModal({
                       </span>
                     </td>
                   </tr>
-                  {openPlan === p.planId && <PlanHistoryRows studentId={p.studentId} />}
+                  {openPlan === p.planId && <PlanInstalmentRows planId={p.planId} />}
                   </Fragment>
                 ))}
               </tbody>
