@@ -52,6 +52,11 @@ const SERVICES: { key: ServiceName; label: string; buyHref: (childId: string) =>
  *
  * Kept as one wrapper so the two columns cannot drift into different empty
  * states, which is what a tick and a dash used to be.
+ *
+ * `empty` means there is nothing to show, not that nothing was paid for. A
+ * parent who has paid but chosen no course used to get "Paid, no course yet",
+ * which named the state and then left them to work out where to go next. The
+ * cell they are looking at is the one that can take them there.
  */
 function ServiceCell({
   empty,
@@ -171,9 +176,7 @@ function tierColour(tier: { sortOrder?: number } | null | undefined): string {
  * The tier alone answered "what did we buy" and left "who is actually doing
  * it" to another page, which is the question a parent opens this to ask.
  */
-function PlanCell({ plan }: { plan: AdmissionsPlan | null | undefined }) {
-  if (!plan) return <span className="text-[13px] text-muted-foreground">Paid, no plan yet</span>;
-
+function PlanCell({ plan }: { plan: AdmissionsPlan }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <img
@@ -569,7 +572,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                         <td className="py-3">
                           <ServiceCell
-                            empty={!hasService(c.id, "tutoring")}
+                            empty={!hasService(c.id, "tutoring") || courses.length === 0}
                             addHref={SERVICES[0].buyHref(c.id)}
                             addLabel="Add a course"
                             addIcon={<PackagePlusIcon size={15} />}
@@ -580,12 +583,12 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                         <td className="py-3 pr-4">
                           <ServiceCell
-                            empty={!hasService(c.id, "admissions")}
+                            empty={!hasService(c.id, "admissions") || !plans?.get(c.id)}
                             addHref={SERVICES[1].buyHref(c.id)}
                             addLabel="Select a tier"
                             addIcon={<GraduationCap size={15} />}
                           >
-                            <PlanCell plan={plans?.get(c.id)} />
+                            <PlanCell plan={plans!.get(c.id)!} />
                           </ServiceCell>
                         </td>
 
@@ -616,7 +619,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                                 className="flex items-center justify-between gap-3 border-b pb-2"
                                 style={{ borderColor: `${tierColour(plans.get(c.id)!.tier)}50` }}
                               >
-                                <PlanCell plan={plans.get(c.id)} />
+                                <PlanCell plan={plans.get(c.id)!} />
                                 {/* Here rather than on the row, because here
                                     it is unambiguous: it changes this plan.
                                     Beside a child's name it could have meant
