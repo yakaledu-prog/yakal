@@ -131,7 +131,7 @@ Creates a probe file, reads it back, and deletes the file it just created. It
 cannot touch anything that existed beforehand: the only delete is of the id the
 create call returned one line earlier.
 
-For Classroom, follow `docs/CLASSROOM_TESTING.md`. The `K-12 Mathematics`
+For Classroom, follow `docs/COURSE_LIFECYCLE.md`. The `K-12 Mathematics`
 course is already pointed at the `yakal` class.
 
 To point a course at a different class, sign in to Yakal as an admin, edit the
