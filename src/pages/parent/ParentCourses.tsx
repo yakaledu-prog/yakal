@@ -257,6 +257,36 @@ export function ParentCourses() {
             ))}
           </div>
           )}
+
+          {/* The same pager, at the foot of the grid.
+              The arrows in the header were the only way through the catalog,
+              and nobody looks back up at a header after scrolling past six
+              cards: a course on page 3 read as a course that did not exist.
+              Deliberately the same control rather than a "show more" that
+              appends, so there is one meaning of what the page is showing. */}
+          {!isLoading && totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-4 py-2 text-[14px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2a3942]"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <span className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1.5 rounded-lg border border-[#e9edef] px-4 py-2 text-[14px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2a3942]"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </PageWrapper>

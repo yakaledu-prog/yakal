@@ -5,12 +5,12 @@ Every password is `demo123`.
 
 ## The accounts
 
-| Role | Sign in as | Notes |
-| --- | --- | --- |
-| Admin, and the Google account that owns the classes | `binyam2537@gmail.com` | holds `GOOGLE_OAUTH_REFRESH_TOKEN` |
-| **Parent** | **`binyam2537+parent@gmail.com`** | **this is the one linked to the child below** |
-| Child | `binyammamo01@gmail.com` | "Binyam (student)", the only real Google account on a roster |
-| Tutor | `binyam2537+tutor@gmail.com` | an alias, no Google account needed |
+| Role                                                | Sign in as                        | Notes                                                        |
+| -----------------------------------------------------| -----------------------------------| --------------------------------------------------------------|
+| Admin, and the Google account that owns the classes | `binyam2537@gmail.com`            | holds `GOOGLE_OAUTH_REFRESH_TOKEN`                           |
+| **Parent**                                          | **`binyam2537+parent@gmail.com`** | **this is the one linked to the child below**                |
+| Child                                               | `binyammamo01@gmail.com`          | "Binyam (student)", the only real Google account on a roster |
+| Tutor                                               | `binyam2537+tutor@gmail.com`      | an alias, no Google account needed                           |
 
 The child is **already enrolled in K-12 Mathematics** from the seed, so use a
 different course for this walkthrough or the purchase step has nothing to do.
@@ -24,7 +24,7 @@ our API on 3001, not the browser.
 
 Sign in as `binyam2537@gmail.com`, go to **Courses**, **New course**.
 
-1. **Basic info**: title, subject, and pick a **tutor**. Give it a thumbnail.
+1. **Basic info**: title, subject, thumbnail.
 2. **Description**: anything.
 3. **Classroom and pricing**:
    - Paste the class URL, for example `https://classroom.google.com/c/ODcwNjI3MzQ5NDc2` (the `yakal` class)
@@ -37,6 +37,22 @@ Sign in as `binyam2537@gmail.com`, go to **Courses**, **New course**.
 If Fetch Details errors, the message says which: "not found for the Yakal
 Google account" means the class belongs to a different Google account, and
 "Google access has expired" means the refresh token is dead.
+
+## 1b. Give the course a tutor, or the parent will never see it
+
+**The course modal has no tutor field, on purpose.** A tutor is assigned by
+applying, and the parent catalog lists only courses that have one, because a
+course with no tutor has no calendar to book a time from and every card would
+be a dead end.
+
+So a course you just created is invisible to parents until:
+
+1. Sign in as a tutor, for example `binyam2537+tutor@gmail.com`
+2. **Find Courses**, find the new course, **Apply**
+3. Back as the admin, open the course, **Tutors** tab, approve them
+
+Faster, if you only want to test the purchase: set `tutor_id` on the course in
+Supabase Studio on port 54323.
 
 ## 2. Parent: buy it for the child
 

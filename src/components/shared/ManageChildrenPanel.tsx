@@ -93,10 +93,6 @@ function ServiceCell({
  * gets the full width rather than a column's worth.
  */
 function CourseList({ courses }: { courses: CoursePackage[] }) {
-  if (courses.length === 0) {
-    return <span className="text-[13px] text-muted-foreground">Paid, no course yet</span>;
-  }
-
   const faces = courses.slice(0, 3);
 
   return (
