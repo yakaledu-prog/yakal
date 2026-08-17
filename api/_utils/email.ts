@@ -72,6 +72,20 @@ async function from(): Promise<string> {
 }
 
 function provider(): "resend" | "smtp" {
+  // An explicit choice wins, and is the only way to reach a real inbox from a
+  // development machine.
+  //
+  // Deliberately a separate variable rather than relaxing the rule below. The
+  // property worth keeping is that a production key sitting in a local .env
+  // cannot send real mail by accident; naming the provider is not an accident.
+  // It is also how the local mail server is tested when it is the thing that
+  // has stopped working, which is what put this here: the Supabase stack was
+  // running Mailpit with no published ports, so every local send failed at the
+  // socket and there was no way to prove the rest of the path worked.
+  const chosen = (process.env.EMAIL_PROVIDER ?? "").trim().toLowerCase();
+  if (chosen === "resend") return "resend";
+  if (chosen === "smtp") return "smtp";
+
   const isProduction =
     process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
   // A key on its own is not enough. Someone with a production key in their
@@ -90,6 +104,12 @@ export async function sendEmail(input: EmailInput): Promise<EmailResult> {
 
   try {
     if (which === "resend") {
+      // Named without a key is a configuration mistake worth saying plainly.
+      // The SDK's own failure for a missing key is opaque enough to send
+      // somebody looking at their template instead.
+      if (!process.env.RESEND_API_KEY) {
+        return { sent: false, provider: "resend", error: "RESEND_API_KEY is not set" };
+      }
       const resend = new Resend(process.env.RESEND_API_KEY);
       const { error } = await resend.emails.send({
         from: sender,

@@ -86,10 +86,23 @@ Mailpit otherwise**, decided by `VERCEL_ENV`/`NODE_ENV` plus the presence of a
 key. A production key sitting in a local `.env` therefore cannot send real
 mail by accident.
 
-Only two places send: the contact form, and five messages on the Stripe
-fulfilment path. **Notably, inviting a child sends nothing** - the invite is
-recorded and claimed when that address signs up. If email matters to a feature
-you are adding, check whether it is actually wired.
+Three places send: the contact form, five messages on the Stripe fulfilment
+path, and `api/invites.ts`, which mails a child their invitation link. The
+invite row is created in the browser under the parent's own session, so RLS has
+already decided they may; the endpoint only turns an existing invite into an
+email, and reads it through the caller's client so a parent can only mail their
+own. If email matters to a feature you are adding, check whether it is actually
+wired.
+
+**`EMAIL_PROVIDER` overrides the choice**, and is the only way to reach a real
+inbox from a development machine. Without it a production key in a local `.env`
+still sends to Mailpit, which is the property worth keeping; naming the provider
+is not an accident. Set it back to `smtp`, or remove it, when you are done.
+
+Local sends failing at the socket usually means Mailpit is running with no
+published ports: `docker ps` shows `supabase_inbucket_*` with an empty Ports
+column, and 54324 and 54325 refuse connections. Restarting the Supabase stack
+republishes them.
 
 While Resend is on its shared `onboarding@resend.dev` sender, it will only
 deliver to the address the Resend account is registered under. Verify a domain
