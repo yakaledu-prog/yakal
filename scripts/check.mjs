@@ -27,6 +27,8 @@ const PURE = [
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
+  ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
+  ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],
 ];
 
 /** Needs the local Supabase. Skipped when it is not answering. */
