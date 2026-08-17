@@ -6,10 +6,19 @@
  * token so it can act as that account forever without anyone signing in again.
  *
  *   node scripts/google-oauth-setup.mjs
+ *   node scripts/google-oauth-setup.mjs --env .env.production
  *
- * Needs VITE_GCP_CLIENT_ID and GCP_CLIENT_SECRET in the environment or .env,
- * and http://localhost:5599/callback registered as an authorised redirect URI
- * on that OAuth client.
+ * Needs VITE_GCP_CLIENT_ID and GCP_CLIENT_SECRET in the environment or the env
+ * file, and http://localhost:5599/callback registered as an authorised redirect
+ * URI on that OAuth client.
+ *
+ * --env matters more than it looks. A refresh token belongs to the OAuth client
+ * that minted it, so a token made here against .env cannot be used by a
+ * deployment whose client comes from a different Google Cloud project: the
+ * first call fails with unauthorized_client. Reading only .env made that the
+ * easy mistake, because the file naming the deployment's client was never the
+ * file this script read. It now prints which client it is using, so a mismatch
+ * is visible before you sign in rather than after you deploy.
  */
 
 import http from 'node:http';
@@ -52,24 +61,40 @@ const SCOPES = [
   'https://www.googleapis.com/auth/classroom.topics.readonly',
 ];
 
+// Which env file the credentials come from. Defaults to .env, the local one.
+const envArg = process.argv.indexOf('--env');
+const ENV_FILE = envArg !== -1 ? process.argv[envArg + 1] : '.env';
+
+if (!existsSync(ENV_FILE)) {
+  console.error(`\nNo such env file: ${ENV_FILE}\n`);
+  process.exit(1);
+}
+
 // Minimal .env reader so this runs without pulling in a dependency.
-if (existsSync('.env')) {
-  for (const line of readFileSync('.env', 'utf8').split('\n')) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && !process.env[m[1]]) {
-      process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-    }
-  }
+//
+// The file wins over the surrounding environment, which is the opposite of the
+// usual rule and deliberate: asking for .env.production and quietly getting a
+// client id already exported in the shell is the mistake this flag exists to
+// stop.
+for (const line of readFileSync(ENV_FILE, 'utf8').split('\n')) {
+  const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+  if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
 }
 
 const clientId = process.env.VITE_GCP_CLIENT_ID;
 const clientSecret = process.env.GCP_CLIENT_SECRET;
 
 if (!clientId || !clientSecret) {
-  console.error('\nMissing VITE_GCP_CLIENT_ID or GCP_CLIENT_SECRET.');
+  console.error(`\nMissing VITE_GCP_CLIENT_ID or GCP_CLIENT_SECRET in ${ENV_FILE}.`);
   console.error('Find them at console.cloud.google.com > APIs & Services > Credentials.\n');
   process.exit(1);
 }
+
+// Named before the consent screen opens, because the client decides which
+// Google Cloud project the token belongs to and that is the thing worth
+// checking twice.
+console.log(`\n  Credentials from  ${ENV_FILE}`);
+console.log(`  OAuth client      ${clientId}`);
 
 const oauth = new googleAuth.OAuth2(clientId, clientSecret, REDIRECT);
 

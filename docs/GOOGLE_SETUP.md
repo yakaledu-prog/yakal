@@ -101,8 +101,18 @@ Skip this if you already published in stage 7.
 In the project directory:
 
 ```
-node scripts/google-oauth-setup.mjs
+node scripts/google-oauth-setup.mjs                        # uses .env
+node scripts/google-oauth-setup.mjs --env .env.production  # uses that file
 ```
+
+**Mint against the client the deployment actually uses.** A refresh token
+belongs to the OAuth client that made it, so a token minted against `.env`
+cannot be used by a deployment whose client comes from a different Google Cloud
+project: the first call fails with `unauthorized_client`, long after setup. The
+script prints the client id before the consent screen so you can check.
+
+Everything in stages 1, 2 and 4 has to have been done **on that same client's
+project**: the redirect URI, the six scopes, and the test user.
 
 It prints a URL and waits. Open the URL, **sign in as binyam2537@gmail.com**,
 and accept the consent screen. Google will warn that the app is unverified;
