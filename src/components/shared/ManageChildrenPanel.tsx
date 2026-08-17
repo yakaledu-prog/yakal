@@ -532,6 +532,12 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
               <tbody>
                 {children.map((c) => {
                   const courses = coursesFor(c.id);
+                  // Read once, and never with a non-null assertion. JSX children
+                  // are built before the parent decides whether to render them,
+                  // so ServiceCell being about to discard this does not stop it
+                  // being evaluated: asserting here crashed the whole page for
+                  // the first paint, while plans was still loading.
+                  const plan = plans?.get(c.id) ?? null;
                   const open = expandedId === c.id;
                   return (
                     <Fragment key={c.id}>
@@ -583,12 +589,12 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
 
                         <td className="py-3 pr-4">
                           <ServiceCell
-                            empty={!hasService(c.id, "admissions") || !plans?.get(c.id)}
+                            empty={!hasService(c.id, "admissions") || !plan}
                             addHref={SERVICES[1].buyHref(c.id)}
                             addLabel="Select a tier"
                             addIcon={<GraduationCap size={15} />}
                           >
-                            <PlanCell plan={plans!.get(c.id)!} />
+                            {plan && <PlanCell plan={plan} />}
                           </ServiceCell>
                         </td>
 
@@ -614,12 +620,12 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                                 in its own colour, so the panel reads as this
                                 child's whole arrangement rather than a list of
                                 lessons. */}
-                            {plans?.get(c.id) && (
+                            {plan && (
                               <div
                                 className="flex items-center justify-between gap-3 border-b pb-2"
-                                style={{ borderColor: `${tierColour(plans.get(c.id)!.tier)}50` }}
+                                style={{ borderColor: `${tierColour(plan.tier)}50` }}
                               >
-                                <PlanCell plan={plans.get(c.id)!} />
+                                <PlanCell plan={plan} />
                                 {/* Here rather than on the row, because here
                                     it is unambiguous: it changes this plan.
                                     Beside a child's name it could have meant
