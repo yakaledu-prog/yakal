@@ -39,6 +39,14 @@ const SCOPES = [
   'https://www.googleapis.com/auth/classroom.coursework.students',
   'https://www.googleapis.com/auth/classroom.rosters.readonly',
   'https://www.googleapis.com/auth/classroom.student-submissions.students.readonly',
+  // Topics are their own scope, and classroom.courses does not cover them.
+  // Without this, courses.topics.list answers "Request had insufficient
+  // authentication scopes" and nothing else breaks: the read-through treats a
+  // topics failure as a class that groups nothing, so the work still lists,
+  // flat. That is the right way to fail and a terrible way to find out, since
+  // grouping simply never appears and the code looks correct. A token minted
+  // before this line was added has to be minted again.
+  'https://www.googleapis.com/auth/classroom.topics.readonly',
 ];
 
 // Minimal .env reader so this runs without pulling in a dependency.

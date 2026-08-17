@@ -125,16 +125,35 @@ const generated = generatedData as {
 
 export const USERS: SeedUser[] = [
   {
-    // The real operations mailbox, seeded as a second admin so the Google
-    // Classroom and Drive integrations can be exercised against the account
-    // that actually owns them. admin@yakal.com stays: it is what every demo
-    // login and verification suite signs in as.
+    // The client's own mailbox, reserved. It is meant to become the account
+    // that owns the classes, but nobody here has its password yet, so it owns
+    // nothing and holds no token. Seeded so the row and its id are already
+    // right when the handover happens.
     //
-    // This is a Supabase row and nothing more. Seeding it does not contact
-    // Google, and cannot touch anything in that mailbox or its Drive.
+    // A Supabase row and nothing more. Seeding it does not contact Google and
+    // cannot touch that mailbox or its Drive.
     id: "6f1c3a20-4d7e-4a6b-9c2f-7b83e5d41a09",
     email: "yakaledu@gmail.com",
     fullName: "Yakal Education",
+    role: "admin",
+    status: "active",
+    isOnboarded: true,
+    lastSeenMinutesAgo: 5,
+  },
+  {
+    // The operations account in practice, until the handover.
+    //
+    // GOOGLE_OAUTH_REFRESH_TOKEN was minted from here, so this is the account
+    // that owns the classes the server reads. Admin rather than tutor because
+    // the ops account is the one that creates classes and adds teachers, and
+    // because readerFor gives an admin staff access to every course, which is
+    // what makes the whole read path testable from one login.
+    //
+    // admin@yakal.com stays: it is what every demo login and verification
+    // suite signs in as.
+    id: "b58e0c73-2d41-4a96-8b17-c0e35f9a7612",
+    email: "binyam2537@gmail.com",
+    fullName: "Binyam (ops)",
     role: "admin",
     status: "active",
     isOnboarded: true,
@@ -280,9 +299,12 @@ export const USERS: SeedUser[] = [
   // nothing more. Where Google itself has to recognise the person, the account
   // has to be real, and real ones are scarce. They are spent like this:
   //
-  //   yakaledu@gmail.com      owns the classes and holds the refresh token
+  //   binyam2537@gmail.com    owns the classes and holds the refresh token
   //   binyammamo01@gmail.com  the one student on a roster
-  //   binyam2537@gmail.com    kept free for the co-teacher call
+  //
+  // yakaledu@gmail.com is the client's and nobody here has its password, so
+  // it owns nothing yet. That still leaves a spare for the co-teacher call,
+  // and a tutor needs no Google account before then.
   //
   // A parent never needs one. They read their child's class through our
   // server, as that child, so no parent will ever touch Google. That is what
@@ -328,7 +350,12 @@ export const USERS: SeedUser[] = [
     lastSeenMinutesAgo: 30,
   },
   {
-    id: "b58e0c73-2d41-4a96-8b17-c0e35f9a7612",
+    // An alias, deliberately. A tutor needs a real Google account only to be
+    // made a co-teacher so they can write in Classroom; nothing we read ever
+    // looks a staff member up in Google, because readerFor answers staff from
+    // our own database. So this tests the whole tutor read path without
+    // spending one of the three real accounts.
+    id: "c94a71e6-5f38-4b02-a6d1-83e7259bc410",
     email: "binyam2537+tutor@gmail.com",
     fullName: "Binyam (tutor)",
     role: "tutor",
@@ -393,6 +420,15 @@ export const PARENT_LINKS: {
   {
     parent: "parent@yakal.com",
     student: "student@yakal.com",
+    services: ["tutoring", "admissions"],
+  },
+  // Linked so the parent's view of the Classroom course can be tested at all:
+  // a parent reads as their child, and without a link there is no child to
+  // read as. The invite flow this pre-empts is still testable any time, since
+  // plus addressing makes a fresh child address free.
+  {
+    parent: "binyam2537+parent@gmail.com",
+    student: "binyammamo01@gmail.com",
     services: ["tutoring", "admissions"],
   },
 ];
@@ -460,9 +496,19 @@ export const COURSES: SeedCourse[] = [
   // that did not exist, so every one of them led to a dead booking page.
   // Seeded now, which also puts them in front of admins and tutors.
   {
+    // The Classroom test course, and the only one wired end to end.
+    //
+    // Points at the "testroom" class on the operations account. The URL that
+    // was here decoded to course 870627349476, which that account cannot see,
+    // so every read of it came back "not found for the Yakal Google account"
+    // and looked like a broken integration rather than a stale fixture.
+    //
+    // There is no admin field for this yet, so changing the class means this
+    // line or Supabase Studio.
     title: "K-12 Mathematics",
     subject: "Mathematics",
-    classroomUrl: "https://classroom.google.com/c/ODcwNjI3MzQ5NDc2",
+    tutor: "binyam2537+tutor@gmail.com",
+    classroomUrl: "https://classroom.google.com/c/ODE5OTE1NjYyMzIx",
     description:
       "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
     thumbnailUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&q=80",
@@ -539,6 +585,15 @@ export const ENROLMENTS: { course: string; student: string; purchasedBy: string 
     course: "K-12 Mathematics",
     student: "student@yakal.com",
     purchasedBy: "parent@yakal.com",
+  },
+  // The real student on the Classroom test course. Enrolment is what the read
+  // path checks, so without this row binyammamo01@gmail.com is refused the
+  // class before Google is ever called, and the test looks like a Google
+  // problem rather than a missing fixture.
+  {
+    course: "K-12 Mathematics",
+    student: "binyammamo01@gmail.com",
+    purchasedBy: "binyam2537+parent@gmail.com",
   },
 ];
 
