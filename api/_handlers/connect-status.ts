@@ -59,8 +59,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error('connect-status error:', err);
-    return res
-      .status(err.message?.includes('session') ? 401 : 500)
-      .json({ error: err.message || 'Server error' });
+
+    const raw: string = err?.message ?? '';
+    if (/session|authorization|token/i.test(raw)) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+    // The same reason as connect-onboard: Stripe's messages are written for
+    // whoever wrote the integration, not for the tutor reading the page.
+    return res.status(502).json({ error: 'Could not check your payout status. Please try again shortly.' });
   }
 }
