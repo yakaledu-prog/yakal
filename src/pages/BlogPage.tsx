@@ -63,7 +63,11 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="min-h-screen flex font-sans bg-white text-[#111827]">
+    // flex-col until lg, which BlogsPage has and this did not.
+    // Without a direction the container defaults to a row, so on a phone the
+    // header and the article became two columns side by side, each asking for
+    // w-full and each getting about half of it.
+    <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-white text-[#111827]">
       {/* Reading progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent pointer-events-none">
         <div
@@ -73,7 +77,7 @@ export default function BlogPage() {
       </div>
 
       {/* Left side: Immersive Image (Hidden on small screens) */}
-      <div className="hidden lg:block lg:w-[45%] sticky top-0 h-screen overflow-hidden">
+      <div className="hidden lg:block lg:w-[45%] shrink-0 sticky top-0 h-screen overflow-hidden">
         {blog.thumbnail_url ? (
           <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
@@ -96,14 +100,14 @@ export default function BlogPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-white/50"></span>
             <span>{format(new Date(blog.created_at), "MMM d, yyyy")}</span>
           </div>
-          <h2 className="text-[36px] md:text-[42px] font-bold text-white leading-tight">
+          <h2 className="text-[36px] xl:text-[42px] font-bold text-white leading-tight">
             {blog.title}
           </h2>
         </div>
       </div>
 
       {/* Mobile Header (visible only on small screens) */}
-      <div className="lg:hidden w-full relative h-[300px]">
+      <div className="lg:hidden w-full shrink-0 relative h-[300px]">
         {blog.thumbnail_url ? (
           <img src={blog.thumbnail_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
@@ -129,8 +133,10 @@ export default function BlogPage() {
       </div>
 
       {/* Right side: Content */}
-      <div className="w-full lg:w-[55%] lg:h-screen lg:overflow-y-auto">
-        <div className="max-w-[800px] mx-auto px-6 py-10 lg:px-16 lg:py-16">
+      {/* min-w-0 so a long word, a URL or a code block wraps instead of
+          widening the column and giving the whole page a sideways scroll. */}
+      <div className="w-full min-w-0 lg:w-[55%] lg:h-screen lg:overflow-y-auto">
+        <div className="max-w-[800px] mx-auto px-5 py-8 sm:px-6 sm:py-10 lg:px-16 lg:py-16">
           {/* Light regardless of the reader's app theme. The page around it is
               a hardcoded white, so an editor following the dark class put a
               black article body in the middle of it. */}

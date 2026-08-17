@@ -62,3 +62,23 @@ body {
     stroke-dasharray: 70, 200;
   }
 }
+
+/* A published post, read-only, in a column the width of a phone.
+ *
+ * BlockNote styles the editor but does not stop a pasted image, a table or a
+ * long code block being wider than the column it sits in, and on a phone one
+ * that is gives the whole page a sideways scroll: the reader drags the article
+ * left to read it and the header comes with it. Constrained here rather than in
+ * the component, because it is the content that arrives oversized, not the
+ * layout that is wrong. */
+.block-editor img,
+.block-editor video {
+  max-width: 100%;
+  height: auto;
+}
+
+.block-editor pre,
+.block-editor table {
+  max-width: 100%;
+  overflow-x: auto;
+}
