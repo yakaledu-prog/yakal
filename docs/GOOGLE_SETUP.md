@@ -1,125 +1,162 @@
 # Google setup: Drive and Classroom
 
-Wiring one Google account as the operations account, so the server can read
-Classroom and write Drive files without anybody signing into Google.
+Do these in order. Each stage says exactly what to click and what to paste.
 
-Currently that account is **binyam2537@gmail.com**. `yakaledu@gmail.com` is
-meant to take it over later; when it does, the only change is re-running step 4
-signed in as that account and replacing one line in `.env`.
+The operations account is **binyam2537@gmail.com**. Be signed into Google as
+that account, in that browser profile, for every stage below. Signing in as
+anyone else at stage 5 produces a token that cannot see the classes.
 
-APIs assumed already enabled: **Google Classroom API** and **Google Drive API**.
+Assumed done already: Google Classroom API and Google Drive API enabled.
 
 ---
 
-## 1. OAuth client
+## Stage 1: create the OAuth client
 
-Cloud Console, **APIs and Services > Credentials > Create credentials > OAuth
-client ID**.
+Cloud Console > **APIs and Services** > **Credentials** > **Create credentials**
+> **OAuth client ID**.
 
 - Application type: **Web application**
-- Authorised redirect URI: `http://localhost:5599/callback`
+- Name: anything, `Yakal local` is fine
+- Under **Authorised redirect URIs**, click ADD URI and paste exactly:
 
-That URI is only used by the one-time script that mints the token. Nothing in
-the running app redirects through it, so it does not need a production entry.
+```
+http://localhost:5599/callback
+```
 
-Keep the client ID and secret for step 3.
+Click **Create**. A dialog shows a **Client ID** and a **Client secret**. Copy
+both now, you need them in stage 3.
 
-## 2. Consent screen
+## Stage 2: add the scopes
 
-**APIs and Services > OAuth consent screen.**
+Cloud Console > **APIs and Services** > **OAuth consent screen** > **Data
+access** (older console: the **Scopes** step) > **ADD OR REMOVE SCOPES**.
 
-- User type: External
-- Add **binyam2537@gmail.com** as a test user
-- Add the scopes in the appendix below
+At the bottom of that panel there is a box labelled **Manually add scopes**.
+Paste all six, one per line:
 
-Then **publish to Production**.
+```
+https://www.googleapis.com/auth/drive.file
+https://www.googleapis.com/auth/classroom.courses
+https://www.googleapis.com/auth/classroom.coursework.students
+https://www.googleapis.com/auth/classroom.rosters.readonly
+https://www.googleapis.com/auth/classroom.student-submissions.students.readonly
+https://www.googleapis.com/auth/classroom.topics.readonly
+```
 
-This matters more than it looks. While the app sits in Testing, Google expires
-every refresh token after **seven days**, so the integration works for a week
-and then dies with `invalid_grant` for no visible reason. Publishing stops that.
+Click **ADD TO TABLE**, then **UPDATE**, then **SAVE**.
 
-Some Classroom scopes are sensitive, so publishing may prompt for verification.
-An unverified published app still works for the accounts you own; verification
-only becomes necessary when strangers sign in, which in this design they never
-do.
+They must be the full `https://www.googleapis.com/auth/...` URL. The short name
+alone is rejected with "the following scope(s) were not added because they are
+invalid".
 
-## 3. Environment
+Five of the six will land under **Sensitive scopes**. That is expected and
+changes nothing until you want strangers signing in, which in this design never
+happens.
 
-In `.env`:
+## Stage 3: put the client in .env
+
+Open `.env` and set these two, from stage 1:
 
 ```
 VITE_GCP_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GCP_CLIENT_SECRET=your-client-secret
 ```
 
-`VITE_GCP_CLIENT_ID` is deliberately public. The secret must never take a
-`VITE_` prefix, or Vite inlines it into the browser bundle at build time.
+Do not rename the secret to anything starting with `VITE_`. Vite inlines those
+into the browser bundle at build time, which would publish it to every visitor.
+`VITE_GCP_CLIENT_ID` is public on purpose.
 
-## 4. Mint the refresh token
+## Stage 4: add yourself as a test user
+
+Cloud Console > **OAuth consent screen** > **Audience**.
+
+If **Publishing status** is **Testing**, find **Test users**, click **ADD
+USERS**, and add `binyam2537@gmail.com`. Without this, stage 5 fails with
+"access blocked, this app has not completed verification".
+
+Skip this if you already published in stage 7.
+
+## Stage 5: mint the refresh token
+
+In the project directory:
 
 ```
 node scripts/google-oauth-setup.mjs
 ```
 
-It opens a consent URL and waits on `localhost:5599`. **Sign in as
-binyam2537@gmail.com**, the account that owns the classes. Signing in as anyone
-else produces a token that cannot see them.
+It prints a URL and waits. Open the URL, **sign in as binyam2537@gmail.com**,
+and accept the consent screen. Google will warn that the app is unverified;
+click **Advanced**, then **Go to (app name) (unsafe)**. That warning is about
+verification, not about anything being wrong.
 
-Add the token it prints:
+The script prints a refresh token starting `1//`. Put it in `.env`:
 
 ```
 GOOGLE_OAUTH_REFRESH_TOKEN=1//0...
 ```
 
-A refresh token carries whatever was consented at the moment it was minted.
-Adding a scope to the script later does nothing to a token already issued, so
-**any scope change means running this again**.
+Make sure there is only one uncommented `GOOGLE_OAUTH_REFRESH_TOKEN` line.
+Different loaders in this repo disagree about whether the first or last wins.
 
-If port 5599 is taken: `node scripts/google-oauth-setup.mjs --port 5173`, and
-register that URI too.
+If port 5599 is in use, run `node scripts/google-oauth-setup.mjs --port 5173`
+and add `http://localhost:5173/callback` as a redirect URI in stage 1 too.
 
-## 5. Check Drive
+## Stage 6: check it works
 
 ```
 node scripts/verify-drive.mjs
 ```
 
-Creates a probe file, reads it back, deletes the file it just created, and
-reports what worked. It cannot touch anything that existed beforehand: the only
-delete is of the id the create call returned one line earlier.
+Creates a probe file, reads it back, and deletes the file it just created. It
+cannot touch anything that existed beforehand: the only delete is of the id the
+create call returned one line earlier.
 
-## 6. Check Classroom
+For Classroom, start the app and open the `K-12 Mathematics` course, which is
+already pointed at the `testroom` class. See `notes/` or ask for the per-role
+test path.
 
-Classroom permissions are per course membership, so the operations account has
-to be a **teacher** on any class the server reads. A class it merely owns in
-Drive terms is not enough.
+## Stage 7: publish, so the token stops dying
 
-1. Create or pick a class while signed in as the operations account.
-2. Copy its URL, which looks like `https://classroom.google.com/c/ODE5OTE...`.
-3. Put it on a course. There is no admin field for this yet, so either edit
-   `classroomUrl` in `scripts/seed/data.ts` and run `npm run db:seed`, or edit
-   `courses.google_classroom_url` in Supabase Studio on port 54323.
-4. Sign in to Yakal as someone entitled to that course and open it.
+Cloud Console > **OAuth consent screen** > **Audience** > **PUBLISH APP**.
 
-The `K-12 Mathematics` course is already wired to the `testroom` class for
-exactly this.
+While the app sits in **Testing**, Google expires every refresh token after
+**seven days**. The integration works for a week and then fails with
+`invalid_grant` for no visible reason. Publishing stops that.
 
-## 7. Production
+Publishing does not require verification to keep working for accounts you own.
+Google may show a "needs verification" banner; ignore it unless you ever want
+users outside the project signing in.
 
-Set the same three variables in the hosting environment. The refresh token is
-per account, not per environment, so the one minted locally is the one
-production uses.
+## Stage 8: production
+
+Set the same three variables in the hosting environment:
+
+```
+VITE_GCP_CLIENT_ID
+GCP_CLIENT_SECRET
+GOOGLE_OAUTH_REFRESH_TOKEN
+```
+
+A refresh token is per account, not per environment, so the one minted locally
+is the one production uses.
 
 ---
 
-## Appendix: scopes, and why each
+## If you change scopes later
 
-Set on the consent screen and in `SCOPES` in `scripts/google-oauth-setup.mjs`.
-The two must agree.
+A refresh token carries whatever was consented at the moment it was minted.
+Adding a scope in stage 2 does nothing to a token already issued. Redo stage 2
+and stage 5, in that order.
 
-| Scope | Why |
+Stage 5 of the Classroom plan, adding co-teachers and inviting students, needs
+`https://www.googleapis.com/auth/classroom.rosters` instead of the `.readonly`
+form. That is another re-mint when it arrives.
+
+## What each scope is for
+
+| Scope, after `https://www.googleapis.com/auth/` | Why |
 | --- | --- |
-| `drive.file` | Files this app created, and nothing else. Non-sensitive, so it does not drag the whole consent screen into verification. |
+| `drive.file` | Files this app created, and nothing else. The only non-sensitive one. |
 | `classroom.courses` | Read the class itself. |
 | `classroom.coursework.students` | Read the work set on a class. |
 | `classroom.rosters.readonly` | Turn a submission's user id into a name. |
@@ -127,29 +164,26 @@ The two must agree.
 | `classroom.topics.readonly` | The class's own grouping of work into units. |
 
 `classroom.topics.readonly` is separate from `classroom.courses` and easy to
-miss. Without it `courses.topics.list` answers "Request had insufficient
+miss. Without it, `courses.topics.list` answers "Request had insufficient
 authentication scopes", the read-through treats that as a class that groups
-nothing, and the work still lists, flat. Nothing errors, grouping just never
+nothing, and the work still lists, flat. Nothing errors. Grouping just never
 appears.
 
-Step 5 of the Classroom plan, adding co-teachers and inviting students, needs
-`classroom.rosters` rather than the readonly form. That is another re-mint when
-it arrives.
+## Things that will waste an afternoon
 
-## Appendix: things that will waste an afternoon
+**The operations account must be a teacher on the class.** Classroom
+permissions are per course membership. Owning the class in Drive terms is not
+enough, and reading a class it is not a teacher on fails as "not found".
 
 **A Gmail alias is not a Google account.** `binyam2537+student@gmail.com`
 resolves back to `binyam2537@gmail.com`, so it cannot be a separate member of a
 class. Aliases are fine for testing our own email and useless for a roster.
 
-**A student's Yakal profile email has to equal their Google account email.**
-The read-through resolves a learner's Classroom identity by handing that exact
+**A student's Yakal profile email must equal their Google account email.** The
+read-through resolves a learner's Classroom identity by handing that exact
 address to `courses.students.get`. A mismatch makes them unplaceable: excluded
 from individually assigned work, with no submissions of their own to read.
 
 **A class URL from the wrong account fails as "not found".** Google answers the
 same way whether a class does not exist or is simply invisible to this token,
 so the message reads like a broken integration when it is a stale link.
-
-**Two `GOOGLE_OAUTH_REFRESH_TOKEN` lines in `.env`** is worth avoiding.
-Different loaders in this repo disagree about whether the first or last wins.
