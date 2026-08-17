@@ -325,33 +325,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             </button>
 
             {topbarActions}
-            {/* Beside the other topbar controls rather than floating over the
-                bottom right of the page. The questions it answers are about
-                the content underneath, so it should not be sitting on top of
-                it while closed. */}
-            {supportRole && (
-              <Tooltip
-                side="bottom"
-                width={150}
-                content={
-                  <span className="flex items-center gap-2">
-                    Ask Yali
-                    <kbd className="rounded border border-white/25 px-1 py-0.5 text-[10px] leading-none">
-                      {isMac ? "\u2318" : "Ctrl"} /
-                    </kbd>
-                  </span>
-                }
-              >
-                <button
-                  onClick={() => setSupportOpen((o) => !o)}
-                  aria-label="Ask AI support"
-                  aria-keyshortcuts={isMac ? "Meta+/" : "Control+/"}
-                  className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
-                >
-                  <BotMessageSquareIcon size={21} />
-                </button>
-              </Tooltip>
-            )}
             <ThemeToggle />
             <NotificationBell basePath={basePath} />
           </div>
@@ -382,10 +355,49 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           />
         )}
 
-        {/* Here rather than in the router, so the topbar button and the drawer
-            share one piece of state without a context to carry it between
-            them. Mounted only when open, so a signed-in user who never asks
-            pays nothing for it. */}
+        {/* Floating rather than in the topbar.
+            The topbar is where the page's own controls live, and a button that
+            opens an assistant is not one of them: it belongs to every page
+            equally, so it reads better as a fixture of the app than as another
+            icon competing with search, theme and notifications.
+
+            Hidden while the drawer is open, so it is not sitting on top of the
+            thing it opened. Escape and the shortcut still close it. */}
+        {supportRole && !supportOpen && (
+          // A wrapper that is fixed, rather than making Tooltip fixed.
+          // Tooltip's own span is "relative inline-flex" and cn is a plain
+          // join, so passing "fixed" left both position classes on the element
+          // and Tailwind emits relative after fixed: the button stayed in the
+          // flow and bottom-5 right-5 shifted it up and left, into the sidebar.
+          <div className="fixed bottom-5 right-5 z-[90] md:bottom-6 md:right-6">
+            <Tooltip
+              side="left"
+              width={150}
+              content={
+                <span className="flex items-center gap-2">
+                  Ask Yali
+                  <kbd className="rounded border border-white/25 px-1 py-0.5 text-[10px] leading-none">
+                    {isMac ? "\u2318" : "Ctrl"} /
+                  </kbd>
+                </span>
+              }
+            >
+              <button
+                onClick={() => setSupportOpen(true)}
+                aria-label="Ask AI support"
+                aria-keyshortcuts={isMac ? "Meta+/" : "Control+/"}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary-hover"
+              >
+                <BotMessageSquareIcon size={23} />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* Here rather than in the router, so the trigger and the drawer share
+            one piece of state without a context to carry it between them.
+            Mounted only when open, so a signed-in user who never asks pays
+            nothing for it. */}
         {supportRole && user && supportOpen && (
           <SupportDrawer
             role={supportRole}
