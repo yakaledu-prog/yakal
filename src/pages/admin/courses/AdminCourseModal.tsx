@@ -106,6 +106,27 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
     const price = parseFloat(formData.price_cents);
     const payout = parseFloat(formData.tutor_payout_cents);
 
+    // Both required, and both above zero.
+    //
+    // These used to save as null when left blank, which looked harmless in the
+    // admin table and was not: the course reached the parent's booking page
+    // priced at $0.00, and Stripe refused the checkout with "Invalid amount".
+    // The parent met the failure, the admin never saw it, and nothing on
+    // either screen said the price was missing.
+    //
+    // Sent back to step 3 rather than only toasted, because the fields being
+    // complained about are on a step the admin may not be looking at.
+    if (!Number.isFinite(price) || price <= 0) {
+      setStep(3);
+      toast.error("Set the parent price. A course priced at zero cannot be checked out.");
+      return;
+    }
+    if (!Number.isFinite(payout) || payout <= 0) {
+      setStep(3);
+      toast.error("Set the tutor payout, so the tutor is paid for this course.");
+      return;
+    }
+
     const patch: Partial<AdminCourse> = {
       title: formData.title,
       subject: formData.subject || "Other",
@@ -113,8 +134,8 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
       thumbnail_url: formData.thumbnail_url,
       google_classroom_url: formData.google_classroom_url,
       is_active: formData.is_active, // We default to true in form state
-      price_cents: Number.isFinite(price) && price >= 0 ? Math.round(price * 100) : null,
-      tutor_payout_cents: Number.isFinite(payout) && payout >= 0 ? Math.round(payout * 100) : null,
+      price_cents: Math.round(price * 100),
+      tutor_payout_cents: Math.round(payout * 100),
     };
 
     await onSubmit(patch);
@@ -278,7 +299,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD)</label>
+                    <label className="text-[13px] font-medium text-muted-foreground">Parent Price (USD) <span className="text-secondary">*</span></label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
                       <Input
@@ -291,7 +312,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-medium text-muted-foreground">Tutor Payout (USD)</label>
+                    <label className="text-[13px] font-medium text-muted-foreground">Tutor Payout (USD) <span className="text-secondary">*</span></label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px] font-medium">$</span>
                       <Input
