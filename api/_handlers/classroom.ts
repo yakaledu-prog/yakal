@@ -554,6 +554,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // worth translating: the raw string sends whoever reads it looking at the
     // request, and the request is fine. An OAuth app left in Testing expires
     // its refresh tokens after seven days, which is the usual reason.
+    // The refresh token and the OAuth client do not belong together.
+    //
+    // A token carries the client that minted it, so pasting one into an
+    // environment whose VITE_GCP_CLIENT_ID and GCP_CLIENT_SECRET come from a
+    // different Google Cloud project fails here rather than at setup. Easy to
+    // do: scripts/google-oauth-setup.mjs reads .env, so a token minted for
+    // local work is minted against the local client.
+    if (/unauthorized_client/i.test(raw)) {
+      return res.status(503).json({
+        error:
+          'Google rejected this server\'s credentials. The refresh token was ' +
+          'created for a different OAuth client than VITE_GCP_CLIENT_ID and ' +
+          'GCP_CLIENT_SECRET name here, so one of the two has to change.',
+      });
+    }
+
     if (/invalid_grant/i.test(raw)) {
       return res.status(503).json({
         error:
@@ -572,7 +588,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const status = raw.includes('session') || raw.includes('token') ? 401 : 500;
+    // Case matters here: the message is "GOOGLE_OAUTH_REFRESH_TOKEN is not
+    // set", which the lowercase test misses, so a server with no credentials
+    // answered 500 with a developer's variable name.
+    if (/GOOGLE_OAUTH_REFRESH_TOKEN is not set/i.test(raw)) {
+      return res.status(503).json({
+        error: 'Google Classroom is not configured on this server yet.',
+      });
+    }
+
+    const status = /session|authorization/i.test(raw) ? 401 : 500;
     return res.status(status).json({ error: raw });
   }
 }
