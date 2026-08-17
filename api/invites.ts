@@ -66,7 +66,17 @@ export default async function handler(req: any, res: any) {
 
     // The invite exists whether or not the mail went out, so report the send
     // result rather than failing the request: the parent can copy the link.
-    return res.status(200).json({ sent: result.sent, provider: result.provider, link });
+    //
+    // sendError carries why, and is the whole point of this line. Dropping it
+    // left the parent with "Could not resend the invitation" for a refused SMTP
+    // socket, a missing API key and an unverified sender alike, none of which
+    // they can act on and all of which name themselves.
+    return res.status(200).json({
+      sent: result.sent,
+      provider: result.provider,
+      sendError: result.error,
+      link,
+    });
   } catch (err: any) {
     const msg = err?.message || 'Internal server error';
     const status = /session|authorization|token/i.test(msg) ? 401 : 500;

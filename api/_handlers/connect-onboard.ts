@@ -65,9 +65,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ url: link.url, accountId });
   } catch (err: any) {
+    // The whole message, for whoever has to fix it.
     console.error('connect-onboard error:', err);
-    return res
-      .status(err.message?.includes('session') ? 401 : 500)
-      .json({ error: err.message || 'Server error' });
+
+    const raw: string = err?.message ?? '';
+
+    if (/session|authorization|token/i.test(raw)) {
+      return res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
+    }
+
+    // Stripe has stopped creating v1 Connect accounts on platforms that were
+    // not already using them, which is why this works against one Stripe
+    // account and fails against another: the two environments hold different
+    // keys, and only the older account has v1 enabled.
+    //
+    // Both fixes are somebody's decision rather than a retry, so say which
+    // rather than inviting a tutor to press the button again.
+    if (/accounts v1|v2\/core\/accounts|feat_accounts_v1_support/i.test(raw)) {
+      return res.status(503).json({
+        error:
+          'Bank payouts are not enabled on this Stripe account yet. This needs an ' +
+          'administrator: either turn on Accounts v1 support in the Stripe dashboard, ' +
+          'or move the platform to Accounts v2. Nothing is wrong with your account.',
+      });
+    }
+
+    // Anything else is a Stripe message written for developers. A tutor who
+    // wanted to add their bank details got a wall of API documentation, links
+    // and a shell command, none of which is theirs to act on.
+    return res.status(502).json({
+      error: 'Could not start bank setup. Please try again, or contact Yakal support if it keeps failing.',
+    });
   }
 }

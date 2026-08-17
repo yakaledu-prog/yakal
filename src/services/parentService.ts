@@ -358,9 +358,16 @@ export async function inviteChild(
 export async function sendInviteEmail(
   inviteId: string
 ): Promise<{ sent: boolean; error?: string }> {
-  const res = await authedPost<{ sent?: boolean }>("/api/invites?action=send", { inviteId });
+  const res = await authedPost<{ sent?: boolean; sendError?: string }>(
+    "/api/invites?action=send",
+    { inviteId }
+  );
+  // Two different failures. res.error is the request itself going wrong;
+  // sendError is the request succeeding and the mail not going out, which is
+  // the common one and used to arrive as silence.
   if (res.error) return { sent: false, error: res.error };
-  return { sent: !!res.sent };
+  if (!res.sent) return { sent: false, error: res.sendError };
+  return { sent: true };
 }
 
 /** Invitations still waiting to be accepted. */
