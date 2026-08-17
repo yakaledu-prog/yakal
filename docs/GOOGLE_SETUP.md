@@ -17,14 +17,34 @@ Cloud Console > **APIs and Services** > **Credentials** > **Create credentials**
 
 - Application type: **Web application**
 - Name: anything, `Yakal local` is fine
-- Under **Authorised redirect URIs**, click ADD URI and paste exactly:
+
+Under **Authorised redirect URIs**, click ADD URI and paste exactly:
 
 ```
 http://localhost:5599/callback
 ```
 
+Under **Authorised JavaScript origins**, add both:
+
+```
+http://localhost:5599
+http://localhost:5173
+```
+
+The two lists are for different things and are not interchangeable. The
+redirect URI is used by the server-side script in stage 5. The origins are used
+by the browser popup behind the admin course modal's "Fetch Details" button,
+which fails with **Error 400: origin_mismatch** if 5173 is missing.
+
+`http://localhost:5173` and `http://127.0.0.1:5173` are different origins to
+Google. Register whichever you actually open the app on, or both.
+
 Click **Create**. A dialog shows a **Client ID** and a **Client secret**. Copy
 both now, you need them in stage 3.
+
+Google's own note applies here: a change to this page takes **5 minutes to a
+few hours** to take effect. An `origin_mismatch` straight after saving is
+usually just that.
 
 ## Stage 2: add the scopes
 
