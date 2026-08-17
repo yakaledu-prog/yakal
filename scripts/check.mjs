@@ -37,6 +37,7 @@ const NEEDS_DB = [
   ['profiles-not-public.mjs', 'profiles is not readable signed out'],
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
+  ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
 ];
 
 /** Needs the local Supabase and the Vite loader, because it imports src/. */
@@ -70,16 +71,28 @@ function run(command, args, label) {
   }
 }
 
+/**
+ * .mjs runs under node, anything else under tsx.
+ *
+ * Shared by both groups. It used to live only in the pure loop, and the
+ * database group hardcoded node, so the first check there that imported a
+ * TypeScript handler failed with ERR_MODULE_NOT_FOUND rather than a result.
+ */
+function runByExtension(file, label) {
+  const isPlain = file.endsWith('.mjs');
+  return run(
+    isPlain ? 'node' : 'npx',
+    isPlain ? [join('scripts/verify', file)] : ['tsx', join('scripts/verify', file)],
+    label
+  );
+}
+
 async function main() {
   let failed = 0;
 
   console.log('\nChecks that need nothing\n');
   for (const [file, label] of PURE) {
-    const command = file.endsWith('.mjs') ? 'node' : 'npx';
-    const args = file.endsWith('.mjs')
-      ? [join('scripts/verify', file)]
-      : ['tsx', join('scripts/verify', file)];
-    if (!run(command, args, label)) failed++;
+    if (!runByExtension(file, label)) failed++;
   }
 
   const up = await databaseIsUp();
@@ -90,7 +103,7 @@ async function main() {
       console.log(`  ${label.padEnd(46)}skip`);
       continue;
     }
-    if (!run('node', [join('scripts/verify', file)], label)) failed++;
+    if (!runByExtension(file, label)) failed++;
   }
   for (const [file, label] of NEEDS_DB_AND_VITE) {
     if (!up) {
