@@ -189,9 +189,21 @@ export function CourseAssignments({
 
       {sections && sections.length > 0 ? (
         <div className="space-y-8">
-          {sections.map((s) => (
+          {sections.map((s, i) => (
             <section key={s.id}>
-              <h4 className="mb-3 text-[15px] font-semibold text-foreground">{s.name}</h4>
+              {/* Numbered, because a topic's place in the course is part of what
+                  it means: unit two comes after unit one. The ungrouped bucket
+                  is not a topic and is not numbered, or it would claim a
+                  position in a sequence it is not part of. */}
+              {s.id !== "__ungrouped" && (
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                  Topic {String(i + 1).padStart(2, "0")}
+                </p>
+              )}
+              <div className="mb-3 mt-1 flex items-center gap-4">
+                <h4 className="shrink-0 text-[16px] font-semibold text-foreground">{s.name}</h4>
+                <span className="h-px flex-1 bg-border" />
+              </div>
               <AssignmentList assignments={s.items} emptyText="" submittersById={submitters} />
             </section>
           ))}

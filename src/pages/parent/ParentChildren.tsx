@@ -198,7 +198,7 @@ export function ParentChildren() {
 
 import { Lock } from "lucide-react";
 import { ParentMessages } from "./ParentMessages";
-import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { AssignmentList, toAssignmentItems } from "@/components/shared/AssignmentList";
 import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
 import { getAllAssignments } from "@/services/studentService";
 import { getFlaggedStudentIds } from "@/services/reports";
@@ -220,18 +220,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
     enabled: !!child.id,
   });
 
-  const childAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
-    id: a.id,
-    index: i + 1,
-    title: a.title,
-    description: a.description,
-    materials: a.materials,
-    dueDate: a.dueDate,
-    maxPoints: a.maxPoints,
-    link: a.link,
-    grade: a.grade,
-    isSubmitted: a.isSubmitted,
-  }));
+  const childAssignments = toAssignmentItems(assignmentRows);
 
   // A parent watches rather than attends, so no join and no reschedule here:
   // the rows are there to be read.

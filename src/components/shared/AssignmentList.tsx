@@ -52,6 +52,23 @@ export interface AssignmentItem {
 }
 
 /**
+ * Database rows to list items.
+ *
+ * The tutor's view of a student and the parent's view of a child both build
+ * this same object from their own service's row type, field for field. The two
+ * row types are structurally identical, so this is one function rather than the
+ * same twelve lines drifting apart in two files.
+ *
+ * The index is positional: these lists arrive already sorted by deadline, so it
+ * numbers what the reader sees rather than anything stored.
+ */
+export function toAssignmentItems(
+  rows: Omit<AssignmentItem, "index">[]
+): AssignmentItem[] {
+  return rows.map((row, i) => ({ ...row, index: i + 1 }));
+}
+
+/**
  * Classroom descriptions are plain text with newlines, so a blank line is a
  * paragraph and a leading dash is a bullet. Anything cleverer would be
  * inventing structure the source does not have.

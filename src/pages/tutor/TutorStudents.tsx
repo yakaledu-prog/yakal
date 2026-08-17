@@ -14,7 +14,7 @@ import {
   getTutorStudents, getStudentDetail, getStudentAssignments, StudentDetail,
 } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
-import { AssignmentList, type AssignmentItem } from "@/components/shared/AssignmentList";
+import { AssignmentList, toAssignmentItems } from "@/components/shared/AssignmentList";
 import {
   PastSessions,
   UpcomingSessions,
@@ -188,18 +188,7 @@ function StudentDetailView({
     enabled: !!p?.id,
   });
 
-  const studentAssignments: AssignmentItem[] = assignmentRows.map((a, i) => ({
-    id: a.id,
-    index: i + 1,
-    title: a.title,
-    description: a.description,
-    materials: a.materials,
-    dueDate: a.dueDate,
-    maxPoints: a.maxPoints,
-    link: a.link,
-    grade: a.grade,
-    isSubmitted: a.isSubmitted,
-  }));
+  const studentAssignments = toAssignmentItems(assignmentRows);
 
   const join = (id: string) => {
     const s = sessions.find((row) => row.id === id);
