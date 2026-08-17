@@ -201,7 +201,7 @@ export function CourseAssignments({
                 </p>
               )}
               <div className="mb-3 mt-1 flex items-center gap-4">
-                <h4 className="shrink-0 text-[16px] font-semibold text-foreground">{s.name}</h4>
+                <h4 className="shrink-0 text-[14px] font-medium text-foreground">{s.name}</h4>
                 <span className="h-px flex-1 bg-border" />
               </div>
               <AssignmentList assignments={s.items} emptyText="" submittersById={submitters} />

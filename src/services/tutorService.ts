@@ -533,6 +533,13 @@ export async function getPendingSubmissions(
 
 export interface StudentAssignmentRow {
   id: string;
+  /** The course this belongs to, so a list spanning several can group by it
+   *  and read each one's Google class. */
+  courseId: string;
+  courseTitle: string;
+  /** The Classroom page the sync wrote back, so one piece of work is not
+   *  listed twice once Google returns it. */
+  classroomUrl: string | null;
   title: string;
   description: string | null;
   materials: { title: string; link: string | null }[];
@@ -560,19 +567,23 @@ export async function getStudentAssignments(studentId: string): Promise<StudentA
       .select("id, course_id, title, description, materials, due_date, max_points, template_url")
       .in("course_id", courseIds)
       .order("due_date", { ascending: true }),
-    supabase.from("courses").select("id, google_classroom_url").in("id", courseIds),
+    supabase.from("courses").select("id, title, google_classroom_url").in("id", courseIds),
     supabase.from("submissions").select("assignment_id, grade").eq("student_id", studentId),
   ]);
 
   const classroomByCourse = new Map(
     (courses ?? []).map((c: any) => [c.id, c.google_classroom_url])
   );
+  const titleByCourse = new Map((courses ?? []).map((c: any) => [c.id, c.title]));
   const byAssignment = new Map((submissions ?? []).map((s: any) => [s.assignment_id, s]));
 
   return (rows ?? []).map((r: any) => {
     const submission = byAssignment.get(r.id);
     return {
       id: r.id,
+      courseId: r.course_id,
+      courseTitle: titleByCourse.get(r.course_id) ?? "This course",
+      classroomUrl: r.template_url ?? null,
       title: r.title,
       description: r.description,
       materials: Array.isArray(r.materials) ? r.materials : [],
