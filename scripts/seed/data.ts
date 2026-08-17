@@ -125,10 +125,9 @@ const generated = generatedData as {
 
 export const USERS: SeedUser[] = [
   {
-    // The client's own mailbox, reserved. It is meant to become the account
-    // that owns the classes, but nobody here has its password yet, so it owns
-    // nothing and holds no token. Seeded so the row and its id are already
-    // right when the handover happens.
+    // The operations account: the admin whose Google account owns the classes
+    // and mints GOOGLE_OAUTH_REFRESH_TOKEN. This is the one deployed installs
+    // use, which is why it is first.
     //
     // A Supabase row and nothing more. Seeding it does not contact Google and
     // cannot touch that mailbox or its Drive.
@@ -141,19 +140,15 @@ export const USERS: SeedUser[] = [
     lastSeenMinutesAgo: 5,
   },
   {
-    // The operations account in practice, until the handover.
+    // A second real admin, for local work. The token can be minted from either
+    // account; whichever one it came from is the account that owns the classes
+    // the server can read.
     //
-    // GOOGLE_OAUTH_REFRESH_TOKEN was minted from here, so this is the account
-    // that owns the classes the server reads. Admin rather than tutor because
-    // the ops account is the one that creates classes and adds teachers, and
-    // because readerFor gives an admin staff access to every course, which is
-    // what makes the whole read path testable from one login.
-    //
-    // admin@yakal.com stays: it is what every demo login and verification
-    // suite signs in as.
+    // admin@yakal.com stays as well: it is what every demo login and
+    // verification suite signs in as.
     id: "b58e0c73-2d41-4a96-8b17-c0e35f9a7612",
     email: "binyam2537@gmail.com",
-    fullName: "Binyam (ops)",
+    fullName: "Binyam (admin)",
     role: "admin",
     status: "active",
     isOnboarded: true,
@@ -282,6 +277,26 @@ export const USERS: SeedUser[] = [
     phone: "+251911000005",
   },
 
+  {
+    // The unpaid fixture, and nothing else.
+    //
+    // scripts/verify/service-entitlements.mjs needs a student who has bought
+    // nothing, to prove a permission row alone opens no service. It named
+    // student2@yakal.com, who is also an ordinary demo student: the first time
+    // somebody bought them a tier while testing, the check stopped running.
+    //
+    // Named so nobody buys anything for them. A fixture that doubles as a demo
+    // account is a fixture with an expiry date.
+    id: "e2a7c9b4-1f60-4d83-9a25-7c4e08b1d6f3",
+    email: "unpaid-fixture@yakal.demo",
+    fullName: "Zz Test Fixture (do not buy)",
+    role: "student",
+    status: "active",
+    isOnboarded: true,
+    gradeLevel: "Grade 9",
+    lastSeenMinutesAgo: 100000,
+  },
+
   // ----------------------------------------------------------
   // One reachable account per role, on Gmail plus addressing.
   //
@@ -347,6 +362,19 @@ export const USERS: SeedUser[] = [
     status: "active",
     isOnboarded: true,
     gradeLevel: "Grade 11",
+    lastSeenMinutesAgo: 30,
+  },
+  {
+    // A reachable counsellor, so the admissions flow has one with an address
+    // that receives mail. The counsellor picker only appears when there is
+    // more than one, and the seeded Daniel Haile is the other.
+    id: "7d3f5a81-9c26-4b40-8e17-2a95c0f3b6d8",
+    email: "binyam2537+counselor@gmail.com",
+    fullName: "Binyam (counsellor)",
+    role: "counselor",
+    status: "active",
+    isOnboarded: true,
+    subjects: ["College Advising"],
     lastSeenMinutesAgo: 30,
   },
   {
