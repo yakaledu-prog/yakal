@@ -39,8 +39,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const stripe = getStripe();
-    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
-    const payoutsEnabled = !!account.payouts_enabled;
+
+    // v1 first, then v2. An account created either way is stored in the same
+    // column and its id does not say which, so the only way to find out is to
+    // ask and see.
+    let payoutsEnabled = false;
+    let needs: string[] = [];
+    try {
+      const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+      payoutsEnabled = !!account.payouts_enabled;
+      // What Stripe is still waiting for, so a stuck tutor can be told why
+      // rather than left to guess.
+      needs = account.requirements?.currently_due ?? [];
+    } catch (v1Err: any) {
+      console.warn('connect-status: v1 retrieve failed, trying v2:', v1Err?.message);
+      const v2: any = await stripe.v2.core.accounts.retrieve(profile.stripe_account_id, {
+        include: ['configuration.recipient'],
+      });
+      // v2 has no payouts_enabled. The equivalent is whether the capability
+      // that lets them receive transfers has actually come through.
+      const transfers =
+        v2?.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers;
+      payoutsEnabled = transfers?.status === 'active';
+      // status_details is empty while active, which is exactly when there is
+      // nothing outstanding to report.
+      needs = (transfers?.status_details ?? []).map((d: any) => d?.code ?? 'unknown');
+    }
 
     if (payoutsEnabled !== profile.stripe_payouts_enabled) {
       await db
@@ -53,9 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       accountId: profile.stripe_account_id,
       payoutsEnabled,
       started: true,
-      // What Stripe is still waiting for, so a stuck tutor can be told why
-      // rather than left to guess.
-      needs: account.requirements?.currently_due ?? [],
+      needs,
     });
   } catch (err: any) {
     console.error('connect-status error:', err);

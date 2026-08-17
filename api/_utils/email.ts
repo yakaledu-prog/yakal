@@ -234,9 +234,31 @@ function escapeHtml(s: string): string {
 }
 
 /** The app's public URL, for links in an email. */
-export function appUrl(path = ""): string {
-  const base =
-    process.env.PUBLIC_APP_URL ||
+/**
+ * A link that works from somebody else's inbox.
+ *
+ * Every link in every email came through here, and on the deployed host it
+ * produced http://localhost:5173. VERCEL_URL is only set on Vercel and this
+ * runs on Render, so with PUBLIC_APP_URL unset the fallback was the developer's
+ * own machine: an invitation, a purchase confirmation and a newsletter all
+ * pointed at a server the reader does not have.
+ *
+ * `base` is for callers holding a request. Deriving the host from the request
+ * that asked is the only version that cannot be misconfigured, so where one is
+ * in hand it wins over the environment entirely.
+ *
+ * APP_BASE_URL is read as well as PUBLIC_APP_URL because appBaseUrl in
+ * _utils/supabase already used that name. Two variables meaning the same thing
+ * is how half of this stays broken after somebody sets one of them.
+ */
+export function appUrl(path = "", base?: string): string {
+  const clean = (v: string | undefined) => v?.trim().replace(/\/+$/, "") || "";
+
+  const resolved =
+    clean(base) ||
+    clean(process.env.APP_BASE_URL) ||
+    clean(process.env.PUBLIC_APP_URL) ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5173");
-  return `${base.replace(/\/$/, "")}${path}`;
+
+  return `${resolved}${path}`;
 }
