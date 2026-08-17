@@ -3,6 +3,7 @@ import { X, Mic, Send, Keyboard, Square, BotMessageSquareIcon } from "lucide-rea
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { StreamingText, TypingDots, grow, linkify } from "./chatParts";
 import { askAssistant, STARTERS, type AssistantTurn } from "@/services/assistantService";
 import { speechSupported, takeSentences, useListener, useSpeaker, useVoices } from "./useSpeech";
 
@@ -19,102 +20,6 @@ import { speechSupported, takeSentences, useListener, useSpeaker, useVoices } fr
 // ============================================================
 
 type Phase = "idle" | "listening" | "thinking" | "speaking";
-
-/**
- * Turns addresses and links in an answer into things you can click.
- *
- * The assistant is told to hand out the contact address, and a plain-text
- * address on a phone is a thing you have to memorise and retype. Done at
- * render rather than by asking the model for markdown: markdown would have to
- * be parsed, it would be read aloud by the speech voice as punctuation, and a
- * model that emits links sometimes emits broken ones.
- */
-const LINKABLE = /([\w.+-]+@[\w-]+\.[\w.-]+[\w])|(https?:\/\/[^\s<>()]+[^\s<>().,])/g;
-
-function linkify(text: string): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
-  let last = 0;
-
-  for (const m of text.matchAll(LINKABLE)) {
-    const at = m.index ?? 0;
-    if (at > last) out.push(text.slice(last, at));
-
-    const [match, email] = m;
-    out.push(
-      <a
-        key={`${at}-${match}`}
-        href={email ? `mailto:${email}` : match}
-        {...(email ? {} : { target: "_blank", rel: "noreferrer noopener" })}
-        className="text-primary underline underline-offset-2 hover:text-primary-hover"
-      >
-        {match}
-      </a>
-    );
-    last = at + match.length;
-  }
-
-  if (last < text.length) out.push(text.slice(last));
-  return out;
-}
-
-/**
- * The classic three dots.
- *
- * A spinner says "loading", which is what a page does. Dots say "writing",
- * which is what this is, and they sit on the same line the answer will appear
- * on so nothing jumps when it does.
- */
-function TypingDots() {
-  return (
-    <span className="flex items-center gap-1 py-1" aria-label="Thinking">
-      {[0, 160, 320].map((delay) => (
-        <span
-          key={delay}
-          className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#54656f]"
-          style={{ animationDelay: `${delay}ms`, animationDuration: "1s" }}
-        />
-      ))}
-    </span>
-  );
-}
-
-/**
- * The answer, revealed at a readable pace.
- *
- * The stream was already a stream: tokens are painted as they land. The
- * trouble is that a lite model finishes a short answer about 100ms after it
- * starts one, so "streaming" looked like the paragraph appearing at once.
- *
- * This paces the reveal just behind the arrival and catches up proportionally,
- * so a fast answer reads as typed and a slow one is never held back. It only
- * exists while an answer is in flight; the finished turn renders as plain text.
- */
-function StreamingText({ text }: { text: string }) {
-  const [shown, setShown] = useState("");
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setShown((prev) => {
-        // A new answer never starts with the old one, so this is the reset.
-        if (!text.startsWith(prev)) return text;
-        if (prev.length >= text.length) return prev;
-        // Proportional, so the gap closes rather than growing on a long answer.
-        const step = Math.max(2, Math.ceil((text.length - prev.length) / 6));
-        return text.slice(0, prev.length + step);
-      });
-    }, 16);
-    return () => clearInterval(id);
-  }, [text]);
-
-  return (
-    <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
-      {linkify(shown)}
-      {shown.length < text.length && (
-        <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-primary" />
-      )}
-    </p>
-  );
-}
 
 /** The last thing either side said. Array.at is above this project's target. */
 function lastOf(turns: AssistantTurn[], role: "user" | "model"): string {
@@ -139,18 +44,6 @@ function pastTurns(turns: AssistantTurn[]): AssistantTurn[] {
   if (keep > 0 && turns[keep - 1].role === "model") keep -= 1;
   if (keep > 0 && turns[keep - 1].role === "user") keep -= 1;
   return turns.slice(0, keep);
-}
-
-/**
- * Grows the composer to fit what has been typed.
- *
- * Height is reset to auto first, or scrollHeight only ever reports the taller
- * of the two and the box grows but never shrinks when a line is deleted. The
- * cap is in CSS as max-h-32 so the overflow scrolls past it.
- */
-function grow(el: HTMLTextAreaElement) {
-  el.style.height = "auto";
-  el.style.height = `${el.scrollHeight}px`;
 }
 
 export function LandingAssistant() {
@@ -358,7 +251,12 @@ export function LandingAssistant() {
             {turns.map((t, i) => (
               <Bubble key={i} role={t.role} text={t.text} />
             ))}
-            {streaming && <StreamingText text={streaming} />}
+            {streaming && (
+              <StreamingText
+                text={streaming}
+                className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]"
+              />
+            )}
             {busy && !streaming && <TypingDots />}
             {error && <p className="text-[13px] text-secondary">{error}</p>}
           </div>

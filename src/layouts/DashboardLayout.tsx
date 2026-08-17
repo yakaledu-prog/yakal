@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/ui/NotificationBell";
 import { InstallButton } from "@/components/pwa/InstallPrompt";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { LockedOverlay } from "@/components/shared/LockedOverlay";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   Search,
   ChevronRight,
@@ -16,9 +17,12 @@ import {
   Sun,
   Menu,
   Lock,
-  ChevronDown
+  ChevronDown,
+  BotMessageSquareIcon
 } from "lucide-react";
 import { toast } from "sonner";
+import { SupportDrawer } from "@/components/support/SupportDrawer";
+import { SUPPORT_ROLES, type SupportChatRole } from "@/services/supportChatService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
@@ -52,12 +56,20 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const location = useLocation();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
   const badges = useNavBadges();
+
+  // Yali answers about how the app works for a given role, so an account
+  // whose role it has no guide for is offered nothing rather than a assistant
+  // that has to say "not for you" to everything.
+  const supportRole = SUPPORT_ROLES.includes(profile?.role as SupportChatRole)
+    ? (profile!.role as SupportChatRole)
+    : null;
 
   // Applied here rather than in each role's layout, because all five build the
   // same two links and would otherwise each have to remember to ask for the
@@ -66,8 +78,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const decorated = useMemo(() => {
     const countFor = (href?: string) =>
       href?.endsWith("/notifications") ? badges.notifications
-      : href?.endsWith("/messages") ? badges.messages
-      : undefined;
+        : href?.endsWith("/messages") ? badges.messages
+          : undefined;
     const apply = (item: NavItem): NavItem => ({
       ...item,
       badge: countFor(item.href) ?? item.badge,
@@ -85,6 +97,14 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         // hand reaches for to dismiss it.
         e.preventDefault();
         setSearchOpen((wasOpen) => !wasOpen);
+      }
+      // Cmd/Ctrl+/ for the assistant, the conventional help key and unclaimed
+      // by every major browser. K belongs to the palette, and J was the first
+      // choice until it turned out to open the downloads page in Chrome, Edge
+      // and Firefox alike.
+      if (e.key === '/' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSupportOpen((wasOpen) => !wasOpen);
       }
       if (e.key === 'Escape') {
         setSearchOpen(false);
@@ -287,7 +307,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted sm:flex"
+              className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 pr-4.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted sm:flex"
             >
               <Search size={15} />
               <span className="pr-6">Search pages</span>
@@ -332,6 +352,59 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             navItems={flattenNav(navItems).filter((i) => i.href) as { name: string; href: string; icon: React.ReactNode }[]}
             onToggleSidebar={() => setSidebarOpen((o) => !o)}
             onClose={() => setSearchOpen(false)}
+          />
+        )}
+
+        {/* Floating rather than in the topbar.
+            The topbar is where the page's own controls live, and a button that
+            opens an assistant is not one of them: it belongs to every page
+            equally, so it reads better as a fixture of the app than as another
+            icon competing with search, theme and notifications.
+
+            Hidden while the drawer is open, so it is not sitting on top of the
+            thing it opened. Escape and the shortcut still close it. */}
+        {supportRole && !supportOpen && (
+          // A wrapper that is fixed, rather than making Tooltip fixed.
+          // Tooltip's own span is "relative inline-flex" and cn is a plain
+          // join, so passing "fixed" left both position classes on the element
+          // and Tailwind emits relative after fixed: the button stayed in the
+          // flow and bottom-5 right-5 shifted it up and left, into the sidebar.
+          <div className="fixed bottom-5 right-5 z-[90] md:bottom-6 md:right-6">
+            <Tooltip
+              side="left"
+              width={150}
+              content={
+                <span className="flex items-center gap-2">
+                  Ask Yali
+                  <kbd className="rounded border border-white/25 px-1 py-0.5 text-[10px] leading-none">
+                    {isMac ? "\u2318" : "Ctrl"} /
+                  </kbd>
+                </span>
+              }
+            >
+              <button
+                onClick={() => setSupportOpen(true)}
+                aria-label="Ask AI support"
+                aria-keyshortcuts={isMac ? "Meta+/" : "Control+/"}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-colors hover:bg-primary-hover"
+              >
+                <BotMessageSquareIcon size={23} />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* Here rather than in the router, so the trigger and the drawer share
+            one piece of state without a context to carry it between them.
+            Mounted only when open, so a signed-in user who never asks pays
+            nothing for it. */}
+        {supportRole && user && supportOpen && (
+          <SupportDrawer
+            role={supportRole}
+            userId={user.id}
+            userName={profile?.full_name}
+            open={supportOpen}
+            onClose={() => setSupportOpen(false)}
           />
         )}
       </main>
