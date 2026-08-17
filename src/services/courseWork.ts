@@ -32,6 +32,33 @@ export interface CourseWorkResult {
    *  once the class has students; a learner is told about their own work and
    *  nothing about anybody else's. */
   submitters?: Record<string, { id: string; name: string; avatarUrl: string | null }[]>;
+  /** Where this learner stands with the Google class. Undefined for staff, who
+   *  read it as a teacher and have no membership of their own. */
+  membership?: "joined" | "invited" | "none";
+  /** The class to open, sent only when there is something to do there. */
+  classLink?: string;
+}
+
+export type ClassroomMembership = "joined" | "invited" | "none";
+
+/** Where every enrolled student stands with the class. Staff only. */
+export async function getClassroomMembership(courseId: string) {
+  const res = await authedPost<{
+    linked: boolean;
+    students: { studentId: string; email: string | null; membership: ClassroomMembership }[];
+  }>("/api/google?action=classroom-membership", { courseId });
+  if (res.error) throw new Error(res.error);
+  return res;
+}
+
+/** Send a student their Classroom invitation. Admin, or the course's tutor. */
+export async function sendClassroomInvite(courseId: string, studentId: string) {
+  const res = await authedPost<{ membership: string; alreadyThere: boolean; email: string }>(
+    "/api/google?action=classroom-invite",
+    { courseId, studentId }
+  );
+  if (res.error) throw new Error(res.error);
+  return res;
 }
 
 /**
@@ -63,5 +90,7 @@ async function read(body: { courseId: string } | { classroomUrl: string }): Prom
     linked: !!(res as any).linked,
     invalidLink: !!(res as any).invalidLink,
     submitters: (res as any).submitters ?? undefined,
+    membership: (res as any).membership ?? undefined,
+    classLink: (res as any).classLink ?? undefined,
   };
 }

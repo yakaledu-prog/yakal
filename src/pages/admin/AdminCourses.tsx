@@ -4,10 +4,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getCourses, updateCourse, createCourse, type AdminCourse } from "@/services/adminService";
+import { getCourses, getCourseRollups, updateCourse, createCourse, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
-import { Loader2, Plus, Pencil, ExternalLink, Star, Search, LayoutGrid, List } from "lucide-react";
+import { Loader2, Plus, Pencil, ExternalLink, Search, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { dicebearUrl } from "@/utils/avatar";
 import { Button } from "@/components/ui/Button";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
 
@@ -15,6 +16,9 @@ export function AdminCourses() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: courses = [], isLoading } = useQuery({ queryKey: ["admin-courses"], queryFn: getCourses });
+  // Two queries rather than a join on getCourses, because getCourses is read by
+  // several pages that do not want the counts.
+  const { data: rollups } = useQuery({ queryKey: ["admin-course-rollups"], queryFn: getCourseRollups });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
@@ -167,15 +171,18 @@ export function AdminCourses() {
                         </div>
                       </div>
 
-                      {/* Mocked Rating & Students & Classroom */}
+                      {/* Enrolled count and Classroom.
+                          A star rating used to sit here reading 4.8 (320) on
+                          every course, next to "1,204 Students". Neither came
+                          from anywhere. Reviews are written about tutors rather
+                          than courses, so there is no course rating to show and
+                          inventing one was worse than leaving it out. */}
                       <div className={cn("flex items-center gap-2.5 text-[14px] text-muted-foreground font-medium flex-wrap", viewMode === "grid" ? "mt-4" : "")}>
-                        <div className="flex items-center gap-1 text-[#111] dark:text-white">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span>4.8</span>
-                          <span className="text-muted-foreground font-normal">(320)</span>
-                        </div>
-                        <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
-                        <span>1,204 Students</span>
+                        <span>
+                          {(rollups?.[c.id]?.students ?? 0) === 1
+                            ? "1 student"
+                            : `${rollups?.[c.id]?.students ?? 0} students`}
+                        </span>
                         {c.google_classroom_url && (
                           <>
                             <span className="text-[#e9edef] dark:text-[#2a3942]">•</span>
@@ -205,16 +212,29 @@ export function AdminCourses() {
 
                     {/* Bottom Row: Tutors and Admin Actions */}
                     <div className="flex justify-between items-center flex-wrap gap-4">
+                      {/* The tutor teaching it, or that nobody is.
+                          Three generated faces above "+ 9 available tutors" sat
+                          here on every row. It read as a roster and was a
+                          placeholder. A course has one tutor, and whether it
+                          has one at all is what an admin needs to see: without
+                          one it never reaches the parent catalog. */}
                       <div className="flex items-center gap-3">
-                        <div className="flex -space-x-2">
-                          {/* Mocking Tutor Avatars */}
-                          {[1, 2, 3].map(i => (
-                            <img key={i} src={`https://api.dicebear.com/7.x/notionists/svg?seed=tutor${i}`} alt="tutor" className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21] bg-gray-100" />
-                          ))}
-                        </div>
-                        <span className="text-[14px] text-primary font-medium">
-                          + 9 available tutors
-                        </span>
+                        {rollups?.[c.id]?.tutorName ? (
+                          <>
+                            <img
+                              src={rollups[c.id].tutorAvatarUrl || dicebearUrl(rollups[c.id].tutorName!)}
+                              alt=""
+                              className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21] object-cover"
+                            />
+                            <span className="text-[14px] font-medium text-[#111] dark:text-white">
+                              {rollups[c.id].tutorName}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[14px] font-medium text-secondary">
+                            No tutor yet, so parents cannot see it
+                          </span>
+                        )}
                       </div>
 
                       {/* Admin Actions */}

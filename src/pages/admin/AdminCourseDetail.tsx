@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
-import { getCourse, getCourses, getCourseAssignments, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
+import { getCourse, getCourses, getCourseAssignments, getCourseDetail, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
 import { CourseAssignments } from "@/components/shared/CourseAssignments";
 import { useQuery } from "@tanstack/react-query";
-
-// Mock Tutors
+import { StudentsTab } from "@/pages/admin/courses/StudentsTab";
 
 export function AdminCourseDetail() {
   // One column at a time on a phone, both on a desktop.
@@ -22,6 +21,14 @@ export function AdminCourseDetail() {
   const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [query, setQuery] = useState("");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+
+  // The enrolled count in the header, from the same query the Students tab
+  // reads, so the two cannot disagree.
+  const { data: detail } = useQuery({
+    queryKey: ["admin-course-detail", id],
+    queryFn: () => getCourseDetail(id!),
+    enabled: !!id,
+  });
 
   useEffect(() => {
     if (id) {
@@ -178,15 +185,19 @@ export function AdminCourseDetail() {
                   </p>
                 )}
 
+                {/* A 4.8 from 320 reviews and 1,204 students enrolled sat here
+                    on every course, including one created a minute ago. Both
+                    were placeholder text. Reviews are written about tutors
+                    rather than courses, so the rating had nothing behind it at
+                    all and is gone rather than replaced. */}
                 <div className="flex flex-wrap items-center gap-6 text-[14px] font-medium text-white/95">
                   <div className="flex items-center gap-1.5">
-                    <Star className="w-4 h-4 fill-[#F2C94C] text-[#F2C94C]" />
-                    <span>4.8</span>
-                    <span className="underline underline-offset-2 opacity-90 cursor-pointer hover:opacity-100">(320 reviews)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
                     <Users className="w-4 h-4 opacity-80" />
-                    <span>1,204 students enrolled</span>
+                    <span>
+                      {detail?.students.length === 1
+                        ? "1 student enrolled"
+                        : `${detail?.students.length ?? 0} students enrolled`}
+                    </span>
                   </div>
                   {course.google_classroom_url && (
                     <a href={course.google_classroom_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 underline underline-offset-2 opacity-90 hover:opacity-100">
@@ -271,15 +282,7 @@ export function AdminCourseDetail() {
 
           {/* STUDENTS TAB */}
           {activeTab === "students" && (
-            <div className="animate-in fade-in duration-300">
-              <div className="p-12 flex flex-col items-center justify-center text-center">
-                <Users className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">Manage Students</h3>
-                <p className="text-[14px] text-muted-foreground max-w-sm">
-                  View and manage all students enrolled in this course. You can assign them to specific tutors or sessions.
-                </p>
-              </div>
-            </div>
+            <StudentsTab courseId={course.id} hasClassroom={!!course.google_classroom_url} />
           )}
 
           {/* SESSIONS TAB */}

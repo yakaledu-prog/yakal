@@ -7,4 +7,6 @@ export default dispatch({
   'token': () => import('./_handlers/google-token.js'),
   'drive': () => import('./_handlers/drive.js'),
   'classroom': () => import('./_handlers/classroom.js'),
+  'classroom-invite': () => import('./_handlers/classroom-invite.js'),
+  'classroom-membership': () => import('./_handlers/classroom-membership.js'),
 });

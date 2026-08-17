@@ -41,7 +41,7 @@ import { getServiceClient, requireUser } from '../_utils/supabase.js';
  * that does not decode to digits is already the id. Mirrors courseIdFromUrl in
  * src/services/classroomService.ts.
  */
-function courseIdFromUrl(url: string): string | null {
+export function courseIdFromUrl(url: string): string | null {
   const match = url.match(/\/c\/([a-zA-Z0-9_-]+)/);
   if (!match) return null;
   try {
@@ -53,7 +53,41 @@ function courseIdFromUrl(url: string): string | null {
   return match[1];
 }
 
-function classroomClient() {
+/**
+ * Where a learner stands with the Google class.
+ *
+ * Only membership decides whether Classroom has submissions for them, and only
+ * membership lets them turn work in. Reading the coursework needs none of it,
+ * because the server reads as the account that owns the class, so a student who
+ * never joins still sees everything that was set.
+ */
+export type Membership = 'joined' | 'invited' | 'none';
+
+export async function membershipOf(
+  classroom: classroom_v1.Classroom,
+  classId: string,
+  email: string
+): Promise<{ membership: Membership; googleId: string | null }> {
+  // Classroom accepts an email wherever it accepts a userId, so this is one
+  // lookup rather than paging the roster.
+  const googleId = await classroom.courses.students
+    .get({ courseId: classId, userId: email })
+    .then((r: any) => (r?.data?.userId ? String(r.data.userId) : null))
+    .catch(() => null);
+  if (googleId) return { membership: 'joined', googleId };
+
+  // Not on the roster. An outstanding invitation is a different state to
+  // never having been asked, and it is the difference between showing a
+  // student a Join button and telling an admin to send one.
+  const invited = await classroom.invitations
+    .list({ courseId: classId, userId: email })
+    .then((r: any) => (r?.data?.invitations ?? []).length > 0)
+    .catch(() => false);
+
+  return { membership: invited ? 'invited' : 'none', googleId: null };
+}
+
+export function classroomClient() {
   const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
   if (!refreshToken) {
     throw new Error('GOOGLE_OAUTH_REFRESH_TOKEN is not set');
@@ -374,11 +408,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // a member of the class resolves to null, which the filter treats as
     // "prove it or hide it".
     let readerGoogleId: string | null = null;
+    let membership: Membership | undefined;
     if (reader.kind === 'learner' && reader.email) {
-      readerGoogleId = await classroom.courses.students
-        .get({ courseId: classId, userId: reader.email })
-        .then((r: any) => (r?.data?.userId ? String(r.data.userId) : null))
-        .catch(() => null);
+      const state = await membershipOf(classroom, classId, reader.email);
+      readerGoogleId = state.googleId;
+      membership = state.membership;
     }
 
     const visibleTo = (w: any) => isVisibleTo(w, reader, readerGoogleId);
@@ -437,7 +471,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? submittersByWork(submissions, roster)
         : undefined;
 
-    return res.status(200).json({ assignments, topics, submitters, linked: true });
+    // classLink goes with membership: a Join button needs somewhere to go, and
+    // the stored URL is the one the admin confirmed rather than one rebuilt
+    // from an id.
+    return res.status(200).json({
+      assignments,
+      topics,
+      submitters,
+      membership,
+      classLink: membership && membership !== 'joined' ? classUrl : undefined,
+      linked: true,
+    });
   } catch (err: any) {
     console.error('classroom error:', err);
     const raw = err?.message || 'Server error';

@@ -101,14 +101,46 @@ export function CourseAssignments({
         </p>
       )}
 
+      {/* Joining the Google class is the one step nobody can take for the
+          student: invitations.accept has to be called as the invited person,
+          and we hold no student credentials on purpose. So this puts the class
+          one click away instead of leaving them to find an email.
+
+          Not shown as an error, because nothing is broken. Everything below
+          reads fine without it; joining is what lets them hand work in. */}
+      {data?.membership && data.membership !== "joined" && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded border border-primary/30 bg-primary/10 px-4 py-3">
+          <p className="text-[13px] text-foreground">
+            {data.membership === "invited"
+              ? "You have been invited to this Google Classroom. Join it to turn work in."
+              : "You are not in this Google Classroom yet, so you cannot turn work in. Ask your tutor to invite you."}
+          </p>
+          {data.membership === "invited" && data.classLink && (
+            <a
+              href={data.classLink}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+            >
+              Accept invitation
+            </a>
+          )}
+        </div>
+      )}
+
       {/* A failure here is worth naming rather than showing as an empty list:
           an empty list says the teacher set nothing, which is a different and
           much more reassuring claim than the truth. */}
+      {/* The server's own words, not a summary of them. It distinguishes a
+          class owned by a different Google account from an expired token from
+          a missing scope, and every one of those has a different fix. Flattening
+          all three into "could not be reached" sent people looking at their
+          network. */}
       {error != null && (
-        <p className="mb-4 flex items-center gap-2 text-[13px] text-secondary">
-          <TriangleAlert size={14} />
-          Google Classroom could not be reached, so anything set there is missing from this
-          list.
+        <p className="mb-4 flex items-start gap-2 text-[13px] text-secondary">
+          <TriangleAlert size={14} className="mt-0.5 shrink-0" />
+          {(error as Error).message ||
+            "Google Classroom could not be reached, so anything set there is missing from this list."}
         </p>
       )}
 

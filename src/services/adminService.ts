@@ -629,6 +629,46 @@ export async function getCourseDetail(courseId: string): Promise<AdminCourseDeta
  * so an admin does not have to open each course to find out which are
  * waiting on them.
  */
+/**
+ * Enrolled students per course, and the tutor teaching it.
+ *
+ * The admin course list showed "4.8 (320)" and "1,204 Students" beside every
+ * course, and three generated faces above "+ 9 available tutors". None of it
+ * came from anywhere. It was placeholder text that survived into something
+ * admins were making decisions from, and a made-up number is worse than no
+ * number: it cannot be spotted as missing.
+ */
+export async function getCourseRollups(): Promise<
+  Record<string, { students: number; tutorName: string | null; tutorAvatarUrl: string | null }>
+> {
+  const [enrolRes, courseRes] = await Promise.all([
+    supabase.from("enrolments").select("course_id").eq("status", "active"),
+    supabase
+      .from("courses")
+      .select(`id, tutor:profiles!courses_tutor_id_fkey (full_name, avatar_url)`),
+  ]);
+
+  if (enrolRes.error) console.error("getCourseRollups enrolments:", enrolRes.error);
+  if (courseRes.error) console.error("getCourseRollups courses:", courseRes.error);
+
+  const rollups: Record<
+    string,
+    { students: number; tutorName: string | null; tutorAvatarUrl: string | null }
+  > = {};
+
+  for (const row of (courseRes.data ?? []) as any[]) {
+    rollups[row.id] = {
+      students: 0,
+      tutorName: row.tutor?.full_name ?? null,
+      tutorAvatarUrl: row.tutor?.avatar_url ?? null,
+    };
+  }
+  for (const row of (enrolRes.data ?? []) as any[]) {
+    if (rollups[row.course_id]) rollups[row.course_id].students += 1;
+  }
+  return rollups;
+}
+
 export async function getPendingApplicantCounts(): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from("course_applications")
