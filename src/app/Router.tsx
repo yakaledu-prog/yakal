@@ -77,6 +77,7 @@ const ProposalPage = lazy(() => import("../pages/shared/ProposalPage").then((m) 
 const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
 const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
+const StudentAdvising = lazy(() => import("../pages/student/StudentAdvising").then((m) => ({ default: m.StudentAdvising })));
 const StudentCollegeList = lazy(() => import("../pages/student/StudentCollegeList").then((m) => ({ default: m.StudentCollegeList })));
 const StudentCourseDashboard = lazy(() => import("../pages/student/StudentCourseDashboard").then((m) => ({ default: m.StudentCourseDashboard })));
 const StudentCourseMessages = lazy(() => import("../pages/student/StudentCourseMessages").then((m) => ({ default: m.StudentCourseMessages })));
@@ -440,6 +441,7 @@ const router = createBrowserRouter([
           { path: "diagnostics", element: <StudentDiagnostics /> },
           { path: "explore", element: <StudentExploreUniversities /> },
           { path: "college-list", element: <StudentCollegeList /> },
+          { path: "advising", element: <StudentAdvising /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "profile", element: <StudentProfile /> },
