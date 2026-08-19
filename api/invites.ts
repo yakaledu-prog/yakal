@@ -1,4 +1,4 @@
-import { requireUser, getUserClient } from './_utils/supabase.js';
+import { requireUser, getUserClient, appBaseUrl } from './_utils/supabase.js';
 import { sendEmail, layout, appUrl } from './_utils/email.js';
 
 // ============================================================
@@ -49,7 +49,10 @@ export default async function handler(req: any, res: any) {
       .maybeSingle();
     if (prof?.full_name) parentName = prof.full_name;
 
-    const link = appUrl(`/invite/${invite.token}`);
+    // From the request, not the environment. This is the link a child clicks
+    // out of their inbox, and it was http://localhost:5173 on the deployed
+    // host because VERCEL_URL is a Vercel variable and this runs on Render.
+    const link = appUrl(`/invite/${invite.token}`, appBaseUrl(req));
 
     const result = await sendEmail({
       to: invite.email,

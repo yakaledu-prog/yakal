@@ -35,19 +35,30 @@ const FALLBACK_FROM = "Yakal Education Services <onboarding@resend.dev>";
 /**
  * Who mail comes from.
  *
- * The settings row first, so an admin can change it on their own page without
- * a redeploy, then EMAIL_FROM, then the provider's sandbox sender. Cached for
- * the life of the process: this is read on every send and it changes about
- * once a year.
+ * The settings row first, so an admin can change it on their own page, then
+ * EMAIL_FROM, then the provider's sandbox sender.
+ *
+ * Cached for a minute rather than for the life of the process. Forever made the
+ * admin page a liar: somebody changes the sender, nothing happens, and on a
+ * long-lived server nothing keeps happening until the next deploy. A minute is
+ * still one read per burst of mail, and it means the setting works.
+ *
+ * The fallback sender is the reason this matters. Resend's shared
+ * onboarding@resend.dev can only deliver to the address the Resend account is
+ * registered under, so with no sender configured every invitation to anybody
+ * else is refused, and the refusal names the sender rather than the setting
+ * that produced it.
  *
  * Read through the service client because the sender is not something an
  * anonymous reader needs, and a failure here must not stop the email: it falls
  * through to the environment, which is where it lived before.
  */
 let cachedFrom: string | null = null;
+let cachedAt = 0;
+const FROM_TTL_MS = 60_000;
 
 async function from(): Promise<string> {
-  if (cachedFrom) return cachedFrom;
+  if (cachedFrom && Date.now() - cachedAt < FROM_TTL_MS) return cachedFrom;
 
   try {
     const { getServiceClient } = await import('./supabase.js');
@@ -60,6 +71,7 @@ async function from(): Promise<string> {
     const configured = (data?.value ?? '').trim();
     if (configured) {
       cachedFrom = configured;
+      cachedAt = Date.now();
       return configured;
     }
   } catch (e) {
@@ -68,6 +80,7 @@ async function from(): Promise<string> {
 
   const fallback = process.env.EMAIL_FROM || FALLBACK_FROM;
   cachedFrom = fallback;
+  cachedAt = Date.now();
   return fallback;
 }
 
@@ -234,9 +247,31 @@ function escapeHtml(s: string): string {
 }
 
 /** The app's public URL, for links in an email. */
-export function appUrl(path = ""): string {
-  const base =
-    process.env.PUBLIC_APP_URL ||
+/**
+ * A link that works from somebody else's inbox.
+ *
+ * Every link in every email came through here, and on the deployed host it
+ * produced http://localhost:5173. VERCEL_URL is only set on Vercel and this
+ * runs on Render, so with PUBLIC_APP_URL unset the fallback was the developer's
+ * own machine: an invitation, a purchase confirmation and a newsletter all
+ * pointed at a server the reader does not have.
+ *
+ * `base` is for callers holding a request. Deriving the host from the request
+ * that asked is the only version that cannot be misconfigured, so where one is
+ * in hand it wins over the environment entirely.
+ *
+ * APP_BASE_URL is read as well as PUBLIC_APP_URL because appBaseUrl in
+ * _utils/supabase already used that name. Two variables meaning the same thing
+ * is how half of this stays broken after somebody sets one of them.
+ */
+export function appUrl(path = "", base?: string): string {
+  const clean = (v: string | undefined) => v?.trim().replace(/\/+$/, "") || "";
+
+  const resolved =
+    clean(base) ||
+    clean(process.env.APP_BASE_URL) ||
+    clean(process.env.PUBLIC_APP_URL) ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5173");
-  return `${base.replace(/\/$/, "")}${path}`;
+
+  return `${resolved}${path}`;
 }

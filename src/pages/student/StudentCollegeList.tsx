@@ -364,7 +364,12 @@ export function StudentCollegeList({
                   ? "Browse the catalog and add the ones you are curious about. You can change your mind later."
                   : "Nothing has been added to this list yet. It appears here as soon as it is."}
               </p>
-              {canEdit && (
+              {/* Only on the student's own page. "/student/explore" is the
+                  viewer's own route, so a counselor or parent viewing a student
+                  would be sent to their own explore page - a locked one for
+                  staff with no admissions plan, ending in "request access from
+                  parent". Staff add colleges through the embedded add flow. */}
+              {canEdit && !embedded && (
                 <a
                   href="/student/explore"
                   className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
