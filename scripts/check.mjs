@@ -27,6 +27,7 @@ const PURE = [
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
+  ['error-scrubbing.ts', 'no credential leaves in an error report'],
   ['email-links.ts', 'links in email do not point at localhost'],
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
   ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],

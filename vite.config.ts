@@ -5,6 +5,18 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Sentry ships tracing and debug logging in its default build. Neither is
+  // used here: this reports errors, not performance, and the debug logger only
+  // talks to a console nobody reads. These flags are Sentry's documented way to
+  // tree-shake both out, and they take the lazy chunk from 159KB gzipped to
+  // roughly half that.
+  //
+  // Worth the two lines. The audience is on Ethiopian mobile data, where a
+  // reporting SDK costing more than a third of the app is the wrong trade.
+  define: {
+    __SENTRY_DEBUG__: false,
+    __SENTRY_TRACING__: false,
+  },
   plugins: [
     react(),
     tailwindcss(),

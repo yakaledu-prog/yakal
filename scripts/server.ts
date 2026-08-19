@@ -26,6 +26,8 @@ import contactHandler from '../api/contact.js';
 import newsletterHandler from '../api/newsletter.js';
 import notifyHandler from '../api/notify.js';
 import invitesHandler from '../api/invites.js';
+import { handleHealth } from '../api/_utils/health.js';
+import { startServerReporting } from '../api/_utils/report.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
 import aiHandler from '../api/ai.js';
@@ -61,7 +63,16 @@ app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), (req, res) =>
   stripeWebhookHandler(req as never, res as never)
 );
 
+// Before any route, so a crash during startup is reported too. A no-op unless
+// SENTRY_DSN is set.
+void startServerReporting();
+
 app.use(express.json({ limit: '8mb' }));
+
+// Health, before the routes table because it is not one of the deployed
+// functions: it lives in api/_utils so it does not count against Vercel's
+// twelve, and both servers mount it by hand.
+app.get('/api/healthz', (req, res) => handleHealth(req, res));
 
 const routes = {
   '/api/stripe': stripeHandler,
