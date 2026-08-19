@@ -186,7 +186,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const tierId: string = req.body?.tierId;
     if (!tierId) return res.status(400).json({ error: 'tierId required' });
+
     if (tierId === plan.tier_id) {
+      // Asking for the tier they are on already, while a downgrade is waiting
+      // to happen, is somebody changing their mind and wanting to stay. Telling
+      // them they are already on it would be true and useless: the change would
+      // still land at the end of the month with no way left to stop it.
+      if (plan.stripe_schedule_id) {
+        await stripe.subscriptionSchedules.release(plan.stripe_schedule_id).catch(() => undefined);
+        await db
+          .from('admissions_plans')
+          .update({
+            pending_tier_id: null,
+            stripe_schedule_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', plan.id);
+        return res.status(200).json({ applied: 'kept', tierName: null });
+      }
       return res.status(400).json({ error: 'They are already on that plan.' });
     }
 
@@ -211,6 +228,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isUpgrade = (tier.price_cents ?? 0) > (currentTier?.price_cents ?? 0);
 
     if (isUpgrade) {
+      // A schedule owns the subscription while it exists, and Stripe refuses to
+      // let the subscription be edited out from under one. Releasing it hands
+      // control back; the pending downgrade is being replaced by this upgrade
+      // either way.
+      if (plan.stripe_schedule_id) {
+        await stripe.subscriptionSchedules.release(plan.stripe_schedule_id).catch(() => undefined);
+        await db
+          .from('admissions_plans')
+          .update({ pending_tier_id: null, stripe_schedule_id: null })
+          .eq('id', plan.id);
+      }
+
       const updated = await upgrade(stripe, sub, newPriceId);
       await syncPlanFromSubscription(db, updated);
       return res.status(200).json({ applied: 'now', tierName: tier.name });

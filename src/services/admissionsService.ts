@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 import { bookAndPay } from "./billingService";
 
 // ============================================================
@@ -55,6 +56,13 @@ export interface AdmissionsPlan {
   /** Who is actually advising them. Null until one is assigned. */
   counselorName: string | null;
   counselorAvatarUrl: string | null;
+  /** When the month they have paid for runs out. Null until Stripe says. */
+  currentPeriodEnd: string | null;
+  /** Leaving at the end of the period. They keep everything until then. */
+  cancelAtPeriodEnd: boolean;
+  /** A downgrade Stripe will apply when the period ends. */
+  pendingTierId: string | null;
+  pendingTierName: string | null;
 }
 
 function toTier(row: any): AdmissionsTier {
@@ -438,12 +446,14 @@ export async function setTierFlag(
 export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPlan | null> {
   const { data, error } = await supabase
     .from("admissions_plans")
-    .select(`id, student_id, started_at, status,
+    .select(`id, student_id, started_at, status, current_period_end,
+             cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              counselor:profiles!admissions_plans_counselor_id_fkey (full_name, avatar_url),
-             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS})`)
+             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS}),
+             pendingTier:admissions_tiers!admissions_plans_pending_tier_id_fkey (name)`)
     .eq("student_id", studentId)
-    .eq("status", "active")
+    .in("status", ["active", "past_due"])
     .maybeSingle();
 
   if (error) {
@@ -459,6 +469,10 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     tier: toTier((data as any).tier),
     startedAt: data.started_at,
     status: data.status,
+    currentPeriodEnd: (data as any).current_period_end ?? null,
+    cancelAtPeriodEnd: !!(data as any).cancel_at_period_end,
+    pendingTierId: (data as any).pending_tier_id ?? null,
+    pendingTierName: (data as any).pendingTier?.name ?? null,
     counselorName: (data as any).counselor?.full_name ?? null,
     counselorAvatarUrl: (data as any).counselor?.avatar_url ?? null,
   };
@@ -473,11 +487,15 @@ export async function getAdmissionsPlans(
 
   const { data, error } = await supabase
     .from("admissions_plans")
-    .select(`id, student_id, started_at, status,
+    .select(`id, student_id, started_at, status, current_period_end,
+             cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
-             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS})`)
+             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS}),
+             pendingTier:admissions_tiers!admissions_plans_pending_tier_id_fkey (name)`)
     .in("student_id", studentIds)
-    .eq("status", "active");
+    // past_due is still their plan. A card that bounced does not stop the work
+    // and must not make the plan vanish off the page that explains it.
+    .in("status", ["active", "past_due"]);
 
   if (error) {
     console.error("getAdmissionsPlans failed:", error);
@@ -495,9 +513,47 @@ export async function getAdmissionsPlans(
       status: row.status,
       counselorName: row.counselor?.full_name ?? null,
       counselorAvatarUrl: row.counselor?.avatar_url ?? null,
+      currentPeriodEnd: row.current_period_end ?? null,
+      cancelAtPeriodEnd: !!row.cancel_at_period_end,
+      pendingTierId: row.pending_tier_id ?? null,
+      pendingTierName: row.pendingTier?.name ?? null,
     });
   }
   return out;
+}
+
+// ------------------------------------------------------------
+// Changing and ending a subscription
+//
+// All three go through the server, which does the Stripe call and mirrors the
+// result back onto the plan. Nothing here writes admissions_plans directly: a
+// browser that can set its own tier is a browser that can award itself one.
+// ------------------------------------------------------------
+
+/**
+ * Move to another tier.
+ *
+ * Upgrading takes effect immediately and charges the difference now.
+ * Downgrading takes effect when the month already paid for runs out, which is
+ * why the answer says which of the two happened rather than assuming.
+ */
+export async function changePlanTier(
+  planId: string,
+  tierId: string
+): Promise<{ applied?: "now" | "period_end"; startsAt?: string | null; error?: string }> {
+  return authedPost("/api/stripe?action=subscription", { planId, tierId, op: "change" });
+}
+
+/** Stop at the end of the period. Access continues until then, and there is nothing to refund. */
+export async function cancelPlan(
+  planId: string
+): Promise<{ cancelAtPeriodEnd?: boolean; periodEnd?: string | null; error?: string }> {
+  return authedPost("/api/stripe?action=subscription", { planId, op: "cancel" });
+}
+
+/** Undo a cancellation that has not taken effect yet. */
+export async function resumePlan(planId: string): Promise<{ error?: string }> {
+  return authedPost("/api/stripe?action=subscription", { planId, op: "resume" });
 }
 
 export interface QuotaLine {

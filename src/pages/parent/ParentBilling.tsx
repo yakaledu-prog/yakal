@@ -22,7 +22,11 @@ import {
 import {
   bookAdvisingSlots,
   cancelAdvisingSession,
+  cancelPlan,
+  changePlanTier,
   getAdmissionsPlans,
+  getTiers,
+  resumePlan,
   getAdmissionsUsage,
   getAdvisingSessions,
   getPlanPeople,
@@ -648,8 +652,15 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
  * there so a parent can see where they stand before asking for one more round,
  * not because anything is about to be cut off.
  */
+/** "1 September" from a timestamp, or "the period ends" when Stripe has not said yet. */
+function periodDate(iso: string | null): string {
+  if (!iso) return "the end of the period";
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long" });
+}
+
 function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boolean }) {
   const [booking, setBooking] = useState(false);
+  const [managing, setManaging] = useState(false);
   const { data: usage } = useQuery({
     queryKey: ["admissions-usage", plan.studentId],
     queryFn: () => getAdmissionsUsage(plan.studentId),
@@ -695,9 +706,11 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
         </div>
       </div>
 
-      {/* Since and paid, one row, ends apart. Both used to hang off the title
-          line, where the date pushed the name into wrapping and the amount
-          dropped onto a line of its own. */}
+      {/* Since and what happens next, one row, ends apart. The right hand side
+          used to say what had been paid, which under a subscription is the one
+          number that keeps changing and the least useful thing to show. What a
+          parent wants from this line is when they are next charged, and whether
+          anything is about to change. */}
       <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
         <span className="truncate">
           {"since "}
@@ -708,9 +721,31 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
           })}
         </span>
         <span className="shrink-0">
-          <Money cents={plan.tier.priceCents} /> paid
+          <Money cents={plan.tier.priceCents} /> a month
         </span>
       </div>
+
+      {/* Said plainly rather than as a countdown. A clock ticking down to a
+          cancellation deadline reads as a nudge to use it, and generates a
+          support ticket every time somebody misses it by a minute. */}
+      <p
+        className={cn(
+          "mt-1 text-[12.5px]",
+          plan.cancelAtPeriodEnd || plan.status === "past_due"
+            ? "text-secondary"
+            : "text-muted-foreground"
+        )}
+      >
+        {plan.status === "past_due"
+          ? "Your last payment did not go through. Counselling carries on, update your card when you can."
+          : plan.cancelAtPeriodEnd
+            ? `Ends ${periodDate(plan.currentPeriodEnd)}. Everything stays available until then.`
+            : plan.pendingTierName
+              ? `Changes to ${plan.pendingTierName} on ${periodDate(plan.currentPeriodEnd)}.`
+              : plan.currentPeriodEnd
+                ? `Renews ${periodDate(plan.currentPeriodEnd)}. Cancel any time.`
+                : "Billed monthly. Cancel any time."}
+      </p>
 
       {usage && usage.lines.length > 0 && (
         <div
@@ -740,6 +775,14 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
             ))}
           </dl>
 
+          <div className={cn("flex items-center gap-3", !compact && "md:shrink-0")}>
+          <button
+            type="button"
+            onClick={() => setManaging(true)}
+            className="h-9 whitespace-nowrap text-[13px] font-medium text-primary hover:underline"
+          >
+            Manage plan
+          </button>
           {advising && (
             // Enabled whenever there is something to do: hours left to book, or
             // hours already booked that can be given back and taken elsewhere.
@@ -758,6 +801,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
               {remaining !== Infinity && ` (${Math.max(0, remaining)})`}
             </Button>
           )}
+          </div>
         </div>
       )}
 
@@ -768,7 +812,146 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
           onClose={() => setBooking(false)}
         />
       )}
+
+      {managing && <ManagePlanDialog plan={plan} onClose={() => setManaging(false)} />}
     </article>
+  );
+}
+
+/**
+ * Changing or ending a counselling subscription.
+ *
+ * The two directions are deliberately not symmetrical, and the wording says so
+ * rather than leaving somebody to find out on their statement. Moving up costs
+ * the difference today and applies today. Moving down, and cancelling, wait
+ * until the month already paid for runs out, so nothing is refunded and nothing
+ * a family has already used this month has to be unpicked.
+ */
+function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [tierId, setTierId] = useState(plan.tier.id);
+  const [busy, setBusy] = useState<"change" | "cancel" | null>(null);
+
+  const { data: tiers = [] } = useQuery({ queryKey: ["tiers"], queryFn: getTiers });
+
+  const chosen = tiers.find((t) => t.id === tierId);
+  const isUpgrade = !!chosen && chosen.priceCents > plan.tier.priceCents;
+  const changed = tierId !== plan.tier.id;
+
+  async function refresh() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["admissions-plans"] }),
+      qc.invalidateQueries({ queryKey: ["admissions-usage"] }),
+      qc.invalidateQueries({ queryKey: ["parent-invoices"] }),
+    ]);
+  }
+
+  async function applyChange() {
+    if (!changed) return;
+    setBusy("change");
+    const res = await changePlanTier(plan.id, tierId);
+    setBusy(null);
+    if (res.error) return toast.error(res.error);
+
+    toast.success(
+      res.applied === "now"
+        ? `Moved to ${chosen?.name}. The difference has been charged to your card.`
+        : `${chosen?.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
+    );
+    await refresh();
+    onClose();
+  }
+
+  async function endOrResume() {
+    setBusy("cancel");
+    const res = plan.cancelAtPeriodEnd ? await resumePlan(plan.id) : await cancelPlan(plan.id);
+    setBusy(null);
+    if (res.error) return toast.error(res.error);
+
+    toast.success(
+      plan.cancelAtPeriodEnd
+        ? "Your counselling carries on."
+        : `Counselling ends ${periodDate(plan.currentPeriodEnd)}. Nothing changes before then.`
+    );
+    await refresh();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border p-5">
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-semibold text-foreground">Manage counselling</h2>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              For {plan.studentName}. Currently {plan.tier.name}.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-5 overflow-y-auto p-5">
+          <div>
+            <label className="text-[12.5px] font-medium text-foreground">Plan</label>
+            <Dropdown
+              value={tierId}
+              onChange={setTierId}
+              className="mt-1.5 w-full"
+              options={tiers.map((t) => ({
+                value: t.id,
+                label: `${t.name} - ${money(t.priceCents)} a month`,
+              }))}
+            />
+
+            {changed && (
+              <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
+                {isUpgrade
+                  ? `You will be charged the difference for the rest of this month today, and ${money(chosen!.priceCents)} a month from then on. ${chosen!.name} is available straight away.`
+                  : `${chosen!.name} starts ${periodDate(plan.currentPeriodEnd)}. You keep ${plan.tier.name} until then, and there is no refund for the month you are in.`}
+              </p>
+            )}
+
+            <Button
+              onClick={() => void applyChange()}
+              disabled={!changed || busy !== null}
+              className="mt-3 h-10 w-full bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+            >
+              {busy === "change" ? "Working..." : isUpgrade ? "Upgrade now" : "Change plan"}
+            </Button>
+          </div>
+
+          {/* Ending it is deliberately quiet: a plain link at the bottom rather
+              than a second button competing with the one above. It is not a
+              destructive action needing a scary colour either, because nothing
+              is lost at the moment they press it. */}
+          <div className="border-t border-border pt-4">
+            <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+              {plan.cancelAtPeriodEnd
+                ? `Counselling is set to end ${periodDate(plan.currentPeriodEnd)}. You can carry on instead.`
+                : `Cancelling keeps everything until ${periodDate(plan.currentPeriodEnd)}, then stops. The month you are in is not refunded.`}
+            </p>
+            <button
+              type="button"
+              onClick={() => void endOrResume()}
+              disabled={busy !== null}
+              className="mt-2 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
+            >
+              {busy === "cancel"
+                ? "Working..."
+                : plan.cancelAtPeriodEnd
+                  ? "Keep my counselling"
+                  : "Cancel counselling"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
