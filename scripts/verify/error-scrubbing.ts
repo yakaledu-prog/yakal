@@ -25,6 +25,9 @@ const secrets: [string, string][] = [
   ['a Stripe secret key', 'No such customer: sk_test_51QabcDEFghij0123456789'],
   ['a Stripe live key', 'auth failed for sk_live_51QabcDEFghij0123456789'],
   ['a Google refresh token', 'invalid_grant for 1//03VSw-gr9AbCdEfGhIjKlMnOpQrStUvWx'],
+  // Deliberately short. The first version of this required twenty characters
+  // and silently passed a shorter one straight through.
+  ['a short refresh token', 'invalid_grant for 1//03VSw-gr9AbCd'],
   ['a JWT', 'rejected eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.abc-DEF_123'],
   ['a bearer header', 'sent Bearer sk_test_abcdefghijklmnop'],
 ];

@@ -27,7 +27,11 @@ function redact(text: string): string {
   return text
     // Stripe keys, Google refresh tokens, JWTs, and bearer headers.
     .replace(/sk_(live|test)_[A-Za-z0-9]+/g, 'sk_[redacted]')
-    .replace(/1\/\/[A-Za-z0-9_-]{20,}/g, '[refresh-token]')
+    // Ten, not twenty. A real Google refresh token is about a hundred
+    // characters, so either threshold catches one; the point is that a
+    // scrubber must not depend on the secret being long enough to notice.
+    // "1//" followed by ten of this alphabet does not occur in prose.
+    .replace(/1\/\/[A-Za-z0-9_-]{10,}/g, '[refresh-token]')
     .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[jwt]')
     .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]');
 }
