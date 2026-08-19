@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Download, Loader2, Star, X , ChevronLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/Button";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import {
+  PlanChangeSummary,
+  periodDate,
+  usePlanChangePreview,
+} from "@/components/billing/PlanChangeSummary";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
@@ -13,11 +19,13 @@ import { money } from "@/services/billingService";
 import { getLinkedChildren } from "@/services/parentService";
 import {
   buyTier,
+  changePlanTier,
   getCounselors,
   type CounselorCard,
   getAdmissionsPlans,
   getTiers,
   tierShade,
+  type AdmissionsPlan,
   type AdmissionsTier,
 } from "@/services/admissionsService";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
@@ -51,6 +59,7 @@ export function ParentAdmissions() {
   // The tier awaiting confirmation. Buying names the child first, because
   // buying the right plan for the wrong child is the expensive mistake here.
   const [pendingTier, setPendingTier] = useState<AdmissionsTier | null>(null);
+  const [switchingTo, setSwitchingTo] = useState<AdmissionsTier | null>(null);
   // Who the parent picked from the gallery. Null means they have not chosen,
   // and the server assigns the counsellor with the fewest families.
   const [chosenCounselor, setChosenCounselor] = useState<CounselorCard | null>(null);
@@ -102,6 +111,15 @@ export function ParentAdmissions() {
     picked: PickedSlot[]
   ) {
     if (!activeChildId) return toast.error("Choose which child this is for first.");
+
+    // A family already subscribed is changing tier, not buying one. Sending
+    // them through checkout would start a second subscription alongside the
+    // first and charge the full price for it, rather than the difference.
+    if (currentPlan) {
+      setSwitchingTo(tier);
+      return;
+    }
+
     setBusy(tier.id);
     const { error } = await buyTier({
       tierId: tier.id,
@@ -183,7 +201,7 @@ export function ParentAdmissions() {
                     hasPlan={!!currentPlan}
                     disabled={!activeChildId}
                     busy={busy === t.id}
-                    onChoose={() => setPendingTier(t)}
+                    onChoose={() => (currentPlan ? setSwitchingTo(t) : setPendingTier(t))}
                   />
                 ))}
               </div>
@@ -200,6 +218,14 @@ export function ParentAdmissions() {
       {/* Naming the child at checkout. The most expensive, most common mistake
           is buying the right plan for the wrong child, so the confirmation
           leads with who it is for. */}
+      {switchingTo && currentPlan && (
+        <SwitchPlanDialog
+          plan={currentPlan}
+          to={switchingTo}
+          onClose={() => setSwitchingTo(null)}
+        />
+      )}
+
       {pendingTier && activeChild && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
@@ -432,6 +458,108 @@ export function ParentAdmissions() {
     </PageWrapper>
   );
 }
+
+/**
+ * Switching an existing subscription to another tier.
+ *
+ * Deliberately not the purchase wizard. That one picks a counsellor and books
+ * the first hours, and a family changing tier already has both: what is left is
+ * a number and a yes.
+ */
+function SwitchPlanDialog({
+  plan,
+  to,
+  onClose,
+}: {
+  plan: AdmissionsPlan;
+  to: AdmissionsTier;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const { data: preview, isFetching } = usePlanChangePreview(plan.id, to.id);
+
+  async function confirm() {
+    setBusy(true);
+    const res = await changePlanTier(plan.id, to.id);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+
+    toast.success(
+      res.applied === "now"
+        ? `Moved to ${to.name}.`
+        : res.applied === "kept"
+          ? `Staying on ${plan.tier.name}.`
+          : `${to.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
+    );
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["admissions-plans"] }),
+      qc.invalidateQueries({ queryKey: ["admissions-usage"] }),
+      qc.invalidateQueries({ queryKey: ["parent-invoices"] }),
+    ]);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-border p-5">
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-semibold text-foreground">Change plan</h2>
+            <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+              {plan.studentName} is on {plan.tier.name}, {money(plan.tier.priceCents)} a month
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {isFetching && !preview ? (
+            <p className="py-6 text-center text-[13px] text-muted-foreground">
+              Working out what this costs...
+            </p>
+          ) : (
+            <PlanChangeSummary
+              preview={preview}
+              from={plan.tier}
+              to={to}
+              fallbackPeriodEnd={plan.currentPeriodEnd}
+            />
+          )}
+
+          <div className="mt-5 flex items-center gap-3">
+            <Button
+              onClick={() => void confirm()}
+              disabled={busy || isFetching || !!preview?.error}
+              className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+            >
+              {busy
+                ? "Working..."
+                : preview?.direction === "upgrade"
+                  ? `Pay ${money(preview.dueNowCents ?? 0)} and upgrade`
+                  : "Confirm"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={busy}
+              className="h-10 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50"
+            >
+              Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function TierCard({
   tier,

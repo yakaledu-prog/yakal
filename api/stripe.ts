@@ -5,6 +5,7 @@ import confirm from './_handlers/stripe-confirm.js';
 import paymentMethods from './_handlers/stripe-payment-methods.js';
 import createInvoice from './_handlers/create-invoice.js';
 import subscription from './_handlers/subscription.js';
+import sessionCancel from './_handlers/session-cancel.js';
 
 export default dispatch({
   'checkout': checkout,
@@ -13,4 +14,5 @@ export default dispatch({
   'payment-methods': paymentMethods,
   'create-invoice': createInvoice,
   'subscription': subscription,
+  'session-cancel': sessionCancel,
 });

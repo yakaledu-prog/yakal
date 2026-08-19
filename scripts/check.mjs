@@ -28,6 +28,7 @@ const PURE = [
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
+  ['cancellation-policy.ts', 'the published cancellation policy, applied'],
   ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],
 ];
 

@@ -7,6 +7,11 @@ import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X, ChevronLeft,
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
+import {
+  PlanChangeSummary,
+  periodDate,
+  usePlanChangePreview,
+} from "@/components/billing/PlanChangeSummary";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
@@ -25,8 +30,8 @@ import {
   cancelPlan,
   changePlanTier,
   getAdmissionsPlans,
+  getPlanStatus,
   getTiers,
-  previewPlanChange,
   resumePlan,
   getAdmissionsUsage,
   getAdvisingSessions,
@@ -678,12 +683,6 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
  * there so a parent can see where they stand before asking for one more round,
  * not because anything is about to be cut off.
  */
-/** "1 September" from a timestamp, or "the period ends" when Stripe has not said yet. */
-function periodDate(iso: string | null): string {
-  if (!iso) return "the end of the period";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long" });
-}
-
 function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boolean }) {
   const [booking, setBooking] = useState(false);
   const [managing, setManaging] = useState(false);
@@ -879,16 +878,32 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
 
   const { data: tiers = [] } = useQuery({ queryKey: ["tiers"], queryFn: getTiers });
   const chosen = tiers.find((t) => t.id === tierId);
+
+  // Asked of Stripe when the dialog opens, because the row can be stale and
+  // this is the screen that has to name a date. A plan created before period
+  // tracking existed carries no date at all, and "the end of the period" is not
+  // an answer to when somebody's counselling stops.
+  const { data: live } = useQuery({
+    queryKey: ["plan-status", plan.id],
+    queryFn: () => getPlanStatus(plan.id),
+  });
+  const periodEnd = live?.periodEnd ?? plan.currentPeriodEnd;
+
+  // The same two faces the card underneath shows. A dialog about ending
+  // somebody's counselling should say whose, and who they would be leaving.
+  const { data: people } = useQuery({
+    queryKey: ["plan-people", plan.studentId],
+    queryFn: () => getPlanPeople(plan.studentId),
+  });
   const changed = tierId !== plan.tier.id || !!plan.pendingTierId;
 
   // Asked of Stripe, and only once somebody has actually picked something. The
   // figure is the whole point of the confirmation step, so the button waits for
   // it rather than letting anybody agree to an amount that is still loading.
-  const { data: preview, isFetching: previewing } = useQuery({
-    queryKey: ["plan-change-preview", plan.id, tierId],
-    queryFn: () => previewPlanChange(plan.id, tierId),
-    enabled: changed,
-  });
+  const { data: preview, isFetching: previewing } = usePlanChangePreview(
+    plan.id,
+    changed ? tierId : null
+  );
 
   async function refresh() {
     await Promise.all([
@@ -909,7 +924,7 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
         ? `Moved to ${chosen?.name}.`
         : res.applied === "kept"
           ? `Staying on ${plan.tier.name}.`
-          : `${chosen?.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
+          : `${chosen?.name} starts ${periodDate(res.startsAt ?? periodEnd)}.`
     );
     await refresh();
     onClose();
@@ -921,7 +936,7 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
     const res = await cancelPlan(plan.id, said || undefined);
     setBusy(false);
     if (res.error) return toast.error(res.error);
-    toast.success(`Counselling ends ${periodDate(plan.currentPeriodEnd)}. Nothing changes before then.`);
+    toast.success(`Counselling ends ${periodDate(periodEnd)}. Nothing changes before then.`);
     await refresh();
     onClose();
   }
@@ -946,21 +961,43 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <div className="min-w-0">
+        <div className="border-b border-border p-5">
+          <div className="flex items-start justify-between gap-3">
             <h2 className="text-[17px] font-semibold text-foreground">{heading}</h2>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              For {plan.studentName}. Currently {plan.tier.name}, {money(plan.tier.priceCents)} a
-              month.
-            </p>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
-          >
-            <X size={18} />
-          </button>
+
+          <div className="mt-3 flex min-w-0 items-center gap-3">
+            <StackedAvatars
+              people={[
+                people?.student && {
+                  id: people.student.id,
+                  name: people.student.fullName,
+                  avatarUrl: people.student.avatarUrl,
+                },
+                people?.counselor && {
+                  id: people.counselor.id,
+                  name: people.counselor.fullName,
+                  avatarUrl: people.counselor.avatarUrl,
+                },
+              ]}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-medium text-foreground">
+                {people?.student?.fullName ?? plan.studentName}
+                {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
+              </p>
+              <p className="truncate text-[12.5px] text-muted-foreground">
+                {plan.tier.name}, {money(plan.tier.priceCents)} a month
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-y-auto p-5">
@@ -991,26 +1028,32 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
                 {plan.cancelAtPeriodEnd ? (
                   <>
                     <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                      Counselling is set to end {periodDate(plan.currentPeriodEnd)}. You can carry
-                      on instead, and nothing will have changed.
+                      Counselling is set to end {periodDate(periodEnd)}. You can carry on instead,
+                      and nothing will have changed.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => void keepIt()}
-                      disabled={busy}
-                      className="mt-2 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
-                    >
-                      {busy ? "Working..." : "Keep my counselling"}
-                    </button>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void keepIt()}
+                        disabled={busy}
+                        className="text-[13px] font-medium text-primary transition-colors hover:underline disabled:opacity-50"
+                      >
+                        {busy ? "Working..." : "Keep my counselling"}
+                      </button>
+                    </div>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setView("confirmCancel")}
-                    className="text-[13px] font-medium text-primary hover:underline"
-                  >
-                    Cancel counselling
-                  </button>
+                  // Right, under the end of the control above it, rather than
+                  // starting a second column of its own on the left.
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setView("confirmCancel")}
+                      className="text-[13px] font-medium text-primary transition-colors hover:underline"
+                    >
+                      Cancel counselling
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1021,58 +1064,12 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
               us rather than a description of one. */}
           {view === "confirmChange" && (
             <div className="space-y-4">
-              {preview?.direction === "upgrade" && (
-                <>
-                  <p className="text-[14px] leading-relaxed text-foreground">
-                    Moving to <strong>{chosen?.name}</strong> now.
-                  </p>
-                  <dl className="space-y-2 rounded-xl border border-border p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <dt className="text-[13px] text-muted-foreground">Charged today</dt>
-                      <dd className="text-[15px] font-semibold text-foreground">
-                        {money(preview.dueNowCents ?? 0)}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <dt className="text-[13px] text-muted-foreground">
-                        Then from {periodDate(preview.nextChargeAt ?? plan.currentPeriodEnd)}
-                      </dt>
-                      <dd className="text-[15px] text-foreground">
-                        {money(preview.monthlyCents)} a month
-                      </dd>
-                    </div>
-                  </dl>
-                  <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                    Today's amount covers the rest of this month at the new rate, less what you
-                    have already paid for it. {chosen?.name} is available as soon as this goes
-                    through.
-                  </p>
-                </>
-              )}
-
-              {preview?.direction === "downgrade" && (
-                <>
-                  <p className="text-[14px] leading-relaxed text-foreground">
-                    Moving to <strong>{chosen?.name}</strong> on{" "}
-                    {periodDate(preview.startsAt ?? plan.currentPeriodEnd)}.
-                  </p>
-                  <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                    Nothing is charged today and nothing is refunded. You keep {plan.tier.name} and
-                    everything it includes until then.
-                  </p>
-                </>
-              )}
-
-              {preview?.direction === "keep" && (
-                <p className="text-[14px] leading-relaxed text-foreground">
-                  Staying on <strong>{plan.tier.name}</strong>. The change to{" "}
-                  {plan.pendingTierName} will not happen, and nothing is charged.
-                </p>
-              )}
-
-              {preview?.error && (
-                <p className="text-[13px] text-secondary">{preview.error}</p>
-              )}
+              <PlanChangeSummary
+                preview={preview}
+                from={plan.tier}
+                to={chosen}
+                fallbackPeriodEnd={periodEnd}
+              />
 
               <div className="flex items-center gap-3 pt-1">
                 <Button
@@ -1086,14 +1083,14 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
                       ? `Pay ${money(preview.dueNowCents ?? 0)} and upgrade`
                       : "Confirm"}
                 </Button>
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
                   onClick={() => setView("main")}
                   disabled={busy}
-                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+                  className="h-10 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50"
                 >
                   Back
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -1106,8 +1103,8 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
             <div className="space-y-4">
               <p className="text-[14px] leading-relaxed text-foreground">
                 You keep {plan.tier.name} and everything in it until{" "}
-                {periodDate(plan.currentPeriodEnd)}. After that counselling stops and the month you
-                are in is not refunded.
+                {periodDate(periodEnd)}. After that counselling stops, and the month you are in is
+                not refunded.
               </p>
               <p className="text-[12.5px] leading-relaxed text-muted-foreground">
                 If it is the cost, a smaller plan keeps your counsellor and your work in place. You
@@ -1135,6 +1132,10 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
                 )}
               </div>
 
+              {/* Side by side and the same size. Keeping it is the suggested
+                  answer, which is what the fill says; leaving is a legitimate
+                  choice and hiding it in a text link is the kind of thing
+                  people notice and hold against a business. */}
               <div className="flex items-center gap-3 pt-1">
                 <Button
                   onClick={() => setView("main")}
@@ -1143,14 +1144,19 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
                 >
                   Keep counselling
                 </Button>
-                <button
-                  type="button"
+                {/* variant="outline", not a className. Button builds its
+                    classes by concatenation and cn does not resolve conflicts,
+                    so bg-transparent passed in sat alongside the default
+                    variant's bg-primary and lost: the button was invisible
+                    until hover, then turned teal. */}
+                <Button
+                  variant="outline"
                   onClick={() => void endIt()}
                   disabled={busy}
-                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="h-10 flex-1 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
                 >
-                  {busy ? "Working..." : "Cancel it"}
-                </button>
+                  {busy ? "Working..." : "Cancel counselling"}
+                </Button>
               </div>
             </div>
           )}

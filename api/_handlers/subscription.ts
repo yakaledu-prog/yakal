@@ -192,6 +192,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const plan = loaded.plan;
     const sub = await stripe.subscriptions.retrieve(plan.stripe_subscription_id);
 
+    // ---- where this subscription actually stands ----
+    //
+    // Asked of Stripe and mirrored back, rather than read from the plan row.
+    // The row can be stale: a plan created before period tracking existed has
+    // no date on it at all, and a screen that has to tell somebody when their
+    // counselling ends cannot answer "the end of the period".
+    if (op === 'status') {
+      await syncPlanFromSubscription(db, sub);
+      return res.status(200).json({
+        periodEnd: periodEndOf(sub),
+        cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+        status: sub.status,
+      });
+    }
+
     // ---- what would happen, without doing it ----
 
     if (op === 'preview') {

@@ -530,6 +530,19 @@ export async function getAdmissionsPlans(
 // browser that can set its own tier is a browser that can award itself one.
 // ------------------------------------------------------------
 
+/**
+ * Where a subscription stands, from Stripe rather than from our copy.
+ *
+ * The plan row is a mirror and can be stale, and one screen genuinely cannot
+ * work without the real date: telling somebody their counselling ends "at the
+ * end of the period" is not an answer. Asking also repairs the row.
+ */
+export async function getPlanStatus(
+  planId: string
+): Promise<{ periodEnd?: string | null; cancelAtPeriodEnd?: boolean; error?: string }> {
+  return authedPost("/api/stripe?action=subscription", { planId, op: "status" });
+}
+
 export interface PlanChangePreview {
   /** upgrade bills now, downgrade waits, keep cancels a scheduled downgrade. */
   direction: "upgrade" | "downgrade" | "keep" | "same";
