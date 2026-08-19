@@ -283,3 +283,72 @@ export async function settleEarnings(
     paidOn: options.paidOn ?? null,
   });
 }
+
+export interface EarningsMonth {
+  key: string;
+  shortLabel: string;
+  amountCents: number;
+}
+
+export interface EarningsTotals {
+  /** Everything not cancelled or reversed. What the work was worth. */
+  totalCents: number;
+  settledCents: number;
+  /** Owed and not yet moved, whether still on hold or waiting for a bank. */
+  owedCents: number;
+  thisMonthCents: number;
+  lastMonthCents: number;
+  /** Null when there is no last month to compare against. */
+  momChangePct: number | null;
+  months: EarningsMonth[];
+}
+
+/**
+ * A payee's earnings, by month.
+ *
+ * Only months that actually happened. An earlier version of the counsellor's
+ * page invented amounts for empty historical months so the chart would look
+ * fuller, which in a financial view is not decoration, it is a wrong number in
+ * front of the person whose income it is.
+ */
+export function summariseEarnings(rows: EarningRow[], now = new Date()): EarningsTotals {
+  const live = rows.filter((r) => r.status === "pending" || r.status === "settled");
+
+  const byMonth = new Map<string, number>();
+  for (const r of live) {
+    if (!r.date) continue;
+    const key = r.date.slice(0, 7);
+    byMonth.set(key, (byMonth.get(key) ?? 0) + r.amountCents);
+  }
+
+  const months: EarningsMonth[] = [...byMonth.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, amountCents]) => ({
+      key,
+      shortLabel: new Date(`${key}-01T00:00:00`).toLocaleDateString(undefined, { month: "short" }),
+      amountCents,
+    }));
+
+  const keyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const thisKey = keyOf(now);
+  const lastKey = keyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+  const thisMonthCents = byMonth.get(thisKey) ?? 0;
+  const lastMonthCents = byMonth.get(lastKey) ?? 0;
+
+  const sum = (test: (r: EarningRow) => boolean) =>
+    live.filter(test).reduce((n, r) => n + r.amountCents, 0);
+
+  return {
+    totalCents: sum(() => true),
+    settledCents: sum((r) => r.status === "settled"),
+    owedCents: sum((r) => r.status === "pending"),
+    thisMonthCents,
+    lastMonthCents,
+    momChangePct:
+      lastMonthCents > 0
+        ? Math.round(((thisMonthCents - lastMonthCents) / lastMonthCents) * 100)
+        : null,
+    months,
+  };
+}

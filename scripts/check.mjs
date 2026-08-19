@@ -45,7 +45,10 @@ const NEEDS_DB = [
 ];
 
 /** Needs the local Supabase and the Vite loader, because it imports src/. */
-const NEEDS_DB_AND_VITE = [['realtime-refcount.ts', 'realtime channels are ref-counted']];
+const NEEDS_DB_AND_VITE = [
+  ['realtime-refcount.ts', 'realtime channels are ref-counted'],
+  ['earnings-summary.ts', 'an earnings page adds up what is really there'],
+];
 
 const SUPABASE = process.env.VITE_SUPABASE_LOCAL_URL || 'http://127.0.0.1:54321';
 
