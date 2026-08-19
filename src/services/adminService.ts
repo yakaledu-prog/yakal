@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 
 export interface AdminUser {
   id: string;
@@ -760,4 +761,53 @@ export async function getCourseAssignments(courseId: string): Promise<AdminAssig
       return x.dueDate.localeCompare(y.dueDate);
     })
     .map((a: AdminAssignment, i: number) => ({ ...a, index: i + 1 }));
+}
+
+// ------------------------------------------------------------
+// Refunding, outside the cancellation rules
+//
+// Goodwill, a complaint, a mistake. session-cancel is the path that follows the
+// published policy; this is the one where a person has decided.
+// ------------------------------------------------------------
+
+export interface RefundPreview {
+  amountCents: number;
+  /** What is left of the payment after anything already refunded. */
+  refundable: number;
+  refundedSoFar: number;
+  /**
+   * Money already transferred to a tutor or counsellor for delivered work.
+   * Refunding the family does not bring it back, and it is not recoverable by
+   * any API call, so it is what this refund actually costs the platform.
+   */
+  alreadyPaidOutCents: number;
+  alreadyPaidOutCount: number;
+  currency: string;
+  error?: string;
+}
+
+/** What refunding this would do, and what it would cost. Changes nothing. */
+export async function previewRefund(
+  invoiceId: string,
+  amountCents?: number
+): Promise<RefundPreview> {
+  return authedPost("/api/stripe?action=refund", { invoiceId, amountCents, preview: true });
+}
+
+export async function refundInvoice(
+  invoiceId: string,
+  options: { amountCents?: number; note?: string } = {}
+): Promise<{
+  refunded?: boolean;
+  amountCents?: number;
+  earningsCancelled?: number;
+  /** Paid out already, so the platform absorbs it. Worth saying out loud. */
+  earningsAlreadyPaid?: number;
+  error?: string;
+}> {
+  return authedPost("/api/stripe?action=refund", {
+    invoiceId,
+    amountCents: options.amountCents,
+    note: options.note,
+  });
 }

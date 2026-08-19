@@ -6,6 +6,7 @@ import { AdminHeader } from "./AdminHeader";
 import { getAllInvoices } from "@/services/adminService";
 import { getOwedEarnings, settleEarnings, type OwedRow } from "@/services/payoutService";
 import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
+import { RefundDialog } from "@/components/admin/RefundDialog";
 import { money } from "@/services/billingService";
 import { Loader2, CheckCircle2, Clock, Wallet, Check, ScrollTextIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -34,6 +35,7 @@ export function AdminBilling() {
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [recording, setRecording] = useState<OwedRow | null>(null);
+  const [refunding, setRefunding] = useState<(typeof invoices)[number] | null>(null);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
@@ -147,11 +149,27 @@ export function AdminBilling() {
                           {inv.parent_name} - <span className="capitalize">{inv.kind}</span> - {paid ? `paid ${fmtDate(inv.paid_at)}` : `created ${fmtDate(inv.created_at)}`}
                         </p>
                       </div>
-                      <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize",
-                        paid ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/15 text-amber-600 dark:text-amber-400")}>
+                      {/* Plain coloured text in a fixed column, so the status
+                          and the amount sit at the same place on every row
+                          rather than shifting with the width of the word. */}
+                      <span className={cn("w-28 shrink-0 text-right text-[12.5px] font-medium capitalize",
+                        paid ? "text-primary" : "text-[#8a6a2a] dark:text-secondary")}>
                         {inv.status}
                       </span>
-                      <span className="text-[14px] font-semibold text-[#111] dark:text-white w-24 text-right">{money(inv.amount_cents, inv.currency)}</span>
+                      <span className="w-24 shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">{money(inv.amount_cents, inv.currency)}</span>
+                      {/* Only a payment that was actually taken can be given
+                          back. The dialog says what it costs before it does. */}
+                      <span className="flex w-20 shrink-0 justify-end">
+                        {paid && (
+                          <button
+                            type="button"
+                            onClick={() => setRefunding(inv)}
+                            className="text-[12.5px] font-medium text-primary transition-colors hover:underline"
+                          >
+                            Refund
+                          </button>
+                        )}
+                      </span>
                     </div>
                   );
                 })}
@@ -160,6 +178,9 @@ export function AdminBilling() {
           </div>
         </div>
       </div>
+      {refunding && (
+        <RefundDialog invoice={refunding} onClose={() => setRefunding(null)} />
+      )}
       {recording && (
         <RecordPayoutModal
           payout={recording}
