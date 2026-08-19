@@ -811,3 +811,96 @@ export async function refundInvoice(
     note: options.note,
   });
 }
+
+// ------------------------------------------------------------
+// What a purchase actually bought, and where each part got to
+//
+// A row on the billing page says a family paid. It does not say whether the
+// lessons happened, whether anybody was paid for them, or whether any of it
+// came back, and those are the questions somebody opens that page to answer.
+// ------------------------------------------------------------
+
+export interface InvoiceLine {
+  id: string;
+  /** The lesson, or the month of counselling. */
+  label: string;
+  when: string | null;
+  /** upcoming, completed, cancelled, no-show, disputed. */
+  status: string;
+  /** What the tutor or counsellor earns from it, and where that stands. */
+  earningCents: number | null;
+  earningStatus: string | null;
+}
+
+export interface InvoiceDetail {
+  lines: InvoiceLine[];
+  refundedCents: number;
+  /** Owed and unmoved against this purchase. */
+  owedCents: number;
+  /** Already gone out. Not recoverable if this is refunded. */
+  paidOutCents: number;
+}
+
+export async function getInvoiceDetail(invoiceId: string): Promise<InvoiceDetail> {
+  const [sessionRes, earningRes, refundRes] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("id, subject, date, start_time, status")
+      .eq("invoice_id", invoiceId)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true }),
+    supabase
+      .from("earnings")
+      .select("id, session_id, period_start, amount_cents, status, kind")
+      .eq("invoice_id", invoiceId)
+      .is("voided_at", null),
+    supabase
+      .from("refunds")
+      .select("amount_cents")
+      .eq("invoice_id", invoiceId)
+      .eq("status", "succeeded"),
+  ]);
+
+  if (sessionRes.error) console.error("getInvoiceDetail sessions:", sessionRes.error.message);
+  if (earningRes.error) console.error("getInvoiceDetail earnings:", earningRes.error.message);
+  if (refundRes.error) console.error("getInvoiceDetail refunds:", refundRes.error.message);
+
+  const earnings = (earningRes.data ?? []) as any[];
+  const bySession = new Map<string, any>(
+    earnings.filter((e) => e.session_id).map((e) => [e.session_id, e])
+  );
+
+  const lines: InvoiceLine[] = (sessionRes.data ?? []).map((s: any) => {
+    const e = bySession.get(s.id);
+    return {
+      id: s.id,
+      label: s.subject,
+      when: `${s.date}T${String(s.start_time).slice(0, 5)}`,
+      status: s.status,
+      earningCents: e?.amount_cents ?? null,
+      earningStatus: e?.status ?? null,
+    };
+  });
+
+  // A counselling month has no session, so its earning is the line.
+  for (const e of earnings.filter((x) => !x.session_id)) {
+    lines.push({
+      id: e.id,
+      label: "Counselling",
+      when: e.period_start,
+      status: "billed",
+      earningCents: e.amount_cents,
+      earningStatus: e.status,
+    });
+  }
+
+  const sum = (test: (e: any) => boolean) =>
+    earnings.filter(test).reduce((n, e) => n + e.amount_cents, 0);
+
+  return {
+    lines,
+    refundedCents: (refundRes.data ?? []).reduce((n: number, r: any) => n + r.amount_cents, 0),
+    owedCents: sum((e) => e.status === "pending"),
+    paidOutCents: sum((e) => e.status === "settled"),
+  };
+}
