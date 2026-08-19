@@ -26,6 +26,7 @@ import {
   changePlanTier,
   getAdmissionsPlans,
   getTiers,
+  previewPlanChange,
   resumePlan,
   getAdmissionsUsage,
   getAdvisingSessions,
@@ -167,7 +168,9 @@ export function ParentBilling() {
     packages.reduce((n, p) => n + p.totalPaidCents, 0) +
     admissionsPlans.reduce((n, p) => n + p.tier.priceCents, 0);
   const planCount = packages.length + admissionsPlans.length;
-  const open = invoices.filter((i) => i.status === "open");
+  // Money a parent can actually do something about. An abandoned checkout is
+  // not a debt and should not be totted up as one.
+  const open = invoices.filter((i) => i.status === "failed");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
 
   // The two filters compose in the order they are read: service, then status.
@@ -455,6 +458,11 @@ export function ParentBilling() {
             invoices.length === 0 ? (
               <Empty title="Nothing yet" body="Payments appear here once you have made one." />
             ) : (
+              // Four columns, in the same place on every row: what it was for,
+              // where it got to, how much, and an action only where there is
+              // one. The amount used to be followed by a Pay button on some
+              // rows and nothing on others, so the figures did not line up with
+              // each other down the page.
               <ul className="divide-y divide-border">
                 {invoices.map((i) => (
                   <li key={i.id} className="flex items-center gap-4 py-3.5">
@@ -470,29 +478,47 @@ export function ParentBilling() {
                         })}
                       </p>
                     </div>
+
+                    {/* Said in words rather than echoing the column. "Open" is
+                        a database value; what a parent needs to know is whether
+                        anything is expected of them. */}
                     <span
                       className={cn(
-                        "text-[12.5px] font-medium capitalize",
-                        i.status === "paid"
-                          ? "text-primary"
-                          : "text-[#8a6a2a] dark:text-secondary"
+                        "hidden w-32 shrink-0 text-right text-[12.5px] font-medium sm:block",
+                        i.status === "paid" ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
                       )}
                     >
-                      {i.status}
+                      {i.status === "paid"
+                        ? "Paid"
+                        : i.status === "failed"
+                          ? "Payment failed"
+                          : "Not finished"}
                     </span>
-                    <span className="w-24 text-right text-[14px] text-foreground">
+
+                    <span className="w-24 shrink-0 text-right text-[14px] tabular-nums text-foreground">
                       <Money cents={i.amountCents} />
                     </span>
-                    {i.status === "open" && (
-                      <Button
-                        size="sm"
-                        onClick={() => pay([i.id], i.id)}
-                        disabled={busy !== null}
-                        className="h-8 shrink-0 bg-primary px-4 text-[12px] text-white hover:bg-primary-hover"
-                      >
-                        {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
-                      </Button>
-                    )}
+
+                    {/* Only a declined card is worth a button. Everything else
+                        on this page has either happened or been abandoned, and
+                        a Pay button beside a payment that already went through
+                        is an invitation to pay twice. */}
+                    <span className="flex w-20 shrink-0 justify-end">
+                      {i.status === "failed" && (
+                        <Button
+                          size="sm"
+                          onClick={() => pay([i.id], i.id)}
+                          disabled={busy !== null}
+                          className="h-8 bg-primary px-3 text-[12px] text-white hover:bg-primary-hover"
+                        >
+                          {busy === i.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            "Try again"
+                          )}
+                        </Button>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -818,8 +844,24 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
   );
 }
 
+/** Reasons people actually give, plus room to say something else. */
+const CANCEL_REASONS = [
+  { value: "", label: "Prefer not to say" },
+  { value: "Too expensive", label: "Too expensive" },
+  { value: "Applications are finished", label: "Applications are finished" },
+  { value: "Not using it enough", label: "Not using it enough" },
+  { value: "Not what we expected", label: "Not what we expected" },
+  { value: "Going elsewhere", label: "Going elsewhere" },
+  { value: "other", label: "Something else" },
+];
+
 /**
  * Changing or ending a counselling subscription.
+ *
+ * Nothing here charges a card without saying what it will cost first. An
+ * upgrade takes money immediately, so the amount comes from Stripe and is shown
+ * on its own confirmation step: "you have been upgraded" arriving before the
+ * customer agreed to a figure is how a chargeback starts.
  *
  * The two directions are deliberately not symmetrical, and the wording says so
  * rather than leaving somebody to find out on their statement. Moving up costs
@@ -829,14 +871,24 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
  */
 function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: () => void }) {
   const qc = useQueryClient();
+  const [view, setView] = useState<"main" | "confirmChange" | "confirmCancel">("main");
   const [tierId, setTierId] = useState(plan.tier.id);
-  const [busy, setBusy] = useState<"change" | "cancel" | null>(null);
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const { data: tiers = [] } = useQuery({ queryKey: ["tiers"], queryFn: getTiers });
-
   const chosen = tiers.find((t) => t.id === tierId);
-  const isUpgrade = !!chosen && chosen.priceCents > plan.tier.priceCents;
-  const changed = tierId !== plan.tier.id;
+  const changed = tierId !== plan.tier.id || !!plan.pendingTierId;
+
+  // Asked of Stripe, and only once somebody has actually picked something. The
+  // figure is the whole point of the confirmation step, so the button waits for
+  // it rather than letting anybody agree to an amount that is still loading.
+  const { data: preview, isFetching: previewing } = useQuery({
+    queryKey: ["plan-change-preview", plan.id, tierId],
+    queryFn: () => previewPlanChange(plan.id, tierId),
+    enabled: changed,
+  });
 
   async function refresh() {
     await Promise.all([
@@ -847,44 +899,59 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
   }
 
   async function applyChange() {
-    if (!changed) return;
-    setBusy("change");
+    setBusy(true);
     const res = await changePlanTier(plan.id, tierId);
-    setBusy(null);
+    setBusy(false);
     if (res.error) return toast.error(res.error);
 
     toast.success(
       res.applied === "now"
-        ? `Moved to ${chosen?.name}. The difference has been charged to your card.`
-        : `${chosen?.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
+        ? `Moved to ${chosen?.name}.`
+        : res.applied === "kept"
+          ? `Staying on ${plan.tier.name}.`
+          : `${chosen?.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
     );
     await refresh();
     onClose();
   }
 
-  async function endOrResume() {
-    setBusy("cancel");
-    const res = plan.cancelAtPeriodEnd ? await resumePlan(plan.id) : await cancelPlan(plan.id);
-    setBusy(null);
+  async function endIt() {
+    setBusy(true);
+    const said = reason === "other" ? note.trim() : reason;
+    const res = await cancelPlan(plan.id, said || undefined);
+    setBusy(false);
     if (res.error) return toast.error(res.error);
-
-    toast.success(
-      plan.cancelAtPeriodEnd
-        ? "Your counselling carries on."
-        : `Counselling ends ${periodDate(plan.currentPeriodEnd)}. Nothing changes before then.`
-    );
+    toast.success(`Counselling ends ${periodDate(plan.currentPeriodEnd)}. Nothing changes before then.`);
     await refresh();
     onClose();
   }
+
+  async function keepIt() {
+    setBusy(true);
+    const res = await resumePlan(plan.id);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+    toast.success("Your counselling carries on.");
+    await refresh();
+    onClose();
+  }
+
+  const heading =
+    view === "confirmCancel"
+      ? "Before you go"
+      : view === "confirmChange"
+        ? "Confirm the change"
+        : "Manage counselling";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">Manage counselling</h2>
+            <h2 className="text-[17px] font-semibold text-foreground">{heading}</h2>
             <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              For {plan.studentName}. Currently {plan.tier.name}.
+              For {plan.studentName}. Currently {plan.tier.name}, {money(plan.tier.priceCents)} a
+              month.
             </p>
           </div>
           <button
@@ -896,59 +963,197 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
           </button>
         </div>
 
-        <div className="space-y-5 overflow-y-auto p-5">
-          <div>
-            <label className="text-[12.5px] font-medium text-foreground">Plan</label>
-            <Dropdown
-              value={tierId}
-              onChange={setTierId}
-              className="mt-1.5 w-full"
-              options={tiers.map((t) => ({
-                value: t.id,
-                label: `${t.name} - ${money(t.priceCents)} a month`,
-              }))}
-            />
+        <div className="overflow-y-auto p-5">
+          {view === "main" && (
+            <div className="space-y-5">
+              <div>
+                <label className="text-[12.5px] font-medium text-foreground">Plan</label>
+                <Dropdown
+                  value={tierId}
+                  onChange={setTierId}
+                  className="mt-1.5 w-full"
+                  options={tiers.map((t) => ({
+                    value: t.id,
+                    label: `${t.name} - ${money(t.priceCents)} a month`,
+                  }))}
+                />
 
-            {changed && (
-              <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">
-                {isUpgrade
-                  ? `You will be charged the difference for the rest of this month today, and ${money(chosen!.priceCents)} a month from then on. ${chosen!.name} is available straight away.`
-                  : `${chosen!.name} starts ${periodDate(plan.currentPeriodEnd)}. You keep ${plan.tier.name} until then, and there is no refund for the month you are in.`}
+                <Button
+                  onClick={() => setView("confirmChange")}
+                  disabled={!changed || previewing}
+                  className="mt-3 h-10 w-full bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {previewing ? "Checking..." : "Review change"}
+                </Button>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                {plan.cancelAtPeriodEnd ? (
+                  <>
+                    <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                      Counselling is set to end {periodDate(plan.currentPeriodEnd)}. You can carry
+                      on instead, and nothing will have changed.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void keepIt()}
+                      disabled={busy}
+                      className="mt-2 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
+                    >
+                      {busy ? "Working..." : "Keep my counselling"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setView("confirmCancel")}
+                    className="text-[13px] font-medium text-primary hover:underline"
+                  >
+                    Cancel counselling
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Nothing has been charged at this point. What the customer agreed to
+              is whatever this screen said, so it says the figure Stripe gave
+              us rather than a description of one. */}
+          {view === "confirmChange" && (
+            <div className="space-y-4">
+              {preview?.direction === "upgrade" && (
+                <>
+                  <p className="text-[14px] leading-relaxed text-foreground">
+                    Moving to <strong>{chosen?.name}</strong> now.
+                  </p>
+                  <dl className="space-y-2 rounded-xl border border-border p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[13px] text-muted-foreground">Charged today</dt>
+                      <dd className="text-[15px] font-semibold text-foreground">
+                        {money(preview.dueNowCents ?? 0)}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-[13px] text-muted-foreground">
+                        Then from {periodDate(preview.nextChargeAt ?? plan.currentPeriodEnd)}
+                      </dt>
+                      <dd className="text-[15px] text-foreground">
+                        {money(preview.monthlyCents)} a month
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                    Today's amount covers the rest of this month at the new rate, less what you
+                    have already paid for it. {chosen?.name} is available as soon as this goes
+                    through.
+                  </p>
+                </>
+              )}
+
+              {preview?.direction === "downgrade" && (
+                <>
+                  <p className="text-[14px] leading-relaxed text-foreground">
+                    Moving to <strong>{chosen?.name}</strong> on{" "}
+                    {periodDate(preview.startsAt ?? plan.currentPeriodEnd)}.
+                  </p>
+                  <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                    Nothing is charged today and nothing is refunded. You keep {plan.tier.name} and
+                    everything it includes until then.
+                  </p>
+                </>
+              )}
+
+              {preview?.direction === "keep" && (
+                <p className="text-[14px] leading-relaxed text-foreground">
+                  Staying on <strong>{plan.tier.name}</strong>. The change to{" "}
+                  {plan.pendingTierName} will not happen, and nothing is charged.
+                </p>
+              )}
+
+              {preview?.error && (
+                <p className="text-[13px] text-secondary">{preview.error}</p>
+              )}
+
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  onClick={() => void applyChange()}
+                  disabled={busy || previewing || !!preview?.error}
+                  className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {busy
+                    ? "Working..."
+                    : preview?.direction === "upgrade"
+                      ? `Pay ${money(preview.dueNowCents ?? 0)} and upgrade`
+                      : "Confirm"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setView("main")}
+                  disabled={busy}
+                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* One screen, not a gauntlet. It says what they keep, offers the two
+              things that genuinely fix most reasons for leaving, and asks why
+              without requiring an answer. Anything more would be a business
+              making itself hard to leave, which is a thing customers remember. */}
+          {view === "confirmCancel" && (
+            <div className="space-y-4">
+              <p className="text-[14px] leading-relaxed text-foreground">
+                You keep {plan.tier.name} and everything in it until{" "}
+                {periodDate(plan.currentPeriodEnd)}. After that counselling stops and the month you
+                are in is not refunded.
               </p>
-            )}
+              <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                If it is the cost, a smaller plan keeps your counsellor and your work in place. You
+                can also come back later, though your counsellor may not be free by then.
+              </p>
 
-            <Button
-              onClick={() => void applyChange()}
-              disabled={!changed || busy !== null}
-              className="mt-3 h-10 w-full bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
-            >
-              {busy === "change" ? "Working..." : isUpgrade ? "Upgrade now" : "Change plan"}
-            </Button>
-          </div>
+              <div>
+                <label className="text-[12.5px] font-medium text-foreground">
+                  What made you decide? Optional.
+                </label>
+                <Dropdown
+                  value={reason}
+                  onChange={setReason}
+                  className="mt-1.5 w-full"
+                  options={CANCEL_REASONS}
+                />
+                {reason === "other" && (
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    placeholder="In your own words"
+                    className="mt-2 w-full rounded-xl border border-border bg-background p-3 text-[13.5px] text-foreground outline-none focus:border-primary"
+                  />
+                )}
+              </div>
 
-          {/* Ending it is deliberately quiet: a plain link at the bottom rather
-              than a second button competing with the one above. It is not a
-              destructive action needing a scary colour either, because nothing
-              is lost at the moment they press it. */}
-          <div className="border-t border-border pt-4">
-            <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-              {plan.cancelAtPeriodEnd
-                ? `Counselling is set to end ${periodDate(plan.currentPeriodEnd)}. You can carry on instead.`
-                : `Cancelling keeps everything until ${periodDate(plan.currentPeriodEnd)}, then stops. The month you are in is not refunded.`}
-            </p>
-            <button
-              type="button"
-              onClick={() => void endOrResume()}
-              disabled={busy !== null}
-              className="mt-2 text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
-            >
-              {busy === "cancel"
-                ? "Working..."
-                : plan.cancelAtPeriodEnd
-                  ? "Keep my counselling"
-                  : "Cancel counselling"}
-            </button>
-          </div>
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  onClick={() => setView("main")}
+                  disabled={busy}
+                  className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  Keep counselling
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => void endIt()}
+                  disabled={busy}
+                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  {busy ? "Working..." : "Cancel it"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

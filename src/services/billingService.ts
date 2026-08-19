@@ -9,7 +9,13 @@ export interface Invoice {
   amount_cents: number;
   currency: string;
   kind: "tutoring" | "admissions" | "registration" | "other";
-  status: "open" | "paid" | "void";
+  /**
+   * open   not paid yet, and the checkout may still be live
+   * failed a card was declined. The only one worth putting an action on
+   * paid   settled
+   * void   abandoned or expired. Kept for the record, not for the parent
+   */
+  status: "open" | "failed" | "paid" | "void";
   due_date: string | null;
   paid_at: string | null;
   created_at: string;
@@ -26,13 +32,18 @@ export async function getInvoices(parentId: string): Promise<Invoice[]> {
     .from("invoices")
     .select("*")
     .eq("parent_id", parentId)
+    // Voided rows are abandoned checkouts and cancelled charges. They are kept
+    // for the record and are not something a parent needs to read on a page
+    // about their payments.
+    .neq("status", "void")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data as Invoice[]) || [];
 }
 
 export function summarize(invoices: Invoice[]): BillingSummary {
-  const open = invoices.filter((i) => i.status === "open");
+  // Only what a card actually refused. An unfinished checkout is not a balance.
+  const open = invoices.filter((i) => i.status === "failed");
   const balanceDueCents = open.reduce((sum, i) => sum + i.amount_cents, 0);
   const withDates = open.filter((i) => i.due_date).sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1));
   return {

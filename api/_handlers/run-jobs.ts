@@ -126,6 +126,36 @@ async function completeFinishedSessions(db: any): Promise<CompletionResult> {
   return result;
 }
 
+/**
+ * Close invoices nobody ever paid.
+ *
+ * checkout.session.expired handles the ones that reached Stripe. This is for
+ * the ones that never did: an invoice is written before the parent is
+ * redirected, so closing the tab on the page before checkout leaves a row that
+ * no webhook will ever mention again. They accumulate on the billing page
+ * looking like money owed.
+ *
+ * A week, because a family that starts a booking and comes back the next
+ * evening should find it where they left it, and nobody comes back after seven
+ * days to a checkout they abandoned.
+ */
+async function voidStaleInvoices(db: any): Promise<number> {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await db
+    .from('invoices')
+    .update({ status: 'void', updated_at: new Date().toISOString() })
+    .eq('status', 'open')
+    .lt('created_at', cutoff)
+    .select('id');
+
+  if (error) {
+    console.error('run-jobs: could not close stale invoices:', error.message);
+    return 0;
+  }
+  return (data ?? []).length;
+}
+
 async function tellAdmins(db: any, title: string, message: string): Promise<void> {
   const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
   const rows = (admins ?? []).map((a: any) => ({
@@ -167,6 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // not move until three days from now.
     const sessions = await completeFinishedSessions(db);
     const released = await releaseDueEarnings(db);
+    const voided = await voidStaleInvoices(db);
 
     const errors = [...sessions.errors, ...released.errors];
     if (errors.length > 0) console.error('run-jobs finished with errors:', errors);
@@ -182,6 +213,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amountCents: released.amountCents,
         skipped: released.skipped.length,
       },
+      staleInvoicesClosed: voided,
       errors,
     });
   } catch (err: any) {

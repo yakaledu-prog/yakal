@@ -2,7 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type Stripe from 'stripe';
 import { getStripe } from '../_utils/billing.js';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
-import { priceForTier, priceIdOf, syncPlanFromSubscription } from '../_utils/subscriptions.js';
+import {
+  periodEndOf,
+  priceForTier,
+  priceIdOf,
+  syncPlanFromSubscription,
+} from '../_utils/subscriptions.js';
 
 // ============================================================
 // Changing or ending a counselling subscription.
@@ -130,6 +135,43 @@ async function downgrade(
   });
 }
 
+/**
+ * What changing to this tier would actually cost, before anything is charged.
+ *
+ * Asked of Stripe rather than worked out here. Proration depends on how much of
+ * the month is left, what has already been credited, and any discount on the
+ * subscription, and a second implementation of that arithmetic would be wrong
+ * in a way nobody notices until a customer adds it up.
+ *
+ * Only meaningful for an upgrade. A downgrade bills nothing now by design, so
+ * the honest preview for one is a date, not an amount.
+ */
+async function previewChange(
+  stripe: Stripe,
+  sub: Stripe.Subscription,
+  newPriceId: string
+): Promise<{ dueNowCents: number; nextChargeAt: string | null }> {
+  const prorationDate = Math.floor(Date.now() / 1000);
+
+  const preview = await stripe.invoices.createPreview({
+    customer: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+    subscription: sub.id,
+    subscription_details: {
+      items: [{ id: sub.items.data[0].id, price: newPriceId }],
+      proration_behavior: 'always_invoice',
+      proration_date: prorationDate,
+    },
+  });
+
+  return {
+    // amount_due, not total: a credit sitting on the customer from an earlier
+    // change is money they do not have to pay again, and showing the figure
+    // before it is applied would overstate the bill.
+    dueNowCents: preview.amount_due ?? 0,
+    nextChargeAt: periodEndOf(sub),
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -150,10 +192,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const plan = loaded.plan;
     const sub = await stripe.subscriptions.retrieve(plan.stripe_subscription_id);
 
+    // ---- what would happen, without doing it ----
+
+    if (op === 'preview') {
+      const tierId: string = req.body?.tierId;
+      if (!tierId) return res.status(400).json({ error: 'tierId required' });
+
+      const { data: tier } = await db
+        .from('admissions_tiers')
+        .select('id, name, price_cents, stripe_price_id, is_active')
+        .eq('id', tierId)
+        .maybeSingle();
+      if (!tier || !tier.is_active) {
+        return res.status(400).json({ error: 'That plan is not available.' });
+      }
+
+      const { data: currentTier } = await db
+        .from('admissions_tiers')
+        .select('price_cents')
+        .eq('id', plan.tier_id)
+        .maybeSingle();
+
+      // Staying put while a downgrade is scheduled is a real choice with a real
+      // effect, so it gets its own answer rather than being called "no change".
+      if (tierId === plan.tier_id) {
+        return res.status(200).json({
+          direction: plan.stripe_schedule_id ? 'keep' : 'same',
+          monthlyCents: tier.price_cents,
+          periodEnd: periodEndOf(sub),
+        });
+      }
+
+      const isUpgrade = (tier.price_cents ?? 0) > (currentTier?.price_cents ?? 0);
+      if (!isUpgrade) {
+        return res.status(200).json({
+          direction: 'downgrade',
+          monthlyCents: tier.price_cents,
+          dueNowCents: 0,
+          startsAt: periodEndOf(sub),
+        });
+      }
+
+      const priceId = await priceForTier(db, tier);
+      const { dueNowCents, nextChargeAt } = await previewChange(stripe, sub, priceId);
+      return res.status(200).json({
+        direction: 'upgrade',
+        monthlyCents: tier.price_cents,
+        dueNowCents,
+        nextChargeAt,
+      });
+    }
+
     // ---- cancel, and undo a cancel ----
 
     if (op === 'cancel' || op === 'resume') {
       const cancelling = op === 'cancel';
+      // Optional and in their own words. A required reason is an interrogation,
+      // and what somebody types to get past a mandatory field is worth nothing.
+      const reason: string | null = (req.body?.reason ?? '').toString().trim().slice(0, 500) || null;
 
       // A pending downgrade and a pending cancellation are two answers to the
       // same question. Cancelling wins, so the schedule is dropped rather than
@@ -170,6 +266,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cancel_at_period_end: cancelling,
       });
       await syncPlanFromSubscription(db, updated);
+
+      await db
+        .from('admissions_plans')
+        .update({
+          cancel_reason: cancelling ? reason : null,
+          cancel_requested_at: cancelling ? new Date().toISOString() : null,
+        })
+        .eq('id', plan.id);
 
       return res.status(200).json({
         cancelAtPeriodEnd: cancelling,

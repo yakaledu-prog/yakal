@@ -298,6 +298,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
+    // A checkout nobody finished. Stripe expires a session after 24 hours, and
+    // until this existed the invoice behind it sat open forever, indistinguish-
+    // able on the billing page from a card that had been declined. One of those
+    // is worth showing somebody and the other is litter.
+    if (event.type === 'checkout.session.expired') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const ids = (session.metadata?.invoice_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        await getServiceClient()
+          .from('invoices')
+          .update({ status: 'void', updated_at: new Date().toISOString() })
+          .in('id', ids)
+          // Only ones still waiting. A session can expire after the payment
+          // landed by another route, and voiding a paid invoice would erase it.
+          .eq('status', 'open');
+      }
+    }
+
+    // A card declined on the way in. Distinct from the above: this one the
+    // parent can fix, so it stays visible and says so.
+    if (event.type === 'checkout.session.async_payment_failed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const ids = (session.metadata?.invoice_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        await getServiceClient()
+          .from('invoices')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .in('id', ids)
+          .eq('status', 'open');
+      }
+    }
+
     // Money going back to the payer, however it was started: our own refund
     // path, or an admin pressing refund in the Stripe dashboard. Either way
     // anything still owed on that charge stops being owed.

@@ -122,9 +122,30 @@ const cleanup = async () => {
 };
 
 try {
+  // ---- what it will cost, before it costs it ----
+  //
+  // The figure on the confirmation screen is what the customer agrees to, so
+  // the only assertion worth making about it is that it turns out to be true.
+
+  const preview = await call({ planId, tierId: dearId, op: 'preview' });
+  pass('an upgrade can be previewed', preview.code === 200, JSON.stringify(preview.body));
+  pass('and is named as an upgrade', preview.body?.direction === 'upgrade', JSON.stringify(preview.body));
+  pass(
+    'with something to pay today',
+    (preview.body?.dueNowCents ?? 0) > 0,
+    String(preview.body?.dueNowCents)
+  );
+  // Prorated, so never more than a full month at the new rate.
+  pass(
+    'and never more than a month at the new rate',
+    (preview.body?.dueNowCents ?? 0) <= dear!.price_cents,
+    `${preview.body?.dueNowCents} vs ${dear!.price_cents}`
+  );
+
   // ---- upgrading ----
 
   const before = (await stripe.invoices.list({ customer: customer.id, limit: 100 })).data.length;
+  const quotedCents = preview.body?.dueNowCents ?? 0;
   const up = await call({ planId, tierId: dearId, op: 'change' });
 
   pass('an upgrade is accepted', up.code === 200, JSON.stringify(up.body));
@@ -138,8 +159,21 @@ try {
 
   // always_invoice rather than the default, so the difference is billed now
   // instead of appearing on next month's invoice.
-  const after = (await stripe.invoices.list({ customer: customer.id, limit: 100 })).data.length;
-  pass('and the difference is billed now, not next month', after > before, `${before} -> ${after}`);
+  const invoicesAfter = (await stripe.invoices.list({ customer: customer.id, limit: 100 })).data;
+  pass('and the difference is billed now, not next month', invoicesAfter.length > before, `${before} -> ${invoicesAfter.length}`);
+
+  // The whole point of the preview. A quote that does not match the charge is
+  // worse than no quote, because the customer agreed to the quote.
+  //
+  // A cent of tolerance: proration is computed per second, and a moment passes
+  // between quoting and charging. At a monthly price that is a fraction of a
+  // cent, but exact equality would make this fail on a slow afternoon.
+  const charged = invoicesAfter[0]?.amount_due ?? 0;
+  pass(
+    'and the amount charged is the amount quoted',
+    Math.abs(charged - quotedCents) <= 1,
+    `quoted ${quotedCents}, charged ${charged}`
+  );
 
   pass(
     'the plan row followed',
@@ -147,6 +181,14 @@ try {
   );
 
   // ---- downgrading ----
+
+  const downPreview = await call({ planId, tierId: cheapId, op: 'preview' });
+  pass(
+    'a downgrade previews as costing nothing today',
+    downPreview.body?.direction === 'downgrade' && downPreview.body?.dueNowCents === 0,
+    JSON.stringify(downPreview.body)
+  );
+  pass('and says when it starts', !!downPreview.body?.startsAt, JSON.stringify(downPreview.body));
 
   const invoicesBeforeDown = (await stripe.invoices.list({ customer: customer.id, limit: 100 })).data.length;
   const down = await call({ planId, tierId: cheapId, op: 'change' });

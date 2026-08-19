@@ -530,6 +530,35 @@ export async function getAdmissionsPlans(
 // browser that can set its own tier is a browser that can award itself one.
 // ------------------------------------------------------------
 
+export interface PlanChangePreview {
+  /** upgrade bills now, downgrade waits, keep cancels a scheduled downgrade. */
+  direction: "upgrade" | "downgrade" | "keep" | "same";
+  monthlyCents: number;
+  /** What Stripe would charge today. Zero for anything but an upgrade. */
+  dueNowCents?: number;
+  /** When the new tier starts, for a downgrade. */
+  startsAt?: string | null;
+  /** When the next full month is charged, for an upgrade. */
+  nextChargeAt?: string | null;
+  periodEnd?: string | null;
+  error?: string;
+}
+
+/**
+ * What changing to this tier would cost, before anything is charged.
+ *
+ * The figure comes from Stripe, not from us. Proration depends on how much of
+ * the month is left and what has already been credited, and a second
+ * implementation of that arithmetic would be wrong in a way nobody notices
+ * until a customer adds it up.
+ */
+export async function previewPlanChange(
+  planId: string,
+  tierId: string
+): Promise<PlanChangePreview> {
+  return authedPost("/api/stripe?action=subscription", { planId, tierId, op: "preview" });
+}
+
 /**
  * Move to another tier.
  *
@@ -540,15 +569,28 @@ export async function getAdmissionsPlans(
 export async function changePlanTier(
   planId: string,
   tierId: string
-): Promise<{ applied?: "now" | "period_end"; startsAt?: string | null; error?: string }> {
+): Promise<{
+  /** kept means a scheduled downgrade was cancelled and nothing else changed. */
+  applied?: "now" | "period_end" | "kept";
+  startsAt?: string | null;
+  error?: string;
+}> {
   return authedPost("/api/stripe?action=subscription", { planId, tierId, op: "change" });
 }
 
-/** Stop at the end of the period. Access continues until then, and there is nothing to refund. */
+/**
+ * Stop at the end of the period. Access continues until then, and there is
+ * nothing to refund.
+ *
+ * The reason is optional and free text. It is the only feedback a small
+ * business gets from the people it is losing, and making it mandatory turns
+ * cancelling into an interrogation that produces answers worth nothing.
+ */
 export async function cancelPlan(
-  planId: string
+  planId: string,
+  reason?: string
 ): Promise<{ cancelAtPeriodEnd?: boolean; periodEnd?: string | null; error?: string }> {
-  return authedPost("/api/stripe?action=subscription", { planId, op: "cancel" });
+  return authedPost("/api/stripe?action=subscription", { planId, op: "cancel", reason });
 }
 
 /** Undo a cancellation that has not taken effect yet. */
