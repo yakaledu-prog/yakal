@@ -61,7 +61,17 @@ app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), (req, res) =>
   stripeWebhookHandler(req as never, res as never)
 );
 
-app.use(express.json({ limit: '8mb' }));
+// Zoom signs the exact bytes it sent too, and its webhook shares a route with
+// the other Zoom actions, so the raw body is kept alongside the parsed one
+// rather than replacing it. verify runs before parsing and cannot reject.
+app.use(
+  express.json({
+    limit: '8mb',
+    verify: (req, _res, buf) => {
+      (req as never as { rawBody?: string }).rawBody = buf.toString('utf8');
+    },
+  })
+);
 
 const routes = {
   '/api/stripe': stripeHandler,

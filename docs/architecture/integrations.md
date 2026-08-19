@@ -158,6 +158,32 @@ Server-to-server OAuth creates meetings; a separate meeting SDK credential
 signs the client-side join. `api/_utils/zoom.ts` caches the token until it
 expires.
 
+**Attendance is evidence, not a gate.** `meeting.ended` arrives at
+`.../api/zoom?action=webhook`, and the handler stores who Zoom saw in the room
+on the session. Nothing about payment depends on it: Zoom can say two people
+were present, not that a lesson was taught, it reports no email for guests
+joining through the Meeting SDK, and `sessions.mode` already allows in-person.
+The one thing it says with confidence is that **nobody joined at all**, and that
+alone holds a lesson back for review instead of completing it.
+
+`attendance_checked_at` is what separates "Zoom said the room was empty" from
+"nobody has asked Zoom". Only the first should ever hold a lesson.
+
+Reading past participants needs **Zoom Pro or higher**; on a free plan the call
+fails and the lesson simply completes with no evidence attached.
+
+**Setting it up**: Zoom Marketplace > your Server-to-Server OAuth app > Feature
+> Event Subscriptions. Add an endpoint at
+`https://yakal.me/api/zoom?action=webhook`, subscribe to **Meeting > End
+Meeting**, and copy the **Secret Token** into `ZOOM_WEBHOOK_SECRET_TOKEN`.
+Zoom validates the URL by asking the endpoint to sign a token back, which it
+does before any signature exists to check.
+
+The signature is over the exact bytes Zoom sent, so both servers keep the raw
+body alongside the parsed one. **A delivery with no raw body is refused rather
+than verified against a re-serialisation**, because a signature check that
+cannot actually check is worse than none.
+
 ## Email
 
 `api/_utils/email.ts` sends through **Resend in production** and **SMTP to
