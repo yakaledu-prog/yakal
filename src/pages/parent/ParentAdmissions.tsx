@@ -17,7 +17,6 @@ import {
   type CounselorCard,
   getAdmissionsPlans,
   getTiers,
-  monthlyCents,
   tierShade,
   type AdmissionsTier,
 } from "@/services/admissionsService";
@@ -244,14 +243,10 @@ export function ParentAdmissions() {
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-[17px] font-bold leading-tight text-foreground">
-                  {pendingTier.instalmentMonths > 1
-                    ? `${money(monthlyCents(pendingTier))}/month`
-                    : money(pendingTier.priceCents)}
+                  {money(pendingTier.priceCents)}/month
                 </p>
                 <p className="text-[12px] leading-tight text-muted-foreground">
-                  {pendingTier.instalmentMonths > 1
-                    ? `${pendingTier.instalmentMonths} months · ${money(pendingTier.priceCents)}`
-                    : "one payment"}
+                  cancel any time
                 </p>
               </div>
             </div>
@@ -313,11 +308,9 @@ export function ParentAdmissions() {
                             </p>
                           </div>
                           <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
-                            {pendingTier.instalmentMonths > 1
-                              ? money(monthlyCents(pendingTier))
-                              : money(pendingTier.priceCents)}
+                            {money(pendingTier.priceCents)}
                             <span className="text-[12px] font-normal text-muted-foreground">
-                              {pendingTier.instalmentMonths > 1 ? "/month" : " one payment"}
+                              /month
                             </span>
                           </p>
                         </div>
@@ -475,27 +468,16 @@ function TierCard({
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{tier.blurb}</p>
       )}
 
-      {/* The monthly figure leads because it is what a family is deciding to
-          pay, but the total is right underneath it: the commitment is the
-          whole engagement, and burying that would be a trick. How often you
-          meet is a feature and lives in the list below, not here, or a total
+      {/* The monthly figure is the whole price now, so there is no total to
+          disclose underneath it. What replaces that line is the commitment,
+          which is the other thing a family is deciding. How often you meet is
+          a feature and lives in the list below, not here, or an allowance
           reads as a rate. */}
-      {tier.instalmentMonths > 1 ? (
-        <>
-          <p className="mt-4 text-[26px] font-bold text-foreground">
-            {money(monthlyCents(tier))}
-            <span className="text-[14px] font-normal text-muted-foreground"> /month</span>
-          </p>
-          <p className="text-[12.5px] text-muted-foreground">
-            {tier.instalmentMonths} monthly payments, {money(tier.priceCents)} in total
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="mt-4 text-[26px] font-bold text-foreground">{money(tier.priceCents)}</p>
-          <p className="text-[12.5px] text-muted-foreground">One payment</p>
-        </>
-      )}
+      <p className="mt-4 text-[26px] font-bold text-foreground">
+        {money(tier.priceCents)}
+        <span className="text-[14px] font-normal text-muted-foreground"> /month</span>
+      </p>
+      <p className="text-[12.5px] text-muted-foreground">Cancel any time</p>
 
       <ul className="mt-5 flex-1 space-y-2.5">
         {tier.features.map((f, i) => (

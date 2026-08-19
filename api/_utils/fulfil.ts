@@ -1,7 +1,6 @@
 import { sendEmail, layout, appUrl } from "./email.js";
 import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
 import { inviteOnEnrolment } from "../_handlers/classroom-invite.js";
-import { recordCounselorShare } from "./counselor-pay.js";
 
 // ============================================================
 // What happens after a course is paid for.
@@ -280,7 +279,7 @@ async function attachZoomMeetings(
 async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   const { data: tier } = await db
     .from("admissions_tiers")
-    .select("id, name, price_cents, instalment_months, counselor_share_percent")
+    .select("id, name, price_cents")
     .eq("id", invoice.admissions_tier_id)
     .single();
   if (!tier) {
@@ -293,7 +292,10 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     .from("admissions_plans")
     .select("id, tier_id, invoice_id")
     .eq("student_id", invoice.student_id)
-    .eq("status", "active")
+    // past_due is still their live plan. Treating only 'active' as live would
+    // start a second subscription alongside one that is merely behind on a
+    // payment, and bill the family twice.
+    .in("status", ["active", "past_due"])
     .maybeSingle();
 
   if (existing?.invoice_id === invoice.id) return;
@@ -303,7 +305,7 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   if (existing) {
     await db
       .from("admissions_plans")
-      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .update({ status: "canceled", ended_at: new Date().toISOString() })
       .eq("id", existing.id);
   }
 
@@ -332,16 +334,16 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     counselorId = (picked as string | null) ?? null;
   }
 
-  // Granted on the first payment, not the last. The instalments are how the
-  // money is collected; the family gets the whole engagement straight away.
+  // Granted on the first payment. The subscription id and the period end are
+  // filled in on the way back from Stripe, by whichever of the confirm handler
+  // and the webhook gets there first; both sync from the same subscription, so
+  // it does not matter which.
   const { data: plan, error: planErr } = await db.from("admissions_plans").insert({
     student_id: invoice.student_id,
     purchased_by: invoice.parent_id,
     tier_id: tier.id,
     invoice_id: invoice.id,
     counselor_id: counselorId,
-    payments_made: 1,
-    payments_due: tier.instalment_months ?? 1,
   }).select("id").single();
   if (planErr) {
     // The unique index refuses a second active plan, which is a duplicate
@@ -403,23 +405,11 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     }
   }
 
-  // The counsellor's share of this first payment.
-  //
-  // Recorded per payment received rather than once for the engagement: an
-  // instalment plan collects monthly and does not create an invoice row per
-  // month, so paying the whole share here would hand somebody a year up front
-  // for money the platform has not collected. recordInstalment writes the rest
-  // as each arrives.
-  if (plan?.id && counselorId) {
-    await recordCounselorShare(db, {
-      planId: plan.id,
-      counselorId,
-      tierPriceCents: tier.price_cents ?? 0,
-      sharePercent: tier.counselor_share_percent,
-      instalmentMonths: tier.instalment_months ?? 1,
-      instalmentNumber: 1,
-    });
-  }
+  // The counsellor's share is not written here, including for the first month.
+  // Every month arrives as invoice.paid, which knows what was actually charged
+  // rather than what the tier lists, so it is the one writer. Recording it in
+  // both places would mean two computations of the same money, and they only
+  // have to disagree once.
 
   // The workspace the counsellor opens. Created here rather than waiting for
   // the student to touch a college list, so the family appears on their

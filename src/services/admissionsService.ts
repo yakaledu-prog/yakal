@@ -32,8 +32,8 @@ export interface AdmissionsTier {
   /** Null is unlimited. Zero means the tier includes no interview prep. */
   mockInterviewsLimit: number | null;
   sessionsPerMonth: number | null;
-  /** Monthly instalments the total is collected over. 1 is a single payment. */
-  instalmentMonths: number;
+  /** Null until the first purchase creates one. */
+  stripePriceId: string | null;
   /** Percent of the price paid to the counsellor. Null means nobody has
    *  decided, which is not the same as zero. */
   counselorSharePercent: number | null;
@@ -68,7 +68,7 @@ function toTier(row: any): AdmissionsTier {
     suppEssaysLimit: row.supp_essays_limit,
     mockInterviewsLimit: row.mock_interviews_limit,
     sessionsPerMonth: row.sessions_per_month,
-    instalmentMonths: row.instalment_months ?? 1,
+    stripePriceId: row.stripe_price_id ?? null,
     counselorSharePercent:
       row.counselor_share_percent == null ? null : Number(row.counselor_share_percent),
     features: Array.isArray(row.features) ? row.features : [],
@@ -82,20 +82,14 @@ function toTier(row: any): AdmissionsTier {
 }
 
 const TIER_FIELDS =
-  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, instalment_months, counselor_share_percent, features, fits, is_recommended, sort_order";
+  "id, key, name, blurb, price_cents, ps_rounds_limit, supp_essays_limit, mock_interviews_limit, sessions_per_month, stripe_price_id, counselor_share_percent, features, fits, is_recommended, sort_order";
 
 // The admin editor needs is_active as well, because hiding a tier is one of the
 // things it is for. Kept separate so the public getTiers query stays lean.
 const ADMIN_TIER_FIELDS = `${TIER_FIELDS}, is_active`;
 
-/**
- * One instalment. Derived, never stored: a total and a number of months are
- * the two facts, and a third number that has to agree with them is a bug
- * waiting to happen. Matches monthlyCents in api/stripe-checkout.
- */
-export function monthlyCents(tier: AdmissionsTier): number {
-  return Math.floor(tier.priceCents / Math.max(1, tier.instalmentMonths));
-}
+// monthlyCents is gone. priceCents is the monthly figure now, so deriving one
+// from a total and a term was a calculation with nothing left to calculate.
 
 /**
  * A distinct shade per tier, so the plans read as three different things at a
@@ -161,7 +155,6 @@ export interface TierInput {
   name: string;
   blurb: string | null;
   priceCents: number;
-  instalmentMonths: number;
   counselorSharePercent: number | null;
   psRoundsLimit: number | null;
   suppEssaysLimit: number | null;
@@ -182,7 +175,6 @@ function toRow(input: TierInput) {
     name: input.name,
     blurb: input.blurb,
     price_cents: input.priceCents,
-    instalment_months: input.instalmentMonths,
     counselor_share_percent: input.counselorSharePercent,
     ps_rounds_limit: input.psRoundsLimit,
     supp_essays_limit: input.suppEssaysLimit,
@@ -261,9 +253,12 @@ export interface TierSubscriber {
   counselorAvatar: string | null;
   status: string;
   startedAt: string | null;
-  /** Instalments settled and owed, so a past_due plan explains itself. */
-  paymentsMade: number;
-  paymentsDue: number;
+  /** When the month they have paid for runs out. Null until Stripe says. */
+  currentPeriodEnd: string | null;
+  /** Leaving at the end of the period. */
+  cancelAtPeriodEnd: boolean;
+  /** A downgrade waiting for the period to end. */
+  pendingTierId: string | null;
 }
 
 /**
@@ -277,12 +272,12 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
   const { data, error } = await supabase
     .from("admissions_plans")
     .select(
-      `id, tier_id, status, started_at, payments_made, payments_due,
+      `id, tier_id, status, started_at, current_period_end, cancel_at_period_end, pending_tier_id,
        student:profiles!admissions_plans_student_id_fkey(id, full_name, avatar_url),
        parent:profiles!admissions_plans_purchased_by_fkey(id, full_name, avatar_url),
        counselor:profiles!admissions_plans_counselor_id_fkey(id, full_name, avatar_url)`
     )
-    .neq("status", "cancelled");
+    .neq("status", "canceled");
 
   if (error) {
     // A card without a count is a card; a card that fails to draw is not.
@@ -306,90 +301,119 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
       counselorAvatar: row.counselor?.avatar_url ?? null,
       status: row.status,
       startedAt: row.started_at,
-      paymentsMade: row.payments_made ?? 0,
-      paymentsDue: row.payments_due ?? 1,
+      currentPeriodEnd: row.current_period_end ?? null,
+      cancelAtPeriodEnd: !!row.cancel_at_period_end,
+      pendingTierId: row.pending_tier_id ?? null,
     });
     byTier.set(row.tier_id, list);
   }
   return byTier;
 }
 
-export interface PlanInstalment {
+export interface PlanPayment {
   id: string;
-  instalmentNumber: number;
   /** When the payment arrived. */
   paidAt: string;
-  /** What the parent paid for this month. Null on rows written before the
-   *  column existed, which is different from zero. */
-  paidCents: number | null;
-  /** The counsellor's share of it, and where that payout stands. */
+  /** The month it covers. */
+  periodStart: string | null;
+  /** What the parent paid. */
+  paidCents: number;
+  /** The counsellor's share of it, and where that payment stands. */
   counselorCents: number;
-  sharePercent: number | null;
-  payoutStatus: string;
+  payoutStatus: string | null;
   note: string | null;
 }
 
 /**
  * Every payment made on one plan, newest first.
  *
- * One row per month, not per tier. A plan is a single subscription to a single
- * tier: if a family switched, that is a different plan with its own payments,
- * and mixing the two into one list made a switch look like something that
- * happened inside a subscription rather than the end of one.
- *
- * counselor_payouts is the only per-month record of an engagement there is.
- * Plans carry payments_made as a counter and the amounts live in Stripe, so
- * both halves of each payment, what came in and what the counsellor is owed,
- * are read from here.
+ * One row per month. Both halves are read together: what the family paid, from
+ * the invoice, and what the counsellor is owed for it, from the earnings
+ * ledger. They are separate tables because they are separate obligations, and
+ * joining them here is what lets an admin see a month as one line.
  *
  * Fetched on expand rather than joined into the list: a tier with forty
  * families would otherwise pull every payment any of them has ever made to
  * draw one screen.
  */
-export async function getPlanInstalments(planId: string): Promise<PlanInstalment[]> {
-  const { data, error } = await supabase
-    .from("counselor_payouts")
-    .select("id, instalment_number, created_at, paid_cents, amount_cents, share_percent, status, note")
-    .eq("plan_id", planId)
-    .order("instalment_number", { ascending: false });
+export async function getPlanPayments(planId: string): Promise<PlanPayment[]> {
+  const { data: plan } = await supabase
+    .from("admissions_plans")
+    .select("student_id, tier_id")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return [];
 
-  if (error) {
-    console.error("getPlanInstalments failed:", error.message);
-    return [];
-  }
+  const [invoiceRes, earningRes] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, amount_cents, paid_at, description")
+      .eq("student_id", plan.student_id)
+      .eq("admissions_tier_id", plan.tier_id)
+      .eq("status", "paid")
+      .order("paid_at", { ascending: false }),
+    supabase
+      .from("earnings")
+      .select("id, period_start, amount_cents, status, note, invoice_id")
+      .eq("plan_id", planId)
+      .is("voided_at", null),
+  ]);
 
-  return ((data ?? []) as any[]).map((row) => ({
-    id: row.id,
-    instalmentNumber: row.instalment_number ?? 1,
-    paidAt: row.created_at,
-    paidCents: row.paid_cents == null ? null : Number(row.paid_cents),
-    counselorCents: Number(row.amount_cents ?? 0),
-    sharePercent: row.share_percent == null ? null : Number(row.share_percent),
-    payoutStatus: row.status ?? "pending",
-    note: row.note ?? null,
-  }));
+  if (invoiceRes.error) console.error("getPlanPayments invoices:", invoiceRes.error.message);
+  if (earningRes.error) console.error("getPlanPayments earnings:", earningRes.error.message);
+
+  const shareByInvoice = new Map<string, any>(
+    (earningRes.data ?? []).map((e: any) => [e.invoice_id, e])
+  );
+
+  return (invoiceRes.data ?? []).map((inv: any) => {
+    const share = shareByInvoice.get(inv.id);
+    return {
+      id: inv.id,
+      paidAt: inv.paid_at,
+      periodStart: share?.period_start ?? null,
+      paidCents: inv.amount_cents ?? 0,
+      counselorCents: share?.amount_cents ?? 0,
+      payoutStatus: share?.status ?? null,
+      note: share?.note ?? null,
+    };
+  });
 }
 
 /**
  * Total collected per plan, for the column on the table.
  *
- * Summed from the payments themselves rather than price times payments_made,
- * so a repriced tier does not restate what a family has already paid.
+ * Summed from the invoices themselves rather than price times a counter, so a
+ * repriced tier does not restate what a family has already paid.
  */
 export async function getPlanTotals(): Promise<Map<string, number>> {
-  const { data, error } = await supabase
-    .from("counselor_payouts")
-    .select("plan_id, paid_cents");
+  const [planRes, invoiceRes] = await Promise.all([
+    supabase.from("admissions_plans").select("id, student_id, tier_id"),
+    supabase
+      .from("invoices")
+      .select("student_id, admissions_tier_id, amount_cents")
+      .eq("kind", "admissions")
+      .eq("status", "paid"),
+  ]);
 
-  if (error) {
-    console.error("getPlanTotals failed:", error.message);
+  if (planRes.error || invoiceRes.error) {
+    console.error("getPlanTotals failed:", (planRes.error ?? invoiceRes.error)?.message);
     return new Map();
   }
 
+  // Keyed on the pair, because an invoice names a student and a tier rather
+  // than a plan: a family that left and came back has two plans and the
+  // payments have to land on the right one.
+  const paid = new Map<string, number>();
+  for (const inv of (invoiceRes.data ?? []) as any[]) {
+    if (!inv.student_id || !inv.admissions_tier_id) continue;
+    const key = `${inv.student_id}|${inv.admissions_tier_id}`;
+    paid.set(key, (paid.get(key) ?? 0) + (inv.amount_cents ?? 0));
+  }
+
   const totals = new Map<string, number>();
-  for (const row of (data ?? []) as any[]) {
-    if (!row.plan_id) continue;
-    totals.set(row.plan_id, (totals.get(row.plan_id) ?? 0) + Number(row.paid_cents ?? 0));
+  for (const plan of (planRes.data ?? []) as any[]) {
+    totals.set(plan.id, paid.get(`${plan.student_id}|${plan.tier_id}`) ?? 0);
   }
   return totals;
 }
@@ -417,7 +441,7 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     .select(`id, student_id, started_at, status,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              counselor:profiles!admissions_plans_counselor_id_fkey (full_name, avatar_url),
-             tier:admissions_tiers (${TIER_FIELDS})`)
+             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS})`)
     .eq("student_id", studentId)
     .eq("status", "active")
     .maybeSingle();
@@ -451,7 +475,7 @@ export async function getAdmissionsPlans(
     .from("admissions_plans")
     .select(`id, student_id, started_at, status,
              student:profiles!admissions_plans_student_id_fkey (full_name),
-             tier:admissions_tiers (${TIER_FIELDS})`)
+             tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS})`)
     .in("student_id", studentIds)
     .eq("status", "active");
 

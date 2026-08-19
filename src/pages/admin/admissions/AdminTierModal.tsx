@@ -26,7 +26,6 @@ type FormState = {
   blurb: string;
   fits: string;
   priceDollars: string;
-  instalmentMonths: string;
   counselorSharePercent: string;
   psRoundsLimit: string;
   suppEssaysLimit: string;
@@ -42,7 +41,6 @@ const EMPTY: FormState = {
   blurb: "",
   fits: "",
   priceDollars: "",
-  instalmentMonths: "1",
   counselorSharePercent: "",
   psRoundsLimit: "",
   suppEssaysLimit: "",
@@ -85,7 +83,6 @@ function initForm(tier: AdmissionsTier | null): FormState {
     blurb: tier.blurb ?? "",
     fits: tier.fits ?? "",
     priceDollars: centsToDollars(tier.priceCents),
-    instalmentMonths: String(tier.instalmentMonths),
     counselorSharePercent:
       tier.counselorSharePercent == null ? "" : String(tier.counselorSharePercent),
     psRoundsLimit: quotaToStr(tier.psRoundsLimit),
@@ -139,11 +136,6 @@ export function AdminTierModal({
     const price = parseFloat(form.priceDollars);
     if (!Number.isFinite(price) || price < 0) return fail("price", "Enter a valid price.");
 
-    const months = parseInt(form.instalmentMonths, 10);
-    if (!Number.isFinite(months) || months < 1 || months > 24) {
-      return fail("months", "Monthly payments must be between 1 and 24.");
-    }
-
     // Blank is unlimited and 0 is none, but anything unreadable is a typo, and
     // a typo must not quietly become the most generous option on a paid tier.
     const quotas = {
@@ -164,7 +156,6 @@ export function AdminTierModal({
       blurb: form.blurb.trim() || null,
       fits: form.fits.trim() || null,
       priceCents: Math.round(price * 100),
-      instalmentMonths: months,
       // Blank stays null rather than becoming zero. "Nobody has decided" and
       // "the counsellor gets nothing" are different answers, and the payout
       // ledger records which one it was.
@@ -297,30 +288,31 @@ export function AdminTierModal({
             <section className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className={labelCls}>Total price (USD)</label>
+                  <label className={labelCls}>Price a month (USD)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">$</span>
                     <Input
                       value={form.priceDollars}
                       onChange={(e) => set("priceDollars", e.target.value)}
-                      placeholder="2500.00"
+                      placeholder="250.00"
                       inputMode="decimal"
                       className={cn(inputCls, "pl-7")}
                     />
                   </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Monthly payments</label>
-                  <Input
-                    value={form.instalmentMonths}
-                    onChange={(e) => set("instalmentMonths", e.target.value)}
-                    placeholder="10"
-                    inputMode="numeric"
-                    className={inputCls}
-                  />
                   <p className="mt-1 text-[12px] text-muted-foreground">
-                    1 is a single payment. Otherwise the total is split over this many months.
+                    Charged every month until the family cancels. There is no total
+                    and no fixed number of payments.
                   </p>
+                  {/* Stripe will not let a price's amount be edited, so a new
+                      one is made and everybody already subscribed keeps paying
+                      what they agreed to. Worth saying here rather than being
+                      discovered when a repricing does not reach anybody. */}
+                  {isEdit && (
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      Changing this only affects new subscriptions. Families already
+                      on this tier keep the price they signed up at.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>Counsellor share (%)</label>
@@ -346,10 +338,7 @@ export function AdminTierModal({
                     ) : (
                       <>
                         {money(Math.round((priceCentsFromForm * Number(form.counselorSharePercent || 0)) / 100))}{" "}
-                        of {money(priceCentsFromForm)}
-                        {Number(form.instalmentMonths) > 1
-                          ? `, split over ${form.instalmentMonths} payments.`
-                          : ", on the single payment."}
+                        of {money(priceCentsFromForm)}, every month.
                       </>
                     )}
                   </p>

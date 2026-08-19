@@ -13,10 +13,10 @@ import { money } from "@/services/billingService";
 import {
   getAllTiers,
   getTierSubscribers,
-  getPlanInstalments,
+  getPlanPayments,
+  type PlanPayment,
   getPlanTotals,
   reorderTiers,
-  monthlyCents,
   tierShade,
   updateTier,
   createTier,
@@ -262,11 +262,7 @@ export function AdminAdmissions() {
                         <span className="text-[24px] font-bold text-[#111] dark:text-white">
                           {money(t.priceCents)}
                         </span>
-                        {t.instalmentMonths > 1 && (
-                          <span className="text-[13px] text-muted-foreground">
-                            = {money(monthlyCents(t))}/mo over {t.instalmentMonths} months
-                          </span>
-                        )}
+                        <span className="text-[13px] text-muted-foreground">a month</span>
                       </div>
 
                     </div>
@@ -523,14 +519,19 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
  * counsellor's share with its payout state under Counsellor, which is where an
  * admin is looking when they want to know whether somebody has been paid.
  */
-function PlanInstalmentRows({ planId }: { planId: string }) {
+function PlanPaymentRows({ planId }: { planId: string }) {
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["plan-instalments", planId],
-    queryFn: () => getPlanInstalments(planId),
+    queryKey: ["plan-payments", planId],
+    queryFn: () => getPlanPayments(planId),
   });
 
   const when = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
+  // A period start is a date with no time, so it is read as one: "T00:00:00"
+  // keeps it in the local day instead of shifting to the one before.
+  const monthOf = (date: string) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   const shell = "bg-[#f8f9fa] dark:bg-[#182329]";
   const edge = "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60";
@@ -557,10 +558,10 @@ function PlanInstalmentRows({ planId }: { planId: string }) {
 
   return (
     <>
-      {rows.map((r, i) => (
+      {rows.map((r: PlanPayment, i: number) => (
         <tr key={r.id} className={cn(shell, i === rows.length - 1 && edge)}>
           <td className="px-6 py-2.5 pl-[3.1rem] text-[13px] text-[#111] dark:text-white">
-            Payment {r.instalmentNumber}
+            {r.periodStart ? monthOf(r.periodStart) : when(r.paidAt)}
           </td>
 
           <td className="px-3 py-2.5" />
@@ -570,29 +571,27 @@ function PlanInstalmentRows({ planId }: { planId: string }) {
               "have they had this month's money". */}
           <td className="px-3 py-2.5 text-[13px]">
             <span className="text-muted-foreground">{money(r.counselorCents)}</span>
-            {r.sharePercent != null && (
-              <span className="text-muted-foreground"> ({r.sharePercent}%)</span>
+            {r.payoutStatus && (
+              <span
+                className={cn(
+                  "ml-2",
+                  r.payoutStatus === "settled"
+                    ? "text-primary"
+                    : r.payoutStatus === "pending"
+                      ? "text-secondary"
+                      : "text-muted-foreground"
+                )}
+                title={r.note ?? undefined}
+              >
+                {r.payoutStatus}
+              </span>
             )}
-            <span
-              className={cn(
-                "ml-2",
-                r.payoutStatus === "paid"
-                  ? "text-primary"
-                  : r.payoutStatus === "held"
-                    ? "text-secondary"
-                    : "text-muted-foreground"
-              )}
-              title={r.note ?? undefined}
-            >
-              {r.payoutStatus}
-            </span>
           </td>
 
           <td className="px-3 py-2.5 text-[13px] text-muted-foreground">{when(r.paidAt)}</td>
 
           <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
-            {/* Null means the row predates the column, which is not zero. */}
-            {r.paidCents == null ? "Not recorded" : money(r.paidCents)}
+            {money(r.paidCents)}
           </td>
 
           <td className="px-3 py-2.5" />
@@ -608,7 +607,7 @@ function PlanInstalmentRows({ planId }: { planId: string }) {
  *
  * This was a list of names with the paying parent underneath. That answered
  * "who is on this" and nothing an admin actually opens it to do: who is
- * advising them, when it started, whether the instalments are up to date, and
+ * advising them, when it started, where the subscription is going, and
  * how to reach the person who is paying.
  *
  * A table because these are records to compare down a column, not cards to
@@ -747,8 +746,17 @@ function SubscribersModal({
 
                     <td className="px-3 py-3 text-[13px] text-muted-foreground">{started(p.startedAt)}</td>
 
+                    {/* Where the subscription is going, which is the thing an
+                        admin cannot see anywhere else: a family leaving at the
+                        end of the month looks identical to one staying. */}
                     <td className="px-3 py-3 text-[13px] text-muted-foreground">
-                      {p.paymentsDue > 1 ? `${p.paymentsMade} of ${p.paymentsDue}` : "Paid in full"}
+                      {p.cancelAtPeriodEnd
+                        ? `Ends ${started(p.currentPeriodEnd)}`
+                        : p.pendingTierId
+                          ? `Changes ${started(p.currentPeriodEnd)}`
+                          : p.currentPeriodEnd
+                            ? `Renews ${started(p.currentPeriodEnd)}`
+                            : "-"}
                     </td>
 
                     {/* Summed from the payments themselves, not price times
@@ -776,7 +784,7 @@ function SubscribersModal({
                       </span>
                     </td>
                   </tr>
-                  {openPlan === p.planId && <PlanInstalmentRows planId={p.planId} />}
+                  {openPlan === p.planId && <PlanPaymentRows planId={p.planId} />}
                   </Fragment>
                 ))}
               </tbody>

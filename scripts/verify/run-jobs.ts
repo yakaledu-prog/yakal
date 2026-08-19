@@ -16,6 +16,11 @@
 // takes the skip path rather than making a transfer, which is the honest
 // behaviour for somebody who has not connected a bank and is worth pinning.
 //
+// It runs the real job, so it also acts on rows that are not its fixtures: a
+// seeded lesson whose slot has passed gets completed and earns, because that is
+// what the job is for and the row was stale. Correct, and worth knowing before
+// wondering where a local earning came from.
+//
 // Needs the local Supabase, the seeded accounts, and STRIPE_SECRET_KEY.
 import 'dotenv/config';
 import { execSync } from 'node:child_process';

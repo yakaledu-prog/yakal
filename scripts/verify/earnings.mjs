@@ -51,17 +51,30 @@ const soon = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
 
 // ---- the shape of a row ----
 
-const bothSources = await db.from('earnings').insert({
-  payee_id: tutorId, kind: 'tutoring_session', session_id: session.id,
-  plan_id: null, period_start: '2026-08-01', amount_cents: 100,
+// A row says what kind of earning it is, and may only point at that kind of
+// source. It is allowed to point at nothing: both foreign keys are ON DELETE
+// SET NULL, so deleting a lesson leaves the money owed for it on the books
+// without a lesson to point at, which is the correct outcome for a financial
+// record and the reason the constraint is shaped this way rather than
+// demanding exactly one.
+const wrongSource = await db.from('earnings').insert({
+  payee_id: tutorId, kind: 'tutoring_session', plan_id: null,
+  period_start: '2026-08-01', amount_cents: 100,
 });
-pass('an earning cannot name both a session and a period', !!bothSources.error,
-  bothSources.error?.code ?? 'accepted it');
+pass('a lesson earning cannot carry a billing period', !!wrongSource.error,
+  wrongSource.error?.code ?? 'accepted it');
 
-const noSource = await db.from('earnings').insert({
-  payee_id: tutorId, kind: 'tutoring_session', amount_cents: 100,
+const monthWithoutPeriod = await db.from('earnings').insert({
+  payee_id: tutorId, kind: 'counselling_month', amount_cents: 100,
 });
-pass('an earning must name what earned it', !!noSource.error, noSource.error?.code ?? 'accepted it');
+pass('a counselling earning must say which month', !!monthWithoutPeriod.error,
+  monthWithoutPeriod.error?.code ?? 'accepted it');
+
+const crossed = await db.from('earnings').insert({
+  payee_id: tutorId, kind: 'counselling_month', session_id: session.id,
+  period_start: '2026-08-01', amount_cents: 100,
+});
+pass('nor point at a lesson', !!crossed.error, crossed.error?.code ?? 'accepted it');
 
 // Claiming settlement with no way to check it is the state that makes a ledger
 // unauditable, so the constraint refuses it rather than reporting it later.

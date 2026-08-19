@@ -88,7 +88,7 @@ const FIELDS = `id, kind, session_id, plan_id, period_start, amount_cents, curre
                 ),
                 plan:admissions_plans (
                   student:profiles!admissions_plans_student_id_fkey (full_name, avatar_url),
-                  tier:admissions_tiers (name)
+                  tier:admissions_tiers!admissions_plans_tier_id_fkey (name)
                 )`;
 
 function toRow(r: any): EarningRow {
