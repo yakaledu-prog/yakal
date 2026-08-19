@@ -217,7 +217,7 @@ async function tellThem(
   if (by === 'tutor' || by === 'admin') {
     rows.push({
       user_id: session.student_id,
-      type: 'session',
+      type: 'session_cancelled',
       title: 'A lesson was cancelled',
       message: `${session.subject} on ${when} is off${reason ? `: ${reason}` : ''}. ${refundCents > 0 ? `${money} has been refunded.` : ''}`.trim(),
       link: '/student/sessions',
@@ -225,7 +225,7 @@ async function tellThem(
   } else {
     rows.push({
       user_id: session.tutor_id,
-      type: 'session',
+      type: 'session_cancelled',
       title: 'A lesson was cancelled',
       message: `${session.subject} on ${when} has been cancelled by the family.`,
       link: '/tutor/sessions',

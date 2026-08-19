@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Download, Loader2, Star, X , ChevronLeft } from "lucide-react";
+import { Check, Download, Loader2, Star, X, ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -182,36 +182,36 @@ export function ParentAdmissions() {
         </div>
 
         <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8", detailClass)}>
-            {isLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-primary" />
-              </div>
-            ) : tiers.length === 0 ? (
-              <p className="py-20 text-center text-[14px] text-muted-foreground">
-                No plans are on offer at the moment.
-              </p>
-            ) : (
-              <div className="grid gap-5 lg:grid-cols-3">
-                {tiers.map((t, i) => (
-                  <TierCard
-                    key={t.id}
-                    tier={t}
-                    shade={tierShade(i)}
-                    current={currentPlan?.tier.id === t.id}
-                    hasPlan={!!currentPlan}
-                    disabled={!activeChildId}
-                    busy={busy === t.id}
-                    onChoose={() => (currentPlan ? setSwitchingTo(t) : setPendingTier(t))}
-                  />
-                ))}
-              </div>
-            )}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin text-primary" />
+            </div>
+          ) : tiers.length === 0 ? (
+            <p className="py-20 text-center text-[14px] text-muted-foreground">
+              No plans are on offer at the moment.
+            </p>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-3">
+              {tiers.map((t, i) => (
+                <TierCard
+                  key={t.id}
+                  tier={t}
+                  shade={tierShade(i)}
+                  current={currentPlan?.tier.id === t.id}
+                  hasPlan={!!currentPlan}
+                  disabled={!activeChildId}
+                  busy={busy === t.id}
+                  onChoose={() => (currentPlan ? setSwitchingTo(t) : setPendingTier(t))}
+                />
+              ))}
+            </div>
+          )}
 
-            {children.length > 1 && !activeChildId && (
-              <p className="mt-6 text-center text-[13px] text-muted-foreground">
-                Pick a child on the left to choose a plan for them.
-              </p>
-            )}
+          {children.length > 1 && !activeChildId && (
+            <p className="mt-6 text-center text-[13px] text-muted-foreground">
+              Pick a child on the left to choose a plan for them.
+            </p>
+          )}
         </div>
       </div>
 
@@ -238,46 +238,46 @@ export function ParentAdmissions() {
             )}
           >
             <div className="overflow-y-auto p-6">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
-              <button
-                onClick={closePurchase}
-                aria-label="Close"
-                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
-              >
-                <X size={18} />
-              </button>
-            </div>
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
+                <button
+                  onClick={closePurchase}
+                  aria-label="Close"
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-            {/* The summary as a card rather than two sentences, so what is
+              {/* The summary as a card rather than two sentences, so what is
                 being bought and who for is one object to check rather than a
                 paragraph to read. The child's face because buying the right
                 plan for the wrong child is the expensive mistake here. */}
-            <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
-              <img
-                src={activeChild.avatar_url || dicebearUrl(activeChild.full_name)}
-                alt=""
-                className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold text-foreground">
-                  {pendingTier.name} admissions
-                </p>
-                <p className="truncate text-[13px] text-muted-foreground">
-                  for {activeChild.full_name}
-                </p>
+              <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
+                <img
+                  src={activeChild.avatar_url || dicebearUrl(activeChild.full_name)}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-semibold text-foreground">
+                    {pendingTier.name} admissions
+                  </p>
+                  <p className="truncate text-[13px] text-muted-foreground">
+                    for {activeChild.full_name}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[17px] font-bold leading-tight text-foreground">
+                    {money(pendingTier.priceCents)}/month
+                  </p>
+                  <p className="text-[12px] leading-tight text-muted-foreground">
+                    cancel any time
+                  </p>
+                </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="text-[17px] font-bold leading-tight text-foreground">
-                  {money(pendingTier.priceCents)}/month
-                </p>
-                <p className="text-[12px] leading-tight text-muted-foreground">
-                  cancel any time
-                </p>
-              </div>
-            </div>
 
-            {/* Choosing the counsellor, but only when there is a choice.
+              {/* Choosing the counsellor, but only when there is a choice.
                 With one on the books a gallery is a screen with one card and a
                 decision nobody is making; with none, the plan is bought
                 unassigned and an admin places it, which is what already
@@ -290,135 +290,135 @@ export function ParentAdmissions() {
 
                 No heading. The cards are people with a Choose action on them,
                 which does not need a label to explain it. */}
-            {step === "counselor" && counselors.length > 1 && (
-              <div className="mt-5 grid max-h-[22rem] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-                {counselors.map((c) => {
-                  const picked = chosenCounselor?.id === c.id;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
-                        }
-                      }}
-                      className={cn(
-                        "cursor-pointer overflow-hidden rounded-2xl border transition-all",
-                        picked
-                          ? "border-primary ring-2 ring-primary/40"
-                          : "border-border hover:border-primary/40"
-                      )}
-                    >
-                      <div className="relative aspect-[4/3] w-full bg-muted">
-                        <img
-                          src={c.avatarUrl || dicebearUrl(c.name)}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                        {picked && (
-                          <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                            <Check size={14} strokeWidth={3} />
-                          </span>
+              {step === "counselor" && counselors.length > 1 && (
+                <div className="py-5 px-2 grid max-h-[28rem] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                  {counselors.map((c) => {
+                    const picked = chosenCounselor?.id === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
+                          }
+                        }}
+                        className={cn(
+                          "cursor-pointer overflow-hidden rounded-2xl border transition-all",
+                          picked
+                            ? "border-primary ring-2 ring-primary/40"
+                            : "border-border hover:border-primary/40"
                         )}
-                      </div>
+                      >
+                        <div className="relative aspect-[4/3] w-full bg-muted">
+                          <img
+                            src={c.avatarUrl || dicebearUrl(c.name)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                          {picked && (
+                            <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                              <Check size={14} strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-[15px] font-semibold text-foreground">
-                              {c.name}
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-[15px] font-semibold text-foreground">
+                                {c.name}
+                              </p>
+                            </div>
+                            <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
+                              {money(pendingTier.priceCents)}
+                              <span className="text-[12px] font-normal text-muted-foreground">
+                                /month
+                              </span>
                             </p>
                           </div>
-                          <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
-                            {money(pendingTier.priceCents)}
-                            <span className="text-[12px] font-normal text-muted-foreground">
-                              /month
+
+                          <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            {/* Said in words when there are none. An empty five
+                              stars reads as a bad review, not no reviews. */}
+                            {c.averageStars != null ? (
+                              <>
+                                <Star size={11} className="fill-secondary text-secondary" />
+                                <span className="font-medium text-foreground">
+                                  {c.averageStars.toFixed(1)}
+                                </span>
+                                <span>({c.ratingCount})</span>
+                              </>
+                            ) : (
+                              <span>No reviews yet</span>
+                            )}
+                            <span aria-hidden>·</span>
+                            <span>
+                              {c.activePlans} student{c.activePlans === 1 ? "" : "s"}
                             </span>
                           </p>
-                        </div>
 
-                        <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                          {/* Said in words when there are none. An empty five
-                              stars reads as a bad review, not no reviews. */}
-                          {c.averageStars != null ? (
-                            <>
-                              <Star size={11} className="fill-secondary text-secondary" />
-                              <span className="font-medium text-foreground">
-                                {c.averageStars.toFixed(1)}
-                              </span>
-                              <span>({c.ratingCount})</span>
-                            </>
-                          ) : (
-                            <span>No reviews yet</span>
-                          )}
-                          <span aria-hidden>·</span>
-                          <span>
-                            {c.activePlans} student{c.activePlans === 1 ? "" : "s"}
-                          </span>
-                        </p>
-
-                        {/* Always drawn, disabled when there is no CV on file.
+                          {/* Always drawn, disabled when there is no CV on file.
                             Rendered conditionally it simply vanished, which
                             looks identical to the feature not existing. */}
-                        <div className="mt-3 border-t border-border pt-2.5">
-                          {c.resumeUrl ? (
-                            <a
-                              href={c.resumeUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
-                            >
-                              <Download size={13} /> Download CV
-                            </a>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-                              <Download size={13} /> No CV on file
-                            </span>
-                          )}
+                          <div className="mt-3 border-t border-border pt-2.5">
+                            {c.resumeUrl ? (
+                              <a
+                                href={c.resumeUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+                              >
+                                <Download size={13} /> Download CV
+                              </a>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                                <Download size={13} /> No CV on file
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
 
-            {step === "counselor" && counselors.length > 1 && !chosenCounselor && (
-              <p className="mt-3 text-[12px] text-muted-foreground">
-                Skip to be matched automatically.
-              </p>
-            )}
+              {step === "counselor" && counselors.length > 1 && !chosenCounselor && (
+                <p className="mt-3 text-[12px] text-muted-foreground">
+                  Skip to be matched automatically.
+                </p>
+              )}
 
-            {/* The same grid the course booking uses, pointed at the
+              {/* The same grid the course booking uses, pointed at the
                 counsellor. Advising sessions store them in sessions.tutor_id
                 and availability is keyed the same way, so this needed nothing
                 of its own. */}
-            {step === "slots" && chosenCounselor && (
-              <div className="mt-5">
-                <p className="mb-3 text-[13px] text-muted-foreground">
-                  When would you like to meet {chosenCounselor.name}? These become the first
-                  advising sessions. You can skip this and book later from the plan.
-                </p>
-                <AvailabilityPicker
-                  tutorId={chosenCounselor.id}
-                  studentId={activeChildId}
-                  selected={slots}
-                  multiple
-                  onToggle={(slot) =>
-                    setSlots((cur) =>
-                      cur.some((s) => s.key === slot.key)
-                        ? cur.filter((s) => s.key !== slot.key)
-                        : [...cur, slot]
-                    )
-                  }
-                />
-              </div>
-            )}
+              {step === "slots" && chosenCounselor && (
+                <div className="mt-5">
+                  <p className="mb-3 text-[13px] text-muted-foreground">
+                    When would you like to meet {chosenCounselor.name}? These become the first
+                    advising sessions. You can skip this and book later from the plan.
+                  </p>
+                  <AvailabilityPicker
+                    tutorId={chosenCounselor.id}
+                    studentId={activeChildId}
+                    selected={slots}
+                    multiple
+                    onToggle={(slot) =>
+                      setSlots((cur) =>
+                        cur.some((s) => s.key === slot.key)
+                          ? cur.filter((s) => s.key !== slot.key)
+                          : [...cur, slot]
+                      )
+                    }
+                  />
+                </div>
+              )}
             </div>
             <div className="flex gap-3 border-t border-border p-6 pt-4">
               <button

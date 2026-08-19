@@ -263,3 +263,22 @@ REVOKE ALL ON FUNCTION public.sessions_due_for_completion(text, int) FROM public
 -- destroy the one thing on the row worth keeping.
 ALTER TABLE public.sessions
   ADD COLUMN IF NOT EXISTS cancel_reason text;
+
+-- A cancellation is its own kind of news.
+--
+-- session_moved already exists for a reschedule, and a cancellation is the
+-- other half of that pair. Without it the insert is refused, and because
+-- telling somebody is deliberately not allowed to fail a cancellation, the
+-- refusal is a log line nobody reads while the tutor waits for a student who
+-- is not coming.
+ALTER TABLE public.notifications
+  DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+ALTER TABLE public.notifications
+  ADD CONSTRAINT notifications_type_check CHECK (type IN (
+    'booking', 'assignment', 'approval', 'message', 'system', 'parent_link',
+    'application', 'unlock_request', 'course_application',
+    'course_application_decided', 'enrolment', 'admissions_plan',
+    'essay_review', 'payout', 'message_report', 'session_moved',
+    'session_cancelled'
+  ));

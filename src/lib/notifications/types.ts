@@ -16,6 +16,7 @@
 export type NotificationType =
   | "booking"
   | "session_moved"
+  | "session_cancelled"
   | "assignment"
   | "approval"
   | "message"
