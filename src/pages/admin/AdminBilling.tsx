@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getAllInvoices, getConnectReadiness, getTutorPayouts, type TutorPayout } from "@/services/adminService";
-import { payViaConnect } from "@/services/payoutService";
+import { getAllInvoices } from "@/services/adminService";
+import { getOwedEarnings, settleEarnings, type OwedRow } from "@/services/payoutService";
 import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
 import { money } from "@/services/billingService";
 import { Loader2, CheckCircle2, Clock, Wallet, Check, ScrollTextIcon } from "lucide-react";
@@ -20,7 +20,7 @@ function fmtDate(d?: string | null) {
 export function AdminBilling() {
   const qc = useQueryClient();
   const { data: invoices = [], isLoading } = useQuery({ queryKey: ["admin-invoices"], queryFn: getAllInvoices });
-  const { data: payouts = [] } = useQuery({ queryKey: ["admin-payouts"], queryFn: getTutorPayouts });
+  const { data: payouts = [] } = useQuery({ queryKey: ["admin-payouts"], queryFn: getOwedEarnings });
 
   const stats = useMemo(() => {
     const paid = invoices.filter((i) => i.status === "paid");
@@ -28,31 +28,30 @@ export function AdminBilling() {
     return {
       revenue: paid.reduce((s, i) => s + i.amount_cents, 0),
       outstanding: open.reduce((s, i) => s + i.amount_cents, 0),
-      payoutsDue: payouts.reduce((s, p) => s + p.payout_cents, 0),
+      payoutsDue: payouts.reduce((s: number, p: OwedRow) => s + p.amountCents, 0),
     };
   }, [invoices, payouts]);
 
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [recording, setRecording] = useState<TutorPayout | null>(null);
-
-  const { data: ready } = useQuery({
-    queryKey: ["connect-readiness", payouts.map((p) => p.tutor_id).join(",")],
-    queryFn: () => getConnectReadiness([...new Set(payouts.map((p) => p.tutor_id))]),
-    enabled: payouts.length > 0,
-  });
+  const [recording, setRecording] = useState<OwedRow | null>(null);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
     qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
   }
 
-  /** Money out of the Stripe balance into the tutor's connected account. */
-  async function payByTransfer(p: TutorPayout) {
+  /**
+   * Money out of the Stripe balance into the payee's connected account.
+   *
+   * The same thing the scheduled job does once the hold expires, done now. It
+   * is an override, so the row says when it would have gone on its own.
+   */
+  async function payByTransfer(p: OwedRow) {
     setBusyId(p.id);
-    const res = await payViaConnect([p.id]);
+    const res = await settleEarnings([p.id]);
     setBusyId(null);
     if (res.error) return toast.error(res.error);
-    toast.success(`Sent to ${p.tutor_name}. Reference ${res.transferId}.`);
+    toast.success(`Sent to ${p.payeeName ?? "them"}. Reference ${res.transferId}.`);
     refresh();
   }
 
@@ -74,25 +73,31 @@ export function AdminBilling() {
           <div>
             <div className="flex items-center gap-2 border-b border-border/50 pb-3 mb-4">
               <Wallet size={18} className="text-primary" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Tutor payouts</h3>
+              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Owed</h3>
             </div>
             {payouts.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground py-4">No payouts pending. All tutors are settled.</p>
+              <p className="text-[14px] text-muted-foreground py-4">Nothing owed. Everybody is settled.</p>
             ) : (
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
-                {payouts.map((p) => (
+                {payouts.map((p: OwedRow) => {
+                  const clearing = !!p.releasableAt && new Date(p.releasableAt) > new Date();
+                  return (
                   <div key={p.id} className="flex items-center gap-4 p-4">
-                    <img src={dicebearUrl(p.tutor_name)} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    <img src={dicebearUrl(p.payeeName ?? "Yakal")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.tutor_name}</p>
-                      <p className="text-[12px] text-muted-foreground truncate">{p.description} - from {p.parent_name}</p>
+                      <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.payeeName ?? "Payee"}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">
+                        {p.subject}
+                        {p.studentName ? ` - ${p.studentName}` : ""}
+                        {clearing && p.releasableAt ? ` - clears ${fmtDate(p.releasableAt)}` : " - due now"}
+                      </p>
                     </div>
-                    <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.payout_cents, p.currency)}</span>
+                    <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.amountCents, p.currency)}</span>
                     {/* Two ways to settle, and which one is offered is not a
-                        choice: a tutor Stripe has not cleared cannot receive a
+                        choice: somebody Stripe has not cleared cannot receive a
                         transfer, so for them the only honest option is to pay
                         by hand and write down how. */}
-                    {ready?.get(p.tutor_id) ? (
+                    {p.payoutsEnabled ? (
                       <button
                         onClick={() => void payByTransfer(p)}
                         disabled={busyId === p.id}
@@ -111,7 +116,8 @@ export function AdminBilling() {
                       </button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

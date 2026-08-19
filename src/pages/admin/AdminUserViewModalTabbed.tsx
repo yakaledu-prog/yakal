@@ -132,11 +132,14 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                     <p className="text-[11px] text-muted-foreground mt-1">{safeFormatDate(inv.created_at, "MMM d, yyyy")}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[14px] font-bold text-[#111] dark:text-white">{money(user.role === "parent" ? inv.amount_cents : inv.payout_cents)}</p>
+                    {/* A parent's row is an invoice and a tutor's is an
+                        earning, but the service hands both over in the same
+                        shape, so there is nothing to branch on here. */}
+                    <p className="text-[14px] font-bold text-[#111] dark:text-white">{money(inv.amount_cents)}</p>
                     <p className={cn("text-[11px] font-semibold uppercase mt-1",
-                      (user.role === "parent" ? inv.status : inv.payout_status) === "paid" ? "text-emerald-500" : "text-amber-500"
+                      inv.status === "paid" || inv.status === "settled" ? "text-emerald-500" : "text-amber-500"
                     )}>
-                      {user.role === "parent" ? inv.status : inv.payout_status}
+                      {inv.status}
                     </p>
                   </div>
                 </div>

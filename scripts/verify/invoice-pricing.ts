@@ -109,7 +109,7 @@ if (forged.status !== 200) {
 } else {
   const { data: inv } = await admin
     .from('invoices')
-    .select('amount_cents, payout_cents, tutor_id, description')
+    .select('amount_cents, tutor_earning_cents, tutor_id, description')
     .eq('id', forged.payload.invoiceId)
     .single();
 
@@ -119,7 +119,7 @@ if (forged.status !== 200) {
   }
 
   const expectedAmount = course.price_cents * booking.length;
-  const expectedPayout =
+  const expectedEarning =
     course.tutor_payout_cents != null ? course.tutor_payout_cents * booking.length : null;
 
   check(
@@ -128,9 +128,9 @@ if (forged.status !== 200) {
     `${inv.amount_cents} vs ${expectedAmount} expected (request asked for 1)`
   );
   check(
-    'the payout comes from the course, not a hardcoded share',
-    inv.payout_cents === expectedPayout,
-    `${inv.payout_cents} vs ${expectedPayout} expected`
+    'the tutor share comes from the course, not a hardcoded percentage',
+    inv.tutor_earning_cents === expectedEarning,
+    `${inv.tutor_earning_cents} vs ${expectedEarning} expected`
   );
   check(
     'the payee is the course tutor, not the one named',

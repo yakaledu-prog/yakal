@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let finalKind = kind;
     // Null unless a course sets it. A tier's counsellor share is its own
     // ledger, see api/_utils/counselor-pay.ts.
-    let derivedPayoutCents: number | null = null;
+    let derivedEarningCents: number | null = null;
     // Who gets paid: a course's tutor, or the counsellor a parent chose.
     let derivedTutorId: string | null = null;
 
@@ -135,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `${course.title} (${slots} session${slots === 1 ? '' : 's'})`;
       // The tutor teaching it, not the tutor the request named.
       derivedTutorId = course.tutor_id ?? null;
-      derivedPayoutCents =
+      derivedEarningCents =
         course.tutor_payout_cents != null ? course.tutor_payout_cents * slots : null;
     }
 
@@ -177,7 +177,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // What the admin set on the course, times the sessions bought. Recorded
     // now so a later reprice cannot change what somebody was owed for work
     // already booked.
-    const payoutCents = derivedPayoutCents;
+    const earningCents = derivedEarningCents;
     const payeeId = derivedTutorId;
 
     const { data, error } = await db
@@ -188,13 +188,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         tutor_id: payeeId,
         description: finalDescription,
         amount_cents: finalAmountCents,
-        payout_cents: payoutCents,
+        tutor_earning_cents: earningCents,
         kind: finalKind,
         course_id: courseId,
         admissions_tier_id: admissionsTierId,
         booking: booking && booking.length > 0 ? booking : null,
         status: 'open',
-        payout_status: 'none',
       }])
       .select('id')
       .single();

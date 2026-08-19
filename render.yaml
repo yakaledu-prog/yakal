@@ -16,6 +16,9 @@
 #   APP_BASE_URL                 this service's own URL, or Stripe returns
 #   PUBLIC_APP_URL               people to localhost after paying
 #   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+#   JOBS_TOKEN                   the scheduled job's only credential. Without
+#                                it the job refuses every caller, so nothing
+#                                completes and nobody is paid.
 #   VITE_GCP_CLIENT_ID, GCP_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN
 #   RESEND_API_KEY, VITE_CONTACT_DESTINATION_EMAIL
 #   ZOOM_S2S_*, VITE_ZOOM_MEETING_CLIENT_ID, ZOOM_MEETING_CLIENT_SECRET

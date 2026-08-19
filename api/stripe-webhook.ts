@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type Stripe from 'stripe';
-import { getStripe } from './_utils/billing.js';
+import { chargeIdFor, getStripe } from './_utils/billing.js';
 import { getServiceClient } from './_utils/supabase.js';
 import { fulfilInvoices } from './_utils/fulfil.js';
 import { recordCounselorShare } from './_utils/counselor-pay.js';
+import { cancelEarningsForCharge, markReversedByTransfer } from './_utils/earnings.js';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.
 export const config = { api: { bodyParser: false } };
@@ -157,13 +158,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (invoiceIds.length > 0) {
         const db = getServiceClient();
+        const paymentIntentId =
+          typeof session.payment_intent === 'string' ? session.payment_intent : null;
+
         const { error } = await db
           .from('invoices')
           .update({
             status: 'paid',
             paid_at: new Date().toISOString(),
-            stripe_payment_intent_id:
-              typeof session.payment_intent === 'string' ? session.payment_intent : null,
+            stripe_payment_intent_id: paymentIntentId,
+            stripe_charge_id: await chargeIdFor(paymentIntentId),
           })
           .in('id', invoiceIds);
         if (error) console.error('Failed to mark invoices paid:', error.message);
@@ -173,13 +177,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // happen here.
         await fulfilInvoices(db, invoiceIds);
 
-        // The tutor's cut becomes a pending payout once paid.
-        await db
-          .from('invoices')
-          .update({ payout_status: 'pending' })
-          .in('id', invoiceIds)
-          .not('tutor_id', 'is', null)
-          .eq('payout_status', 'none');
+        // Nothing is owed to the tutor yet. An earning is written when a lesson
+        // is delivered, not when it is bought, so that money for an
+        // undelivered session is still ours to refund. See _utils/earnings.ts.
       }
     }
 
@@ -188,6 +188,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // so this is the only place they are ever seen.
     if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
       await recordInstalment(event);
+    }
+
+    // Money going back to the payer, however it was started: our own refund
+    // path, or an admin pressing refund in the Stripe dashboard. Either way
+    // anything still owed on that charge stops being owed.
+    //
+    // This is the hold earning its keep. A pending earning is cancelled with a
+    // single update; a settled one would need the money pulled back out of
+    // somebody's account, which is why nothing settles for three days.
+    if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
+      const charge =
+        event.type === 'charge.refunded'
+          ? (event.data.object as Stripe.Charge)
+          : ((event.data.object as Stripe.Dispute).charge as string | Stripe.Charge);
+      const chargeId = typeof charge === 'string' ? charge : charge.id;
+
+      const { cancelled, alreadySettled } = await cancelEarningsForCharge(
+        getServiceClient(),
+        chargeId,
+        event.type === 'charge.refunded' ? 'The payment was refunded.' : 'The payment was disputed.'
+      );
+
+      // Named rather than swallowed. Money that has already moved is the case
+      // a person has to chase, and it is invisible unless somebody says so.
+      if (alreadySettled > 0) {
+        console.error(
+          `webhook: ${event.type} on ${chargeId}, but ${alreadySettled} earning(s) had already been paid out and need recovering by hand`
+        );
+      }
+      console.log(`webhook: ${event.type} on ${chargeId} cancelled ${cancelled} pending earning(s)`);
+    }
+
+    // A reversal begun in the Stripe dashboard rather than by us. Transfers are
+    // platform objects, so this arrives on the account endpoint, not the
+    // Connect one.
+    if (event.type === 'transfer.reversed') {
+      await markReversedByTransfer(
+        getServiceClient(),
+        event.data.object as Stripe.Transfer,
+        'Reversed in Stripe.'
+      );
     }
 
     // A tutor finishing, or failing, Stripe's onboarding. Nothing else knows

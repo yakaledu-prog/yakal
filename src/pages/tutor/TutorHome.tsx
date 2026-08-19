@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
 import { getTutorDashboard, SessionRow } from "@/services/tutorService";
-import { getTutorEarnings } from "@/services/payoutService";
+import { getEarnings, type EarningRow } from "@/services/payoutService";
 import { money } from "@/services/billingService";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -20,17 +20,22 @@ export function TutorHome() {
     enabled: !!profile?.id,
   });
 
-  const { data: earningRows = [] } = useQuery({
+  const { data: earningRows = [], dataUpdatedAt } = useQuery({
     queryKey: ['tutor-earnings', profile?.id],
-    queryFn: () => getTutorEarnings(profile!.id),
+    queryFn: () => getEarnings(profile!.id),
     enabled: !!profile?.id,
   });
 
-  const unclaimed = earningRows.filter((r) => r.payoutStatus === 'none');
+  // Still owed, and what it is waiting on. Clearing is the hold running down,
+  // which needs nothing from anybody; due is past it and moving on the next run.
+  const held = (r: EarningRow) =>
+    !!r.releasableAt && new Date(r.releasableAt).getTime() > dataUpdatedAt;
+  const owed = earningRows.filter((r: EarningRow) => r.status === 'pending');
+  const sum = (rows: EarningRow[]) => rows.reduce((n: number, r: EarningRow) => n + r.amountCents, 0);
   const totals = {
-    unclaimed: unclaimed.reduce((n, r) => n + r.amountCents, 0),
-    awaiting: earningRows.filter((r) => r.payoutStatus === 'requested').reduce((n, r) => n + r.amountCents, 0),
-    paid: earningRows.filter((r) => r.payoutStatus === 'paid').reduce((n, r) => n + r.amountCents, 0),
+    clearing: sum(owed.filter(held)),
+    due: sum(owed.filter((r: EarningRow) => !held(r))),
+    paid: sum(earningRows.filter((r: EarningRow) => r.status === 'settled')),
   };
 
   if (isLoading || !data) {
@@ -69,7 +74,7 @@ export function TutorHome() {
   // The banner used to multiply the profile's hourly rate by the completed
   // count and label it ETB, while the earnings page showed the real per
   // session figures in USD. One number, from the ledger, in one currency.
-  const totalEarned = totals.unclaimed + totals.awaiting + totals.paid;
+  const totalEarned = totals.clearing + totals.due + totals.paid;
 
   const firstName = profile?.full_name?.split(" ")[0] || "Tutor";
 
@@ -138,17 +143,17 @@ export function TutorHome() {
               <button onClick={() => navigate("/tutor/earnings")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
-            {/* Sessions taught and not yet claimed. Asking to be paid is the
-                one step nobody else can do for a tutor, and it was buried a
-                page away where a quiet week meant forgetting about it. */}
+            {/* What a tutor has earned and where it has got to. Nothing here
+                needs an action from them: a lesson that has run pays out once
+                its hold expires. */}
             <div className="grid grid-cols-3 gap-4 border-b border-border/50 pb-6">
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Not requested</p>
-                <p className="mt-1 text-2xl font-bold text-secondary">{money(totals.unclaimed)}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Clearing</p>
+                <p className="mt-1 text-2xl font-bold text-secondary">{money(totals.clearing)}</p>
               </div>
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Awaiting</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">{money(totals.awaiting)}</p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Due</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">{money(totals.due)}</p>
               </div>
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Paid</p>
@@ -156,11 +161,11 @@ export function TutorHome() {
               </div>
             </div>
 
-            {unclaimed.length > 0 && (
+            {owed.length > 0 && (
               <>
                 <div className="divide-y divide-border">
-                  {unclaimed.slice(0, 5).map((r) => (
-                    <div key={r.sessionId} className="flex items-center gap-4 py-4">
+                  {owed.slice(0, 5).map((r: EarningRow) => (
+                    <div key={r.id} className="flex items-center gap-4 py-4">
                       <img
                         src={r.studentAvatarUrl || dicebearUrl(r.studentName ?? "Yakal")}
                         alt=""
@@ -188,8 +193,7 @@ export function TutorHome() {
                   onClick={() => navigate("/tutor/earnings")}
                   className="mt-2 h-11 w-full rounded-md bg-primary text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  Request payment for {unclaimed.length}{" "}
-                  {unclaimed.length === 1 ? "session" : "sessions"}
+                  See all {owed.length} unpaid {owed.length === 1 ? "item" : "items"}
                 </button>
               </>
             )}

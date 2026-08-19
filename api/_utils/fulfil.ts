@@ -36,7 +36,7 @@ interface Invoice {
   admissions_tier_id: string | null;
   booking: BookingSlot[] | null;
   description: string;
-  payout_cents: number | null;
+  tutor_earning_cents: number | null;
 }
 
 /** Fulfil every paid invoice in the list. Safe to call more than once. */
@@ -46,7 +46,7 @@ export async function fulfilInvoices(db: any, invoiceIds: string[]): Promise<voi
   const { data: invoices, error } = await db
     .from("invoices")
     .select(
-      "id, parent_id, student_id, tutor_id, course_id, admissions_tier_id, booking, description, payout_cents"
+      "id, parent_id, student_id, tutor_id, course_id, admissions_tier_id, booking, description, tutor_earning_cents"
     )
     .in("id", invoiceIds);
 
@@ -139,13 +139,13 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     // money is split across the slots it bought. The remainder goes to the
     // first, which is the only way the parts add back up to the whole.
     const payable = slots.filter((s) => s?.date && s?.startTime);
-    const perSession = payable.length > 0 ? Math.floor((invoice.payout_cents ?? 0) / payable.length) : 0;
-    const remainder = payable.length > 0 ? (invoice.payout_cents ?? 0) % payable.length : 0;
+    const perSession = payable.length > 0 ? Math.floor((invoice.tutor_earning_cents ?? 0) / payable.length) : 0;
+    const remainder = payable.length > 0 ? (invoice.tutor_earning_cents ?? 0) % payable.length : 0;
 
     const rows = payable
-      .map((s, i) => ({ slot: s, payout: perSession + (i === 0 ? remainder : 0) }))
+      .map((s, i) => ({ slot: s, earning: perSession + (i === 0 ? remainder : 0) }))
       .filter(({ slot }) => !seen.has(`${slot.date}|${slot.startTime.slice(0, 5)}`))
-      .map(({ slot, payout }) => ({
+      .map(({ slot, earning }) => ({
         student_id: invoice.student_id,
         tutor_id: tutorId,
         course_id: course.id,
@@ -154,7 +154,7 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
         date: slot.date,
         start_time: slot.startTime,
         duration_minutes: slot.durationMinutes ?? 60,
-        payout_cents: payout,
+        tutor_earning_cents: earning,
         mode: "online",
         status: "upcoming",
       }));

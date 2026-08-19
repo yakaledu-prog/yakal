@@ -131,7 +131,7 @@ const { data: invoice } = await db.from('invoices').insert({
   parent_id: posted.studentId ? psql("select id from profiles where email='parent@yakal.com';") : null,
   student_id: posted.studentId, tutor_id: posted.tutorId, course_id: posted.courseId,
   booking: posted.booking, description: posted.description, amount_cents: posted.amountCents,
-  payout_cents: 4900, kind: 'tutoring', status: 'paid', payout_status: 'pending',
+  tutor_earning_cents: 4900, kind: 'tutoring', status: 'paid',
 }).select('id').single();
 const { fulfilInvoices } = await import('../../api/utils/fulfil.ts');
 await fulfilInvoices(db, [invoice.id]);
@@ -141,7 +141,10 @@ pass('17. the booked slot became a session', psql(`select count(*) from sessions
 pass('18. everyone is notified', psql(`select count(*) from notifications where type='enrolment';`) === '3');
 const mail = await (await fetch('http://127.0.0.1:54324/api/v1/messages')).json();
 pass('19. the emails go out', mail.total === 3, `total=${mail.total}`);
-pass('20. the tutor payout is pending for the admin', psql(`select payout_status from invoices where id='${invoice.id}';`) === 'pending');
+// Nothing is owed yet, and that is the point: the lessons have not happened.
+// An earning appears when one does, and waits out a hold before it moves.
+pass('20. buying owes the tutor nothing yet',
+  psql(`select count(*) from earnings e join sessions s on s.id=e.session_id where s.invoice_id='${invoice.id}';`) === '0');
 
 // ---------- 8. it reaches the student, and the student reaches the tutor ----------
 const student = await signIn('student@yakal.com');

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe } from '../_utils/billing.js';
+import { chargeIdFor, getStripe } from '../_utils/billing.js';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
 import { fulfilInvoices } from '../_utils/fulfil.js';
 
@@ -89,17 +89,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           paid_at: new Date().toISOString(),
           stripe_payment_intent_id:
             typeof session.payment_intent === 'string' ? session.payment_intent : null,
+          stripe_charge_id: await chargeIdFor(session.payment_intent),
         })
         .in('id', invoiceIds)
         .eq('status', 'open');
 
-      // Now that the parent has paid, the tutor's cut becomes a pending payout.
-      await db
-        .from('invoices')
-        .update({ payout_status: 'pending' })
-        .in('id', invoiceIds)
-        .not('tutor_id', 'is', null)
-        .eq('payout_status', 'none');
+      // Nothing is owed to the tutor yet. An earning is written when a lesson
+      // is delivered, not when it is bought. See api/_utils/earnings.ts.
 
       // The same fulfilment as the webhook. Both can fire for one payment, so
       // every step of it is idempotent.

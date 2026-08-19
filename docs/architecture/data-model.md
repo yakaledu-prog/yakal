@@ -23,7 +23,12 @@ is not in a migration it does not exist on a fresh database.
 `recommendations`, `student_documents`, `college_guide_applications`
 
 **Money**
-`billing_customers`, `invoices`, `child_services`, `tutor_payouts`
+`billing_customers`, `invoices`, `child_services`, `earnings`
+
+`invoices` is money in, `earnings` is money out. An earning is written when the
+work is delivered rather than when it is bought, so what a parent has paid for
+but not yet received is still the platform's to refund. See
+`docs/architecture/integrations.md`.
 
 **Talking**
 `conversations`, `conversation_participants`, `messages`, `message_reports`,
