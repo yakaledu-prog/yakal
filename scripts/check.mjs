@@ -30,6 +30,7 @@ const PURE = [
   ['error-scrubbing.ts', 'no credential leaves in an error report'],
   ['email-links.ts', 'links in email do not point at localhost'],
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
+  ['cancellation-policy.ts', 'the published cancellation policy, applied'],
   ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],
 ];
 
@@ -38,10 +39,18 @@ const NEEDS_DB = [
   ['profiles-not-public.mjs', 'profiles is not readable signed out'],
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
+  ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
+  ['earnings.mjs', 'nobody can write themselves an earning, and holds hold'],
+  ['session-completion.mjs', 'which lessons are finished, in the right timezone'],
+  ['run-jobs.ts', 'the scheduled job completes lessons and holds the money'],
+  ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 
 /** Needs the local Supabase and the Vite loader, because it imports src/. */
-const NEEDS_DB_AND_VITE = [['realtime-refcount.ts', 'realtime channels are ref-counted']];
+const NEEDS_DB_AND_VITE = [
+  ['realtime-refcount.ts', 'realtime channels are ref-counted'],
+  ['earnings-summary.ts', 'an earnings page adds up what is really there'],
+];
 
 const SUPABASE = process.env.VITE_SUPABASE_LOCAL_URL || 'http://127.0.0.1:54321';
 
@@ -71,16 +80,28 @@ function run(command, args, label) {
   }
 }
 
+/**
+ * .mjs runs under node, anything else under tsx.
+ *
+ * Shared by both groups. It used to live only in the pure loop, and the
+ * database group hardcoded node, so the first check there that imported a
+ * TypeScript handler failed with ERR_MODULE_NOT_FOUND rather than a result.
+ */
+function runByExtension(file, label) {
+  const isPlain = file.endsWith('.mjs');
+  return run(
+    isPlain ? 'node' : 'npx',
+    isPlain ? [join('scripts/verify', file)] : ['tsx', join('scripts/verify', file)],
+    label
+  );
+}
+
 async function main() {
   let failed = 0;
 
   console.log('\nChecks that need nothing\n');
   for (const [file, label] of PURE) {
-    const command = file.endsWith('.mjs') ? 'node' : 'npx';
-    const args = file.endsWith('.mjs')
-      ? [join('scripts/verify', file)]
-      : ['tsx', join('scripts/verify', file)];
-    if (!run(command, args, label)) failed++;
+    if (!runByExtension(file, label)) failed++;
   }
 
   const up = await databaseIsUp();
@@ -91,7 +112,7 @@ async function main() {
       console.log(`  ${label.padEnd(46)}skip`);
       continue;
     }
-    if (!run('node', [join('scripts/verify', file)], label)) failed++;
+    if (!runByExtension(file, label)) failed++;
   }
   for (const [file, label] of NEEDS_DB_AND_VITE) {
     if (!up) {

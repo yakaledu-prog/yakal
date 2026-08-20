@@ -1,52 +1,47 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getStripe } from '../_utils/billing.js';
+import { chargeIdFor, getStripe } from '../_utils/billing.js';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
 import { fulfilInvoices } from '../_utils/fulfil.js';
+import { syncPlanFromSubscription } from '../_utils/subscriptions.js';
 
 /**
- * Give an instalment plan an end date, and remember its subscription.
+ * Remember which subscription belongs to this plan.
  *
- * A counselling tier is collected over a fixed number of months, so the
- * subscription must stop by itself. Checkout will not accept cancel_at,
- * because there is no subscription at the point the session is created, so it
- * is set here on the first return from Stripe.
+ * There is no longer a term to close: a counselling subscription is open ended
+ * and stops when the family says so, so the cancel_at this used to compute is
+ * gone along with the instalment model.
  *
- * Idempotent: setting the same cancel_at twice is the same as setting it once,
- * and a plan that already carries a subscription id is skipped.
+ * What is still needed is the link. Every later invoice.paid arrives attached
+ * to a subscription and nothing else, so a plan that does not carry its id is a
+ * plan the second month cannot find.
+ *
+ * Idempotent: a plan that already has one is left alone.
  */
-async function closeInstalmentPlan(session: any, db: any): Promise<void> {
+async function linkSubscription(session: any, db: any): Promise<void> {
   const subscriptionId =
     typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
   if (!subscriptionId) return;
 
-  const months = Number(session.metadata?.months ?? 0);
+  const firstInvoiceId = (session.metadata?.invoice_ids || '').split(',')[0]?.trim();
+  if (!firstInvoiceId) return;
 
   try {
-    const stripe = getStripe();
-    const sub = await stripe.subscriptions.retrieve(subscriptionId);
-
-    if (months > 1 && !sub.cancel_at) {
-      // Counting from when the subscription actually started, not from now:
-      // the parent may confirm minutes later, and an end date that drifts by
-      // the length of the checkout is an end date nobody can predict.
-      const startedAt = new Date((sub.start_date ?? Math.floor(Date.now() / 1000)) * 1000);
-      const endsAt = new Date(startedAt);
-      endsAt.setMonth(endsAt.getMonth() + months);
-      await stripe.subscriptions.update(subscriptionId, {
-        cancel_at: Math.floor(endsAt.getTime() / 1000),
-      });
-    }
-
-    // So an admin can find the subscription behind a plan without guessing.
-    await db
+    const { error } = await db
       .from('admissions_plans')
       .update({ stripe_subscription_id: subscriptionId })
-      .eq('invoice_id', (session.metadata?.invoice_ids || '').split(',')[0]?.trim())
+      .eq('invoice_id', firstInvoiceId)
       .is('stripe_subscription_id', null);
+    if (error) throw new Error(error.message);
+
+    // Bring the plan's period end and status into line straight away, so the
+    // billing page can say when the next charge is without waiting for a
+    // webhook that may be minutes behind, or absent locally.
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+    await syncPlanFromSubscription(db, sub);
   } catch (err: any) {
-    // The money has moved and the plan is granted. Failing to set an end date
+    // The money has moved and the plan is granted. Failing to record the link
     // is worth shouting about, not worth failing the confirmation over.
-    console.error('stripe-confirm: could not close the instalment plan:', err?.message ?? err);
+    console.error('stripe-confirm: could not link the subscription:', err?.message ?? err);
   }
 }
 
@@ -89,27 +84,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           paid_at: new Date().toISOString(),
           stripe_payment_intent_id:
             typeof session.payment_intent === 'string' ? session.payment_intent : null,
+          stripe_charge_id: await chargeIdFor(session.payment_intent),
         })
         .in('id', invoiceIds)
         .eq('status', 'open');
 
-      // Now that the parent has paid, the tutor's cut becomes a pending payout.
-      await db
-        .from('invoices')
-        .update({ payout_status: 'pending' })
-        .in('id', invoiceIds)
-        .not('tutor_id', 'is', null)
-        .eq('payout_status', 'none');
+      // Nothing is owed to the tutor yet. An earning is written when a lesson
+      // is delivered, not when it is bought. See api/_utils/earnings.ts.
 
       // The same fulfilment as the webhook. Both can fire for one payment, so
       // every step of it is idempotent.
       await fulfilInvoices(db, invoiceIds);
 
-      // A counselling plan is collected over a fixed number of months, so its
-      // subscription needs an end. Checkout will not take cancel_at, because
-      // at that point there is no subscription to set it on, so it is done
-      // here on the way back.
-      await closeInstalmentPlan(session, db);
+      // The subscription behind a counselling plan, so every later month can
+      // find the plan it belongs to.
+      await linkSubscription(session, db);
     }
 
     return res.status(200).json({ status: 'paid' });

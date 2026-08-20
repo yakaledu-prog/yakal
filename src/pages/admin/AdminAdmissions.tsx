@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Check, Star, EyeOff, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Users, X, MoreVertical, Search, List, LayoutGrid } from "lucide-react";
@@ -13,8 +13,10 @@ import { money } from "@/services/billingService";
 import {
   getAllTiers,
   getTierSubscribers,
+  getPlanPayments,
+  type PlanPayment,
+  getPlanTotals,
   reorderTiers,
-  monthlyCents,
   tierShade,
   updateTier,
   createTier,
@@ -260,11 +262,7 @@ export function AdminAdmissions() {
                         <span className="text-[24px] font-bold text-[#111] dark:text-white">
                           {money(t.priceCents)}
                         </span>
-                        {t.instalmentMonths > 1 && (
-                          <span className="text-[13px] text-muted-foreground">
-                            = {money(monthlyCents(t))}/mo over {t.instalmentMonths} months
-                          </span>
-                        )}
+                        <span className="text-[13px] text-muted-foreground">a month</span>
                       </div>
 
                     </div>
@@ -508,7 +506,115 @@ function Subscribers({ people, onOpen }: { people: TierSubscriber[]; onOpen: () 
   );
 }
 
-/** The same people, with the parent who is paying beside each one. */
+/**
+ * Every payment made on one plan, as rows in the same table.
+ *
+ * One row per month, not per tier. A plan is one subscription to one tier: if a
+ * family switched, that is a different plan with its own payments, and mixing
+ * them made a switch look like something that happened inside a subscription
+ * rather than the end of one.
+ *
+ * Sibling rows so each value lands under the column it belongs to. The month
+ * sits under the student, what the parent paid under Total, and the
+ * counsellor's share with its payout state under Counsellor, which is where an
+ * admin is looking when they want to know whether somebody has been paid.
+ */
+function PlanPaymentRows({ planId }: { planId: string }) {
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["plan-payments", planId],
+    queryFn: () => getPlanPayments(planId),
+  });
+
+  const when = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
+  // A period start is a date with no time, so it is read as one: "T00:00:00"
+  // keeps it in the local day instead of shifting to the one before.
+  const monthOf = (date: string) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  const shell = "bg-[#f8f9fa] dark:bg-[#182329]";
+  const edge = "border-b border-[#e9edef]/60 dark:border-[#2a3942]/60";
+
+  if (isLoading) {
+    return (
+      <tr className={shell}>
+        <td colSpan={7} className="px-6 py-3">
+          <Loader2 size={15} className="animate-spin text-primary" />
+        </td>
+      </tr>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <tr className={cn(shell, edge)}>
+        <td colSpan={7} className="px-6 py-3 pl-[3.1rem] text-[13px] text-muted-foreground">
+          No payments recorded against this plan yet.
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <>
+      {rows.map((r: PlanPayment, i: number) => (
+        <tr key={r.id} className={cn(shell, i === rows.length - 1 && edge)}>
+          <td className="px-6 py-2.5 pl-[3.1rem] text-[13px] text-[#111] dark:text-white">
+            {r.periodStart ? monthOf(r.periodStart) : when(r.paidAt)}
+          </td>
+
+          <td className="px-3 py-2.5" />
+
+          {/* The counsellor's share and whether it has been paid, under the
+              counsellor column: that is where somebody looks to answer
+              "have they had this month's money". */}
+          <td className="px-3 py-2.5 text-[13px]">
+            <span className="text-muted-foreground">{money(r.counselorCents)}</span>
+            {r.payoutStatus && (
+              <span
+                className={cn(
+                  "ml-2",
+                  r.payoutStatus === "settled"
+                    ? "text-primary"
+                    : r.payoutStatus === "pending"
+                      ? "text-secondary"
+                      : "text-muted-foreground"
+                )}
+                title={r.note ?? undefined}
+              >
+                {r.payoutStatus}
+              </span>
+            )}
+          </td>
+
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">{when(r.paidAt)}</td>
+
+          <td className="px-3 py-2.5 text-[13px] text-muted-foreground">
+            {money(r.paidCents)}
+          </td>
+
+          <td className="px-3 py-2.5" />
+          <td className="px-6 py-2.5" />
+        </tr>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Everyone on a tier, as a table.
+ *
+ * This was a list of names with the paying parent underneath. That answered
+ * "who is on this" and nothing an admin actually opens it to do: who is
+ * advising them, when it started, where the subscription is going, and
+ * how to reach the person who is paying.
+ *
+ * A table because these are records to compare down a column, not cards to
+ * read one at a time. Counsellor is the column that matters most: a plan with
+ * nobody assigned is a family paying for advice from no one, and it was
+ * invisible here.
+ */
 function SubscribersModal({
   tier, people, onClose,
 }: {
@@ -516,6 +622,16 @@ function SubscribersModal({
   people: TierSubscriber[];
   onClose: () => void;
 }) {
+  const unassigned = people.filter((p) => !p.counselorId && p.status === "active").length;
+  const [openPlan, setOpenPlan] = useState<string | null>(null);
+
+  const { data: totals } = useQuery({ queryKey: ["plan-totals"], queryFn: getPlanTotals });
+
+  const started = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+      : "Unknown";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
@@ -523,13 +639,21 @@ function SubscribersModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Students on ${tier.name}`}
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#111b21]"
+        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#111b21]"
       >
         <div className="flex items-center justify-between border-b border-[#e9edef] px-6 py-4 dark:border-[#2a3942]">
           <div>
             <h2 className="text-[17px] font-semibold text-[#111] dark:text-white">{tier.name}</h2>
             <p className="text-[12.5px] text-muted-foreground">
               {people.length} {people.length === 1 ? "student" : "students"}
+              {/* Named here rather than left to be spotted down the column,
+                  because it is the one thing on this screen that needs doing
+                  today. */}
+              {unassigned > 0 && (
+                <span className="text-secondary">
+                  {" "}· {unassigned} with no counsellor
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -541,33 +665,131 @@ function SubscribersModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
-          {people.map((p) => (
-            <div key={p.planId} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-[#f8f9fa] dark:hover:bg-[#182329]">
-              <img
-                src={p.studentAvatar || dicebearUrl(p.studentName)}
-                alt=""
-                className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">{p.studentName}</p>
-                {/* The parent, because they are who an admin contacts about a
-                    plan: the student consumes it, the parent bought it. */}
-                <p className="truncate text-[12.5px] text-muted-foreground">
-                  {p.parentName ? `Paid by ${p.parentName}` : "No linked parent"}
-                </p>
-              </div>
-              {p.parentAvatar !== undefined && p.parentName && (
-                <img
-                  src={p.parentAvatar || dicebearUrl(p.parentName)}
-                  alt=""
-                  title={p.parentName}
-                  className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
-                />
-              )}
-              <span className="shrink-0 text-[12px] capitalize text-muted-foreground">{p.status}</span>
-            </div>
-          ))}
+        <div className="flex-1 overflow-auto">
+          {people.length === 0 ? (
+            <p className="py-16 text-center text-[14px] text-muted-foreground">
+              Nobody is on this tier yet.
+            </p>
+          ) : (
+            <table className="w-full min-w-[720px]">
+              <thead className="sticky top-0 bg-white dark:bg-[#111b21]">
+                <tr className="border-b border-[#e9edef] text-left text-[12px] uppercase tracking-wider text-muted-foreground dark:border-[#2a3942]">
+                  <th className="px-6 py-3 pl-[3.1rem] font-medium">Student</th>
+                  <th className="px-3 py-3 font-medium">Parent</th>
+                  <th className="px-3 py-3 font-medium">Counsellor</th>
+                  <th className="px-3 py-3 font-medium">Started</th>
+                  <th className="px-3 py-3 font-medium">Payments</th>
+                  <th className="px-3 py-3 font-medium">Total paid</th>
+                  <th className="px-6 py-3 text-right font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {people.map((p) => (
+                  <Fragment key={p.planId}>
+                  <tr
+                    onClick={() => setOpenPlan((id) => (id === p.planId ? null : p.planId))}
+                    className="cursor-pointer border-b border-[#e9edef]/60 last:border-0 hover:bg-[#f8f9fa] dark:border-[#2a3942]/60 dark:hover:bg-[#182329]"
+                  >
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <ChevronRight
+                          size={15}
+                          className={cn(
+                            "shrink-0 text-muted-foreground transition-transform",
+                            openPlan === p.planId && "rotate-90"
+                          )}
+                        />
+                        <img
+                          src={p.studentAvatar || dicebearUrl(p.studentName)}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full bg-muted object-cover"
+                        />
+                        <span className="truncate text-[14px] font-medium text-[#111] dark:text-white">
+                          {p.studentName}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-3 py-3">
+                      {p.parentName ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={p.parentAvatar || dicebearUrl(p.parentName)}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
+                          />
+                          <span className="truncate text-[13px] text-[#111] dark:text-white">
+                            {p.parentName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[13px] text-muted-foreground">No linked parent</span>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-3">
+                      {p.counselorName ? (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={p.counselorAvatar || dicebearUrl(p.counselorName)}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full bg-muted object-cover"
+                          />
+                          <span className="truncate text-[13px] text-[#111] dark:text-white">
+                            {p.counselorName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[13px] text-secondary">Not assigned</span>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-3 text-[13px] text-muted-foreground">{started(p.startedAt)}</td>
+
+                    {/* Where the subscription is going, which is the thing an
+                        admin cannot see anywhere else: a family leaving at the
+                        end of the month looks identical to one staying. */}
+                    <td className="px-3 py-3 text-[13px] text-muted-foreground">
+                      {p.cancelAtPeriodEnd
+                        ? `Ends ${started(p.currentPeriodEnd)}`
+                        : p.pendingTierId
+                          ? `Changes ${started(p.currentPeriodEnd)}`
+                          : p.currentPeriodEnd
+                            ? `Renews ${started(p.currentPeriodEnd)}`
+                            : "-"}
+                    </td>
+
+                    {/* Summed from the payments themselves, not price times
+                        count, so a repriced tier does not restate what a
+                        family has already handed over. */}
+                    <td className="px-3 py-3 text-[13px] text-foreground">
+                      {money(totals?.get(p.planId) ?? 0)}
+                    </td>
+
+                    <td className="px-6 py-3 text-right">
+                      {/* Plain coloured text rather than a capsule: only
+                          past_due is worth the eye, and tinting every row
+                          tells nobody anything. */}
+                      <span
+                        className={cn(
+                          "text-[13px] capitalize",
+                          p.status === "past_due"
+                            ? "text-secondary"
+                            : p.status === "active"
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        )}
+                      >
+                        {p.status.replace("_", " ")}
+                      </span>
+                    </td>
+                  </tr>
+                  {openPlan === p.planId && <PlanPaymentRows planId={p.planId} />}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

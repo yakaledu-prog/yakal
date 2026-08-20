@@ -9,6 +9,7 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
+import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
 import { Search, Loader2, Users, UserPlus, X, ChevronLeft, ShieldAlertIcon } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { dicebearUrl } from "@/utils/avatar";
@@ -205,6 +206,7 @@ import { getFlaggedStudentIds } from "@/services/reports";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
 
 function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
+  const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
   // Whether the scan has picked anything out of this child's conversations, so
   // the Messages tab can say so without being opened first.
   const { data: flaggedStudents } = useQuery({
@@ -322,8 +324,16 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
             </p>
           ) : (
             <>
-              <UpcomingSessions sessions={childSessions} isLoading={sessionsLoading} hideIfEmpty />
+              <UpcomingSessions
+                sessions={childSessions}
+                isLoading={sessionsLoading}
+                hideIfEmpty
+                onCancel={setCancelling}
+              />
               <PastSessions sessions={childSessions} hideIfEmpty />
+              {cancelling && (
+                <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />
+              )}
             </>
           )
         )}

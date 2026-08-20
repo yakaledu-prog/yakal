@@ -8,7 +8,7 @@ Supabase.
 | --- | --- | --- |
 | `stripe.ts` | checkout, portal, confirm, payment-methods, create-invoice | Stripe secret key |
 | `stripe-webhook.ts` | - | needs the raw body to check a signature |
-| `connect.ts` | onboard, status, transfer, session-payout | Stripe secret key |
+| `connect.ts` | onboard, status, transfer, run-jobs | Stripe secret key, `JOBS_TOKEN` |
 | `google.ts` | token, drive, classroom | acts as the Yakal Google account |
 | `zoom.ts` | signature, meetings | signs with the Zoom secret |
 | `contact.ts` | - | Resend API key |

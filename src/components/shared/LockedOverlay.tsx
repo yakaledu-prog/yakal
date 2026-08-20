@@ -30,8 +30,8 @@ export function LockedOverlay({
         <Lock size={44} strokeWidth={1.25} className="mx-auto mb-6 text-primary" />
         <h2 className="text-2xl font-bold text-[#111] dark:text-white mb-2.5">Access restricted</h2>
         <p className="text-[14px] leading-relaxed text-[#54656f] dark:text-[#aebac1] mb-7">
-          {featureName} is not part of your current plan. Ask your parent to unlock it to
-          get access.
+          {featureName} is not part of your current plan. Ask your parent to add it from
+          their account.
         </p>
 
         {onRequestAccess && (

@@ -194,3 +194,58 @@ export const sessionMoved: NotificationTemplate<{
     reason: "Clashing appointment, sorry",
   },
 };
+
+/**
+ * A lesson called off.
+ *
+ * The other half of sessionMoved. What the reader needs is the money, because
+ * that is the part they cannot work out for themselves: a family wants to know
+ * what is coming back, and a tutor whether they are still paid for an hour they
+ * held. Both are said plainly rather than left to the policy page.
+ */
+export const sessionCancelled: NotificationTemplate<{
+  subject: string;
+  when: string;
+  cancelledBy: string;
+  /** Empty when nothing is coming back, which is itself worth saying. */
+  refund?: string | null;
+  reason?: string | null;
+}> = {
+  type: "session_cancelled",
+  label: "Session cancelled",
+  notification: (v) => ({
+    title: "A lesson was cancelled",
+    message:
+      `${v.subject} on ${v.when} is off` +
+      (v.reason ? `: ${v.reason}` : "") +
+      (v.refund ? `. ${v.refund} refunded` : ""),
+    link: "/student/sessions",
+  }),
+  email: (v) => ({
+    subject: `${v.subject} on ${v.when} is cancelled`,
+    heading: "A lesson has been cancelled",
+    intro:
+      `${v.cancelledBy} cancelled ${v.subject} on ${v.when}.` +
+      (v.reason ? ` They said: "${v.reason}".` : "") +
+      (v.refund
+        ? ` ${v.refund} is on its way back to the card it was paid with, and takes a few days to appear.`
+        : " Nothing has been charged or refunded for it.") +
+      " Nothing else in the timetable has changed.",
+    facts: [
+      { label: "Subject", value: v.subject },
+      { label: "Was", value: v.when },
+      { label: "Cancelled by", value: v.cancelledBy },
+      ...(v.refund ? [{ label: "Refunded", value: v.refund }] : []),
+      ...(v.reason ? [{ label: "Reason", value: v.reason }] : []),
+    ],
+    cta: { label: "See your sessions", url: "/student/sessions" },
+    footer: null,
+  }),
+  sample: {
+    subject: "Mathematics",
+    when: "Thursday 14 August, 4pm",
+    cancelledBy: "Bethlehem Alemu",
+    refund: "$45.00",
+    reason: "Unwell, sorry",
+  },
+};

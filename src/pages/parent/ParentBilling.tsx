@@ -7,6 +7,11 @@ import { CalendarPlus, Check, CreditCard, ExternalLink, Loader2, X, ChevronLeft,
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
+import {
+  PlanChangeSummary,
+  periodDate,
+  usePlanChangePreview,
+} from "@/components/billing/PlanChangeSummary";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
 import { getLinkedChildren } from "@/services/parentService";
@@ -22,7 +27,12 @@ import {
 import {
   bookAdvisingSlots,
   cancelAdvisingSession,
+  cancelPlan,
+  changePlanTier,
   getAdmissionsPlans,
+  getPlanStatus,
+  getTiers,
+  resumePlan,
   getAdmissionsUsage,
   getAdvisingSessions,
   getPlanPeople,
@@ -163,7 +173,9 @@ export function ParentBilling() {
     packages.reduce((n, p) => n + p.totalPaidCents, 0) +
     admissionsPlans.reduce((n, p) => n + p.tier.priceCents, 0);
   const planCount = packages.length + admissionsPlans.length;
-  const open = invoices.filter((i) => i.status === "open");
+  // Money a parent can actually do something about. An abandoned checkout is
+  // not a debt and should not be totted up as one.
+  const open = invoices.filter((i) => i.status === "failed");
   const dueCents = open.reduce((n, i) => n + i.amountCents, 0);
 
   // The two filters compose in the order they are read: service, then status.
@@ -451,6 +463,11 @@ export function ParentBilling() {
             invoices.length === 0 ? (
               <Empty title="Nothing yet" body="Payments appear here once you have made one." />
             ) : (
+              // Four columns, in the same place on every row: what it was for,
+              // where it got to, how much, and an action only where there is
+              // one. The amount used to be followed by a Pay button on some
+              // rows and nothing on others, so the figures did not line up with
+              // each other down the page.
               <ul className="divide-y divide-border">
                 {invoices.map((i) => (
                   <li key={i.id} className="flex items-center gap-4 py-3.5">
@@ -466,29 +483,47 @@ export function ParentBilling() {
                         })}
                       </p>
                     </div>
+
+                    {/* Said in words rather than echoing the column. "Open" is
+                        a database value; what a parent needs to know is whether
+                        anything is expected of them. */}
                     <span
                       className={cn(
-                        "text-[12.5px] font-medium capitalize",
-                        i.status === "paid"
-                          ? "text-primary"
-                          : "text-[#8a6a2a] dark:text-secondary"
+                        "hidden w-32 shrink-0 text-right text-[12.5px] font-medium sm:block",
+                        i.status === "paid" ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
                       )}
                     >
-                      {i.status}
+                      {i.status === "paid"
+                        ? "Paid"
+                        : i.status === "failed"
+                          ? "Payment failed"
+                          : "Not finished"}
                     </span>
-                    <span className="w-24 text-right text-[14px] text-foreground">
+
+                    <span className="w-24 shrink-0 text-right text-[14px] tabular-nums text-foreground">
                       <Money cents={i.amountCents} />
                     </span>
-                    {i.status === "open" && (
-                      <Button
-                        size="sm"
-                        onClick={() => pay([i.id], i.id)}
-                        disabled={busy !== null}
-                        className="h-8 shrink-0 bg-primary px-4 text-[12px] text-white hover:bg-primary-hover"
-                      >
-                        {busy === i.id ? <Loader2 size={14} className="animate-spin" /> : "Pay"}
-                      </Button>
-                    )}
+
+                    {/* Only a declined card is worth a button. Everything else
+                        on this page has either happened or been abandoned, and
+                        a Pay button beside a payment that already went through
+                        is an invitation to pay twice. */}
+                    <span className="flex w-20 shrink-0 justify-end">
+                      {i.status === "failed" && (
+                        <Button
+                          size="sm"
+                          onClick={() => pay([i.id], i.id)}
+                          disabled={busy !== null}
+                          className="h-8 bg-primary px-3 text-[12px] text-white hover:bg-primary-hover"
+                        >
+                          {busy === i.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            "Try again"
+                          )}
+                        </Button>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -650,6 +685,7 @@ function PlanCard({ pkg, compact }: { pkg: CoursePackage; compact?: boolean }) {
  */
 function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boolean }) {
   const [booking, setBooking] = useState(false);
+  const [managing, setManaging] = useState(false);
   const { data: usage } = useQuery({
     queryKey: ["admissions-usage", plan.studentId],
     queryFn: () => getAdmissionsUsage(plan.studentId),
@@ -695,9 +731,11 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
         </div>
       </div>
 
-      {/* Since and paid, one row, ends apart. Both used to hang off the title
-          line, where the date pushed the name into wrapping and the amount
-          dropped onto a line of its own. */}
+      {/* Since and what happens next, one row, ends apart. The right hand side
+          used to say what had been paid, which under a subscription is the one
+          number that keeps changing and the least useful thing to show. What a
+          parent wants from this line is when they are next charged, and whether
+          anything is about to change. */}
       <div className="mt-3 flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
         <span className="truncate">
           {"since "}
@@ -708,9 +746,31 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
           })}
         </span>
         <span className="shrink-0">
-          <Money cents={plan.tier.priceCents} /> paid
+          <Money cents={plan.tier.priceCents} /> a month
         </span>
       </div>
+
+      {/* Said plainly rather than as a countdown. A clock ticking down to a
+          cancellation deadline reads as a nudge to use it, and generates a
+          support ticket every time somebody misses it by a minute. */}
+      <p
+        className={cn(
+          "mt-1 text-[12.5px]",
+          plan.cancelAtPeriodEnd || plan.status === "past_due"
+            ? "text-secondary"
+            : "text-muted-foreground"
+        )}
+      >
+        {plan.status === "past_due"
+          ? "Your last payment did not go through. Counselling carries on, update your card when you can."
+          : plan.cancelAtPeriodEnd
+            ? `Ends ${periodDate(plan.currentPeriodEnd)}. Everything stays available until then.`
+            : plan.pendingTierName
+              ? `Changes to ${plan.pendingTierName} on ${periodDate(plan.currentPeriodEnd)}.`
+              : plan.currentPeriodEnd
+                ? `Renews ${periodDate(plan.currentPeriodEnd)}. Cancel any time.`
+                : "Billed monthly. Cancel any time."}
+      </p>
 
       {usage && usage.lines.length > 0 && (
         <div
@@ -740,6 +800,14 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
             ))}
           </dl>
 
+          <div className={cn("flex items-center gap-3", !compact && "md:shrink-0")}>
+          <button
+            type="button"
+            onClick={() => setManaging(true)}
+            className="h-9 whitespace-nowrap text-[13px] font-medium text-primary hover:underline"
+          >
+            Manage plan
+          </button>
           {advising && (
             // Enabled whenever there is something to do: hours left to book, or
             // hours already booked that can be given back and taken elsewhere.
@@ -758,6 +826,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
               {remaining !== Infinity && ` (${Math.max(0, remaining)})`}
             </Button>
           )}
+          </div>
         </div>
       )}
 
@@ -768,7 +837,332 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
           onClose={() => setBooking(false)}
         />
       )}
+
+      {managing && <ManagePlanDialog plan={plan} onClose={() => setManaging(false)} />}
     </article>
+  );
+}
+
+/** Reasons people actually give, plus room to say something else. */
+const CANCEL_REASONS = [
+  { value: "", label: "Prefer not to say" },
+  { value: "Too expensive", label: "Too expensive" },
+  { value: "Applications are finished", label: "Applications are finished" },
+  { value: "Not using it enough", label: "Not using it enough" },
+  { value: "Not what we expected", label: "Not what we expected" },
+  { value: "Going elsewhere", label: "Going elsewhere" },
+  { value: "other", label: "Something else" },
+];
+
+/**
+ * Changing or ending a counselling subscription.
+ *
+ * Nothing here charges a card without saying what it will cost first. An
+ * upgrade takes money immediately, so the amount comes from Stripe and is shown
+ * on its own confirmation step: "you have been upgraded" arriving before the
+ * customer agreed to a figure is how a chargeback starts.
+ *
+ * The two directions are deliberately not symmetrical, and the wording says so
+ * rather than leaving somebody to find out on their statement. Moving up costs
+ * the difference today and applies today. Moving down, and cancelling, wait
+ * until the month already paid for runs out, so nothing is refunded and nothing
+ * a family has already used this month has to be unpicked.
+ */
+function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [view, setView] = useState<"main" | "confirmChange" | "confirmCancel">("main");
+  const [tierId, setTierId] = useState(plan.tier.id);
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const { data: tiers = [] } = useQuery({ queryKey: ["tiers"], queryFn: getTiers });
+  const chosen = tiers.find((t) => t.id === tierId);
+
+  // Asked of Stripe when the dialog opens, because the row can be stale and
+  // this is the screen that has to name a date. A plan created before period
+  // tracking existed carries no date at all, and "the end of the period" is not
+  // an answer to when somebody's counselling stops.
+  const { data: live } = useQuery({
+    queryKey: ["plan-status", plan.id],
+    queryFn: () => getPlanStatus(plan.id),
+  });
+  const periodEnd = live?.periodEnd ?? plan.currentPeriodEnd;
+
+  // The same two faces the card underneath shows. A dialog about ending
+  // somebody's counselling should say whose, and who they would be leaving.
+  const { data: people } = useQuery({
+    queryKey: ["plan-people", plan.studentId],
+    queryFn: () => getPlanPeople(plan.studentId),
+  });
+  const changed = tierId !== plan.tier.id || !!plan.pendingTierId;
+
+  // Asked of Stripe, and only once somebody has actually picked something. The
+  // figure is the whole point of the confirmation step, so the button waits for
+  // it rather than letting anybody agree to an amount that is still loading.
+  const { data: preview, isFetching: previewing } = usePlanChangePreview(
+    plan.id,
+    changed ? tierId : null
+  );
+
+  async function refresh() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["admissions-plans"] }),
+      qc.invalidateQueries({ queryKey: ["admissions-usage"] }),
+      qc.invalidateQueries({ queryKey: ["parent-invoices"] }),
+    ]);
+  }
+
+  async function applyChange() {
+    setBusy(true);
+    const res = await changePlanTier(plan.id, tierId);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+
+    toast.success(
+      res.applied === "now"
+        ? `Moved to ${chosen?.name}.`
+        : res.applied === "kept"
+          ? `Staying on ${plan.tier.name}.`
+          : `${chosen?.name} starts ${periodDate(res.startsAt ?? periodEnd)}.`
+    );
+    await refresh();
+    onClose();
+  }
+
+  async function endIt() {
+    setBusy(true);
+    const said = reason === "other" ? note.trim() : reason;
+    const res = await cancelPlan(plan.id, said || undefined);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+    toast.success(`Counselling ends ${periodDate(periodEnd)}. Nothing changes before then.`);
+    await refresh();
+    onClose();
+  }
+
+  async function keepIt() {
+    setBusy(true);
+    const res = await resumePlan(plan.id);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+    toast.success("Your counselling carries on.");
+    await refresh();
+    onClose();
+  }
+
+  const heading =
+    view === "confirmCancel"
+      ? "Before you go"
+      : view === "confirmChange"
+        ? "Confirm the change"
+        : "Manage counselling";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="border-b border-border p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-[17px] font-semibold text-foreground">{heading}</h2>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="mt-3 flex min-w-0 items-center gap-3">
+            <StackedAvatars
+              people={[
+                people?.student && {
+                  id: people.student.id,
+                  name: people.student.fullName,
+                  avatarUrl: people.student.avatarUrl,
+                },
+                people?.counselor && {
+                  id: people.counselor.id,
+                  name: people.counselor.fullName,
+                  avatarUrl: people.counselor.avatarUrl,
+                },
+              ]}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-medium text-foreground">
+                {people?.student?.fullName ?? plan.studentName}
+                {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
+              </p>
+              <p className="truncate text-[12.5px] text-muted-foreground">
+                {plan.tier.name}, {money(plan.tier.priceCents)} a month
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto p-5">
+          {view === "main" && (
+            <div className="space-y-5">
+              <div>
+                <label className="text-[12.5px] font-medium text-foreground">Plan</label>
+                <Dropdown
+                  value={tierId}
+                  onChange={setTierId}
+                  className="mt-1.5 w-full"
+                  options={tiers.map((t) => ({
+                    value: t.id,
+                    label: `${t.name} - ${money(t.priceCents)} a month`,
+                  }))}
+                />
+
+                <Button
+                  onClick={() => setView("confirmChange")}
+                  disabled={!changed || previewing}
+                  className="mt-3 h-10 w-full bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {previewing ? "Checking..." : "Review change"}
+                </Button>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                {plan.cancelAtPeriodEnd ? (
+                  <>
+                    <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                      Counselling is set to end {periodDate(periodEnd)}. You can carry on instead,
+                      and nothing will have changed.
+                    </p>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void keepIt()}
+                        disabled={busy}
+                        className="text-[13px] font-medium text-primary transition-colors hover:underline disabled:opacity-50"
+                      >
+                        {busy ? "Working..." : "Keep my counselling"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // Right, under the end of the control above it, rather than
+                  // starting a second column of its own on the left.
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setView("confirmCancel")}
+                      className="text-[13px] font-medium text-primary transition-colors hover:underline"
+                    >
+                      Cancel counselling
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Nothing has been charged at this point. What the customer agreed to
+              is whatever this screen said, so it says the figure Stripe gave
+              us rather than a description of one. */}
+          {view === "confirmChange" && (
+            <div className="space-y-4">
+              <PlanChangeSummary
+                preview={preview}
+                from={plan.tier}
+                to={chosen}
+                fallbackPeriodEnd={periodEnd}
+              />
+
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  onClick={() => void applyChange()}
+                  disabled={busy || previewing || !!preview?.error}
+                  className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {busy
+                    ? "Working..."
+                    : preview?.direction === "upgrade"
+                      ? `Pay ${money(preview.dueNowCents ?? 0)} and upgrade`
+                      : "Confirm"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setView("main")}
+                  disabled={busy}
+                  className="h-10 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50"
+                >
+                  Back
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* One screen, not a gauntlet. It says what they keep, offers the two
+              things that genuinely fix most reasons for leaving, and asks why
+              without requiring an answer. Anything more would be a business
+              making itself hard to leave, which is a thing customers remember. */}
+          {view === "confirmCancel" && (
+            <div className="space-y-4">
+              <p className="text-[14px] leading-relaxed text-foreground">
+                You keep {plan.tier.name} and everything in it until{" "}
+                {periodDate(periodEnd)}. After that counselling stops, and the month you are in is
+                not refunded.
+              </p>
+              <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                If it is the cost, a smaller plan keeps your counsellor and your work in place. You
+                can also come back later, though your counsellor may not be free by then.
+              </p>
+
+              <div>
+                <label className="text-[12.5px] font-medium text-foreground">
+                  What made you decide? Optional.
+                </label>
+                <Dropdown
+                  value={reason}
+                  onChange={setReason}
+                  className="mt-1.5 w-full"
+                  options={CANCEL_REASONS}
+                />
+                {reason === "other" && (
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                    placeholder="In your own words"
+                    className="mt-2 w-full rounded-xl border border-border bg-background p-3 text-[13.5px] text-foreground outline-none focus:border-primary"
+                  />
+                )}
+              </div>
+
+              {/* Side by side and the same size. Keeping it is the suggested
+                  answer, which is what the fill says; leaving is a legitimate
+                  choice and hiding it in a text link is the kind of thing
+                  people notice and hold against a business. */}
+              <div className="flex items-center gap-3 pt-1">
+                <Button
+                  onClick={() => setView("main")}
+                  disabled={busy}
+                  className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  Keep counselling
+                </Button>
+                {/* variant="outline", not a className. Button builds its
+                    classes by concatenation and cn does not resolve conflicts,
+                    so bg-transparent passed in sat alongside the default
+                    variant's bg-primary and lost: the button was invisible
+                    until hover, then turned teal. */}
+                <Button
+                  variant="outline"
+                  onClick={() => void endIt()}
+                  disabled={busy}
+                  className="h-10 flex-1 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+                >
+                  {busy ? "Working..." : "Cancel counselling"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

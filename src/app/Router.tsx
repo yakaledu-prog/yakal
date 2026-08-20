@@ -77,6 +77,7 @@ const ProposalPage = lazy(() => import("../pages/shared/ProposalPage").then((m) 
 const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
 const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
+const StudentAdvising = lazy(() => import("../pages/student/StudentAdvising").then((m) => ({ default: m.StudentAdvising })));
 const StudentCollegeList = lazy(() => import("../pages/student/StudentCollegeList").then((m) => ({ default: m.StudentCollegeList })));
 const StudentCourseDashboard = lazy(() => import("../pages/student/StudentCourseDashboard").then((m) => ({ default: m.StudentCourseDashboard })));
 const StudentCourseMessages = lazy(() => import("../pages/student/StudentCourseMessages").then((m) => ({ default: m.StudentCourseMessages })));
@@ -173,6 +174,19 @@ function ProtectedRoute() {
 
   // Anyone not awaiting approval should not sit on the pending screen.
   if (profile && !awaitingApproval && path === '/pending-approval') {
+    return <Navigate to={homePathForRole(profile.role)} replace />;
+  }
+
+  // A signed-in user belongs on their own role's pages. Without this a counselor
+  // who followed a stale /student/* link, or typed one, landed on the student
+  // dashboard's locked screens - which for staff dead-end at "request access
+  // from parent" and then "no linked parent" (see #35). Staff view a student
+  // through their own embedded tabs, not by routing into /student/*, so send a
+  // mismatched role home. Shared routes (/onboarding, /pending-approval) and the
+  // public "/" have a segment outside this set and are left alone.
+  const ROLE_BASES = ['admin', 'counselor', 'tutor', 'parent', 'student'];
+  const seg = path.split('/')[1];
+  if (profile && ROLE_BASES.includes(seg) && seg !== profile.role) {
     return <Navigate to={homePathForRole(profile.role)} replace />;
   }
 
@@ -440,6 +454,7 @@ const router = createBrowserRouter([
           { path: "diagnostics", element: <StudentDiagnostics /> },
           { path: "explore", element: <StudentExploreUniversities /> },
           { path: "college-list", element: <StudentCollegeList /> },
+          { path: "advising", element: <StudentAdvising /> },
           { path: "my-app", element: <StudentApplicationTracker /> },
           { path: "sessions", element: <StudentSessions /> },
           { path: "profile", element: <StudentProfile /> },

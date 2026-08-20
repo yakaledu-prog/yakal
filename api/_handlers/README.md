@@ -13,7 +13,7 @@ The four group files above dispatch to these on `?action=`:
 | Function | Actions |
 | --- | --- |
 | `api/stripe.ts` | `checkout`, `portal`, `confirm`, `payment-methods`, `create-invoice` |
-| `api/connect.ts` | `onboard`, `status`, `transfer`, `session-payout` |
+| `api/connect.ts` | `onboard`, `status`, `transfer`, `run-jobs` |
 | `api/zoom.ts` | `signature`, `meetings` |
 | `api/google.ts` | `token`, `drive` |
 

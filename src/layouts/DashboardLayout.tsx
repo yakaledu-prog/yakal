@@ -157,7 +157,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       );
 
       if (notifError) throw notifError;
-      toast.success("Request sent. Your parent can turn it on from their account.", {
+      toast.success("Request sent. Your parent can add it from their account.", {
         id: "request-access",
       });
     } catch (err: any) {

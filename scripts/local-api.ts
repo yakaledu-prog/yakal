@@ -46,7 +46,17 @@ app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), createVercelHandle
 // JSON body parser for every other route.
 // Uploads arrive base64 encoded, which inflates them by a third, so this has to
 // clear the file limit in driveService with room to spare.
-app.use(express.json({ limit: '8mb' }));
+// Zoom signs the exact bytes it sent too, and its webhook shares a route with
+// the other Zoom actions, so the raw body is kept alongside the parsed one
+// rather than replacing it. verify runs before parsing and cannot reject.
+app.use(
+  express.json({
+    limit: '8mb',
+    verify: (req, _res, buf) => {
+      (req as never as { rawBody?: string }).rawBody = buf.toString('utf8');
+    },
+  })
+);
 
 // Not a deployed function, so it is not wrapped: see api/_utils/health.ts.
 app.get('/api/healthz', (req, res) => handleHealth(req, res));

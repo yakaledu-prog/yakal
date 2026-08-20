@@ -1,20 +1,31 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Loader2, X , ChevronLeft } from "lucide-react";
+import { Check, Download, Loader2, Star, X, ChevronLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/Button";
 import { PageWrapper } from "@/components/ui/PageWrapper";
+import {
+  PlanChangeSummary,
+  periodDate,
+  usePlanChangePreview,
+} from "@/components/billing/PlanChangeSummary";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
+import { dicebearUrl } from "@/utils/avatar";
+import { AvailabilityPicker, type PickedSlot } from "@/components/shared/AvailabilityPicker";
 import { money } from "@/services/billingService";
 import { getLinkedChildren } from "@/services/parentService";
 import {
   buyTier,
+  changePlanTier,
+  getCounselors,
+  type CounselorCard,
   getAdmissionsPlans,
   getTiers,
-  monthlyCents,
   tierShade,
+  type AdmissionsPlan,
   type AdmissionsTier,
 } from "@/services/admissionsService";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
@@ -48,6 +59,27 @@ export function ParentAdmissions() {
   // The tier awaiting confirmation. Buying names the child first, because
   // buying the right plan for the wrong child is the expensive mistake here.
   const [pendingTier, setPendingTier] = useState<AdmissionsTier | null>(null);
+  const [switchingTo, setSwitchingTo] = useState<AdmissionsTier | null>(null);
+  // Who the parent picked from the gallery. Null means they have not chosen,
+  // and the server assigns the counsellor with the fewest families.
+  const [chosenCounselor, setChosenCounselor] = useState<CounselorCard | null>(null);
+  // Picking somebody is a decision about who, and then about when. Choosing a
+  // counsellor and being sent straight to a card form skips the question the
+  // family most wants answered: can they actually meet at a useful hour.
+  const [step, setStep] = useState<"counselor" | "slots">("counselor");
+  const [slots, setSlots] = useState<PickedSlot[]>([]);
+
+  const closePurchase = () => {
+    setPendingTier(null);
+    setChosenCounselor(null);
+    setStep("counselor");
+    setSlots([]);
+  };
+
+  const { data: counselors = [] } = useQuery({
+    queryKey: ["counselors"],
+    queryFn: getCounselors,
+  });
 
   const { data: children = [] } = useQuery({
     queryKey: ["linked-children", user?.id],
@@ -73,10 +105,28 @@ export function ParentAdmissions() {
   const activeChild = children.find((c) => c.id === activeChildId) ?? null;
   const currentPlan = activeChildId ? (plans?.get(activeChildId) ?? null) : null;
 
-  async function choose(tier: AdmissionsTier) {
+  async function choose(
+    tier: AdmissionsTier,
+    counselorId: string | null,
+    picked: PickedSlot[]
+  ) {
     if (!activeChildId) return toast.error("Choose which child this is for first.");
+
+    // A family already subscribed is changing tier, not buying one. Sending
+    // them through checkout would start a second subscription alongside the
+    // first and charge the full price for it, rather than the difference.
+    if (currentPlan) {
+      setSwitchingTo(tier);
+      return;
+    }
+
     setBusy(tier.id);
-    const { error } = await buyTier({ tierId: tier.id, studentId: activeChildId });
+    const { error } = await buyTier({
+      tierId: tier.id,
+      studentId: activeChildId,
+      counselorId,
+      booking: picked.map((s) => ({ date: s.date, startTime: s.startTime, durationMinutes: 60 })),
+    });
     if (error) {
       toast.error(error);
       setBusy(null);
@@ -132,83 +182,274 @@ export function ParentAdmissions() {
         </div>
 
         <div className={cn("p-6 md:order-3 md:col-start-2 md:row-start-2 md:h-full md:overflow-y-auto md:p-8", detailClass)}>
-            {isLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-primary" />
-              </div>
-            ) : tiers.length === 0 ? (
-              <p className="py-20 text-center text-[14px] text-muted-foreground">
-                No plans are on offer at the moment.
-              </p>
-            ) : (
-              <div className="grid gap-5 lg:grid-cols-3">
-                {tiers.map((t, i) => (
-                  <TierCard
-                    key={t.id}
-                    tier={t}
-                    shade={tierShade(i)}
-                    current={currentPlan?.tier.id === t.id}
-                    hasPlan={!!currentPlan}
-                    disabled={!activeChildId}
-                    busy={busy === t.id}
-                    onChoose={() => setPendingTier(t)}
-                  />
-                ))}
-              </div>
-            )}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin text-primary" />
+            </div>
+          ) : tiers.length === 0 ? (
+            <p className="py-20 text-center text-[14px] text-muted-foreground">
+              No plans are on offer at the moment.
+            </p>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-3">
+              {tiers.map((t, i) => (
+                <TierCard
+                  key={t.id}
+                  tier={t}
+                  shade={tierShade(i)}
+                  current={currentPlan?.tier.id === t.id}
+                  hasPlan={!!currentPlan}
+                  disabled={!activeChildId}
+                  busy={busy === t.id}
+                  onChoose={() => (currentPlan ? setSwitchingTo(t) : setPendingTier(t))}
+                />
+              ))}
+            </div>
+          )}
 
-            {children.length > 1 && !activeChildId && (
-              <p className="mt-6 text-center text-[13px] text-muted-foreground">
-                Pick a child on the left to choose a plan for them.
-              </p>
-            )}
+          {children.length > 1 && !activeChildId && (
+            <p className="mt-6 text-center text-[13px] text-muted-foreground">
+              Pick a child on the left to choose a plan for them.
+            </p>
+          )}
         </div>
       </div>
 
       {/* Naming the child at checkout. The most expensive, most common mistake
           is buying the right plan for the wrong child, so the confirmation
           leads with who it is for. */}
+      {switchingTo && currentPlan && (
+        <SwitchPlanDialog
+          plan={currentPlan}
+          to={switchingTo}
+          onClose={() => setSwitchingTo(null)}
+        />
+      )}
+
       {pendingTier && activeChild && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
-              <button
-                onClick={() => setPendingTier(null)}
-                aria-label="Close"
-                className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
-              >
-                <X size={18} />
-              </button>
+          <div
+            className={cn(
+              "flex max-h-[94vh] w-full flex-col overflow-hidden rounded-2xl bg-card shadow-2xl",
+              // Wide enough for two counsellor cards side by side, and wider
+              // again for a week of hours. A dialog sized for one paragraph
+              // made both of those a column of squeezed thumbnails.
+              step === "slots" ? "max-w-4xl" : counselors.length > 1 ? "max-w-3xl" : "max-w-md"
+            )}
+          >
+            <div className="overflow-y-auto p-6">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
+                <button
+                  onClick={closePurchase}
+                  aria-label="Close"
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* The summary as a card rather than two sentences, so what is
+                being bought and who for is one object to check rather than a
+                paragraph to read. The child's face because buying the right
+                plan for the wrong child is the expensive mistake here. */}
+              <div className="flex items-center gap-3 rounded-2xl border border-border p-4">
+                <img
+                  src={activeChild.avatar_url || dicebearUrl(activeChild.full_name)}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-semibold text-foreground">
+                    {pendingTier.name} admissions
+                  </p>
+                  <p className="truncate text-[13px] text-muted-foreground">
+                    for {activeChild.full_name}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[17px] font-bold leading-tight text-foreground">
+                    {money(pendingTier.priceCents)}/month
+                  </p>
+                  <p className="text-[12px] leading-tight text-muted-foreground">
+                    cancel any time
+                  </p>
+                </div>
+              </div>
+
+              {/* Choosing the counsellor, but only when there is a choice.
+                With one on the books a gallery is a screen with one card and a
+                decision nobody is making; with none, the plan is bought
+                unassigned and an admin places it, which is what already
+                happened silently.
+
+                Built like the course card: the photograph fills the top edge
+                rather than sitting cropped into a circle, and the price is the
+                large figure with its unit under it. This is the same kind of
+                choice, so it should not need to be learned twice.
+
+                No heading. The cards are people with a Choose action on them,
+                which does not need a label to explain it. */}
+              {step === "counselor" && counselors.length > 1 && (
+                <div className="py-5 px-2 grid max-h-[28rem] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                  {counselors.map((c) => {
+                    const picked = chosenCounselor?.id === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setChosenCounselor((cur) => (cur?.id === c.id ? null : c))}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setChosenCounselor((cur) => (cur?.id === c.id ? null : c));
+                          }
+                        }}
+                        className={cn(
+                          "cursor-pointer overflow-hidden rounded-2xl border transition-all",
+                          picked
+                            ? "border-primary ring-2 ring-primary/40"
+                            : "border-border hover:border-primary/40"
+                        )}
+                      >
+                        <div className="relative aspect-[4/3] w-full bg-muted">
+                          <img
+                            src={c.avatarUrl || dicebearUrl(c.name)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                          {picked && (
+                            <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                              <Check size={14} strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-[15px] font-semibold text-foreground">
+                                {c.name}
+                              </p>
+                            </div>
+                            <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
+                              {money(pendingTier.priceCents)}
+                              <span className="text-[12px] font-normal text-muted-foreground">
+                                /month
+                              </span>
+                            </p>
+                          </div>
+
+                          <p className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            {/* Said in words when there are none. An empty five
+                              stars reads as a bad review, not no reviews. */}
+                            {c.averageStars != null ? (
+                              <>
+                                <Star size={11} className="fill-secondary text-secondary" />
+                                <span className="font-medium text-foreground">
+                                  {c.averageStars.toFixed(1)}
+                                </span>
+                                <span>({c.ratingCount})</span>
+                              </>
+                            ) : (
+                              <span>No reviews yet</span>
+                            )}
+                            <span aria-hidden>·</span>
+                            <span>
+                              {c.activePlans} student{c.activePlans === 1 ? "" : "s"}
+                            </span>
+                          </p>
+
+                          {/* Always drawn, disabled when there is no CV on file.
+                            Rendered conditionally it simply vanished, which
+                            looks identical to the feature not existing. */}
+                          <div className="mt-3 border-t border-border pt-2.5">
+                            {c.resumeUrl ? (
+                              <a
+                                href={c.resumeUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+                              >
+                                <Download size={13} /> Download CV
+                              </a>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                                <Download size={13} /> No CV on file
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {step === "counselor" && counselors.length > 1 && !chosenCounselor && (
+                <p className="mt-3 text-[12px] text-muted-foreground">
+                  Skip to be matched automatically.
+                </p>
+              )}
+
+              {/* The same grid the course booking uses, pointed at the
+                counsellor. Advising sessions store them in sessions.tutor_id
+                and availability is keyed the same way, so this needed nothing
+                of its own. */}
+              {step === "slots" && chosenCounselor && (
+                <div className="mt-5">
+                  <p className="mb-3 text-[13px] text-muted-foreground">
+                    When would you like to meet {chosenCounselor.name}? These become the first
+                    advising sessions. You can skip this and book later from the plan.
+                  </p>
+                  <AvailabilityPicker
+                    tutorId={chosenCounselor.id}
+                    studentId={activeChildId}
+                    selected={slots}
+                    multiple
+                    onToggle={(slot) =>
+                      setSlots((cur) =>
+                        cur.some((s) => s.key === slot.key)
+                          ? cur.filter((s) => s.key !== slot.key)
+                          : [...cur, slot]
+                      )
+                    }
+                  />
+                </div>
+              )}
             </div>
-
-            <p className="text-[14px] leading-relaxed text-foreground">
-              Purchasing <span className="font-semibold">{pendingTier.name} admissions</span> for{" "}
-              <span className="font-semibold">{activeChild.full_name}</span>.
-            </p>
-            <p className="mt-2 text-[14px] text-muted-foreground">
-              {pendingTier.instalmentMonths > 1
-                ? `${money(monthlyCents(pendingTier))}/month for ${pendingTier.instalmentMonths} months (${money(pendingTier.priceCents)} total).`
-                : `${money(pendingTier.priceCents)}, one payment.`}
-            </p>
-
-            <div className="mt-6 flex gap-3">
+            <div className="flex gap-3 border-t border-border p-6 pt-4">
               <button
-                onClick={() => setPendingTier(null)}
+                onClick={() => (step === "slots" ? setStep("counselor") : closePurchase())}
                 className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
               >
-                Cancel
+                {step === "slots" ? "Back" : "Cancel"}
               </button>
               <button
                 onClick={() => {
+                  // Chosen somebody and not yet seen their calendar: show it.
+                  // Nobody chosen means no calendar to show, so that path goes
+                  // straight on and an admin assigns afterwards as before.
+                  if (step === "counselor" && chosenCounselor) {
+                    setStep("slots");
+                    return;
+                  }
                   const t = pendingTier;
-                  setPendingTier(null);
-                  void choose(t);
+                  const picked = chosenCounselor?.id ?? null;
+                  const chosenSlots = slots;
+                  closePurchase();
+                  void choose(t, picked, chosenSlots);
                 }}
                 disabled={!!busy}
                 className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
               >
-                Continue to payment
+                {step === "counselor" && chosenCounselor
+                  ? "Choose times"
+                  : slots.length > 0
+                    ? `Continue to payment (${slots.length})`
+                    : "Continue to payment"}
               </button>
             </div>
           </div>
@@ -217,6 +458,108 @@ export function ParentAdmissions() {
     </PageWrapper>
   );
 }
+
+/**
+ * Switching an existing subscription to another tier.
+ *
+ * Deliberately not the purchase wizard. That one picks a counsellor and books
+ * the first hours, and a family changing tier already has both: what is left is
+ * a number and a yes.
+ */
+function SwitchPlanDialog({
+  plan,
+  to,
+  onClose,
+}: {
+  plan: AdmissionsPlan;
+  to: AdmissionsTier;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const { data: preview, isFetching } = usePlanChangePreview(plan.id, to.id);
+
+  async function confirm() {
+    setBusy(true);
+    const res = await changePlanTier(plan.id, to.id);
+    setBusy(false);
+    if (res.error) return toast.error(res.error);
+
+    toast.success(
+      res.applied === "now"
+        ? `Moved to ${to.name}.`
+        : res.applied === "kept"
+          ? `Staying on ${plan.tier.name}.`
+          : `${to.name} starts ${periodDate(res.startsAt ?? plan.currentPeriodEnd)}.`
+    );
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["admissions-plans"] }),
+      qc.invalidateQueries({ queryKey: ["admissions-usage"] }),
+      qc.invalidateQueries({ queryKey: ["parent-invoices"] }),
+    ]);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-border p-5">
+          <div className="min-w-0">
+            <h2 className="text-[17px] font-semibold text-foreground">Change plan</h2>
+            <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+              {plan.studentName} is on {plan.tier.name}, {money(plan.tier.priceCents)} a month
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted/60"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {isFetching && !preview ? (
+            <p className="py-6 text-center text-[13px] text-muted-foreground">
+              Working out what this costs...
+            </p>
+          ) : (
+            <PlanChangeSummary
+              preview={preview}
+              from={plan.tier}
+              to={to}
+              fallbackPeriodEnd={plan.currentPeriodEnd}
+            />
+          )}
+
+          <div className="mt-5 flex items-center gap-3">
+            <Button
+              onClick={() => void confirm()}
+              disabled={busy || isFetching || !!preview?.error}
+              className="h-10 flex-1 bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+            >
+              {busy
+                ? "Working..."
+                : preview?.direction === "upgrade"
+                  ? `Pay ${money(preview.dueNowCents ?? 0)} and upgrade`
+                  : "Confirm"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={busy}
+              className="h-10 border-border text-[14px] font-medium text-foreground transition-colors hover:bg-muted/50"
+            >
+              Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function TierCard({
   tier,
@@ -253,27 +596,16 @@ function TierCard({
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{tier.blurb}</p>
       )}
 
-      {/* The monthly figure leads because it is what a family is deciding to
-          pay, but the total is right underneath it: the commitment is the
-          whole engagement, and burying that would be a trick. How often you
-          meet is a feature and lives in the list below, not here, or a total
+      {/* The monthly figure is the whole price now, so there is no total to
+          disclose underneath it. What replaces that line is the commitment,
+          which is the other thing a family is deciding. How often you meet is
+          a feature and lives in the list below, not here, or an allowance
           reads as a rate. */}
-      {tier.instalmentMonths > 1 ? (
-        <>
-          <p className="mt-4 text-[26px] font-bold text-foreground">
-            {money(monthlyCents(tier))}
-            <span className="text-[14px] font-normal text-muted-foreground"> /month</span>
-          </p>
-          <p className="text-[12.5px] text-muted-foreground">
-            {tier.instalmentMonths} monthly payments, {money(tier.priceCents)} in total
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="mt-4 text-[26px] font-bold text-foreground">{money(tier.priceCents)}</p>
-          <p className="text-[12.5px] text-muted-foreground">One payment</p>
-        </>
-      )}
+      <p className="mt-4 text-[26px] font-bold text-foreground">
+        {money(tier.priceCents)}
+        <span className="text-[14px] font-normal text-muted-foreground"> /month</span>
+      </p>
+      <p className="text-[12.5px] text-muted-foreground">Cancel any time</p>
 
       <ul className="mt-5 flex-1 space-y-2.5">
         {tier.features.map((f, i) => (

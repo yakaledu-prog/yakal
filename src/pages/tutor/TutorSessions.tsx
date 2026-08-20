@@ -22,6 +22,7 @@ import {
   RescheduleDialog,
   type ReschedulableSession,
 } from "@/components/shared/RescheduleDialog";
+import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
 
 export function TutorSessions() {
   const { user, profile } = useAuth();
@@ -33,6 +34,7 @@ export function TutorSessions() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
+  const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
 
   // One column at a time on a phone, both on a desktop.
   const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
@@ -228,6 +230,7 @@ export function TutorSessions() {
               emptyText="Nothing booked yet."
               onJoin={(s) => join(s.id)}
               onReschedule={(s) => setMoving(toReschedulable(s))}
+              onCancel={setCancelling}
             />
           ) : (
             <PastSessions
@@ -239,6 +242,9 @@ export function TutorSessions() {
         </div>
 
         {moving && <RescheduleDialog session={moving} askReason onClose={() => setMoving(null)} />}
+        {cancelling && (
+          <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />
+        )}
       </section>
 
       {notesFor && (

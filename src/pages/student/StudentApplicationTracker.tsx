@@ -473,7 +473,13 @@ export function StudentApplicationTracker({
                   ? "Requirements appear here once you add a college."
                   : "Requirements appear here once a college is added."}
               </p>
-              {canEdit && (
+              {/* Only on the student's own page. "/student/college-list" is the
+                  viewer's own route, so from a counselor's or parent's embedded
+                  view it would drop them onto their own college list - which,
+                  for staff with no admissions plan, is a locked page whose only
+                  action is "request access from parent". Embedded views reach a
+                  student's list through their own College List tab instead. */}
+              {canEdit && !embedded && (
                 <Link
                   to="/student/college-list"
                   className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"

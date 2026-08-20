@@ -4,13 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Banknote, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 
-import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
 import {
   getConnectStatus,
-  getPayoutYearTotal,
-  getTutorPayoutHistory,
+  getEarningsYearTotal,
+  getSettledPayouts,
   methodLabel,
+  type EarningRow,
   refreshConnectStatus,
   startConnectOnboarding,
 } from "@/services/payoutService";
@@ -59,12 +59,12 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
 
   const { data: payouts = [], isLoading } = useQuery({
     queryKey: ["tutor-payouts", tutorId],
-    queryFn: () => getTutorPayoutHistory(tutorId),
+    queryFn: () => getSettledPayouts(tutorId),
   });
 
   const { data: yearTotal } = useQuery({
     queryKey: ["payout-year-total", tutorId],
-    queryFn: () => getPayoutYearTotal(tutorId),
+    queryFn: () => getEarningsYearTotal(tutorId),
   });
 
   async function connect() {
@@ -121,29 +121,21 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
         </p>
       ) : (
         <ul className="divide-y divide-border">
-          {payouts.map((p) => (
-            <li
-              key={p.id}
-              className={cn("flex flex-wrap items-center gap-4 py-4", p.voidedAt && "opacity-55")}
-            >
+          {payouts.map((p: EarningRow) => (
+            <li key={p.id} className="flex flex-wrap items-center gap-4 py-4">
               <div className="min-w-0 flex-1">
                 <p className="text-[14.5px] font-medium text-foreground">
                   {money(p.amountCents, p.currency)}
-                  {p.voidedAt && (
-                    <span className="ml-2 text-[12.5px] font-normal text-muted-foreground">
-                      voided{p.voidReason ? `, ${p.voidReason}` : ""}
-                    </span>
-                  )}
                 </p>
                 <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                  {methodLabel(p.method)}
-                  {" - "}
-                  {new Date(`${p.paidOn}T00:00:00`).toLocaleDateString(undefined, {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                  {p.description && ` - ${p.description}`}
+                  {methodLabel(p.method ?? "")}
+                  {p.settledAt &&
+                    ` - ${new Date(p.settledAt).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}`}
+                  {p.subject && ` - ${p.subject}`}
                 </p>
               </div>
 

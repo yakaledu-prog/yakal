@@ -3,15 +3,19 @@ import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
 
 import { Dropdown } from "@/components/ui/Dropdown";
-import { useAuth } from "@/contexts/AuthContext";
 import { money } from "@/services/billingService";
-import type { TutorPayout } from "@/services/adminService";
-import { METHODS, recordPayout, referenceLabel, type PayoutMethod } from "@/services/payoutService";
+import {
+  METHODS,
+  referenceLabel,
+  settleEarnings,
+  type OwedRow,
+  type PayoutMethod,
+} from "@/services/payoutService";
 
 // ============================================================
 // Writing down a payment made somewhere else.
 //
-// For tutors who have not connected a bank. It does not move money: it records
+// For payees who have not connected a bank. It does not move money: it records
 // that somebody already did, which is why the reference is required rather
 // than optional. An admin who cannot produce one has not paid anybody, and the
 // form should not let them claim they have.
@@ -28,37 +32,27 @@ export function RecordPayoutModal({
   onClose,
   onSaved,
 }: {
-  payout: TutorPayout;
+  payout: OwedRow;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { user } = useAuth();
   const [method, setMethod] = useState<PayoutMethod>("ach");
   const [reference, setReference] = useState("");
+  // The day the money actually left, which is not always the day somebody got
+  // round to recording it.
   const [paidOn, setPaidOn] = useState(today());
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function save() {
-    if (!user) return;
     if (!reference.trim()) return toast.error(`${referenceLabel(method)} is required.`);
 
     setBusy(true);
-    const res = await recordPayout({
-      tutorId: payout.tutor_id,
-      invoiceId: payout.id,
-      amountCents: payout.payout_cents,
-      currency: payout.currency,
-      method,
-      reference,
-      paidOn,
-      note,
-      adminId: user.id,
-    });
+    const res = await settleEarnings([payout.id], { method, reference, note, paidOn });
     setBusy(false);
 
-    if (!res.success) return toast.error(res.error ?? "Could not record that.");
-    toast.success(`Recorded. ${payout.tutor_name} can see the reference.`);
+    if (res.error) return toast.error(res.error);
+    toast.success(`Recorded. ${payout.payeeName ?? "They"} can see the reference.`);
     onSaved();
   }
 
@@ -68,14 +62,14 @@ export function RecordPayoutModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label={`Record a payment to ${payout.tutor_name}`}
+        aria-label={`Record a payment to ${payout.payeeName ?? "a payee"}`}
         className="w-full max-w-md rounded-2xl bg-card p-6 shadow-xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-[17px] font-medium text-foreground">Record a payment</h2>
             <p className="mt-0.5 text-[13px] text-muted-foreground">
-              {payout.tutor_name} - {money(payout.payout_cents, payout.currency)}
+              {payout.payeeName} - {money(payout.amountCents, payout.currency)}
             </p>
           </div>
           <button
