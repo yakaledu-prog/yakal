@@ -4,7 +4,11 @@ import { selectSupportKnowledge, type SupportRole } from './_utils/support-knowl
 import { supportRateLimiter } from './_utils/support-rate-limit.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+// Configurable so a Groq retirement is an env change, not an emergency deploy.
+// The previous default, llama-3.3-70b-versatile, was decommissioned by Groq on
+// 2026-08-16, which took the support chatbot down with a generic error. Set
+// GROQ_MODEL to override; the default tracks Groq's current recommended model.
+const MODEL = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b';
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 1_200;
 const MAX_TOTAL_LENGTH = 6_000;
