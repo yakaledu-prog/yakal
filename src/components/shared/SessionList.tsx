@@ -293,6 +293,7 @@ export function UpcomingSessions({
   onReschedule,
   rescheduleAs = "client",
   onRequestChange,
+  onCancel,
   compact = false,
   /** Show only the first few, for a home page agenda with a View all beside it. */
   limit,
@@ -317,6 +318,13 @@ export function UpcomingSessions({
   rescheduleAs?: "client" | "tutor";
   /** Offered to a client inside the 24 hours, in place of Reschedule. */
   onRequestChange?: (session: SessionListItem) => void;
+  /**
+   * Calling it off entirely. Offered alongside whatever the main action is,
+   * and at any notice: the published policy handles a late cancellation with a
+   * fee rather than by refusing one, and a family who cannot cancel simply
+   * fails to turn up, which is worse for the tutor.
+   */
+  onCancel?: (session: SessionListItem) => void;
   className?: string;
 }) {
   const { upcoming } = splitSessions(sessions);
@@ -330,8 +338,31 @@ export function UpcomingSessions({
       emptyText={emptyText}
       className={className}
       renderAction={(s) => {
+        // Always in the same place, whatever the main action turns out to be,
+        // so a column of rows does not have its buttons at three different
+        // widths depending on how far away each lesson is.
+        const cancel = onCancel ? (
+          <button
+            type="button"
+            onClick={() => onCancel(s)}
+            className="h-10 rounded-md px-3 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Cancel
+          </button>
+        ) : null;
+
+        const withCancel = (main: React.ReactNode) =>
+          cancel ? (
+            <div className="flex items-center gap-1">
+              {main}
+              {cancel}
+            </div>
+          ) : (
+            main
+          );
+
         if (onJoin && isJoinable(s)) {
-          return (
+          return withCancel(
             <button
               type="button"
               onClick={() => onJoin(s)}
@@ -347,7 +378,7 @@ export function UpcomingSessions({
         const mayMove = rescheduleAs === "tutor" || canClientReschedule(s, new Date());
 
         if (onReschedule && mayMove) {
-          return (
+          return withCancel(
             <button
               type="button"
               onClick={() => onReschedule(s)}
@@ -361,7 +392,7 @@ export function UpcomingSessions({
         // Inside the window the move stops being self-serve. The tutor has
         // held the hour and turned other work away, so it becomes a request.
         if (onRequestChange) {
-          return (
+          return withCancel(
             <button
               type="button"
               onClick={() => onRequestChange(s)}
@@ -372,7 +403,7 @@ export function UpcomingSessions({
             </button>
           );
         }
-        return null;
+        return cancel;
       }}
     />
   );

@@ -35,7 +35,7 @@ interface Invoice {
   admissions_tier_id: string | null;
   booking: BookingSlot[] | null;
   description: string;
-  payout_cents: number | null;
+  tutor_earning_cents: number | null;
 }
 
 /** Fulfil every paid invoice in the list. Safe to call more than once. */
@@ -45,7 +45,7 @@ export async function fulfilInvoices(db: any, invoiceIds: string[]): Promise<voi
   const { data: invoices, error } = await db
     .from("invoices")
     .select(
-      "id, parent_id, student_id, tutor_id, course_id, admissions_tier_id, booking, description, payout_cents"
+      "id, parent_id, student_id, tutor_id, course_id, admissions_tier_id, booking, description, tutor_earning_cents"
     )
     .in("id", invoiceIds);
 
@@ -138,13 +138,13 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     // money is split across the slots it bought. The remainder goes to the
     // first, which is the only way the parts add back up to the whole.
     const payable = slots.filter((s) => s?.date && s?.startTime);
-    const perSession = payable.length > 0 ? Math.floor((invoice.payout_cents ?? 0) / payable.length) : 0;
-    const remainder = payable.length > 0 ? (invoice.payout_cents ?? 0) % payable.length : 0;
+    const perSession = payable.length > 0 ? Math.floor((invoice.tutor_earning_cents ?? 0) / payable.length) : 0;
+    const remainder = payable.length > 0 ? (invoice.tutor_earning_cents ?? 0) % payable.length : 0;
 
     const rows = payable
-      .map((s, i) => ({ slot: s, payout: perSession + (i === 0 ? remainder : 0) }))
+      .map((s, i) => ({ slot: s, earning: perSession + (i === 0 ? remainder : 0) }))
       .filter(({ slot }) => !seen.has(`${slot.date}|${slot.startTime.slice(0, 5)}`))
-      .map(({ slot, payout }) => ({
+      .map(({ slot, earning }) => ({
         student_id: invoice.student_id,
         tutor_id: tutorId,
         course_id: course.id,
@@ -153,7 +153,7 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
         date: slot.date,
         start_time: slot.startTime,
         duration_minutes: slot.durationMinutes ?? 60,
-        payout_cents: payout,
+        tutor_earning_cents: earning,
         mode: "online",
         status: "upcoming",
       }));
@@ -279,7 +279,7 @@ async function attachZoomMeetings(
 async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   const { data: tier } = await db
     .from("admissions_tiers")
-    .select("id, name, price_cents, instalment_months")
+    .select("id, name, price_cents")
     .eq("id", invoice.admissions_tier_id)
     .single();
   if (!tier) {
@@ -292,7 +292,10 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     .from("admissions_plans")
     .select("id, tier_id, invoice_id")
     .eq("student_id", invoice.student_id)
-    .eq("status", "active")
+    // past_due is still their live plan. Treating only 'active' as live would
+    // start a second subscription alongside one that is merely behind on a
+    // payment, and bill the family twice.
+    .in("status", ["active", "past_due"])
     .maybeSingle();
 
   if (existing?.invoice_id === invoice.id) return;
@@ -302,7 +305,7 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   if (existing) {
     await db
       .from("admissions_plans")
-      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .update({ status: "canceled", ended_at: new Date().toISOString() })
       .eq("id", existing.id);
   }
 
@@ -311,8 +314,13 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   // through an application; otherwise the counsellor with the fewest live
   // plans. Null when nobody has been hired yet, which leaves the plan
   // unassigned for an admin to place rather than failing the purchase.
-  let counselorId: string | null = null;
-  if (existing) {
+  //
+  // A choice the parent made wins over both. They picked somebody from the
+  // gallery, and quietly handing them to whoever is least busy would make that
+  // screen a decoration. create-invoice has already checked the id is an
+  // active counsellor, so this is a stored decision rather than a request.
+  let counselorId: string | null = invoice.tutor_id ?? null;
+  if (!counselorId && existing) {
     const { data: prior } = await db
       .from("admissions_plans")
       .select("counselor_id")
@@ -326,23 +334,82 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
     counselorId = (picked as string | null) ?? null;
   }
 
-  // Granted on the first payment, not the last. The instalments are how the
-  // money is collected; the family gets the whole engagement straight away.
-  const { error: planErr } = await db.from("admissions_plans").insert({
+  // Granted on the first payment. The subscription id and the period end are
+  // filled in on the way back from Stripe, by whichever of the confirm handler
+  // and the webhook gets there first; both sync from the same subscription, so
+  // it does not matter which.
+  const { data: plan, error: planErr } = await db.from("admissions_plans").insert({
     student_id: invoice.student_id,
     purchased_by: invoice.parent_id,
     tier_id: tier.id,
     invoice_id: invoice.id,
     counselor_id: counselorId,
-    payments_made: 1,
-    payments_due: tier.instalment_months ?? 1,
-  });
+  }).select("id").single();
   if (planErr) {
     // The unique index refuses a second active plan, which is a duplicate
     // delivery arriving while the first is still in flight.
     if (planErr.code !== "23505") console.error("fulfil: admissions plan failed:", planErr.message);
     return;
   }
+
+  // ---- the first advising sessions ----
+  //
+  // Chosen from the counsellor's calendar at checkout and created here, because
+  // a session cannot exist before the plan it is booked against does.
+  // book_advising_session is the path once a family is on a plan; it refuses
+  // one that has no active plan, which is every family at the moment they are
+  // paying for it.
+  //
+  // kind 'advising' with no course, matching what book_advising_session writes,
+  // so the counsellor's calendar and the monthly allowance count these the same
+  // as any other.
+  const slots = Array.isArray(invoice.booking) ? invoice.booking : [];
+  if (plan?.id && counselorId && slots.length > 0) {
+    const { data: alreadyThere } = await db
+      .from("sessions")
+      .select("date, start_time")
+      .eq("student_id", invoice.student_id)
+      .eq("tutor_id", counselorId)
+      .eq("kind", "advising");
+
+    const seen = new Set(
+      (alreadyThere ?? []).map((s: any) => `${s.date}|${String(s.start_time).slice(0, 5)}`)
+    );
+
+    // One at a time. An hour can be taken between the checkout page and the
+    // payment landing, and the unique index will refuse that row; as a batch,
+    // one refusal would lose every other session in the same purchase.
+    for (const slot of slots) {
+      if (!slot?.date || !slot?.startTime) continue;
+      if (seen.has(`${slot.date}|${String(slot.startTime).slice(0, 5)}`)) continue;
+
+      const { error: sessionErr } = await db.from("sessions").insert({
+        student_id: invoice.student_id,
+        tutor_id: counselorId,
+        course_id: null,
+        kind: "advising",
+        subject: "College advising",
+        date: slot.date,
+        start_time: slot.startTime,
+        duration_minutes: slot.durationMinutes ?? 60,
+        mode: "online",
+        status: "upcoming",
+      });
+
+      // 23505 is somebody else taking the hour first. The plan is bought and
+      // the family can book another; losing the purchase over it would be far
+      // worse than losing the slot.
+      if (sessionErr && sessionErr.code !== "23505") {
+        console.error("fulfil: advising session failed:", sessionErr.message);
+      }
+    }
+  }
+
+  // The counsellor's share is not written here, including for the first month.
+  // Every month arrives as invoice.paid, which knows what was actually charged
+  // rather than what the tier lists, so it is the one writer. Recording it in
+  // both places would mean two computations of the same money, and they only
+  // have to disagree once.
 
   // The workspace the counsellor opens. Created here rather than waiting for
   // the student to touch a college list, so the family appears on their

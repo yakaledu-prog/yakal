@@ -1,5 +1,12 @@
 // A slot cannot be sold twice.
 //
+// Run it with tsx, not node: it imports api/_utils/fulfil.ts, whose own imports
+// carry .js extensions because the deployed functions are ESM. Node's type
+// stripping does not map those back to .ts, so plain node fails on email.js
+// rather than on anything to do with slots.
+//
+//   npx tsx scripts/verify/slot-conflicts.mjs
+//
 // Slots are chosen per course, so nothing used to stop a parent buying
 // Chemistry at Monday 4pm and Physics at Monday 4pm for the same child. Three
 // layers now stop it, and this checks all three:
@@ -112,15 +119,14 @@ const { data: invoice } = await db
     ],
     description: 'slot-conflicts fixture',
     amount_cents: 11000,
-    payout_cents: 8000,
+    tutor_earning_cents: 8000,
     kind: 'tutoring',
     status: 'paid',
-    payout_status: 'pending',
   })
   .select('id')
   .single();
 
-const { fulfilInvoices } = await import('../../api/utils/fulfil.ts');
+const { fulfilInvoices } = await import('../../api/_utils/fulfil.ts');
 await fulfilInvoices(db, [invoice.id]);
 
 pass(

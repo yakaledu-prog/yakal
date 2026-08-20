@@ -38,7 +38,7 @@ const { data: invoice } = await db.from('invoices').insert({
   parent_id: parentId, student_id: studentId, tutor_id: tutorId,
   course_id: courseId, booking,
   description: 'Chemistry, Grade 11 Foundations', amount_cents: 5500,
-  payout_cents: 4000, kind: 'tutoring', status: 'paid', payout_status: 'pending',
+  tutor_earning_cents: 4000, kind: 'tutoring', status: 'paid',
 }).select('id').single();
 
 const { fulfilInvoices } = await import('../../api/utils/fulfil.ts');

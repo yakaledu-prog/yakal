@@ -50,8 +50,9 @@ async function main() {
   // no check, because the next person to see it red assumes it is that again.
   //
   // A fixture of its own rather than a demo student. This was student2, who is
-  // also an ordinary account somebody can buy a tier for while testing, and the
-  // first time that happened the check stopped running.
+  // also an ordinary account somebody can buy a tier for while testing, and
+  // the first time that happened the check stopped running. Its name asks
+  // people not to.
   const UNPAID = 'unpaid-fixture@yakal.demo';
 
   const { data: students } = await admin.from('profiles').select('id, full_name, email').eq('role', 'student');

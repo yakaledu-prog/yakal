@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap } from "lucide-react";
+import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService } from "@/services/diagnosticService";
 import { diagnosticTests } from "@/data/diagnostics";
@@ -46,6 +46,10 @@ export function StudentLayout() {
         { name: "Roadmap", href: "/student/roadmap", icon: <Map size={18} /> },
         { name: "Explore", href: "/student/explore", icon: <Compass size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "My list", href: "/student/college-list", icon: <List size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
+        // Its own entry, because the general Sessions list is locked behind
+        // tutoring: a family who bought counselling and nothing else could not
+        // see the hours they were paying for anywhere at all.
+        { name: "Advising", href: "/student/advising", icon: <CalendarDays size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "Applications", href: "/student/my-app", icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
       ],
     },

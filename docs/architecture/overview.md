@@ -53,9 +53,14 @@ decision rather than an oversight. Messages and notifications are realtime.
 
 ## Where the money goes
 
-Parents pay Stripe. Tutors are paid out through Stripe Connect, or by hand if
-they have not connected a bank. `tutor_payouts` records either way, so the
-ledger does not depend on which path was used.
+Parents pay Stripe. Tutors and counsellors are paid out through Stripe Connect,
+or by hand if they have not connected a bank; `earnings` records either way, so
+the ledger does not depend on which path was used.
+
+Money is never transferred to a payee before the work is delivered. An earning
+is written when a lesson completes, not when it is bought, and it waits out a
+hold before it moves, so anything a parent has paid for but not yet received is
+still ours to refund.
 
 ## The public site
 

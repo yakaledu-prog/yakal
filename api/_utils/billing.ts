@@ -18,3 +18,33 @@ export function getStripe(): Stripe {
   if (!_stripe) _stripe = new Stripe(key);
   return _stripe;
 }
+
+/**
+ * The charge behind a payment intent.
+ *
+ * A transfer's source_transaction has to name a charge, and a checkout session
+ * only carries the intent, which is the attempt rather than the money. Resolved
+ * once when a payment lands and stored on the invoice, because the alternative
+ * is a Stripe call per earning at release time, months later, on a path that
+ * must not fail for want of network.
+ *
+ * Null on failure rather than throwing. Marking the invoice paid matters more
+ * than the transfer hint, and an earning with no source charge still transfers,
+ * just out of the general balance.
+ */
+export async function chargeIdFor(paymentIntent: unknown): Promise<string | null> {
+  const id =
+    typeof paymentIntent === 'string'
+      ? paymentIntent
+      : ((paymentIntent as { id?: string } | null)?.id ?? null);
+  if (!id) return null;
+
+  try {
+    const intent = await getStripe().paymentIntents.retrieve(id);
+    const latest = (intent as { latest_charge?: string | { id?: string } }).latest_charge;
+    return typeof latest === 'string' ? latest : (latest?.id ?? null);
+  } catch (err) {
+    console.error('could not resolve the charge for', id, (err as Error)?.message);
+    return null;
+  }
+}

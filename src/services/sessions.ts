@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { authedPost } from '@/lib/authedFetch';
 import { sendFromTemplate } from '@/services/notificationService';
 
 export interface CreateSessionParams {
@@ -434,3 +435,45 @@ export const getTutorReviews = async (tutorId: string): Promise<TutorReview[]> =
     reviewerAvatarUrl: r.reviewer_avatar_url ?? null,
   }));
 };
+
+// ------------------------------------------------------------
+// Calling a lesson off
+//
+// Through the server, because it decides the refund. The published policy is a
+// 24 hour window, half kept inside it, and nothing kept when the tutor is the
+// one cancelling; none of that is a decision a browser can be trusted with.
+// ------------------------------------------------------------
+
+export interface CancellationPreview {
+  refundCents: number;
+  /** What the tutor keeps. Only ever non-zero on a late cancellation. */
+  tutorEarningCents: number;
+  reason: "in_notice" | "late" | "tutor_cancelled" | "admin";
+  /** Said to whoever is about to press the button. */
+  explanation: string;
+  by: "family" | "tutor" | "admin";
+  /** The moment after which cancelling costs money. */
+  freeUntil: string;
+  startsAt: string;
+  slotPriceCents: number;
+  error?: string;
+}
+
+/** What cancelling would do. Changes nothing. */
+export async function previewCancellation(sessionId: string): Promise<CancellationPreview> {
+  return authedPost("/api/stripe?action=session-cancel", { sessionId, preview: true });
+}
+
+/** Do it. The refund, if any, follows the policy the preview described. */
+export async function cancelSession(
+  sessionId: string,
+  reason?: string
+): Promise<{
+  cancelled?: boolean;
+  refundedCents?: number;
+  /** The cancellation went through and the refund did not. Somebody has to know. */
+  refundError?: string | null;
+  error?: string;
+}> {
+  return authedPost("/api/stripe?action=session-cancel", { sessionId, reason });
+}

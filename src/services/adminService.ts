@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { authedPost } from "@/lib/authedFetch";
 
 export interface AdminUser {
   id: string;
@@ -56,17 +57,6 @@ export interface ContactMessage {
   created_at: string;
 }
 
-export interface TutorPayout {
-  id: string;
-  tutor_id: string;
-  tutor_name: string;
-  parent_name: string;
-  description: string;
-  payout_cents: number;
-  currency: string;
-  paid_at: string | null;
-}
-
 export interface AdminDashboard {
   usersByRole: Record<string, number>;
   totalUsers: number;
@@ -96,7 +86,7 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   const [profilesRes, sessionsRes, invoicesRes, messagesRes] = await Promise.all([
     supabase.from("profiles").select("role, status"),
     supabase.from("sessions").select("id", { count: "exact", head: true }),
-    supabase.from("invoices").select("amount_cents, status, payout_cents, payout_status"),
+    supabase.from("invoices").select("amount_cents, status"),
     supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
@@ -111,9 +101,15 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   const invoices = invoicesRes.data || [];
   const revenueCents = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + i.amount_cents, 0);
   const outstandingCents = invoices.filter((i: any) => i.status === "open").reduce((s: number, i: any) => s + i.amount_cents, 0);
-  const payoutsDueCents = invoices
-    .filter((i: any) => i.payout_status === "pending")
-    .reduce((s: number, i: any) => s + (i.payout_cents || 0), 0);
+  // What is owed comes from the earnings ledger, not the invoice. An invoice
+  // being paid says a parent paid us; it says nothing about whether the lesson
+  // it bought has happened yet, and only delivered work is owed to anybody.
+  const { data: owed } = await supabase
+    .from("earnings")
+    .select("amount_cents")
+    .eq("status", "pending")
+    .is("voided_at", null);
+  const payoutsDueCents = (owed || []).reduce((s: number, e: any) => s + e.amount_cents, 0);
 
   return {
     usersByRole,
@@ -127,45 +123,10 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   };
 }
 
-// ---- Tutor payouts (owed once a parent has paid) ----
-export async function getTutorPayouts(): Promise<TutorPayout[]> {
-  const { data: rows } = await supabase
-    .from("invoices")
-    .select("id, tutor_id, parent_id, description, payout_cents, currency, paid_at")
-    .eq("payout_status", "pending")
-    .order("paid_at", { ascending: false });
-  const list = (rows || []).filter((r: any) => r.tutor_id && r.payout_cents);
-  const ids = [...new Set([...list.map((r: any) => r.tutor_id), ...list.map((r: any) => r.parent_id)])];
-  const { data: people } = ids.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", ids)
-    : { data: [] as any[] };
-  const nameById = new Map((people || []).map((p: any) => [p.id, p.full_name]));
-  return list.map((r: any) => ({
-    id: r.id,
-    tutor_id: r.tutor_id,
-    tutor_name: nameById.get(r.tutor_id) || "Tutor",
-    parent_name: nameById.get(r.parent_id) || "Parent",
-    description: r.description,
-    payout_cents: r.payout_cents,
-    currency: r.currency || "usd",
-    paid_at: r.paid_at,
-  }));
-}
-
-/**
- * Settle a payout without recording how.
- *
- * Kept only so nothing that still calls it breaks. It flips a column and
- * leaves the tutor no way to check the money moved, which is the problem
- * recordPayout and payViaConnect exist to fix. Use one of those.
- *
- * @deprecated
- */
-export async function markPayoutPaid(id: string): Promise<Result> {
-  const { error } = await supabase.from("invoices").update({ payout_status: "paid" }).eq("id", id);
-  if (error) return { success: false, error: error.message };
-  return { success: true };
-}
+// Who is owed what now lives in payoutService.getOwedEarnings, reading the
+// earnings ledger. markPayoutPaid went with it: flipping a column left the
+// payee no way to check the money had moved, which is the whole reason the
+// ledger records a method and a reference.
 
 /** Whether each of these tutors can receive a Stripe transfer yet. */
 export async function getConnectReadiness(tutorIds: string[]): Promise<Map<string, boolean>> {
@@ -462,11 +423,33 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
       const [sessions, courses, invoices] = await Promise.all([
         rows("tutor sessions", supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false })),
         rows("tutor courses", supabase.from("courses").select("*").eq("tutor_id", id)),
-        rows("tutor invoices", supabase.from("invoices").select("*").eq("tutor_id", id).order("created_at", { ascending: false })),
+        // Earnings, not invoices. An invoice is what a parent paid us; what a
+        // tutor is owed is a different question with a different answer, and
+        // showing the first labelled as the second was how a tutor's page came
+        // to display money nobody owed them yet.
+        rows("tutor earnings", supabase
+          .from("earnings")
+          .select("id, amount_cents, currency, status, created_at, settled_at, session:sessions (subject, date)")
+          .eq("payee_id", id)
+          .is("voided_at", null)
+          .order("created_at", { ascending: false })),
       ]);
       details.sessions = sessions;
       details.courses = courses;
-      details.invoices = invoices;
+      // Shaped like the invoice rows the modal already renders, so it does not
+      // have to know which of the two it is looking at.
+      details.invoices = invoices.map((e: any) => ({
+        id: e.id,
+        parent_id: "",
+        parent_name: "",
+        description: e.session?.subject ?? "Counselling",
+        created_at: e.session?.date ?? e.created_at,
+        amount_cents: e.amount_cents,
+        currency: e.currency ?? "usd",
+        kind: "tutoring",
+        status: e.status,
+        paid_at: e.settled_at ?? null,
+      }));
       
       const studentIds = [...new Set(sessions.map((s: any) => s.student_id).filter(Boolean))];
       if (studentIds.length > 0) {
@@ -567,7 +550,7 @@ export interface AdminCourseDetailData {
 }
 
 export async function getCourseDetail(courseId: string): Promise<AdminCourseDetailData> {
-  const [enrolRes, sessionRes, invoiceRes] = await Promise.all([
+  const [enrolRes, sessionRes, invoiceRes, owedRes] = await Promise.all([
     supabase
       .from("enrolments")
       .select(`id, created_at, status,
@@ -584,13 +567,22 @@ export async function getCourseDetail(courseId: string): Promise<AdminCourseDeta
       .order("date", { ascending: true }),
     supabase
       .from("invoices")
-      .select("amount_cents, payout_cents, payout_status, status")
+      .select("id, amount_cents, tutor_earning_cents, status")
       .eq("course_id", courseId),
+    // Owed and unmoved, reached through the lessons this course actually ran.
+    // !inner so a row with no session is excluded rather than returned null.
+    supabase
+      .from("earnings")
+      .select("amount_cents, session:sessions!inner (course_id)")
+      .eq("session.course_id", courseId)
+      .eq("status", "pending")
+      .is("voided_at", null),
   ]);
 
   if (enrolRes.error) console.error("getCourseDetail enrolments:", enrolRes.error);
   if (sessionRes.error) console.error("getCourseDetail sessions:", sessionRes.error);
   if (invoiceRes.error) console.error("getCourseDetail invoices:", invoiceRes.error);
+  if (owedRes.error) console.error("getCourseDetail earnings:", owedRes.error);
 
   const paid = (invoiceRes.data ?? []).filter((i: any) => i.status === "paid");
 
@@ -613,12 +605,13 @@ export async function getCourseDetail(courseId: string): Promise<AdminCourseDeta
       studentName: r.student?.full_name ?? null,
     })),
     revenueCents: paid.reduce((n: number, i: any) => n + (i.amount_cents ?? 0), 0),
-    payoutCents: paid.reduce((n: number, i: any) => n + (i.payout_cents ?? 0), 0),
-    // What the admin still owes the tutor. The payout is marked pending by the
-    // payment webhook and settled by hand.
-    unpaidPayoutCents: paid
-      .filter((i: any) => i.payout_status === "pending")
-      .reduce((n: number, i: any) => n + (i.payout_cents ?? 0), 0),
+    // What this course will owe its tutor in total, if every lesson bought is
+    // delivered.
+    payoutCents: paid.reduce((n: number, i: any) => n + (i.tutor_earning_cents ?? 0), 0),
+    // What is owed and has not moved. From the ledger rather than the invoice:
+    // an invoice being paid says a parent paid us, not that the lessons it
+    // bought have happened, and only delivered work is owed to anybody.
+    unpaidPayoutCents: (owedRes.data ?? []).reduce((n: number, e: any) => n + e.amount_cents, 0),
   };
 }
 
@@ -768,4 +761,146 @@ export async function getCourseAssignments(courseId: string): Promise<AdminAssig
       return x.dueDate.localeCompare(y.dueDate);
     })
     .map((a: AdminAssignment, i: number) => ({ ...a, index: i + 1 }));
+}
+
+// ------------------------------------------------------------
+// Refunding, outside the cancellation rules
+//
+// Goodwill, a complaint, a mistake. session-cancel is the path that follows the
+// published policy; this is the one where a person has decided.
+// ------------------------------------------------------------
+
+export interface RefundPreview {
+  amountCents: number;
+  /** What is left of the payment after anything already refunded. */
+  refundable: number;
+  refundedSoFar: number;
+  /**
+   * Money already transferred to a tutor or counsellor for delivered work.
+   * Refunding the family does not bring it back, and it is not recoverable by
+   * any API call, so it is what this refund actually costs the platform.
+   */
+  alreadyPaidOutCents: number;
+  alreadyPaidOutCount: number;
+  currency: string;
+  error?: string;
+}
+
+/** What refunding this would do, and what it would cost. Changes nothing. */
+export async function previewRefund(
+  invoiceId: string,
+  amountCents?: number
+): Promise<RefundPreview> {
+  return authedPost("/api/stripe?action=refund", { invoiceId, amountCents, preview: true });
+}
+
+export async function refundInvoice(
+  invoiceId: string,
+  options: { amountCents?: number; note?: string } = {}
+): Promise<{
+  refunded?: boolean;
+  amountCents?: number;
+  earningsCancelled?: number;
+  /** Paid out already, so the platform absorbs it. Worth saying out loud. */
+  earningsAlreadyPaid?: number;
+  error?: string;
+}> {
+  return authedPost("/api/stripe?action=refund", {
+    invoiceId,
+    amountCents: options.amountCents,
+    note: options.note,
+  });
+}
+
+// ------------------------------------------------------------
+// What a purchase actually bought, and where each part got to
+//
+// A row on the billing page says a family paid. It does not say whether the
+// lessons happened, whether anybody was paid for them, or whether any of it
+// came back, and those are the questions somebody opens that page to answer.
+// ------------------------------------------------------------
+
+export interface InvoiceLine {
+  id: string;
+  /** The lesson, or the month of counselling. */
+  label: string;
+  when: string | null;
+  /** upcoming, completed, cancelled, no-show, disputed. */
+  status: string;
+  /** What the tutor or counsellor earns from it, and where that stands. */
+  earningCents: number | null;
+  earningStatus: string | null;
+}
+
+export interface InvoiceDetail {
+  lines: InvoiceLine[];
+  refundedCents: number;
+  /** Owed and unmoved against this purchase. */
+  owedCents: number;
+  /** Already gone out. Not recoverable if this is refunded. */
+  paidOutCents: number;
+}
+
+export async function getInvoiceDetail(invoiceId: string): Promise<InvoiceDetail> {
+  const [sessionRes, earningRes, refundRes] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("id, subject, date, start_time, status")
+      .eq("invoice_id", invoiceId)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true }),
+    supabase
+      .from("earnings")
+      .select("id, session_id, period_start, amount_cents, status, kind")
+      .eq("invoice_id", invoiceId)
+      .is("voided_at", null),
+    supabase
+      .from("refunds")
+      .select("amount_cents")
+      .eq("invoice_id", invoiceId)
+      .eq("status", "succeeded"),
+  ]);
+
+  if (sessionRes.error) console.error("getInvoiceDetail sessions:", sessionRes.error.message);
+  if (earningRes.error) console.error("getInvoiceDetail earnings:", earningRes.error.message);
+  if (refundRes.error) console.error("getInvoiceDetail refunds:", refundRes.error.message);
+
+  const earnings = (earningRes.data ?? []) as any[];
+  const bySession = new Map<string, any>(
+    earnings.filter((e) => e.session_id).map((e) => [e.session_id, e])
+  );
+
+  const lines: InvoiceLine[] = (sessionRes.data ?? []).map((s: any) => {
+    const e = bySession.get(s.id);
+    return {
+      id: s.id,
+      label: s.subject,
+      when: `${s.date}T${String(s.start_time).slice(0, 5)}`,
+      status: s.status,
+      earningCents: e?.amount_cents ?? null,
+      earningStatus: e?.status ?? null,
+    };
+  });
+
+  // A counselling month has no session, so its earning is the line.
+  for (const e of earnings.filter((x) => !x.session_id)) {
+    lines.push({
+      id: e.id,
+      label: "Counselling",
+      when: e.period_start,
+      status: "billed",
+      earningCents: e.amount_cents,
+      earningStatus: e.status,
+    });
+  }
+
+  const sum = (test: (e: any) => boolean) =>
+    earnings.filter(test).reduce((n, e) => n + e.amount_cents, 0);
+
+  return {
+    lines,
+    refundedCents: (refundRes.data ?? []).reduce((n: number, r: any) => n + r.amount_cents, 0),
+    owedCents: sum((e) => e.status === "pending"),
+    paidOutCents: sum((e) => e.status === "settled"),
+  };
 }

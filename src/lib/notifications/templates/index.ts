@@ -1,6 +1,13 @@
 import type { NotificationTemplate, NotificationType } from "../types";
 import { parentLink, accountApproved, unlockRequest } from "./people";
-import { enrolment, booking, assignment, message, sessionMoved } from "./learning";
+import {
+  enrolment,
+  booking,
+  assignment,
+  message,
+  sessionMoved,
+  sessionCancelled,
+} from "./learning";
 import { courseApplication, courseApplicationDecided, payout } from "./teaching";
 import { admissionsPlan, essayReview, application } from "./admissions";
 import { messageReport, system } from "./safety";
@@ -19,6 +26,7 @@ export const TEMPLATES = {
   enrolment,
   booking,
   sessionMoved,
+  sessionCancelled,
   assignment,
   message,
   courseApplication,

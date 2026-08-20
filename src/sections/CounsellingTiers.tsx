@@ -6,7 +6,7 @@ import { Check } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import { cn } from "@/utils/cn";
 import { money } from "@/services/billingService";
-import { getTiers, monthlyCents, tierShade, type AdmissionsTier } from "@/services/admissionsService";
+import { getTiers, tierShade, type AdmissionsTier } from "@/services/admissionsService";
 
 // ============================================================
 // College counselling plans, on the public page.
@@ -85,8 +85,6 @@ function TierCard({
   shade: string;
   onEnquire: () => void;
 }) {
-  const monthly = tier.instalmentMonths > 1;
-
   return (
     <article
       className={cn(
@@ -109,24 +107,11 @@ function TierCard({
       )}
 
       <div className="mt-5">
-        {monthly ? (
-          <>
-            <p className="text-[30px] font-bold leading-none text-[#111]">
-              {money(monthlyCents(tier))}
-              <span className="text-[15px] font-normal text-[#54656f]"> /month</span>
-            </p>
-            <p className="mt-1.5 text-[13px] text-[#54656f]">
-              {tier.instalmentMonths} monthly payments, {money(tier.priceCents)} in total
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-[30px] font-bold leading-none text-[#111]">
-              {money(tier.priceCents)}
-            </p>
-            <p className="mt-1.5 text-[13px] text-[#54656f]">One payment</p>
-          </>
-        )}
+        <p className="text-[30px] font-bold leading-none text-[#111]">
+          {money(tier.priceCents)}
+          <span className="text-[15px] font-normal text-[#54656f]"> /month</span>
+        </p>
+        <p className="mt-1.5 text-[13px] text-[#54656f]">Cancel any time</p>
       </div>
 
       <ul className="mt-6 flex-1 space-y-3">

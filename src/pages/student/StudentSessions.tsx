@@ -20,6 +20,7 @@ import {
   type ReschedulableSession,
 } from "@/components/shared/RescheduleDialog";
 import { RateSessionDialog } from "@/components/shared/RateSessionDialog";
+import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
 
 interface StudentSessionRow {
   id: string;
@@ -44,6 +45,7 @@ export function StudentSessions() {
   const [filterText, setFilterText] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
+  const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
   const [rating, setRating] = useState<StudentSessionRow | null>(null);
   const [asked, setAsked] = useState(false);
 
@@ -267,6 +269,7 @@ export function StudentSessions() {
               sessions={items}
               onJoin={(s) => join(s.id)}
               onReschedule={(s) => setMoving(toReschedulable(s))}
+              onCancel={setCancelling}
               // Inside 24 hours it stops being self-serve, so the button
               // takes them to the person who can actually agree to it.
               onRequestChange={() => navigate("/student/messages")}
@@ -282,7 +285,10 @@ export function StudentSessions() {
           )}
         </div>
 
-        {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
+        {cancelling && (
+        <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />
+      )}
+      {moving && <RescheduleDialog session={moving} onClose={() => setMoving(null)} />}
 
         {rating && (
           <RateSessionDialog

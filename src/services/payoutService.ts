@@ -1,18 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import { authedPost } from "@/lib/authedFetch";
-import { sendNotification } from "./notificationService";
 
 // ============================================================
-// Paying a tutor, with a receipt.
+// What a tutor or counsellor is owed, and what they have been paid.
 //
-// Marking an invoice paid used to be the whole of it, so a tutor had no way to
-// tell whether the money had actually moved. Every rail a US platform uses
-// produces an identifier the recipient can look up in their own bank, so that
-// identifier is what turns "we paid you" into something checkable.
+// One table behind all of it. There used to be four: a payout figure on the
+// invoice, another on the session, a table of payments already made, and a
+// table of counsellor amounts nothing ever paid. Asking "what am I owed" meant
+// reading all of them and hoping they agreed.
 //
-// Stripe Connect would remove the manual step for most payouts. It does not
-// remove this: an off-platform payment always happens eventually, and the
-// annual total per tutor is needed for a 1099 either way.
+// Nothing here asks to be paid, because nothing needs to. An earning is written
+// when the work is delivered, waits out a hold, and transfers itself. A tutor
+// requesting payment for their own lesson was a tutor authorising their own
+// payment, and it is gone.
 // ============================================================
 
 export type PayoutMethod =
@@ -28,8 +28,8 @@ export type PayoutMethod =
 /**
  * What the reference field holds, per rail. Shown as the input's hint.
  *
- * stripe_connect is not in here: it is never chosen by hand. A transfer
- * records itself, with the transfer id as its reference.
+ * stripe_connect is not in here: it is never chosen by hand. A transfer records
+ * itself, with the transfer id as its reference.
  */
 export const METHODS: { id: PayoutMethod; label: string; referenceLabel: string }[] = [
   { id: "ach", label: "ACH direct deposit", referenceLabel: "Trace number" },
@@ -46,79 +46,120 @@ export const methodLabel = (m: string) =>
 export const referenceLabel = (m: string) =>
   METHODS.find((x) => x.id === m)?.referenceLabel ?? "Reference";
 
-export interface Payout {
+/**
+ * pending   owed, waiting out its hold or waiting for a bank to be connected
+ * settled   paid, and `reference` says how
+ * cancelled never became payable: refunded in time, disputed, or the lesson
+ *           did not happen
+ * reversed  moved and then pulled back
+ */
+export type EarningStatus = "pending" | "settled" | "cancelled" | "reversed";
+
+export interface EarningRow {
   id: string;
-  tutorId: string;
-  tutorName: string | null;
-  invoiceId: string | null;
-  description: string | null;
+  kind: "tutoring_session" | "counselling_month";
+  sessionId: string | null;
+  planId: string | null;
+  /** The lesson's date, or the first day of the month a subscription paid for. */
+  date: string;
+  startTime: string | null;
+  durationMinutes: number | null;
+  /** The subject taught, or the tier's name. */
+  subject: string;
+  studentName: string | null;
+  studentAvatarUrl: string | null;
   amountCents: number;
   currency: string;
-  method: PayoutMethod;
-  reference: string;
-  paidOn: string;
+  status: EarningStatus;
+  /** When the hold expires. Nothing moves before this. */
+  releasableAt: string | null;
+  method: string | null;
+  reference: string | null;
+  settledAt: string | null;
   receiptUrl: string | null;
   note: string | null;
-  recordedByName: string | null;
-  voidedAt: string | null;
-  voidReason: string | null;
 }
 
-const FIELDS = `id, tutor_id, invoice_id, amount_cents, currency, method, reference,
-                paid_on, receipt_url, note, voided_at, void_reason,
-                tutor:profiles!tutor_payouts_tutor_id_fkey (full_name),
-                recorder:profiles!tutor_payouts_recorded_by_fkey (full_name),
-                invoice:invoices (description)`;
+const FIELDS = `id, kind, session_id, plan_id, period_start, amount_cents, currency,
+                status, releasable_at, method, reference, settled_at, receipt_url, note,
+                session:sessions (
+                  date, start_time, duration_minutes, subject,
+                  student:profiles!sessions_student_id_fkey (full_name, avatar_url)
+                ),
+                plan:admissions_plans (
+                  student:profiles!admissions_plans_student_id_fkey (full_name, avatar_url),
+                  tier:admissions_tiers!admissions_plans_tier_id_fkey (name)
+                )`;
 
-function toPayout(r: any): Payout {
+function toRow(r: any): EarningRow {
+  const session = r.session ?? null;
+  const plan = r.plan ?? null;
+  const student = session?.student ?? plan?.student ?? null;
+
   return {
     id: r.id,
-    tutorId: r.tutor_id,
-    tutorName: r.tutor?.full_name ?? null,
-    invoiceId: r.invoice_id,
-    description: r.invoice?.description ?? null,
+    kind: r.kind,
+    sessionId: r.session_id,
+    planId: r.plan_id,
+    date: session?.date ?? r.period_start ?? "",
+    startTime: session ? String(session.start_time).slice(0, 5) : null,
+    durationMinutes: session?.duration_minutes ?? null,
+    subject: session?.subject ?? plan?.tier?.name ?? "Counselling",
+    studentName: student?.full_name ?? null,
+    studentAvatarUrl: student?.avatar_url ?? null,
     amountCents: r.amount_cents,
     currency: r.currency ?? "usd",
+    status: r.status,
+    releasableAt: r.releasable_at,
     method: r.method,
     reference: r.reference,
-    paidOn: r.paid_on,
+    settledAt: r.settled_at,
     receiptUrl: r.receipt_url,
     note: r.note,
-    recordedByName: r.recorder?.full_name ?? null,
-    voidedAt: r.voided_at,
-    voidReason: r.void_reason,
   };
 }
 
-/** Everything paid to one tutor, newest first. Their own receipt list. */
-export async function getTutorPayoutHistory(tutorId: string): Promise<Payout[]> {
+/**
+ * Everything one person has earned, newest first.
+ *
+ * Voided rows are excluded: a correction is not a second earning, and showing
+ * both is how a total stops matching the payments behind it.
+ */
+export async function getEarnings(payeeId: string): Promise<EarningRow[]> {
   const { data, error } = await supabase
-    .from("tutor_payouts")
+    .from("earnings")
     .select(FIELDS)
-    .eq("tutor_id", tutorId)
-    .order("paid_on", { ascending: false });
+    .eq("payee_id", payeeId)
+    .is("voided_at", null)
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("getTutorPayoutHistory failed:", error);
+    console.error("getEarnings failed:", error);
     return [];
   }
-  return (data ?? []).map(toPayout);
+  return (data ?? []).map(toRow);
+}
+
+/** Just the payments, for the receipt list. */
+export async function getSettledPayouts(payeeId: string): Promise<EarningRow[]> {
+  const rows = await getEarnings(payeeId);
+  return rows.filter((r) => r.status === "settled");
 }
 
 /**
- * What a tutor has been paid this calendar year.
+ * What somebody has been paid this calendar year.
  *
- * A US platform files a 1099-NEC once a contractor passes the annual
- * threshold, so this is a number somebody will need in January.
+ * A US platform files a 1099-NEC once a contractor passes the annual threshold,
+ * so this is a number somebody needs in January.
  */
-export async function getPayoutYearTotal(
-  tutorId: string,
+export async function getEarningsYearTotal(
+  payeeId: string,
   year = new Date().getFullYear()
 ): Promise<{ totalCents: number; count: number }> {
   const { data, error } = await supabase
-    .from("tutor_payout_totals")
+    .from("earnings_year_totals")
     .select("total_cents, payout_count")
-    .eq("tutor_id", tutorId)
+    .eq("payee_id", payeeId)
     .eq("tax_year", year)
     .maybeSingle();
 
@@ -126,114 +167,13 @@ export async function getPayoutYearTotal(
   return { totalCents: Number(data.total_cents), count: data.payout_count };
 }
 
-/**
- * Record a payment that has already been made.
- *
- * This does not move money. It is the platform writing down that somebody
- * moved it elsewhere, which is why the reference is not optional: without it
- * there is nothing to check the claim against.
- *
- * The invoice is marked paid out only once the record exists, so a failure
- * halfway leaves the payout still owed rather than silently settled.
- */
-export async function recordPayout(input: {
-  tutorId: string;
-  invoiceId: string | null;
-  amountCents: number;
-  currency?: string;
-  method: PayoutMethod;
-  reference: string;
-  paidOn: string;
-  receiptUrl?: string | null;
-  note?: string | null;
-  adminId: string;
-}): Promise<{ success: boolean; error?: string }> {
-  const reference = input.reference.trim();
-  if (!reference) return { success: false, error: "A reference is required." };
-
-  const { error } = await supabase.from("tutor_payouts").insert({
-    tutor_id: input.tutorId,
-    invoice_id: input.invoiceId,
-    amount_cents: input.amountCents,
-    currency: input.currency ?? "usd",
-    method: input.method,
-    reference,
-    paid_on: input.paidOn,
-    receipt_url: input.receiptUrl ?? null,
-    note: input.note?.trim() || null,
-    recorded_by: input.adminId,
-  });
-
-  if (error) {
-    // The partial unique index refuses a second live payout on one invoice,
-    // which is the double payment this exists to prevent.
-    if (error.code === "23505") {
-      return { success: false, error: "That invoice has already been paid out." };
-    }
-    return { success: false, error: error.message };
-  }
-
-  if (input.invoiceId) {
-    const { error: invErr } = await supabase
-      .from("invoices")
-      .update({ payout_status: "paid" })
-      .eq("id", input.invoiceId);
-    if (invErr) return { success: false, error: invErr.message };
-  }
-
-  await sendNotification({
-    userId: input.tutorId,
-    type: "payout",
-    title: "You have been paid",
-    message: `${(input.amountCents / 100).toLocaleString(undefined, { style: "currency", currency: (input.currency ?? "usd").toUpperCase() })} by ${methodLabel(input.method)}, reference ${reference}.`,
-    link: "/tutor/earnings",
-  }).catch(() => undefined);
-
-  return { success: true };
-}
-
-/**
- * Undo a payout that was recorded in error.
- *
- * Voided, never deleted: a financial record that can vanish is not a record.
- * The invoice goes back to owing, so it reappears in the queue.
- */
-export async function voidPayout(input: {
-  payoutId: string;
-  invoiceId: string | null;
-  adminId: string;
-  reason: string;
-}): Promise<{ success: boolean; error?: string }> {
-  const reason = input.reason.trim();
-  if (!reason) return { success: false, error: "Say why it is being voided." };
-
-  const { error } = await supabase
-    .from("tutor_payouts")
-    .update({
-      voided_at: new Date().toISOString(),
-      voided_by: input.adminId,
-      void_reason: reason,
-    })
-    .eq("id", input.payoutId);
-  if (error) return { success: false, error: error.message };
-
-  if (input.invoiceId) {
-    await supabase
-      .from("invoices")
-      .update({ payout_status: "pending" })
-      .eq("id", input.invoiceId);
-  }
-
-  return { success: true };
-}
-
 // ------------------------------------------------------------
 // Stripe Connect
 //
-// A tutor connects their own bank on Stripe's hosted pages, so the platform
-// never holds a bank number or a tax ID. Nothing here can pay anybody until
-// they have finished: connect-transfer refuses an account Stripe has not
-// cleared, which is why the fallback above still exists.
+// A payee connects their own bank on Stripe's hosted pages, so the platform
+// never holds a bank number or a tax ID. Until they finish, their earnings sit
+// pending rather than failing: the money is still owed, it simply has nowhere
+// to go, and it moves on its own the day they connect.
 // ------------------------------------------------------------
 
 export interface ConnectStatus {
@@ -254,7 +194,6 @@ export async function getConnectStatus(profileId: string): Promise<ConnectStatus
   };
 }
 
-
 /**
  * Start or resume connecting a bank.
  *
@@ -272,9 +211,9 @@ export async function startConnectOnboarding(): Promise<{ error?: string }> {
 /**
  * Ask Stripe whether onboarding is finished, and store the answer.
  *
- * The account.updated webhook does this too. This is the pull for when that
- * has not arrived: locally it needs the Stripe CLI running, and a tutor who
- * has just finished will not sit waiting for a retry.
+ * The account.updated webhook does this too. This is the pull for when that has
+ * not arrived: locally it needs the Stripe CLI running, and a tutor who has
+ * just finished will not sit waiting for a retry.
  */
 export async function refreshConnectStatus(
   profileId?: string
@@ -282,123 +221,134 @@ export async function refreshConnectStatus(
   return authedPost("/api/connect?action=status", profileId ? { profileId } : {});
 }
 
-/** Pay one tutor for one or more settled invoices, out of the Stripe balance. */
-export async function payViaConnect(
-  invoiceIds: string[]
-): Promise<{ transferId?: string; error?: string }> {
-  return authedPost("/api/connect?action=transfer", { invoiceIds });
-}
+// ------------------------------------------------------------
+// Admin
+// ------------------------------------------------------------
 
-// ============================================================
-// Earnings, a session at a time.
-//
-// Money is earned per session, so this is the ledger: one row per session with
-// what it was worth, whether it has been asked for, and the reference for the
-// payment that settled it. The by-invoice history it replaces could not answer
-// "which lesson was that for".
-// ============================================================
-
-export interface EarningRow {
-  sessionId: string;
-  date: string;
-  startTime: string;
-  durationMinutes: number;
-  subject: string;
-  studentName: string | null;
-  studentAvatarUrl: string | null;
-  amountCents: number;
-  /** none = not asked for yet, requested = waiting on an admin, paid = settled. */
-  payoutStatus: "none" | "requested" | "paid";
-  requestedAt: string | null;
-  /** Only once paid. */
-  method: string | null;
-  reference: string | null;
-  paidOn: string | null;
-}
-
-export async function getTutorEarnings(tutorId: string): Promise<EarningRow[]> {
-  const { data: sessions, error } = await supabase
-    .from("sessions")
-    .select(
-      "id, date, start_time, duration_minutes, subject, status, payout_cents, payout_status, payout_requested_at, student:profiles!sessions_student_id_fkey (full_name, avatar_url)"
-    )
-    .eq("tutor_id", tutorId)
-    .order("date", { ascending: false })
-    .order("start_time", { ascending: false });
-
-  if (error) {
-    console.error("getTutorEarnings failed:", error);
-    return [];
-  }
-
-  const rows = (sessions ?? []) as any[];
-
-  // The payment that settled each session, where there is one. Read in a single
-  // query rather than per row.
-  const ids = rows.map((r) => r.id);
-  const { data: payouts } = ids.length
-    ? await supabase
-        .from("tutor_payouts")
-        .select("session_id, method, reference, paid_on")
-        .in("session_id", ids)
-        .is("voided_at", null)
-    : { data: [] as any[] };
-
-  const settled = new Map<string, any>((payouts ?? []).map((p: any) => [p.session_id, p]));
-
-  // Only sessions that have actually run. A lesson next Tuesday is not an
-  // earning, and listing it as one is how a tutor comes to expect money that
-  // is not owed yet.
-  const now = Date.now();
-  return rows
-    .filter((r) => {
-      const ended = new Date(`${r.date}T${String(r.start_time).slice(0, 5)}:00`).getTime()
-        + (r.duration_minutes || 60) * 60_000;
-      return r.status !== "cancelled" && ended < now;
-    })
-    .map((r) => {
-      const paid = settled.get(r.id);
-      return {
-        sessionId: r.id,
-        date: r.date,
-        startTime: String(r.start_time).slice(0, 5),
-        durationMinutes: r.duration_minutes ?? 60,
-        subject: r.subject,
-        studentName: r.student?.full_name ?? null,
-        studentAvatarUrl: r.student?.avatar_url ?? null,
-        amountCents: r.payout_cents ?? 0,
-        payoutStatus: (paid ? "paid" : r.payout_status) as EarningRow["payoutStatus"],
-        requestedAt: r.payout_requested_at,
-        method: paid?.method ?? null,
-        reference: paid?.reference ?? null,
-        paidOn: paid?.paid_on ?? null,
-      };
-    });
+/** One person's unpaid earnings, as the admin queue shows them. */
+export interface OwedRow extends EarningRow {
+  payeeId: string;
+  payeeName: string | null;
+  payoutsEnabled: boolean;
 }
 
 /**
- * Ask to be paid for a session, and be paid.
+ * Everything still owed, across everybody.
  *
- * The server decides whether the session happened and whether the money can
- * move. A connected tutor is transferred straight away; one without a bank
- * connected is left waiting for an admin, and told so rather than left
- * wondering why nothing arrived.
- *
- * Every refusal is a sentence worth putting in front of the tutor rather than
- * flattening to "failed".
+ * The ordinary path pays these on its own once the hold expires. This is the
+ * queue for the exceptions: somebody with no bank connected, and somebody an
+ * admin has decided to pay early.
  */
-export async function requestSessionPayment(sessionId: string): Promise<{
-  success: boolean;
-  paid?: boolean;
-  message?: string;
-  error?: string;
-}> {
-  const payload = await authedPost<{
-    success?: boolean;
-    paid?: boolean;
-    message?: string;
-  }>("/api/connect?action=session-payout", { sessionId });
+export async function getOwedEarnings(): Promise<OwedRow[]> {
+  const { data, error } = await supabase
+    .from("earnings")
+    .select(
+      `${FIELDS}, payee_id,
+       payee:profiles!earnings_payee_id_fkey (full_name, stripe_payouts_enabled)`
+    )
+    .eq("status", "pending")
+    .is("voided_at", null)
+    .order("releasable_at", { ascending: true });
 
-  if (payload.error) return { success: false, error: payload.error };
-  return { success: true, paid: !!payload.paid, message: payload.message };
+  if (error) {
+    console.error("getOwedEarnings failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((r: any) => ({
+    ...toRow(r),
+    payeeId: r.payee_id,
+    payeeName: r.payee?.full_name ?? null,
+    payoutsEnabled: !!r.payee?.stripe_payouts_enabled,
+  }));
+}
+
+/**
+ * Settle what somebody is owed, now.
+ *
+ * With no method, this transfers through Stripe, which is the same thing the
+ * scheduled job would have done later. With one of the manual methods it
+ * records a payment made elsewhere, and the reference is required: an admin who
+ * cannot produce one has not paid anybody.
+ */
+export async function settleEarnings(
+  earningIds: string[],
+  options: { method?: PayoutMethod; reference?: string; note?: string; paidOn?: string } = {}
+): Promise<{ transferId?: string; settled?: number; error?: string }> {
+  return authedPost("/api/connect?action=transfer", {
+    earningIds,
+    method: options.method ?? null,
+    reference: options.reference ?? "",
+    note: options.note ?? "",
+    paidOn: options.paidOn ?? null,
+  });
+}
+
+export interface EarningsMonth {
+  key: string;
+  shortLabel: string;
+  amountCents: number;
+}
+
+export interface EarningsTotals {
+  /** Everything not cancelled or reversed. What the work was worth. */
+  totalCents: number;
+  settledCents: number;
+  /** Owed and not yet moved, whether still on hold or waiting for a bank. */
+  owedCents: number;
+  thisMonthCents: number;
+  lastMonthCents: number;
+  /** Null when there is no last month to compare against. */
+  momChangePct: number | null;
+  months: EarningsMonth[];
+}
+
+/**
+ * A payee's earnings, by month.
+ *
+ * Only months that actually happened. An earlier version of the counsellor's
+ * page invented amounts for empty historical months so the chart would look
+ * fuller, which in a financial view is not decoration, it is a wrong number in
+ * front of the person whose income it is.
+ */
+export function summariseEarnings(rows: EarningRow[], now = new Date()): EarningsTotals {
+  const live = rows.filter((r) => r.status === "pending" || r.status === "settled");
+
+  const byMonth = new Map<string, number>();
+  for (const r of live) {
+    if (!r.date) continue;
+    const key = r.date.slice(0, 7);
+    byMonth.set(key, (byMonth.get(key) ?? 0) + r.amountCents);
+  }
+
+  const months: EarningsMonth[] = [...byMonth.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([key, amountCents]) => ({
+      key,
+      shortLabel: new Date(`${key}-01T00:00:00`).toLocaleDateString(undefined, { month: "short" }),
+      amountCents,
+    }));
+
+  const keyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const thisKey = keyOf(now);
+  const lastKey = keyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+
+  const thisMonthCents = byMonth.get(thisKey) ?? 0;
+  const lastMonthCents = byMonth.get(lastKey) ?? 0;
+
+  const sum = (test: (r: EarningRow) => boolean) =>
+    live.filter(test).reduce((n, r) => n + r.amountCents, 0);
+
+  return {
+    totalCents: sum(() => true),
+    settledCents: sum((r) => r.status === "settled"),
+    owedCents: sum((r) => r.status === "pending"),
+    thisMonthCents,
+    lastMonthCents,
+    momChangePct:
+      lastMonthCents > 0
+        ? Math.round(((thisMonthCents - lastMonthCents) / lastMonthCents) * 100)
+        : null,
+    months,
+  };
 }

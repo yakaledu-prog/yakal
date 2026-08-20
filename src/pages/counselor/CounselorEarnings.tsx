@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
 import { Info, TrendingUp, TrendingDown, Database } from "lucide-react";
@@ -6,8 +7,24 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
 } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCounselorSessionsFull } from "@/services/counselorService";
-import { computeEarnings, type EarningsSummary } from "@/services/tutorService";
+import { money } from "@/services/billingService";
+import { getEarnings, summariseEarnings, type EarningRow } from "@/services/payoutService";
+import { PayoutHistory } from "@/components/shared/PayoutHistory";
+
+// ============================================================
+// What a counsellor has earned.
+//
+// From the earnings ledger, which is the only thing that knows. This page used
+// to multiply completed sessions by the hourly_rate on the counsellor's own
+// profile and label the result ETB, which was wrong three times over: a
+// counsellor is paid a percentage of the tier, not an hour; the rate is the
+// admin's to set and was being read from a field the counsellor could edit; and
+// every other figure on the platform is in USD.
+//
+// It also invented amounts for empty historical months so the chart would look
+// fuller. In a financial view that is not decoration, it is a wrong number in
+// front of the person whose income it is.
+// ============================================================
 
 
 
@@ -26,35 +43,27 @@ function ChartTooltip({ active, payload, label, money }: any) {
 }
 
 export function CounselorEarnings() {
-  const { user, profile } = useAuth();
-  const [summary, setSummary] = useState<EarningsSummary | null>(null);
-  const currency = profile?.rate_currency || "ETB";
-  const rate = profile?.hourly_rate ?? 0;
-  const money = (n: number) => `${n.toLocaleString()} ${currency}`;
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!user) return;
-    getCounselorSessionsFull(user.id).then((s) => setSummary(computeEarnings(s as any, rate)));
-  }, [user, rate]);
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["counselor-earnings", user?.id],
+    queryFn: () => getEarnings(user!.id),
+    enabled: !!user?.id,
+  });
 
-  if (!summary) {
+  const summary = useMemo(() => summariseEarnings(rows), [rows]);
+
+  if (isLoading) {
     return <PageWrapper><div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div></PageWrapper>;
   }
 
   const now = new Date();
-  const thisYear = now.getFullYear();
-  const thisMonthStr = String(now.getMonth() + 1).padStart(2, "0");
-  const thisKey = `${thisYear}-${thisMonthStr}`;
+  const thisKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const up = (summary.momChangePct ?? 0) >= 0;
 
-  const barData = [...summary.months].reverse().slice(-8).map((m, i) => {
-    // Inject realistic-looking dummy data for empty historical months to make the chart look great
-    if (m.amount === 0 && m.key !== thisKey) {
-      const dummyAmounts = [2500, 4200, 3100, 5800, 4600, 6200, 3800, 5100];
-      return { ...m, amount: dummyAmounts[i % dummyAmounts.length] };
-    }
-    return m;
-  });
+  // Only months that happened. Filling the empty ones so the chart looks
+  // fuller would be inventing somebody's income.
+  const barData = summary.months.slice(-8).map((m) => ({ ...m, amount: m.amountCents / 100 }));
 
   return (
     <PageWrapper>
@@ -74,7 +83,7 @@ export function CounselorEarnings() {
             <div className="space-y-1">
               <h1 className="text-white/80 text-[14px] font-medium uppercase tracking-wider mb-2">Total Earnings</h1>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-4xl md:text-5xl font-bold tracking-tight">{money(summary.total)}</span>
+                <span className="text-4xl md:text-5xl font-bold tracking-tight">{money(summary.totalCents)}</span>
                 {summary.momChangePct !== null && (
                   <span className={cn("inline-flex items-center gap-1 text-[13px] font-semibold px-2.5 py-1 rounded-full",
                     up ? "bg-white/20 text-white" : "bg-red-500/20 text-white")}>
@@ -83,18 +92,18 @@ export function CounselorEarnings() {
                 )}
               </div>
               <p className="text-white/70 text-[14px] pt-1">
-                {money(summary.thisMonth)} this month · {summary.completedCount} sessions at {money(rate)}
+                {money(summary.settledCents)} paid, {money(summary.owedCents)} still owed
               </p>
             </div>
 
             <div className="flex items-center gap-8 md:gap-12 pb-2">
               <div className="text-left md:text-right">
                 <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-0.5">This Month</p>
-                <p className="text-2xl font-bold">{money(summary.thisMonth)}</p>
+                <p className="text-2xl font-bold">{money(summary.thisMonthCents)}</p>
               </div>
               <div className="text-left md:text-right">
                 <p className="text-white/70 text-[12px] font-medium uppercase tracking-wider mb-0.5">Last Month</p>
-                <p className="text-2xl font-bold opacity-80">{money(summary.lastMonth)}</p>
+                <p className="text-2xl font-bold opacity-80">{money(summary.lastMonthCents)}</p>
               </div>
             </div>
           </div>
@@ -129,14 +138,14 @@ export function CounselorEarnings() {
           <div className="pt-8 space-y-4">
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <h3 className="text-[18px] font-semibold text-foreground">Recent Activity</h3>
-              <span className="text-[13px] text-muted-foreground">{summary.activity.length} entries</span>
+              <span className="text-[13px] text-muted-foreground">{rows.length} entries</span>
             </div>
             
-            {summary.activity.length === 0 ? (
-              <p className="text-center text-[14px] text-muted-foreground py-12">No completed sessions yet.</p>
+            {rows.length === 0 ? (
+              <p className="text-center text-[14px] text-muted-foreground py-12">Nothing yet. A month appears here once it has been paid for.</p>
             ) : (
               <div className="space-y-0">
-                {summary.activity.slice(0, 20).map((a) => (
+                {rows.slice(0, 20).map((a: EarningRow) => (
                   <div key={a.id} className="flex items-center justify-between py-4 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
                     <div className="flex items-center gap-6 min-w-0">
                       <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-primary/10 items-center justify-center text-primary">
@@ -145,20 +154,35 @@ export function CounselorEarnings() {
                       <div className="min-w-0">
                         <p className="font-semibold text-[15px] text-foreground truncate">{a.subject}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">
-                          {new Date(a.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · {a.student}
+                          {a.date ? new Date(a.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : ""}
+                          {a.studentName ? ` · ${a.studentName}` : ""}
+                          {a.status === "settled" ? " · paid" : a.status === "pending" ? " · owed" : ` · ${a.status}`}
                         </p>
                       </div>
                     </div>
-                    <span className="text-[15px] font-bold text-primary whitespace-nowrap">+{money(a.amount)}</span>
+                    <span className="text-[15px] font-bold text-primary whitespace-nowrap tabular-nums">{money(a.amountCents, a.currency)}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
+          {/* Connecting a bank, and every payment with the reference to check
+              it against. The same component the tutor's page uses, because it
+              is the same question. */}
+          {user && (
+            <div className="pt-8">
+              <PayoutHistory tutorId={user.id} />
+            </div>
+          )}
+
           <div className="mt-8 flex items-start gap-2.5 bg-muted/30 px-4 py-3 rounded-lg text-[13px] text-muted-foreground">
             <Info size={16} className="mt-0.5 shrink-0 text-primary" />
-            <span>Earnings are estimated from your completed sessions at your current rate of {money(rate)}. Payments are settled separately.</span>
+            <span>
+              You earn a share of each month a family pays for, set by Yakal on the plan they are
+              on. A month is held briefly before it is paid out, so recently earned money shows as
+              owed rather than paid.
+            </span>
           </div>
 
         </div>

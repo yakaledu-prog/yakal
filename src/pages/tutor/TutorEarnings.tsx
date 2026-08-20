@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,9 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { money as usd } from "@/services/billingService";
 import {
   getConnectStatus,
-  getTutorEarnings,
+  getEarnings,
   methodLabel,
-  requestSessionPayment,
   startConnectOnboarding,
   type EarningRow,
 } from "@/services/payoutService";
@@ -26,43 +25,34 @@ import { cn } from "@/utils/cn";
 // payment covered. It is one ledger now, a row per session that has run, and
 // the payment state lives on the same row as the money.
 //
-// Confirming a session lives here rather than on the sessions page. The
-// sessions page answers what happened; this one answers what is owed, and a
-// tutor checking whether they have been paid is exactly the person who should
-// be asked to confirm the ones still waiting.
+// Nothing here asks to be paid. A lesson that has run pays out on its own once
+// its hold expires, so the tutor's job on this page is to read it, not to
+// chase it. The button that used to live here let a tutor authorise their own
+// payment, which is why it is gone.
 // ============================================================
 
 const FILTERS = [
   { value: "all", label: "All" },
-  { value: "none", label: "Not requested" },
-  { value: "requested", label: "Awaiting payment" },
-  { value: "paid", label: "Paid" },
+  { value: "pending", label: "Not paid yet" },
+  { value: "settled", label: "Paid" },
+  { value: "cancelled", label: "Cancelled" },
 ];
+
+/** "23 Aug" from a timestamp. */
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 function StatusCell({
   row,
-  busy,
-  onRequest,
+  bankConnected,
+  asOf,
 }: {
   row: EarningRow;
-  busy: string | null;
-  onRequest: () => void;
+  bankConnected: boolean;
+  /** When the data was fetched. Reading a clock during render is not pure. */
+  asOf: number;
 }) {
-  // Nothing has been asked for yet, so what belongs here is the asking.
-  if (row.payoutStatus === "none") {
-    return (
-      <button
-        type="button"
-        disabled={busy !== null}
-        onClick={onRequest}
-        className="h-9 rounded-md border border-primary px-4 text-[13.5px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
-      >
-        {busy === row.sessionId ? "Requesting..." : "Request payment"}
-      </button>
-    );
-  }
-
-  if (row.payoutStatus === "paid") {
+  if (row.status === "settled") {
     return (
       <div className="text-right">
         <p className="text-[13.5px] font-medium text-primary">Paid</p>
@@ -74,13 +64,32 @@ function StatusCell({
     );
   }
 
+  if (row.status === "cancelled" || row.status === "reversed") {
+    return (
+      <div className="text-right">
+        <p className="text-[13.5px] font-medium text-muted-foreground">
+          {row.status === "cancelled" ? "Cancelled" : "Reversed"}
+        </p>
+        <p className="text-[12px] text-muted-foreground">{row.note ?? ""}</p>
+      </div>
+    );
+  }
+
+  // Still owed. Which of the two reasons it has not moved is the thing the
+  // tutor actually wants to know, and only one of them is theirs to fix.
+  const clearing = !!row.releasableAt && new Date(row.releasableAt).getTime() > asOf;
+
   return (
     <div className="text-right">
-      <p className="text-[13.5px] font-medium text-secondary">Awaiting payment</p>
+      <p className="text-[13.5px] font-medium text-secondary">
+        {clearing ? "Clearing" : bankConnected ? "Paying out" : "Awaiting your bank"}
+      </p>
       <p className="text-[12px] text-muted-foreground">
-        {row.requestedAt
-          ? `Asked ${new Date(row.requestedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
-          : ""}
+        {clearing && row.releasableAt
+          ? `Pays out ${shortDate(row.releasableAt)}`
+          : bankConnected
+            ? "On the next run"
+            : "Connect a bank to receive it"}
       </p>
     </div>
   );
@@ -88,21 +97,22 @@ function StatusCell({
 
 export function TutorEarnings() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [busy, setBusy] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
 
-  const { data: rows = [], isLoading } = useQuery({
+  // dataUpdatedAt rather than a clock read during render: whether an earning
+  // is still clearing is judged against the moment the data was fetched, which
+  // is both pure and the honest answer for what is on screen.
+  const { data: rows = [], isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["tutor-earnings", user?.id],
-    queryFn: () => getTutorEarnings(user!.id),
+    queryFn: () => getEarnings(user!.id),
     enabled: !!user?.id,
   });
 
-  // Without a connected bank there is nothing to transfer into, so a request
-  // can only sit and wait for an admin. That is worth saying before the tutor
-  // asks and wonders why nothing arrived.
+  // Without a connected bank there is nothing to transfer into, so an earning
+  // sits pending however long its hold was. That is worth saying before the
+  // tutor waits and wonders why nothing arrived.
   const { data: connect } = useQuery({
     queryKey: ["connect-status", user?.id],
     queryFn: () => getConnectStatus(user!.id),
@@ -112,18 +122,20 @@ export function TutorEarnings() {
   const totals = useMemo(() => {
     const sum = (test: (r: EarningRow) => boolean) =>
       rows.filter(test).reduce((n, r) => n + r.amountCents, 0);
+    const held = (r: EarningRow) =>
+      !!r.releasableAt && new Date(r.releasableAt).getTime() > dataUpdatedAt;
     return {
-      earned: sum(() => true),
-      paid: sum((r) => r.payoutStatus === "paid"),
-      awaiting: sum((r) => r.payoutStatus === "requested"),
-      unclaimed: sum((r) => r.payoutStatus === "none"),
+      earned: sum((r) => r.status !== "cancelled" && r.status !== "reversed"),
+      paid: sum((r) => r.status === "settled"),
+      clearing: sum((r) => r.status === "pending" && held(r)),
+      due: sum((r) => r.status === "pending" && !held(r)),
     };
-  }, [rows]);
+  }, [rows, dataUpdatedAt]);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return rows.filter((r) => {
-      if (filter !== "all" && r.payoutStatus !== filter) return false;
+      if (filter !== "all" && r.status !== filter) return false;
       if (!needle) return true;
       return (
         r.subject.toLowerCase().includes(needle) ||
@@ -133,41 +145,6 @@ export function TutorEarnings() {
     });
   }, [rows, filter, search]);
 
-  const pending = rows.filter((r) => r.payoutStatus === "none");
-
-  const request = async (ids: string[]) => {
-    setBusy(ids.length === 1 ? ids[0] : "all");
-    let done = 0;
-    let paid = 0;
-    let waiting = "";
-    const problems: string[] = [];
-
-    // One at a time, because each is checked separately and one refusal must
-    // not cost the others.
-    for (const id of ids) {
-      const result = await requestSessionPayment(id);
-      if (!result.success) {
-        problems.push(result.error ?? "Could not request that session.");
-        continue;
-      }
-      done += 1;
-      if (result.paid) paid += 1;
-      else if (result.message) waiting = result.message;
-    }
-
-    setBusy(null);
-    if (done > 0) {
-      void queryClient.invalidateQueries({ queryKey: ["tutor-earnings", user?.id] });
-      void queryClient.invalidateQueries({ queryKey: ["tutor-sessions", user?.id] });
-      // Paid and waiting are different outcomes, so they get different words.
-      if (paid > 0) {
-        toast.success(paid === 1 ? "Paid, on its way to your bank." : `${paid} sessions paid.`);
-      }
-      if (waiting) toast.info(waiting);
-    }
-    // The server's refusals explain themselves, so the first is shown as it is.
-    if (problems.length > 0) toast.error(problems[0]);
-  };
 
   return (
     <PageWrapper>
@@ -205,15 +182,15 @@ export function TutorEarnings() {
               </div>
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
-                  Awaiting
+                  Clearing
                 </p>
-                <p className="text-2xl font-bold opacity-80">{usd(totals.awaiting)}</p>
+                <p className="text-2xl font-bold opacity-80">{usd(totals.clearing)}</p>
               </div>
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
-                  Not requested
+                  Due
                 </p>
-                <p className="text-2xl font-bold opacity-80">{usd(totals.unclaimed)}</p>
+                <p className="text-2xl font-bold opacity-80">{usd(totals.due)}</p>
               </div>
             </div>
           </div>
@@ -223,8 +200,8 @@ export function TutorEarnings() {
           {connect && !connect.payoutsEnabled && (
             <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-muted/30 px-5 py-4">
               <p className="text-[14px] text-foreground">
-                Connect your bank and finished sessions pay out to you straight away. Until then an
-                admin pays them by hand.
+                Connect your bank and finished sessions pay out to you on their own. Until then
+                what you have earned waits here and an admin pays it by hand.
               </p>
               <button
                 type="button"
@@ -259,19 +236,6 @@ export function TutorEarnings() {
               options={FILTERS}
               className="w-[190px]"
             />
-
-            {/* Requesting one at a time is the fiddly part of doing this per
-                session, so a week of teaching can go in one go. */}
-            {pending.length > 1 && (
-              <button
-                type="button"
-                disabled={busy !== null}
-                onClick={() => request(pending.map((r) => r.sessionId))}
-                className="h-10 rounded-md bg-primary px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {busy === "all" ? "Requesting..." : `Request all ${pending.length}`}
-              </button>
-            )}
           </div>
 
           {isLoading ? (
@@ -307,7 +271,7 @@ export function TutorEarnings() {
               </thead>
               <tbody>
                 {visible.map((r) => (
-                  <tr key={r.sessionId} className="border-b border-border last:border-0">
+                  <tr key={r.id} className="border-b border-border last:border-0">
                     <td className="py-4 pr-4 align-top">
                       <p className="text-[14px] text-foreground">
                         {new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, {
@@ -346,11 +310,7 @@ export function TutorEarnings() {
                       {r.amountCents === 0 ? "-" : usd(r.amountCents)}
                     </td>
                     <td className="py-4 text-right align-middle">
-                      <StatusCell
-                        row={r}
-                        busy={busy}
-                        onRequest={() => request([r.sessionId])}
-                      />
+                      <StatusCell row={r} bankConnected={!!connect?.payoutsEnabled} asOf={dataUpdatedAt} />
                     </td>
                   </tr>
                 ))}

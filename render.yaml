@@ -16,9 +16,17 @@
 #   APP_BASE_URL                 this service's own URL, or Stripe returns
 #   PUBLIC_APP_URL               people to localhost after paying
 #   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+#   JOBS_TOKEN                   the scheduled job's only credential. Without
+#                                it the job refuses every caller, so nothing
+#                                completes and nobody is paid.
 #   VITE_GCP_CLIENT_ID, GCP_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN
 #   RESEND_API_KEY, VITE_CONTACT_DESTINATION_EMAIL
 #   ZOOM_S2S_*, VITE_ZOOM_MEETING_CLIENT_ID, ZOOM_MEETING_CLIENT_SECRET
+#   ZOOM_WEBHOOK_SECRET_TOKEN   only Zoom may post attendance; without it the
+#                                endpoint refuses everything
+#   STRIPE_CONNECT_WEBHOOK_SECRET  the second Stripe endpoint, for events about
+#                                connected accounts. Without it nobody who
+#                                connects a bank is ever paid automatically
 #
 # Do NOT set VITE_BACKEND=local. It points the deployed site at 127.0.0.1,
 # which on a visitor's machine is the visitor's machine.

@@ -18,7 +18,6 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getCounselorSessionsFull, SessionRow } from "@/services/counselorService";
-import { MoneyInput, Currency } from "@/components/ui/MoneyInput";
 import { dicebearUrl } from "@/utils/avatar";
 
 const SUBJECTS = ["College Advising", "Financial Aid", "Essay Review", "SAT Prep", "Other"];
@@ -250,8 +249,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
   const [phone, setPhone] = useState(profile?.phone || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [zoomLink, setZoomLink] = useState(profile?.zoom_link || "");
-  const [rate, setRate] = useState(profile?.hourly_rate != null ? String(profile.hourly_rate) : "");
-  const [currency, setCurrency] = useState<Currency>((profile?.rate_currency as Currency) || "ETB");
   const [subjects, setSubjects] = useState<string[]>(profile?.subjects || []);
   const [saving, setSaving] = useState(false);
 
@@ -265,8 +262,6 @@ function EditModal({ onClose }: { onClose: () => void }) {
       phone: phone.trim() || null,
       bio: bio.trim() || null,
       zoom_link: zoomLink.trim() || null,
-      hourly_rate: rate ? Number(rate) : null,
-      rate_currency: currency,
       subjects,
     }).eq("id", user.id);
     setSaving(false);
@@ -291,7 +286,11 @@ function EditModal({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><label className={lbl}>Phone</label><input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
           <div className="space-y-1.5"><label className={lbl}>Session Link (Zoom / Meet)</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /></div>
           <div className="space-y-1.5"><label className={lbl}>Rate per session</label>
-            <MoneyInput label="Rate per session" value={rate} onChange={setRate} currency={currency} onCurrencyChange={setCurrency} />
+            {/* No rate field. A counsellor is paid a share of the plan a
+                family is on, and the share is the admin's to set. The display
+                above already leaves it out for the same reason; leaving it
+                editable here meant a counsellor could type a number that
+                decided nothing and expect to be paid it. */}
           </div>
           <div className="space-y-1.5"><label className={lbl}>Bio</label><textarea className={cn(field, "h-auto py-2 resize-none")} rows={3} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
           <div className="space-y-1.5">
