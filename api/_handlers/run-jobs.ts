@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient } from '../_utils/supabase.js';
 import { recordSessionEarning, releaseDueEarnings } from '../_utils/earnings.js';
+import { reportServerError } from '../_utils/report.js';
 
 // ============================================================
 // The one scheduled task.
@@ -200,7 +201,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const voided = await voidStaleInvoices(db);
 
     const errors = [...sessions.errors, ...released.errors];
-    if (errors.length > 0) console.error('run-jobs finished with errors:', errors);
+    // Reported, not just logged. Nobody is watching when this runs, and every
+    // error it collects is either a lesson that did not complete or money that
+    // did not reach somebody. A quiet failure here is a tutor wondering why
+    // they have not been paid, weeks later.
+    if (errors.length > 0) {
+      reportServerError('run-jobs', new Error(`the scheduled job finished with ${errors.length} error(s): ${errors.join(' | ')}`));
+    }
 
     return res.status(200).json({
       sessions: {

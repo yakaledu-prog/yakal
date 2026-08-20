@@ -78,6 +78,14 @@ export async function startServerReporting(): Promise<void> {
     sentry.init({
       dsn: process.env.SENTRY_DSN,
       environment: process.env.NODE_ENV ?? 'development',
+      // Named rather than left to the defaults. These two are what turn an
+      // uncaught throw or a rejected promise into a report, and relying on a
+      // default set to contain them is how the server half of this ended up
+      // reporting nothing at all: init succeeded, and no error ever arrived.
+      integrations: [
+        sentry.onUncaughtExceptionIntegration({ exitEvenIfOtherHandlersAreRegistered: false }),
+        sentry.onUnhandledRejectionIntegration({ mode: 'warn' }),
+      ],
       tracesSampleRate: 0,
       sendDefaultPii: false,
       beforeSend: (event) => scrub(event),

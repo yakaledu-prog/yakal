@@ -27,7 +27,7 @@ import newsletterHandler from '../api/newsletter.js';
 import notifyHandler from '../api/notify.js';
 import invitesHandler from '../api/invites.js';
 import { handleHealth } from '../api/_utils/health.js';
-import { startServerReporting } from '../api/_utils/report.js';
+import { reportServerError, startServerReporting } from '../api/_utils/report.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
 import aiHandler from '../api/ai.js';
@@ -59,9 +59,20 @@ app.use((_req, res, next) => {
 // Before the JSON parser, and raw: Stripe signs the exact bytes it sent, so a
 // body that has been parsed and re-serialised fails verification even when
 // every field survived.
-app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), (req, res) =>
-  stripeWebhookHandler(req as never, res as never)
-);
+// Mounted on its own, before the parser, so it is outside the wrapped loop
+// below and needs its own reporting. A webhook that fails is one Stripe will
+// retry and then give up on, which is a payment that silently never lands.
+app.post('/api/stripe-webhook', express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    await stripeWebhookHandler(req as never, res as never);
+    if (res.statusCode >= 500) {
+      reportServerError('stripe-webhook', new Error(`webhook answered ${res.statusCode}`));
+    }
+  } catch (error) {
+    reportServerError('stripe-webhook', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Webhook handler failed' });
+  }
+});
 
 // Before any route, so a crash during startup is reported too. A no-op unless
 // SENTRY_DSN is set.
@@ -108,8 +119,27 @@ const routes = {
   '/api/support-chat': supportChatHandler,
 } as const;
 
+// Wrapped, so a failure is reported rather than only logged.
+//
+// Two different failures, and both matter. A handler that throws gives a real
+// stack, which is the useful one. A handler that catches its own error and
+// answers 500 gives nothing to catch, so the status is the only signal there
+// is; the report is thinner but it is the difference between knowing and not.
+//
+// Doing it here rather than in each handler means a new endpoint is covered by
+// existing, rather than by somebody remembering.
 for (const [path, handler] of Object.entries(routes)) {
-  app.all(path, (req, res) => handler(req as never, res as never));
+  app.all(path, async (req, res) => {
+    try {
+      await handler(req as never, res as never);
+      if (res.statusCode >= 500) {
+        reportServerError(path, new Error(`${path} answered ${res.statusCode}`));
+      }
+    } catch (error) {
+      reportServerError(path, error);
+      if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+    }
+  });
 }
 
 // Anything under /api that matched nothing is a 404 as JSON. Without this it

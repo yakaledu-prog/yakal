@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { reportServerError } from '../_utils/report.js';
 
 type Handler = (req: VercelRequest, res: VercelResponse) => unknown;
 
@@ -45,7 +46,10 @@ export function dispatch(routes: Record<string, Route>) {
       return await fn(req, res);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`Action ${action} failed:`, error);
+      // Reported from here rather than from the server's route wrapper,
+      // because this is the last place the real error object exists. The
+      // wrapper only ever sees a 500 and can report the status, not the stack.
+      reportServerError(`action:${action}`, error);
       if (res.headersSent) return;
       return res.status(500).json({ error: `Action ${action} failed: ${message}` });
     }
