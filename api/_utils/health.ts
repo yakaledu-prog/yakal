@@ -146,6 +146,32 @@ function checkAppUrl(): Component {
   };
 }
 
+/**
+ * The two settings whose absence pays nobody.
+ *
+ * Both fail in complete silence, which is the exact class of failure this
+ * endpoint exists for. Without JOBS_TOKEN the scheduled job refuses every
+ * caller, so no lesson is ever completed and no money ever moves. Without the
+ * Connect webhook secret, account.updated never arrives, so a tutor who has
+ * finished connecting a bank is never marked payable and is skipped on every
+ * run forever.
+ *
+ * Neither produces an error anywhere. A tutor simply never gets paid, and the
+ * first person to notice is the tutor.
+ */
+function checkPayouts(): Component {
+  const missing: string[] = [];
+  if (!(process.env.JOBS_TOKEN ?? '').trim()) missing.push('no JOBS_TOKEN, so nothing is ever completed or paid');
+  if (!(process.env.STRIPE_CONNECT_WEBHOOK_SECRET ?? '').trim()) {
+    missing.push('no Connect webhook secret, so nobody who connects a bank is marked payable');
+  }
+
+  if (missing.length === 0) {
+    return { name: 'payouts', ok: true, detail: 'job token and Connect webhook configured' };
+  }
+  return { name: 'payouts', ok: false, detail: missing.join('; ') };
+}
+
 /** The whole picture. Cached for a minute. */
 export async function healthReport(): Promise<HealthReport> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.report;
@@ -156,6 +182,7 @@ export async function healthReport(): Promise<HealthReport> {
     await checkGoogle(),
     checkEmail(),
     checkAppUrl(),
+    checkPayouts(),
   ];
 
   const report: HealthReport = {

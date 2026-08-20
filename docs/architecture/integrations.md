@@ -250,6 +250,17 @@ was the failure that kept happening, and a process check would have called it
 healthy every time. It answers 503 when any component is wrong, so an uptime
 monitor needs to read nothing.
 
+Six components: **database**, **stripe** (which names live or test mode out
+loud, because a deployment quietly taking no real money looks identical to one
+that does), **google**, **email**, **links**, and **payouts**.
+
+That last one covers `JOBS_TOKEN` and `STRIPE_CONNECT_WEBHOOK_SECRET`. Both fail
+in complete silence: without the first the scheduled job refuses every caller,
+so no lesson is completed and no money moves; without the second
+`account.updated` never arrives, so a tutor who has finished connecting a bank
+is never marked payable and is skipped on every run forever. Neither logs
+anything. The first person to notice is the tutor who has not been paid.
+
 Public callers get the verdict only. The detail names which integration is
 broken, which is a map for somebody probing, so it needs `HEALTH_TOKEN` as a
 `?token=` or an `x-health-token` header. With no token configured the detail is
