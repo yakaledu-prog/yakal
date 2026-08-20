@@ -28,6 +28,13 @@
 #                                connected accounts. Without it nobody who
 #                                connects a bank is ever paid automatically
 #
+# Optional, and worth having:
+#   SENTRY_DSN                   server error reporting; silent without it
+#   VITE_SENTRY_DSN              browser error reporting, read at BUILD time,
+#                                so setting it needs a rebuild not a restart
+#   HEALTH_TOKEN                 lets /api/healthz say which integration is
+#                                broken; without it, only ok or degraded
+#
 # Do NOT set VITE_BACKEND=local. It points the deployed site at 127.0.0.1,
 # which on a visitor's machine is the visitor's machine.
 

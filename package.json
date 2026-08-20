@@ -46,6 +46,8 @@
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@react-oauth/google": "^0.13.5",
+    "@sentry/browser": "^10.70.0",
+    "@sentry/node": "^10.70.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.101.2",
     "@tiptap/extension-placeholder": "^3.29.0",

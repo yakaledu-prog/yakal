@@ -3,6 +3,7 @@ import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 import { Home, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import bugFixing from "@/assets/images/bug-fixing-60.png";
+import { reportError } from "@/lib/errorReporting";
 
 // ============================================================
 // What a visitor sees when something breaks.
@@ -165,6 +166,9 @@ export class AppErrorBoundary extends Component<
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
     console.error("Uncaught render error:", error, info.componentStack);
+    // The same crash, sent somewhere a person will see it. Reporting is a no-op
+    // unless a DSN is configured, so this costs a developer nothing locally.
+    reportError(error, { source: "render" });
   }
 
   render() {

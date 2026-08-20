@@ -195,6 +195,14 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
   let stripe: ReturnType<typeof getStripe> | null = null;
 
   for (const earning of due as DueEarning[]) {
+    // Nothing to send. Stripe refuses a zero transfer, and rows like this exist:
+    // the migration that folded counselor_payouts into this ledger carried over
+    // amounts that were zero because no share had been set on the tier.
+    if (earning.amount_cents <= 0) {
+      result.skipped.push({ earningId: earning.id, reason: 'nothing to transfer' });
+      continue;
+    }
+
     const payee = byId.get(earning.payee_id);
 
     // Left pending, not failed. The money is still owed; they simply have

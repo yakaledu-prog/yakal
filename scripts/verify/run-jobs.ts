@@ -150,7 +150,10 @@ psql(
      where session_id in (select id from sessions where subject like 'job-fixture%');`
 );
 const third = await run(process.env.JOBS_TOKEN!);
-pass('a payee with no bank is skipped, not failed', third.body?.payouts?.skipped === 1, JSON.stringify(third.body?.payouts));
+// At least one, not exactly one. The job works on the whole database, so a row
+// this check did not create can legitimately be waiting too, and asserting a
+// global tally made the check fail for reasons nothing to do with it.
+pass('a payee with no bank is skipped, not failed', (third.body?.payouts?.skipped ?? 0) >= 1, JSON.stringify(third.body?.payouts));
 pass('nothing was transferred', third.body?.payouts?.transferred === 0, JSON.stringify(third.body?.payouts));
 pass('and it is still owed', psql(
   `select e.status from earnings e join sessions s on s.id = e.session_id where s.subject like 'job-fixture%';`

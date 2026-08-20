@@ -16,6 +16,7 @@ import newsletterHandler from '../api/newsletter.ts';
 import notifyHandler from '../api/notify.ts';
 import devUserHandler from '../api/dev-user.ts';
 import invitesHandler from '../api/invites.ts';
+import { handleHealth } from '../api/_utils/health.ts';
 import stripeWebhookHandler from '../api/stripe-webhook.ts';
 import aiHandler from '../api/ai.ts';
 import supportChatHandler from '../api/support-chat.ts';
@@ -56,6 +57,9 @@ app.use(
     },
   })
 );
+
+// Not a deployed function, so it is not wrapped: see api/_utils/health.ts.
+app.get('/api/healthz', (req, res) => handleHealth(req, res));
 
 app.all('/api/stripe', createVercelHandler(stripeHandler));
 app.all('/api/connect', createVercelHandler(connectHandler));

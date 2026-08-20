@@ -1,6 +1,6 @@
 # The outside world
 
-Five external services and one scheduled job. Each has an operational guide in
+Six external services and one scheduled job. Each has an operational guide in
 `docs/`; this is what the code does with them and where the seams are.
 
 ---
@@ -212,3 +212,56 @@ republishes them.
 While Resend is on its shared `onboarding@resend.dev` sender, it will only
 deliver to the address the Resend account is registered under. Verify a domain
 before expecting mail to reach anybody else.
+
+## Sentry
+
+Error reporting, browser and server, and **entirely optional**: it is a no-op
+unless a DSN is set, so local runs and tests report nothing.
+
+| | Browser | Server |
+| --- | --- | --- |
+| Variable | `VITE_SENTRY_DSN` | `SENTRY_DSN` |
+| Read at | build time | run time |
+
+Because the browser DSN is read at build time, an unset one lets the bundler
+remove the SDK entirely: with no DSN the cost is zero bytes, and with one it is
+a lazily loaded chunk of roughly 143KB gzipped that never blocks first paint.
+Setting it therefore requires a rebuild, not just a restart.
+
+**Nothing is sent unscrubbed.** This process holds the service-role key,
+Stripe's secret and a Google refresh token, and all three have appeared in error
+messages. Request bodies, headers, cookies and query strings are dropped; a user
+is reduced to an id; and credential-shaped strings are redacted out of the
+message itself. `scripts/verify/error-scrubbing.ts` pins that, and it is in
+`npm run check`.
+
+Tracing and session replay are both off. Tracing because the question is what
+broke, not what was slow, and replay because it records the screen and the
+people on the other side of it are children.
+
+## Health
+
+`GET /api/healthz`, mounted by both servers and deliberately **not** an
+`api/*.ts` file: every top-level file there is a deployed function and Vercel's
+plan allows twelve, which is how many there are.
+
+It reports configuration, not a pulse. "Alive but with no Google credentials"
+was the failure that kept happening, and a process check would have called it
+healthy every time. It answers 503 when any component is wrong, so an uptime
+monitor needs to read nothing.
+
+Six components: **database**, **stripe** (which names live or test mode out
+loud, because a deployment quietly taking no real money looks identical to one
+that does), **google**, **email**, **links**, and **payouts**.
+
+That last one covers `JOBS_TOKEN` and `STRIPE_CONNECT_WEBHOOK_SECRET`. Both fail
+in complete silence: without the first the scheduled job refuses every caller,
+so no lesson is completed and no money moves; without the second
+`account.updated` never arrives, so a tutor who has finished connecting a bank
+is never marked payable and is skipped on every run forever. Neither logs
+anything. The first person to notice is the tutor who has not been paid.
+
+Public callers get the verdict only. The detail names which integration is
+broken, which is a map for somebody probing, so it needs `HEALTH_TOKEN` as a
+`?token=` or an `x-health-token` header. With no token configured the detail is
+never served rather than served to everyone.

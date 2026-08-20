@@ -2,12 +2,17 @@
   import { createRoot } from "react-dom/client";
   import { AppRouter } from "./app/Router.tsx";
   import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+  import { startErrorReporting } from "./lib/errorReporting";
   import "./styles/index.css";
   import { applyTheme, preferredTheme } from "./lib/theme";
 
   // Before the first paint, so a dark user does not get a white flash on the
   // way to their own theme.
   applyTheme(preferredTheme());
+
+  // After the theme and before the tree, but not awaited: a reporting service
+  // that is slow to load must not hold up the first paint.
+  void startErrorReporting();
 
   // Server state is TanStack Query's job everywhere in this app. Defaults are
   // set once here rather than per call, and one retry covers a dropped
