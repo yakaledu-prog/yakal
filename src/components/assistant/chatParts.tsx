@@ -48,6 +48,110 @@ export function linkify(text: string): React.ReactNode[] {
 }
 
 /**
+ * Renders the light markdown the models actually emit as real styling.
+ *
+ * Both models are asked for plain prose but still reach for **bold**, *italic*
+ * and `code`, which used to land in the bubble as literal asterisks. Rather
+ * than strip the markers, which throws away the emphasis the model meant, or
+ * inject HTML, which a model's output must never be trusted to be, this walks
+ * the string and builds React nodes. A run with no markers is handed to linkify
+ * so addresses stay clickable; a code span is left verbatim so an example is
+ * not itself reformatted; emphasis recurses so `**bold _and italic_**` works.
+ *
+ * An unclosed marker stays as text, which is what makes it safe on a
+ * half-streamed answer: `**bol` reads as typed until its closing `**` arrives.
+ */
+function formatInline(text: string, keyBase: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let buf = "";
+  let n = 0;
+
+  const flush = () => {
+    if (!buf) return;
+    for (const node of linkify(buf)) out.push(node);
+    buf = "";
+  };
+
+  for (let i = 0; i < text.length; ) {
+    const rest = text.slice(i);
+
+    const code = /^`([^`\n]+)`/.exec(rest);
+    if (code) {
+      flush();
+      out.push(
+        <code
+          key={`${keyBase}-c${n++}`}
+          className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em]"
+        >
+          {code[1]}
+        </code>
+      );
+      i += code[0].length;
+      continue;
+    }
+
+    const bold =
+      /^\*\*(\S(?:[\s\S]*?\S)?)\*\*/.exec(rest) ?? /^__(\S(?:[\s\S]*?\S)?)__/.exec(rest);
+    if (bold) {
+      flush();
+      out.push(
+        <strong key={`${keyBase}-b${n++}`}>{formatInline(bold[1], `${keyBase}-b${n}`)}</strong>
+      );
+      i += bold[0].length;
+      continue;
+    }
+
+    const star = /^\*(\S(?:[^*\n]*?\S)?)\*/.exec(rest);
+    if (star) {
+      flush();
+      out.push(<em key={`${keyBase}-i${n++}`}>{formatInline(star[1], `${keyBase}-i${n}`)}</em>);
+      i += star[0].length;
+      continue;
+    }
+
+    // Underscore emphasis, but only when the underscore is not inside a word,
+    // so a snake_case identifier in an answer is left exactly as written.
+    if (text[i] === "_" && !/[A-Za-z0-9_]/.test(text[i - 1] ?? "")) {
+      const under = /^_(\S(?:[^_\n]*?\S)?)_(?![A-Za-z0-9_])/.exec(rest);
+      if (under) {
+        flush();
+        out.push(<em key={`${keyBase}-u${n++}`}>{formatInline(under[1], `${keyBase}-u${n}`)}</em>);
+        i += under[0].length;
+        continue;
+      }
+    }
+
+    buf += text[i];
+    i += 1;
+  }
+
+  flush();
+  return out;
+}
+
+/**
+ * A whole answer: emphasis within each line, a heading marker turned into bold
+ * rather than shown as literal hashes, and the line breaks kept for the
+ * bubble's whitespace-pre-wrap to lay out. Everything stays inline so it is
+ * valid inside the answer's <p>.
+ */
+export function formatMessage(text: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const out: React.ReactNode[] = [];
+  lines.forEach((line, idx) => {
+    const key = `l${idx}`;
+    const heading = /^\s*#{1,6}\s+(.*)$/.exec(line);
+    if (heading) {
+      out.push(<strong key={key}>{formatInline(heading[1], key)}</strong>);
+    } else {
+      for (const node of formatInline(line, key)) out.push(node);
+    }
+    if (idx < lines.length - 1) out.push("\n");
+  });
+  return out;
+}
+
+/**
  * The classic three dots.
  *
  * A spinner says "loading", which is what a page does. Dots say "writing",
@@ -99,7 +203,7 @@ export function StreamingText({ text, className }: { text: string; className?: s
 
   return (
     <p className={className}>
-      {linkify(shown)}
+      {formatMessage(shown)}
       {shown.length < text.length && (
         <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-primary" />
       )}
