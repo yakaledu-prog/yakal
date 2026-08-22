@@ -110,6 +110,25 @@ const TOPICS: Topic[] = [
       'Billing uses hosted Stripe Checkout; card details are not handled by the Yakal browser. The server reads authoritative prices and creates checkout. The signed Stripe webhook, not the return redirect, is the authority that marks invoices paid and fulfils enrolments, sessions, or admissions plans. Tutors and counselors see earnings records; tutor payouts may use Stripe Connect or be recorded manually by an admin. Yali cannot see charges, cards, invoices, webhook status, refunds, or payout accounts and cannot change or retry them. For account-specific billing, duplicate charges, refunds, missing paid access, or payout issues, contact Yakal support.',
   },
   {
+    id: 'account-session',
+    roles: ['all'],
+    keywords: ['sign in', 'signin', 'login', 'log in', 'sign out', 'signout', 'logout', 'log out', 'signed out', 'logged out', 'kicked out', 'session', 'expired', 'timeout', 'timed out', 'inactivity', 'idle', 'browser', 'tab', 'close', 'password', 'forgot password', 'reset password', 'forgot', 'reset', 'security'],
+    // Sources: src/components/shared/IdleTimeout.tsx (15-minute idle sign-out),
+    // src/lib/supabase.ts (sessionStorage token), and
+    // src/pages/shared/ForgotPasswordPage.tsx and ResetPasswordPage.tsx.
+    text:
+      'Sign-in and session: sign in from the login page with your account email and password. The session is stored per browser tab, so closing the tab or the browser signs you out and a new tab needs a fresh sign-in. As a safeguard on shared or walked-away machines, a signed-in account is signed out automatically after 15 minutes with no mouse, keyboard, scroll, or touch activity; a short message explains it and returns you to the login page, and activity in any open tab keeps the whole session alive. To recover a forgotten password, use the "Forgot password" link on the login page to be emailed a reset link, then set a new one on the reset page. Yali cannot sign you in or out, reset your password, or read your session; if a reset does not clear a lockout, contact Yakal support.',
+  },
+  {
+    id: 'getting-started',
+    roles: ['all'],
+    keywords: ['onboarding', 'get started', 'getting started', 'set up', 'setup', 'first time', 'profile', 'avatar', 'photo', 'display name', 'theme', 'dark mode', 'light mode', 'appearance', 'settings', 'preferences', 'update profile', 'edit profile', 'grade', 'grade level'],
+    // Sources: src/pages/shared/OnboardingPage.tsx, src/pages/shared/SettingsPage.tsx,
+    // and each role's *Profile.tsx.
+    text:
+      'Getting started and account settings: after the first sign-in a short multi-step onboarding collects your display name and avatar and, for a student, grade level and subjects of interest; a parent can add their children and the services each one needs while onboarding. You can revisit and change these later from your role Profile page. Settings holds appearance and notification preferences, including a dark-mode toggle and an email-notification switch. Yali can point you to these pages but cannot edit your profile, avatar, grade, theme, or notification preferences for you.',
+  },
+  {
     id: 'support-boundaries',
     roles: ['all'],
     keywords: ['support', 'help', 'contact', 'account', 'password', 'emergency', 'urgent', 'medical', 'legal', 'refund', 'problem', 'broken'],
