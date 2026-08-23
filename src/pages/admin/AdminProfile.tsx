@@ -178,12 +178,12 @@ export function AdminProfile() {
       {/* Edit modal */}
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942] shrink-0">
               <h2 className="text-[20px] font-bold text-[#111] dark:text-white">Edit Profile</h2>
               <button onClick={() => setEditOpen(false)} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"><X size={20} /></button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">Full Name</label>
                 <input value={name} onChange={(e) => setName(e.target.value)}
@@ -195,7 +195,7 @@ export function AdminProfile() {
                   className="w-full h-11 px-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] text-[#54656f] dark:text-[#aebac1] cursor-not-allowed opacity-70" />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] shrink-0">
               <Button variant="outline" onClick={() => setEditOpen(false)} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
               <Button onClick={saveName} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold">
                 {saving ? "Saving..." : "Save Changes"}
