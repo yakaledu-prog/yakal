@@ -41,6 +41,31 @@ have to create the endpoint and paste one value.
 
 ### What to do
 
+**Run the script.** It creates the endpoint with the right flag and the right
+events, and prints the secret:
+
+```
+npx tsx scripts/setup-connect-webhook.ts
+```
+
+Then paste what it prints into Render > your service > **Environment**:
+
+```
+STRIPE_CONNECT_WEBHOOK_SECRET = whsec_...
+```
+
+Render restarts on its own. Running the script twice is safe: it finds the
+existing endpoint rather than making a second one. The signing secret is only
+readable at creation, so if the value is lost, delete the endpoint in Stripe and
+run it again.
+
+When you move to live keys, run it once more with the live `STRIPE_SECRET_KEY`.
+Test and live endpoints are separate, and so are their secrets.
+
+### Doing it by hand instead
+
+The dashboard route, if you would rather see it:
+
 **Stage 1.** Stripe Dashboard > **Developers** > **Webhooks** > **Add endpoint**.
 
 **Stage 2.** Endpoint URL. The same one your existing webhook uses:
@@ -268,18 +293,11 @@ stays ours; the paperwork does not have to be.
    case. Our ledger is the complete figure, so where the two disagree, ours wins
    and Stripe's form gets corrected to match.
 
-   The `earnings_year_totals` view is that number. It counts every settled
-   earning whatever rail paid it:
-
-```sql
-select p.full_name, p.email, t.total_cents / 100.0 as paid
-  from earnings_year_totals t
-  join profiles p on p.id = t.payee_id
- where t.tax_year = 2026
- order by t.total_cents desc;
-```
-
-Anyone at $600 or more needs a form, whether or not Stripe moved the money.
+   **The admin billing page does this for you.** `/admin/billing` has a **Tax
+   forms** section: pick the year and it lists everybody paid, flags who is over
+   the $600 threshold, and shows how much of each person's total was paid
+   outside Stripe. That last figure is what to correct Stripe's draft form to.
+   Nobody needs to run a query.
 
 ### Key dates
 
@@ -293,8 +311,8 @@ January**.
 
 **Blocking, do these first:**
 
-1. Create the Connect webhook endpoint, and set `STRIPE_CONNECT_WEBHOOK_SECRET`
-   in Render.
+1. Run `npx tsx scripts/setup-connect-webhook.ts` and put the
+   `STRIPE_CONNECT_WEBHOOK_SECRET` it prints into Render.
 2. Set `JOBS_TOKEN` in Render.
 3. Run the `cron.schedule` statement in the production Supabase SQL editor,
    with your `JOBS_TOKEN` substituted in.

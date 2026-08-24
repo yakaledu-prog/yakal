@@ -167,6 +167,79 @@ export async function getEarningsYearTotal(
   return { totalCents: Number(data.total_cents), count: data.payout_count };
 }
 
+/**
+ * The IRS threshold for a 1099-NEC, in cents.
+ *
+ * Not a Yakal setting and deliberately not in the admin tier editor: it is a
+ * figure the IRS sets, and an admin changing it would only ever be wrong. It
+ * has moved before, so it lives in one place rather than inline.
+ */
+export const FORM_1099_THRESHOLD_CENTS = 60_000;
+
+export interface TaxYearPayee {
+  payeeId: string;
+  name: string;
+  email: string | null;
+  role: string;
+  totalCents: number;
+  /** What Stripe already has on its own records. */
+  viaStripeCents: number;
+  /** What it does not, and what its draft form therefore understates by. */
+  outsideStripeCents: number;
+  paymentCount: number;
+  lastPaidAt: string | null;
+  needsForm: boolean;
+}
+
+/**
+ * Everybody paid in a calendar year, and who needs a 1099.
+ *
+ * Yakal is the filer, not Stripe: Stripe issues a 1099-K only when the
+ * connected account pays the processing fees, and ours are configured so the
+ * platform pays them. So this list is the one somebody works from in January.
+ *
+ * outsideStripeCents is the part that matters most. Stripe builds its draft
+ * form from what moved through Stripe, and a tutor who never finished
+ * onboarding gets paid by ACH or cheque instead. Stripe's dashboard accepts an
+ * edited total for exactly that, and this is the number to edit it to.
+ */
+export async function getTaxYearPayees(
+  year = new Date().getFullYear()
+): Promise<TaxYearPayee[]> {
+  const { data, error } = await supabase
+    .from("v_tax_year_payees")
+    .select("*")
+    .eq("tax_year", year)
+    .order("total_cents", { ascending: false });
+
+  if (error) {
+    console.error("getTaxYearPayees failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((r: any) => ({
+    payeeId: r.payee_id,
+    name: r.full_name ?? "Unknown",
+    email: r.email,
+    role: r.role,
+    totalCents: Number(r.total_cents),
+    viaStripeCents: Number(r.via_stripe_cents),
+    outsideStripeCents: Number(r.outside_stripe_cents),
+    paymentCount: r.payment_count,
+    lastPaidAt: r.last_paid_at,
+    needsForm: Number(r.total_cents) >= FORM_1099_THRESHOLD_CENTS,
+  }));
+}
+
+/** Which years have any payments at all, newest first. For the year picker. */
+export async function getTaxYears(): Promise<number[]> {
+  const { data } = await supabase.from("v_tax_year_payees").select("tax_year");
+  const years = [...new Set((data ?? []).map((r: any) => r.tax_year as number))];
+  const thisYear = new Date().getFullYear();
+  if (!years.includes(thisYear)) years.push(thisYear);
+  return years.sort((a, b) => b - a);
+}
+
 // ------------------------------------------------------------
 // Stripe Connect
 //

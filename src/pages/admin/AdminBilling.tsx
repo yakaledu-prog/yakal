@@ -4,11 +4,18 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
 import { getAllInvoices, getInvoiceDetail } from "@/services/adminService";
-import { getOwedEarnings, settleEarnings, type OwedRow } from "@/services/payoutService";
+import {
+  FORM_1099_THRESHOLD_CENTS,
+  getOwedEarnings,
+  getTaxYearPayees,
+  getTaxYears,
+  settleEarnings,
+  type OwedRow,
+} from "@/services/payoutService";
 import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
 import { RefundDialog } from "@/components/admin/RefundDialog";
 import { money } from "@/services/billingService";
-import { Loader2, CheckCircle2, Clock, Wallet, Check, ChevronRight, ScrollTextIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Wallet, Check, ChevronRight, FileText, ScrollTextIcon } from "lucide-react";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
@@ -237,6 +244,8 @@ export function AdminBilling() {
               </div>
             )}
           </div>
+
+          <TaxYear />
         </div>
       </div>
       {refunding && (
@@ -334,6 +343,117 @@ function InvoiceLines({ invoiceId, currency }: { invoiceId: string; currency: st
           {data.refundedCents > 0 ? `, ${money(data.refundedCents, currency)} refunded` : ""}
         </span>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * Who needs a 1099, and what Stripe's draft form will get wrong.
+ *
+ * Yakal is the filer. Stripe issues a 1099-K only when the connected account
+ * pays the processing fees, and ours are configured so the platform pays them,
+ * so a 1099-NEC for everybody over the threshold is ours to send.
+ *
+ * The second number is the one worth having. Stripe builds its draft from what
+ * moved through Stripe, and somebody paid by ACH or cheque because they never
+ * finished onboarding is invisible to it. Stripe's dashboard takes an edited
+ * total for exactly that case; this says which people need editing and by how
+ * much, so nobody has to reconcile two systems by hand in January.
+ */
+function TaxYear() {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  const { data: years = [] } = useQuery({ queryKey: ["tax-years"], queryFn: getTaxYears });
+  const { data: payees = [], isLoading } = useQuery({
+    queryKey: ["tax-year-payees", year],
+    queryFn: () => getTaxYearPayees(year),
+  });
+
+  const filing = payees.filter((p) => p.needsForm);
+  const needsCorrection = filing.filter((p) => p.outsideStripeCents > 0);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-border/50 pb-3">
+        <FileText size={18} className="text-primary" />
+        <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Tax forms</h3>
+        <Dropdown
+          value={String(year)}
+          onChange={(v) => setYear(Number(v))}
+          options={years.map((y) => ({ value: String(y), label: String(y) }))}
+          className="ml-auto w-[120px]"
+        />
+      </div>
+
+      <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
+        Yakal files these, not Stripe. Anybody paid {money(FORM_1099_THRESHOLD_CENTS)} or more in{" "}
+        {year} needs a 1099-NEC.{" "}
+        {needsCorrection.length > 0 ? (
+          <>
+            <span className="font-semibold text-[#8a6a2a] dark:text-secondary">
+              {needsCorrection.length} of them {needsCorrection.length === 1 ? "was" : "were"} paid
+              partly outside Stripe
+            </span>
+            , so Stripe's draft form understates them. Correct the total in Stripe to the figure
+            here before filing.
+          </>
+        ) : (
+          "Stripe's own records cover everybody here, so its draft forms need no correction."
+        )}
+      </p>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="animate-spin text-primary" />
+        </div>
+      ) : payees.length === 0 ? (
+        <p className="py-10 text-center text-[14px] text-muted-foreground">
+          Nobody has been paid in {year} yet.
+        </p>
+      ) : (
+        <div className="rounded-xl border border-[#e9edef] bg-white divide-y divide-[#e9edef] dark:divide-[#2a3942] dark:border-[#2a3942] dark:bg-[#111b21]">
+          {payees.map((p) => (
+            <div key={p.payeeId} className="flex items-center gap-4 p-4">
+              <img
+                src={dicebearUrl(p.name)}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold text-[#111] dark:text-white">
+                  {p.name}
+                </p>
+                <p className="truncate text-[12px] text-muted-foreground">
+                  {p.email ?? "no email on file"} - {p.paymentCount}{" "}
+                  {p.paymentCount === 1 ? "payment" : "payments"}
+                </p>
+              </div>
+
+              {/* What Stripe cannot see. Blank when there is nothing to correct,
+                  so the column only speaks when it has something to say. */}
+              <span className="w-40 shrink-0 text-right text-[12.5px] tabular-nums text-[#8a6a2a] dark:text-secondary">
+                {p.outsideStripeCents > 0
+                  ? `${money(p.outsideStripeCents)} outside Stripe`
+                  : ""}
+              </span>
+
+              <span className="w-24 shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+                {money(p.totalCents)}
+              </span>
+
+              <span
+                className={cn(
+                  "w-28 shrink-0 text-right text-[12.5px]",
+                  p.needsForm ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {p.needsForm ? "1099 needed" : "under threshold"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -44,6 +44,7 @@ const NEEDS_DB = [
   ['session-completion.mjs', 'which lessons are finished, in the right timezone'],
   ['run-jobs.ts', 'the scheduled job completes lessons and holds the money'],
   ['counselling-escrow.ts', 'a counselling month is paid at the end of it, and only if worked'],
+  ['tax-year-totals.ts', 'the 1099 list, and what Stripe cannot see'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 
