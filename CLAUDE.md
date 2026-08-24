@@ -62,6 +62,28 @@ npx tsx scripts/verify/api-dispatch.ts          # needs nothing
 npm run verify -- messaging                     # only suites matching a name
 ```
 
+## Testing the money
+
+The chain takes days in real time: a lesson has to finish, an earning waits 72
+hours, a counselling month waits for the month. `npm run scenarios` builds those
+states directly so every screen can be looked at now.
+
+```
+npm run scenarios build         every money state at once
+npm run scenarios fast-forward  make booked lessons have happened, and run the job
+npm run scenarios release       expire every hold, and pay what is payable
+npm run scenarios status        what exists now
+npm run scenarios clear         remove exactly what it made
+```
+
+`fast-forward` is the answer to "I cannot book at 1 AM". `tutor_availability` is
+thirteen rows starting at 8 AM, because `book_advising_session` reads `hour - 8`,
+so 1 AM is not a slot that can exist. Book at any hour the tutor offers on any
+future date, then fast-forward moves it into the past and completes it.
+
+It creates real Stripe test-mode charges, so transfers and refunds actually
+happen and can be checked in Stripe. Local stack only, and not overridable.
+
 Anything importing from `src/` needs the Vite loader, because `import.meta.env`
 does not exist under plain tsx:
 

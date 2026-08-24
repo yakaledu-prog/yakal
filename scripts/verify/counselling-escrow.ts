@@ -43,9 +43,21 @@ const counselorId = psql("select id from profiles where email='counselor@yakal.c
 const parentId = psql("select id from profiles where email='parent@yakal.com';");
 const tierId = psql("select id from admissions_tiers order by sort_order limit 1;");
 
-// Three students, because admissions_plans_one_live allows a student only one
-// live plan and this needs three side by side. Picked from whoever has none
-// rather than named, so a change to the seed does not silently break this.
+// Two students, not one per plan.
+//
+// admissions_plans_one_live allows a student only one plan in active or
+// past_due, so the fixtures are created cancelled instead. Nothing here tests
+// plan status, and a period that ended on a cancelled plan is a real case
+// anyway: the family left, and the month they had already paid for still has to
+// settle.
+//
+// The split is what matters. One student has a completed advising hour and one
+// has nothing, so "delivered" and "not delivered" are properties of the student
+// rather than of which row happened to be created first. Sharing the idle
+// student across every undelivered case is safe for the same reason.
+//
+// Picked from whoever has no live plan rather than named, so a change to the
+// seed does not silently break this.
 const students = psql(
   `select string_agg(id::text, ',') from (
      select p.id from profiles p
@@ -54,15 +66,19 @@ const students = psql(
           select 1 from admissions_plans a
            where a.student_id = p.id and a.status in ('active','past_due')
         )
-      limit 4
+      limit 2
    ) s;`
-).split(',');
+).split(',').filter(Boolean);
 
-if (students.length < 4) {
-  console.error('needs four students with no live plan; run npm run db:reset');
+if (students.length < 2) {
+  console.error('needs two students with no live plan; run npm run db:reset');
   process.exit(1);
 }
-const [openStudent, idleStudent, workedStudent, refundedStudent] = students;
+const [idleStudent, workedStudent] = students;
+// Every undelivered case belongs to the student who never had a session.
+const openStudent = idleStudent;
+const refundedStudent = workedStudent;
+const notedStudent = idleStudent;
 
 const clean = () => {
   psql("delete from earnings where source_charge_id = 'ch_escrow_fixture' or note like 'escrow-fixture%' or plan_id in (select id from admissions_plans where stripe_subscription_id like 'sub_escrow_fixture%');");
@@ -75,7 +91,7 @@ clean();
 const makePlan = (label: string, student: string) =>
   psql(
     `insert into admissions_plans (student_id, purchased_by, tier_id, counselor_id, status, stripe_subscription_id)
-     values ('${student}','${parentId}','${tierId}','${counselorId}','active','sub_escrow_fixture_${label}')
+     values ('${student}','${parentId}','${tierId}','${counselorId}','canceled','sub_escrow_fixture_${label}')
      returning id;`
   );
 
@@ -147,6 +163,21 @@ pass(
 const note = psql(`select coalesce(note,'') from earnings where id='${idleEarning}';`);
 pass('and the reason is written on the row', note.includes('no advising session'), note);
 
+// The latch is its own column, not `note` being empty. Latching on note meant
+// any note already on the row, an admin's or a cancellation reason, silently
+// swallowed the alert and the month sat unpaid with nobody told.
+const withNote = makeEarning(makePlan('noted', notedStudent), '-40 days', '-10 days');
+psql(`update earnings set note = 'an admin was here first' where id='${withNote}';`);
+const noted = await releaseDueEarnings(db);
+pass(
+  'a row that already has a note is still announced',
+  noted.skipped.find((s) => s.earningId === withNote)?.firstTime === true
+);
+pass(
+  "and that admin's note is left alone",
+  psql(`select note from earnings where id='${withNote}';`) === 'an admin was here first'
+);
+
 const second = await releaseDueEarnings(db);
 pass(
   'but not announced again on the next run',
@@ -170,7 +201,7 @@ psql(`update earnings set source_charge_id = 'ch_escrow_fixture' where id = '${r
 psql(
   `insert into sessions (student_id, tutor_id, subject, date, start_time, duration_minutes, status, kind)
    select '${refundedStudent}','${counselorId}','escrow-fixture refunded advising',
-          (now() - interval '20 days')::date, '10:00', 60, 'completed', 'advising';`
+          (now() - interval '18 days')::date, '11:00', 60, 'completed', 'advising';`
 );
 
 const { cancelled } = await cancelEarningsForCharge(db, 'ch_escrow_fixture', 'escrow-fixture refund');

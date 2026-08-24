@@ -165,6 +165,7 @@ interface DueEarning {
   period_start: string | null;
   period_end: string | null;
   note: string | null;
+  delivery_flagged_at: string | null;
 }
 
 export interface ReleaseResult {
@@ -227,7 +228,7 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
   const { data: due, error } = await db
     .from('earnings')
     .select(
-      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note'
+      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note, delivery_flagged_at'
     )
     .eq('status', 'pending')
     .is('voided_at', null)
@@ -270,15 +271,24 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
     try {
       if (!(await counsellingIsPayable(db, earning))) {
         // Left pending rather than cancelled, so an admin who finds the work
-        // was done off the platform can still settle it by hand. The note is
-        // the latch: it is written once, so a job running every hour does not
-        // tell the same people the same thing every hour.
-        const firstTime = !earning.note;
+        // was done off the platform can still settle it by hand.
+        //
+        // delivery_flagged_at is the latch, so a job running every hour tells
+        // the same people the same thing once. It used to latch on `note` being
+        // empty, which meant any note already on the row, an admin's or a
+        // cancellation reason, silently swallowed the alert and the month sat
+        // unpaid with nobody told.
+        const firstTime = !earning.delivery_flagged_at;
         if (firstTime) {
           await db
             .from('earnings')
             .update({
-              note: 'Held: no advising session or essay review in this period.',
+              delivery_flagged_at: new Date().toISOString(),
+              // Only if nobody has written here. Clobbering somebody's note to
+              // explain ourselves would lose the more important of the two.
+              ...(earning.note ? {} : {
+                note: 'Held: no advising session or essay review in this period.',
+              }),
               updated_at: new Date().toISOString(),
             })
             .eq('id', earning.id)

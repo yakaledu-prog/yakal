@@ -33,7 +33,8 @@
     "db:snapshot": "tsx scripts/snapshot.ts save",
     "db:restore": "tsx scripts/snapshot.ts restore",
     "seed:generate": "tsx scripts/seed/generate.ts",
-    "start": "tsx scripts/server.ts"
+    "start": "tsx scripts/server.ts",
+    "scenarios": "tsx scripts/scenarios.ts"
   },
   "dependencies": {
     "@blocknote/core": "^0.51.4",
