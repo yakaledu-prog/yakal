@@ -259,9 +259,17 @@ stays ours; the paperwork does not have to be.
 3. Add state registration numbers for any state you file in.
 4. **Reconcile against our own ledger before filing.** Stripe only knows what
    moved through Stripe, and `connect-transfer.ts` deliberately supports paying
-   somebody by ACH, Zelle or cheque with a reference. Those dollars are still
-   reportable, and a form built from Stripe's view alone understates them. The
-   `earnings_year_totals` view is the number to check against:
+   somebody by ACH, Zelle or cheque with a reference, because a tutor who never
+   finishes onboarding still has to be paid. Those dollars are reportable too,
+   and a form built from Stripe's view alone understates them.
+
+   This is expected rather than awkward: Stripe's tax dashboard lets you **edit a
+   form's total** to include payments made outside Stripe, which is exactly this
+   case. Our ledger is the complete figure, so where the two disagree, ours wins
+   and Stripe's form gets corrected to match.
+
+   The `earnings_year_totals` view is that number. It counts every settled
+   earning whatever rail paid it:
 
 ```sql
 select p.full_name, p.email, t.total_cents / 100.0 as paid
