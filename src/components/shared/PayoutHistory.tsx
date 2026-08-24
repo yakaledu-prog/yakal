@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -38,25 +38,40 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
     queryFn: () => getConnectStatus(tutorId),
   });
 
-  // Coming back from Stripe's onboarding. The account.updated webhook says the
-  // same thing, but it needs the Stripe CLI forwarding locally and can be
-  // delayed or missed in production, and somebody who has just finished will
-  // not sit on a page that still tells them to connect a bank.
+  // Ask Stripe what is actually true, rather than trusting the stored flag. The
+  // account.updated webhook says the same thing, but it needs the Stripe CLI
+  // forwarding locally and can be delayed or missed in production.
+  //
+  // Two triggers, because either alone leaves somebody stuck: returning from
+  // Stripe, and an account that exists but is not enabled, which is that same
+  // person coming back tomorrow after the redirect is long gone. The ref keeps
+  // it to once per visit, since the second trigger would otherwise re-run every
+  // time the answer is still no.
+  const asked = useRef(false);
   useEffect(() => {
-    if (params.get("connect") !== "done") return;
+    if (asked.current) return;
+    const returning = params.get("connect") === "done";
+    const looksStuck = !!status?.accountId && !status.payoutsEnabled;
+    if (!returning && !looksStuck) return;
+
+    asked.current = true;
     (async () => {
       const res = await refreshConnectStatus();
       await qc.invalidateQueries({ queryKey: ["connect-status", tutorId] });
-      if (res.payoutsEnabled) {
-        toast.success("Your bank is connected. Payments will come here from now on.");
-      } else if (res.needs?.length) {
-        toast("Stripe still needs a few details before payments can reach you.");
+      // Only on the way back from Stripe. Announcing it to somebody who merely
+      // opened the page is news to nobody.
+      if (returning) {
+        if (res.payoutsEnabled) {
+          toast.success("Your bank is connected. Payments will come here from now on.");
+        } else if (res.needs?.length) {
+          toast("Stripe still needs a few details before payments can reach you.");
+        }
+        params.delete("connect");
+        setParams(params, { replace: true });
       }
-      params.delete("connect");
-      setParams(params, { replace: true });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  }, [params, status?.accountId, status?.payoutsEnabled]);
 
   const { data: payouts = [], isLoading } = useQuery({
     queryKey: ["tutor-payouts", tutorId],

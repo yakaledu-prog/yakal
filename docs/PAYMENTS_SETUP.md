@@ -160,9 +160,25 @@ JOBS_TOKEN = <the string from stage 1>
 
 Save, and let it restart.
 
-**Stage 3.** Supabase Dashboard > your **production** project > **SQL Editor** >
-New query. Paste this, replacing YOUR-JOBS-TOKEN with the value from stage 1,
-and Run:
+**Stage 3.** Run the script. It reads `JOBS_TOKEN` from your environment rather
+than having you paste it into SQL, and reads the job back afterwards to confirm
+it is really there:
+
+```
+APP_BASE_URL=https://yakal.me npx tsx scripts/setup-cron.ts --confirm
+```
+
+Without `--confirm` it prints what it would do and changes nothing. It refuses
+outright if `APP_BASE_URL` is localhost while the project is hosted, because
+that combination schedules a job that fires hourly and reaches nothing.
+
+Run it again after rotating `JOBS_TOKEN`: it replaces the schedule rather than
+leaving a second one behind that now returns 401 every hour.
+
+### Doing it by hand instead
+
+Supabase Dashboard > your **production** project > **SQL Editor** > New query.
+Paste this, replacing YOUR-JOBS-TOKEN with the value from stage 1, and Run:
 
 ```sql
 create extension if not exists pg_cron;
@@ -313,9 +329,8 @@ January**.
 
 1. Run `npx tsx scripts/setup-connect-webhook.ts` and put the
    `STRIPE_CONNECT_WEBHOOK_SECRET` it prints into Render.
-2. Set `JOBS_TOKEN` in Render.
-3. Run the `cron.schedule` statement in the production Supabase SQL editor,
-   with your `JOBS_TOKEN` substituted in.
+2. Set `JOBS_TOKEN` in Render, and in your local `.env` so the script can read it.
+3. Run `APP_BASE_URL=https://yakal.me npx tsx scripts/setup-cron.ts --confirm`.
 
 **When you want it:**
 

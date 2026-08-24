@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -12,6 +13,7 @@ import {
   getEarnings,
   methodLabel,
   openPayoutsDashboard,
+  refreshConnectStatus,
   startConnectOnboarding,
   type EarningRow,
 } from "@/services/payoutService";
@@ -100,6 +102,8 @@ export function TutorEarnings() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
   const [connecting, setConnecting] = useState(false);
   const [openingDashboard, setOpeningDashboard] = useState(false);
 
@@ -120,6 +124,47 @@ export function TutorEarnings() {
     queryFn: () => getConnectStatus(user!.id),
     enabled: !!user?.id,
   });
+
+  // Ask Stripe what is actually true, rather than trusting the stored flag.
+  //
+  // getConnectStatus only reads what the account.updated webhook last wrote,
+  // and that webhook needs the Stripe CLI forwarding locally and can be late or
+  // missed in production. A tutor who had finished onboarding was left on a
+  // page still telling them to finish onboarding, with nothing to press.
+  //
+  // Two triggers, because either one alone leaves somebody stuck:
+  //
+  //   returning from Stripe, which is the moment it changes
+  //   an account that exists but is not enabled, which is that same tutor
+  //   coming back tomorrow, after the redirect is long gone
+  //
+  // The ref keeps it to once per visit. The second trigger cannot depend on
+  // payoutsEnabled without re-running every time the answer is still no.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!user?.id || asked.current) return;
+    const returning = params.get("connect") === "done";
+    const looksStuck = !!connect?.accountId && !connect.payoutsEnabled;
+    if (!returning && !looksStuck) return;
+
+    asked.current = true;
+    (async () => {
+      const res = await refreshConnectStatus();
+      await qc.invalidateQueries({ queryKey: ["connect-status", user.id] });
+      // Only on the way back from Stripe. Saying "your bank is connected" to
+      // somebody who merely opened their earnings page is news to nobody.
+      if (returning) {
+        if (res.payoutsEnabled) {
+          toast.success("Your bank is connected. Payments will come here from now on.");
+        } else if (res.needs?.length) {
+          toast("Stripe still needs a few details before payments can reach you.");
+        }
+        params.delete("connect");
+        setParams(params, { replace: true });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, user?.id, connect?.accountId, connect?.payoutsEnabled]);
 
   const totals = useMemo(() => {
     const sum = (test: (r: EarningRow) => boolean) =>
