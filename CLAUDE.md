@@ -68,6 +68,9 @@ The chain takes days in real time: a lesson has to finish, an earning waits 72
 hours, a counselling month waits for the month. `npm run scenarios` builds those
 states directly so every screen can be looked at now.
 
+Buttons for the same thing live on `/dev`, under **Money states**, which is
+usually easier because the point is to look at a screen straight afterwards.
+
 ```
 npm run scenarios build         every money state at once
 npm run scenarios fast-forward  make booked lessons have happened, and run the job

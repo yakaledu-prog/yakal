@@ -1,10 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
 // ============================================================
-// Developer-only account actions, for the /dev console.
+// Developer-only actions, for the /dev console.
 //
 // Deleting an auth user needs the service role key, which must never reach the
-// browser, so it happens here instead.
+// browser, so it happens here instead. The money scenarios are here for the
+// same reason, and because they create real Stripe test-mode charges with a key
+// that is equally not the browser's.
 //
 // Two guards, both of which must pass:
 //   1. DEV_TOOLS_ENABLED must be exactly "true". Absent by default, so a
@@ -31,6 +33,35 @@ export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
 
   const { action, userId } = req.body ?? {};
+
+  // Money states for testing. Same actions as npm run scenarios, so the two
+  // cannot drift, and behind the same two guards as everything else here: never
+  // in production, and only with DEV_TOOLS_ENABLED set. The module itself
+  // refuses anything but the local stack.
+  const scenarioActions = ["build", "fast-forward", "release", "status", "clear"];
+  if (scenarioActions.includes(action)) {
+    const lines: string[] = [];
+    try {
+      const s = await import("./_utils/scenarios.js");
+      const run = {
+        build: s.build,
+        "fast-forward": s.fastForward,
+        release: s.release,
+        status: s.status,
+        clear: s.clear,
+      }[action as string]!;
+      await run((line: string) => lines.push(line));
+      return res.status(200).json({ success: true, output: lines.join("\n") });
+    } catch (err: any) {
+      // The lines so far as well as the failure: a build that dies halfway has
+      // already written rows, and knowing which is the difference between
+      // fixing it and running clear.
+      return res
+        .status(500)
+        .json({ error: err?.message ?? "That scenario failed.", output: lines.join("\n") });
+    }
+  }
+
   if (action !== "delete") return res.status(400).json({ error: `Unknown action: ${action}` });
   if (!userId) return res.status(400).json({ error: "userId is required." });
 

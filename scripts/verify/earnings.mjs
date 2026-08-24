@@ -22,7 +22,19 @@ const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vI
 const SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 const db = createClient('http://127.0.0.1:54321', SERVICE, { auth: { persistSession: false } });
 
-const tutorId = psql("select id from profiles where email='tutor@yakal.com';");
+// A tutor nothing else uses.
+//
+// Several checks below count every earning this person has: that a fresh one is
+// not yet due, that the payee sees exactly one, that the annual total ignores a
+// voided row. Those are the right assertions, and they only hold if nobody else
+// writes to this account, so the cleanup wipes the payee outright.
+//
+// It used to be tutor@yakal.com, which is the account you sign in as to look at
+// the earnings page, and the account npm run scenarios builds states on. Running
+// the checks silently emptied it, and the page went back to $0.00 with no
+// explanation.
+const FIXTURE_TUTOR = 'senait.gashaw@yakal.demo';
+const tutorId = psql(`select id from profiles where email='${FIXTURE_TUTOR}';`);
 const adminId = psql("select id from profiles where role='admin' limit 1;");
 const parentId = psql("select id from profiles where email='parent@yakal.com';");
 const studentId = psql("select id from profiles where role='student' limit 1;");
@@ -125,7 +137,7 @@ pass('and it is due once the hold has passed', dueNow === '1', `${dueNow} due`);
 // ---- who can see it ----
 
 const asTutor = createClient('http://127.0.0.1:54321', ANON, { auth: { persistSession: false } });
-await asTutor.auth.signInWithPassword({ email: 'tutor@yakal.com', password: 'demo123' });
+await asTutor.auth.signInWithPassword({ email: FIXTURE_TUTOR, password: 'demo123' });
 const mine = await asTutor.from('earnings').select('id, amount_cents').eq('payee_id', tutorId);
 pass('the payee can see their own', (mine.data ?? []).length === 1, mine.error?.message ?? '');
 

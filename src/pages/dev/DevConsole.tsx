@@ -23,6 +23,37 @@ import { cn } from "@/utils/cn";
 const DEMO_PASSWORD = "demo123";
 
 /**
+ * Money states, the same ones npm run scenarios builds.
+ *
+ * Buttons rather than only a command line because the point is to look at a
+ * screen straight afterwards, and switching to a terminal to get there is the
+ * friction that stops anybody testing the money at all.
+ */
+const SCENARIOS: { action: string; name: string; note: string; button: string }[] = [
+  {
+    action: "build",
+    name: "Build every state",
+    note: "Paid, held, owed, settled two ways, refunded in full and by half, a no-show, an abandoned checkout, and three counselling plans. Creates real Stripe test charges.",
+    button: "Build",
+  },
+  {
+    action: "fast-forward",
+    name: "Make booked lessons have happened",
+    note: "Moves every upcoming lesson to yesterday and runs the job. This is how you test something you booked yourself: the availability grid starts at 8 AM, so move the data rather than the clock.",
+    button: "Fast forward",
+  },
+  {
+    action: "release",
+    name: "Expire every hold and pay",
+    note: "Skips the 72 hours. A payee with no connected bank is skipped rather than paid, and so is a counselling month where nothing was delivered.",
+    button: "Release",
+  },
+  { action: "status", name: "What exists now", note: "Totals across the ledger, sessions, invoices and refunds.", button: "Show" },
+  { action: "clear", name: "Remove it all", note: "Deletes exactly what these made, and nothing else.", button: "Clear" },
+];
+
+
+/**
  * Screens that were built to compare against the one that shipped.
  *
  * They stay reachable because showing somebody the alternative is easier than
@@ -87,6 +118,8 @@ export function DevConsole() {
   const { profile: me } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DevProfile | null>(null);
+  const [scenarioBusy, setScenarioBusy] = useState<string | null>(null);
+  const [scenarioOutput, setScenarioOutput] = useState("");
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ["dev-profiles"],
@@ -113,6 +146,38 @@ export function DevConsole() {
   // toggle, because access no longer follows a switch.
   const isActive = (studentId: string, service: ServiceName) =>
     services.some((s) => s.student_id === studentId && s.service === service && s.is_active);
+
+  /**
+   * Run one money scenario on the server.
+   *
+   * It needs the service role key and a Stripe key, so it cannot happen in the
+   * browser. The endpoint is the same one the account actions use, behind the
+   * same guards: refused in production, and off unless DEV_TOOLS_ENABLED is set.
+   */
+  async function runScenario(action: string) {
+    setScenarioBusy(action);
+    setScenarioOutput("");
+    try {
+      const res = await fetch(`${BACKEND}/api/dev-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const body = await res.json();
+      // Output even on failure: a build that dies halfway has already written
+      // rows, and knowing which is the difference between fixing it and
+      // pressing Clear.
+      setScenarioOutput(body.output || "");
+      if (!res.ok) throw new Error(body.error ?? "That scenario failed.");
+      toast.success(`${action} finished.`);
+      // Every earnings, billing and session query is now stale.
+      await queryClient.invalidateQueries();
+    } catch (err: any) {
+      toast.error(err?.message ?? "That scenario failed.");
+    } finally {
+      setScenarioBusy(null);
+    }
+  }
 
   async function deleteAccount(target: DevProfile) {
     setBusy(target.id);
@@ -372,6 +437,43 @@ export function DevConsole() {
                 );
               })}
             </ul>
+          )}
+        </section>
+
+        <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
+            <h2 className="text-[15px] font-semibold">Money states</h2>
+            <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-0.5">
+              A lesson has to finish, an earning waits 72 hours, a counselling month
+              waits for the month. These build those states now, so the earnings,
+              billing and tax screens have something on them. Local database only.
+            </p>
+          </div>
+          <ul className="divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+            {SCENARIOS.map((sc) => (
+              <li key={sc.action} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium">{sc.name}</p>
+                  <p className="text-[12px] text-[#667781] dark:text-[#8696a0]">{sc.note}</p>
+                </div>
+                <button
+                  onClick={() => void runScenario(sc.action)}
+                  disabled={!!scenarioBusy}
+                  className="shrink-0 px-3 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[12px] font-medium hover:bg-[#f0f2f5] dark:hover:bg-[#2a3942] transition-colors disabled:opacity-50"
+                >
+                  {scenarioBusy === sc.action ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    sc.button
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {scenarioOutput && (
+            <pre className="border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f0f2f5] dark:bg-[#111b21] px-4 py-3 text-[12px] leading-relaxed overflow-x-auto whitespace-pre-wrap">
+              {scenarioOutput}
+            </pre>
           )}
         </section>
 
