@@ -20,7 +20,12 @@
 // Needs the local Supabase and the seeded accounts.
 import 'dotenv/config';
 import { execSync } from 'node:child_process';
-import { HOLD_HOURS, NOTHING_DELIVERED, releaseDueEarnings } from '../../api/_utils/earnings.js';
+import {
+  cancelEarningsForCharge,
+  HOLD_HOURS,
+  NOTHING_DELIVERED,
+  releaseDueEarnings,
+} from '../../api/_utils/earnings.js';
 import { getServiceClient } from '../../api/_utils/supabase.js';
 
 const psql = (sql: string) =>
@@ -49,18 +54,18 @@ const students = psql(
           select 1 from admissions_plans a
            where a.student_id = p.id and a.status in ('active','past_due')
         )
-      limit 3
+      limit 4
    ) s;`
 ).split(',');
 
-if (students.length < 3) {
-  console.error('needs three students with no live plan; run npm run db:reset');
+if (students.length < 4) {
+  console.error('needs four students with no live plan; run npm run db:reset');
   process.exit(1);
 }
-const [openStudent, idleStudent, workedStudent] = students;
+const [openStudent, idleStudent, workedStudent, refundedStudent] = students;
 
 const clean = () => {
-  psql("delete from earnings where note like 'escrow-fixture%' or plan_id in (select id from admissions_plans where stripe_subscription_id like 'sub_escrow_fixture%');");
+  psql("delete from earnings where source_charge_id = 'ch_escrow_fixture' or note like 'escrow-fixture%' or plan_id in (select id from admissions_plans where stripe_subscription_id like 'sub_escrow_fixture%');");
   psql("delete from sessions where subject like 'escrow-fixture%';");
   psql("delete from admissions_plans where stripe_subscription_id like 'sub_escrow_fixture%';");
 };
@@ -148,6 +153,39 @@ pass(
   second.skipped.find((s) => s.earningId === idleEarning)?.firstTime === false
 );
 pass('and it is still owed, not cancelled', psql(`select status from earnings where id='${idleEarning}';`) === 'pending');
+
+// ------------------------------------------------------------
+// A refunded month pays nobody
+//
+// The whole point of holding the money. Under the old rule the counsellor's
+// share had already been transferred by day four, so refunding a family in week
+// three cost Yakal the share on top of the refund: Stripe does not claw back a
+// transfer when the charge behind it is refunded. Held, it is still ours to
+// cancel.
+// ------------------------------------------------------------
+const refundedPlan = makePlan('refunded', refundedStudent);
+const refundedEarning = makeEarning(refundedPlan, '-40 days', '-10 days');
+psql(`update earnings set source_charge_id = 'ch_escrow_fixture' where id = '${refundedEarning}';`);
+// Delivered, so nothing but the refund is stopping this from being paid.
+psql(
+  `insert into sessions (student_id, tutor_id, subject, date, start_time, duration_minutes, status, kind)
+   select '${refundedStudent}','${counselorId}','escrow-fixture refunded advising',
+          (now() - interval '20 days')::date, '10:00', 60, 'completed', 'advising';`
+);
+
+const { cancelled } = await cancelEarningsForCharge(db, 'ch_escrow_fixture', 'escrow-fixture refund');
+pass('a refund cancels the month while it is still held', cancelled === 1, String(cancelled));
+pass(
+  'and it is cancelled, not merely skipped',
+  psql(`select status from earnings where id='${refundedEarning}';`) === 'cancelled'
+);
+
+const third = await releaseDueEarnings(db);
+pass(
+  'so the release never sees it again',
+  !third.skipped.some((s) => s.earningId === refundedEarning) &&
+    !third.errors.some((e) => e.includes(refundedEarning))
+);
 
 clean();
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);
