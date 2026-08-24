@@ -8,12 +8,14 @@
 import { dispatch } from './_handlers/_dispatch.js';
 import onboard from './_handlers/connect-onboard.js';
 import status from './_handlers/connect-status.js';
+import dashboard from './_handlers/connect-dashboard.js';
 import transfer from './_handlers/connect-transfer.js';
 import runJobs from './_handlers/run-jobs.js';
 
 export default dispatch({
   'onboard': onboard,
   'status': status,
+  'dashboard': dashboard,
   'transfer': transfer,
   'run-jobs': runJobs,
 });

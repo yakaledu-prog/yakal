@@ -32,8 +32,8 @@ async function readRawBody(req: any): Promise<Buffer> {
  *   writes the month's invoice row, so a parent's billing page keeps showing
  *   payments instead of going quiet after the first one
  *
- *   writes the counsellor's share into the earnings ledger, on the same hold as
- *   everybody else's money
+ *   writes the counsellor's share into the earnings ledger, held until the end
+ *   of the month it pays for rather than 72 hours from now
  *
  *   brings the plan row back into line with the subscription
  *
@@ -73,6 +73,15 @@ export async function recordSubscriptionInvoice(event: Stripe.Event): Promise<vo
     ? new Date(line.period.start * 1000).toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
+  // When the month being paid for runs out, which is what the counsellor's
+  // share is now held until. Taken from the invoice rather than by retrieving
+  // the subscription, so recording what is owed does not depend on a network
+  // call that can fail. A month from the start is the fallback, because every
+  // tier bills monthly and holding money slightly wrong beats not holding it.
+  const periodEnd = line?.period?.end
+    ? new Date(line.period.end * 1000).toISOString()
+    : new Date(new Date(periodStart).setMonth(new Date(periodStart).getMonth() + 1)).toISOString();
+
   const amountPaid = invoice.amount_paid ?? 0;
   const chargeId =
     typeof (invoice as any).charge === 'string'
@@ -111,6 +120,12 @@ export async function recordSubscriptionInvoice(event: Stripe.Event): Promise<vo
   // A percentage of what actually came in, not of the tier's list price: an
   // upgrade's proration invoice is a real payment and should pay a real share,
   // and a discounted month should not pay a full one.
+  //
+  // Recorded now, paid later. The row exists from renewal so a counsellor can
+  // see what the month is worth while they work it, but it is held until the
+  // period ends and the release job refuses it if nothing was delivered. Paying
+  // at renewal meant a counsellor who stopped answering in week two had already
+  // been paid for week four.
   if (plan.counselor_id) {
     const share = counsellorShare(amountPaid, (plan as any).tier?.counselor_share_percent);
     if (share > 0) {
@@ -118,6 +133,7 @@ export async function recordSubscriptionInvoice(event: Stripe.Event): Promise<vo
         planId: plan.id,
         payeeId: plan.counselor_id,
         periodStart,
+        periodEnd,
         amountCents: share,
         currency: (invoice.currency ?? 'usd').toLowerCase(),
         invoiceId: invoiceRow?.id ?? null,

@@ -1,13 +1,16 @@
-# Payments setup: the two things not in code
+# Payments setup: the things not in code
 
-Two switches have to be thrown by hand, one in Stripe and one in Supabase.
-Neither is a secret you need to send anybody: both are set in a dashboard, and
-nothing here asks you to share a key.
+Some switches have to be thrown by hand, in Stripe and in Supabase. None of them
+is a secret you need to send anybody: they are set in a dashboard, and nothing
+here asks you to share a key.
 
-Without the first, **nobody who connects a bank is ever paid automatically**.
-Without the second, **nothing is ever marked complete and no money ever moves**.
-Both fail silently, which is why they are written down rather than left to be
-noticed.
+The first two are blocking. Without the Connect webhook, **nobody who connects a
+bank is ever paid automatically**. Without the scheduled job, **nothing is ever
+marked complete and no money ever moves**. Both fail silently, which is why they
+are written down rather than left to be noticed.
+
+Parts 3 and 4 are not blocking today. Part 3 is a convenience with a running
+cost, and part 4 has a January deadline that is easier to meet early than late.
 
 ---
 
@@ -192,7 +195,95 @@ places, Render and this statement, and the job is refused in between.
 
 ---
 
+## Part 3: instant payouts
+
+### Why this exists
+
+Payouts to a payee's bank now run **weekly, on a Friday**. The code sets that
+when it creates their account, so there is nothing to configure for the ordinary
+case.
+
+Instant payouts are the exception: a tutor who does not want to wait until Friday
+can take the money in about thirty minutes. They do it themselves from their
+Stripe Express dashboard, which the app now links to from the earnings page, so
+there is no screen here to build. What cannot be done from code is enabling it
+and deciding who pays for it.
+
+**Stripe charges the platform 1% of every instant payout, minimum $0.50.** Left
+alone, that comes out of Yakal. An application fee moves it to the tutor who
+chose the convenience, which is the intended arrangement.
+
+### What to do
+
+1. In the Stripe dashboard, go to **Settings > Connect > Payouts** and turn on
+   instant payouts for connected accounts.
+2. Under **External accounts**, set **Allow debit cards** to **Yes**. Most
+   instant payouts in the US go to a debit card, and without this a tutor has no
+   eligible destination.
+3. Open the **Platform pricing** tool for instant payouts and set the fee to
+   cover Stripe's 1% with a $0.50 minimum.
+
+### If you would rather not
+
+Skip it. Nothing breaks: tutors are paid weekly, the dashboard link still shows
+them their balance and history, and the option simply is not offered.
+
+---
+
+## Part 4: 1099 tax forms
+
+### Why this exists
+
+This one is worth reading carefully, because it is the opposite of what is
+usually assumed about Express accounts.
+
+Express means Stripe collects the bank details, the SSN and the identity
+documents on its own pages, so none of it touches our servers. That liability is
+genuinely gone. **The tax filing obligation is not.** Stripe issues a 1099-K only
+when the connected account pays the processing fees; ours are set to
+`application_express`, meaning Yakal pays them. So **Yakal is the filer**, and
+owes a **1099-NEC** to every tutor or counsellor paid $600 or more in a calendar
+year.
+
+Stripe will do the mechanics through its 1099 product: it generates the forms,
+collects the missing tax details from the payee, e-files with the IRS, and
+delivers a copy into the Express dashboard the payee already has. The obligation
+stays ours; the paperwork does not have to be.
+
+### What to do, before January
+
+1. In the Stripe dashboard open **Connect > Tax reporting** and press **Get
+   started**. Choose **1099-NEC**, and answer the filer questions.
+2. Turn on **e-delivery** and **outreach from Stripe** in the tax form settings,
+   so Stripe chases payees for missing tax details rather than you.
+3. Add state registration numbers for any state you file in.
+4. **Reconcile against our own ledger before filing.** Stripe only knows what
+   moved through Stripe, and `connect-transfer.ts` deliberately supports paying
+   somebody by ACH, Zelle or cheque with a reference. Those dollars are still
+   reportable, and a form built from Stripe's view alone understates them. The
+   `earnings_year_totals` view is the number to check against:
+
+```sql
+select p.full_name, p.email, t.total_cents / 100.0 as paid
+  from earnings_year_totals t
+  join profiles p on p.id = t.payee_id
+ where t.tax_year = 2026
+ order by t.total_cents desc;
+```
+
+Anyone at $600 or more needs a form, whether or not Stripe moved the money.
+
+### Key dates
+
+Stripe begins contacting payees in early November. Forms can be e-filed from
+mid-January, and the IRS deadline for getting them to recipients is **31
+January**.
+
+---
+
 ## What is needed from you, in one list
+
+**Blocking, do these first:**
 
 1. Create the Connect webhook endpoint, and set `STRIPE_CONNECT_WEBHOOK_SECRET`
    in Render.
@@ -200,5 +291,14 @@ places, Render and this statement, and the job is refused in between.
 3. Run the `cron.schedule` statement in the production Supabase SQL editor,
    with your `JOBS_TOKEN` substituted in.
 
+**When you want it:**
+
+4. Enable instant payouts and set the application fee (part 3).
+
+**Before January:**
+
+5. Set up Stripe's 1099 tax reporting, and reconcile it against
+   `earnings_year_totals` (part 4).
+
 None of these need a secret sent anywhere, and none of them need anything from
-me. All three are dashboard work, and the site answers at `https://yakal.me`.
+me. All of it is dashboard work, and the site answers at `https://yakal.me`.

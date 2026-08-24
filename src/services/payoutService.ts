@@ -209,6 +209,34 @@ export async function startConnectOnboarding(): Promise<{ error?: string }> {
 }
 
 /**
+ * Open the payee's own Stripe dashboard.
+ *
+ * Express accounts come with one, and it already does everything a payouts
+ * screen here would: the balance, the payout history, changing a bank account,
+ * downloading a 1099, and taking the money early rather than waiting for the
+ * weekly run. Rebuilding any of that would mean hosting a bank form, which is a
+ * liability worth not having.
+ *
+ * A new tab rather than a redirect: they are looking at their earnings here and
+ * should still be when they come back. Opened synchronously and pointed at the
+ * URL once it arrives, because a popup blocker stops any window opened after an
+ * await.
+ */
+export async function openPayoutsDashboard(): Promise<{ error?: string }> {
+  const tab = window.open("", "_blank");
+  const res = await authedPost("/api/connect?action=dashboard", {});
+
+  if (res.error || !res.url) {
+    tab?.close();
+    return { error: res.error ?? "Could not open your payouts dashboard." };
+  }
+
+  if (tab) tab.location.href = res.url;
+  else window.location.assign(res.url);
+  return {};
+}
+
+/**
  * Ask Stripe whether onboarding is finished, and store the answer.
  *
  * The account.updated webhook does this too. This is the pull for when that has

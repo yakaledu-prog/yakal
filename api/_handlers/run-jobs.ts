@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient } from '../_utils/supabase.js';
-import { recordSessionEarning, releaseDueEarnings } from '../_utils/earnings.js';
+import { NOTHING_DELIVERED, recordSessionEarning, releaseDueEarnings } from '../_utils/earnings.js';
 import { reportServerError } from '../_utils/report.js';
 
 // ============================================================
@@ -110,6 +110,13 @@ async function completeFinishedSessions(db: any): Promise<CompletionResult> {
     }
     result.completed += 1;
 
+    // An advising hour completes like anything else, because the counselling
+    // delivery check reads status = 'completed' and a session that never
+    // completes makes its counsellor look like they did nothing. It must not
+    // earn here though: that work is paid through the subscription, and a
+    // second earning against the same hour would pay them twice.
+    if (session.kind === 'advising') continue;
+
     const invoice = session.invoice_id ? chargeByInvoice.get(session.invoice_id) : null;
     const { created, error: earnErr } = await recordSessionEarning(db, {
       sessionId: session.id,
@@ -199,6 +206,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sessions = await completeFinishedSessions(db);
     const released = await releaseDueEarnings(db);
     const voided = await voidStaleInvoices(db);
+
+    // A counselling month that ended with nothing delivered. Money nobody is
+    // getting is exactly the thing a person should look at, and the ledger has
+    // already latched it so this is said once rather than every run.
+    const undelivered = released.skipped.filter(
+      (s) => s.reason === NOTHING_DELIVERED && s.firstTime
+    );
+    if (undelivered.length > 0) {
+      await tellAdmins(
+        db,
+        'A counselling month is being held',
+        `${undelivered.length} counselling ${undelivered.length === 1 ? 'month has' : 'months have'} ended with no advising session and no essay review. Nothing has been paid out.`
+      );
+    }
 
     const errors = [...sessions.errors, ...released.errors];
     // Reported, not just logged. Nobody is watching when this runs, and every

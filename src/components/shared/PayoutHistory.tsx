@@ -12,6 +12,7 @@ import {
   methodLabel,
   type EarningRow,
   refreshConnectStatus,
+  openPayoutsDashboard,
   startConnectOnboarding,
 } from "@/services/payoutService";
 
@@ -76,6 +77,13 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
     }
   }
 
+  async function openDashboard() {
+    setBusy(true);
+    const { error } = await openPayoutsDashboard();
+    setBusy(false);
+    if (error) toast.error(error);
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
@@ -108,6 +116,20 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
             {status.accountId ? "Carry on" : "Connect with Stripe"}
           </button>
         </div>
+      )}
+
+      {status?.payoutsEnabled && (
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
+          Payouts reach your bank weekly.{" "}
+          <button
+            onClick={() => void openDashboard()}
+            disabled={busy}
+            className="font-semibold text-primary underline-offset-2 transition-colors hover:underline disabled:opacity-50"
+          >
+            Open your Stripe dashboard
+          </button>{" "}
+          for the history, your bank details and your tax forms, or to be paid out early.
+        </p>
       )}
 
       {isLoading ? (

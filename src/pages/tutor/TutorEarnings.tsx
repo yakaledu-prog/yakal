@@ -11,6 +11,7 @@ import {
   getConnectStatus,
   getEarnings,
   methodLabel,
+  openPayoutsDashboard,
   startConnectOnboarding,
   type EarningRow,
 } from "@/services/payoutService";
@@ -100,6 +101,7 @@ export function TutorEarnings() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [openingDashboard, setOpeningDashboard] = useState(false);
 
   // dataUpdatedAt rather than a clock read during render: whether an earning
   // is still clearing is judged against the moment the data was fetched, which
@@ -215,6 +217,28 @@ export function TutorEarnings() {
                 className="h-10 shrink-0 rounded-md bg-primary px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {connecting ? "Opening..." : connect.accountId ? "Finish connecting" : "Connect bank"}
+              </button>
+            </div>
+          )}
+
+          {connect?.payoutsEnabled && (
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-muted/30 px-5 py-4">
+              <p className="text-[14px] text-foreground">
+                Payouts reach your bank weekly. Your Stripe dashboard has the history, your
+                bank details and your tax forms, and can pay you out early.
+              </p>
+              <button
+                type="button"
+                disabled={openingDashboard}
+                onClick={async () => {
+                  setOpeningDashboard(true);
+                  const result = await openPayoutsDashboard();
+                  setOpeningDashboard(false);
+                  if (result.error) toast.error(result.error);
+                }}
+                className="h-10 shrink-0 rounded-md border border-border px-5 text-[14px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+              >
+                {openingDashboard ? "Opening..." : "Open Stripe dashboard"}
               </button>
             </div>
           )}

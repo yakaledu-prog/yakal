@@ -85,30 +85,49 @@ export interface CounsellingEarningInput {
   payeeId: string;
   /** First day of the month this pays for. One earning per plan per period. */
   periodStart: string;
+  /** When that period ends. The hold runs to here, not to 72 hours from now. */
+  periodEnd: string;
   amountCents: number;
   currency?: string;
   invoiceId?: string | null;
   sourceChargeId?: string | null;
 }
 
-/** The same, for one month of a counselling subscription. */
+/**
+ * The same, for one month of a counselling subscription.
+ *
+ * Written when the subscription renews, so a counsellor can see what the month
+ * is worth while they are working it, but held until the month is over. A
+ * lesson has an end time and so does a subscription period; paying at renewal
+ * was paying for work that had not happened yet, and a family owed a refund in
+ * week three would have been refunded out of Yakal rather than out of the money
+ * still held for them.
+ *
+ * The hold is the period end plus the usual window, so the last day of the
+ * month gets the same three days to be disputed as everything else.
+ */
 export async function recordCounsellingEarning(
   db: any,
   input: CounsellingEarningInput
 ): Promise<{ created: boolean; error?: string }> {
   if (input.amountCents <= 0) return { created: false };
 
+  const releasableAt = new Date(
+    new Date(input.periodEnd).getTime() + HOLD_HOURS * 60 * 60 * 1000
+  );
+
   const { error } = await db.from('earnings').insert({
     payee_id: input.payeeId,
     kind: 'counselling_month',
     plan_id: input.planId,
     period_start: input.periodStart,
+    period_end: input.periodEnd,
     amount_cents: input.amountCents,
     currency: input.currency ?? 'usd',
     invoice_id: input.invoiceId ?? null,
     source_charge_id: input.sourceChargeId ?? null,
     status: 'pending',
-    releasable_at: new Date(Date.now() + HOLD_HOURS * 60 * 60 * 1000).toISOString(),
+    releasable_at: releasableAt.toISOString(),
   });
 
   if (error && error.code === '23505') return { created: false };
@@ -137,18 +156,59 @@ export function counsellorShare(
 interface DueEarning {
   id: string;
   payee_id: string;
+  kind: string;
   amount_cents: number;
   currency: string;
   source_charge_id: string | null;
   session_id: string | null;
   plan_id: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  note: string | null;
 }
 
 export interface ReleaseResult {
   transferred: number;
   amountCents: number;
-  skipped: { earningId: string; reason: string }[];
+  /** firstTime marks a skip worth telling somebody about, so a repeated run does not repeat the news. */
+  skipped: { earningId: string; reason: string; firstTime?: boolean }[];
   errors: string[];
+}
+
+/** Why a counselling month can be owed and still not payable. */
+export const NOTHING_DELIVERED = 'nothing delivered';
+
+/**
+ * Whether a counselling month may be paid.
+ *
+ * A tutoring earning exists because a lesson completed, so the work is already
+ * proven by the time there is a row. A subscription month is not: it is paid
+ * for in advance and the row is written at renewal, so this is where the
+ * equivalent question gets asked.
+ *
+ * The bar is deliberately low, and the reason is in the migration: this
+ * separates a counsellor who worked from one who was never there, and is not a
+ * judgement about whether a family got their money's worth. That judgement
+ * belongs to a person looking at a flagged row.
+ */
+async function counsellingIsPayable(db: any, earning: DueEarning): Promise<boolean> {
+  if (earning.kind !== 'counselling_month') return true;
+  // Older rows predate the period columns. Paying them is the safer error:
+  // withholding money over a column that was not being written yet would be
+  // this change reaching backwards into months nobody disputed.
+  if (!earning.plan_id || !earning.period_start || !earning.period_end) return true;
+
+  const { data, error } = await db.rpc('counselling_period_delivered', {
+    p_plan: earning.plan_id,
+    p_from: earning.period_start,
+    p_to: earning.period_end,
+  });
+
+  // A database error is not evidence that nobody worked. Hold rather than
+  // decide: the next run asks again, and nobody is wrongly paid or wrongly not.
+  if (error) throw new Error(`could not check delivery: ${error.message}`);
+
+  return data === true;
 }
 
 /**
@@ -166,7 +226,9 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
 
   const { data: due, error } = await db
     .from('earnings')
-    .select('id, payee_id, amount_cents, currency, source_charge_id, session_id, plan_id')
+    .select(
+      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note'
+    )
     .eq('status', 'pending')
     .is('voided_at', null)
     .lte('releasable_at', new Date().toISOString())
@@ -200,6 +262,33 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
     // amounts that were zero because no share had been set on the tier.
     if (earning.amount_cents <= 0) {
       result.skipped.push({ earningId: earning.id, reason: 'nothing to transfer' });
+      continue;
+    }
+
+    // A month nobody worked. Checked before the bank, because this is a reason
+    // not to pay at all rather than a reason the money cannot land yet.
+    try {
+      if (!(await counsellingIsPayable(db, earning))) {
+        // Left pending rather than cancelled, so an admin who finds the work
+        // was done off the platform can still settle it by hand. The note is
+        // the latch: it is written once, so a job running every hour does not
+        // tell the same people the same thing every hour.
+        const firstTime = !earning.note;
+        if (firstTime) {
+          await db
+            .from('earnings')
+            .update({
+              note: 'Held: no advising session or essay review in this period.',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', earning.id)
+            .eq('status', 'pending');
+        }
+        result.skipped.push({ earningId: earning.id, reason: NOTHING_DELIVERED, firstTime });
+        continue;
+      }
+    } catch (err: any) {
+      result.errors.push(`earning ${earning.id}: ${err?.message ?? 'delivery check failed'}`);
       continue;
     }
 

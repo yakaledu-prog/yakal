@@ -16,6 +16,35 @@ import { getServiceClient, requireUser, appBaseUrl } from '../_utils/supabase.js
 // returns a fresh link.
 // ============================================================
 
+/**
+ * How often Stripe empties the payee's balance into their bank.
+ *
+ * Set once, at creation, because the default differs by account and leaving it
+ * unset means nobody here has decided. Weekly on a Friday: money is in the bank
+ * before the weekend, and by the time anything reaches this schedule it has
+ * already served the 72 hour hold in the earnings ledger, so there is no risk
+ * argument for holding it longer.
+ *
+ * Written through balance_settings rather than accounts.update because it is
+ * scoped by the Stripe-Account header rather than by the account's API
+ * generation, so the one call covers both the v1 and v2 accounts this platform
+ * has. It works before onboarding is finished; the setting simply waits.
+ *
+ * Never fatal. A tutor is here to add their bank details, and failing that over
+ * a scheduling preference would be the wrong trade. An unset schedule falls
+ * back to Stripe's default, which pays them slightly differently, not never.
+ */
+async function setPayoutSchedule(stripe: any, accountId: string): Promise<void> {
+  try {
+    await stripe.balanceSettings.update(
+      { payments: { payouts: { schedule: { interval: 'weekly', weekly_payout_days: ['friday'] } } } },
+      { stripeAccount: accountId }
+    );
+  } catch (err: any) {
+    console.error(`connect-onboard: could not set the payout schedule on ${accountId}:`, err?.message ?? err);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -116,6 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       await db.from('profiles').update({ stripe_account_id: accountId }).eq('id', profile.id);
+      await setPayoutSchedule(stripe, accountId!);
     }
 
     // Single use and short lived, so it is minted per visit rather than

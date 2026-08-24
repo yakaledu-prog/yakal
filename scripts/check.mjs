@@ -43,6 +43,7 @@ const NEEDS_DB = [
   ['earnings.mjs', 'nobody can write themselves an earning, and holds hold'],
   ['session-completion.mjs', 'which lessons are finished, in the right timezone'],
   ['run-jobs.ts', 'the scheduled job completes lessons and holds the money'],
+  ['counselling-escrow.ts', 'a counselling month is paid at the end of it, and only if worked'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 

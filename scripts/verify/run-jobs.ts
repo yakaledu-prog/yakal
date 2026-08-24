@@ -68,6 +68,20 @@ const makeSession = (label: string, offset: string, extra = '') =>
 
 makeSession('done', '-3 hours');
 makeSession('later', '5 hours');
+
+// An advising hour, carrying a payout amount it must ignore.
+//
+// Counselling is paid through the subscription, so this session completing must
+// not also earn. The amount is deliberately non-zero: for a long time the only
+// thing preventing a double payment was that book_advising_session never set
+// this column, which is an accident rather than a rule. This fails if the job
+// ever goes back to deciding on the amount instead of the kind.
+psql(
+  `insert into sessions (student_id, tutor_id, invoice_id, subject, date, start_time, duration_minutes, status, kind, tutor_earning_cents)
+   select '${studentId}','${tutorId}','${invoiceId}','job-fixture advising',(t)::date,(t)::time,60,'upcoming','advising',2800
+     from (select (now() at time zone 'America/New_York') - interval '3 hours' as t) s;`
+);
+
 // Zoom looked and found an empty room. The one signal it gives with confidence.
 makeSession('empty', '-4 hours', ", '[]'::jsonb, now()");
 
@@ -104,9 +118,13 @@ pass('a wrong token is refused', refused.code === 401, String(refused.code));
 
 const first = await run(process.env.JOBS_TOKEN!);
 pass('the job runs', first.code === 200, JSON.stringify(first.body));
-pass('it completed the finished lesson', first.body?.sessions?.completed === 1, JSON.stringify(first.body?.sessions));
+// At least one, not exactly one, for the same reason the skip count below is:
+// the job works on the whole database, so a seeded lesson whose slot has passed
+// legitimately completes and earns in the same run. What this check owns is the
+// fixtures, and those are asserted by name further down.
+pass('it completed the finished lesson', (first.body?.sessions?.completed ?? 0) >= 1, JSON.stringify(first.body?.sessions));
 pass('and flagged the empty one', first.body?.sessions?.noShows === 1, JSON.stringify(first.body?.sessions));
-pass('writing one earning', first.body?.sessions?.earningsWritten === 1, JSON.stringify(first.body?.sessions));
+pass('writing an earning for it', (first.body?.sessions?.earningsWritten ?? 0) >= 1, JSON.stringify(first.body?.sessions));
 pass('and reporting no errors', (first.body?.errors ?? []).length === 0, JSON.stringify(first.body?.errors));
 
 const statuses = psql(
@@ -119,6 +137,9 @@ pass(
 );
 pass('the finished one is completed', statuses.includes('job-fixture done=completed'), statuses);
 pass('the empty one is a no-show', statuses.includes('job-fixture empty=no-show'), statuses);
+// It has to complete, because counselling_period_delivered reads exactly this.
+// A counsellor whose sessions never complete looks like one who did nothing.
+pass('the advising hour completed', statuses.includes('job-fixture advising=completed'), statuses);
 
 // A no-show earns nothing. That is the point of looking at attendance at all.
 const rows = psql(
@@ -127,6 +148,7 @@ const rows = psql(
     where s.subject like 'job-fixture%';`
 );
 pass('only the delivered lesson earned', rows === 'job-fixture done|2800|pending|ch_job_fixture|true', rows);
+pass('and the advising hour earned nothing', !rows.includes('advising'), rows);
 
 // The hold is what makes a refund cheap and a dispute survivable, so a fresh
 // earning must not be releasable.
