@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, FileText, Landmark, Loader2, Search, Smartphone, Zap } from "lucide-react";
+import {
+  ArrowDownUpIcon,
+  ArrowUpDownIcon,
+  FileText,
+  Landmark,
+  Loader2,
+  Search,
+  Smartphone,
+  Zap,
+} from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -129,9 +138,9 @@ function MethodCell({ row }: { row: EarningRow }) {
     <div className="flex items-center gap-2">
       <Icon size={14} className="shrink-0 text-muted-foreground" />
       <div className="min-w-0">
-        <p className="truncate text-[13px] text-foreground">{methodLabel(row.method)}</p>
+        <p className="truncate text-[13.5px] text-foreground">{methodLabel(row.method)}</p>
         {row.reference && (
-          <p className="truncate font-mono text-[11px] text-muted-foreground">{row.reference}</p>
+          <p className="truncate text-[12px] text-muted-foreground">{row.reference}</p>
         )}
       </div>
     </div>
@@ -242,6 +251,9 @@ export function TutorEarnings() {
         case "length": return r.durationMinutes ?? 0;
         case "amount": return r.amountCents;
         case "status": return rank[r.status] ?? 9;
+        // Unpaid rows have no method, and sorting them into the middle of the
+        // alphabet is noise. They go last either way.
+        case "method": return r.method ? methodLabel(r.method).toLowerCase() : "zzz";
         default: return r.date;
       }
     };
@@ -390,13 +402,11 @@ export function TutorEarnings() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <SortHeader label="Date" col="date" sort={sort} onSort={setSort} />
-                  <SortHeader label="Session" col="subject" sort={sort} onSort={setSort} />
-                  <SortHeader label="Length" col="length" sort={sort} onSort={setSort} align="right" />
-                  <SortHeader label="Amount" col="amount" sort={sort} onSort={setSort} align="right" />
-                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Method
-                  </th>
+                  <SortHeader label="Date" col="date" sort={sort} onSort={setSort} className="pr-4" />
+                  <SortHeader label="Session" col="subject" sort={sort} onSort={setSort} className="pr-4" />
+                  <SortHeader label="Length" col="length" sort={sort} onSort={setSort} align="right" className="pr-4" />
+                  <SortHeader label="Amount" col="amount" sort={sort} onSort={setSort} align="right" className="pr-8" />
+                  <SortHeader label="Method" col="method" sort={sort} onSort={setSort} className="pl-4 pr-4" />
                   <SortHeader label="Status" col="status" sort={sort} onSort={setSort} align="right" />
                 </tr>
               </thead>
@@ -434,13 +444,13 @@ export function TutorEarnings() {
                     </td>
                     <td
                       className={cn(
-                        "py-4 pr-4 text-right align-top text-[14px] font-medium tabular-nums",
+                        "py-4 pr-8 text-right align-top text-[14px] font-medium tabular-nums",
                         r.amountCents === 0 ? "text-muted-foreground" : "text-foreground"
                       )}
                     >
                       {r.amountCents === 0 ? "-" : usd(r.amountCents)}
                     </td>
-                    <td className="py-4 pr-4 align-middle">
+                    <td className="py-4 pl-4 pr-4 align-middle">
                       <MethodCell row={r} />
                     </td>
                     <td className="py-4 text-right align-middle">
@@ -457,7 +467,7 @@ export function TutorEarnings() {
   );
 }
 
-type SortCol = "date" | "subject" | "length" | "amount" | "status";
+type SortCol = "date" | "subject" | "length" | "amount" | "method" | "status";
 interface Sort { col: SortCol; dir: "asc" | "desc" }
 
 /**
@@ -473,19 +483,23 @@ function SortHeader({
   sort,
   onSort,
   align = "left",
+  className,
 }: {
   label: string;
   col: SortCol;
   sort: Sort;
   onSort: (s: Sort) => void;
   align?: "left" | "right";
+  /** Must match the padding on the cells below, or headers collide. */
+  className?: string;
 }) {
   const active = sort.col === col;
   return (
     <th
       className={cn(
         "pb-2 text-[11px] font-medium uppercase tracking-wider",
-        align === "right" ? "text-right" : "text-left"
+        align === "right" ? "text-right" : "text-left",
+        className
       )}
     >
       <button
@@ -500,13 +514,26 @@ function SortHeader({
         )}
       >
         {label}
-        <ArrowUpDown
-          size={11}
-          className={cn(
-            "shrink-0 transition-opacity duration-200",
-            active ? "opacity-100" : "opacity-0 group-hover:opacity-50"
-          )}
-        />
+        {/* Kept quiet on purpose. The sorted column already reads as sorted
+            from its own heading being darker, so the arrow is a confirmation
+            rather than the signal, and a row of bold arrows would compete with
+            the figures underneath. */}
+        {active && sort.dir === "asc" ? (
+          <ArrowUpDownIcon
+            size={12}
+            strokeWidth={1.5}
+            className="shrink-0 text-muted-foreground/70 transition-opacity duration-200"
+          />
+        ) : (
+          <ArrowDownUpIcon
+            size={12}
+            strokeWidth={1.5}
+            className={cn(
+              "shrink-0 text-muted-foreground/70 transition-opacity duration-200",
+              active ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+            )}
+          />
+        )}
       </button>
     </th>
   );

@@ -98,17 +98,55 @@ function timeRange(item: SessionListItem): string {
 }
 
 /**
+ * A rating as five slots rather than one star and a number.
+ *
+ * Five slots say "out of five" without a caption, and the fill can land
+ * part-way through a star, which a single star and "4.3" cannot show at all.
+ * Two stacked rows, the filled one clipped to a percentage.
+ */
+function Stars({ value }: { value: number }) {
+  const slots = [0, 1, 2, 3, 4];
+  return (
+    <span
+      className="relative inline-flex shrink-0"
+      role="img"
+      aria-label={`${value.toFixed(1)} out of 5`}
+    >
+      <span className="flex gap-[3px]">
+        {slots.map((i) => (
+          <Star key={i} size={13} className="shrink-0 text-border" aria-hidden="true" />
+        ))}
+      </span>
+      <span
+        className="absolute inset-y-0 left-0 flex gap-[3px] overflow-hidden"
+        style={{ width: `${Math.max(0, Math.min(value, 5)) * 20}%` }}
+        aria-hidden="true"
+      >
+        {slots.map((i) => (
+          <Star key={i} size={13} className="shrink-0 fill-secondary text-secondary" />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/**
  * "Today", "Tomorrow", or the status.
  *
  * A date already sits in the left column, so repeating it here would say the
  * same thing twice. What is worth saying is how soon it is.
  */
-function whenLabel(item: SessionListItem): string {
+function whenLabel(item: SessionListItem, showAwaiting = true): string {
   if (item.status !== "upcoming") {
     return item.status.charAt(0).toUpperCase() + item.status.slice(1);
   }
   // Not "Missed": nobody knows yet whether it happened, which is the point.
-  if (isAwaitingConfirmation(item)) return "Awaiting confirmation";
+  //
+  // Withheld from a student on purpose. What is being confirmed is whether the
+  // lesson is billable and payable, which is a question for whoever paid and
+  // whoever gets paid. A student has nothing to do about it and no stake in the
+  // answer, so for them the row simply says Today until it completes.
+  if (showAwaiting && isAwaitingConfirmation(item)) return "Awaiting confirmation";
 
   const start = startsAt(item);
   const midnight = new Date();
@@ -139,6 +177,14 @@ export function SessionList({
   onRate,
   /** Stays stacked at every width, for a narrow column like the home agenda. */
   compact = false,
+  /**
+   * Whether to say a finished session is still being confirmed.
+   *
+   * False for a student: what is being confirmed is whether the lesson is
+   * billable and payable, which is a question for whoever paid and whoever gets
+   * paid, not for the person who sat in it.
+   */
+  showAwaitingConfirmation = true,
   className,
 }: {
   sessions: SessionListItem[];
@@ -147,6 +193,7 @@ export function SessionList({
   renderAction?: (session: SessionListItem) => React.ReactNode;
   onRate?: (session: SessionListItem) => void;
   compact?: boolean;
+  showAwaitingConfirmation?: boolean;
   className?: string;
 }) {
   if (isLoading) {
@@ -167,7 +214,8 @@ export function SessionList({
         const start = startsAt(s);
         const upcoming = isStillToCome(s);
         const completed = s.status === "completed";
-        const label = whenLabel(s);
+        const label = whenLabel(s, showAwaitingConfirmation);
+        const cancelled = s.status === "cancelled" || s.status === "no-show";
 
         return (
           <div key={s.id} className={compact ? "py-4" : "py-6 md:py-8"}>
@@ -213,15 +261,39 @@ export function SessionList({
                   !compact && "md:justify-end md:gap-4 md:pl-0"
                 )}
               >
+                {/* The rating sits before the status, not after.
+                    Reading order is what happened, then how it went, then what
+                    you can do about it, and the answer occupies the same slot
+                    the invitation did. */}
+                {completed && (
+                  <div className="shrink-0">
+                    {s.rating != null ? (
+                      <Stars value={s.rating} />
+                    ) : onRate ? (
+                      <button
+                        type="button"
+                        onClick={() => onRate(s)}
+                        className="rounded-md border border-secondary bg-secondary/10 px-3 py-1.5 text-[12.5px] font-semibold text-[#8a6a2a] transition-colors hover:bg-secondary/20 dark:text-secondary"
+                      >
+                        Rate
+                      </button>
+                    ) : (
+                      <span className="text-[12.5px] text-muted-foreground">Not rated</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="shrink-0">
                   <p
                     className={cn(
                       "flex items-center gap-1.5 text-[13.5px] font-medium",
-                      isAwaitingConfirmation(s)
-                        ? "text-secondary"
-                        : upcoming
-                          ? "text-primary"
-                          : "text-muted-foreground"
+                      cancelled
+                        ? "text-destructive"
+                        : isAwaitingConfirmation(s)
+                          ? "text-secondary"
+                          : upcoming
+                            ? "text-primary"
+                            : "text-muted-foreground"
                     )}
                   >
                     <StatusIcon item={s} />
@@ -232,32 +304,6 @@ export function SessionList({
                     {completed && s.attendedMinutes != null && ` \u00b7 ${s.attendedMinutes} min attended`}
                   </p>
                 </div>
-
-                {/* A rating only exists once a session has happened. The column
-                    is kept even when unrated, so the ones that are line up. */}
-                {completed && (
-                  <div className="w-20 shrink-0 text-right">
-                    {s.rating != null ? (
-                      <span className="inline-flex items-center gap-1 text-[13.5px] text-foreground">
-                        <Star size={14} className="fill-secondary text-secondary" />
-                        {s.rating.toFixed(1)}
-                      </span>
-                    ) : onRate ? (
-                      // The invitation lives in the rating column rather than
-                      // as another button on the right: it is the same slot
-                      // the answer will occupy.
-                      <button
-                        type="button"
-                        onClick={() => onRate(s)}
-                        className="text-[12.5px] font-medium text-primary hover:underline"
-                      >
-                        Rate
-                      </button>
-                    ) : (
-                      <span className="text-[12.5px] text-muted-foreground">Not rated</span>
-                    )}
-                  </div>
-                )}
 
                 {renderAction && <div className="shrink-0">{renderAction(s)}</div>}
               </div>
@@ -297,6 +343,8 @@ export function UpcomingSessions({
   compact = false,
   /** Show only the first few, for a home page agenda with a View all beside it. */
   limit,
+  /** False for a student. See the prop of the same name on SessionList. */
+  showAwaitingConfirmation = true,
   className,
 }: {
   sessions: SessionListItem[];
@@ -306,6 +354,7 @@ export function UpcomingSessions({
   hideIfEmpty?: boolean;
   compact?: boolean;
   limit?: number;
+  showAwaitingConfirmation?: boolean;
   /** Omitted, and no session offers Join: a parent watches, they do not attend. */
   onJoin?: (session: SessionListItem) => void;
   onReschedule?: (session: SessionListItem) => void;
@@ -337,7 +386,16 @@ export function UpcomingSessions({
       isLoading={isLoading}
       emptyText={emptyText}
       className={className}
+      showAwaitingConfirmation={showAwaitingConfirmation}
       renderAction={(s) => {
+        // A finished lesson has no action left.
+        //
+        // It cannot be joined and cannot be moved, so offering either is a
+        // button that does nothing or, worse, one that errors. The only thing
+        // left to do about it is rate it, and that invitation already sits in
+        // the rating slot beside the status.
+        if (s.status !== "upcoming") return null;
+
         // Always in the same place, whatever the main action turns out to be,
         // so a column of rows does not have its buttons at three different
         // widths depending on how far away each lesson is.
@@ -345,7 +403,7 @@ export function UpcomingSessions({
           <button
             type="button"
             onClick={() => onCancel(s)}
-            className="h-10 rounded-md px-3 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="h-10 rounded-md border border-border px-4 text-[14px] font-medium text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
           >
             Cancel
           </button>

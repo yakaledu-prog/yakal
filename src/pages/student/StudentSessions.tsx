@@ -266,6 +266,8 @@ export function StudentSessions() {
             </div>
           ) : activeTab === "upcoming" ? (
             <UpcomingSessions
+              // Whether a lesson is billable is not a student's question.
+              showAwaitingConfirmation={false}
               sessions={items}
               onJoin={(s) => join(s.id)}
               onReschedule={(s) => setMoving(toReschedulable(s))}

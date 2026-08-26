@@ -124,6 +124,8 @@ export function StudentAdvising() {
               <h2 className="text-[18px] font-semibold text-foreground">Coming up</h2>
             </div>
             <UpcomingSessions
+              // Whether a lesson is billable is not a student's question.
+              showAwaitingConfirmation={false}
               sessions={advising}
               isLoading={isLoading}
               emptyText="Nothing booked this month."
