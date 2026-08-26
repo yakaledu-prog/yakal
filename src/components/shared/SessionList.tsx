@@ -3,6 +3,7 @@ import { CalendarDays, Check, Loader2, Star, XCircle } from "lucide-react";
 
 import { getSessionExtras } from "@/services/sessions";
 import { dicebearUrl } from "@/utils/avatar";
+import { useNow } from "@/hooks/useNow";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -95,6 +96,49 @@ function timeRange(item: SessionListItem): string {
   const to = new Date(from.getTime() + (item.durationMinutes || 60) * 60_000);
   const fmt = (d: Date) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   return `${fmt(from)} - ${fmt(to)}`;
+}
+
+/** How soon a booked session is, relative to a given moment. */
+export type SessionPhase = "live" | "soon" | "overdue" | "later";
+
+/** A session counts as starting soon this many minutes out. */
+const SOON_MINUTES = 15;
+
+/**
+ * Where a session sits against the clock.
+ *
+ * Taking `now` as an argument rather than reading it keeps this pure, which is
+ * what lets a row be rendered from a ticking value in state instead of the
+ * component reaching for the clock partway through a render.
+ */
+export function sessionPhase(item: SessionListItem, now: number): SessionPhase {
+  if (item.status !== "upcoming") return "later";
+
+  const start = startsAt(item).getTime();
+  const end = start + (item.durationMinutes || 60) * 60_000;
+
+  if (now >= end) return "overdue";
+  if (now >= start) return "live";
+  if (start - now <= SOON_MINUTES * 60_000) return "soon";
+  return "later";
+}
+
+/** "in 12 min", "in 2 h", or how long ago it should have started. */
+export function countdownLabel(item: SessionListItem, now: number): string {
+  const start = startsAt(item).getTime();
+  const minutes = Math.round((start - now) / 60_000);
+
+  if (minutes > 0) {
+    if (minutes < 60) return `in ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    return `in ${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+
+  const since = Math.abs(minutes);
+  if (since < 1) return "starting now";
+  if (since < 60) return `started ${since} min ago`;
+  const hours = Math.round(since / 60);
+  return `started ${hours} ${hours === 1 ? "hour" : "hours"} ago`;
 }
 
 /**
@@ -196,6 +240,9 @@ export function SessionList({
   showAwaitingConfirmation?: boolean;
   className?: string;
 }) {
+  // Ticks, so a countdown moves without the row reading the clock mid-render.
+  const now = useNow();
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
@@ -216,9 +263,20 @@ export function SessionList({
         const completed = s.status === "completed";
         const label = whenLabel(s, showAwaitingConfirmation);
         const cancelled = s.status === "cancelled" || s.status === "no-show";
+        const phase = sessionPhase(s, now);
+        const imminent = phase === "live" || phase === "soon";
 
         return (
-          <div key={s.id} className={compact ? "py-4" : "py-6 md:py-8"}>
+          <div
+            key={s.id}
+            className={cn(
+              compact ? "py-4" : "py-6 md:py-8",
+              // A lesson happening now is the one thing on this page worth
+              // finding at a glance, so it gets a rail rather than a badge.
+              imminent && "-mx-3 border-l-2 border-primary bg-primary/5 px-3",
+              phase === "overdue" && "-mx-3 border-l-2 border-destructive px-3"
+            )}
+          >
             {/* Two lines on a phone and one on a desktop. Squeezed onto a
                 single line, a narrow screen truncates the subject and the
                 person to initials, which is everything worth reading. */}
@@ -287,17 +345,21 @@ export function SessionList({
                   <p
                     className={cn(
                       "flex items-center gap-1.5 text-[13.5px] font-medium",
-                      cancelled
+                      cancelled || phase === "overdue"
                         ? "text-destructive"
-                        : isAwaitingConfirmation(s)
-                          ? "text-secondary"
-                          : upcoming
-                            ? "text-primary"
-                            : "text-muted-foreground"
+                        : imminent
+                          ? "text-primary"
+                          : isAwaitingConfirmation(s)
+                            ? "text-secondary"
+                            : upcoming
+                              ? "text-primary"
+                              : "text-muted-foreground"
                     )}
                   >
                     <StatusIcon item={s} />
-                    {label}
+                    {/* A countdown beats a date the moment one is close: "in 8
+                        min" is what somebody needs, "Today" is not. */}
+                    {imminent || phase === "overdue" ? countdownLabel(s, now) : label}
                   </p>
                   <p className="mt-0.5 text-[12.5px] text-muted-foreground">
                     {timeRange(s)}
@@ -420,11 +482,21 @@ export function UpcomingSessions({
           );
 
         if (onJoin && isJoinable(s)) {
+          // Solid only once it is nearly time. A lesson booked for six this
+          // evening should not be shouting Join at eight in the morning, but
+          // the moment it is close it should be the loudest thing on the row.
+          const near = sessionPhase(s, Date.now());
+          const live = near === "live" || near === "soon";
           return withCancel(
             <button
               type="button"
               onClick={() => onJoin(s)}
-              className="h-10 rounded-md bg-primary px-6 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+              className={cn(
+                "h-10 rounded-md px-6 text-[14px] font-semibold transition-all",
+                live
+                  ? "bg-primary text-white shadow-sm hover:opacity-90"
+                  : "border border-primary/40 text-primary hover:border-primary hover:bg-primary/5"
+              )}
             >
               Join
             </button>

@@ -79,14 +79,18 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
     const countFor = (href?: string) =>
       href?.endsWith("/notifications") ? badges.notifications
         : href?.endsWith("/messages") ? badges.messages
-          : undefined;
+          // Not an unread count: a lesson that is happening now or nearly is.
+          // It clears itself when the session ends.
+          : href?.endsWith("/sessions") ? badges.sessions
+            : href?.endsWith("/billing") || href?.endsWith("/earnings") ? badges.billing
+              : undefined;
     const apply = (item: NavItem): NavItem => ({
       ...item,
       badge: countFor(item.href) ?? item.badge,
       children: item.children?.map(apply),
     });
     return navItems.map(apply);
-  }, [navItems, badges.notifications, badges.messages]);
+  }, [navItems, badges.notifications, badges.messages, badges.sessions, badges.billing]);
 
 
 
