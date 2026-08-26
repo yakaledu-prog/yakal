@@ -15,10 +15,18 @@ import {
 import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
 import { RefundDialog } from "@/components/admin/RefundDialog";
 import { money } from "@/services/billingService";
-import { Loader2, CheckCircle2, Clock, Wallet, Check, ChevronRight, FileText, ScrollTextIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Check, ChevronRight, FileText, Search } from "lucide-react";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
+
+type TabId = "owed" | "invoices" | "tax";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "owed", label: "Owed" },
+  { id: "invoices", label: "Invoices" },
+  { id: "tax", label: "Tax forms" },
+];
 
 const KINDS = [
   { value: "all", label: "All services" },
@@ -58,19 +66,25 @@ export function AdminBilling() {
   const [recording, setRecording] = useState<OwedRow | null>(null);
   const [refunding, setRefunding] = useState<(typeof invoices)[number] | null>(null);
   const [openInvoice, setOpenInvoice] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabId>("owed");
+  const [search, setSearch] = useState("");
   const [kind, setKind] = useState("all");
   const [payState, setPayState] = useState("all");
 
   // The two filters compose in the order they are read: what it was for, then
   // where the money got to.
-  const shownInvoices = useMemo(
-    () =>
-      invoices.filter(
-        (i) =>
-          (kind === "all" || i.kind === kind) && (payState === "all" || i.status === payState)
-      ),
-    [invoices, kind, payState]
-  );
+  const shownInvoices = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return invoices.filter((i) => {
+      if (kind !== "all" && i.kind !== kind) return false;
+      if (payState !== "all" && i.status !== payState) return false;
+      if (!needle) return true;
+      return (
+        (i.description ?? "").toLowerCase().includes(needle) ||
+        (i.parent_name ?? "").toLowerCase().includes(needle)
+      );
+    });
+  }, [invoices, kind, payState, search]);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
@@ -103,19 +117,34 @@ export function AdminBilling() {
             { label: "Outstanding", value: money(stats.outstanding) },
             { label: "Payouts due", value: money(stats.payoutsDue) },
           ]}
+          hideStatsOnMobile
+          tabs={TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={cn(
+                "-mb-px border-b-2 px-4 py-3 text-[14px] font-medium transition-colors",
+                tab === t.id
+                  ? "border-white text-white"
+                  : "border-transparent text-white/70 hover:text-white"
+              )}
+            >
+              {t.label}
+              {t.id === "owed" && payouts.length > 0 && (
+                <span className="ml-2 text-[12px] tabular-nums text-white/60">{payouts.length}</span>
+              )}
+            </button>
+          ))}
         />
 
-        <div className="p-6 md:p-10 space-y-12">
+        <div className="p-6 md:p-10">
           {/* Tutor payouts */}
-          <div>
-            <div className="flex items-center gap-2 border-b border-border/50 pb-3 mb-4">
-              <Wallet size={18} className="text-primary" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Owed</h3>
-            </div>
+          <div className={cn(tab !== "owed" && "hidden")}>
             {payouts.length === 0 ? (
               <p className="text-[14px] text-muted-foreground py-4">Nothing owed. Everybody is settled.</p>
             ) : (
-              <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+              <div className="divide-y divide-border border-t border-border">
                 {payouts.map((p: OwedRow) => {
                   const clearing = !!p.releasableAt && new Date(p.releasableAt) > new Date();
                   return (
@@ -160,25 +189,21 @@ export function AdminBilling() {
           </div>
 
           {/* Invoices */}
-          <div>
-            <div className="border-b border-border/50 pb-3 mb-4 flex flex-wrap items-center gap-3">
-              <ScrollTextIcon size={18} className="text-primary" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Invoices</h3>
-              {/* Tutoring and counselling are different businesses with
-                  different questions. Looking at one at a time is most of what
-                  this page is used for. */}
-              <Dropdown
-                value={kind}
-                onChange={setKind}
-                options={KINDS}
-                className="ml-auto w-[190px]"
-              />
-              <Dropdown
-                value={payState}
-                onChange={setPayState}
-                options={PAY_STATES}
-                className="w-[170px]"
-              />
+          <div className={cn(tab !== "invoices" && "hidden")}>
+            {/* Search first and wide, filters after, matching the tutor's
+                earnings page so the two read as the same kind of table. */}
+            <div className="mb-6 flex flex-wrap items-center gap-6">
+              <div className="flex min-w-[220px] flex-1 items-center gap-2 border-b border-border px-1 py-2 focus-within:border-primary">
+                <Search size={16} className="shrink-0 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by what was bought, or the family"
+                  className="w-full bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+              <Dropdown value={kind} onChange={setKind} options={KINDS} className="w-[190px]" />
+              <Dropdown value={payState} onChange={setPayState} options={PAY_STATES} className="w-[170px]" />
             </div>
             {isLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
@@ -187,7 +212,7 @@ export function AdminBilling() {
                 {invoices.length === 0 ? "No invoices yet." : "Nothing matches those filters."}
               </p>
             ) : (
-              <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl divide-y divide-[#e9edef] dark:divide-[#2a3942]">
+              <div className="divide-y divide-border border-t border-border">
                 {shownInvoices.map((inv) => {
                   const paid = inv.status === "paid";
                   const open = openInvoice === inv.id;
@@ -245,7 +270,9 @@ export function AdminBilling() {
             )}
           </div>
 
-          <TaxYear />
+          <div className={cn(tab !== "tax" && "hidden")}>
+            <TaxYear />
+          </div>
         </div>
       </div>
       {refunding && (
@@ -412,7 +439,7 @@ function TaxYear() {
           Nobody has been paid in {year} yet.
         </p>
       ) : (
-        <div className="rounded-xl border border-[#e9edef] bg-white divide-y divide-[#e9edef] dark:divide-[#2a3942] dark:border-[#2a3942] dark:bg-[#111b21]">
+        <div className="divide-y divide-border border-t border-border">
           {payees.map((p) => (
             <div key={p.payeeId} className="flex items-center gap-4 p-4">
               <img

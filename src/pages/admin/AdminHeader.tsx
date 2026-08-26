@@ -15,6 +15,7 @@ export function AdminHeader({
   children,
   rightContent,
   leading,
+  tabs,
   hideStatsOnMobile = false,
   hideSubtitleOnMobile = false,
 }: {
@@ -25,6 +26,14 @@ export function AdminHeader({
   rightContent?: React.ReactNode;
   /** Above the title. A back link belongs there, not under the subtitle. */
   leading?: React.ReactNode;
+  /**
+   * Sits on the band's bottom edge, replacing its rule.
+   *
+   * Below the band a tab strip has to draw its own line and ends up looking
+   * like a second header. On the edge it reads as part of the band, and the
+   * active tab is anchored to the page it opens.
+   */
+  tabs?: React.ReactNode;
   /** For a banner that already carries tabs, where stats crowd them on a phone. */
   hideStatsOnMobile?: boolean;
   hideSubtitleOnMobile?: boolean;
@@ -38,7 +47,13 @@ export function AdminHeader({
         <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
         <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
       </svg>
-      <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
+      <div
+        className={cn(
+          "relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-end",
+          // With tabs the rule belongs under them, not under the title.
+          tabs ? "pb-6" : "border-b border-white/20 pb-8"
+        )}
+      >
         <div className="min-w-0">
           {leading}
           {title && <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{title}</h1>}
@@ -65,6 +80,7 @@ export function AdminHeader({
           </div>
         )}
       </div>
+      {tabs && <div className="relative z-10 flex items-center gap-1">{tabs}</div>}
     </div>
   );
 }
