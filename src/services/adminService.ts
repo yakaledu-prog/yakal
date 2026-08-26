@@ -904,3 +904,60 @@ export async function getInvoiceDetail(invoiceId: string): Promise<InvoiceDetail
     paidOutCents: sum((e) => e.status === "settled"),
   };
 }
+
+// ------------------------------------------------------------
+// Reported sessions
+// ------------------------------------------------------------
+
+export interface OpenDispute {
+  id: string;
+  sessionId: string;
+  reason: string;
+  detail: string;
+  createdAt: string;
+  raisedByName: string | null;
+  subject: string;
+  sessionDate: string;
+  tutorName: string | null;
+  studentName: string | null;
+  /** Evidence, not verdict. Null means our meeting client saw nobody. */
+  tutorPresent: boolean | null;
+  studentPresent: boolean | null;
+  overlapSeconds: number | null;
+  longestSeconds: number | null;
+  earningCents: number | null;
+  earningStatus: string | null;
+  invoiceCents: number | null;
+}
+
+export async function getOpenDisputes(): Promise<OpenDispute[]> {
+  const { data, error } = await supabase
+    .from("v_open_disputes")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getOpenDisputes failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((d: any) => ({
+    id: d.id,
+    sessionId: d.session_id,
+    reason: d.reason,
+    detail: d.detail,
+    createdAt: d.created_at,
+    raisedByName: d.raised_by_name,
+    subject: d.subject,
+    sessionDate: d.session_date,
+    tutorName: d.tutor_name,
+    studentName: d.student_name,
+    tutorPresent: d.tutor_present,
+    studentPresent: d.student_present,
+    overlapSeconds: d.overlap_seconds,
+    longestSeconds: d.longest_seconds,
+    earningCents: d.earning_cents,
+    earningStatus: d.earning_status,
+    invoiceCents: d.invoice_cents,
+  }));
+}

@@ -477,3 +477,79 @@ export async function cancelSession(
 }> {
   return authedPost("/api/stripe?action=session-cancel", { sessionId, reason });
 }
+
+// ------------------------------------------------------------
+// Reporting a session
+//
+// The 72 hour hold exists so a complaint can arrive while the money is still
+// ours. This is the thing that arrives in it.
+// ------------------------------------------------------------
+
+export type DisputeReason = "no_show" | "left_early" | "quality" | "other";
+
+export const DISPUTE_REASONS: { value: DisputeReason; label: string }[] = [
+  { value: "no_show", label: "Nobody was there" },
+  { value: "left_early", label: "It ended early" },
+  { value: "quality", label: "It was not what we booked" },
+  { value: "other", label: "Something else" },
+];
+
+/** Whether this session already has a complaint on it, so the row can say so. */
+export async function getOpenDispute(sessionId: string): Promise<{ id: string } | null> {
+  const { data } = await supabase
+    .from("session_disputes")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("status", "open")
+    .maybeSingle();
+  return data ?? null;
+}
+
+export async function reportSession(input: {
+  sessionId: string;
+  reason: DisputeReason;
+  detail: string;
+}): Promise<{ paymentHeld?: boolean; error?: string }> {
+  return authedPost("/api/stripe?action=dispute", { op: "raise", ...input });
+}
+
+export async function resolveDispute(input: {
+  disputeId: string;
+  verdict: "upheld" | "rejected";
+  note: string;
+}): Promise<{ verdict?: string; refundedCents?: number; error?: string }> {
+  return authedPost("/api/stripe?action=dispute", { op: "resolve", ...input });
+}
+
+/**
+ * Who was actually in the room, from our own meeting client.
+ *
+ * Recorded by heartbeat against the signed-in user id, so it says who rather
+ * than what name somebody typed. Null means nobody was seen, which for an
+ * in-person lesson is expected and says nothing either way.
+ */
+export interface AttendanceSummary {
+  tutorPresent: boolean;
+  studentPresent: boolean;
+  startedAt: string | null;
+  longestSeconds: number;
+  /** The lesser of the two totals. A fair proxy for time present, not time together. */
+  overlapSeconds: number;
+}
+
+export async function getAttendance(sessionId: string): Promise<AttendanceSummary | null> {
+  const { data } = await supabase
+    .from("v_session_attendance_summary")
+    .select("tutor_present, student_present, started_at, longest_seconds, overlap_seconds")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    tutorPresent: !!data.tutor_present,
+    studentPresent: !!data.student_present,
+    startedAt: data.started_at,
+    longestSeconds: data.longest_seconds ?? 0,
+    overlapSeconds: data.overlap_seconds ?? 0,
+  };
+}

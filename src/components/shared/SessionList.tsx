@@ -553,6 +553,15 @@ export function PastSessions({
   hideIfEmpty = false,
   renderAction,
   onRate,
+  /**
+   * Given, a finished lesson can be reported as not having happened.
+   *
+   * The family's side of the 72 hour hold: money sits with Yakal so a
+   * complaint can arrive while it is still ours to give back, and this is how
+   * one is made. Not passed on a tutor's page, where it would be a way to stop
+   * your own payout.
+   */
+  onReport,
   compact = false,
   limit,
   className,
@@ -565,6 +574,7 @@ export function PastSessions({
   limit?: number;
   renderAction?: (session: SessionListItem) => React.ReactNode;
   onRate?: (session: SessionListItem) => void;
+  onReport?: (session: SessionListItem) => void;
   className?: string;
 }) {
   const { past } = splitSessions(sessions);
@@ -577,8 +587,25 @@ export function PastSessions({
       isLoading={isLoading}
       emptyText={emptyText}
       className={className}
-      renderAction={renderAction}
       onRate={onRate}
+      renderAction={
+        renderAction ??
+        (onReport
+          ? (s) =>
+              // Only a lesson we believe happened. Cancelled and no-show have
+              // already been judged, and reporting one is arguing with a
+              // verdict rather than raising a complaint.
+              s.status === "completed" ? (
+                <button
+                  type="button"
+                  onClick={() => onReport(s)}
+                  className="h-9 rounded-md border border-border px-3 text-[13px] font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+                >
+                  Report a problem
+                </button>
+              ) : null
+          : undefined)
+      }
     />
   );
 }

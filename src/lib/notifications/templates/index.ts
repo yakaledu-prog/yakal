@@ -8,7 +8,7 @@ import {
   sessionMoved,
   sessionCancelled,
 } from "./learning";
-import { courseApplication, courseApplicationDecided, payout } from "./teaching";
+import { courseApplication, courseApplicationDecided, payout, sessionDisputed } from "./teaching";
 import { admissionsPlan, essayReview, application } from "./admissions";
 import { messageReport, system } from "./safety";
 
@@ -32,6 +32,7 @@ export const TEMPLATES = {
   courseApplication,
   courseApplicationDecided,
   payout,
+  sessionDisputed,
   admissionsPlan,
   essayReview,
   application,

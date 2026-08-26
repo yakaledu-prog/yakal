@@ -111,3 +111,49 @@ export const payout: NotificationTemplate<{
     period: "July",
   },
 };
+
+/**
+ * A family has said a lesson did not happen as booked.
+ *
+ * Goes to the tutor as well as to admins, deliberately. Being argued about
+ * without being told is worse than the argument, and a tutor who was there can
+ * usually settle it in one reply.
+ */
+export const sessionDisputed: NotificationTemplate<{
+  subject: string;
+  date: string;
+  paymentHeld: boolean;
+}> = {
+  type: "session_disputed",
+  label: "Session reported",
+  notification: (v) => ({
+    title: "A session has been reported",
+    message: `${v.subject} on ${v.date} has been reported. ${
+      v.paymentHeld ? "The payment is on hold." : "The payment had already gone out."
+    }`,
+    link: "/admin/billing",
+  }),
+  email: (v) => ({
+    subject: `A session has been reported: ${v.subject}`,
+    heading: "A session has been reported",
+    intro:
+      `A family has said ${v.subject} on ${v.date} did not happen as booked. ` +
+      `${
+        v.paymentHeld
+          ? "Payment for it is on hold while somebody looks at it, so nothing has been decided."
+          : "Payment for it had already gone out, so this needs a person rather than a reversal."
+      } Nobody is in trouble; reports are how a lesson nobody attended gets caught.`,
+    facts: [
+      { label: "Session", value: v.subject },
+      { label: "Date", value: v.date },
+      { label: "Payment", value: v.paymentHeld ? "On hold" : "Already paid out" },
+    ],
+    cta: { label: "See the report", url: "/admin/billing" },
+    footer: "If you taught this session, reply and say so. That is usually the whole of it.",
+  }),
+  sample: {
+    subject: "Advanced Mathematics",
+    date: "12 March",
+    paymentHeld: true,
+  },
+};

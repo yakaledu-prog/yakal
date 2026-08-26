@@ -78,10 +78,12 @@ export interface EarningRow {
   settledAt: string | null;
   receiptUrl: string | null;
   note: string | null;
+  /** When the row appeared, so a page can say what is new since you last looked. */
+  createdAt: string;
 }
 
 const FIELDS = `id, kind, session_id, plan_id, period_start, amount_cents, currency,
-                status, releasable_at, method, reference, settled_at, receipt_url, note,
+                status, releasable_at, method, reference, settled_at, receipt_url, note, created_at,
                 session:sessions (
                   date, start_time, duration_minutes, subject,
                   student:profiles!sessions_student_id_fkey (full_name, avatar_url)
@@ -116,6 +118,7 @@ function toRow(r: any): EarningRow {
     settledAt: r.settled_at,
     receiptUrl: r.receipt_url,
     note: r.note,
+    createdAt: r.created_at,
   };
 }
 

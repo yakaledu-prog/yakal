@@ -7,6 +7,7 @@ import createInvoice from './_handlers/create-invoice.js';
 import subscription from './_handlers/subscription.js';
 import sessionCancel from './_handlers/session-cancel.js';
 import adminRefund from './_handlers/admin-refund.js';
+import sessionDispute from './_handlers/session-dispute.js';
 
 export default dispatch({
   'checkout': checkout,
@@ -17,4 +18,5 @@ export default dispatch({
   'subscription': subscription,
   'session-cancel': sessionCancel,
   'refund': adminRefund,
+  'dispute': sessionDispute,
 });

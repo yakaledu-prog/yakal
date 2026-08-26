@@ -21,6 +21,7 @@ import {
 } from "@/components/shared/RescheduleDialog";
 import { RateSessionDialog } from "@/components/shared/RateSessionDialog";
 import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
+import { ReportSessionDialog } from "@/components/shared/ReportSessionDialog";
 
 interface StudentSessionRow {
   id: string;
@@ -46,6 +47,7 @@ export function StudentSessions() {
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [moving, setMoving] = useState<ReschedulableSession | null>(null);
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
+  const [reporting, setReporting] = useState<SessionListItem | null>(null);
   const [rating, setRating] = useState<StudentSessionRow | null>(null);
   const [asked, setAsked] = useState(false);
 
@@ -283,9 +285,14 @@ export function StudentSessions() {
                 const row = sessions.find((r) => r.id === s.id);
                 if (row) setRating(row);
               }}
+              onReport={setReporting}
             />
           )}
         </div>
+
+        {reporting && (
+          <ReportSessionDialog session={reporting} onClose={() => setReporting(null)} />
+        )}
 
         {cancelling && (
         <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />

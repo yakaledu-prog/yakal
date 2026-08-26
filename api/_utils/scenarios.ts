@@ -229,6 +229,42 @@ export async function build(log: Log = console.log) {
   await makeSession(c, 'upcoming lesson', inv1.id, days(3), 'upcoming', tutorShare);
   log(`  upcoming            paid ${usd(coursePrice)}, nothing earned yet`);
 
+  /**
+   * Who was in the room, as the meeting client would have recorded it.
+   *
+   * Seeded because nothing has ever recorded any: record_attendance compared
+   * against the booked slot read as UTC while the rest of the platform reads
+   * it as US Eastern, so its credit window never overlapped the lesson. Fixed
+   * in 20260825000300, but every session before that has nothing.
+   *
+   * Written straight to the table rather than through record_attendance, which
+   * credits only the gap since the last heartbeat and would need an hour of
+   * real time to build up an hour of attendance.
+   */
+  const attended = async (
+    sessionId: string,
+    opts: { tutorSeconds?: number; studentSeconds?: number; startedAgoDays: number }
+  ) => {
+    const started = iso(-days(opts.startedAgoDays));
+    const rows = [
+      opts.tutorSeconds
+        ? { session_id: sessionId, user_id: tutor, role: 'tutor', seconds: opts.tutorSeconds }
+        : null,
+      opts.studentSeconds
+        ? { session_id: sessionId, user_id: student, role: 'student', seconds: opts.studentSeconds }
+        : null,
+    ].filter(Boolean) as Record<string, unknown>[];
+
+    if (rows.length === 0) return;
+    const { error } = await db
+      .from('session_attendance')
+      .upsert(
+        rows.map((r) => ({ ...r, first_joined_at: started, last_seen_at: started })),
+        { onConflict: 'session_id,user_id' }
+      );
+    if (error) log(`  (could not seed attendance: ${error.message})`);
+  };
+
   // Taught an hour ago. Earned, and inside its hold.
   const inv2 = await makeInvoice(c, 'held lesson', coursePrice, tutorShare, log);
   const s2 = await makeSession(c, 'held lesson', inv2.id, -hours(2), 'completed', tutorShare, {
@@ -239,6 +275,7 @@ export async function build(log: Log = console.log) {
     amount_cents: tutorShare, status: 'pending', releasable_at: iso(hours(70)),
     source_charge_id: inv2.stripe_charge_id,
   });
+  await attended(s2, { tutorSeconds: 3480, studentSeconds: 3300, startedAgoDays: 0 });
   log(`  held                ${usd(tutorShare)} owed, releases in ~3 days`);
 
   // Past its hold with nowhere to send it. This is the admin Owed queue.
@@ -251,7 +288,10 @@ export async function build(log: Log = console.log) {
     amount_cents: tutorShare, status: 'pending', releasable_at: iso(-days(2)),
     source_charge_id: inv3.stripe_charge_id,
   });
-  log(`  due                 ${usd(tutorShare)} owed, hold expired`);
+  // Nobody from the tutor's side. This is what a report worth upholding looks
+  // like, and it is the row to open on the admin's review tab.
+  await attended(s3, { studentSeconds: 900, startedAgoDays: 5 });
+  log(`  due                 ${usd(tutorShare)} owed, hold expired, tutor never joined`);
 
   // Already paid, both ways. The two rails are what the tax screen tells apart.
   const inv4 = await makeInvoice(c, 'paid by stripe', coursePrice, tutorShare, log);
@@ -263,6 +303,7 @@ export async function build(log: Log = console.log) {
     amount_cents: tutorShare, status: 'settled', releasable_at: iso(-days(17)),
     method: 'stripe_connect', reference: 'tr_scenario_example', settled_at: iso(-days(17)),
   });
+  await attended(s4, { tutorSeconds: 3600, studentSeconds: 3540, startedAgoDays: 20 });
   log(`  settled by Stripe   ${usd(tutorShare)}`);
 
   const inv5 = await makeInvoice(c, 'paid by ach', coursePrice, tutorShare, log);

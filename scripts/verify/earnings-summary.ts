@@ -38,6 +38,7 @@ const row = (date: string, amountCents: number, status: EarningRow['status']): E
   settledAt: null,
   receiptUrl: null,
   note: null,
+  createdAt: `${date}T00:00:00Z`,
 });
 
 const rows: EarningRow[] = [

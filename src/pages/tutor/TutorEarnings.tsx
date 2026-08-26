@@ -25,6 +25,7 @@ import {
   type EarningRow,
 } from "@/services/payoutService";
 import { dicebearUrl } from "@/utils/avatar";
+import { useSeen } from "@/hooks/useSeen";
 import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { cn } from "@/utils/cn";
 
@@ -152,6 +153,7 @@ export function TutorEarnings() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState<Sort<SortCol>>({ col: "date", dir: "desc" });
+  const { isNew } = useSeen("earnings");
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -405,10 +407,15 @@ export function TutorEarnings() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((r) => (
+                {visible.map((r) => {
+                  // Bold for one visit, the way an inbox does it. The row is
+                  // new relative to when this page was last opened, not to
+                  // whether anybody clicked it.
+                  const fresh = isNew(r.createdAt);
+                  return (
                   <tr key={r.id} className="border-b border-border last:border-0">
                     <td className="py-4 pr-4 align-top">
-                      <p className="text-[14px] text-foreground">
+                      <p className={cn("text-[14px] text-foreground", fresh && "font-semibold")}>
                         {new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -424,7 +431,12 @@ export function TutorEarnings() {
                           className="h-9 w-9 shrink-0 rounded-full object-cover"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-[14px] font-medium text-foreground">
+                          <p
+                            className={cn(
+                              "truncate text-[14px] text-foreground",
+                              fresh ? "font-bold" : "font-medium"
+                            )}
+                          >
                             {r.subject}
                           </p>
                           <p className="truncate text-[12.5px] text-muted-foreground">
@@ -451,7 +463,8 @@ export function TutorEarnings() {
                       <StatusCell row={r} bankConnected={!!connect?.payoutsEnabled} asOf={dataUpdatedAt} />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

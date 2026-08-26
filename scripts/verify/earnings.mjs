@@ -55,7 +55,7 @@ const { data: inv } = await db.from('invoices').insert({
 
 const { data: session } = await db.from('sessions').insert({
   student_id: studentId, tutor_id: tutorId, invoice_id: inv.id,
-  subject: 'earnings-fixture lesson', date: '2026-08-01', start_time: '10:00',
+  subject: 'earnings-fixture lesson', date: '2031-03-04', start_time: '19:00',
   duration_minutes: 60, status: 'completed', tutor_earning_cents: 4200,
 }).select('id').single();
 
@@ -178,9 +178,9 @@ pass('a parent cannot write one either', !!sneaky.error, sneaky.error?.code ?? '
 // ---- settling, voiding, and the annual total ----
 
 psql(
-  `update earnings set status='settled', method='ach', reference='021000021398765', settled_at='2026-08-01T12:00:00Z' where id='${owed.data.id}';`
+  `update earnings set status='settled', method='ach', reference='021000021398765', settled_at='2031-03-05T12:00:00Z' where id='${owed.data.id}';`
 );
-const total = psql(`select total_cents from earnings_year_totals where payee_id='${tutorId}' and tax_year=2026;`);
+const total = psql(`select total_cents from earnings_year_totals where payee_id='${tutorId}' and tax_year=2031;`);
 pass('the annual total counts a settled payment', total === '4200', total);
 
 // A financial record that can vanish is not a record, so a mistake is voided
@@ -191,11 +191,11 @@ pass('a voided earning is kept', psql(`select count(*) from earnings where id='$
 const corrected = await db.from('earnings').insert({
   payee_id: tutorId, kind: 'tutoring_session', session_id: session.id,
   amount_cents: 4200, status: 'settled', method: 'wire', reference: 'IMAD-123',
-  settled_at: '2026-08-02T12:00:00Z',
+  settled_at: '2031-03-05T12:00:00Z',
 });
 pass('and the corrected one can be written', !corrected.error, corrected.error?.message ?? '');
 
-const afterVoid = psql(`select total_cents from earnings_year_totals where payee_id='${tutorId}' and tax_year=2026;`);
+const afterVoid = psql(`select total_cents from earnings_year_totals where payee_id='${tutorId}' and tax_year=2031;`);
 pass('the annual total ignores the voided one', afterVoid === '4200', afterVoid);
 
 cleanup();

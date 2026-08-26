@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { AdminHeader } from "./AdminHeader";
-import { getAllInvoices, getInvoiceDetail } from "@/services/adminService";
+import { getAllInvoices, getInvoiceDetail, getOpenDisputes, type OpenDispute } from "@/services/adminService";
+import { resolveDispute } from "@/services/sessions";
 import {
   FORM_1099_THRESHOLD_CENTS,
   getOwedEarnings,
@@ -21,7 +22,7 @@ import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
-type TabId = "owed" | "invoices" | "tax";
+type TabId = "reports" | "owed" | "invoices" | "tax";
 type InvoiceCol = "description" | "kind" | "status" | "amount";
 
 /** What a family would call it, rather than the column value. */
@@ -31,6 +32,7 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: "reports", label: "Reports" },
   { id: "owed", label: "Owed" },
   { id: "invoices", label: "Invoices" },
   { id: "tax", label: "Tax forms" },
@@ -59,6 +61,7 @@ export function AdminBilling() {
   const qc = useQueryClient();
   const { data: invoices = [], isLoading } = useQuery({ queryKey: ["admin-invoices"], queryFn: getAllInvoices });
   const { data: payouts = [] } = useQuery({ queryKey: ["admin-payouts"], queryFn: getOwedEarnings });
+  const { data: disputes = [] } = useQuery({ queryKey: ["admin-disputes"], queryFn: getOpenDisputes });
 
   const stats = useMemo(() => {
     const paid = invoices.filter((i) => i.status === "paid");
@@ -108,6 +111,7 @@ export function AdminBilling() {
   }, [invoices, kind, payState, search, sort]);
 
   function refresh() {
+    qc.invalidateQueries({ queryKey: ["admin-disputes"] });
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
     qc.invalidateQueries({ queryKey: ["admin-dashboard"] });
   }
@@ -155,11 +159,18 @@ export function AdminBilling() {
               {t.id === "owed" && payouts.length > 0 && (
                 <span className="ml-2 text-[12px] tabular-nums text-white/60">{payouts.length}</span>
               )}
+              {t.id === "reports" && disputes.length > 0 && (
+                <span className="ml-2 text-[12px] tabular-nums text-white/60">{disputes.length}</span>
+              )}
             </button>
           ))}
         />
 
         <div className="p-6 md:p-10">
+          <div className={cn(tab !== "reports" && "hidden")}>
+            <Reports disputes={disputes} onDone={refresh} />
+          </div>
+
           {/* Tutor payouts */}
           <div className={cn(tab !== "owed" && "hidden")}>
             {payouts.length === 0 ? (
@@ -544,6 +555,125 @@ function TaxYear() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+
+/**
+ * Reported sessions, waiting on a person.
+ *
+ * A family says a lesson did not happen; the tutor's earning is held rather
+ * than cancelled, because "nobody showed up" and "it ran and we did not like
+ * it" look identical from the ledger and only one is a refund.
+ *
+ * What decides it is who was in the room, so that is shown next to the
+ * complaint rather than a click away. It is evidence and not a verdict: our
+ * meeting client sees nothing at all for a lesson held in person, which says
+ * nothing either way and is spelled out rather than left to be misread.
+ */
+function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => void }) {
+  const [note, setNote] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function decide(d: OpenDispute, verdict: "upheld" | "rejected") {
+    const why = (note[d.id] ?? "").trim();
+    if (!why) return toast.error("Say why. It is the part anybody reads later.");
+
+    setBusy(d.id);
+    const res = await resolveDispute({ disputeId: d.id, verdict, note: why });
+    setBusy(null);
+
+    if (res.error) return toast.error(res.error);
+    toast.success(
+      verdict === "upheld"
+        ? `Upheld.${(res.refundedCents ?? 0) > 0 ? ` ${money(res.refundedCents!)} refunded.` : ""}`
+        : "Rejected. The payment carries on as normal."
+    );
+    onDone();
+  }
+
+  if (disputes.length === 0) {
+    return (
+      <p className="py-16 text-center text-[14px] text-muted-foreground">
+        Nothing reported. Every finished lesson is settled or on its way.
+      </p>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-border border-t border-border">
+      {disputes.map((d) => (
+        <div key={d.id} className="py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-[#111] dark:text-white">{d.subject}</p>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                {d.tutorName} with {d.studentName} - {fmtDate(d.sessionDate)} - reported by{" "}
+                {d.raisedByName}
+              </p>
+            </div>
+            <span className="shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+              {d.earningCents != null ? money(d.earningCents) : "-"}
+              <span className="ml-2 text-[12px] font-normal text-secondary">
+                {d.earningStatus === "held" ? "held" : d.earningStatus}
+              </span>
+            </span>
+          </div>
+
+          <p className="mt-3 border-l-2 border-border pl-3 text-[14px] leading-relaxed text-foreground">
+            {d.detail}
+          </p>
+
+          {/* Who was actually in the room. */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[12.5px]">
+            {d.tutorPresent == null && d.studentPresent == null ? (
+              <span className="text-muted-foreground">
+                No record of anybody joining through Yakal. Normal for a lesson held in person.
+              </span>
+            ) : (
+              <>
+                <span className={d.tutorPresent ? "text-primary" : "text-destructive"}>
+                  Tutor {d.tutorPresent ? "joined" : "never joined"}
+                </span>
+                <span className={d.studentPresent ? "text-primary" : "text-destructive"}>
+                  Student {d.studentPresent ? "joined" : "never joined"}
+                </span>
+                {(d.overlapSeconds ?? 0) > 0 && (
+                  <span className="text-muted-foreground">
+                    both present about {Math.round((d.overlapSeconds ?? 0) / 60)} min
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input
+              value={note[d.id] ?? ""}
+              onChange={(e) => setNote((n) => ({ ...n, [d.id]: e.target.value }))}
+              placeholder="Why you decided this"
+              className="min-w-[220px] flex-1 border-b border-border bg-transparent px-1 py-2 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+            <button
+              type="button"
+              disabled={busy === d.id}
+              onClick={() => void decide(d, "rejected")}
+              className="h-10 rounded-md border border-border px-4 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              disabled={busy === d.id}
+              onClick={() => void decide(d, "upheld")}
+              className="h-10 rounded-md border border-destructive px-4 text-[13.5px] font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            >
+              Uphold and refund
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
