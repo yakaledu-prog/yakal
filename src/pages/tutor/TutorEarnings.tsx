@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Search } from "lucide-react";
+import { ArrowUpDown, FileText, Landmark, Loader2, Search, Smartphone, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -38,7 +38,7 @@ const FILTERS = [
   { value: "all", label: "All" },
   { value: "pending", label: "Not paid yet" },
   { value: "settled", label: "Paid" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "cancelled", label: "Not payable" },
 ];
 
 /** "23 Aug" from a timestamp. */
@@ -60,18 +60,20 @@ function StatusCell({
       <div className="text-right">
         <p className="text-[13.5px] font-medium text-primary">Paid</p>
         <p className="text-[12px] text-muted-foreground">
-          {row.method ? methodLabel(row.method) : "-"}
-          {row.reference ? ` · ${row.reference}` : ""}
+          {row.settledAt ? shortDate(row.settledAt) : ""}
         </p>
       </div>
     );
   }
 
+  // "Not payable" rather than "Cancelled": nothing the tutor did was cancelled,
+  // the money simply never became theirs, usually because the lesson was
+  // refunded. The reason underneath is the part that helps.
   if (row.status === "cancelled" || row.status === "reversed") {
     return (
       <div className="text-right">
-        <p className="text-[13.5px] font-medium text-muted-foreground">
-          {row.status === "cancelled" ? "Cancelled" : "Reversed"}
+        <p className="text-[13.5px] font-medium text-destructive">
+          {row.status === "cancelled" ? "Not payable" : "Reversed"}
         </p>
         <p className="text-[12px] text-muted-foreground">{row.note ?? ""}</p>
       </div>
@@ -85,11 +87,11 @@ function StatusCell({
   return (
     <div className="text-right">
       <p className="text-[13.5px] font-medium text-secondary">
-        {clearing ? "Clearing" : bankConnected ? "Paying out" : "Awaiting your bank"}
+        {clearing ? "Clearing" : bankConnected ? "Due" : "Awaiting your bank"}
       </p>
       <p className="text-[12px] text-muted-foreground">
         {clearing && row.releasableAt
-          ? `Pays out ${shortDate(row.releasableAt)}`
+          ? `Clears ${shortDate(row.releasableAt)}`
           : bankConnected
             ? "On the next run"
             : "Connect a bank to receive it"}
@@ -98,9 +100,48 @@ function StatusCell({
   );
 }
 
+/**
+ * Which rail paid it, as its own column.
+ *
+ * It used to sit under the status, where it competed with the one thing that
+ * line is for. A tutor reconciling against their bank statement is looking for
+ * the reference, and it should be findable without reading a status first.
+ *
+ * Line icons from the set the rest of the app uses, deliberately, rather than
+ * each provider's brand mark: a row of mismatched logos next to lucide icons
+ * everywhere else looks like scraped assets, which is what it would be.
+ */
+function MethodCell({ row }: { row: EarningRow }) {
+  if (row.status !== "settled" || !row.method) {
+    return <span className="text-[13px] text-muted-foreground">-</span>;
+  }
+
+  const Icon =
+    row.method === "stripe_connect"
+      ? Zap
+      : row.method === "check"
+        ? FileText
+        : row.method === "wire" || row.method === "ach"
+          ? Landmark
+          : Smartphone;
+
+  return (
+    <div className="flex items-center gap-2">
+      <Icon size={14} className="shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="truncate text-[13px] text-foreground">{methodLabel(row.method)}</p>
+        {row.reference && (
+          <p className="truncate font-mono text-[11px] text-muted-foreground">{row.reference}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TutorEarnings() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState<Sort>({ col: "date", dir: "desc" });
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -181,7 +222,7 @@ export function TutorEarnings() {
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const matched = rows.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
       if (!needle) return true;
       return (
@@ -190,7 +231,30 @@ export function TutorEarnings() {
         (r.reference ?? "").toLowerCase().includes(needle)
       );
     });
-  }, [rows, filter, search]);
+
+    // Sorted by what the column means rather than by what it displays. Status
+    // sorts by how far along the money is, not alphabetically, so one click
+    // groups everything still owed together.
+    const rank: Record<string, number> = { pending: 0, settled: 1, cancelled: 2, reversed: 3 };
+    const key = (r: EarningRow): string | number => {
+      switch (sort.col) {
+        case "subject": return r.subject.toLowerCase();
+        case "length": return r.durationMinutes ?? 0;
+        case "amount": return r.amountCents;
+        case "status": return rank[r.status] ?? 9;
+        default: return r.date;
+      }
+    };
+
+    return [...matched].sort((a, b) => {
+      const x = key(a);
+      const y = key(b);
+      const cmp = typeof x === "number" && typeof y === "number"
+        ? x - y
+        : String(x).localeCompare(String(y));
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+  }, [rows, filter, search, sort]);
 
 
   return (
@@ -227,17 +291,22 @@ export function TutorEarnings() {
                 </p>
                 <p className="text-2xl font-bold">{usd(totals.paid)}</p>
               </div>
+              {/* Clearing and Due are the same money at two stages, and the
+                  words alone do not say which. The hint under each is what
+                  stops a tutor wondering why a figure is not in their bank. */}
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
                   Clearing
                 </p>
                 <p className="text-2xl font-bold opacity-80">{usd(totals.clearing)}</p>
+                <p className="pt-0.5 text-[11px] text-white/60">earned, on hold</p>
               </div>
               <div className="text-left md:text-right">
                 <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
                   Due
                 </p>
                 <p className="text-2xl font-bold opacity-80">{usd(totals.due)}</p>
+                <p className="pt-0.5 text-[11px] text-white/60">next payout</p>
               </div>
             </div>
           </div>
@@ -321,21 +390,14 @@ export function TutorEarnings() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
+                  <SortHeader label="Date" col="date" sort={sort} onSort={setSort} />
+                  <SortHeader label="Session" col="subject" sort={sort} onSort={setSort} />
+                  <SortHeader label="Length" col="length" sort={sort} onSort={setSort} align="right" />
+                  <SortHeader label="Amount" col="amount" sort={sort} onSort={setSort} align="right" />
                   <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Date
+                    Method
                   </th>
-                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Session
-                  </th>
-                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Length
-                  </th>
-                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Amount
-                  </th>
-                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Status
-                  </th>
+                  <SortHeader label="Status" col="status" sort={sort} onSort={setSort} align="right" />
                 </tr>
               </thead>
               <tbody>
@@ -378,6 +440,9 @@ export function TutorEarnings() {
                     >
                       {r.amountCents === 0 ? "-" : usd(r.amountCents)}
                     </td>
+                    <td className="py-4 pr-4 align-middle">
+                      <MethodCell row={r} />
+                    </td>
                     <td className="py-4 text-right align-middle">
                       <StatusCell row={r} bankConnected={!!connect?.payoutsEnabled} asOf={dataUpdatedAt} />
                     </td>
@@ -389,5 +454,60 @@ export function TutorEarnings() {
         </div>
       </div>
     </PageWrapper>
+  );
+}
+
+type SortCol = "date" | "subject" | "length" | "amount" | "status";
+interface Sort { col: SortCol; dir: "asc" | "desc" }
+
+/**
+ * A column header you can sort by.
+ *
+ * The arrow only appears on the sorted column and on hover, so five permanent
+ * arrows do not compete with the figures underneath them. Sorting is the kind
+ * of affordance that should be discoverable without being loud.
+ */
+function SortHeader({
+  label,
+  col,
+  sort,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  col: SortCol;
+  sort: Sort;
+  onSort: (s: Sort) => void;
+  align?: "left" | "right";
+}) {
+  const active = sort.col === col;
+  return (
+    <th
+      className={cn(
+        "pb-2 text-[11px] font-medium uppercase tracking-wider",
+        align === "right" ? "text-right" : "text-left"
+      )}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          onSort({ col, dir: active && sort.dir === "asc" ? "desc" : "asc" })
+        }
+        className={cn(
+          "group inline-flex items-center gap-1.5 uppercase tracking-wider transition-colors",
+          align === "right" && "flex-row-reverse",
+          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        {label}
+        <ArrowUpDown
+          size={11}
+          className={cn(
+            "shrink-0 transition-opacity duration-200",
+            active ? "opacity-100" : "opacity-0 group-hover:opacity-50"
+          )}
+        />
+      </button>
+    </th>
   );
 }

@@ -47,10 +47,41 @@ export function currentTheme(): Theme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
+/**
+ * Flip it, and remember the choice everywhere it is read from.
+ *
+ * The profile write is the half that was missing. applyTheme stored the choice
+ * in this browser, but the profile row kept its old value, and fetchProfile
+ * applies that row on every load rather than only on sign in. So a reload
+ * handed the stale profile back and the toggle looked like it had done nothing.
+ *
+ * Only on a deliberate toggle, never from applyTheme: that also runs from
+ * main.tsx before React mounts and before there is a session to write to.
+ *
+ * Fire and forget. A failed write means the choice does not follow them to
+ * another machine, which is not worth failing a click over, and this browser
+ * has already stored it either way.
+ */
 export function toggleTheme(): Theme {
   const next: Theme = currentTheme() === "dark" ? "light" : "dark";
   applyTheme(next);
+  void rememberOnProfile(next);
   return next;
+}
+
+async function rememberOnProfile(theme: Theme): Promise<void> {
+  try {
+    // Imported lazily: this module is loaded before React and must not drag
+    // the Supabase client into that first paint.
+    const { supabase } = await import("./supabase");
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id;
+    if (!userId) return;
+    await supabase.from("profiles").update({ theme }).eq("id", userId);
+  } catch {
+    // Signed out, offline, or storage refused. The class is set and this
+    // browser remembers, which is the part that matters now.
+  }
 }
 
 /** For anything that renders differently per theme and has to re-render. */
