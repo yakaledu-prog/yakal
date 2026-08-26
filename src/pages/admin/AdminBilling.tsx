@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -17,10 +17,18 @@ import { RefundDialog } from "@/components/admin/RefundDialog";
 import { money } from "@/services/billingService";
 import { Loader2, CheckCircle2, Clock, Check, ChevronRight, FileText, Search } from "lucide-react";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
 type TabId = "owed" | "invoices" | "tax";
+type InvoiceCol = "description" | "kind" | "status" | "amount";
+
+/** What a family would call it, rather than the column value. */
+const KIND_LABELS: Record<string, string> = {
+  tutoring: "Tutoring",
+  admissions: "Counselling",
+};
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "owed", label: "Owed" },
@@ -68,6 +76,7 @@ export function AdminBilling() {
   const [openInvoice, setOpenInvoice] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("owed");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<Sort<InvoiceCol>>({ col: "description", dir: "asc" });
   const [kind, setKind] = useState("all");
   const [payState, setPayState] = useState("all");
 
@@ -75,7 +84,7 @@ export function AdminBilling() {
   // where the money got to.
   const shownInvoices = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return invoices.filter((i) => {
+    const matched = invoices.filter((i) => {
       if (kind !== "all" && i.kind !== kind) return false;
       if (payState !== "all" && i.status !== payState) return false;
       if (!needle) return true;
@@ -84,7 +93,19 @@ export function AdminBilling() {
         (i.parent_name ?? "").toLowerCase().includes(needle)
       );
     });
-  }, [invoices, kind, payState, search]);
+
+    // Status sorts by how settled the money is rather than alphabetically, so
+    // one click brings everything still owed to the top.
+    const rank: Record<string, number> = { open: 0, failed: 1, paid: 2, void: 3 };
+    return sortRows(matched, sort, (i) => {
+      switch (sort.col) {
+        case "kind": return i.kind ?? "";
+        case "status": return rank[i.status] ?? 9;
+        case "amount": return i.amount_cents;
+        default: return (i.description ?? "").toLowerCase();
+      }
+    });
+  }, [invoices, kind, payState, search, sort]);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["admin-payouts"] });
@@ -126,8 +147,8 @@ export function AdminBilling() {
               className={cn(
                 "-mb-px border-b-2 px-4 py-3 text-[14px] font-medium transition-colors",
                 tab === t.id
-                  ? "border-white text-white"
-                  : "border-transparent text-white/70 hover:text-white"
+                  ? "border-white font-semibold text-white"
+                  : "border-transparent text-white/70 hover:border-white/40 hover:text-white"
               )}
             >
               {t.label}
@@ -144,44 +165,44 @@ export function AdminBilling() {
             {payouts.length === 0 ? (
               <p className="text-[14px] text-muted-foreground py-4">Nothing owed. Everybody is settled.</p>
             ) : (
-              <div className="divide-y divide-border border-t border-border">
+              <div className="divide-y divide-border border-b border-border">
                 {payouts.map((p: OwedRow) => {
                   const clearing = !!p.releasableAt && new Date(p.releasableAt) > new Date();
                   return (
-                  <div key={p.id} className="flex items-center gap-4 p-4">
-                    <img src={dicebearUrl(p.payeeName ?? "Yakal")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.payeeName ?? "Payee"}</p>
-                      <p className="text-[12px] text-muted-foreground truncate">
-                        {p.subject}
-                        {p.studentName ? ` - ${p.studentName}` : ""}
-                        {clearing && p.releasableAt ? ` - clears ${fmtDate(p.releasableAt)}` : " - due now"}
-                      </p>
-                    </div>
-                    <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.amountCents, p.currency)}</span>
-                    {/* Two ways to settle, and which one is offered is not a
+                    <div key={p.id} className="flex items-center gap-4 p-4">
+                      <img src={dicebearUrl(p.payeeName ?? "Yakal")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.payeeName ?? "Payee"}</p>
+                        <p className="text-[12px] text-muted-foreground truncate">
+                          {p.subject}
+                          {p.studentName ? ` - ${p.studentName}` : ""}
+                          {clearing && p.releasableAt ? ` - clears ${fmtDate(p.releasableAt)}` : " - due now"}
+                        </p>
+                      </div>
+                      <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.amountCents, p.currency)}</span>
+                      {/* Two ways to settle, and which one is offered is not a
                         choice: somebody Stripe has not cleared cannot receive a
                         transfer, so for them the only honest option is to pay
                         by hand and write down how. */}
-                    {p.payoutsEnabled ? (
-                      <button
-                        onClick={() => void payByTransfer(p)}
-                        disabled={busyId === p.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover shrink-0 disabled:opacity-50"
-                      >
-                        {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                        Pay via Stripe
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setRecording(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-[12px] font-semibold hover:bg-primary/10 shrink-0"
-                        title="This tutor has not connected a bank. Record how you paid them."
-                      >
-                        Record payment
-                      </button>
-                    )}
-                  </div>
+                      {p.payoutsEnabled ? (
+                        <button
+                          onClick={() => void payByTransfer(p)}
+                          disabled={busyId === p.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover shrink-0 disabled:opacity-50"
+                        >
+                          {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                          Pay via Stripe
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setRecording(p)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-[12px] font-semibold hover:bg-primary/10 shrink-0"
+                          title="This tutor has not connected a bank. Record how you paid them."
+                        >
+                          Record payment
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -212,61 +233,103 @@ export function AdminBilling() {
                 {invoices.length === 0 ? "No invoices yet." : "Nothing matches those filters."}
               </p>
             ) : (
-              <div className="divide-y divide-border border-t border-border">
-                {shownInvoices.map((inv) => {
-                  const paid = inv.status === "paid";
-                  const open = openInvoice === inv.id;
-                  return (
-                    <div key={inv.id}>
-                    <div className="flex items-center gap-4 p-4">
-                      {/* Opening a row is how you find out whether the lessons
-                          it bought actually happened, which the row itself
-                          cannot say without becoming three lines long. */}
-                      <button
-                        type="button"
-                        onClick={() => setOpenInvoice(open ? null : inv.id)}
-                        aria-label={open ? "Hide detail" : "Show detail"}
-                        className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
-                      >
-                        <ChevronRight size={16} className={cn("transition-transform", open && "rotate-90")} />
-                      </button>
-                      <div className={cn("hidden sm:flex w-10 h-10 rounded-full items-center justify-center shrink-0",
-                        paid ? "bg-tertiary/20 text-[#7d8f69]" : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400")}>
-                        {paid ? <CheckCircle2 size={18} /> : <Clock size={16} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{inv.description}</p>
-                        <p className="text-[12px] text-muted-foreground truncate">
-                          {inv.parent_name} - <span className="capitalize">{inv.kind}</span> - {paid ? `paid ${fmtDate(inv.paid_at)}` : `created ${fmtDate(inv.created_at)}`}
-                        </p>
-                      </div>
-                      {/* Plain coloured text in a fixed column, so the status
-                          and the amount sit at the same place on every row
-                          rather than shifting with the width of the word. */}
-                      <span className={cn("w-28 shrink-0 text-right text-[12.5px] font-medium capitalize",
-                        paid ? "text-primary" : "text-[#8a6a2a] dark:text-secondary")}>
-                        {inv.status}
-                      </span>
-                      <span className="w-24 shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">{money(inv.amount_cents, inv.currency)}</span>
-                      {/* Only a payment that was actually taken can be given
-                          back. The dialog says what it costs before it does. */}
-                      <span className="flex w-20 shrink-0 justify-end">
-                        {paid && (
-                          <button
-                            type="button"
-                            onClick={() => setRefunding(inv)}
-                            className="text-[12.5px] font-medium text-primary transition-colors hover:underline"
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="w-8 pb-2" />
+                    <SortHeader label="What was bought" col="description" sort={sort} onSort={setSort} className="pr-4" />
+                    <SortHeader label="Service" col="kind" sort={sort} onSort={setSort} className="pr-4" />
+                    <SortHeader label="Status" col="status" sort={sort} onSort={setSort} align="right" className="pr-6" />
+                    <SortHeader label="Amount" col="amount" sort={sort} onSort={setSort} align="right" className="pr-6" />
+                    <th className="w-20 pb-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {shownInvoices.map((inv) => {
+                    const paid = inv.status === "paid";
+                    const open = openInvoice === inv.id;
+                    return (
+                      <Fragment key={inv.id}>
+                        <tr className="border-b border-border">
+                          {/* Opening a row is how you find out whether the
+                              lessons it bought actually happened, which the row
+                              itself cannot say without becoming three lines. */}
+                          <td className="py-4 align-middle">
+                            <button
+                              type="button"
+                              onClick={() => setOpenInvoice(open ? null : inv.id)}
+                              aria-label={open ? "Hide detail" : "Show detail"}
+                              className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                            >
+                              <ChevronRight size={16} className={cn("transition-transform", open && "rotate-90")} />
+                            </button>
+                          </td>
+                          <td className="py-4 pr-4 align-middle">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={cn(
+                                  "hidden h-9 w-9 shrink-0 items-center justify-center rounded-full sm:flex",
+                                  paid
+                                    ? "bg-tertiary/20 text-[#7d8f69]"
+                                    : "bg-secondary/20 text-[#8a6a2a] dark:text-secondary"
+                                )}
+                              >
+                                {paid ? <CheckCircle2 size={17} /> : <Clock size={15} />}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="truncate text-[14px] font-semibold text-[#111] dark:text-white">
+                                  {inv.description}
+                                </p>
+                                <p className="truncate text-[12px] text-muted-foreground">
+                                  {inv.parent_name} -{" "}
+                                  {paid ? `paid ${fmtDate(inv.paid_at)}` : `created ${fmtDate(inv.created_at)}`}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          {/* Its own column now. Tutoring and counselling are
+                              different businesses, and reading which one a row
+                              belongs to should not mean parsing a subtitle. */}
+                          <td className="py-4 pr-4 align-middle text-[13px] text-muted-foreground">
+                            {KIND_LABELS[inv.kind] ?? inv.kind}
+                          </td>
+                          <td
+                            className={cn(
+                              "py-4 pr-6 text-right align-middle text-[12.5px] font-medium capitalize",
+                              paid ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
+                            )}
                           >
-                            Refund
-                          </button>
+                            {inv.status}
+                          </td>
+                          <td className="py-4 pr-6 text-right align-middle text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+                            {money(inv.amount_cents, inv.currency)}
+                          </td>
+                          {/* Only a payment that was actually taken can be
+                              given back. The dialog says what it costs first. */}
+                          <td className="py-4 text-right align-middle">
+                            {paid && (
+                              <button
+                                type="button"
+                                onClick={() => setRefunding(inv)}
+                                className="text-[12.5px] font-medium text-primary transition-colors hover:underline"
+                              >
+                                Refund
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {open && (
+                          <tr>
+                            <td colSpan={6} className="p-0">
+                              <InvoiceLines invoiceId={inv.id} currency={inv.currency} />
+                            </td>
+                          </tr>
                         )}
-                      </span>
-                    </div>
-                    {open && <InvoiceLines invoiceId={inv.id} currency={inv.currency} />}
-                    </div>
-                  );
-                })}
-              </div>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
 

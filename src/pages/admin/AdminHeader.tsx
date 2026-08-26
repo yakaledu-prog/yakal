@@ -80,7 +80,9 @@ export function AdminHeader({
           </div>
         )}
       </div>
-      {tabs && <div className="relative z-10 flex items-center gap-1">{tabs}</div>}
+      {tabs && (
+        <div className="relative z-10 flex items-center gap-1 border-b border-white/20">{tabs}</div>
+      )}
     </div>
   );
 }

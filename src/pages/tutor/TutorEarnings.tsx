@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDownUpIcon,
-  ArrowUpDownIcon,
   FileText,
   Landmark,
   Loader2,
@@ -27,6 +25,7 @@ import {
   type EarningRow,
 } from "@/services/payoutService";
 import { dicebearUrl } from "@/utils/avatar";
+import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { cn } from "@/utils/cn";
 
 // ============================================================
@@ -42,6 +41,8 @@ import { cn } from "@/utils/cn";
 // chase it. The button that used to live here let a tutor authorise their own
 // payment, which is why it is gone.
 // ============================================================
+
+type SortCol = "date" | "subject" | "length" | "amount" | "method" | "status";
 
 const FILTERS = [
   { value: "all", label: "All" },
@@ -150,7 +151,7 @@ function MethodCell({ row }: { row: EarningRow }) {
 export function TutorEarnings() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
-  const [sort, setSort] = useState<Sort>({ col: "date", dir: "desc" });
+  const [sort, setSort] = useState<Sort<SortCol>>({ col: "date", dir: "desc" });
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -258,14 +259,7 @@ export function TutorEarnings() {
       }
     };
 
-    return [...matched].sort((a, b) => {
-      const x = key(a);
-      const y = key(b);
-      const cmp = typeof x === "number" && typeof y === "number"
-        ? x - y
-        : String(x).localeCompare(String(y));
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
+    return sortRows(matched, sort, key);
   }, [rows, filter, search, sort]);
 
 
@@ -464,77 +458,5 @@ export function TutorEarnings() {
         </div>
       </div>
     </PageWrapper>
-  );
-}
-
-type SortCol = "date" | "subject" | "length" | "amount" | "method" | "status";
-interface Sort { col: SortCol; dir: "asc" | "desc" }
-
-/**
- * A column header you can sort by.
- *
- * The arrow only appears on the sorted column and on hover, so five permanent
- * arrows do not compete with the figures underneath them. Sorting is the kind
- * of affordance that should be discoverable without being loud.
- */
-function SortHeader({
-  label,
-  col,
-  sort,
-  onSort,
-  align = "left",
-  className,
-}: {
-  label: string;
-  col: SortCol;
-  sort: Sort;
-  onSort: (s: Sort) => void;
-  align?: "left" | "right";
-  /** Must match the padding on the cells below, or headers collide. */
-  className?: string;
-}) {
-  const active = sort.col === col;
-  return (
-    <th
-      className={cn(
-        "pb-2 text-[11px] font-medium uppercase tracking-wider",
-        align === "right" ? "text-right" : "text-left",
-        className
-      )}
-    >
-      <button
-        type="button"
-        onClick={() =>
-          onSort({ col, dir: active && sort.dir === "asc" ? "desc" : "asc" })
-        }
-        className={cn(
-          "group inline-flex items-center gap-1.5 uppercase tracking-wider transition-colors",
-          align === "right" && "flex-row-reverse",
-          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        {label}
-        {/* Kept quiet on purpose. The sorted column already reads as sorted
-            from its own heading being darker, so the arrow is a confirmation
-            rather than the signal, and a row of bold arrows would compete with
-            the figures underneath. */}
-        {active && sort.dir === "asc" ? (
-          <ArrowUpDownIcon
-            size={12}
-            strokeWidth={1.5}
-            className="shrink-0 text-muted-foreground/70 transition-opacity duration-200"
-          />
-        ) : (
-          <ArrowDownUpIcon
-            size={12}
-            strokeWidth={1.5}
-            className={cn(
-              "shrink-0 text-muted-foreground/70 transition-opacity duration-200",
-              active ? "opacity-100" : "opacity-0 group-hover:opacity-60"
-            )}
-          />
-        )}
-      </button>
-    </th>
   );
 }
