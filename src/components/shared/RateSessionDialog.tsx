@@ -89,7 +89,31 @@ export function RateSessionDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-popover shadow-xl">
         <div className="flex items-start justify-between p-6 pb-4">
-          <h3 className="text-[22px] font-bold text-foreground">How was the session?</h3>
+          {/* Which lesson this is about. Asked days later from a list of six,
+            the tutor's name alone does not narrow it down. */}
+          <div className="flex items-center gap-4">
+            <img
+              src={tutorAvatarUrl || dicebearUrl(tutorName)}
+              alt=""
+              className="h-16 w-16 shrink-0 rounded-full object-cover"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-[17px] font-bold text-foreground">{tutorName}</p>
+              {subject && <p className="truncate text-[14px] text-primary">{subject}</p>}
+              {startsAt && endsAt && (
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays size={14} />
+                    {startsAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock size={14} />
+                    {clock(startsAt)} - {clock(endsAt)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -100,36 +124,16 @@ export function RateSessionDialog({
           </button>
         </div>
 
-        {/* Which lesson this is about. Asked days later from a list of six,
-            the tutor's name alone does not narrow it down. */}
-        <div className="flex items-center gap-4 border-b border-border px-6 pb-5">
-          <img
-            src={tutorAvatarUrl || dicebearUrl(tutorName)}
-            alt=""
-            className="h-16 w-16 shrink-0 rounded-full object-cover"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-[17px] font-bold text-foreground">{tutorName}</p>
-            {subject && <p className="truncate text-[14px] text-primary">{subject}</p>}
-            {startsAt && endsAt && (
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays size={14} />
-                  {startsAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock size={14} />
-                  {clock(startsAt)} - {clock(endsAt)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="px-6 py-6">
-          <p className="mb-4 text-center text-[15px] font-semibold text-foreground">
-            Rate your experience
-          </p>
+          <div className="relative mb-5">
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="Share a quick note about the session (optional)"
+              className="w-full resize-none rounded-xl border border-border bg-transparent py-3 px-3.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
 
           <div
             className="flex items-center justify-center gap-2"
@@ -145,11 +149,11 @@ export function RateSessionDialog({
                 className="p-1 transition-transform hover:scale-110"
               >
                 <Star
-                  size={44}
-                  strokeWidth={1.5}
+                  size={35}
+                  strokeWidth={1}
                   className={
                     n <= shown
-                      ? "fill-secondary text-secondary"
+                      ? "fill-secondary/85 text-secondary"
                       : "fill-transparent text-secondary"
                   }
                 />
@@ -159,29 +163,15 @@ export function RateSessionDialog({
 
           {/* The prompt goes once a rating is picked: it has been answered. */}
           <p className="mt-3 text-center text-[13px] text-muted-foreground">
-            {stars === 0 ? "Tap to rate your experience" : RATING_WORD[stars]}
+            {stars === 0 ? "Rate your experience" : RATING_WORD[stars]}
           </p>
-
-          <div className="relative mt-5">
-            <MessageSquare
-              size={16}
-              className="pointer-events-none absolute left-3.5 top-3.5 text-muted-foreground"
-            />
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              placeholder="Share a quick note about the session (optional)"
-              className="w-full resize-none rounded-xl border border-border bg-transparent py-3 pl-10 pr-3.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
-            />
-          </div>
         </div>
 
         <div className="flex items-center justify-between border-t border-border p-5">
           <button
             type="button"
             onClick={onClose}
-            className="px-2 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
+            className="cursor-pointer rounded-lg border px-4 py-2 text-[14px] text-muted-foreground hover:opacity-75 active:scale-95 transition ease-in-out"
           >
             Not now
           </button>

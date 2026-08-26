@@ -267,7 +267,7 @@ export function TutorEarnings() {
           )}
 
           {connect?.payoutsEnabled && (
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-muted/30 px-5 py-4">
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 bg-muted/30 px-5 py-4 rounded">
               <p className="text-[14px] text-foreground">
                 Payouts reach your bank weekly. Your Stripe dashboard has the history, your
                 bank details and your tax forms, and can pay you out early.
@@ -281,7 +281,7 @@ export function TutorEarnings() {
                   setOpeningDashboard(false);
                   if (result.error) toast.error(result.error);
                 }}
-                className="h-10 shrink-0 rounded-md border border-border px-5 text-[14px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                className="h-10 shrink-0 rounded-md border border-foreground px-5 text-[14px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
               >
                 {openingDashboard ? "Opening..." : "Open Stripe dashboard"}
               </button>
