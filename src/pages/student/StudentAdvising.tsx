@@ -4,13 +4,13 @@ import { CalendarDays } from "lucide-react";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/utils/cn";
 import {
   PastSessions,
   UpcomingSessions,
   type SessionListItem,
 } from "@/components/shared/SessionList";
 import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
+import { BookAdvisingDialog } from "@/components/shared/BookAdvisingDialog";
 import { getAdmissionsUsage } from "@/services/admissionsService";
 import { getStudentSessions } from "@/services/sessions";
 
@@ -28,8 +28,9 @@ import { getStudentSessions } from "@/services/sessions";
 // ============================================================
 
 export function StudentAdvising() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
+  const [booking, setBooking] = useState(false);
 
   const { data: raw, isLoading } = useQuery({
     queryKey: ["student-sessions", user?.id],
@@ -101,19 +102,28 @@ export function StudentAdvising() {
               </p>
             </div>
 
-            {/* Booking is the parent's, because it is their plan and their
-                calendar to arrange around. Said plainly rather than left as an
-                absent button somebody hunts for. */}
-            <div className="pb-2 text-left md:text-right">
-              <p className="mb-0.5 text-[12px] font-medium uppercase tracking-wider text-white/70">
-                {left != null && left > 0 ? "Still to book" : "Booking"}
-              </p>
-              <p className={cn("text-[14px] text-white/80", left != null && left > 0 && "font-semibold")}>
-                {left != null && left > 0
-                  ? `${left} ${left === 1 ? "hour" : "hours"}, booked by your parent`
-                  : "Your parent books these from their billing page"}
-              </p>
-            </div>
+            {/* Either the student or a linked parent can book: the family
+                function book_advising_session authorises both, so the student
+                arranges their own hours here rather than being sent to a
+                parent's billing page for a plan that may be their own. */}
+            {allowance != null && (
+              <div className="pb-2 text-left md:text-right">
+                <button
+                  onClick={() => setBooking(true)}
+                  disabled={left != null && left <= 0}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 font-semibold text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <CalendarDays size={16} /> Book a session
+                </button>
+                <p className="mt-1.5 text-[12px] text-white/70">
+                  {left != null && left > 0
+                    ? `${left} ${left === 1 ? "hour" : "hours"} left this month`
+                    : left === 0
+                      ? "You have used this month's hours"
+                      : "You or your parent can book these"}
+                </p>
+              </div>
+            )}
           </div>
         </header>
 
@@ -142,6 +152,15 @@ export function StudentAdvising() {
 
       {cancelling && (
         <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />
+      )}
+
+      {booking && (
+        <BookAdvisingDialog
+          studentId={user!.id}
+          studentName={profile?.full_name ?? null}
+          remaining={left ?? 99}
+          onClose={() => setBooking(false)}
+        />
       )}
     </PageWrapper>
   );
