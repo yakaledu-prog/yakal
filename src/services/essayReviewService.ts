@@ -77,7 +77,9 @@ export async function reviewEssay(input: {
         input.action === "approved"
           ? `${input.essayTitle ?? "Your essay"} has been approved.`
           : `${input.essayTitle ?? "Your essay"} has comments waiting in the document.`,
-      link: "/student/essays",
+      // The student essays live on the application workspace at /student/my-app;
+      // there is no /student/essays route, so the old link opened not-found.
+      link: "/student/my-app",
     }).catch(() => undefined);
   }
 

@@ -174,7 +174,12 @@ export async function getCounselorSessionsFull(counselorId: string): Promise<Ses
   const { data: sessions, error } = await supabase
     .from("sessions")
     .select("*")
-    .eq("counselor_id", counselorId)
+    // Advising sessions store the counsellor in tutor_id; the sessions table
+    // has no counselor_id column, so the old filter matched nothing and the
+    // calendar came back empty. Restrict to counselling kinds so a tutoring
+    // lesson never shows up in a counsellor's list.
+    .eq("tutor_id", counselorId)
+    .in("kind", ["advising", "mock_interview"])
     .order("date", { ascending: false })
     .order("start_time", { ascending: false });
 
