@@ -1,9 +1,90 @@
-# CRITICAL: the database has no backups
+# The database backup situation
 
-**Status: unresolved. This is the largest single risk to the company.**
+**Status: solved for free, with two caveats. Read the caveats.**
 
-Read this before the Stripe work. Losing the database loses the business;
-losing a Stripe integration loses a week.
+`.github/workflows/backup.yml` takes an encrypted dump every day and stores it
+on the `db-backups` branch. That closes the hole this document was written
+about.
+
+---
+
+## The correction
+
+An earlier version of this file said upgrading to Supabase Pro at $25/month was
+the only real answer and could not be done with code. **That was wrong**, and it
+was the expensive kind of wrong: it presented a recurring cost as mandatory when
+a scheduled `pg_dump` does the same job.
+
+What Pro actually buys over the workflow:
+
+| | GitHub Action | Supabase Pro |
+| --- | --- | --- |
+| Daily backups | yes | yes, 7 day retention |
+| Retention | as long as git history | 7 days |
+| Survives Supabase itself failing | **yes** | no, they live there |
+| Storage buckets | **no** | yes |
+| Stops the project pausing | incidentally, see below | yes |
+| Cost | nothing | $25/month |
+
+The workflow is better on retention and better on independence. Pro is better on
+buckets. Neither is a reason to pay $25 a month today.
+
+## The two caveats
+
+**1. Storage buckets are not covered.** `pg_dump` dumps the database.
+`avatars`, `resumes` and `testimonials` live in Supabase Storage and are not in
+it. Losing them loses every uploaded CV and profile picture. That is a real gap
+and it is not solved yet.
+
+**2. The passphrase is now a single point of failure.** The dumps are encrypted
+with `BACKUP_PASSPHRASE`, and without it they are noise. Keep it somewhere that
+is not this repository and not only in GitHub Secrets.
+
+## The incidental benefit
+
+The free plan pauses a project after a week with no API calls, no database
+connections and no dashboard logins. The backup job makes a database connection
+every day, so **running it keeps the project awake**. The pausing risk this
+document worried about is answered by the same workflow, as a side effect.
+
+## Tested, not assumed
+
+Taken on 3 September 2026 against the local stack:
+
+```
+dump            1,512,367 bytes
+encrypted         261,713 bytes
+restored into a scratch database, 0 errors
+profiles 27, sessions 44, invoices 28, earnings 31, plans 8
+```
+
+Every count matched the source database, and `auth.users` restored with all 27
+rows, so sign-in survives a restore.
+
+At 262 KB a day this is about 95 MB of git history a year, which is nothing.
+
+## Setting it up
+
+1. Generate a passphrase: `openssl rand -base64 48`
+2. Save it somewhere outside this repository. A password manager, not a note.
+3. GitHub > Settings > Secrets and variables > Actions > New secret:
+   `BACKUP_PASSPHRASE`
+4. `SUPABASE_DB_URL` is already set for the Database workflow.
+5. Actions > Backup > Run workflow, to prove it before trusting the schedule.
+
+## Restoring
+
+```
+git fetch origin db-backups && git checkout db-backups
+BACKUP_PASSPHRASE=... scripts/restore-backup.sh dump-2026-09-03.sql.gz.gpg
+```
+
+With no target it restores into the local stack. It refuses a hosted URL
+outright, because a `--clean` dump drops every table it recreates and doing that
+to production by mistyping an argument is not a mistake worth leaving available.
+
+**Restore one on purpose, once a quarter.** A backup nobody has restored is a
+belief, not a backup.
 
 ---
 
@@ -39,9 +120,9 @@ is exactly the situation where nobody is watching.
 
 ## What to do, in order
 
-**1. Move production to Pro, $25/month.** This buys 7 day backup retention and
-removes pausing. It is the cheapest insurance the company will ever buy and the
-only item here that cannot be done with code.
+**1. ~~Move production to Pro.~~ Done for free instead.** See the correction at
+the top of this file. The workflow covers it, and covers more of it than Pro
+would.
 
 **2. Take a backup now, before anything else.** Even on Pro, "backups exist" and
 "a restore works" are different claims, and only one of them has been tested:
@@ -59,9 +140,11 @@ is a belief, not a backup. Restore into the local stack and check that
 `profiles`, `invoices`, `earnings` and `sessions` all come back with their row
 counts intact.
 
-**4. Automate it.** A GitHub Action on a schedule, dumping to a private
-repository or object storage. Roughly an hour, and it survives Supabase itself
-going wrong, which Pro's own backups do not.
+**4. ~~Automate it.~~ Done.** `.github/workflows/backup.yml`.
+
+**5. Still open: the storage buckets.** Nothing backs up `avatars`, `resumes` or
+`testimonials`. A second job listing the buckets through the storage API and
+committing the objects would close it.
 
 ## Should we move off Supabase?
 
