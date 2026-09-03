@@ -1,0 +1,171 @@
+name: Backup
+
+# A daily encrypted dump of the hosted database, kept in this repository.
+#
+# The Supabase free plan takes no backups at all. Not old ones, none. So this
+# is the only copy of the data that exists outside the live database, and it
+# stands in for the Pro plan's seven day retention at no cost.
+#
+# It is also better than that plan in one way: these dumps survive Supabase
+# itself going wrong, because they are not stored there. Pro's own backups are.
+#
+# ---
+#
+# Repository secrets required (Settings > Secrets and variables > Actions):
+#
+#   SUPABASE_DB_URL     already set for the Database workflow. Use the pooler
+#                       host, not db.<ref>.supabase.co: the direct host is IPv6
+#                       only and GitHub runners have no IPv6 route to it.
+#
+#   BACKUP_PASSPHRASE   a long random string, kept somewhere that is not this
+#                       repository. Without it the dumps are unreadable, so
+#                       losing it loses the backups.
+#
+# Generate one with: openssl rand -base64 48
+#
+# ---
+#
+# The dumps are encrypted, and that is not optional. A dump of this database
+# contains every parent's email and phone, every child's name, and every
+# message between a child and an adult. A private repository is readable by
+# every collaborator you ever add, and git history is permanent: once personal
+# data is in a commit it cannot practically be removed.
+
+on:
+  schedule:
+    # 07:12 UTC, a little after most of the US is asleep and nothing is being
+    # written. The odd minute is deliberate: GitHub drops scheduled jobs that
+    # land on a busy round hour.
+    - cron: "12 7 * * *"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why you are running this by hand"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the secrets are there
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "SUPABASE_DB_URL is not set. Nothing to back up."; exit 1
+          fi
+          if [ -z "${{ secrets.BACKUP_PASSPHRASE }}" ]; then
+            echo "BACKUP_PASSPHRASE is not set. Refusing to write an unencrypted dump."; exit 1
+          fi
+
+      # Supabase runs Postgres 17 and ubuntu-latest ships the 16 client, which
+      # pg_dump refuses to use against a newer server.
+      - name: Install the Postgres 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Dump, then encrypt
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%F)
+
+          # Plain SQL rather than the custom format: it compresses better and,
+          # more importantly, it can be read and partially recovered by hand if
+          # the tooling is ever the thing that is broken.
+          #
+          # --no-owner and --no-privileges so it restores into a fresh project
+          # without every GRANT failing on roles that do not exist there yet.
+          pg_dump "$DB_URL" \
+            --no-owner --no-privileges --clean --if-exists \
+            --quote-all-identifiers \
+            -f "dump.sql"
+
+          BYTES=$(stat -c%s dump.sql)
+          echo "dump is $BYTES bytes"
+          # A dump that is suspiciously small is a failed dump that exited 0.
+          # Better to fail loudly than to quietly overwrite a good backup.
+          if [ "$BYTES" -lt 100000 ]; then
+            echo "That is too small to be a real dump. Refusing to store it."; exit 1
+          fi
+
+          gzip -9 dump.sql
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$PASSPHRASE" \
+            -o "dump-${STAMP}.sql.gz.gpg" dump.sql.gz
+          rm -f dump.sql.gz
+
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+
+      - name: Store it on the backups branch
+        env:
+          STAMP: ${{ env.STAMP }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # An orphan branch, so backups never touch main's history and nobody
+          # cloning the code pulls a year of dumps with it.
+          git fetch origin db-backups --depth=1 2>/dev/null \
+            && git checkout db-backups \
+            || git checkout --orphan db-backups
+
+          # The dump is the only thing that belongs here.
+          git rm -rq --cached . 2>/dev/null || true
+          find . -maxdepth 1 ! -name . ! -name .git ! -name "dump-*.sql.gz.gpg" \
+            -exec rm -rf {} + 2>/dev/null || true
+
+          # Thirty days in the tree. Older ones stay in git history, which is
+          # what makes an older restore possible at all; this only keeps the
+          # checkout small.
+          find . -maxdepth 1 -name "dump-*.sql.gz.gpg" -mtime +30 -delete || true
+
+          cat > README.md <<'EOF'
+          # Encrypted database backups
+
+          Written daily by `.github/workflows/backup.yml`. Do not edit by hand.
+
+          Each file is a `pg_dump` of the production database, gzipped and
+          encrypted with AES256 using `BACKUP_PASSPHRASE`.
+
+          To restore one:
+
+              gpg --decrypt --passphrase "$BACKUP_PASSPHRASE" \
+                dump-YYYY-MM-DD.sql.gz.gpg | gunzip > dump.sql
+              psql "$TARGET_DB_URL" -f dump.sql
+
+          Restore into a scratch project first. A backup nobody has restored is
+          a belief, not a backup.
+
+          These dumps cover the database only. Storage buckets (avatars,
+          resumes, testimonials) are not included.
+          EOF
+
+          git add -A
+          git commit -m "backup ${STAMP}" || { echo "nothing changed"; exit 0; }
+          git push origin db-backups
+
+      - name: Say what happened
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "### Backup stored: ${{ env.STAMP }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Backup FAILED. The database has no copy from today." >> "$GITHUB_STEP_SUMMARY"
+          fi
