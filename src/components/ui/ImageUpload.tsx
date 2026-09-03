@@ -1,14 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
+
+import { uploadImage } from "@/lib/cloudinary";
 import { cn } from "@/utils/cn";
 
 interface ImageUploadProps {
   value: string | null;
   onChange: (url: string) => void;
+  /** Keeps the media library navigable instead of one flat list. */
+  folder?: string;
   className?: string;
 }
 
-export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, folder = "yakal/uploads", className }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,31 +28,12 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
 
     setIsUploading(true);
     try {
-      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-      if (!cloudName || !uploadPreset) {
-        throw new Error("Cloudinary configuration missing in .env");
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
-
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to upload image");
-      }
-
-      const data = await res.json();
-      onChange(data.secure_url);
-    } catch (err) {
+      // Through the shared helper, so this and the profile uploads cannot
+      // drift apart on which preset or folder they use.
+      onChange(await uploadImage(file, folder));
+    } catch (err: any) {
       console.error(err);
-      alert("Error uploading image. Make sure VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET are set.");
+      toast.error(err?.message ?? "Could not upload that image.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

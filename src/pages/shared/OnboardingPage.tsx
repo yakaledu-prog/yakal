@@ -8,6 +8,7 @@ import { SelectMenu } from "@/components/ui/SelectMenu";
 import { GRADE_LEVELS } from "@/config/grades";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/cloudinary";
 import { postAuthPath } from "@/utils/roleRoutes";
 import { fireConfetti } from "@/utils/confetti";
 import { dicebearUrl } from "@/utils/avatar";
@@ -176,17 +177,11 @@ export function OnboardingPage({ previewRole }: OnboardingPageProps = {}) {
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true, cacheControl: "3600" });
-      if (upErr) throw upErr;
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      setAvatarUrl(data.publicUrl);
+      const url = await uploadImage(file, "yakal/avatars");
+      setAvatarUrl(url);
       toast.success("Photo uploaded.");
     } catch (err: any) {
-      toast.error(err.message || "Upload failed. The avatars bucket may not be set up yet.");
+      toast.error(err.message || "Upload failed.");
     } finally {
       setUploading(false);
     }

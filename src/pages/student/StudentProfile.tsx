@@ -12,6 +12,7 @@ import { gradYearFromGrade } from "@/config/admissionsCalendar";
 import { toast } from "sonner";
 import { dicebearUrl } from "@/utils/avatar";
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/cloudinary";
 import { SelectMenu } from "@/components/ui/SelectMenu";
 import { GRADE_LEVELS } from "@/config/grades";
 
@@ -125,13 +126,10 @@ export function StudentProfile() {
     if (!file || !user) return;
     if (file.size > 2 * 1024 * 1024) return toast.error("Please choose an image under 2 MB.");
     try {
-      const path = `${user.id}/${Date.now()}.${file.name.split(".").pop()}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = await uploadImage(file, "yakal/avatars");
       const { error: saveErr } = await supabase
         .from("profiles")
-        .update({ avatar_url: data.publicUrl })
+        .update({ avatar_url: url })
         .eq("id", user.id);
       if (saveErr) throw saveErr;
       await refreshProfile();

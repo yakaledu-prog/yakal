@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/cloudinary";
 
 /**
  * Testimonials on the marketing page.
@@ -152,19 +153,21 @@ export async function reorderTestimonials(orderedIds: string[]): Promise<Result>
   return failed?.error ? { success: false, error: failed.error.message } : { success: true };
 }
 
-/** Upload a photo and return its public URL. Admin only, by bucket policy. */
+/**
+ * Upload a photo and return its public URL.
+ *
+ * Cloudinary rather than a Supabase bucket: a testimonial photo appears on the
+ * public site, so there is nothing to protect and a bucket only adds something
+ * outside the database backup. Writing is still admin-only, by the RLS on the
+ * testimonials table this URL ends up on.
+ */
 export async function uploadTestimonialPhoto(file: File): Promise<Result<string>> {
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const path = `${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await supabase.storage
-    .from("testimonials")
-    .upload(path, file, { cacheControl: "3600", upsert: false });
-
-  if (error) return { success: false, error: error.message };
-
-  const { data } = supabase.storage.from("testimonials").getPublicUrl(path);
-  return { success: true, data: data.publicUrl };
+  try {
+    const url = await uploadImage(file, "yakal/testimonials");
+    return { success: true, data: url };
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? "Upload failed." };
+  }
 }
 
 export async function updateTestimonial(

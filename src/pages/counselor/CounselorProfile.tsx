@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/cloudinary";
 import { getCounselorSessionsFull, SessionRow } from "@/services/counselorService";
 import { dicebearUrl } from "@/utils/avatar";
 
@@ -84,11 +85,8 @@ export function CounselorProfile() {
     if (file.size > 2 * 1024 * 1024) return toast.error("Please choose an image under 2 MB.");
     setUploading(true);
     try {
-      const path = `${user.id}/${Date.now()}.${file.name.split(".").pop()}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", user.id);
+      const url = await uploadImage(file, "yakal/avatars");
+      await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
       await refreshProfile();
       toast.success("Photo updated.");
     } catch (err: any) {

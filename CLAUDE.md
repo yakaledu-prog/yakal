@@ -125,6 +125,23 @@ bundle at build time. `VITE_SUPABASE_ANON_KEY` is fine and intended;
 
 ---
 
+## Where uploaded files go
+
+Three stores, and the rule is what the file is, not who uploads it:
+
+- **Cloudinary** for anything public: avatars, testimonial photos, course
+  thumbnails, blog images. Through `src/lib/cloudinary.ts`, never by hand.
+- **Supabase Storage** for anything private. Only `resumes`, which is a CV with
+  somebody's address and employment history on it and wants RLS. Cloudinary
+  URLs are public and free accounts have to actively enable PDF delivery to
+  serve one at all, which is the wrong direction for a private document.
+- **Google Drive** for documents somebody collaborates on: student essays.
+
+Avatars used to go to a Supabase bucket while the seeded avatar URLs pointed at
+Cloudinary, so the two disagreed about where a profile picture lives. Every
+public bucket removed is also one less thing outside the nightly database
+backup, which covers Postgres and not the file bytes.
+
 ## House style
 
 - **No em dashes, no emoji.** Plain ASCII in code, UI, commit messages.
