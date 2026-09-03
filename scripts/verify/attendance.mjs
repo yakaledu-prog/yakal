@@ -34,8 +34,8 @@ const [sessionId, tutorId, studentId] = ids;
 const asUser = (userId, body) =>
   psql(
     `begin;\n` +
-    `update public.sessions set date = current_date,\n` +
-    `  start_time = to_char(now() - interval '5 minutes', 'HH24:MI:SS')::time\n` +
+    `update public.sessions set date = (now() at time zone 'America/New_York')::date,\n` +
+    `  start_time = to_char((now() at time zone 'America/New_York') - interval '5 minutes', 'HH24:MI:SS')::time\n` +
     `  where id = '${sessionId}';\n` +
     `select set_config('request.jwt.claims',\n` +
     `  '{"sub":"${userId}","role":"authenticated"}', true);\n` +
@@ -116,8 +116,8 @@ pass('an event that is not join or leave is refused', out[0] === 'nonsense event
 
 out = psql(
   `begin;\n` +
-  `update public.sessions set date = current_date,\n` +
-  `  start_time = to_char(now() - interval '5 minutes', 'HH24:MI:SS')::time where id = '${sessionId}';\n` +
+  `update public.sessions set date = (now() at time zone 'America/New_York')::date,\n` +
+  `  start_time = to_char((now() at time zone 'America/New_York') - interval '5 minutes', 'HH24:MI:SS')::time where id = '${sessionId}';\n` +
   `select set_config('request.jwt.claims', '{"sub":"${studentId}","role":"authenticated"}', true);\n` +
   `select public.record_attendance_event('${sessionId}', 'join');\n` +
   `select set_config('request.jwt.claims', '{"sub":"${tutorId}","role":"authenticated"}', true);\n` +
@@ -130,8 +130,8 @@ pass('the summary sees both sides', out[out.length - 1] === 'both: true,true', o
 
 out = psql(
   `begin;\n` +
-  `update public.sessions set date = current_date,\n` +
-  `  start_time = to_char(now() - interval '5 minutes', 'HH24:MI:SS')::time where id = '${sessionId}';\n` +
+  `update public.sessions set date = (now() at time zone 'America/New_York')::date,\n` +
+  `  start_time = to_char((now() at time zone 'America/New_York') - interval '5 minutes', 'HH24:MI:SS')::time where id = '${sessionId}';\n` +
   `select set_config('request.jwt.claims', '{"sub":"${studentId}","role":"authenticated"}', true);\n` +
   `select public.record_attendance_event('${sessionId}', 'join');\n` +
   `select 'one side: ' || tutor_present::text || ',' || student_present::text\n` +
