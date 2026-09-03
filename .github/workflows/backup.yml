@@ -1,6 +1,7 @@
 name: Backup
 
-# A daily encrypted dump of the hosted database, kept in this repository.
+# A daily encrypted dump of the hosted database, pushed to a separate private
+# repository.
 #
 # The Supabase free plan takes no backups at all. Not old ones, none. So this
 # is the only copy of the data that exists outside the live database, and it
@@ -17,19 +18,31 @@ name: Backup
 #                       host, not db.<ref>.supabase.co: the direct host is IPv6
 #                       only and GitHub runners have no IPv6 route to it.
 #
-#   BACKUP_PASSPHRASE   a long random string, kept somewhere that is not this
+#   BACKUP_PASSPHRASE   a long random string, kept somewhere that is not a
 #                       repository. Without it the dumps are unreadable, so
-#                       losing it loses the backups.
+#                       losing it loses the backups. openssl rand -base64 48
 #
-# Generate one with: openssl rand -base64 48
+#   BACKUP_REPO         owner/name of a PRIVATE repository to push to,
+#                       e.g. yakaledu-prog/yakal-backups
+#
+#   BACKUP_REPO_TOKEN   a fine-grained PAT with Contents: read and write on
+#                       that repository and nothing else.
 #
 # ---
 #
-# The dumps are encrypted, and that is not optional. A dump of this database
-# contains every parent's email and phone, every child's name, and every
-# message between a child and an adult. A private repository is readable by
-# every collaborator you ever add, and git history is permanent: once personal
-# data is in a commit it cannot practically be removed.
+# Why a separate repository, and why the job checks it is private.
+#
+# This repository is public. An encrypted dump published to a public branch is
+# downloadable by anyone forever, which turns a passphrase into the only thing
+# standing between the world and an offline attack it can run for as long as it
+# likes. AES256 with a long random passphrase is strong, but "children's names,
+# parents' phone numbers and private messages, publicly downloadable" is not a
+# sentence worth being one mistake away from.
+#
+# So the dumps never go here, and the job refuses to run if the target it is
+# given turns out to be public. That check is not paranoia about today: it is
+# what stops this quietly starting to publish personal data the day somebody
+# flips that repository open.
 
 on:
   schedule:
@@ -62,6 +75,31 @@ jobs:
           if [ -z "${{ secrets.BACKUP_PASSPHRASE }}" ]; then
             echo "BACKUP_PASSPHRASE is not set. Refusing to write an unencrypted dump."; exit 1
           fi
+          if [ -z "${{ secrets.BACKUP_REPO }}" ] || [ -z "${{ secrets.BACKUP_REPO_TOKEN }}" ]; then
+            echo "BACKUP_REPO and BACKUP_REPO_TOKEN must both be set."
+            echo "Backups do not go in this repository: it is public."
+            exit 1
+          fi
+
+      # The one check that matters. Everything else here is plumbing; this is
+      # what stops a dump of children's personal data becoming a public file.
+      - name: Refuse to push anywhere public
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          REPO: ${{ secrets.BACKUP_REPO }}
+        run: |
+          set -euo pipefail
+          VISIBILITY=$(gh api "repos/$REPO" --jq .visibility 2>/dev/null || echo "unreachable")
+
+          if [ "$VISIBILITY" = "unreachable" ]; then
+            echo "Could not read $REPO. Check BACKUP_REPO_TOKEN has Contents access to it."
+            exit 1
+          fi
+          if [ "$VISIBILITY" != "private" ]; then
+            echo "$REPO is $VISIBILITY. Refusing to write a database dump to it."
+            exit 1
+          fi
+          echo "$REPO is private. Proceeding."
 
       # Supabase runs Postgres 17 and ubuntu-latest ships the 16 client, which
       # pg_dump refuses to use against a newer server.
@@ -112,54 +150,60 @@ jobs:
 
           echo "STAMP=$STAMP" >> "$GITHUB_ENV"
 
-      - name: Store it on the backups branch
+      - name: Push it to the private backup repository
         env:
           STAMP: ${{ env.STAMP }}
+          REPO: ${{ secrets.BACKUP_REPO }}
+          TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
         run: |
           set -euo pipefail
+          DUMP="dump-${STAMP}.sql.gz.gpg"
+
+          git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/${REPO}.git" backup-repo \
+            || { mkdir backup-repo && cd backup-repo && git init -q && cd ..; }
+
+          mv "$DUMP" backup-repo/
+          cd backup-repo
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # An orphan branch, so backups never touch main's history and nobody
-          # cloning the code pulls a year of dumps with it.
-          git fetch origin db-backups --depth=1 2>/dev/null \
-            && git checkout db-backups \
-            || git checkout --orphan db-backups
-
-          # The dump is the only thing that belongs here.
-          git rm -rq --cached . 2>/dev/null || true
-          find . -maxdepth 1 ! -name . ! -name .git ! -name "dump-*.sql.gz.gpg" \
-            -exec rm -rf {} + 2>/dev/null || true
-
           # Thirty days in the tree. Older ones stay in git history, which is
-          # what makes an older restore possible at all; this only keeps the
-          # checkout small.
+          # what makes an older restore possible at all; this only keeps a
+          # clone of the backup repository small.
           find . -maxdepth 1 -name "dump-*.sql.gz.gpg" -mtime +30 -delete || true
 
           cat > README.md <<'EOF'
           # Encrypted database backups
 
-          Written daily by `.github/workflows/backup.yml`. Do not edit by hand.
+          Written daily by the Backup workflow in the yakal repository. Do not
+          edit by hand.
 
           Each file is a `pg_dump` of the production database, gzipped and
           encrypted with AES256 using `BACKUP_PASSPHRASE`.
 
-          To restore one:
+          To restore one, from a checkout of the yakal repository:
 
-              gpg --decrypt --passphrase "$BACKUP_PASSPHRASE" \
-                dump-YYYY-MM-DD.sql.gz.gpg | gunzip > dump.sql
-              psql "$TARGET_DB_URL" -f dump.sql
+              BACKUP_PASSPHRASE=... scripts/restore-backup.sh dump-YYYY-MM-DD.sql.gz.gpg
 
           Restore into a scratch project first. A backup nobody has restored is
           a belief, not a backup.
 
-          These dumps cover the database only. Storage buckets (avatars,
-          resumes, testimonials) are not included.
+          **This repository must stay private.** These dumps contain every
+          parent's email and phone, every child's name, and every message
+          between a child and an adult. The workflow refuses to push here if
+          this repository is ever made public, which is a safety net and not a
+          reason to try it.
+
+          These dumps cover the database only. The `resumes` storage bucket is
+          not included; its file bytes live in Supabase Storage, which a
+          database accident does not touch.
           EOF
 
           git add -A
           git commit -m "backup ${STAMP}" || { echo "nothing changed"; exit 0; }
-          git push origin db-backups
+          git branch -M main
+          git push -u origin main
 
       - name: Say what happened
         if: always()

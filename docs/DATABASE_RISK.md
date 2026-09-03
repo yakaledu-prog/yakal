@@ -2,9 +2,9 @@
 
 **Status: solved for free, with two caveats. Read the caveats.**
 
-`.github/workflows/backup.yml` takes an encrypted dump every day and stores it
-on the `db-backups` branch. That closes the hole this document was written
-about.
+`.github/workflows/backup.yml` takes an encrypted dump every day and pushes it
+to a **separate private repository**. That closes the hole this document was
+written about.
 
 ---
 
@@ -29,6 +29,21 @@ What Pro actually buys over the workflow:
 The workflow is better on retention and better on independence. Pro is better on
 buckets. Neither is a reason to pay $25 a month today.
 
+## Why a separate repository
+
+**This repository is public.** The first version of the workflow committed the
+dumps to a branch here, which would have published encrypted personal data
+where anyone could download it and attack it offline for as long as they liked.
+AES256 with a long random passphrase is strong, but "children's names, parents'
+phone numbers and private messages, publicly downloadable" is not a sentence
+worth being one mistake away from.
+
+Nothing leaked: it was caught before the workflow ever ran.
+
+The job now refuses to push to any repository that is not private, checked
+through the API on every run. That is not paranoia about today; it is what stops
+backups quietly becoming public the day somebody flips that repository open.
+
 ## The two caveats
 
 **1. Storage buckets are not covered.** `pg_dump` dumps the database.
@@ -36,7 +51,7 @@ buckets. Neither is a reason to pay $25 a month today.
 it. Losing them loses every uploaded CV and profile picture. That is a real gap
 and it is not solved yet.
 
-**2. The passphrase is now a single point of failure.** The dumps are encrypted
+**2. The passphrase is a single point of failure.** The dumps are encrypted
 with `BACKUP_PASSPHRASE`, and without it they are noise. Keep it somewhere that
 is not this repository and not only in GitHub Secrets.
 
@@ -65,18 +80,24 @@ At 262 KB a day this is about 95 MB of git history a year, which is nothing.
 
 ## Setting it up
 
-1. Generate a passphrase: `openssl rand -base64 48`
-2. Save it somewhere outside this repository. A password manager, not a note.
-3. GitHub > Settings > Secrets and variables > Actions > New secret:
-   `BACKUP_PASSPHRASE`
-4. `SUPABASE_DB_URL` is already set for the Database workflow.
+1. Create a **private** repository, e.g. `yakaledu-prog/yakal-backups`. Empty
+   is fine; the first run initialises it.
+2. Generate a passphrase: `openssl rand -base64 48`. Save it in a password
+   manager and one other place. Not in a repository.
+3. Create a fine-grained PAT with **Contents: read and write** on that
+   repository and nothing else.
+4. In *this* repository: Settings > Secrets and variables > Actions, add
+   `BACKUP_PASSPHRASE`, `BACKUP_REPO` (`owner/name`) and `BACKUP_REPO_TOKEN`.
+   `SUPABASE_DB_URL` is already there for the Database workflow.
 5. Actions > Backup > Run workflow, to prove it before trusting the schedule.
+
+If the target repository is not private the job stops before dumping anything.
 
 ## Restoring
 
 ```
-git fetch origin db-backups && git checkout db-backups
-BACKUP_PASSPHRASE=... scripts/restore-backup.sh dump-2026-09-03.sql.gz.gpg
+git clone git@github.com:yakaledu-prog/yakal-backups.git
+BACKUP_PASSPHRASE=... scripts/restore-backup.sh yakal-backups/dump-2026-09-03.sql.gz.gpg
 ```
 
 With no target it restores into the local stack. It refuses a hosted URL
