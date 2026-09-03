@@ -24,7 +24,7 @@ if [ -z "$FILE" ]; then
 fi
 if [ ! -f "$FILE" ]; then
   echo "No such file: $FILE"
-  echo "Backups live on the db-backups branch: git fetch origin db-backups && git checkout db-backups"
+  echo "Backups live in the private backup repository named by BACKUP_REPO."
   exit 1
 fi
 if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
