@@ -440,10 +440,10 @@ export function AddCollegeModal({
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
                   id="why"
-                  rows={9}
+                  aria-label="Why this college"
+                  rows={7}
                   value={why}
                   onChange={(e) => setWhy(e.target.value)}
                   placeholder="What draws you to it?"
@@ -602,9 +602,7 @@ export function AddCollegeModal({
  */
 function CollegePanel({ college }: { college: College }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const [crestFailed, setCrestFailed] = useState(false);
   const img = imgFailed ? null : collegeImageUrl(college.image, 480);
-  const crest = crestFailed ? null : collegeImageUrl(college.logo, 120);
 
   const rows = [
     {
@@ -686,26 +684,6 @@ function CollegePanel({ college }: { college: College }) {
       {/* At the head, where the ground is thinnest and the campus shows. About
           half of schools have one; without it the panel simply opens on the
           photograph. */}
-      {crest && (
-        <div className="relative z-10 px-5 pt-5">
-          <img
-            src={crest}
-            alt=""
-            loading="lazy"
-            onError={() => setCrestFailed(true)}
-            // Height fixed, width free. These are not square crests: about half
-            // are wide wordmarks, and boxing one into a square left a few
-            // pixels of content inside the padding.
-            //
-            // Flattened to a white silhouette, because university marks are
-            // every colour there is and none of them sat on the teal. As one
-            // tone it reads as part of the panel, and the shape is what
-            // identifies a school anyway.
-            className="h-7 w-auto max-w-[150px] object-contain object-left opacity-85 brightness-0 invert"
-          />
-        </div>
-      )}
-
       <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
         <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
@@ -724,9 +702,8 @@ function CollegePanel({ college }: { college: College }) {
               // these four things belong together.
               className="flex items-center justify-between gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2.5"
             >
-              {/* No icon and no hint. Four rows that each say what they are do
-                  not need a picture of it, and an info dot beside every label
-                  is four invitations to stop reading and go somewhere else. */}
+              {/* Label at one end, figure at the other: that gap is what lets
+                  the eye run down the column of values without reading. */}
               <span className="min-w-0 truncate text-[12.5px] text-white/75">
                 {r.label}
               </span>
