@@ -27,7 +27,6 @@ import { SchoolTier } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
-import { Segmented } from "@/components/ui/Segmented";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
 
 export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
@@ -416,19 +415,25 @@ export function AddCollegeModal({
                 </div>
               </div>
 
-              {/* Moved up from the last step. It belongs with the other facts
-                  about applying rather than beside the one thing on this form
-                  that is genuinely the student's own words, and it evens out
-                  two steps that were lopsided. */}
-              <div>
-                <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
-                <Segmented
-                  value={tier}
-                  onChange={setTier}
-                  options={TIERS}
-                  ariaLabel="Reach, target or safety"
-                />
+              {/* Odds beside the essay count rather than a segmented control
+                  across the whole form. Three short words do not need that much
+                  width, and the space they left was the emptiest thing here. */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
+                    Your odds
+                  </FieldLabel>
+                  <Dropdown
+                    value={tier}
+                    onChange={(v) => setTier(v as SchoolTier)}
+                    options={TIERS}
+                    buttonClassName="h-11 rounded-xl text-[14px] font-normal"
+                    ariaLabel="Reach, target or safety"
+                  />
+                </div>
               </div>
+
+
             </div>
           )}
 
