@@ -385,7 +385,10 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
-              <div>
+              {/* The URL takes what is left rather than half: it is the
+                  longest value on the form and the counter beside it only needs
+                  room for two digits. */}
+              <div className="grid grid-cols-[1fr_auto] gap-3">
                 <div>
                   <FieldLabel
                     htmlFor="appurl"
@@ -402,21 +405,17 @@ export function AddCollegeModal({
                     className={input}
                   />
                 </div>
-              </div>
-
-              {/* The URL takes the full width above, so the essay count pairs
-                  with nothing and sits at its natural size rather than being
-                  stretched to fill a column. */}
-              <div>
-                <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
-                  Essays
-                </FieldLabel>
-                <NumberStepper
-                  value={essays}
-                  onChange={setEssays}
-                  max={20}
-                  ariaLabel="Number of supplemental essays"
-                />
+                <div>
+                  <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
+                    Essays
+                  </FieldLabel>
+                  <NumberStepper
+                    value={essays}
+                    onChange={setEssays}
+                    max={20}
+                    ariaLabel="Number of supplemental essays"
+                  />
+                </div>
               </div>
 
 
@@ -441,7 +440,7 @@ export function AddCollegeModal({
                 <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
                   id="why"
-                  rows={5}
+                  rows={3}
                   value={why}
                   onChange={(e) => setWhy(e.target.value)}
                   placeholder="What draws you to it?"
