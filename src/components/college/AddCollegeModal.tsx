@@ -281,7 +281,7 @@ export function AddCollegeModal({
               hint="Middle 50 percent of enrolled students who submitted a score. Because many now apply test-optional, this skews higher than the typical admitted student."
             />
             <Stat
-              k="Grad"
+              k="Grad rate"
               v={picked.gradRate === null ? "-" : `${picked.gradRate}%`}
               hint="Share of students who finish a bachelor's degree here within six years."
             />
@@ -624,14 +624,14 @@ function CollegePanel({ college }: { college: College }) {
     },
     {
       icon: <GraduationCap size={15} />,
-      label: "Grad",
+      label: "Grad rate",
       value: college.gradRate === null ? "-" : `${college.gradRate}%`,
       hint: "Share of students who finish a bachelor's degree here within six years.",
     },
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-primary/40 bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-primary/40 bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333] dark:bg-[#0a4f54]">
       {img && (
         <>
           <img
@@ -648,10 +648,17 @@ function CollegePanel({ college }: { college: College }) {
               turned a light panel dark and made the text fight the photograph.
               Dark mode gets the same treatment in its own surface. */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 dark:hidden"
             style={{
               backgroundImage:
                 "linear-gradient(to bottom, #1099A1 0%, #1099A1 62%, rgba(16,153,161,0.88) 78%, rgba(16,153,161,0.6) 90%, rgba(16,153,161,0.4) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 hidden dark:block"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, #0a4f54 0%, #0a4f54 62%, rgba(10,79,84,0.9) 78%, rgba(10,79,84,0.68) 90%, rgba(10,79,84,0.5) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
@@ -664,7 +671,7 @@ function CollegePanel({ college }: { college: College }) {
               only, where the panel is pale enough for a colour to read as a
               tint; over the dark surface it would only muddy it. */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 dark:opacity-50"
             style={{
               backgroundImage:
                 "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
@@ -716,6 +723,15 @@ function CollegePanel({ college }: { college: College }) {
           ))}
         </div>
       </div>
+
+      {/* Foot of the panel, over the part of the photograph that shows. Small
+          and low contrast on purpose: it is an attribution, not a caption, and
+          the licence asks for it to be present rather than prominent. */}
+      {img && college.credit && (
+        <p className="relative z-10 px-5 pb-3 text-[10px] leading-snug text-white/45">
+          Photo: {college.credit}
+        </p>
+      )}
     </aside>
   );
 }
