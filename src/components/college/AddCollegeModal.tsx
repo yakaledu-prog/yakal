@@ -657,7 +657,7 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 hidden dark:block"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #17262b 0%, #17262b 62%, rgba(23,38,43,0.9) 78%, rgba(23,38,43,0.66) 90%, rgba(23,38,43,0.45) 100%)",
+                "linear-gradient(to bottom, #17262b 0%, #17262b 55%, rgba(23,38,43,0.94) 70%, rgba(23,38,43,0.88) 85%, rgba(23,38,43,0.82) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
@@ -670,7 +670,7 @@ function CollegePanel({ college }: { college: College }) {
               only, where the panel is pale enough for a colour to read as a
               tint; over the dark surface it would only muddy it. */}
           <div
-            className="absolute inset-0 dark:opacity-80"
+            className="absolute inset-0 dark:opacity-35"
             style={{
               backgroundImage:
                 "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
