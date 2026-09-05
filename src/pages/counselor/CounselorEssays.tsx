@@ -200,7 +200,7 @@ export function CounselorEssays() {
               filter lives at the end of the field rather than beside it,
               because narrowing by status and narrowing by word are the same
               action to somebody looking for one essay. */}
-          <div className="mx-auto mb-6 flex max-w-4xl items-center gap-3">
+          <div className="mb-6 flex items-center gap-3">
             <div className="relative flex-1">
               <Search
                 size={16}
@@ -226,7 +226,7 @@ export function CounselorEssays() {
                   align="end"
                   icon={<SlidersHorizontal size={15} />}
                   buttonClassName={cn(
-                    "h-8 w-8 justify-center rounded-lg border-transparent px-0",
+                    "h-8 w-8 justify-center rounded-lg border-0 px-0 hover:border-0",
                     // Tinted when it is doing something, so an active filter is
                     // visible without opening the menu.
                     filter === "waiting"
@@ -276,7 +276,6 @@ export function CounselorEssays() {
           ) : (
             <div
               className={cn(
-                "mx-auto max-w-4xl",
                 view === "list"
                   ? "divide-y divide-border"
                   : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
