@@ -676,14 +676,18 @@ function CollegePanel({ college }: { college: College }) {
           {rows.map((r) => (
             <div
               key={r.label}
-              className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/55 px-3 py-2.5 backdrop-blur-[2px] dark:border-white/10 dark:bg-white/5"
+              // Outline only. With a wash behind them a filled card is a second
+              // surface competing with the photograph; a rule is enough to say
+              // these four things belong together.
+              className="flex items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5 dark:border-primary/30 dark:bg-primary/[0.06]"
             >
-              <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="text-primary">{r.icon}</span>
-                <span className="truncate">{r.label}</span>
-                <InfoHint text={r.hint} size={11} />
+              {/* No icon and no hint. Four rows that each say what they are do
+                  not need a picture of it, and an info dot beside every label
+                  is four invitations to stop reading and go somewhere else. */}
+              <span className="min-w-0 truncate text-[12.5px] text-[#3c5c5e] dark:text-[#aebac1]">
+                {r.label}
               </span>
-              <span className="shrink-0 text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+              <span className="shrink-0 text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
                 {r.value}
               </span>
             </div>
