@@ -42,6 +42,10 @@ export interface College {
   image: string | null;
   /** Photographer. CC BY licences require this to be displayed. */
   credit: string | null;
+  /** The institution's homepage, from Scorecard. Present for every school. */
+  website: string | null;
+  /** Commons filename for the crest. About half of schools have one. */
+  logo: string | null;
 }
 
 const CONTROL: Control[] = ["public", "private_nonprofit", "private_for_profit"];
@@ -83,6 +87,7 @@ function decode(payload: {
     actLow: i("actLow"), actHigh: i("actHigh"),
     netPrice: i("netPrice"), cost: i("cost"), ratio: i("ratio"),
     gradRate: i("gradRate"), image: i("image"), credit: i("credit"),
+    website: i("website"), logo: i("logo"),
   };
 
   return payload.rows.map((r) => ({
@@ -106,6 +111,8 @@ function decode(payload: {
     gradRate: r[c.gradRate] as number | null,
     image: r[c.image] as string | null,
     credit: r[c.credit] as string | null,
+    website: r[c.website] as string | null,
+    logo: r[c.logo] as string | null,
   }));
 }
 

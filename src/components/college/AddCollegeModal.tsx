@@ -172,6 +172,11 @@ export function AddCollegeModal({
   const choose = (c: College) => {
     setPicked(c);
     setTier(FIT_TO_TIER[computeFit(c, student)]);
+    // Prefilled from the catalogue, which carries every school's homepage.
+    // Scorecard has no admissions-page field, so this is the front door rather
+    // than the right page: a head start to correct, not an answer. Only when
+    // the field is untouched, so it never overwrites something typed.
+    setAppUrl((current) => current.trim() || c.website || "");
     setStep(1);
   };
 
@@ -584,7 +589,9 @@ export function AddCollegeModal({
  */
 function CollegePanel({ college }: { college: College }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [crestFailed, setCrestFailed] = useState(false);
   const img = imgFailed ? null : collegeImageUrl(college.image, 480);
+  const crest = crestFailed ? null : collegeImageUrl(college.logo, 120);
 
   const rows = [
     {
@@ -664,6 +671,18 @@ function CollegePanel({ college }: { college: College }) {
       )}
 
       <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
+        {/* The crest, where the catalogue has one. About half of schools do,
+            so this cannot be a layout the panel depends on: no crest simply
+            means the name starts higher. */}
+        {crest && (
+          <img
+            src={crest}
+            alt=""
+            loading="lazy"
+            onError={() => setCrestFailed(true)}
+            className="mb-3 h-10 w-10 object-contain"
+          />
+        )}
         <h3 className="text-[17px] font-bold leading-tight text-[#111] dark:text-white">
           {college.name}
         </h3>

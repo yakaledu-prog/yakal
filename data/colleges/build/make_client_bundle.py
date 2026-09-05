@@ -43,6 +43,8 @@ COLUMNS = [
     "gradRate",
     "image",         # Commons filename only, the client builds the URL
     "credit",        # photographer, for the attribution line
+    "website",       # the institution's homepage, from Scorecard INSTURL
+    "logo",          # Commons filename for the crest, or null
 ]
 
 CONTROL = {"public": 0, "private_nonprofit": 1, "private_for_profit": 2}
@@ -110,6 +112,11 @@ def main():
             rnd(r.get("grad_rate_6yr_pct")),
             img,
             credits.get(uid) or None,
+            r.get("website"),
+            # The crest, as a Commons filename like the photograph. Shipping
+            # the filename rather than the URL keeps the bundle small and lets
+            # the client ask for the size it wants.
+            commons_filename(r.get("logo_url")),
         ])
 
     rows.sort(key=lambda x: -(x[6] or 0))
