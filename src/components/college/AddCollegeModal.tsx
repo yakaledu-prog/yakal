@@ -635,7 +635,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:bg-[#17262b]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:bg-[#0e161a]">
       {img && (
         <>
           <img
@@ -662,7 +662,7 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 hidden dark:block"
             style={{
               backgroundImage:
-                "linear-gradient(to top, #17262b 0%, #17262b 55%, rgba(23,38,43,0.94) 70%, rgba(23,38,43,0.88) 85%, rgba(23,38,43,0.82) 100%)",
+                "linear-gradient(to top, #0e161a 0%, #0e161a 55%, rgba(14,22,26,0.97) 70%, rgba(14,22,26,0.94) 85%, rgba(14,22,26,0.9) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
