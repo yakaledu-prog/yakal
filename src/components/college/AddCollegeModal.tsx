@@ -66,10 +66,10 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
 
 // What each step is for, as a phrase rather than a list of its fields.
 // "Deadline" named one of five things on the middle step, and joining them with
-// ampersands would only have named three of five in more words. The step is
-// about applying to this college, so it says that, and the three read as a
-// sentence: which college, applying here, and why.
-const STEPS = ["College", "Applying here", "Why this college"];
+// ampersands would only have named three of five in more words. A noun phrase
+// covers all five: "Applying here" read as a half-asked question, so the middle
+// step is a thing rather than an action.
+const STEPS = ["College", "Your application", "Why this college"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
