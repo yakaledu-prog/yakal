@@ -64,10 +64,9 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-// What each step is for. The last one holds the two judgements that are the
-// student's rather than the college's: how likely they think it is, and why
-// they want it.
-const STEPS = ["College", "Deadline", "Your take"];
+// What each step is for. The last one is a single question in the student's own
+// words, which is why it is named as that question rather than as a category.
+const STEPS = ["College", "Deadline", "Why this college"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
@@ -360,8 +359,10 @@ export function AddCollegeModal({
 
           {step === 1 && (
             <div className="space-y-5">
-              {/* Round and deadline are one decision, so they share a row. */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Round, deadline and odds are one decision each about applying
+                  here, so they share a row rather than being spread over two
+                  steps. */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted you must enrol. Pick Not decided if you are still weighing it.">
                     Round
@@ -372,6 +373,18 @@ export function AddCollegeModal({
                     options={[{ value: "" as const, label: "Not decided" }, ...ROUNDS]}
                     buttonClassName="h-11 rounded-xl text-[14px] font-normal"
                     ariaLabel="Application round"
+                  />
+                </div>
+                <div>
+                  <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
+                    Your odds
+                  </FieldLabel>
+                  <Dropdown
+                    value={tier}
+                    onChange={(v) => setTier(v as SchoolTier)}
+                    options={TIERS}
+                    buttonClassName="h-11 rounded-xl text-[14px] font-normal"
+                    ariaLabel="Reach, target or safety"
                   />
                 </div>
                 <div>
@@ -424,18 +437,6 @@ export function AddCollegeModal({
 
           {step === 2 && (
             <div className="space-y-5">
-                <div>
-                  <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
-                    Your odds
-                  </FieldLabel>
-                  <Dropdown
-                    value={tier}
-                    onChange={(v) => setTier(v as SchoolTier)}
-                    options={TIERS}
-                    buttonClassName="h-11 rounded-xl text-[14px] font-normal"
-                    ariaLabel="Reach, target or safety"
-                  />
-                </div>
               <div>
                 <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
@@ -599,9 +600,7 @@ export function AddCollegeModal({
  */
 function CollegePanel({ college }: { college: College }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const [crestFailed, setCrestFailed] = useState(false);
   const img = imgFailed ? null : collegeImageUrl(college.image, 480);
-  const crest = crestFailed ? null : collegeImageUrl(college.logo, 120);
 
   const rows = [
     {
@@ -680,23 +679,7 @@ function CollegePanel({ college }: { college: College }) {
         </>
       )}
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5 text-center">
-        {/* The crest, where the catalogue has one. About half of schools do,
-            so this cannot be a layout the panel depends on: no crest simply
-            means the name starts higher.
-
-            No plate behind it. One was tried to keep dark marks visible on the
-            teal and it read as a sticker, which is worse than a crest that is
-            occasionally hard to see. */}
-        {crest && (
-          <img
-            src={crest}
-            alt=""
-            loading="lazy"
-            onError={() => setCrestFailed(true)}
-            className="mx-auto mb-3 h-11 w-11 object-contain"
-          />
-        )}
+      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
         <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
@@ -705,7 +688,7 @@ function CollegePanel({ college }: { college: College }) {
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
 
-        <div className="mt-5 space-y-2 text-left">
+        <div className="mt-5 space-y-2">
           {rows.map((r) => (
             <div
               key={r.label}
@@ -732,7 +715,7 @@ function CollegePanel({ college }: { college: College }) {
           and low contrast on purpose: it is an attribution, not a caption, and
           the licence asks for it to be present rather than prominent. */}
       {img && college.credit && (
-        <p className="relative z-10 line-clamp-2 px-5 pb-3 text-center text-[10px] leading-snug text-white/45">
+        <p className="relative z-10 line-clamp-2 px-5 pb-3 text-[10px] leading-snug text-white/45">
           Photo: {college.credit}
         </p>
       )}
