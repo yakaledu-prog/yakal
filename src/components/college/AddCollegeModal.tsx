@@ -683,14 +683,18 @@ function CollegePanel({ college }: { college: College }) {
       <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
         {/* The crest, where the catalogue has one. About half of schools do,
             so this cannot be a layout the panel depends on: no crest simply
-            means the name starts higher. */}
+            means the name starts higher.
+
+            No plate behind it. One was tried to keep dark marks visible on the
+            teal and it read as a sticker, which is worse than a crest that is
+            occasionally hard to see. */}
         {crest && (
           <img
             src={crest}
             alt=""
             loading="lazy"
             onError={() => setCrestFailed(true)}
-            className="mb-3 h-10 w-10 rounded-md bg-white/90 object-contain p-1"
+            className="mb-3 h-10 w-10 object-contain"
           />
         )}
         <h3 className="text-[17px] font-bold leading-tight text-white">
