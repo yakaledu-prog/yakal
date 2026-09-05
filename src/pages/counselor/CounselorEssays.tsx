@@ -158,7 +158,7 @@ export function CounselorEssays() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-8">
+        <header className="relative overflow-hidden bg-primary px-6 py-7 text-white md:px-10 md:py-9">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -226,9 +226,11 @@ export function CounselorEssays() {
                   align="end"
                   icon={<SlidersHorizontal size={15} />}
                   buttonClassName={cn(
-                    "h-8 w-8 justify-center gap-0 rounded-lg border-0 bg-transparent px-0 [&>span]:hidden [&>svg:last-child]:hidden",
+                    "h-8 w-8 justify-center rounded-lg border-transparent px-0",
+                    // Tinted when it is doing something, so an active filter is
+                    // visible without opening the menu.
                     filter === "waiting"
-                      ? "text-muted-foreground hover:text-foreground"
+                      ? "bg-transparent text-muted-foreground hover:text-foreground"
                       : "bg-primary/10 text-primary"
                   )}
                   ariaLabel="Filter essays by status"
