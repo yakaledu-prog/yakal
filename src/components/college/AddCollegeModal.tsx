@@ -687,17 +687,23 @@ function CollegePanel({ college }: { college: College }) {
           half of schools have one; without it the panel simply opens on the
           photograph. */}
       {crest && (
-        <img
-          src={crest}
-          alt=""
-          loading="lazy"
-          onError={() => setCrestFailed(true)}
-          // Flattened to a white silhouette. University marks are every colour
-          // there is and none of them sat on the teal; as one tone they read as
-          // part of the panel instead of a sticker on it, and the shape is what
-          // identifies a school anyway.
-          className="relative z-10 mt-5 h-11 w-11 self-start object-contain px-5 opacity-80 brightness-0 invert"
-        />
+        <div className="relative z-10 px-5 pt-5">
+          <img
+            src={crest}
+            alt=""
+            loading="lazy"
+            onError={() => setCrestFailed(true)}
+            // Height fixed, width free. These are not square crests: about half
+            // are wide wordmarks, and boxing one into a square left a few
+            // pixels of content inside the padding.
+            //
+            // Flattened to a white silhouette, because university marks are
+            // every colour there is and none of them sat on the teal. As one
+            // tone it reads as part of the panel, and the shape is what
+            // identifies a school anyway.
+            className="h-7 w-auto max-w-[150px] object-contain object-left opacity-85 brightness-0 invert"
+          />
+        </div>
       )}
 
       <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
