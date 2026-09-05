@@ -1,5 +1,17 @@
 import type { NotificationTemplate, NotificationType } from "../types";
-import { parentLink, accountApproved, unlockRequest } from "./people";
+
+// Relative imports here carry a .js extension, which nothing else under src/
+// does. This directory is the one piece of src/ that api/ imports rather than
+// copies, so it is read by the server as well as bundled for the browser, and
+// the server's rule is the stricter one. Type-only imports are exempt because
+// they are erased before anything resolves them.
+import {
+  parentLink,
+  parentLinkDecided,
+  accountApproved,
+  unlockRequest,
+  unlockRequestDeclined,
+} from "./people.js";
 import {
   enrolment,
   booking,
@@ -7,10 +19,16 @@ import {
   message,
   sessionMoved,
   sessionCancelled,
-} from "./learning";
-import { courseApplication, courseApplicationDecided, payout } from "./teaching";
-import { admissionsPlan, essayReview, application } from "./admissions";
-import { messageReport, system } from "./safety";
+} from "./learning.js";
+import {
+  courseApplication,
+  courseApplicationDecided,
+  payout,
+  adminNotice,
+  subscriptionPaymentFailed,
+} from "./teaching.js";
+import { admissionsPlan, essayReview, application } from "./admissions.js";
+import { messageReport, system } from "./safety.js";
 
 /**
  * Every template, keyed by the name a caller uses.
@@ -21,8 +39,10 @@ import { messageReport, system } from "./safety";
  */
 export const TEMPLATES = {
   parentLink,
+  parentLinkDecided,
   accountApproved,
   unlockRequest,
+  unlockRequestDeclined,
   enrolment,
   booking,
   sessionMoved,
@@ -32,6 +52,8 @@ export const TEMPLATES = {
   courseApplication,
   courseApplicationDecided,
   payout,
+  adminNotice,
+  subscriptionPaymentFailed,
   admissionsPlan,
   essayReview,
   application,

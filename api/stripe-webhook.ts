@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { chargeIdFor, getStripe } from './_utils/billing.js';
 import { getServiceClient } from './_utils/supabase.js';
 import { fulfilInvoices } from './_utils/fulfil.js';
+import { notifyAll } from './_utils/notify.js';
 import {
   cancelEarningsForCharge,
   counsellorShare,
@@ -163,29 +164,27 @@ async function reportFailedPayment(db: any, plan: any): Promise<void> {
   const studentName = plan.student?.full_name ?? 'a student';
   const tierName = plan.tier?.name ?? 'counselling';
 
+  // Both readers, one template. The parent's copy matters most and used to be
+  // the thinnest thing we sent: a declined card with no explanation of what
+  // happens next, no facts, and no email, so a family learned about it only if
+  // they happened to open the app.
   const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
-  const rows = (admins ?? []).map((a: any) => ({
-    user_id: a.id,
-    type: 'admissions_plan',
-    title: 'A counselling payment failed',
-    message: `${tierName} for ${studentName} could not be charged. Nothing has been switched off.`,
-    link: '/admin/billing',
-  }));
-
-  if (plan.purchased_by) {
-    rows.push({
-      user_id: plan.purchased_by,
-      type: 'admissions_plan',
-      title: 'Your counselling payment did not go through',
-      message: 'Your card was declined. Counselling carries on. Update your card when you can.',
-      link: '/parent/billing',
-    });
-  }
-
-  if (rows.length > 0) {
-    const { error } = await db.from('notifications').insert(rows);
-    if (error) console.error('webhook: could not report a failed payment:', error.message);
-  }
+  await notifyAll(db, [
+    ...(admins ?? []).map((a: any) => ({
+      userId: a.id,
+      key: 'subscriptionPaymentFailed' as const,
+      vars: { audience: 'admin', studentName, tierName },
+    })),
+    ...(plan.purchased_by
+      ? [
+          {
+            userId: plan.purchased_by,
+            key: 'subscriptionPaymentFailed' as const,
+            vars: { audience: 'parent', studentName, tierName },
+          },
+        ]
+      : []),
+  ]);
 }
 
 /**

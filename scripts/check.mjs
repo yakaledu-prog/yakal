@@ -24,6 +24,7 @@ const PURE = [
   ['classroom-visibility.ts', 'individual coursework does not leak between students'],
   ['classroom-submissions.ts', 'submission state, and no draft grade shown as a result'],
   ['notification-templates.ts', 'every notification template renders'],
+  ['notification-links.ts', 'every notification link goes somewhere real'],
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],

@@ -77,6 +77,7 @@ export function CourseApplicants({
       applicationId: a.id,
       courseId,
       tutorId: a.tutor.id,
+      tutorName: a.tutor.name,
       adminId: user.id,
       courseTitle,
     });
@@ -92,6 +93,7 @@ export function CourseApplicants({
     const res = await rejectApplicant({
       applicationId: a.id,
       tutorId: a.tutor.id,
+      tutorName: a.tutor.name,
       adminId: user.id,
       courseTitle,
     });

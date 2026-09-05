@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { SupportDrawer } from "@/components/support/SupportDrawer";
 import { SUPPORT_ROLES, type SupportChatRole } from "@/services/supportChatService";
 import { supabase } from "@/lib/supabase";
+import { SERVICE_LABEL } from "@/services/parentService";
+import { sendFromTemplate } from "@/services/notificationService";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
 import { useTopbarActionsContext } from "../contexts/TopbarActionsContext";
@@ -144,19 +146,25 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       // Asking both is right: either can grant, and neither has to be the one
       // who happens to open the app first.
-      const { error: notifError } = await supabase.from("notifications").insert(
-        parentIds.map((parentId) => ({
-          user_id: parentId,
-          // The type and link carry enough for the parent screen to offer a
-          // one-click grant rather than sending them off to find the setting.
-          type: "unlock_request",
-          title: "Feature unlock request",
-          message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
-          link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
-        }))
+      //
+      // Through the template rather than an insert of its own. Written by hand
+      // this produced a row with no template and no vars, which the inbox can
+      // only render as its one stored line and a bare Open button, and which
+      // sent no email at all. The link it builds is unchanged: the parent's
+      // screen reads the student and service out of it to offer a one-click
+      // grant rather than sending them off to find the setting.
+      const serviceKey = lockedItem.lockedBy ?? "admissions";
+      await Promise.all(
+        parentIds.map((parentId) =>
+          sendFromTemplate(parentId, "unlockRequest", {
+            studentName: profile.full_name,
+            studentId: user.id,
+            service: SERVICE_LABEL[serviceKey] ?? serviceKey,
+            serviceKey,
+            featureName: lockedItem.name,
+          })
+        )
       );
-
-      if (notifError) throw notifError;
       toast.success("Request sent. Your parent can add it from their account.", {
         id: "request-access",
       });

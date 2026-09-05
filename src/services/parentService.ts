@@ -3,6 +3,7 @@ import { getAllAssignments } from "@/services/studentService";
 import { getConversations } from "@/services/messageService";
 import { getBilling } from "@/services/packageService";
 import { authedPost } from "@/lib/authedFetch";
+import { sendFromTemplate } from "@/services/notificationService";
 
 export interface LinkedChild {
   id: string;
@@ -31,6 +32,19 @@ export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]
 
 // --- Per-child service enrollment (Tutoring / Admissions) ---
 export type ServiceName = "tutoring" | "admissions";
+
+/**
+ * What a service is called in front of a family.
+ *
+ * Here rather than beside the screen that shows it, because three of them now
+ * do: the parent's inbox, the request a student raises from a locked nav item,
+ * and the email that request sends. Two copies had already appeared and would
+ * have disagreed the first time somebody reworded one.
+ */
+export const SERVICE_LABEL: Record<string, string> = {
+  admissions: "College admissions",
+  tutoring: "Tutoring",
+};
 
 export interface ChildService {
   id: string;
@@ -193,15 +207,12 @@ export async function requestChildLink(
   }
 
   // Best effort: the request exists either way, and the student also sees it
-  // on their own screen.
-  const { error: notifErr } = await supabase.from("notifications").insert({
-    user_id: student.id,
-    type: "parent_link",
-    title: "Parent link request",
-    message: `${parentName} has asked to link to your account as your parent.`,
-    link: `/student/notifications`,
-  });
-  if (notifErr) console.warn("Could not notify the student", notifErr.message);
+  // on their own screen. Through the template, so it carries its facts and
+  // sends the email half; the hand-written insert it replaces did neither.
+  await sendFromTemplate(student.id, "parentLink", {
+    parentName,
+    studentName: student.full_name ?? "you",
+  }).catch((err) => console.warn("Could not notify the student", err?.message));
 
   return { success: true };
 }

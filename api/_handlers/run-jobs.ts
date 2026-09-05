@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient } from '../_utils/supabase.js';
 import { recordSessionEarning, releaseDueEarnings } from '../_utils/earnings.js';
 import { reportServerError } from '../_utils/report.js';
+import { notifyAll } from '../_utils/notify.js';
 
 // ============================================================
 // The one scheduled task.
@@ -92,7 +93,15 @@ async function completeFinishedSessions(db: any): Promise<CompletionResult> {
       await tellAdmins(
         db,
         'A lesson was billed but nobody joined',
-        `${session.subject} on ${session.session_date} has no attendance. Nothing has been paid out.`
+        `${session.subject} on ${session.session_date} has no attendance.`,
+        `${session.subject} on ${session.session_date} was paid for and neither side joined ` +
+          `the meeting, so it has been marked as a no-show. Nothing has been paid out to the ` +
+          `tutor and the hold on the money is still running, which means this can be refunded ` +
+          `without anything having to be reversed.`,
+        [
+          { label: 'Subject', value: String(session.subject) },
+          { label: 'Date', value: String(session.session_date) },
+        ]
       );
       continue;
     }
@@ -157,19 +166,37 @@ async function voidStaleInvoices(db: any): Promise<number> {
   return (data ?? []).length;
 }
 
-async function tellAdmins(db: any, title: string, message: string): Promise<void> {
+/**
+ * Something for an administrator to look at.
+ *
+ * Through the adminNotice template. The rows this used to write carried type
+ * 'payout', which is not what a no-show is, and no template, so the inbox
+ * could render them only as a line and a bare Open button, and no email went
+ * out at all: an admin who was not in the app never learned about it.
+ */
+async function tellAdmins(
+  db: any,
+  title: string,
+  summary: string,
+  detail?: string,
+  facts?: { label: string; value: string }[]
+): Promise<void> {
   const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
-  const rows = (admins ?? []).map((a: any) => ({
-    user_id: a.id,
-    type: 'payout',
-    title,
-    message,
-    link: '/admin/billing',
-  }));
-  if (rows.length === 0) return;
-
-  const { error } = await db.from('notifications').insert(rows);
-  if (error) console.error('run-jobs: could not notify admins:', error.message);
+  await notifyAll(
+    db,
+    (admins ?? []).map((a: any) => ({
+      userId: a.id,
+      key: 'adminNotice' as const,
+      vars: {
+        title,
+        summary,
+        detail: detail ?? summary,
+        facts: facts ?? [],
+        link: '/admin/billing',
+        linkLabel: 'Open billing',
+      },
+    }))
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

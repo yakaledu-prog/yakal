@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { sendNotification } from "./notificationService";
+import { sendFromTemplate } from "./notificationService";
 
 // ============================================================
 // A counselor's pass over an essay.
@@ -50,6 +50,8 @@ export async function reviewEssay(input: {
   /** Told so the student knows to look at the document. */
   studentId?: string;
   essayTitle?: string;
+  /** Named in the email when the caller has it. */
+  counselorName?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const { error: logErr } = await supabase.from("essay_reviews").insert({
     essay_id: input.essayId,
@@ -69,17 +71,12 @@ export async function reviewEssay(input: {
   // student their finished essay is unfinished again, with no new feedback, is
   // worse than saying nothing.
   if (input.studentId && input.action !== "reopened") {
-    await sendNotification({
-      userId: input.studentId,
-      type: "essay_review",
-      title: input.action === "approved" ? "An essay is finished" : "An essay came back",
-      message:
-        input.action === "approved"
-          ? `${input.essayTitle ?? "Your essay"} has been approved.`
-          : `${input.essayTitle ?? "Your essay"} has comments waiting in the document.`,
-      // The student essays live on the application workspace at /student/my-app;
-      // there is no /student/essays route, so the old link opened not-found.
-      link: "/student/my-app",
+    // The student essays live on the application workspace at /student/my-app;
+    // there is no /student/essays route, and the template used to point at one.
+    await sendFromTemplate(input.studentId, "essayReview", {
+      approved: input.action === "approved",
+      essayTitle: input.essayTitle ?? "Your essay",
+      counselorName: input.counselorName,
     }).catch(() => undefined);
   }
 

@@ -21,7 +21,10 @@ import { join, resolve } from 'node:path';
 import { readdirSync } from 'node:fs';
 
 const root = resolve(import.meta.dirname, '../..');
-const out = mkdtempSync(join(tmpdir(), 'yakal-esm-'));
+// api/ and src/ under one staging root, mirroring the repo, so relative
+// imports out of api/ land where they do in a real deployment.
+const stage = mkdtempSync(join(tmpdir(), 'yakal-esm-'));
+const out = join(stage, 'api');
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -42,8 +45,20 @@ async function main() {
   build('api/*.ts', out);
   build('api/_handlers/*.ts', join(out, '_handlers'));
   build('api/_utils/*.ts', join(out, '_utils'));
+
+  // The notification templates, which api/ imports rather than copies so the
+  // words in an email and the words in the app cannot drift.
+  //
+  // They live under src/, and a handler reaches them as ../../src/..., so the
+  // staging directory has to keep api/ and src/ as siblings. Staged flat, three
+  // functions failed to resolve here while working perfectly in production, and
+  // the error named a path under /tmp, which is an unhelpful way to find out
+  // that the harness is the thing that is wrong.
+  build('src/lib/notifications/*.ts', join(stage, 'src/lib/notifications'));
+  build('src/lib/notifications/templates/*.ts', join(stage, 'src/lib/notifications/templates'));
+  writeFileSync(join(stage, 'package.json'), '{"type":"module"}');
   writeFileSync(join(out, 'package.json'), '{"type":"module"}');
-  symlinkSync(join(root, 'node_modules'), join(out, 'node_modules'));
+  symlinkSync(join(root, 'node_modules'), join(stage, 'node_modules'));
 
   const functions = readdirSync(join(root, 'api'))
     .filter((f) => f.endsWith('.ts'))
@@ -68,7 +83,7 @@ async function main() {
     }
   }
 
-  rmSync(out, { recursive: true, force: true });
+  rmSync(stage, { recursive: true, force: true });
   console.log(failures === 0 ? '\nall passed' : `\n${failures} failed`);
   process.exit(failures === 0 ? 0 : 1);
 }

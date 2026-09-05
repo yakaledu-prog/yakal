@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { authedPost } from "@/lib/authedFetch";
+import { sendFromTemplate } from "@/services/notificationService";
 
 export interface AdminUser {
   id: string;
@@ -236,38 +237,58 @@ export async function getApplicants(
  * Best effort: a failure here must not make the caller think the decision
  * itself failed, because the profile row is already updated by then.
  */
-async function notifyDecision(userId: string, approved: boolean, reason?: string) {
-  const { error } = await supabase.from("notifications").insert({
-    user_id: userId,
-    type: "system",
-    title: approved ? "Your application was approved" : "Your application was not approved",
-    message: approved
-      ? "Welcome aboard. Your account is active and you can start taking on students."
-      : reason?.trim()
-        ? `Reason given: ${reason.trim()}`
-        : "Your application was not approved at this time.",
-    link: approved ? "/" : "/pending-approval",
-  });
-  if (error) console.warn("Could not notify the applicant", error.message);
+async function notifyDecision(
+  userId: string,
+  approved: boolean,
+  reason?: string,
+  applicant?: { fullName?: string | null; role?: string | null }
+) {
+  // Through the accountApproved template, which has existed all along and had
+  // no caller. The insert this replaces wrote type "system" with a link to
+  // "/", so an approved tutor got a notification with no facts, a bare Open
+  // button, and no email telling them their account was live.
+  await sendFromTemplate(userId, "accountApproved", {
+    fullName: applicant?.fullName ?? "",
+    role: applicant?.role ?? "tutor",
+    approved,
+    reason: reason?.trim() || null,
+  }).catch((err) => console.warn("Could not notify the applicant", err?.message));
+}
+
+/**
+ * The applicant's name and role, for the email that greets them by both.
+ *
+ * Read before the update rather than after, so a failed update does not leave
+ * a lookup running for nothing.
+ */
+async function applicantFor(id: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, role")
+    .eq("id", id)
+    .maybeSingle();
+  return { fullName: data?.full_name ?? null, role: data?.role ?? null };
 }
 
 export async function approveUser(id: string): Promise<Result> {
+  const applicant = await applicantFor(id);
   const { error } = await supabase
     .from("profiles")
     .update({ status: "active", rejection_reason: null })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
-  await notifyDecision(id, true);
+  await notifyDecision(id, true, undefined, applicant);
   return { success: true };
 }
 
 export async function rejectUser(id: string, reason: string): Promise<Result> {
+  const applicant = await applicantFor(id);
   const { error } = await supabase
     .from("profiles")
     .update({ status: "rejected", rejection_reason: reason || "Not approved" })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
-  await notifyDecision(id, false, reason);
+  await notifyDecision(id, false, reason, applicant);
   return { success: true };
 }
 

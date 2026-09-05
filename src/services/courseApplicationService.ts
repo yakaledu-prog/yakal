@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { sendNotification } from "./notificationService";
+import { sendFromTemplate } from "./notificationService";
 
 // ============================================================
 // Tutors applying to teach a course.
@@ -186,12 +186,10 @@ export async function applyForCourse(input: {
   const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
   await Promise.all(
     (admins ?? []).map((a: { id: string }) =>
-      sendNotification({
-        userId: a.id,
-        title: "New course application",
-        message: `${input.tutorName} applied to teach ${input.courseTitle}.`,
-        type: "course_application",
-        link: `/admin/courses/${input.courseId}`,
+      sendFromTemplate(a.id, "courseApplication", {
+        tutorName: input.tutorName,
+        courseTitle: input.courseTitle,
+        courseId: input.courseId,
       }).catch(() => undefined)
     )
   );
@@ -277,6 +275,8 @@ export async function acceptApplicant(input: {
   tutorId: string;
   adminId: string;
   courseTitle: string;
+  /** For the email, which greets them by name. */
+  tutorName?: string;
   note?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const now = new Date().toISOString();
@@ -303,12 +303,10 @@ export async function acceptApplicant(input: {
     .eq("id", input.applicationId);
   if (acceptErr) return { success: false, error: acceptErr.message };
 
-  await sendNotification({
-    userId: input.tutorId,
-    title: "You got the course",
-    message: `You are now teaching ${input.courseTitle}.`,
-    type: "course_application_decided",
-    link: "/tutor/courses",
+  await sendFromTemplate(input.tutorId, "courseApplicationDecided", {
+    tutorName: input.tutorName ?? "",
+    courseTitle: input.courseTitle,
+    accepted: true,
   }).catch(() => undefined);
 
   return { success: true };
@@ -339,6 +337,8 @@ export async function rejectApplicant(input: {
   tutorId: string;
   adminId: string;
   courseTitle: string;
+  /** For the email, which greets them by name. */
+  tutorName?: string;
   note?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
@@ -353,12 +353,10 @@ export async function rejectApplicant(input: {
     .eq("id", input.applicationId);
   if (error) return { success: false, error: error.message };
 
-  await sendNotification({
-    userId: input.tutorId,
-    title: "Application not accepted",
-    message: `Your application to teach ${input.courseTitle} was not accepted this time.`,
-    type: "course_application_decided",
-    link: "/tutor/courses",
+  await sendFromTemplate(input.tutorId, "courseApplicationDecided", {
+    tutorName: input.tutorName ?? "",
+    courseTitle: input.courseTitle,
+    accepted: false,
   }).catch(() => undefined);
 
   return { success: true };

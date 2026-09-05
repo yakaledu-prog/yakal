@@ -1,9 +1,9 @@
-import { TEMPLATES, TEMPLATE_KEYS, type TemplateKey, type TemplateVars } from "./templates";
+import { TEMPLATES, TEMPLATE_KEYS, type TemplateKey, type TemplateVars } from "./templates/index.js";
 import type { NotificationDetail, RenderedEmail, RenderedNotification } from "./types";
 
 export * from "./types";
-export { TEMPLATES, TEMPLATE_KEYS, typesInUse } from "./templates";
-export type { TemplateKey, TemplateVars } from "./templates";
+export { TEMPLATES, TEMPLATE_KEYS, typesInUse } from "./templates/index.js";
+export type { TemplateKey, TemplateVars } from "./templates/index.js";
 
 /**
  * The row to write to public.notifications.

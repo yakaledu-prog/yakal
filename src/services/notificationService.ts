@@ -77,13 +77,18 @@ export async function setNotificationArchived(id: string, archived: boolean): Pr
 }
 
 /**
- * Sends a notification to someone else.
+ * Writes one notification row.
+ *
+ * Not exported. Every caller goes through sendFromTemplate, because a row
+ * written without a template and vars is one the inbox can only render as its
+ * stored line and a bare "Open" button, and one that sends no email. Eleven
+ * call sites did exactly that; this is what stops a twelfth.
  *
  * The INSERT policy currently allows any signed-in user to write a row for any
  * user_id, which is what makes student-to-parent requests possible without a
  * server. That is a known shortcut, tracked in the hardening checklist.
  */
-export async function sendNotification(input: {
+async function sendNotification(input: {
   userId: string;
   title: string;
   message: string;
