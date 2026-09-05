@@ -5,7 +5,7 @@ export function TutorLayout() {
   const navItems = [
     { name: "Teaching Hub", href: "/tutor", icon: <Home size={20} /> },
     { name: "Students", href: "/tutor/students", icon: <Users size={20} /> },
-    { name: "Sessions", href: "/tutor/sessions", icon: <History size={20} /> },
+    { name: "Lessons", href: "/tutor/sessions", icon: <History size={20} /> },
     { name: "Calendar", href: "/tutor/calendar", icon: <Calendar size={20} /> },
     { name: "My Courses", href: "/tutor/courses", icon: <Library size={20} /> },
     { name: "Find Courses", href: "/tutor/find-courses", icon: <Search size={20} /> },
