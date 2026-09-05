@@ -34,7 +34,19 @@ const listeners = new Set<(theme: Theme) => void>();
  * the page flashing white on the way to being dark.
  */
 export function applyTheme(theme: Theme): void {
-  document.documentElement.classList.toggle("dark", theme === "dark");
+  const root = document.documentElement;
+
+  // Colour transitions off for the swap itself. Most of the app carries
+  // transition-colors, so without this the background changes at once while
+  // every border eases across, and for about 150ms near-white edges sit on a
+  // dark page. Two frames, because one is not enough to guarantee the new
+  // colours have been painted before transitions come back.
+  root.classList.add("theme-switching");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => root.classList.remove("theme-switching"));
+  });
+
+  root.classList.toggle("dark", theme === "dark");
   try {
     localStorage.setItem(KEY, theme);
   } catch {
