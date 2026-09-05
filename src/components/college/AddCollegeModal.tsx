@@ -446,7 +446,7 @@ export function AddCollegeModal({
                 <textarea
                   id="why"
                   aria-label="Why this college"
-                  rows={7}
+                  rows={6}
                   value={why}
                   onChange={(e) => setWhy(e.target.value)}
                   placeholder="What draws you to it?"
