@@ -5,7 +5,20 @@ const psql = (sql) =>
   execSync(`PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAq -c "${sql}"`).toString().trim();
 
 psql('delete from course_applications;');
-psql("update courses set tutor_id = null where title in ('AP Subject Coaching','Biology, Foundations and Exam Practice');");
+// Two courses with nobody on them, so the tutor has something to apply for.
+psql("delete from course_tutors ct using courses c where ct.course_id = c.id and c.title in ('AP Subject Coaching','Biology, Foundations and Exam Practice');");
+
+// What the parent catalog should hold: the active courses somebody teaches.
+// Named and counted from the database rather than written in, because the two
+// sides of this test pull in opposite directions. The courses emptied above
+// are the ones the tutor page needs open, and they are exactly the ones the
+// parent page must not show.
+const bookableCount = Number(psql(
+  "select count(*) from courses c where c.is_active and exists (select 1 from course_tutors ct where ct.course_id = c.id);"
+));
+const bookableTitle = psql(
+  "select c.title from courses c where c.is_active and exists (select 1 from course_tutors ct where ct.course_id = c.id) order by c.title limit 1;"
+);
 
 const BASE = process.env.BASE || 'http://localhost:5173';
 const S = '/tmp/claude-1000/-home-binyam-products-yakal/470a1a43-cc42-4652-988d-ac4539a37912/scratchpad/shots';
@@ -30,22 +43,40 @@ const parent = await signIn('parent@yakal.com');
 await parent.goto(`${BASE}/parent/courses`, { waitUntil: 'domcontentloaded' });
 await parent.waitForTimeout(3500);
 const pText = await parent.locator('body').innerText();
-pass('the parent catalog shows seeded courses', /AP Subject Coaching/.test(pText) && /College Essay Writing/.test(pText));
-pass('it is paginating real rows', /of 10/.test(pText), pText.match(/Showing [^\n]*/)?.[0] ?? '');
+pass('the parent catalog shows seeded courses', pText.includes(bookableTitle), bookableTitle);
+// A course nobody teaches cannot be booked, so it must not be offered.
+pass('a course with no tutor is not offered', !/AP Subject Coaching/.test(pText));
+pass('it is paginating real rows', new RegExp(`of ${bookableCount}\\b`).test(pText),
+  pText.match(/Showing [^\n]*/)?.[0] ?? '');
 pass('no invented ratings or student counts', !/\d+ Students/.test(pText) && !/available tutors/i.test(pText));
 await parent.screenshot({ path: `${S}/parent-catalog.png`, fullPage: true });
 
 // A card must lead to a course that exists, not to CAT-01.
-await parent.getByText('AP Subject Coaching').first().click();
+await parent.getByText(bookableTitle).first().click();
 await parent.waitForTimeout(3500);
-pass('a card opens the real course', /AP Subject Coaching/.test(await parent.locator('body').innerText()));
+pass('a card opens the real course', (await parent.locator('body').innerText()).includes(bookableTitle));
 pass('the booking page is not a dead end', !parent.url().includes('CAT-'), parent.url().split('/').pop());
 
 // ---------- tutor ----------
 const tutor = await signIn('tutor@yakal.com');
 await tutor.goto(`${BASE}/tutor/find-courses`, { waitUntil: 'domcontentloaded' });
 await tutor.waitForTimeout(3500);
+// Searched rather than read off the first page: the catalog paginates, and a
+// tutor now sees every course they are not already on, so which ones land on
+// page one is not something to assert.
+await tutor.locator('input[placeholder="Search courses..."]').fill('AP Subject');
+await tutor.waitForTimeout(1200);
 pass('the tutor catalog lists open courses', /AP Subject Coaching/.test(await tutor.locator('body').innerText()));
+
+// The bug this replaced: getOpenCourses filtered on tutor_id IS NULL, so the
+// first accepted application removed a course from every other tutor's catalog
+// for good. A course somebody already teaches is open to the rest.
+await tutor.locator('input[placeholder="Search courses..."]').fill('K-12 English');
+await tutor.waitForTimeout(1200);
+pass('a course another tutor teaches is still open to apply for',
+  /K-12 English Language Arts/.test(await tutor.locator('body').innerText()));
+await tutor.locator('input[placeholder="Search courses..."]').fill('');
+await tutor.waitForTimeout(1200);
 const before = await tutor.getByRole('button', { name: 'Apply', exact: true }).count();
 pass('there are courses to apply for', before > 0, `${before} apply buttons`);
 
@@ -53,10 +84,10 @@ await tutor.getByRole('button', { name: 'Apply', exact: true }).first().click();
 await tutor.waitForTimeout(800);
 // The dialog shows what the reviewer will see: the CV and the profile.
 const dlg = tutor.locator('div[role="dialog"]');
-pass('the dialog shows the CV card', await dlg.getByText(/Upload your CV|\.pdf|\.docx?/i).first().isVisible());
+pass('the dialog shows the resume card', await dlg.getByText(/Upload your resume|\.pdf|\.docx?/i).first().isVisible());
 pass('it shows the tutor name', await dlg.getByText('Bethlehem Alemu').isVisible());
 pass('it labels what gets sent', await dlg.getByText(/Sent with your application/i).isVisible());
-pass('it labels the CV', await dlg.getByText(/The CV from your onboarding/i).isVisible());
+pass('it labels the resume', await dlg.getByText(/from your onboarding/i).isVisible());
 // The admin prices a course; a tutor does not quote for it.
 pass('no rate is quoted', !/\/ hr/.test(await dlg.innerText()));
 pass('the profile can be edited from here', await dlg.getByRole('link', { name: /Edit your profile/i }).isVisible());

@@ -68,10 +68,10 @@ export interface BillingData {
 export async function getBilling(parentId: string): Promise<BillingData> {
   const { data: invoiceRows, error } = await supabase
     .from("invoices")
-    .select(`id, description, amount_cents, status, created_at, paid_at, booking, course_id, student_id,
+    .select(`id, description, amount_cents, status, created_at, paid_at, booking, course_id, student_id, tutor_id,
              student:profiles!invoices_student_id_fkey (id, full_name, avatar_url),
-             course:courses (id, title, subject, thumbnail_url, price_cents, tutor_id,
-                             tutor:profiles!courses_tutor_id_fkey (full_name, avatar_url))`)
+             tutor:profiles!invoices_tutor_id_fkey (full_name, avatar_url),
+             course:courses (id, title, subject, thumbnail_url, price_cents)`)
     .eq("parent_id", parentId)
     .order("created_at", { ascending: false });
 
@@ -147,9 +147,14 @@ export async function getBilling(parentId: string): Promise<BillingData> {
       studentId: r.student_id,
       studentName: r.student?.full_name ?? "Your child",
       studentAvatarUrl: r.student?.avatar_url ?? null,
-      tutorId: r.course?.tutor_id ?? null,
-      tutorName: r.course?.tutor?.full_name ?? null,
-      tutorAvatarUrl: r.course?.tutor?.avatar_url ?? null,
+      // The tutor on the invoice, not on the course. This used to read the
+      // course, which held one tutor and so was the same answer for every
+      // family who bought it. A course can carry several now, and "Algebra II
+      // with ..." has to name the one this parent actually booked, which is
+      // the one the invoice was raised against.
+      tutorId: r.tutor_id ?? null,
+      tutorName: r.tutor?.full_name ?? null,
+      tutorAvatarUrl: r.tutor?.avatar_url ?? null,
       slotsPurchased: slots,
       slotsCompleted: 0,
       slotsUpcoming: 0,

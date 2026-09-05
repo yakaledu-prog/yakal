@@ -14,6 +14,7 @@ import { getCourseForBooking } from "@/services/courseApplicationService";
 import { getLinkedChildren, type LinkedChild } from "@/services/parentService";
 import { getSlotConflicts, slotKey } from "@/services/slotService";
 import { TutorResume, resumeFromProfile } from "@/components/shared/TutorResume";
+import { StarRating } from "@/components/ui/StarRating";
 import { dicebearUrl } from "@/utils/avatar";
 import { toast } from "sonner";
 import { ChatBody, useDirectConversation } from "@/components/messaging";
@@ -198,14 +199,41 @@ export function ParentCourseCatalogDetail() {
   const [childId, setChildId] = useState<string | null>(params.get("student"));
   const bookingFor = children.find((c) => c.id === childId) ?? children[0] ?? null;
 
-  const realTutor = realCourse?.tutor ?? null;
+  // Memoised because `?? []` is a new array on every render, and this feeds
+  // the dependencies of everything below it.
+  const roster = useMemo(() => realCourse?.tutors ?? [], [realCourse]);
 
-  // One approved tutor per course, so there is nobody to choose between: the
-  // page opens on them rather than on a picker of one.
-  const [selectedTutorId, setSelectedTutorId] = useState<string | null>(null);
-  useEffect(() => {
-    if (realTutor && !selectedTutorId) setSelectedTutorId(realTutor.id);
-  }, [realTutor, selectedTutorId]);
+  // Which tutor this page is about.
+  //
+  // It used to be "the one", because a course held a single tutor_id and there
+  // was nobody to choose between. A course can carry a roster now, so a family
+  // picks, and the pick starts in the URL: a parent following a link their
+  // child sent should land on the tutor the child meant.
+  //
+  // Derived rather than synced. An effect writing the default into state
+  // renders once with the wrong value first, and has to remember to clear
+  // itself when the roster changes under it. Two rules cover every case here
+  // and both are answerable during render: a pick only counts while that tutor
+  // is still on the course, and a roster of one needs no pick at all, because
+  // choosing from a list of one is a click that decides nothing.
+  const [pickedTutorId, setPickedTutorId] = useState<string | null>(params.get("tutor"));
+  const selectedTutorId = useMemo(() => {
+    if (pickedTutorId && roster.some((t) => t.id === pickedTutorId)) return pickedTutorId;
+    return roster.length === 1 ? roster[0].id : null;
+  }, [roster, pickedTutorId]);
+  const setSelectedTutorId = setPickedTutorId;
+
+  const realTutor = roster.find((t) => t.id === selectedTutorId) ?? null;
+
+  // One lookup for the whole roster rather than one per card, and the same
+  // aggregate view the tutor's own profile reads, so the gallery cannot
+  // disagree with the page it opens.
+  const rosterIds = useMemo(() => roster.map((t) => t.id), [roster]);
+  const { data: rosterRatings } = useQuery({
+    queryKey: ["roster-ratings", rosterIds],
+    queryFn: () => getTutorRatings(rosterIds),
+    enabled: rosterIds.length > 0,
+  });
 
   // What students actually wrote, for a family deciding whether to book.
   const { data: tutorReviews = [] } = useQuery({
@@ -560,12 +588,26 @@ export function ParentCourseCatalogDetail() {
             </svg>
 
             <div className="relative z-10 max-w-[1440px] mx-auto">
-              <Link
-                to="/parent/courses"
-                className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-6 font-medium text-[14px]"
-              >
-                <ChevronLeft size={16} /> Back to courses
-              </Link>
+              {/* Back to the gallery when there is one to go back to, and out
+                  to the catalog when the roster holds one tutor and the
+                  gallery was skipped. A link to a list of one would be a step
+                  that decides nothing. */}
+              {roster.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTutorId(null)}
+                  className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-6 font-medium text-[14px]"
+                >
+                  <ChevronLeft size={16} /> Choose a different tutor
+                </button>
+              ) : (
+                <Link
+                  to="/parent/courses"
+                  className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-6 font-medium text-[14px]"
+                >
+                  <ChevronLeft size={16} /> Back to courses
+                </Link>
+              )}
 
               <div className="mb-8 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                 {/* Left aligned on a phone. items-center centred the whole
@@ -580,6 +622,13 @@ export function ParentCourseCatalogDetail() {
                     className="h-16 w-16 shrink-0 rounded-full border-2 border-white/25 object-cover sm:h-20 sm:w-20"
                   />
                   <div className="min-w-0 space-y-3 max-w-5xl">
+                    {/* Which course. The header named the tutor and nothing
+                        else, so a page reached from the gallery never said
+                        what was being booked, and the price below it had
+                        nothing to attach to. */}
+                    <div className="text-[14px] font-medium uppercase tracking-wider text-white/70">
+                      {realCourse?.title}
+                    </div>
                     <h2 className="text-3xl md:text-[40px] font-bold text-white flex items-center gap-3 leading-tight">
                       {selectedTutor?.name}
                     </h2>
@@ -640,19 +689,85 @@ export function ParentCourseCatalogDetail() {
         )}>
           {/* Dynamic Section: Gallery OR Master-Detail */}
           {!selectedTutorId ? (
-            /* No tutor accepted for this course yet. There is nobody to
-               book with, and inventing three to fill the space is what this
-               page did before. */
-            <div className="rounded-2xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
-              <Users size={32} className="mx-auto mb-3 text-[#aebac1]" />
-              <p className="text-[15px] font-medium text-[#111] dark:text-white">
-                No tutor assigned yet
-              </p>
-              <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                This course is open for tutors to apply to. It becomes bookable once one is
-                approved.
-              </p>
-            </div>
+            roster.length > 0 ? (
+              /* Who teaches this course.
+                 The step between the catalog and a calendar: a course can
+                 carry several tutors, and the family picks before there is
+                 anything to book. A roster of one never gets here, it is
+                 selected on arrival. */
+              <div className="pb-4">
+                <h2 className="text-[18px] font-semibold text-[#111] dark:text-white">
+                  Choose a tutor
+                </h2>
+                <p className="mt-1 text-[13.5px] text-[#54656f] dark:text-[#aebac1]">
+                  {roster.length} tutors teach this course. Pick one to see their week and book.
+                </p>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {roster.map((t) => {
+                    const r = rosterRatings?.get(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedTutorId(t.id)}
+                        className="flex h-full flex-col rounded-2xl border border-[#e9edef] bg-white p-5 text-left transition-colors hover:border-primary dark:border-[#2a3942] dark:bg-[#182329]"
+                      >
+                        <div className="flex items-start gap-3.5">
+                          <img
+                            src={t.avatarUrl || dicebearUrl(t.name)}
+                            alt=""
+                            className="h-14 w-14 shrink-0 rounded-full object-cover"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-[15.5px] font-semibold text-[#111] dark:text-white">
+                              {t.name}
+                            </p>
+                            <p className="truncate text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
+                              {(t.subjects ?? []).slice(0, 3).join(", ") || "Tutor"}
+                            </p>
+                            {/* Real, from the same view the tutor's own
+                                profile reads. A tutor with no ratings yet
+                                shows none rather than a default score. */}
+                            <div className="mt-1">
+                              <StarRating
+                                average={r?.averageStars}
+                                count={r?.ratingCount ?? 0}
+                                size={12}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {t.bio && (
+                          <p className="mt-3.5 line-clamp-3 text-[13px] leading-relaxed text-[#54656f] dark:text-[#aebac1]">
+                            {t.bio}
+                          </p>
+                        )}
+
+                        <span className="mt-4 inline-flex items-center gap-1 pt-1 text-[13px] font-semibold text-primary">
+                          See availability <ChevronRight size={14} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* No tutor accepted for this course yet. There is nobody to
+                 book with, and inventing three to fill the space is what this
+                 page did before. */
+              <div className="rounded-2xl border border-dashed border-[#e9edef] py-16 text-center dark:border-[#2a3942]">
+                <Users size={32} className="mx-auto mb-3 text-[#aebac1]" />
+                <p className="text-[15px] font-medium text-[#111] dark:text-white">
+                  No tutor assigned yet
+                </p>
+                <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#54656f] dark:text-[#aebac1]">
+                  This course is open for tutors to apply to. It becomes bookable once one is
+                  approved.
+                </p>
+              </div>
+            )
           ) : (
             /* SELECTED TUTOR VIEW */
             <div className="w-full">
@@ -682,10 +797,15 @@ export function ParentCourseCatalogDetail() {
                               {/* Week Header */}
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-2">
                                 <div className="flex items-center gap-2">
-                                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={currentWeekOffset <= 0} onClick={() => setCurrentWeekOffset(prev => Math.max(0, prev - 1))}>
+                                  {/* Named, because an icon-only button has no
+                                      accessible name at all: a screen reader
+                                      announced these two as "button", and the
+                                      only handle anything had on them was a
+                                      pair of Tailwind classes. */}
+                                  <Button variant="outline" size="icon" aria-label="Previous week" className="h-8 w-8" disabled={currentWeekOffset <= 0} onClick={() => setCurrentWeekOffset(prev => Math.max(0, prev - 1))}>
                                     <ChevronLeft size={16} />
                                   </Button>
-                                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
+                                  <Button variant="outline" size="icon" aria-label="Next week" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
                                     <ChevronRight size={16} />
                                   </Button>
                                   <span className="text-[14px] font-bold text-[#111] dark:text-white ml-2">

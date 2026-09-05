@@ -22,10 +22,11 @@ import {
 // and quotes, so an admin could not act on it at all. These are the real
 // applications.
 //
-// Accepting assigns the tutor and turns the others down in the same action: a
-// course with two accepted applications is a state nobody should have to
-// reason about, and being left waiting indefinitely is what people complain
-// about.
+// Accepting adds the tutor to the course and leaves the other applications
+// alone. It used to turn them all down in the same action, because the course
+// held a single tutor_id and a second acceptance had nowhere to go. A course
+// carries a roster now, so hiring one tutor says nothing about the next, and
+// an admin who wants to turn somebody down does it on their card.
 // ============================================================
 
 const STATUS: Record<string, { label: string; className: string }> = {
@@ -38,20 +39,19 @@ const STATUS: Record<string, { label: string; className: string }> = {
 export function CourseApplicants({
   courseId,
   courseTitle,
-  assignedTutorId,
   onAssigned,
   show = "pending",
 }: {
   courseId: string;
   courseTitle: string;
-  assignedTutorId: string | null;
   /** Lets the page refetch the course once its tutor changes. */
   onAssigned?: () => void;
   /**
    * "pending" is the queue of people waiting on a decision, which sits at the
-   * top of the page because it is the reason an admin opens an unassigned
-   * course. "assigned" is who ended up teaching it, which belongs in the
-   * Tutors tab. They are different questions and share only this component.
+   * top of the page because it is the reason an admin opens a course with
+   * applications on it. "assigned" is who ended up teaching it, which belongs
+   * in the Tutors tab. They are different questions and share only this
+   * component.
    */
   show?: "pending" | "assigned";
 }) {
@@ -114,17 +114,11 @@ export function CourseApplicants({
 
   return (
     <div className="animate-in fade-in duration-300">
-      {show === "assigned" && !assignedTutorId && (
-        <p className="mb-6 text-[13px] font-medium text-[#8a6a2a] dark:text-secondary">
-          No tutor assigned yet
-        </p>
-      )}
-
       {visible.length === 0 ? (
         show === "assigned" ? (
           <p className="flex items-center gap-2 text-[13.5px] text-muted-foreground">
             <UserCheck size={15} className="shrink-0 text-[#aebac1]" />
-            Nobody is teaching this course yet. Accept an applicant to assign one.
+            Nobody is teaching this course yet. Accept an applicant to add one.
           </p>
         ) : null
       ) : (
@@ -210,14 +204,13 @@ export function CourseApplicants({
                     >
                       <X size={14} /> Not this one
                     </button>
+                    {/* No longer disabled once somebody is teaching this
+                        course. A course can carry several tutors, so accepting
+                        one says nothing about the next, and the old rule made
+                        the first hire permanent. */}
                     <button
                       onClick={() => void accept(a)}
-                      disabled={busyId === a.id || !!assignedTutorId}
-                      title={
-                        assignedTutorId
-                          ? "This course already has a tutor. Unassign them first."
-                          : undefined
-                      }
+                      disabled={busyId === a.id}
                       className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                     >
                       {busyId === a.id ? (
@@ -225,7 +218,7 @@ export function CourseApplicants({
                       ) : (
                         <Check size={14} />
                       )}
-                      Accept and assign
+                      Accept and add
                     </button>
                   </>
                 )}

@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: course, error: courseErr } = await db
         .from('courses')
-        .select('id, title, price_cents, tutor_payout_cents, tutor_id, is_active')
+        .select('id, title, price_cents, tutor_payout_cents, is_active')
         .eq('id', courseId)
         .maybeSingle();
 
@@ -133,8 +133,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // wording it liked on a real charge.
       finalDescription =
         `${course.title} (${slots} session${slots === 1 ? '' : 's'})`;
-      // The tutor teaching it, not the tutor the request named.
-      derivedTutorId = course.tutor_id ?? null;
       derivedEarningCents =
         course.tutor_payout_cents != null ? course.tutor_payout_cents * slots : null;
     }
@@ -160,6 +158,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('status', 'active');
       if ((linked ?? 0) === 0) {
         return res.status(403).json({ error: 'That is not one of your children.' });
+      }
+    }
+
+    // Which tutor gets paid.
+    //
+    // This used to be courses.tutor_id, "the tutor teaching it, not the tutor
+    // the request named", which was right when a course held one. It holds a
+    // roster now and the family genuinely picks, so the request has to be able
+    // to say who. What it does not get is a free choice: the id is checked
+    // against the roster, so a request can only name somebody an admin already
+    // put on this course.
+    //
+    // After the ownership check, not inside the course block above, so that
+    // somebody probing with another family's child gets told that and not
+    // "choose a tutor". An authorisation answer should not be reachable only
+    // by first passing validation.
+    if (courseId) {
+      const { data: roster } = await db
+        .from('course_tutors')
+        .select('tutor_id')
+        .eq('course_id', courseId);
+      const rosterIds = (roster ?? []).map((r: { tutor_id: string }) => r.tutor_id);
+
+      if (rosterIds.length === 0) {
+        return res.status(400).json({ error: 'That course has no tutor yet' });
+      }
+      const requestedTutorId: string | null = req.body?.tutorId || null;
+      if (requestedTutorId) {
+        if (!rosterIds.includes(requestedTutorId)) {
+          return res.status(400).json({ error: 'That tutor does not teach this course' });
+        }
+        derivedTutorId = requestedTutorId;
+      } else if (rosterIds.length === 1) {
+        // A roster of one: nothing to choose, so an older client that sends no
+        // tutor still buys the right thing.
+        derivedTutorId = rosterIds[0];
+      } else {
+        return res.status(400).json({ error: 'Choose a tutor for this course before paying.' });
       }
     }
 

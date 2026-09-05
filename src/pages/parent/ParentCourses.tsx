@@ -44,7 +44,7 @@ export function ParentCourses() {
   // ratings are the same view the tutor's own profile and the course detail
   // page read, so a card cannot disagree with the page it opens.
   const tutorIds = useMemo(
-    () => catalogCourses.map((c) => c.tutor?.id).filter(Boolean) as string[],
+    () => [...new Set(catalogCourses.flatMap((c) => c.tutors.map((t) => t.id)))],
     [catalogCourses]
   );
   const { data: ratings } = useQuery({
@@ -225,25 +225,45 @@ export function ParentCourses() {
 
                   {/* Avatar Stack & Count */}
                   <div className="flex items-center gap-2.5">
-                    {course.tutor ? (
+                    {course.tutors.length > 0 ? (
                       <>
-                        <img
-                          className="w-8 h-8 rounded-full object-cover"
-                          src={course.tutor.avatarUrl || dicebearUrl(course.tutor.name)}
-                          alt=""
-                        />
+                        {/* Three at most. A fourth face adds nothing the count
+                            does not already say, and the row has to survive a
+                            narrow card in list view. */}
+                        <div className="flex shrink-0 -space-x-2">
+                          {course.tutors.slice(0, 3).map((t) => (
+                            <img
+                              key={t.id}
+                              className="w-8 h-8 rounded-full object-cover ring-2 ring-white dark:ring-[#111b21]"
+                              src={t.avatarUrl || dicebearUrl(t.name)}
+                              alt=""
+                            />
+                          ))}
+                        </div>
                         <div className="min-w-0">
                           <p className="truncate text-[13px] font-medium text-[#111] dark:text-white">
-                            {course.tutor.name}
+                            {course.tutors.length === 1
+                              ? course.tutors[0].name
+                              : `${course.tutors.length} tutors`}
                           </p>
-                          {/* Real, from the same view as everywhere else. The
-                              six cards this replaced carried invented ones,
-                              which is why stars were dropped at the time. */}
-                          <StarRating
-                            average={ratings?.get(course.tutor.id)?.averageStars}
-                            count={ratings?.get(course.tutor.id)?.ratingCount ?? 0}
-                            size={12}
-                          />
+                          {/* Only with one tutor. Real, from the same view as
+                              everywhere else; the six cards this replaced
+                              carried invented ones, which is why stars were
+                              dropped at the time. Averaging a roster would
+                              invent a number too, so a course with several
+                              says how many and the gallery gives each their
+                              own. */}
+                          {course.tutors.length === 1 ? (
+                            <StarRating
+                              average={ratings?.get(course.tutors[0].id)?.averageStars}
+                              count={ratings?.get(course.tutors[0].id)?.ratingCount ?? 0}
+                              size={12}
+                            />
+                          ) : (
+                            <p className="truncate text-[12px] text-[#54656f] dark:text-[#aebac1]">
+                              Choose who teaches
+                            </p>
+                          )}
                         </div>
                       </>
                     ) : (

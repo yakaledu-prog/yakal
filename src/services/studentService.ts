@@ -42,6 +42,28 @@ export interface StudentCourse {
  * booked for them. That is the only link the schema actually has between a
  * student and a course.
  */
+/**
+ * One line naming who teaches a course.
+ *
+ * Ordered like the gallery: oldest first, ties broken on id, because a seed
+ * writes a whole roster inside one transaction and every row carries the same
+ * now(). Left to the timestamp alone the name on the card would change
+ * between visits.
+ */
+function tutorLine(roster: any[] | null | undefined): string | null {
+  const names = (roster ?? [])
+    .slice()
+    .sort((a, b) => {
+      const byTime = String(a.created_at).localeCompare(String(b.created_at));
+      return byTime !== 0 ? byTime : String(a.tutor?.id).localeCompare(String(b.tutor?.id));
+    })
+    .map((r) => r.tutor?.full_name)
+    .filter(Boolean) as string[];
+  if (names.length === 0) return null;
+  if (names.length === 1) return names[0];
+  return `${names[0]} and ${names.length - 1} other${names.length > 2 ? "s" : ""}`;
+}
+
 export async function getStudentCourses(studentId: string): Promise<StudentCourse[]> {
   // Enrolment is what puts a course on this list. It used to be derived from
   // booked sessions, so a course a parent had paid for did not exist here
@@ -75,7 +97,12 @@ export async function getStudentCourses(studentId: string): Promise<StudentCours
   const [coursesRes, assignmentsRes, submissionsRes] = await Promise.all([
     supabase
       .from("courses")
-      .select("id, title, subject, thumbnail_url, tutor:profiles!courses_tutor_id_fkey(full_name)")
+      // The roster rather than a column. A course used to hold one tutor, so
+      // the card could name them; it can hold several, and the card has room
+      // for one line, so it names one and says how many others there are.
+      .select(`id, title, subject, thumbnail_url,
+               roster:course_tutors (created_at,
+                 tutor:profiles!course_tutors_tutor_id_fkey (id, full_name))`)
       .in("id", courseIds),
     supabase.from("assignments").select("id, course_id, due_date").in("course_id", courseIds),
     supabase.from("submissions").select("assignment_id, status").eq("student_id", studentId),
@@ -108,7 +135,7 @@ export async function getStudentCourses(studentId: string): Promise<StudentCours
       title: c.title,
       subject: c.subject,
       thumbnailUrl: c.thumbnail_url ?? null,
-      tutorName: c.tutor?.full_name ?? null,
+      tutorName: tutorLine(c.roster),
       completed,
       total,
       progress,

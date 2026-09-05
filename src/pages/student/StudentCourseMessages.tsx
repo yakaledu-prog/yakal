@@ -15,18 +15,44 @@ export function StudentCourseMessages() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Their tutor, not the course's.
+  //
+  // This read courses.tutor_id, which held one tutor for everybody. A course
+  // can carry several now, and a student writing to "the tutor" means the one
+  // they are actually taught by, which is the one on their own sessions. The
+  // roster is only the fallback, for a student who has bought the course but
+  // not yet sat a lesson.
   const { data: course, isLoading } = useQuery({
-    queryKey: ["course-tutor", courseId],
+    queryKey: ["course-tutor", courseId, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: courseRow, error } = await supabase
         .from("courses")
-        .select("id, title, tutor_id, tutor:profiles!courses_tutor_id_fkey(id, full_name, role, avatar_url)")
+        .select(`id, title,
+                 roster:course_tutors (created_at,
+                   tutor:profiles!course_tutors_tutor_id_fkey (id, full_name, role, avatar_url))`)
         .eq("id", courseId!)
         .maybeSingle();
       if (error) throw error;
-      return data;
+
+      const { data: mine } = await supabase
+        .from("sessions")
+        .select("tutor_id")
+        .eq("course_id", courseId!)
+        .eq("student_id", user!.id)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      const roster = ((courseRow as any)?.roster ?? []).slice().sort((a: any, b: any) => {
+        const byTime = String(a.created_at).localeCompare(String(b.created_at));
+        return byTime !== 0 ? byTime : String(a.tutor?.id).localeCompare(String(b.tutor?.id));
+      });
+      const mineId = mine?.[0]?.tutor_id ?? null;
+      const tutor =
+        roster.find((r: any) => r.tutor?.id === mineId)?.tutor ?? roster[0]?.tutor ?? null;
+
+      return { ...(courseRow as any), tutor };
     },
-    enabled: !!courseId,
+    enabled: !!courseId && !!user?.id,
   });
 
   const tutor = (course as any)?.tutor as

@@ -71,9 +71,9 @@ const admin = await signIn('admin@yakal.com');
 await admin.goto(`${BASE}/admin/courses/${course.id}`, { waitUntil: 'domcontentloaded' });
 await admin.waitForTimeout(3500);
 pass('5. the applicant is shown to the admin', (await admin.locator('body').innerText()).includes('Bethlehem Alemu'));
-await admin.getByRole('button', { name: /Accept and assign/i }).click();
+await admin.getByRole('button', { name: /Accept and add/i }).click();
 await admin.waitForTimeout(3000);
-pass('6. the tutor is assigned', psql(`select tutor_id is not null from courses where id='${course.id}';`) === 't');
+pass('6. the tutor joins the roster', Number(psql(`select count(*) from course_tutors where course_id='${course.id}';`)) > 0);
 
 // ---------- 5. it reaches both sides ----------
 await tutor.goto(`${BASE}/tutor/courses`, { waitUntil: 'domcontentloaded' });
@@ -86,11 +86,11 @@ pass('8. it is now on the parent catalog', (await parent.locator('body').innerTe
 
 // ---------- 6. the parent books ----------
 let posted = null;
-await parent.route('**/api/create-invoice', async (route) => {
+await parent.route('**/api/stripe?action=create-invoice', async (route) => {
   posted = route.request().postDataJSON();
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ invoiceId: 'test' }) });
 });
-await parent.route('**/api/stripe-checkout', (route) =>
+await parent.route('**/api/stripe?action=checkout', (route) =>
   route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ url: null }) }));
 
 await parent.goto(`${BASE}/parent/courses/${course.id}`, { waitUntil: 'domcontentloaded' });
@@ -106,7 +106,7 @@ const slotButtons = parent.locator('button').filter({ hasText: /^\d{1,2}:\d{2}\s
 const inert = await parent.locator('button[disabled]').filter({ hasText: /^\d{1,2}:\d{2}\s(AM|PM)$/ }).count();
 pass('11. no past slot is offered', inert === 0, `${inert} inert of ${await slotButtons.count()}`);
 
-await parent.getByRole('button', { name: 'Next week' }).or(parent.locator('button.h-8.w-8').last()).click();
+await parent.getByRole('button', { name: 'Next week' }).click();
 await parent.waitForTimeout(1200);
 const free = parent.locator('button:not([disabled])').filter({ hasText: /^\d{1,2}:\d{2}\s(AM|PM)$/ }).first();
 await free.waitFor({ timeout: 15000 });
@@ -133,7 +133,7 @@ const { data: invoice } = await db.from('invoices').insert({
   booking: posted.booking, description: posted.description, amount_cents: posted.amountCents,
   tutor_earning_cents: 4900, kind: 'tutoring', status: 'paid',
 }).select('id').single();
-const { fulfilInvoices } = await import('../../api/utils/fulfil.ts');
+const { fulfilInvoices } = await import('../../api/_utils/fulfil.ts');
 await fulfilInvoices(db, [invoice.id]);
 
 pass('16. the student is enrolled', psql(`select count(*) from enrolments where course_id='${course.id}';`) === '1');

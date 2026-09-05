@@ -78,7 +78,7 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
 
   const { data: course } = await db
     .from("courses")
-    .select("id, title, subject, tutor_id")
+    .select("id, title, subject")
     .eq("id", invoice.course_id)
     .single();
   if (!course) {
@@ -86,7 +86,13 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
-  const tutorId = invoice.tutor_id ?? course.tutor_id ?? null;
+  // The invoice, and only the invoice. It used to fall back to
+  // courses.tutor_id, which held one tutor for everybody who bought the
+  // course; a course carries a roster now, so there is no single tutor to fall
+  // back to and picking one off it would be inventing the answer.
+  // create-invoice refuses a course purchase that names nobody, so a tutoring
+  // invoice reaching here has one.
+  const tutorId = invoice.tutor_id ?? null;
 
   // ---- enrolment ----
   // The partial unique index refuses a second active row, so a duplicate

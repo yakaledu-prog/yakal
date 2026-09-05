@@ -250,7 +250,6 @@ export function AdminCourseDetail() {
               <CourseApplicants
                 courseId={course.id}
                 courseTitle={course.title}
-                assignedTutorId={course.tutor_id ?? null}
                 show="pending"
                 onAssigned={() => {
                   if (id) getCourse(id).then(setCourse);
@@ -266,7 +265,6 @@ export function AdminCourseDetail() {
             <CourseApplicants
               courseId={course.id}
               courseTitle={course.title}
-              assignedTutorId={course.tutor_id ?? null}
               show="assigned"
               onAssigned={() => {
                 if (id) getCourse(id).then(setCourse);
