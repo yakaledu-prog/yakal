@@ -28,7 +28,6 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { Segmented } from "@/components/ui/Segmented";
-import { Stepper } from "@/components/ui/Stepper";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
 
 export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
@@ -203,6 +202,10 @@ export function AddCollegeModal({
           // Content sets the height. A floor only moved the void from the
           // middle of the form to the foot of it.
           "max-h-[88vh]",
+          // Eased, because the panel arrives at step two and the dialog has to
+          // grow to hold it. Instant, that read as the whole thing jumping from
+          // portrait to landscape.
+          "transition-[max-width] duration-300 ease-out motion-reduce:transition-none",
           picked && step > 0 ? "max-w-lg md:max-w-3xl" : "max-w-lg",
           "flex-col md:flex-row"
         )}
@@ -214,29 +217,32 @@ export function AddCollegeModal({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942] md:px-6 md:pb-5 md:pt-5">
-          {/* One row. On a phone it carries the college name, because the
-              side panel that would otherwise say it is not there; from md the
-              panel has the name and this row gives the space to the stepper.
-              The close button stays at the end of it either way. */}
+          {/* One row, and the heading says different things at different
+              widths. On a phone it carries the college name, because the side
+              panel that would otherwise say it is not there. From md the panel
+              has the name already, so the heading says which step you are on
+              instead: without it this row is a close button and nothing else.
+
+              There is no step rail. Three steps with Prev and Next either side
+              of them do not need a diagram, and it was the widest thing in a
+              header that has a college name to fit. */}
           <div className="flex items-center gap-6">
-            <div className={cn("min-w-0 flex-1", step > 0 && picked && "md:hidden")}>
+            <div className="min-w-0 flex-1">
               <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
-                {step === 0 ? "Add a college" : name}
+                <span className={cn(step > 0 && picked && "md:hidden")}>
+                  {step === 0 ? "Add a college" : name}
+                </span>
+                {step > 0 && picked && (
+                  <span className="hidden md:inline">{STEPS[step]}</span>
+                )}
               </h2>
               {step > 0 && picked && (
-                <p className="truncate text-[12px] text-[#717182]">
+                <p className="truncate text-[12px] text-[#717182] md:hidden">
                   {[picked.city, picked.state].filter(Boolean).join(", ")}
                   {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
                 </p>
               )}
             </div>
-
-            <Stepper
-              className="hidden min-w-0 flex-1 md:flex"
-              steps={STEPS}
-              current={step}
-              onStepClick={(i) => name && setStep(i)}
-            />
 
             <button
               type="button"
@@ -247,15 +253,6 @@ export function AddCollegeModal({
               <X size={18} />
             </button>
           </div>
-
-          {/* The phone keeps its stepper on its own line, where a three step
-              rail beside a title would have nowhere to go. */}
-          <Stepper
-            className="mt-4 md:hidden"
-            steps={STEPS}
-            current={step}
-            onStepClick={(i) => name && setStep(i)}
-          />
         </header>
 
         {/* Facts we already hold, shown as context rather than announced. */}
@@ -617,7 +614,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] md:flex dark:border-[#2a3942] dark:bg-[#0f171c]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333] dark:bg-[#0f171c]">
       {img && (
         <>
           <img
@@ -647,6 +644,22 @@ function CollegePanel({ college }: { college: College }) {
                 "linear-gradient(to bottom, #0f171c 0%, #0f171c 70%, rgba(15,23,28,0.9) 82%, rgba(15,23,28,0.6) 92%, rgba(15,23,28,0.45) 100%)",
             }}
           />
+          {/* A teal wash over the part of the photograph that still shows,
+              deepening towards the foot so the campus resolves into the brand
+              rather than stopping at an edge.
+
+              Stacked on top of the surface gradient rather than replacing it:
+              that one is what keeps the name and the numbers legible, and a
+              tint alone would leave them sitting on a photograph. Light mode
+              only, where the panel is pale enough for a colour to read as a
+              tint; over the dark surface it would only muddy it. */}
+          <div
+            className="absolute inset-0 dark:hidden"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
+            }}
+          />
         </>
       )}
 
@@ -663,7 +676,7 @@ function CollegePanel({ college }: { college: College }) {
           {rows.map((r) => (
             <div
               key={r.label}
-              className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3 py-2.5 dark:border-[#2a3942] dark:bg-[#111b21]"
+              className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/55 px-3 py-2.5 backdrop-blur-[2px] dark:border-white/10 dark:bg-white/5"
             >
               <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
                 <span className="text-primary">{r.icon}</span>
