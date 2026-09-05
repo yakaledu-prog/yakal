@@ -1,172 +1,46 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 import { cn } from "@/utils/cn";
 
-/**
- * Tooltips should feel instant, so these are short. The exit is quicker than
- * the entrance: once you have moved away you have stopped caring about it, and
- * a slow fade out reads as lag.
- */
-const ENTER_MS = 140;
-const EXIT_MS = 110;
-/** Hover intent, so sweeping the cursor across a row of icons does not flash. */
-const OPEN_DELAY_MS = 120;
+// ============================================================
+// A hint beside a label.
+//
+// The browser's own tooltip, through the title attribute. This was 200 lines
+// of portal, timers, measurement and flip logic, and the thing it produced
+// appeared on hover in the middle of a form and pulled the eye off whatever
+// somebody was filling in. A native tooltip waits, sits where the pointer is,
+// and disappears without ceremony.
+//
+// It also comes with things the custom one never had: it survives inside
+// scroll containers, it is announced by screen readers without any aria work,
+// and it cannot be positioned off the edge of the window.
+//
+// The cost is that it cannot be styled. That is the point of choosing it.
+// ============================================================
 
-/**
- * Small info affordance next to a field label.
- *
- * Exists so the form can stay short. Anything that would otherwise be a line of
- * helper text under every input goes in here instead, which keeps the default
- * view clean for people who already know what a field means.
- *
- * Opens on hover and on focus, so it is reachable by keyboard and not only by
- * mouse. Portalled so a modal cannot clip it.
- */
 export function InfoHint({
   text,
-  className,
   size = 13,
+  className,
 }: {
   text: string;
-  className?: string;
   size?: number;
+  className?: string;
 }) {
-  /** Intent: the pointer is on the icon, or it has focus. */
-  const [open, setOpen] = useState(false);
-  /** In the DOM. Stays true through the exit transition so it can play out. */
-  const [mounted, setMounted] = useState(false);
-  /** Drives the transition classes, flipped a frame after mounting. */
-  const [shown, setShown] = useState(false);
-
-  const ref = useRef<HTMLButtonElement>(null);
-  const timers = useRef<number[]>([]);
-  const [pos, setPos] = useState<{ top: number; left: number; flip: boolean } | null>(
-    null
-  );
-
-  const clearTimers = () => {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  };
-
-  const measure = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const H = 90;
-    const W = 240;
-    const flip = window.innerHeight - r.bottom < H && r.top > H;
-    setPos({
-      top: flip ? r.top - 8 : r.bottom + 8,
-      left: Math.max(8, Math.min(r.left - W / 2 + r.width / 2, window.innerWidth - W - 8)),
-      flip,
-    });
-  }, []);
-
-  /**
-   * Enter and exit both need a frame where the element exists but is not yet in
-   * its final state, so the transition has something to animate between.
-   *
-   * Opening: mount, measure, then flip `shown` on the next frame.
-   * Closing: flip `shown` off first and only unmount once the transition has
-   * finished, which is the part a plain conditional render cannot do.
-   */
-  useLayoutEffect(() => {
-    clearTimers();
-
-    if (open) {
-      setMounted(true);
-      measure();
-      // Two frames: one for the browser to paint the initial state, one to
-      // change it. A single rAF is occasionally coalesced and the entry snaps.
-      const raf = requestAnimationFrame(() =>
-        requestAnimationFrame(() => setShown(true))
-      );
-      return () => cancelAnimationFrame(raf);
-    }
-
-    setShown(false);
-    timers.current.push(
-      window.setTimeout(() => setMounted(false), EXIT_MS)
-    );
-  }, [open, measure]);
-
-  useEffect(() => clearTimers, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    const close = () => setOpen(false);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-    };
-  }, [mounted]);
-
   return (
-    <>
-      <button
-        ref={ref}
-        type="button"
-        aria-label={text}
-        // Hover waits out the intent delay. Focus, click and leaving are all
-        // deliberate, so they act at once.
-        onMouseEnter={() => {
-          clearTimers();
-          timers.current.push(window.setTimeout(() => setOpen(true), OPEN_DELAY_MS));
-        }}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen((o) => !o);
-        }}
-        className={cn(
-          "inline-grid place-items-center align-middle text-[#c2c7d0] transition-colors hover:text-primary focus:text-primary focus:outline-none dark:text-[#5a6b75]",
-          className
-        )}
-      >
-        <Info size={size} strokeWidth={2} />
-      </button>
-
-      {mounted && pos && createPortal(
-        <div
-          role="tooltip"
-          style={{
-            position: "fixed",
-            top: pos.top,
-            left: pos.left,
-            width: 240,
-            // The flip offset and the animation share one transform, so they
-            // are composed here rather than fighting over the property.
-            transform: [
-              pos.flip ? "translateY(-100%)" : "translateY(0)",
-              shown ? "translateY(0)" : `translateY(${pos.flip ? "6px" : "-6px"})`,
-              shown ? "scale(1)" : "scale(0.96)",
-            ].join(" "),
-            // Grow out of the edge nearest the icon rather than the centre.
-            transformOrigin: pos.flip ? "bottom center" : "top center",
-            opacity: shown ? 1 : 0,
-            transitionProperty: "opacity, transform",
-            transitionDuration: `${shown ? ENTER_MS : EXIT_MS}ms`,
-            // Slight overshoot on the way in, plain ease on the way out.
-            transitionTimingFunction: shown
-              ? "cubic-bezier(0.16, 1, 0.3, 1)"
-              : "cubic-bezier(0.4, 0, 1, 1)",
-          }}
-          // Follows the theme. A near-black bubble on a light page is the one
-          // element that ignores the theme everywhere it appears, and it reads
-          // as something the browser drew rather than something we did.
-          className="pointer-events-none z-[110] rounded-lg border border-[#e9edef] bg-white px-3 py-2 text-[12px] font-normal normal-case leading-snug tracking-normal text-[#111] shadow-xl motion-reduce:transition-none dark:border-[#2a3942] dark:bg-[#2a3942] dark:text-white"
-        >
-          {text}
-        </div>,
-        document.body
+    <span
+      title={text}
+      // Focusable, so the hint is reachable without a pointer. tabIndex rather
+      // than a button because there is nothing to press.
+      tabIndex={0}
+      role="note"
+      aria-label={text}
+      className={cn(
+        "inline-grid cursor-help place-items-center align-middle text-[#c2c7d0] transition-colors hover:text-primary focus:text-primary focus:outline-none dark:text-[#5a6b75]",
+        className
       )}
-    </>
+    >
+      <Info size={size} strokeWidth={2} aria-hidden="true" />
+    </span>
   );
 }
 

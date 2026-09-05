@@ -359,9 +359,9 @@ export function AddCollegeModal({
 
           {step === 1 && (
             <div className="space-y-5">
-              {/* Round, deadline and odds are one decision each about applying
-                  here, so they share a row rather than being spread over two
-                  steps. */}
+              {/* Three decisions on one row, then the page you read them on
+                  with the essay count beside it. Two rows rather than three:
+                  the form is short enough that a third was mostly gap. */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted you must enrol. Pick Not decided if you are still weighing it.">
@@ -432,6 +432,8 @@ export function AddCollegeModal({
               </div>
 
 
+
+
             </div>
           )}
 
@@ -441,7 +443,7 @@ export function AddCollegeModal({
                 <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
                   id="why"
-                  rows={3}
+                  rows={9}
                   value={why}
                   onChange={(e) => setWhy(e.target.value)}
                   placeholder="What draws you to it?"
@@ -600,7 +602,9 @@ export function AddCollegeModal({
  */
 function CollegePanel({ college }: { college: College }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [crestFailed, setCrestFailed] = useState(false);
   const img = imgFailed ? null : collegeImageUrl(college.image, 480);
+  const crest = crestFailed ? null : collegeImageUrl(college.logo, 120);
 
   const rows = [
     {
@@ -630,7 +634,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-primary/40 bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333] dark:bg-[#17262b]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:bg-[#17262b]">
       {img && (
         <>
           <img
@@ -650,14 +654,14 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 dark:hidden"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #1099A1 0%, #1099A1 62%, rgba(16,153,161,0.88) 78%, rgba(16,153,161,0.6) 90%, rgba(16,153,161,0.4) 100%)",
+                "linear-gradient(to top, #1099A1 0%, #1099A1 62%, rgba(16,153,161,0.88) 78%, rgba(16,153,161,0.6) 90%, rgba(16,153,161,0.4) 100%)",
             }}
           />
           <div
             className="absolute inset-0 hidden dark:block"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #17262b 0%, #17262b 55%, rgba(23,38,43,0.94) 70%, rgba(23,38,43,0.88) 85%, rgba(23,38,43,0.82) 100%)",
+                "linear-gradient(to top, #17262b 0%, #17262b 55%, rgba(23,38,43,0.94) 70%, rgba(23,38,43,0.88) 85%, rgba(23,38,43,0.82) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
@@ -673,13 +677,30 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 dark:opacity-35"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
+                "linear-gradient(to top, rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
             }}
           />
         </>
       )}
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
+      {/* At the head, where the ground is thinnest and the campus shows. About
+          half of schools have one; without it the panel simply opens on the
+          photograph. */}
+      {crest && (
+        <img
+          src={crest}
+          alt=""
+          loading="lazy"
+          onError={() => setCrestFailed(true)}
+          // Flattened to a white silhouette. University marks are every colour
+          // there is and none of them sat on the teal; as one tone they read as
+          // part of the panel instead of a sticker on it, and the shape is what
+          // identifies a school anyway.
+          className="relative z-10 mt-5 h-11 w-11 self-start object-contain px-5 opacity-80 brightness-0 invert"
+        />
+      )}
+
+      <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
         <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
