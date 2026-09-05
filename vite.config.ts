@@ -65,6 +65,12 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Our own push and notificationclick handlers, pulled into the
+        // generated worker. generateSW writes sw.js from this config and has
+        // nowhere to put a handler, and importScripts is the seam it leaves
+        // for one. The alternative is injectManifest, which means owning the
+        // whole service worker and copying the caching below into it by hand.
+        importScripts: ['/push-sw.js'],
         // The app is one big lazy-loaded bundle now, so the chunks are the
         // shell. 4 MB covers them; the default 2 MB silently drops the largest.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

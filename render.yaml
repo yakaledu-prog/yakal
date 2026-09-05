@@ -29,6 +29,15 @@
 #                                connects a bank is ever paid automatically
 #
 # Optional, and worth having:
+#   VITE_VAPID_PUBLIC_KEY        push notifications. The public half is read at
+#   VAPID_PRIVATE_KEY            BUILD time, so setting it needs a rebuild not
+#   VAPID_SUBJECT                a restart. Without the pair, notifications
+#                                still land in the app and in an inbox and
+#                                simply never reach a phone. Generate once with
+#                                node -e "console.log(require('web-push').generateVAPIDKeys())"
+#                                and do not rotate: changing the public key
+#                                invalidates every subscription and every
+#                                browser has to be asked for permission again.
 #   SENTRY_DSN                   server error reporting; silent without it
 #   VITE_SENTRY_DSN              browser error reporting, read at BUILD time,
 #                                so setting it needs a rebuild not a restart

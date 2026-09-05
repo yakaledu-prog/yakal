@@ -1,6 +1,7 @@
 import { sendEmail, layout } from './email.js';
 import { emailBaseUrl } from './supabase.js';
 import { TEMPLATES } from '../../src/lib/notifications/templates/index.js';
+import { pushToUser } from './push.js';
 
 // ============================================================
 // Notifying somebody from the server.
@@ -17,7 +18,7 @@ import { TEMPLATES } from '../../src/lib/notifications/templates/index.js';
 // family who had just paid was told less than one who asked to be linked.
 //
 // The same templates as everywhere else, so a wording change reaches all
-// three: the row, the email, and the panel the row opens.
+// four: the row, the email, the panel the row opens, and the push.
 // ============================================================
 
 type TemplateKey = keyof typeof TEMPLATES;
@@ -55,8 +56,10 @@ export async function notify<K extends TemplateKey>(
     };
   };
 
+  let rendered: { title: string; message: string; link: string | null };
   try {
     const n = entry.notification(vars);
+    rendered = n;
     // The title and line are stored so a row still reads if the template is
     // ever renamed; everything else is rendered fresh from vars each time.
     const { error } = await db.from('notifications').insert({
@@ -76,6 +79,22 @@ export async function notify<K extends TemplateKey>(
     console.error(`notify: rendering ${String(key)} failed:`, err?.message);
     return;
   }
+
+  // The push, which is the only one of the three that arrives while somebody
+  // is doing something else. It carries the notification's own title and line
+  // rather than rendering its own, so a service worker never becomes a third
+  // place that knows how to word this.
+  //
+  // Fired without waiting: a push service taking two seconds must not hold up
+  // fulfilment, and pushToUser swallows everything anyway.
+  void pushToUser(db, userId, {
+    title: rendered.title,
+    body: rendered.message,
+    url: rendered.link,
+    // Collapses repeats about one event: a lesson moved twice should replace
+    // its own notification rather than stack a second one behind it.
+    tag: `${String(key)}:${userId}`,
+  });
 
   // Deliberately after the row and deliberately swallowed. The notification is
   // the record and it is already written.
