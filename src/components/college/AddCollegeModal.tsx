@@ -680,7 +680,7 @@ function CollegePanel({ college }: { college: College }) {
         </>
       )}
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5 text-center">
         {/* The crest, where the catalogue has one. About half of schools do,
             so this cannot be a layout the panel depends on: no crest simply
             means the name starts higher.
@@ -694,7 +694,7 @@ function CollegePanel({ college }: { college: College }) {
             alt=""
             loading="lazy"
             onError={() => setCrestFailed(true)}
-            className="mb-3 h-10 w-10 object-contain"
+            className="mx-auto mb-3 h-11 w-11 object-contain"
           />
         )}
         <h3 className="text-[17px] font-bold leading-tight text-white">
@@ -705,7 +705,7 @@ function CollegePanel({ college }: { college: College }) {
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-2 text-left">
           {rows.map((r) => (
             <div
               key={r.label}
@@ -732,7 +732,7 @@ function CollegePanel({ college }: { college: College }) {
           and low contrast on purpose: it is an attribution, not a caption, and
           the licence asks for it to be present rather than prominent. */}
       {img && college.credit && (
-        <p className="relative z-10 px-5 pb-3 text-[10px] leading-snug text-white/45">
+        <p className="relative z-10 line-clamp-2 px-5 pb-3 text-center text-[10px] leading-snug text-white/45">
           Photo: {college.credit}
         </p>
       )}
