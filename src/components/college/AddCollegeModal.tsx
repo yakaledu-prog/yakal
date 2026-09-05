@@ -64,10 +64,10 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-// What each step is actually for, rather than what it contains. "Your take"
-// covered the odds and the reason; with the odds moved up, the last step is
-// only the student's own words, so it says so.
-const STEPS = ["College", "Deadline and odds", "Why this college"];
+// What each step is for. The last one holds the two judgements that are the
+// student's rather than the college's: how likely they think it is, and why
+// they want it.
+const STEPS = ["College", "Deadline", "Your take"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
@@ -404,11 +404,27 @@ export function AddCollegeModal({
                 </div>
               </div>
 
-              {/* Odds and essays share the last row, so no field sits beside an
-                  empty half. The URL above takes the full width because it is
-                  the longest value on the form and was sharing it with a
-                  three-digit counter. */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* The URL takes the full width above, so the essay count pairs
+                  with nothing and sits at its natural size rather than being
+                  stretched to fill a column. */}
+              <div>
+                <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
+                  Essays
+                </FieldLabel>
+                <NumberStepper
+                  value={essays}
+                  onChange={setEssays}
+                  max={20}
+                  ariaLabel="Number of supplemental essays"
+                />
+              </div>
+
+
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-5">
                 <div>
                   <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
                     Your odds
@@ -421,25 +437,6 @@ export function AddCollegeModal({
                     ariaLabel="Reach, target or safety"
                   />
                 </div>
-                <div>
-                  <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
-                    Essays
-                  </FieldLabel>
-                  <NumberStepper
-                    value={essays}
-                    onChange={setEssays}
-                    max={20}
-                    ariaLabel="Number of supplemental essays"
-                  />
-                </div>
-              </div>
-
-
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-5">
               <div>
                 <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
