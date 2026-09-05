@@ -385,7 +385,7 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-[1fr_auto] gap-3">
+              <div>
                 <div>
                   <FieldLabel
                     htmlFor="appurl"
@@ -402,22 +402,12 @@ export function AddCollegeModal({
                     className={input}
                   />
                 </div>
-                <div>
-                  <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
-                    Essays
-                  </FieldLabel>
-                  <NumberStepper
-                    value={essays}
-                    onChange={setEssays}
-                    max={20}
-                    ariaLabel="Number of supplemental essays"
-                  />
-                </div>
               </div>
 
-              {/* Odds beside the essay count rather than a segmented control
-                  across the whole form. Three short words do not need that much
-                  width, and the space they left was the emptiest thing here. */}
+              {/* Odds and essays share the last row, so no field sits beside an
+                  empty half. The URL above takes the full width because it is
+                  the longest value on the form and was sharing it with a
+                  three-digit counter. */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
@@ -429,6 +419,17 @@ export function AddCollegeModal({
                     options={TIERS}
                     buttonClassName="h-11 rounded-xl text-[14px] font-normal"
                     ariaLabel="Reach, target or safety"
+                  />
+                </div>
+                <div>
+                  <FieldLabel hint="Extra essays this college wants on top of the Common App personal statement. Leave blank if you have not checked yet.">
+                    Essays
+                  </FieldLabel>
+                  <NumberStepper
+                    value={essays}
+                    onChange={setEssays}
+                    max={20}
+                    ariaLabel="Number of supplemental essays"
                   />
                 </div>
               </div>
