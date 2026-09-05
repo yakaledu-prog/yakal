@@ -631,7 +631,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-primary/40 bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333]">
       {img && (
         <>
           <img
@@ -651,7 +651,7 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 70%, rgba(247,250,251,0.9) 82%, rgba(247,250,251,0.6) 92%, rgba(247,250,251,0.45) 100%)",
+                "linear-gradient(to bottom, #1099A1 0%, #1099A1 62%, rgba(16,153,161,0.88) 78%, rgba(16,153,161,0.6) 90%, rgba(16,153,161,0.4) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
@@ -667,7 +667,7 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.15) 20%, rgba(68, 175, 182, 0.3) 40%, rgba(68, 175, 182, 0.45) 60%, rgba(68, 175, 182, 0.6) 80%, rgba(68, 175, 182, 0.7) 100%)",
+                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
             }}
           />
         </>
@@ -683,13 +683,13 @@ function CollegePanel({ college }: { college: College }) {
             alt=""
             loading="lazy"
             onError={() => setCrestFailed(true)}
-            className="mb-3 h-10 w-10 object-contain"
+            className="mb-3 h-10 w-10 rounded-md bg-white/90 object-contain p-1"
           />
         )}
-        <h3 className="text-[17px] font-bold leading-tight text-[#111]">
+        <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
-        <p className="mt-1 text-[12.5px] text-[#717182]">
+        <p className="mt-1 text-[12.5px] text-white/70">
           {[college.city, college.state].filter(Boolean).join(", ")}
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
@@ -701,15 +701,15 @@ function CollegePanel({ college }: { college: College }) {
               // Outline only. With a wash behind them a filled card is a second
               // surface competing with the photograph; a rule is enough to say
               // these four things belong together.
-              className="flex items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5"
+              className="flex items-center justify-between gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2.5"
             >
               {/* No icon and no hint. Four rows that each say what they are do
                   not need a picture of it, and an info dot beside every label
                   is four invitations to stop reading and go somewhere else. */}
-              <span className="min-w-0 truncate text-[12.5px] text-[#3c5c5e]">
+              <span className="min-w-0 truncate text-[12.5px] text-white/75">
                 {r.label}
               </span>
-              <span className="shrink-0 text-[14px] font-medium tabular-nums text-[#111]">
+              <span className="shrink-0 text-[14px] font-medium tabular-nums text-white">
                 {r.value}
               </span>
             </div>
