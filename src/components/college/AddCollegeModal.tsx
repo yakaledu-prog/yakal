@@ -64,9 +64,12 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-// What each step is for. The last one is a single question in the student's own
-// words, which is why it is named as that question rather than as a category.
-const STEPS = ["College", "Deadline", "Why this college"];
+// What each step is for, as a phrase rather than a list of its fields.
+// "Deadline" named one of five things on the middle step, and joining them with
+// ampersands would only have named three of five in more words. The step is
+// about applying to this college, so it says that, and the three read as a
+// sentence: which college, applying here, and why.
+const STEPS = ["College", "Applying here", "Why this college"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
