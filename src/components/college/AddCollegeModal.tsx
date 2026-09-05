@@ -65,7 +65,10 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-const STEPS = ["College", "Deadline", "Your take"];
+// What each step is actually for, rather than what it contains. "Your take"
+// covered the odds and the reason; with the odds moved up, the last step is
+// only the student's own words, so it says so.
+const STEPS = ["College", "Deadline and odds", "Why this college"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
@@ -412,11 +415,11 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
-            </div>
-          )}
 
-          {step === 2 && (
-            <div className="space-y-5">
+              {/* Moved up from the last step. It belongs with the other facts
+                  about applying rather than beside the one thing on this form
+                  that is genuinely the student's own words, and it evens out
+                  two steps that were lopsided. */}
               <div>
                 <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
                 <Segmented
@@ -426,6 +429,11 @@ export function AddCollegeModal({
                   ariaLabel="Reach, target or safety"
                 />
               </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-5">
               <div>
                 <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
@@ -621,7 +629,7 @@ function CollegePanel({ college }: { college: College }) {
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333] dark:bg-[#0f171c]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:border-[#333]">
       {img && (
         <>
           <img
@@ -638,17 +646,10 @@ function CollegePanel({ college }: { college: College }) {
               turned a light panel dark and made the text fight the photograph.
               Dark mode gets the same treatment in its own surface. */}
           <div
-            className="absolute inset-0 dark:hidden"
+            className="absolute inset-0"
             style={{
               backgroundImage:
                 "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 70%, rgba(247,250,251,0.9) 82%, rgba(247,250,251,0.6) 92%, rgba(247,250,251,0.45) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 hidden dark:block"
-            style={{
-              backgroundImage:
-                "linear-gradient(to bottom, #0f171c 0%, #0f171c 70%, rgba(15,23,28,0.9) 82%, rgba(15,23,28,0.6) 92%, rgba(15,23,28,0.45) 100%)",
             }}
           />
           {/* A teal wash over the part of the photograph that still shows,
@@ -661,10 +662,10 @@ function CollegePanel({ college }: { college: College }) {
               only, where the panel is pale enough for a colour to read as a
               tint; over the dark surface it would only muddy it. */}
           <div
-            className="absolute inset-0 dark:hidden"
+            className="absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
+                "linear-gradient(rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.15) 20%, rgba(68, 175, 182, 0.3) 40%, rgba(68, 175, 182, 0.45) 60%, rgba(68, 175, 182, 0.6) 80%, rgba(68, 175, 182, 0.7) 100%)",
             }}
           />
         </>
@@ -683,7 +684,7 @@ function CollegePanel({ college }: { college: College }) {
             className="mb-3 h-10 w-10 object-contain"
           />
         )}
-        <h3 className="text-[17px] font-bold leading-tight text-[#111] dark:text-white">
+        <h3 className="text-[17px] font-bold leading-tight text-[#111]">
           {college.name}
         </h3>
         <p className="mt-1 text-[12.5px] text-[#717182]">
@@ -698,15 +699,15 @@ function CollegePanel({ college }: { college: College }) {
               // Outline only. With a wash behind them a filled card is a second
               // surface competing with the photograph; a rule is enough to say
               // these four things belong together.
-              className="flex items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5 dark:border-primary/30 dark:bg-primary/[0.06]"
+              className="flex items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5"
             >
               {/* No icon and no hint. Four rows that each say what they are do
                   not need a picture of it, and an info dot beside every label
                   is four invitations to stop reading and go somewhere else. */}
-              <span className="min-w-0 truncate text-[12.5px] text-[#3c5c5e] dark:text-[#aebac1]">
+              <span className="min-w-0 truncate text-[12.5px] text-[#3c5c5e]">
                 {r.label}
               </span>
-              <span className="shrink-0 text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
+              <span className="shrink-0 text-[14px] font-medium tabular-nums text-[#111]">
                 {r.value}
               </span>
             </div>

@@ -157,7 +157,10 @@ export function InfoHint({
               ? "cubic-bezier(0.16, 1, 0.3, 1)"
               : "cubic-bezier(0.4, 0, 1, 1)",
           }}
-          className="pointer-events-none z-[110] rounded-lg bg-[#111b21] px-3 py-2 text-[12px] font-normal normal-case leading-snug tracking-normal text-white shadow-xl motion-reduce:transition-none dark:bg-[#2a3942]"
+          // Follows the theme. A near-black bubble on a light page is the one
+          // element that ignores the theme everywhere it appears, and it reads
+          // as something the browser drew rather than something we did.
+          className="pointer-events-none z-[110] rounded-lg border border-[#e9edef] bg-white px-3 py-2 text-[12px] font-normal normal-case leading-snug tracking-normal text-[#111] shadow-xl motion-reduce:transition-none dark:border-[#2a3942] dark:bg-[#2a3942] dark:text-white"
         >
           {text}
         </div>,
