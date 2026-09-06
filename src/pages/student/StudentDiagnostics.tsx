@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
-import { diagnosticTests } from "@/data/diagnostics";
+import { diagnosticTests, DiagnosticQuestion } from "@/data/diagnostics";
 import { useQuery } from "@tanstack/react-query";
 import { getPublishedDiagnostics } from "@/services/diagnosticAdminService";
-import { Search, Loader2, Activity, CheckCircle2, ChevronLeft } from "lucide-react";
+import { Search, Loader2, Activity, CheckCircle2, ChevronLeft, Check, X, Lightbulb, RotateCcw, TrendingUp } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
@@ -32,14 +33,131 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
   );
 }
 
+// One question, after the fact: what the student picked, what was right, and
+// why. Defined at module scope, not inside the page, so it is a stable
+// component type and its subtree is not remounted on every render.
+function QuestionReview({ index, question, chosen }: { index: number; question: DiagnosticQuestion; chosen: number }) {
+  const isCorrect = chosen === question.correctAnswer;
+
+  return (
+    <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden">
+      <div className="px-5 py-4">
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 w-6 h-6 rounded-full bg-[#f0f2f5] dark:bg-[#182329] text-[#54656f] dark:text-[#aebac1] text-[12px] font-bold flex items-center justify-center mt-0.5">
+            {index + 1}
+          </span>
+          <div className="min-w-0 flex-1">
+            {/* Colour lives on the icon and the option rows below; the status
+                word stays in the neutral text colour so it always reads. */}
+            <div className="flex items-center gap-1.5 mb-2">
+              {isCorrect ? (
+                <>
+                  <Check size={15} className="text-[#97CE9D]" />
+                  <span className="text-[12px] font-semibold uppercase tracking-wide text-[#111] dark:text-white">Correct</span>
+                </>
+              ) : (
+                <>
+                  <X size={15} className="text-[#CAA25F]" />
+                  <span className="text-[12px] font-semibold uppercase tracking-wide text-[#111] dark:text-white">Incorrect</span>
+                </>
+              )}
+            </div>
+
+            <p className="text-[15px] font-medium text-[#111] dark:text-white mb-3">{question.text}</p>
+
+            <div className="flex flex-col gap-2">
+              {question.options.map((opt, i) => {
+                const isRight = i === question.correctAnswer;
+                const isChosenWrong = i === chosen && !isRight;
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border text-[14px]",
+                      isRight && "border-[#97CE9D] bg-[#97CE9D]/10",
+                      isChosenWrong && "border-[#CAA25F] bg-[#CAA25F]/10",
+                      !isRight && !isChosenWrong && "border-[#e9edef] dark:border-[#2a3942]"
+                    )}
+                  >
+                    <span className="text-[#111] dark:text-white">{opt}</span>
+                    {isRight && (
+                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
+                        <Check size={13} className="text-[#97CE9D]" /> Correct answer
+                      </span>
+                    )}
+                    {isChosenWrong && (
+                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
+                        <X size={13} className="text-[#CAA25F]" /> Your answer
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {question.explanation && (
+              <div className="mt-3 flex items-start gap-2 bg-[#1099A1]/5 border-l-2 border-[#1099A1] rounded-r-lg px-3 py-2.5">
+                <Lightbulb size={15} className="text-[#CAA25F] mt-0.5 shrink-0" />
+                <p className="text-[13px] text-[#444] dark:text-[#ccc] leading-relaxed">{question.explanation}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Score across a student's attempts at one test, oldest to newest. Only shown
+// once there is more than one attempt, so a single sitting is not a flat line.
+function ScoreTrend({ attempts }: { attempts: DiagnosticResult[] }) {
+  const data = attempts.map((a, i) => ({
+    label: `#${i + 1}`,
+    pct: a.total > 0 ? Math.round((a.score / a.total) * 100) : 0,
+  }));
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <TrendingUp size={15} className="text-[#1099A1]" />
+        <h3 className="text-[15px] font-bold text-[#111] dark:text-white">Your progress</h3>
+      </div>
+      <div className="h-[180px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="diagTrend" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#1099a1" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#1099a1" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
+            <YAxis domain={[0, 100]} unit="%" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
+            <Tooltip
+              contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
+              itemStyle={{ color: "hsl(var(--foreground))" }}
+              formatter={(v) => [`${v}%`, "Score"]}
+            />
+            <Area type="monotone" dataKey="pct" stroke="#1099a1" strokeWidth={2} fill="url(#diagTrend)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export function StudentDiagnostics() {
   // One column at a time on a phone, both on a desktop.
   const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { user } = useAuth();
-  const [results, setResults] = useState<DiagnosticResult[]>([]);
+  // The full attempt history; the latest per test is derived from it below.
+  const [attempts, setAttempts] = useState<DiagnosticResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // The test currently being retaken, if any: shows the form over an existing
+  // result until it is submitted as a fresh attempt.
+  const [retakingId, setRetakingId] = useState<string | null>(null);
 
   // For taking a test inline
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -47,11 +165,19 @@ export function StudentDiagnostics() {
 
   useEffect(() => {
     if (!user) return;
-    diagnosticService.getStudentResults(user.id).then(res => {
-      setResults(res);
+    diagnosticService.getStudentAttempts(user.id).then(res => {
+      setAttempts(res);
       setLoading(false);
     });
   }, [user]);
+
+  // Latest attempt per test, for the list and the completed view. Attempts come
+  // back oldest first, so the last write for a slug is the latest.
+  const results = useMemo(() => {
+    const m = new Map<string, DiagnosticResult>();
+    for (const a of attempts) m.set(a.id, a);
+    return [...m.values()];
+  }, [attempts]);
 
   // Written by an admin when there are any, otherwise the ones built into the
   // app. See getPublishedDiagnostics.
@@ -83,6 +209,25 @@ export function StudentDiagnostics() {
 
   const activeTest = categoryTests.find(t => t.id === activeTabId);
   const activeTestResult = results.find(r => r.id === activeTabId);
+  // Every attempt at the active test, oldest first, for the progress chart.
+  const activeAttempts = useMemo(
+    () => attempts.filter(a => a.id === activeTabId),
+    [attempts, activeTabId]
+  );
+  // Show the form over an existing result only while this test is being retaken.
+  const takingTest = activeTest && (!activeTestResult || retakingId === activeTabId);
+  // What the student picked, keyed by question id, so the review can line each
+  // answer up against its question. Cheap to rebuild per render.
+  const chosenByQuestion = new Map<string, number>(
+    (activeTestResult?.answers ?? []).map(a => [a.questionId, a.chosen])
+  );
+
+  const startRetake = () => {
+    if (!activeTest) return;
+    setRetakingId(activeTest.id);
+    setCurrentQuestionIndex(0);
+    setAnswers({});
+  };
 
   useSetBreadcrumb(selectedCategory, "Diagnostics");
 
@@ -90,18 +235,29 @@ export function StudentDiagnostics() {
     if (!user || !activeTest) return;
 
     setSubmitting(true);
-    let correct = 0;
-    activeTest.questions.forEach((q) => {
-      if (answers[q.id] === q.correctAnswer) correct++;
-    });
 
-    await diagnosticService.saveResult(user.id, activeTest.id, correct, activeTest.questions.length);
+    // The whole answer sheet, not just a tally: the score is derived from this
+    // in the service, and it is what the mistake review reads back later.
+    const answerList = activeTest.questions.map((q) => ({
+      questionId: q.id,
+      chosen: answers[q.id] ?? -1,
+      correct: q.correctAnswer,
+    }));
 
-    // Refresh results
-    const newResults = await diagnosticService.getStudentResults(user.id);
-    setResults(newResults);
+    const res = await diagnosticService.saveResult(user.id, activeTest.id, answerList);
+    if (!res.ok) {
+      toast.error("Could not save your result. Please try again.");
+      setSubmitting(false);
+      return;
+    }
 
-    toast.success(`You scored ${correct} out of ${activeTest.questions.length}!`);
+    // Refresh the attempt history and leave retake mode; the completed view now
+    // shows this fresh attempt and, if there is more than one, the trend.
+    const newAttempts = await diagnosticService.getStudentAttempts(user.id);
+    setAttempts(newAttempts);
+    setRetakingId(null);
+
+    toast.success(`You scored ${res.score} out of ${res.total}!`);
     setCurrentQuestionIndex(0);
     setAnswers({});
     setSubmitting(false);
@@ -231,21 +387,45 @@ export function StudentDiagnostics() {
               <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No tests</h3>
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No diagnostics available in this category.</p>
             </div>
-          ) : activeTestResult ? (
+          ) : activeTestResult && !takingTest ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden flex flex-col">
                 <div className="bg-primary/5 px-6 py-8 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
                   <CheckCircle2 size={48} className="text-primary mb-4" />
                   <h3 className="text-xl font-bold text-[#111] dark:text-white mb-1">Test Completed</h3>
-                  <p className="text-muted-foreground text-sm max-w-md">You have completed the {activeTest.title} diagnostic test. Your tutor has been notified of your result.</p>
+                  <p className="text-muted-foreground text-sm max-w-md">You have completed the {activeTest.title} diagnostic test. Your tutor can see this result.</p>
                 </div>
-                <div className="px-6 py-6 flex items-center justify-center">
+                <div className="px-6 py-6 flex flex-col items-center gap-4">
                   <div className="bg-primary/10 rounded-xl px-8 py-5 border border-primary/20 flex flex-col items-center">
                     <span className="text-sm font-semibold text-[#888] uppercase tracking-wide block mb-2">Score</span>
                     <span className="text-3xl font-bold text-primary">
                       {activeTestResult.score} / {activeTestResult.total}
                     </span>
                   </div>
+                  {/* Retaking records a new attempt; the old one stays in the
+                      history behind the progress chart. */}
+                  <Button variant="outline" onClick={startRetake} className="gap-1.5">
+                    <RotateCcw size={15} /> Retake test
+                  </Button>
+                </div>
+              </div>
+
+              {/* Only meaningful once there is more than one sitting. */}
+              {activeAttempts.length >= 2 && <ScoreTrend attempts={activeAttempts} />}
+
+              {/* The point of storing answers, not just a tally: the student can
+                  see which questions they missed and read the explanation. */}
+              <div>
+                <h3 className="text-[15px] font-bold text-[#111] dark:text-white mb-3">Review your answers</h3>
+                <div className="flex flex-col gap-3">
+                  {activeTest.questions.map((q, i) => (
+                    <QuestionReview
+                      key={q.id}
+                      index={i}
+                      question={q}
+                      chosen={chosenByQuestion.get(q.id) ?? -1}
+                    />
+                  ))}
                 </div>
               </div>
             </div>

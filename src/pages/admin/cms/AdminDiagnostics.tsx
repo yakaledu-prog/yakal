@@ -17,6 +17,7 @@ import { cn } from "@/utils/cn";
 import { JsonEditor } from "@/components/ui/JsonEditor";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { AdminHeader } from "../AdminHeader";
+import { DiagnosticResultsPanel } from "@/components/admin/DiagnosticResultsPanel";
 
 const BLANK_QUESTION = (n: number): DiagnosticQuestion => ({
   id: `q${n}`,
@@ -930,6 +931,9 @@ export function AdminDiagnostics() {
         </aside>
 
         <section className={cn("min-h-0 min-w-0 flex-1 flex-col md:h-full md:overflow-y-auto", detailClass)}>
+          {/* How the tests are landing across all students, above the editor.
+              Renders nothing until somebody has actually sat a test. */}
+          <DiagnosticResultsPanel tests={tests} />
           {activeSubject === null ? (
             <div className="flex flex-1 items-center justify-center p-10 text-center">
               <p className="max-w-sm text-muted-foreground">
