@@ -12,12 +12,6 @@
 //     Drives the student and parent home screens. Needs a query joining
 //     sessions, assignments and submissions for the signed-in student.
 //
-//   Diagnostics (src/services/diagnosticService.ts)
-//     Not here because it is not hardcoded, but it stores results in
-//     localStorage rather than Postgres, so results do not follow a user
-//     between devices and a tutor cannot see them. Needs a
-//     diagnostic_results table and a migration.
-//
 // Tracked in docs/PRODUCTION_UNMOCK_CHECKLIST.md.
 // ============================================================
 
