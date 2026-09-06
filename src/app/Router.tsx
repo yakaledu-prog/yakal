@@ -74,7 +74,6 @@ const ParentRoadmap = lazy(() => import("../pages/parent/ParentRoadmap").then((m
 const PendingApprovalPage = lazy(() => import("../pages/shared/PendingApprovalPage").then((m) => ({ default: m.PendingApprovalPage })));
 const PrivacyPolicyPage = lazy(() => import("../pages/shared/PrivacyPolicyPage").then((m) => ({ default: m.PrivacyPolicyPage })));
 const ProposalPage = lazy(() => import("../pages/shared/ProposalPage").then((m) => ({ default: m.ProposalPage })));
-const SettingsPage = lazy(() => import("../pages/shared/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const StudentApplicationTracker = lazy(() => import("../pages/student/StudentApplicationTracker").then((m) => ({ default: m.StudentApplicationTracker })));
 const StudentCalendar = lazy(() => import("../pages/student/StudentCalendar").then((m) => ({ default: m.StudentCalendar })));
 const StudentAdvising = lazy(() => import("../pages/student/StudentAdvising").then((m) => ({ default: m.StudentAdvising })));
@@ -357,7 +356,6 @@ const router = createBrowserRouter([
           { path: "billing", element: <AdminBilling /> },
           { path: "notifications", element: <AdminContact /> },
           { path: "profile", element: <AdminProfile /> },
-          { path: "settings", element: <SettingsPage /> },
           { path: "*", element: <NotFoundPage /> },
         ]
       },
@@ -379,7 +377,6 @@ const router = createBrowserRouter([
           { path: "explore", element: <CounselorExplore /> },
           { path: "meeting/:id", element: <CounselorSessionDetail /> },
           { path: "session/:id", element: <CounselorSessionDetail /> },
-          { path: "settings", element: <SettingsPage /> },
           { path: "*", element: <NotFoundPage /> },
         ]
       },
@@ -399,7 +396,6 @@ const router = createBrowserRouter([
           { path: "earnings", element: <TutorEarnings /> },
           { path: "messages", element: <TutorMessages /> },
           { path: "profile", element: <TutorProfile /> },
-          { path: "settings", element: <SettingsPage /> },
           { path: "notifications", element: <TutorNotifications /> },
           { path: "*", element: <NotFoundPage /> },
         ]

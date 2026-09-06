@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Archive, ArchiveRestore, ArrowLeft, ArrowRight, Clock, Inbox, Loader2, Mail, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { detailFor } from "@/lib/notifications";
-import { PushToggle } from "@/components/shared/PushToggle";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { useAuth } from "@/contexts/AuthContext";
@@ -153,12 +152,7 @@ export function NotificationsScreen({
               <h1 className="text-xl md:text-2xl font-bold tracking-tight">Notifications</h1>
               <p className="text-white/80 text-[13px] mt-1">{subtitle}</p>
             </div>
-            <div className="flex items-center gap-6 md:gap-8">
-              {/* Asking has to come from a click, so it lives on the screen
-                  somebody opens when they are thinking about notifications
-                  rather than firing on a page load. A browser holds a refused
-                  prompt against the origin, so there is one chance at it. */}
-              <PushToggle />
+            <div className="flex items-center gap-8">
               <MinimalStat label="Unread" value={unreadCount} />
               <MinimalStat label="Total" value={notifications.filter((n) => !n.archived).length} />
             </div>

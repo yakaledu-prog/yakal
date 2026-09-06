@@ -91,9 +91,10 @@ export async function notify<K extends TemplateKey>(
     title: rendered.title,
     body: rendered.message,
     url: rendered.link,
-    // Collapses repeats about one event: a lesson moved twice should replace
-    // its own notification rather than stack a second one behind it.
-    tag: `${String(key)}:${userId}`,
+    // No tag. A tag makes one notification replace another, and keyed on the
+    // template it collapsed different events: two lessons booked arrived as
+    // one notification, and the first was the one that survived. Collapsing is
+    // lossy, stacking is only untidy.
   });
 
   // Deliberately after the row and deliberately swallowed. The notification is

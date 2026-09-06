@@ -82,8 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     title: rendered.title,
     body: rendered.message,
     url: rendered.link,
-    // Collapses repeats about one event rather than stacking them.
-    tag: `${String(template)}:${userId}`,
+    // No tag, for the reason in _utils/notify.ts: keyed on the template it
+    // collapsed two different events into one notification.
   });
 
   const { data: person } = await db

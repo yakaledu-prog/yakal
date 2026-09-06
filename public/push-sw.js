@@ -28,11 +28,13 @@ self.addEventListener('push', (event) => {
     icon: '/icons/icon-192.png',
     // Android shows this small and monochrome in the status bar.
     badge: '/icons/badge-72.png',
-    // Collapses repeats: a second notification about the same thing replaces
-    // the first rather than stacking. Without it, a family whose lesson moved
-    // twice gets two notifications and has to work out which is current.
-    tag: payload.tag || 'yakal',
-    renotify: !!payload.tag,
+    // Only when the sender says two notifications are about the same thing.
+    //
+    // This used to fall back to a fixed 'yakal', which made every untagged
+    // notification replace the previous one: two lessons booked showed one
+    // notification. Collapsing is lossy and stacking is only untidy, so
+    // nothing collapses unless it was asked for.
+    ...(payload.tag ? { tag: payload.tag, renotify: true } : {}),
     data: { url: payload.url || '/' },
     // No requireInteraction. A notification that will not go away until it is
     // dismissed is for alarms, and none of these are.

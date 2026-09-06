@@ -168,7 +168,7 @@ export function CounselorHome() {
               <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
                 <TooltipButton icon={<CalendarDays size={18} />} label="Calendar" onClick={() => navigate("/counselor/calendar")} />
                 <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/counselor/messages")} />
-                <TooltipButton icon={<Settings size={18} />} label="Settings" onClick={() => navigate("/counselor/settings")} />
+                <TooltipButton icon={<Settings size={18} />} label="Settings" onClick={() => navigate("?settings=general")} />
               </div>
             </div>
 

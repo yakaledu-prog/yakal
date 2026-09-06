@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -18,11 +18,14 @@ import {
   Menu,
   Lock,
   ChevronDown,
+  Settings as SettingsIcon,
   BotMessageSquareIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { SupportDrawer } from "@/components/support/SupportDrawer";
 import { SUPPORT_ROLES, type SupportChatRole } from "@/services/supportChatService";
+import { SettingsModal, settingsHref } from "@/components/settings/SettingsModal";
+import { applyTheme, currentTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
 import { SERVICE_LABEL } from "@/services/parentService";
 import { sendFromTemplate } from "@/services/notificationService";
@@ -61,6 +64,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const [supportOpen, setSupportOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const location = useLocation();
+  const navigate = useNavigate();
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
@@ -175,6 +179,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-muted/20 overflow-hidden">
+      {/* Over everything, and driven by ?settings= so a link opens a tab and
+          the back button closes it. */}
+      <SettingsModal />
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -245,9 +252,35 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 <div className="flex items-center justify-between gap-2 min-w-0">
                   <p className="text-xs text-muted-foreground truncate capitalize min-w-0">{profile?.role || "Student"}</p>
                   <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
-                    <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1" title="Toggle Theme">
+                    {/* Through applyTheme, not classList.toggle. Toggling the
+                        class directly changed the page and nothing else: the
+                        choice was not remembered, so a reload undid it, and
+                        the transition suppression that stops every border
+                        flashing white on the way to dark never ran. */}
+                    <button
+                      onClick={() => applyTheme(currentTheme() === "dark" ? "light" : "dark")}
+                      className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1"
+                      title="Toggle theme"
+                      aria-label="Toggle theme"
+                    >
                       <Moon size={12} className="hidden dark:block" />
                       <Sun size={12} className="block dark:hidden" />
+                    </button>
+                    {/* The only way into settings. It was a page on three of
+                        the five roles with one button pointing at it, on the
+                        counsellor's home.
+                        
+                        A button rather than a Link, because this sits inside
+                        the profile Link: an anchor nested in an anchor is not
+                        valid HTML, the browser unpicks it, and the wrapper's
+                        preventDefault swallowed the click anyway. */}
+                    <button
+                      onClick={() => navigate(settingsHref())}
+                      className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1"
+                      title="Settings"
+                      aria-label="Settings"
+                    >
+                      <SettingsIcon size={12} />
                     </button>
                     {/* <button onClick={() => signOut()} className="text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-muted p-1" title="Log Out">
                       <LogOut size={12} />
