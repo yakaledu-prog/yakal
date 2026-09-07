@@ -46,37 +46,11 @@ interface NavItem {
   lockedBy?: string;
   /** Renders this item as a collapsible group instead of a link. */
   children?: NavItem[];
-  /**
-   * Show this in the bottom bar on a phone.
-   *
-   * Opt in per role rather than "the first four", because what a person opens
-   * constantly is not the order the sidebar happens to list things in, and it
-   * differs: a tutor lives in their calendar, a parent in their children.
-   *
-   * A group can carry it. Its href is the child it opens on, which is a real
-   * destination even though the group itself is not a link in the sidebar.
-   */
-  mobile?: boolean;
 }
 
 /** Groups are containers, so route matching only ever runs against leaves. */
 function flattenNav(items: NavItem[]): NavItem[] {
   return items.flatMap((i) => (i.children?.length ? i.children : [i]));
-}
-
-/**
- * What the bottom bar shows.
- *
- * Not flattenNav, which replaces a group with its children and so would drop
- * a group marked for the bar entirely. A group is a legitimate target here:
- * its href is the child it opens on, which is where "Tutoring" should take a
- * student on a phone.
- */
-function mobileNav(items: NavItem[]): NavItem[] {
-  return items.flatMap((i) => {
-    if (i.mobile && i.href) return [i];
-    return (i.children ?? []).filter((c) => c.mobile && c.href);
-  });
 }
 
 interface DashboardLayoutProps {
@@ -221,11 +195,6 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           the back button closes it. */}
       <SettingsModal />
 
-      <MobileTabBar
-        items={mobileNav(decorated)}
-        basePath={basePath}
-        pathname={location.pathname}
-      />
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -236,6 +205,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
+        // Named, because a screen reader announced it as "complementary" and
+        // nothing else. The settings modal has an aside of its own, so this is
+        // also the only way to tell the two apart.
+        aria-label="Sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-50 md:relative md:flex flex-col transition-all duration-300 bg-card dark:bg-[#111b21] border-r dark:border-[#2a3942]",
           sidebarOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full md:w-20 md:translate-x-0"
@@ -244,7 +217,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         <div className={cn("h-16 flex items-center px-4", sidebarOpen ? "justify-between" : "justify-center")}>
           {sidebarOpen ? (
             <>
-              <Link to="/" className="flex items-center gap-2">
+              <Link to="/" onClick={closeDrawerOnPhone} className="flex items-center gap-2">
                 <img src={logoImg} alt="Yakal" className="h-10 object-contain" />
               </Link>
               <button
@@ -290,7 +263,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
         {/* Profile Card */}
         <div className="p-2 border-t dark:border-[#2a3942]">
-          <Link to={`/${profile?.role || 'student'}/profile`} className={cn("flex items-center gap-3 w-full rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", sidebarOpen ? "p-4" : "p-2 justify-center")}>
+          {/* The same close-on-follow as the nav links above. Without it the
+              drawer stayed over the profile page it had just opened. */}
+          <Link to={`/${profile?.role || 'student'}/profile`} onClick={closeDrawerOnPhone} className={cn("flex items-center gap-3 w-full rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", sidebarOpen ? "p-4" : "p-2 justify-center")}>
             <img src={profile?.avatar_url || dicebearUrl(profile?.full_name || "user")} alt="Profile" className="h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
               <div className="flex flex-col gap-1 w-full min-w-0">
@@ -321,7 +296,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                         valid HTML, the browser unpicks it, and the wrapper's
                         preventDefault swallowed the click anyway. */}
                     <button
-                      onClick={() => navigate(settingsHref())}
+                      onClick={() => {
+                        closeDrawerOnPhone();
+                        navigate(settingsHref());
+                      }}
                       className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1"
                       title="Settings"
                       aria-label="Settings"
@@ -417,11 +395,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page Content.
-            The bottom padding on a phone is the height of the tab bar, which
-            is fixed and would otherwise sit on top of whatever is at the end
-            of the page. */}
-        <div className="relative flex-1 overflow-hidden flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] dark:bg-[#111b21] md:pb-0">
+        {/* Page Content */}
+        <div className="relative flex-1 overflow-hidden flex flex-col dark:bg-[#111b21]">
           {/* Always render the Outlet so it's visible behind the overlay */}
           <div className={cn("flex-1 overflow-hidden flex flex-col h-full", lockedItem && "pointer-events-none blur-sm opacity-50 select-none")}>
             <Outlet context={{ sidebarOpen }} />
@@ -459,10 +434,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           // join, so passing "fixed" left both position classes on the element
           // and Tailwind emits relative after fixed: the button stayed in the
           // flow and bottom-5 right-5 shifted it up and left, into the sidebar.
-          //
-          // It sits clear of the mobile tab bar, which is fixed at the bottom
-          // and would otherwise have this on top of its last item.
-          <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-5 z-[90] md:bottom-6 md:right-6">
+          <div className="fixed bottom-5 right-5 z-[90] md:bottom-6 md:right-6">
             <Tooltip
               side="left"
               width={150}
@@ -516,81 +488,6 @@ interface NavNodeProps {
   pathname: string;
   /** Nested items sit under a group header and are indented. */
   nested?: boolean;
-}
-
-/**
- * Navigation on a phone.
- *
- * The sidebar is a drawer on a phone, so reaching anything meant opening it
- * first: two taps for every move, and the drawer covers what you were looking
- * at while you decide. A bottom bar is where a thumb already is.
- *
- * Only the handful somebody opens constantly, marked per role. The rest stay
- * in the drawer, which is still there behind the menu button.
- *
- * Notifications is deliberately not here. It is a bell in the topbar with its
- * own unread count, and a second entry point would compete with it for the
- * same taps while saying the same thing.
- */
-function MobileTabBar({
-  items,
-  basePath,
-  pathname,
-}: {
-  items: NavItem[];
-  basePath: string;
-  pathname: string;
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <nav
-      aria-label="Main"
-      // pb keeps the row clear of the home indicator on a phone with no
-      // hardware button, where the bottom of the screen is not tappable.
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
-    >
-      {items.map((item) => {
-        // A group is active on any of its pages, not only on the one its href
-        // opens. College carries href /student/college-list, so on Advising or
-        // Roadmap or Applications nothing in the bar lit up at all and it
-        // could not answer the one question a bottom bar exists to answer.
-        const active =
-          matches(item.href ?? "", basePath, pathname) ||
-          (item.children ?? []).some((c) => matches(c.href ?? "", basePath, pathname));
-        const locked = !!item.isLocked;
-        return (
-          <Link
-            key={item.name}
-            to={item.href ?? "#"}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex min-w-0 flex-1 flex-col items-center gap-1 py-2 transition-colors",
-              active ? "text-primary" : "text-muted-foreground",
-              locked && "opacity-60"
-            )}
-          >
-            <span className="relative flex items-center justify-center">
-              {item.icon}
-              {locked ? (
-                <span className="absolute -bottom-1 -right-1.5 rounded-full bg-card p-0.5">
-                  <Lock size={9} />
-                </span>
-              ) : item.badge !== undefined && item.badge > 0 ? (
-                // A dot, not a number. There is no room for "12" at this size,
-                // and the useful question on a phone is whether there is
-                // anything at all.
-                <span className="absolute -right-1.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
-              ) : null}
-            </span>
-            <span className="w-full truncate px-1 text-center text-[10.5px] font-medium leading-none">
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
 }
 
 function matches(href: string, basePath: string, pathname: string) {
