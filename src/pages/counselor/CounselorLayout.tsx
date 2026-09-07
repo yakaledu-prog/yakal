@@ -13,9 +13,13 @@ export function CounselorLayout() {
     { name: "Students", href: "/counselor/students", icon: <Users size={20} />, mobile: true },
     { name: "Calendar", href: "/counselor/calendar", icon: <Calendar size={20} />, mobile: true },
     { 
-      name: "College", 
-      href: "/counselor/colleges", 
+      name: "College",
+      // The group opens on Advising, which is the page a counsellor spends
+      // their day in. It pointed at /counselor/colleges, which is not a route,
+      // so on a phone the College tab led to a not-found page.
+      href: "/counselor/sessions",
       icon: <GraduationCap size={20} />,
+      mobile: true,
       children: [
         // Advising belongs with the rest of the college work rather than
         // above it: for a counsellor every session is an advising session, so

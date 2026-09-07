@@ -551,7 +551,13 @@ function MobileTabBar({
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {items.map((item) => {
-        const active = matches(item.href ?? "", basePath, pathname);
+        // A group is active on any of its pages, not only on the one its href
+        // opens. College carries href /student/college-list, so on Advising or
+        // Roadmap or Applications nothing in the bar lit up at all and it
+        // could not answer the one question a bottom bar exists to answer.
+        const active =
+          matches(item.href ?? "", basePath, pathname) ||
+          (item.children ?? []).some((c) => matches(c.href ?? "", basePath, pathname));
         const locked = !!item.isLocked;
         return (
           <Link

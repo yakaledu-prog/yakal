@@ -59,14 +59,19 @@ async function onPhone(email, expected) {
     (await p.evaluate(() => location.pathname)).length > `/${email.split('@')[0]}`.length,
     await p.evaluate(() => location.pathname));
 
+  // The bar's whole job is saying where you are. A group used to match only
+  // its own href, so on Advising or Roadmap nothing lit up at all.
+  const lit = await p.locator('nav[aria-label="Main"] a[aria-current="page"]').allInnerTexts();
+  pass(`${email}: it says where you are`, lit.length === 1, lit.join(',') || 'nothing lit');
+
   pass(`${email}: no page errors`, errs.length === 0, errs[0]?.slice(0, 120) ?? '');
   await ctx.close();
 }
 
 await onPhone('student@yakal.com', ['Home', 'Calendar', 'Tutoring', 'College', 'Messages']);
-await onPhone('parent@yakal.com', ['Home', 'Courses', 'My Children', 'Messages']);
+await onPhone('parent@yakal.com', ['Home', 'Courses', 'My Children', 'College', 'Messages']);
 await onPhone('tutor@yakal.com', ['Teaching Hub', 'Students', 'Lessons', 'Calendar', 'Messages']);
-await onPhone('counselor@yakal.com', ['Home', 'Students', 'Calendar', 'Messages']);
+await onPhone('counselor@yakal.com', ['Home', 'Students', 'Calendar', 'College', 'Messages']);
 
 // A desktop has the sidebar and does not want a second navigation.
 const desktop = await b.newContext({ viewport: { width: 1440, height: 900 } });

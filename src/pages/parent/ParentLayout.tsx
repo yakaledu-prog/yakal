@@ -21,7 +21,11 @@ export function ParentLayout() {
     { name: "My Children", href: "/parent/children", icon: <Users size={20} />, mobile: true },
     {
       name: "College",
+      // A group needs a destination to be reachable from the bottom bar, and
+      // Roadmap is the one a parent opens.
+      href: "/parent/roadmap",
       icon: <GraduationCap size={20} />,
+      mobile: true,
       children: [
         { name: "Roadmap", href: "/parent/roadmap", icon: <Map size={18} /> },
         { name: "Explore", href: "/parent/explore", icon: <Compass size={18} /> },
