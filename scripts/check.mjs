@@ -41,6 +41,7 @@ const NEEDS_DB = [
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
+  ['plan-ownership.ts', 'who may change a child\'s counselling plan'],
   ['earnings.mjs', 'nobody can write themselves an earning, and holds hold'],
   ['session-completion.mjs', 'which lessons are finished, in the right timezone'],
   ['run-jobs.ts', 'the scheduled job completes lessons and holds the money'],

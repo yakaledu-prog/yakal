@@ -201,7 +201,20 @@ export function ParentAdmissions() {
                   hasPlan={!!currentPlan}
                   disabled={!activeChildId}
                   busy={busy === t.id}
-                  onChoose={() => (currentPlan ? setSwitchingTo(t) : setPendingTier(t))}
+                  onChoose={() => {
+                    // Nothing to switch when Stripe is not billing it: every
+                    // change endpoint is a Stripe call, so the dialog could
+                    // only take a confirmation and then say so. A plan set up
+                    // by hand is one to sort out by hand.
+                    if (currentPlan && !currentPlan.isBillable) {
+                      toast.info(
+                        "This plan is not billed through the app, so it cannot be changed here. Message us and we will move it."
+                      );
+                      return;
+                    }
+                    if (currentPlan) setSwitchingTo(t);
+                    else setPendingTier(t);
+                  }}
                 />
               ))}
             </div>

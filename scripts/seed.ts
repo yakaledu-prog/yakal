@@ -615,10 +615,23 @@ async function seedCollegeProfiles() {
           .in("status", ["active", "past_due"])
           .maybeSingle();
 
+        // Who paid for it. Left null, the plan belonged to nobody: the
+        // subscription endpoints check purchased_by, so a parent opening
+        // Change plan on the seeded engagement was told "That is not your
+        // subscription" about their own child.
+        const { data: link } = await db
+          .from("parent_student_links")
+          .select("parent_id")
+          .eq("student_id", student_id)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+
         const plan = {
           student_id,
           tier_id: tier.id,
           counselor_id: idFor(p.counselor),
+          purchased_by: link?.parent_id ?? null,
           status: "active",
         };
         const { error: planErr } = existingPlan
