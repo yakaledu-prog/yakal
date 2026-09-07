@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, use
 import { Loader2 } from "lucide-react";
 
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { SessionExpiry } from "@/components/shared/SessionExpiry";
 import { IdleTimeout } from "@/components/shared/IdleTimeout";
 import { Toaster } from "sonner";
 
@@ -144,7 +145,13 @@ function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Carrying where they were, because this fires on an expired session as
+    // well as on a cold visit to a protected URL, and it races the redirect
+    // SessionExpiry has already started: whichever lands second wins, so both
+    // have to preserve the page or the parameter is dropped half the time.
+    // AuthPage already honours ?next=, which is how an invite link works.
+    const back = `${location.pathname}${location.search}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(back)}`} replace />;
   }
 
   const path = location.pathname;
@@ -248,6 +255,9 @@ function AppRootLayout() {
       {/* Signs an idle session out to /login. Here, under both AuthProvider and
           the router, so it runs on every authenticated screen regardless of role. */}
       <IdleTimeout />
+      {/* The other way a session ends: it expired while the tab sat open. Same
+          destination, and it carries the page back with it. */}
+      <SessionExpiry />
       {/* Here rather than on one page: it should be offerable to a visitor
           reading the landing page and to somebody already signed in, and it
           hides itself once the app is installed. */}
