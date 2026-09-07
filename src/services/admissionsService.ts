@@ -63,14 +63,6 @@ export interface AdmissionsPlan {
   /** A downgrade Stripe will apply when the period ends. */
   pendingTierId: string | null;
   pendingTierName: string | null;
-  /**
-   * Whether Stripe is billing this, which is what makes it changeable.
-   *
-   * A plan set up by hand, or seeded for a demo, has no subscription behind
-   * it: every change endpoint is a Stripe call, so there is nothing to move.
-   * The page used to offer Change plan anyway and only said so after Confirm.
-   */
-  isBillable: boolean;
 }
 
 function toTier(row: any): AdmissionsTier {
@@ -455,7 +447,7 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
   const { data, error } = await supabase
     .from("admissions_plans")
     .select(`id, student_id, started_at, status, current_period_end,
-             cancel_at_period_end, pending_tier_id, stripe_subscription_id,
+             cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              counselor:profiles!admissions_plans_counselor_id_fkey (full_name, avatar_url),
              tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS}),
@@ -483,7 +475,6 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     pendingTierName: (data as any).pendingTier?.name ?? null,
     counselorName: (data as any).counselor?.full_name ?? null,
     counselorAvatarUrl: (data as any).counselor?.avatar_url ?? null,
-    isBillable: !!(data as any).stripe_subscription_id,
   };
 }
 
@@ -497,7 +488,7 @@ export async function getAdmissionsPlans(
   const { data, error } = await supabase
     .from("admissions_plans")
     .select(`id, student_id, started_at, status, current_period_end,
-             cancel_at_period_end, pending_tier_id, stripe_subscription_id,
+             cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS}),
              pendingTier:admissions_tiers!admissions_plans_pending_tier_id_fkey (name)`)
@@ -526,7 +517,6 @@ export async function getAdmissionsPlans(
       cancelAtPeriodEnd: !!row.cancel_at_period_end,
       pendingTierId: row.pending_tier_id ?? null,
       pendingTierName: row.pendingTier?.name ?? null,
-      isBillable: !!row.stripe_subscription_id,
     });
   }
   return out;

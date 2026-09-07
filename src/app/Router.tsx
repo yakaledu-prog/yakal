@@ -245,9 +245,22 @@ function AppRootLayout() {
         richColors
         toastOptions={{
           classNames: {
-            success: '!bg-[#1099A1aa] !border-none !text-white',
+            // No icon. A toast is one line that has already announced itself
+            // by appearing, and sonner's tick, cross and i were the only
+            // things on screen drawn in somebody else's palette.
+            //
+            // !hidden, not hidden: sonner styles [data-sonner-toast] [data-icon]
+            // itself, which is two classes of specificity and beats a plain
+            // utility. The class was on the element and doing nothing.
+            icon: '!hidden',
+            // The brand colours as tokens rather than hexes, so they follow
+            // the theme. success was #1099A1aa, which is the primary written
+            // out by hand and then made translucent, and it stayed that exact
+            // teal in dark mode where primary is a shade deeper.
+            success: '!bg-primary !border-none !text-primary-foreground',
+            info: '!bg-primary !border-none !text-primary-foreground',
             warning: '!bg-secondary !border-none !text-white',
-            error: '!bg-[#ef4444] !border-none !text-white'
+            error: '!bg-destructive !border-none !text-destructive-foreground',
           }
         }}
       />
