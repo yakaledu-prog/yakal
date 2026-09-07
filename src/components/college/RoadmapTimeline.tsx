@@ -129,8 +129,14 @@ export function RoadmapTimeline({
   gradYear,
   gradeLevel,
   subjectName,
+  anonymous,
 }: {
   gradYear?: number | null;
+  /**
+   * The plan with nobody in it: no year marked, and nothing telling the reader
+   * to set one. The parent's roadmap is the advice on its own.
+   */
+  anonymous?: boolean;
   /** Fallback when no graduation year is on file, e.g. "11" or "Grade 11". */
   gradeLevel?: string | null;
   /**
@@ -184,7 +190,10 @@ export function RoadmapTimeline({
 
       <p className="text-[14px] text-[#54656f] dark:text-[#aebac1]">
         {plan.headline}
-        {derived === null && (
+        {/* Only where there is a graduation year to set. On the parent's
+            roadmap there is no year and no field to put one in, so this was an
+            instruction with nothing behind it. */}
+        {derived === null && !anonymous && (
           <span className="text-[#717182]">
             {" "}
             Set your graduation year above to have this follow you.

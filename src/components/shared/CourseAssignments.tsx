@@ -7,6 +7,7 @@ import { AssignmentList, type AssignmentItem } from "@/components/shared/Assignm
 import { LoadingPanel } from "@/components/shared/Spinner";
 import { getCourseWorkFor, sendClassroomInvite } from "@/services/courseWork";
 import { groupCourseWorkByTopic } from "@/utils/courseWorkTopics";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ============================================================
 // The work set on a course, wherever it was written.
@@ -88,6 +89,17 @@ export function CourseAssignments({
   // inviting the parent would be refused for not being enrolled. The server
   // decides who the learner is and says so.
   const learnerId = data?.learnerId;
+
+  // Whether the person reading is the one who has to join.
+  //
+  // A parent reads this page as their child, so the server hands back the
+  // child's membership and the child's id, and the banner below was shown to
+  // the parent in the child's voice: "You are not in this Google Classroom
+  // yet, so you cannot turn work in", over a button offering to invite them.
+  // Neither is true of a parent, who does not turn work in and cannot join a
+  // class they are not enrolled on. Joining is the student's to do.
+  const { user } = useAuth();
+  const readerIsLearner = !!learnerId && learnerId === user?.id;
   const queryClient = useQueryClient();
   const [inviting, setInviting] = useState(false);
 
@@ -136,8 +148,11 @@ export function CourseAssignments({
           one click away instead of leaving them to find an email.
 
           Not shown as an error, because nothing is broken. Everything below
-          reads fine without it; joining is what lets them hand work in. */}
-      {data?.membership && data.membership !== "joined" && (
+          reads fine without it; joining is what lets them hand work in.
+
+          Only to the student. A parent, a tutor and an admin all read this
+          page about somebody else, and none of them is the person who joins. */}
+      {readerIsLearner && data?.membership && data.membership !== "joined" && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded border border-primary/30 bg-primary/10 px-4 py-3">
           <p className="text-[13px] text-foreground">
             {data.membership === "invited"
