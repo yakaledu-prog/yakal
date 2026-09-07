@@ -276,7 +276,9 @@ export function InstallPrompt({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-border bg-popover p-4 shadow-2xl md:left-auto md:right-6",
+        // Above the mobile tab bar rather than over it. This sat at bottom-4
+        // and covered the whole row, including the labels.
+        "fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-border bg-popover p-4 shadow-2xl md:bottom-4 md:left-auto md:right-6",
         "transition-all duration-500 ease-out motion-reduce:transition-none",
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
         className

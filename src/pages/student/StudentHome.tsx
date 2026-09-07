@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { CalendarDays, Activity, MessagesSquareIcon, Settings, X } from "lucide-react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { CalendarDays, Activity, MessagesSquareIcon, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { studentService } from "@/services/studentService";
+import { studentService, getAllAssignments } from "@/services/studentService";
 import { cn } from "@/utils/cn";
 import { getStudentSessions } from "@/services/sessions";
 import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
@@ -16,13 +14,19 @@ export function StudentHome() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
-  const [showAnnouncement, setShowAnnouncement] = useState(true);
-  const [showAnnouncementDialog, setShowAnnouncementDialog] = useState(false);
-  const { sidebarOpen } = useOutletContext<{ sidebarOpen: boolean }>();
 
   useEffect(() => {
     studentService.getDashboardSummary().then(setData);
   }, []);
+
+  // What is actually set and not yet turned in. The two blocks this replaced
+  // read MOCK_DASHBOARD_SUMMARY.homeworkDue, which is two hardcoded rows.
+  const { data: assignments = [], isLoading: workLoading } = useQuery({
+    queryKey: ["student-assignments", user?.id],
+    queryFn: () => getAllAssignments(user!.id),
+    enabled: !!user?.id,
+  });
+  const outstanding = assignments.filter((a) => !a.isSubmitted);
 
   // The agenda reads the real sessions rather than the dashboard summary's one
   // shaped "next session", so it can show the week rather than the next hour.
@@ -110,28 +114,50 @@ export function StudentHome() {
         {/* Content Below Banner (Borderless, Typography Driven) */}
         <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
 
-          {/* Left: Recent Activity Feed */}
+          {/* Left: work that is actually outstanding.
+              This was an "Activity Feed" of three invented lines: "You
+              submitted Derivatives Practice", "Dr. Alex graded your Lab
+              Report" and "System processed your course enrollment", with
+              timestamps of two hours and five hours ago that were as fixed as
+              the text. None of it came from anywhere, and Dr. Alex is not a
+              person on this platform. */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><Activity size={20} className="text-primary" /> Activity Feed</h2>
+              <h2 className="text-[17px] font-medium flex items-center gap-2 text-foreground"><Activity size={19} className="text-primary" /> Work due</h2>
+              <button onClick={() => navigate("/student/my-learning")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
-            <div className="space-y-0">
-              <FeedItem text={`You submitted ${data.homeworkDue[0]?.title || 'Homework'}`} time="2 hours ago" />
-              <FeedItem text={`Dr. Alex graded your ${data.homeworkDue[1]?.title || 'Lab Report'}`} time="5 hours ago" />
-              <FeedItem text="System processed your course enrollment" time="Yesterday" />
-            </div>
+            {workLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+              </div>
+            ) : outstanding.length === 0 ? (
+              <p className="text-[14px] text-muted-foreground py-6">
+                Nothing is outstanding. Anything a tutor sets appears here.
+              </p>
+            ) : (
+              <div className="space-y-0">
+                {outstanding.slice(0, 6).map((a) => (
+                  <WorkItem
+                    key={a.id}
+                    title={a.title}
+                    course={a.courseTitle}
+                    due={a.dueDate}
+                    onClick={() => navigate(`/student/my-learning/${a.courseId}`)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Vertical Agenda */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-primary" /> Agenda</h2>
+              <h2 className="text-[17px] font-medium flex items-center gap-2 text-foreground"><CalendarDays size={19} className="text-primary" /> Your week</h2>
               <button onClick={() => navigate("/student/sessions")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
             </div>
 
             {/* The same rows as the sessions page, stacked so they fit this
-                column. Homework keeps its own shape below: it is not a
-                session and should not pretend to be one. */}
+                column. */}
             <UpcomingSessions
               sessions={agendaItems}
               isLoading={sessionsLoading}
@@ -140,84 +166,9 @@ export function StudentHome() {
               emptyText="Your schedule is clear."
               onJoin={(s) => navigate(`/student/meeting/${s.id}`)}
             />
-
-            {data.homeworkDue.length > 0 && (
-              <div className="space-y-4 border-t border-border/50 pt-6">
-                {data.homeworkDue.map((h: any) => (
-                  <div key={h.id}>
-                    <p className="text-[15px] font-medium text-foreground">{h.title}</p>
-                    <div className="mt-1.5 flex items-center gap-3 text-[13px] text-muted-foreground">
-                      <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {h.due}</span>
-                      <span>{h.subject}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
         </div>
-
-        {/* Announcements Logic */}
-        {showAnnouncement && data.announcements.length > 0 && (
-          <div
-            className={cn(
-              "fixed bottom-0 right-0 z-40 transition-all duration-300 left-0",
-              sidebarOpen ? "md:left-60" : "md:left-20"
-            )}
-          >
-            <div className="bg-teal-50/95 dark:bg-teal-950/95 backdrop-blur border-t border-teal-200 dark:border-teal-900/50 px-4 py-1 text-xs font-medium flex items-center justify-between text-teal-800 dark:text-teal-200">
-              <div className="flex items-center gap-2">
-                <span className="font-bold">Notice:</span>
-                <span className="truncate">{data.announcements[0].title} on {data.announcements[0].date}. Check your inbox for details.</span>
-              </div>
-              <button
-                onClick={() => setShowAnnouncementDialog(true)}
-                className="p-1 hover:bg-teal-200/50 dark:hover:bg-teal-900/50 rounded-md transition-colors shrink-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showAnnouncementDialog && data.announcements.length > 0 && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <Card className="w-full max-w-md shadow-lg border-muted animate-in fade-in zoom-in-95 duration-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex justify-between items-start text-lg">
-                  <span>{data.announcements[0].title}</span>
-                  <button
-                    onClick={() => setShowAnnouncementDialog(false)}
-                    className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
-                  <p className="font-medium text-foreground mb-1">Date: {data.announcements[0].date}</p>
-                  <p>Please make sure to check your inbox for the registration link and further details regarding this upcoming seminar. Preparation materials will be sent out 24 hours prior.</p>
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowAnnouncementDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setShowAnnouncement(false);
-                      setShowAnnouncementDialog(false);
-                    }}
-                  >
-                    Mark as Read
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
       </div>
     </PageWrapper>
@@ -250,15 +201,55 @@ function IntegratedStat({ label, value, alert }: { label: string; value: string 
   );
 }
 
-function FeedItem({ text, time }: { text: string; time: string }) {
+/** One piece of outstanding work. Real, unlike the feed this replaced. */
+function WorkItem({
+  title,
+  course,
+  due,
+  onClick,
+}: {
+  title: string;
+  course: string;
+  due: string | null;
+  onClick: () => void;
+}) {
+  // "Overdue" and "Today" are worth saying plainly; anything further out is a
+  // date, because "in 9 days" makes somebody do arithmetic to plan around it.
+  const label = (() => {
+    if (!due) return "No deadline";
+    const d = new Date(due + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+    if (days < 0) return "Overdue";
+    if (days === 0) return "Due today";
+    if (days === 1) return "Due tomorrow";
+    return `Due ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  })();
+  const overdue = label === "Overdue";
+
   return (
-    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-border/40 last:border-0 hover:bg-muted/10 transition-colors px-2 -mx-2 rounded-lg cursor-default">
-      <div className="flex items-center gap-4">
-        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-primary transition-colors" />
-        <p className="text-[14px] md:text-[15px] font-medium text-foreground">{text}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex w-full flex-col justify-between gap-1 rounded-lg border-b border-border/40 px-2 -mx-2 py-4 text-left transition-colors last:border-0 hover:bg-muted/10 sm:flex-row sm:items-center"
+    >
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/30 transition-colors group-hover:bg-primary" />
+        <div className="min-w-0">
+          <p className="truncate text-[14px] font-medium text-foreground md:text-[15px]">{title}</p>
+          <p className="truncate text-[12.5px] text-muted-foreground">{course}</p>
+        </div>
       </div>
-      <span className="text-[12px] md:text-[13px] text-muted-foreground mt-2 sm:mt-0">{time}</span>
-    </div>
+      <span
+        className={cn(
+          "shrink-0 pl-6 text-[12px] sm:pl-0 md:text-[13px]",
+          overdue ? "font-medium text-[#b3261e] dark:text-[#f2b8b5]" : "text-muted-foreground"
+        )}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 

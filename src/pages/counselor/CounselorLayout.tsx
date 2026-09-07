@@ -2,10 +2,16 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Home, Users, MessagesSquare, Bell, Calendar, History, Map, GraduationCap, Compass, Wallet, FileText } from "lucide-react";
 
 export function CounselorLayout() {
+  // Five at most in the bottom bar on a phone, and they are the ones this role
+  // opens constantly rather than the first five the sidebar lists. Everything
+  // else stays in the drawer behind the menu button.
+  //
+  // Notifications is never here: it is a bell in the topbar with its own
+  // unread count, and a second entry point would compete with it.
   const navItems = [
-    { name: "Home", href: "/counselor", icon: <Home size={20} /> },
-    { name: "Students", href: "/counselor/students", icon: <Users size={20} /> },
-    { name: "Calendar", href: "/counselor/calendar", icon: <Calendar size={20} /> },
+    { name: "Home", href: "/counselor", icon: <Home size={20} />, mobile: true },
+    { name: "Students", href: "/counselor/students", icon: <Users size={20} />, mobile: true },
+    { name: "Calendar", href: "/counselor/calendar", icon: <Calendar size={20} />, mobile: true },
     { 
       name: "College", 
       href: "/counselor/colleges", 
@@ -20,7 +26,7 @@ export function CounselorLayout() {
         { name: "Explore", href: "/counselor/explore", icon: <Compass size={20} /> },
       ]
     },
-    { name: "Messages", href: "/counselor/messages", icon: <MessagesSquare size={20} /> },
+    { name: "Messages", href: "/counselor/messages", icon: <MessagesSquare size={20} />, mobile: true },
     { name: "Notifications", href: "/counselor/notifications", icon: <Bell size={20} /> },
     { name: "Earnings", href: "/counselor/earnings", icon: <Wallet size={20} /> },
   ];

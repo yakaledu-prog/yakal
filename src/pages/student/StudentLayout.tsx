@@ -32,11 +32,21 @@ export function StudentLayout() {
   const hasAdmissions = activeServices.includes("admissions");
   const hasTutoring = activeServices.includes("tutoring");
 
+  // Five at most in the bottom bar on a phone, and they are the ones a student
+  // opens constantly rather than the first five the sidebar lists. Everything
+  // else stays in the drawer behind the menu button.
+  //
+  // Two of them are groups. A group is not a link in the sidebar, but its href
+  // is the child it opens on, which is a real destination: on a phone
+  // "Tutoring" should go straight to My Learning rather than expand a list.
+  //
+  // Notifications is never here: it is a bell in the topbar with its own
+  // unread count, and a second entry point would compete with it.
   const navItems = [
-    { name: "Home", href: "/student", icon: <Home size={20} /> },
+    { name: "Home", href: "/student", icon: <Home size={20} />, mobile: true },
     // Outside both groups on purpose. A calendar answers "what is my week",
     // which is not a question about one service or the other.
-    { name: "Calendar", href: "/student/calendar", icon: <Calendar size={20} /> },
+    { name: "Calendar", href: "/student/calendar", icon: <Calendar size={20} />, mobile: true },
     {
       // Grouped rather than merged. Each of these does a different job and the
       // accordion only says which service it belongs to, which is the thing a
@@ -45,6 +55,7 @@ export function StudentLayout() {
       name: "Tutoring",
       href: "/student/my-learning",
       icon: <BookOpen size={20} />,
+      mobile: true,
       children: [
         { name: "My Learning", href: "/student/my-learning", icon: <CheckSquare size={18} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
         { name: "Diagnostics", href: "/student/diagnostics", icon: <Activity size={18} />, badge: incompleteDiagnostics, isLocked: !hasTutoring, lockedBy: "tutoring" },
@@ -58,6 +69,7 @@ export function StudentLayout() {
       name: "College",
       href: "/student/college-list",
       icon: <GraduationCap size={20} />,
+      mobile: true,
       children: [
         { name: "Roadmap", href: "/student/roadmap", icon: <Map size={18} /> },
         { name: "Explore", href: "/student/explore", icon: <Compass size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
@@ -69,7 +81,7 @@ export function StudentLayout() {
         { name: "Applications", href: "/student/my-app", icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
       ],
     },
-    { name: "Messages", href: "/student/messages", icon: <MessagesSquareIcon size={20} /> },
+    { name: "Messages", href: "/student/messages", icon: <MessagesSquareIcon size={20} />, mobile: true },
     { name: "Notifications", href: "/student/notifications", icon: <Bell size={20} /> },
   ];
   return <DashboardLayout navItems={navItems} basePath="/student" />;

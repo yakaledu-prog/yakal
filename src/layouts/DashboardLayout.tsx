@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
@@ -46,11 +46,37 @@ interface NavItem {
   lockedBy?: string;
   /** Renders this item as a collapsible group instead of a link. */
   children?: NavItem[];
+  /**
+   * Show this in the bottom bar on a phone.
+   *
+   * Opt in per role rather than "the first four", because what a person opens
+   * constantly is not the order the sidebar happens to list things in, and it
+   * differs: a tutor lives in their calendar, a parent in their children.
+   *
+   * A group can carry it. Its href is the child it opens on, which is a real
+   * destination even though the group itself is not a link in the sidebar.
+   */
+  mobile?: boolean;
 }
 
 /** Groups are containers, so route matching only ever runs against leaves. */
 function flattenNav(items: NavItem[]): NavItem[] {
   return items.flatMap((i) => (i.children?.length ? i.children : [i]));
+}
+
+/**
+ * What the bottom bar shows.
+ *
+ * Not flattenNav, which replaces a group with its children and so would drop
+ * a group marked for the bar entirely. A group is a legitimate target here:
+ * its href is the child it opens on, which is where "Tutoring" should take a
+ * student on a phone.
+ */
+function mobileNav(items: NavItem[]): NavItem[] {
+  return items.flatMap((i) => {
+    if (i.mobile && i.href) return [i];
+    return (i.children ?? []).filter((c) => c.mobile && c.href);
+  });
 }
 
 interface DashboardLayoutProps {
@@ -59,7 +85,13 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // One flag, two meanings: expanded or collapsed on a desktop, drawer open or
+  // shut on a phone. It defaulted to true, so every phone landed with the
+  // drawer covering the page and the menu button that closes it underneath.
+  // 768 is Tailwind's md, which is the breakpoint the aside itself switches on.
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 768
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -68,6 +100,12 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
+  // Only on a phone: on a desktop the sidebar is not a drawer and closing it
+  // would collapse it every time somebody used it.
+  const closeDrawerOnPhone = useCallback(() => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  }, []);
+
   const badges = useNavBadges();
 
   // Yali answers about how the app works for a given role, so an account
@@ -182,6 +220,12 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
       {/* Over everything, and driven by ?settings= so a link opens a tab and
           the back button closes it. */}
       <SettingsModal />
+
+      <MobileTabBar
+        items={mobileNav(decorated)}
+        basePath={basePath}
+        pathname={location.pathname}
+      />
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -229,6 +273,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 sidebarOpen={sidebarOpen}
                 basePath={basePath}
                 pathname={location.pathname}
+                onNavigate={closeDrawerOnPhone}
               />
             ) : (
               <NavLeaf
@@ -237,6 +282,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 sidebarOpen={sidebarOpen}
                 basePath={basePath}
                 pathname={location.pathname}
+                onNavigate={closeDrawerOnPhone}
               />
             )
           )}
@@ -371,8 +417,11 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="relative flex-1 overflow-hidden flex flex-col dark:bg-[#111b21]">
+        {/* Page Content.
+            The bottom padding on a phone is the height of the tab bar, which
+            is fixed and would otherwise sit on top of whatever is at the end
+            of the page. */}
+        <div className="relative flex-1 overflow-hidden flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] dark:bg-[#111b21] md:pb-0">
           {/* Always render the Outlet so it's visible behind the overlay */}
           <div className={cn("flex-1 overflow-hidden flex flex-col h-full", lockedItem && "pointer-events-none blur-sm opacity-50 select-none")}>
             <Outlet context={{ sidebarOpen }} />
@@ -410,7 +459,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           // join, so passing "fixed" left both position classes on the element
           // and Tailwind emits relative after fixed: the button stayed in the
           // flow and bottom-5 right-5 shifted it up and left, into the sidebar.
-          <div className="fixed bottom-5 right-5 z-[90] md:bottom-6 md:right-6">
+          //
+          // It sits clear of the mobile tab bar, which is fixed at the bottom
+          // and would otherwise have this on top of its last item.
+          <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-5 z-[90] md:bottom-6 md:right-6">
             <Tooltip
               side="left"
               width={150}
@@ -456,6 +508,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 // -- Sidebar items ------------------------------------------------------------
 
 interface NavNodeProps {
+  /** Puts the drawer away on a phone. A no-op on a desktop. */
+  onNavigate?: () => void;
   item: NavItem;
   sidebarOpen: boolean;
   basePath: string;
@@ -464,12 +518,81 @@ interface NavNodeProps {
   nested?: boolean;
 }
 
+/**
+ * Navigation on a phone.
+ *
+ * The sidebar is a drawer on a phone, so reaching anything meant opening it
+ * first: two taps for every move, and the drawer covers what you were looking
+ * at while you decide. A bottom bar is where a thumb already is.
+ *
+ * Only the handful somebody opens constantly, marked per role. The rest stay
+ * in the drawer, which is still there behind the menu button.
+ *
+ * Notifications is deliberately not here. It is a bell in the topbar with its
+ * own unread count, and a second entry point would compete with it for the
+ * same taps while saying the same thing.
+ */
+function MobileTabBar({
+  items,
+  basePath,
+  pathname,
+}: {
+  items: NavItem[];
+  basePath: string;
+  pathname: string;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <nav
+      aria-label="Main"
+      // pb keeps the row clear of the home indicator on a phone with no
+      // hardware button, where the bottom of the screen is not tappable.
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+    >
+      {items.map((item) => {
+        const active = matches(item.href ?? "", basePath, pathname);
+        const locked = !!item.isLocked;
+        return (
+          <Link
+            key={item.name}
+            to={item.href ?? "#"}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex min-w-0 flex-1 flex-col items-center gap-1 py-2 transition-colors",
+              active ? "text-primary" : "text-muted-foreground",
+              locked && "opacity-60"
+            )}
+          >
+            <span className="relative flex items-center justify-center">
+              {item.icon}
+              {locked ? (
+                <span className="absolute -bottom-1 -right-1.5 rounded-full bg-card p-0.5">
+                  <Lock size={9} />
+                </span>
+              ) : item.badge !== undefined && item.badge > 0 ? (
+                // A dot, not a number. There is no room for "12" at this size,
+                // and the useful question on a phone is whether there is
+                // anything at all.
+                <span className="absolute -right-1.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+              ) : null}
+            </span>
+            <span className="w-full truncate px-1 text-center text-[10.5px] font-medium leading-none">
+              {item.name}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function matches(href: string, basePath: string, pathname: string) {
   return href === basePath ? pathname === href : pathname.startsWith(href);
 }
 
 function NavLeaf({
-  item, sidebarOpen, basePath, pathname, nested = false,
+  item, sidebarOpen, basePath, pathname, nested = false, onNavigate,
 }: NavNodeProps) {
   const isActive = matches(item.href ?? "", basePath, pathname);
   const isLocked = !!item.isLocked;
@@ -477,6 +600,12 @@ function NavLeaf({
   return (
     <Link
       to={item.href ?? "#"}
+      // Following a link on a phone puts the drawer away. Without this it
+      // stays over the page you just asked for, and the first tap on the new
+      // page is spent dismissing it. Done here rather than in an effect on the
+      // pathname, which is a setState in an effect and a render with the
+      // drawer still open before it closes.
+      onClick={onNavigate}
       title={!sidebarOpen ? item.name : undefined}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
@@ -520,7 +649,7 @@ function NavLeaf({
 }
 
 function NavGroup({
-  item, sidebarOpen, basePath, pathname,
+  item, sidebarOpen, basePath, pathname, onNavigate,
 }: NavNodeProps) {
   const children = item.children ?? [];
   const hasActiveChild = children.some((c) => matches(c.href ?? "", basePath, pathname));
@@ -543,6 +672,7 @@ function NavGroup({
             sidebarOpen={sidebarOpen}
             basePath={basePath}
             pathname={pathname}
+            onNavigate={onNavigate}
           />
         ))}
       </>
@@ -591,6 +721,7 @@ function NavGroup({
               sidebarOpen={sidebarOpen}
               basePath={basePath}
               pathname={pathname}
+              onNavigate={onNavigate}
               nested
             />
           ))}
