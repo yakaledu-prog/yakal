@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { getCounselorDashboard, getCounselorSessionsFull } from "@/services/counselorService";
-import { CalendarDays, Loader2, MessagesSquareIcon, Settings, Video, CalendarClock, Check } from "lucide-react";
+import { CalendarDays, Loader2, MessagesSquareIcon, Video, CalendarClock, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 function getDaysLeft(deadline: string) {
@@ -168,7 +168,6 @@ export function CounselorHome() {
               <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
                 <TooltipButton icon={<CalendarDays size={18} />} label="Calendar" onClick={() => navigate("/counselor/calendar")} />
                 <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/counselor/messages")} />
-                <TooltipButton icon={<Settings size={18} />} label="Settings" onClick={() => navigate("?settings=general")} />
               </div>
             </div>
 

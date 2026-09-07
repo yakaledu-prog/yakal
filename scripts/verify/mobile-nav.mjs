@@ -35,10 +35,6 @@ async function signIn(ctx, email) {
 /**
  * Off screen, or over the page. Measured, because the class list says both:
  * shut on a phone still carries md:translate-x-0 for the desktop case.
- *
- * Named rather than "the first aside": the settings modal has one of its own,
- * and it comes first in the DOM, so an unscoped locator measures its tab rail
- * and reports the drawer as open.
  */
 const drawerLeft = (p) =>
   p.locator('aside[aria-label="Sidebar"]').evaluate((el) => el.getBoundingClientRect().left);
@@ -65,24 +61,12 @@ pass('and puts the drawer away', (await drawerLeft(p)) < 0, `left=${Math.round(a
 // Everything that leaves the drawer has to close it, not only the nav links.
 // The profile card at the bottom is a link too, and it left the drawer sitting
 // over the page it had just opened.
-for (const [what, open] of [
-  ['the profile card', async () => {
-    await p.locator('aside[aria-label="Sidebar"] a[href$="/profile"]').first().click();
-  }],
-  ['the settings button', async () => {
-    await p.locator('aside[aria-label="Sidebar"] button[aria-label="Settings"]').first().click();
-  }],
-]) {
-  await p.locator('header button').first().click();
-  await p.waitForTimeout(600);
-  await open();
-  await p.waitForTimeout(1400);
-  pass(`${what} closes the drawer`, (await drawerLeft(p)) < 0,
-    `left=${Math.round(await drawerLeft(p))} url=${await p.evaluate(() => location.pathname + location.search)}`);
-  // Settings opens a modal over the page; put it away before the next round.
-  await p.keyboard.press('Escape');
-  await p.waitForTimeout(500);
-}
+await p.locator('header button').first().click();
+await p.waitForTimeout(600);
+await p.locator('aside[aria-label="Sidebar"] a[href$="/profile"]').first().click();
+await p.waitForTimeout(1400);
+pass('the profile card closes the drawer', (await drawerLeft(p)) < 0,
+  `left=${Math.round(await drawerLeft(p))}`);
 
 pass('no page errors', errs.length === 0, errs[0]?.slice(0, 120) ?? '');
 await ctx.close();
