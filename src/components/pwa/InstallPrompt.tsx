@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useLocation } from "react-router-dom";
 import { Download, Share, SquarePlus, X } from "lucide-react";
 
 import { cn } from "@/utils/cn";
@@ -249,6 +250,7 @@ export function InstallButton({
 }
 
 export function InstallPrompt({ className }: { className?: string }) {
+  const { pathname } = useLocation();
   const { installed, canInstall, install } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(() => snoozed());
   const [showSteps, setShowSteps] = useState(false);
@@ -267,6 +269,20 @@ export function InstallPrompt({ className }: { className?: string }) {
   // does, so waiting for it meant the offer was usually absent. Without an
   // event the button opens directions instead.
   if (installed || dismissed) return null;
+
+  // The landing page and nowhere else.
+  //
+  // This was mounted at the router root so it followed somebody through the
+  // whole app, and it is fixed to the bottom right with z-50. On the diagnostic
+  // onboarding it sat directly on top of the Skip button and swallowed the
+  // click: Playwright reported the button visible, enabled and stable, and the
+  // card intercepting every attempt. On a short window a student could not get
+  // past that screen at all.
+  //
+  // Somebody signed in and working has already chosen the browser. The moment
+  // to offer an app is the moment before they commit to anything, which is the
+  // page they arrive on.
+  if (pathname !== "/") return null;
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, String(Date.now()));

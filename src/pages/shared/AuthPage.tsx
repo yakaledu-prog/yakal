@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { User, GraduationCap, Users, Compass, Info, ChevronDown } from "lucide-react";
@@ -8,6 +8,7 @@ import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
 import { cn } from "@/utils/cn";
 import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { DEV_PREVIEW } from "@/config/dev";
 
@@ -25,11 +26,13 @@ const DEMO_ACCOUNTS = [
 export function AuthPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { user, profile, loading: authLoading } = useAuth();
 
   // An invite link lands here with the address to use, whether to start on
   // signup, and where to go afterwards. Read once so the fields arrive filled
   // rather than flickering in from an effect.
   const nextPath = params.get("next");
+
   const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
@@ -42,7 +45,20 @@ export function AuthPage() {
   const [selectedRole, setSelectedRole] = useState<RoleType>("student");
   const [notice, setNotice] = useState<string | null>(null);
 
-  const [phone, setPhone] = useState("");  // Fetch the just-authenticated user's profile and route by role/status/onboarding.
+  const [phone, setPhone] = useState("");
+
+  // Already signed in, so there is nothing to ask for. Below every hook, so the
+  // hook order does not change between renders.
+  //
+  // This matters more than a stray bookmark: the installed app's start_url is
+  // /login, deliberately, so launching it never shows the marketing page.
+  // Without this, anybody whose session was still alive opened the app onto a
+  // login form they did not need. A "next" is honoured first, because that is
+  // an invite or an expired-session bounce carrying somewhere specific.
+  if (!authLoading && user && profile) {
+    if (!profile.is_onboarded) return <Navigate to="/onboarding" replace />;
+    return <Navigate to={nextPath || postAuthPath(profile)} replace />;
+  }  // Fetch the just-authenticated user's profile and route by role/status/onboarding.
   const routeByProfile = async (userId: string) => {
     const { data: prof } = await supabase
       .from("profiles")

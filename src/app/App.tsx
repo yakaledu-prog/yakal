@@ -3,6 +3,7 @@ import HomePage from "@/pages/HomePage";
 import SubjectPage from "@/pages/SubjectPage";
 import type { Page } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { hasStoredSession } from "@/lib/supabase";
 import { Navigate } from "react-router-dom";
 
 export default function App() {
@@ -21,6 +22,20 @@ export default function App() {
       });
     }
   }, [page]);
+
+  // Somebody signed in should never see the landing page, even for a frame.
+  //
+  // While auth resolves this fell through and rendered the whole marketing page,
+  // then replaced it the moment the profile arrived: navigations went / -> / ->
+  // /student, and the flash was visible on every visit to the root.
+  //
+  // sessionStorage answers "is there a token here" synchronously, so a returning
+  // tab waits on a blank ground for the real answer instead of being shown a
+  // page it is about to lose. A visitor with no token is not made to wait: the
+  // landing page is what they came for and it renders immediately.
+  if (loading && hasStoredSession()) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   if (!loading && user) {
     if (profile && profile.is_onboarded) {

@@ -101,6 +101,33 @@ if (import.meta.env.DEV) {
   )
 }
 
+/**
+ * Whether this tab already holds a session, answered synchronously.
+ *
+ * Supabase keys its token by project ref, and reading it back through the
+ * client is asynchronous, which is a whole first paint too late. The landing
+ * page used to render for anybody arriving at "/" and then swap itself for the
+ * dashboard once auth resolved, which is a visible flash on every visit.
+ *
+ * This only says a token is present, not that it is valid. That is enough to
+ * decide whether to show a landing page or wait a moment for the real answer,
+ * and nothing is trusted on the strength of it.
+ */
+export function hasStoredSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) return true;
+    }
+  } catch {
+    // Storage can throw outright in a locked-down browser. Treat it as no
+    // session: a visitor sees the landing page, which is the safe way to be
+    // wrong here.
+  }
+  return false;
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Keep the session in sessionStorage rather than localStorage, so closing
