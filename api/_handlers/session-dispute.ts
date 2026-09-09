@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
 import { refundInvoice } from '../_utils/refunds.js';
+import { notifyAll } from '../_utils/notify.js';
+import type { TemplateKey } from '../../src/lib/notifications/index.js';
 
 // ============================================================
 // A family saying a lesson did not happen, and somebody deciding.
@@ -23,22 +25,20 @@ const REASONS = ['no_show', 'left_early', 'quality', 'other'] as const;
 async function tellThem(
   db: any,
   userIds: string[],
-  title: string,
-  message: string,
-  link: string
+  key: TemplateKey,
+  vars: Record<string, unknown>
 ): Promise<void> {
-  const rows = userIds.filter(Boolean).map((id) => ({
-    user_id: id,
-    type: 'session_disputed',
-    title,
-    message,
-    link,
-  }));
-  if (rows.length === 0) return;
-  const { error } = await db.from('notifications').insert(rows);
-  // Never fatal. Telling somebody is not allowed to fail a verdict that has
-  // already moved money.
-  if (error) console.error('session-dispute: could not notify:', error.message);
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (ids.length === 0) return;
+  // Through the template rather than as a title and a line. Rows written
+  // without template and vars fall back in detailFor() to the one sentence
+  // they were stored with, so opening one showed less than the email said
+  // about the same event.
+  await notifyAll(db, ids.map((userId) => ({ userId, key, vars }))).catch((err) =>
+    // Never fatal. Telling somebody is not allowed to fail a verdict that has
+    // already moved money.
+    console.error('session-dispute: could not notify:', err?.message ?? err)
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -126,15 +126,11 @@ async function raise(req: VercelRequest, res: VercelResponse, db: any, userId: s
   const stopped = (held ?? []).length > 0;
 
   const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
-  await tellThem(
-    db,
-    [...(admins ?? []).map((a: any) => a.id), session.tutor_id],
-    'A session has been reported',
-    `${session.subject} on ${session.date} has been reported. ${
-      stopped ? 'The payment is on hold.' : 'The payment had already gone out.'
-    }`,
-    '/admin/billing'
-  );
+  await tellThem(db, [...(admins ?? []).map((a: any) => a.id), session.tutor_id], 'sessionDisputed', {
+    subject: session.subject,
+    date: session.date,
+    paymentHeld: stopped,
+  });
 
   return res.status(200).json({ id: dispute.id, paymentHeld: stopped });
 }
@@ -249,15 +245,13 @@ async function resolve(req: VercelRequest, res: VercelResponse, db: any, userId:
 
   if (closeErr) throw new Error(closeErr.message);
 
-  await tellThem(
-    db,
-    [dispute.raised_by, session?.tutor_id].filter(Boolean) as string[],
-    verdict === 'upheld' ? 'Your report was upheld' : 'Your report was reviewed',
-    verdict === 'upheld'
-      ? `${session?.subject}: ${refunded > 0 ? `${(refunded / 100).toFixed(2)} has been refunded. ` : ''}${note}`
-      : `${session?.subject}: ${note}`,
-    '/parent/billing'
-  );
+  await tellThem(db, [dispute.raised_by, session?.tutor_id].filter(Boolean) as string[], 'disputeResolved', {
+    subject: session?.subject ?? 'That session',
+    date: session?.date ?? '',
+    upheld: verdict === 'upheld',
+    refunded: refunded > 0 ? `$${(refunded / 100).toFixed(2)}` : null,
+    note,
+  });
 
   return res.status(200).json({ verdict, refundedCents: refunded });
 }

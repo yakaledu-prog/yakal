@@ -26,6 +26,7 @@ import {
   payout,
   payoutBlocked,
   sessionDisputed,
+  disputeResolved,
   adminNotice,
   subscriptionPaymentFailed,
 } from "./teaching.js";
@@ -56,6 +57,7 @@ export const TEMPLATES = {
   payout,
   payoutBlocked,
   sessionDisputed,
+  disputeResolved,
   adminNotice,
   subscriptionPaymentFailed,
   admissionsPlan,

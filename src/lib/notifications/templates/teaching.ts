@@ -187,6 +187,68 @@ export const payoutBlocked: NotificationTemplate<{
 };
 
 /**
+ * A reported session has been decided.
+ *
+ * Goes to whoever raised it and to the tutor, because a decision about money
+ * and about whether somebody turned up is not one to hear about second hand.
+ * The admin's note is the substance: it is why, and it is the thing both sides
+ * will quote back.
+ */
+export const disputeResolved: NotificationTemplate<{
+  subject: string;
+  date: string;
+  upheld: boolean;
+  /** Given back to the family, already formatted. Null when nothing moved. */
+  refunded?: string | null;
+  note: string;
+}> = {
+  type: "session_disputed",
+  label: "Report decided",
+  notification: (v) => ({
+    title: v.upheld ? "Your report was upheld" : "Your report was reviewed",
+    message: v.upheld
+      ? `${v.subject}: ${v.refunded ? `${v.refunded} has been refunded. ` : ""}${v.note}`
+      : `${v.subject}: ${v.note}`,
+    link: "/parent/billing",
+  }),
+  email: (v) => ({
+    subject: v.upheld
+      ? `Your report about ${v.subject} was upheld`
+      : `Your report about ${v.subject} has been reviewed`,
+    heading: v.upheld ? "Your report was upheld" : "Your report has been reviewed",
+    intro: v.upheld
+      ? `Somebody has been through what happened with ${v.subject} on ${v.date} and agreed ` +
+        `with you.` +
+        (v.refunded
+          ? ` ${v.refunded} has been refunded to the card that paid, which banks usually take ` +
+            `a few days to show.`
+          : ` No money had moved on it yet, so there was nothing to give back.`) +
+        ` The reason is below, in the words of the person who decided it.`
+      : `Somebody has been through what happened with ${v.subject} on ${v.date}. The session ` +
+        `stands and the payment for it goes ahead as normal. That is not a judgement about ` +
+        `anyone: it means the evidence did not support changing it. The reason is below, in ` +
+        `the words of the person who decided it.`,
+    facts: [
+      { label: "Session", value: v.subject },
+      { label: "Date", value: v.date },
+      { label: "Decision", value: v.upheld ? "Upheld" : "Session stands" },
+      ...(v.refunded ? [{ label: "Refunded", value: v.refunded }] : []),
+      { label: "Reason", value: v.note },
+    ],
+    cta: { label: "See the payment", url: "/parent/billing" },
+    footer:
+      "If this is wrong, reply and say so. A decision can be looked at again, and it is better to say now than in a month.",
+  }),
+  sample: {
+    subject: "Advanced Mathematics",
+    date: "12 March",
+    upheld: true,
+    refunded: "$49.99",
+    note: "Attendance shows the tutor never joined the room.",
+  },
+};
+
+/**
  * A family has said a lesson did not happen as booked.
  *
  * Goes to the tutor as well as to admins, deliberately. Being argued about
