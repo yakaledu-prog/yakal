@@ -67,7 +67,9 @@ export function AdminBilling() {
     const paid = invoices.filter((i) => i.status === "paid");
     const open = invoices.filter((i) => i.status === "open");
     return {
-      revenue: paid.reduce((s, i) => s + i.amount_cents, 0),
+      // Net of anything given back. Summing paid invoices alone counted a fully
+      // refunded payment as revenue for ever, and did so cumulatively.
+      revenue: paid.reduce((s, i) => s + i.amount_cents - i.refunded_cents, 0),
       outstanding: open.reduce((s, i) => s + i.amount_cents, 0),
       payoutsDue: payouts.reduce((s: number, p: OwedRow) => s + p.amountCents, 0),
     };
@@ -258,6 +260,8 @@ export function AdminBilling() {
                 <tbody>
                   {shownInvoices.map((inv) => {
                     const paid = inv.status === "paid";
+                    const fullyRefunded = inv.refunded_cents >= inv.amount_cents && inv.refunded_cents > 0;
+                    const partlyRefunded = inv.refunded_cents > 0 && !fullyRefunded;
                     const open = openInvoice === inv.id;
                     return (
                       <Fragment key={inv.id}>
@@ -304,21 +308,34 @@ export function AdminBilling() {
                           <td className="py-4 pr-4 align-middle text-[13px] text-muted-foreground">
                             {KIND_LABELS[inv.kind] ?? inv.kind}
                           </td>
+                          {/* A refunded payment used to read "Paid" for ever,
+                              because refunds live on their own table and nothing
+                              read it. Plain coloured text rather than a capsule,
+                              like every other status here. */}
                           <td
                             className={cn(
                               "py-4 pr-6 text-right align-middle text-[12.5px] font-medium capitalize",
-                              paid ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
+                              fullyRefunded
+                                ? "text-muted-foreground"
+                                : paid
+                                  ? "text-primary"
+                                  : "text-[#8a6a2a] dark:text-secondary"
                             )}
                           >
-                            {inv.status}
+                            {fullyRefunded ? "Refunded" : partlyRefunded ? "Part refunded" : inv.status}
                           </td>
                           <td className="py-4 pr-6 text-right align-middle text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
                             {money(inv.amount_cents, inv.currency)}
+                            {inv.refunded_cents > 0 && (
+                              <span className="block text-[12px] font-normal text-muted-foreground">
+                                {money(inv.refunded_cents, inv.currency)} back
+                              </span>
+                            )}
                           </td>
                           {/* Only a payment that was actually taken can be
                               given back. The dialog says what it costs first. */}
                           <td className="py-4 text-right align-middle">
-                            {paid && (
+                            {paid && !fullyRefunded && (
                               <button
                                 type="button"
                                 onClick={() => setRefunding(inv)}

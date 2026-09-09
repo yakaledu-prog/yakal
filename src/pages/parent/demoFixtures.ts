@@ -155,6 +155,7 @@ export const DEMO_BILLING: BillingData = {
       studentId: CHILD_AMEN,
       studentName: "Amen Worku",
       courseId: "demo-course-chemistry",
+      refundedCents: 0,
     },
     {
       id: "demo-inv-2",
@@ -166,6 +167,7 @@ export const DEMO_BILLING: BillingData = {
       studentId: CHILD_AMEN,
       studentName: "Amen Worku",
       courseId: "demo-course-maths",
+      refundedCents: 0,
     },
     {
       id: "demo-inv-3",
@@ -177,6 +179,7 @@ export const DEMO_BILLING: BillingData = {
       studentId: CHILD_SELAM,
       studentName: "Selam Girma",
       courseId: "demo-course-english",
+      refundedCents: 0,
     },
     {
       id: "demo-inv-4",
@@ -188,6 +191,7 @@ export const DEMO_BILLING: BillingData = {
       studentId: CHILD_AMEN,
       studentName: "Amen Worku",
       courseId: "demo-course-chemistry",
+      refundedCents: 0,
     },
     {
       id: "demo-inv-5",
@@ -199,6 +203,7 @@ export const DEMO_BILLING: BillingData = {
       studentId: CHILD_SELAM,
       studentName: "Selam Girma",
       courseId: null,
+      refundedCents: 0,
     },
   ],
 };

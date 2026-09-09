@@ -58,6 +58,14 @@ export interface BillingInvoice {
   studentId: string | null;
   studentName: string | null;
   courseId: string | null;
+  /**
+   * Given back on this payment, in cents.
+   *
+   * A refund is a row on its own table and leaves invoices.status at 'paid', so
+   * a family who had been refunded still read "Paid" here with no sign it had
+   * happened, and had to check their bank to find out.
+   */
+  refundedCents: number;
 }
 
 export interface BillingData {
@@ -82,6 +90,18 @@ export async function getBilling(parentId: string): Promise<BillingData> {
 
   const rows = invoiceRows ?? [];
 
+  const { data: refundRows } = rows.length
+    ? await supabase
+        .from("refunds")
+        .select("invoice_id, amount_cents")
+        .eq("status", "succeeded")
+        .in("invoice_id", rows.map((r: any) => r.id))
+    : { data: [] as any[] };
+  const refundedById = new Map<string, number>();
+  for (const r of refundRows ?? []) {
+    refundedById.set(r.invoice_id, (refundedById.get(r.invoice_id) ?? 0) + r.amount_cents);
+  }
+
   const invoices: BillingInvoice[] = rows.map((r: any) => ({
     id: r.id,
     description: r.description,
@@ -92,6 +112,7 @@ export async function getBilling(parentId: string): Promise<BillingData> {
     studentId: r.student_id,
     studentName: r.student?.full_name ?? null,
     courseId: r.course_id,
+    refundedCents: refundedById.get(r.id) ?? 0,
   }));
 
   // Sessions tell us what has been used. Purchases tell us what was bought.
@@ -132,7 +153,7 @@ export async function getBilling(parentId: string): Promise<BillingData> {
     const existing = byKey.get(key);
     if (existing) {
       existing.slotsPurchased += slots;
-      existing.totalPaidCents += r.amount_cents ?? 0;
+      existing.totalPaidCents += (r.amount_cents ?? 0) - (refundedById.get(r.id) ?? 0);
       if (r.paid_at && (!existing.lastPaidAt || r.paid_at > existing.lastPaidAt)) {
         existing.lastPaidAt = r.paid_at;
       }
@@ -159,7 +180,7 @@ export async function getBilling(parentId: string): Promise<BillingData> {
       slotsCompleted: 0,
       slotsUpcoming: 0,
       slotsUnscheduled: 0,
-      totalPaidCents: r.amount_cents ?? 0,
+      totalPaidCents: (r.amount_cents ?? 0) - (refundedById.get(r.id) ?? 0),
       pricePerSlotCents: r.course?.price_cents ?? null,
       lastPaidAt: r.paid_at,
       recurring: false,

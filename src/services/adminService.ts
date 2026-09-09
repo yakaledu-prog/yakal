@@ -30,6 +30,15 @@ export interface AdminInvoice {
   status: string;
   created_at: string;
   paid_at: string | null;
+  /**
+   * What has been given back on this invoice, in cents.
+   *
+   * invoices.status has no 'refunded' value and should not gain one: the
+   * invoice was paid, and the refund is a separate event on its own table. But
+   * nothing read that table, so a fully refunded payment still showed as Paid
+   * with a live Refund button, and revenue counted it in full for ever.
+   */
+  refunded_cents: number;
 }
 
 export interface AdminCourse {
@@ -82,11 +91,12 @@ type Result = { success: boolean; error?: string };
 
 // ---- Dashboard ----
 export async function getAdminDashboard(): Promise<AdminDashboard> {
-  const [profilesRes, sessionsRes, invoicesRes, messagesRes] = await Promise.all([
+  const [profilesRes, sessionsRes, invoicesRes, messagesRes, refundsRes] = await Promise.all([
     supabase.from("profiles").select("role, status"),
     supabase.from("sessions").select("id", { count: "exact", head: true }),
     supabase.from("invoices").select("amount_cents, status"),
     supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new"),
+    supabase.from("refunds").select("amount_cents").eq("status", "succeeded"),
   ]);
 
   const profiles = profilesRes.data || [];
@@ -98,7 +108,11 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   });
 
   const invoices = invoicesRes.data || [];
-  const revenueCents = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + i.amount_cents, 0);
+  // Net of anything given back. Summing paid invoices alone overstates income by
+  // every refund ever issued, and does so cumulatively.
+  const takenCents = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + i.amount_cents, 0);
+  const refundedCents = (refundsRes.data || []).reduce((s: number, r: any) => s + r.amount_cents, 0);
+  const revenueCents = takenCents - refundedCents;
   const outstandingCents = invoices.filter((i: any) => i.status === "open").reduce((s: number, i: any) => s + i.amount_cents, 0);
   // What is owed comes from the earnings ledger, not the invoice. An invoice
   // being paid says a parent paid us; it says nothing about whether the lesson
@@ -304,7 +318,24 @@ export async function getAllInvoices(): Promise<AdminInvoice[]> {
     ? await supabase.from("profiles").select("id, full_name").in("id", parentIds)
     : { data: [] as any[] };
   const nameById = new Map((parents || []).map((p: any) => [p.id, p.full_name]));
-  return rows.map((r: any) => ({ ...r, parent_name: nameById.get(r.parent_id) || "Unknown" }));
+
+  const { data: refunds } = rows.length
+    ? await supabase
+        .from("refunds")
+        .select("invoice_id, amount_cents")
+        .eq("status", "succeeded")
+        .in("invoice_id", rows.map((r: any) => r.id))
+    : { data: [] as any[] };
+  const refundedById = new Map<string, number>();
+  for (const r of refunds || []) {
+    refundedById.set(r.invoice_id, (refundedById.get(r.invoice_id) ?? 0) + r.amount_cents);
+  }
+
+  return rows.map((r: any) => ({
+    ...r,
+    parent_name: nameById.get(r.parent_id) || "Unknown",
+    refunded_cents: refundedById.get(r.id) ?? 0,
+  }));
 }
 
 // ---- Courses (parent price = margin control) ----
@@ -476,6 +507,9 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
         kind: "tutoring",
         status: e.status,
         paid_at: e.settled_at ?? null,
+        // An earning is not an invoice and cannot be refunded. A cancelled one
+        // carries its own status.
+        refunded_cents: 0,
       }));
       
       const studentIds = [...new Set(sessions.map((s: any) => s.student_id).filter(Boolean))];

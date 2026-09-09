@@ -487,18 +487,34 @@ export function ParentBilling() {
                     <span
                       className={cn(
                         "hidden w-32 shrink-0 text-right text-[12.5px] font-medium sm:block",
-                        i.status === "paid" ? "text-primary" : "text-[#8a6a2a] dark:text-secondary"
+                        i.refundedCents >= i.amountCents && i.refundedCents > 0
+                          ? "text-muted-foreground"
+                          : i.status === "paid"
+                            ? "text-primary"
+                            : "text-[#8a6a2a] dark:text-secondary"
                       )}
                     >
-                      {i.status === "paid"
-                        ? "Paid"
-                        : i.status === "failed"
-                          ? "Payment failed"
-                          : "Not finished"}
+                      {i.refundedCents >= i.amountCents && i.refundedCents > 0
+                        ? "Refunded"
+                        : i.refundedCents > 0
+                          ? "Part refunded"
+                          : i.status === "paid"
+                            ? "Paid"
+                            : i.status === "failed"
+                              ? "Payment failed"
+                              : "Not finished"}
                     </span>
 
                     <span className="w-24 shrink-0 text-right text-[14px] tabular-nums text-foreground">
                       <Money cents={i.amountCents} />
+                      {/* Said in money, because the question a family has after a
+                          refund is how much came back, and until now the only
+                          way to answer it was to look at their bank. */}
+                      {i.refundedCents > 0 && (
+                        <span className="block text-[12px] text-muted-foreground">
+                          <Money cents={i.refundedCents} /> back
+                        </span>
+                      )}
                     </span>
 
                     {/* Only a declined card is worth a button. Everything else

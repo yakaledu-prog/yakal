@@ -556,23 +556,33 @@ export function ParentCourseCatalogDetail() {
                   {course.description}
                 </p>
 
-                <div className="flex items-center gap-6 text-[14px]">
-                  <div className="flex items-center gap-1.5 text-yellow-300 font-bold">
-                    <span>{course.rating}</span>
-                    <Star size={16} fill="currentColor" />
-                    <span className="text-white font-medium underline">({course.reviews} reviews)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/80">
+                {/* A 4.8 from 320 reviews and 1,204 students enrolled sat here on
+                    every course, beside tutors each marked "Not yet rated". Both
+                    came from the placeholder fixture. Reviews are written about
+                    tutors rather than courses, so a course rating had nothing
+                    behind it and is gone rather than replaced. The roster size is
+                    true and is the thing a family is about to choose from. */}
+                {roster.length > 0 && (
+                  <div className="flex items-center gap-2 text-[14px] text-white/80">
                     <Users size={16} />
-                    <span>{course.students} students enrolled</span>
+                    <span>
+                      {roster.length === 1 ? "1 tutor teaches this" : `${roster.length} tutors teach this`}
+                    </span>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Pricing in header */}
               <div className="flex flex-col md:items-end shrink-0 mb-2 md:mb-0">
-                <div className="text-[28px] font-bold">$199.96<span className="text-[16px] font-normal text-white/80">/course</span></div>
-                <div className="text-[14px] text-white/70">Or starting at $49.99/hr with tutors</div>
+                {/* Both figures used to be literals: $199.96 a course and $49.99
+                    an hour, on every course whatever it cost. A $65 course was
+                    advertised at $49.99 and charged at $65. Courses are priced
+                    per session and have no session count, so there is no such
+                    thing as a course total to show. */}
+                <div className="text-[28px] font-bold">
+                  {course.price}
+                  <span className="text-[16px] font-normal text-white/80">/session</span>
+                </div>
               </div>
             </div>
           </div>

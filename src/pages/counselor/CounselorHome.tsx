@@ -46,100 +46,13 @@ export function CounselorHome() {
   }).slice(0, 5); // Limit to 5
 
 
-  // --- MOCK DATA INJECTION ---
-  const mockDashboard = dashboard ? {
-    ...dashboard,
-    totalStudents: 1,
-    essaysInReview: 0,
-    upcomingDeadlines: [
-      {
-        id: "mock1",
-        school: "Massachusetts Institute of Technology",
-        student: "Amen Worku",
-        studentAvatar: null,
-        deadline: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
-        image: "https://commons.wikimedia.org/wiki/Special:FilePath/MIT%20Dome%20night1%20Edit.jpg?width=640",
-        requirements: [
-          { label: "Application submitted", is_complete: true },
-          { label: "Supplemental essays", is_complete: false },
-          { label: "Transcript sent", is_complete: true },
-          { label: "Recommendations requested", is_complete: true },
-          { label: "Recommendations submitted", is_complete: true },
-          { label: "Test scores", is_complete: true },
-          { label: "FAFSA", is_complete: true },
-          { label: "CSS Profile", is_complete: true }
-        ]
-      },
-      {
-        id: "mock2",
-        school: "Harvard University",
-        student: "Amen Worku",
-        studentAvatar: null,
-        deadline: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
-        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sanders%20theater%202009y.JPG?width=640",
-        requirements: [
-          { label: "Application submitted", is_complete: true },
-          { label: "Supplemental essays", is_complete: false },
-          { label: "Transcript sent", is_complete: true },
-          { label: "Recommendations requested", is_complete: true },
-          { label: "Recommendations submitted", is_complete: true },
-          { label: "Test scores", is_complete: true },
-          { label: "FAFSA", is_complete: true },
-          { label: "CSS Profile", is_complete: true }
-        ]
-      },
-      {
-        id: "mock3",
-        school: "Stanford University",
-        student: "Amen Worku",
-        studentAvatar: null,
-        deadline: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
-        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Sanders%20theater%202009y.JPG?width=640",
-        requirements: [
-          { label: "Application submitted", is_complete: true },
-          { label: "Supplemental essays", is_complete: false },
-          { label: "Transcript sent", is_complete: true },
-          { label: "Recommendations requested", is_complete: true },
-          { label: "Recommendations submitted", is_complete: true },
-          { label: "Test scores", is_complete: true },
-          { label: "FAFSA", is_complete: true },
-          { label: "CSS Profile", is_complete: true }
-        ]
-      }
-    ]
-  } : null;
-
-  const activeDashboard = mockDashboard || dashboard;
-
-  const mockSessions = [
-    {
-      id: "s1",
-      date: new Date().toISOString().split('T')[0],
-      start_time: "15:00:00",
-      duration_minutes: 60,
-      subject: "College Essay Review",
-      student_name: "Amen Worku",
-      student_avatar: null,
-      status: "scheduled",
-      meeting_link: "https://zoom.us/j/123456789",
-      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: "s2",
-      date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
-      start_time: "10:00:00",
-      duration_minutes: 45,
-      subject: "Application Strategy",
-      student_name: "Amen Worku",
-      student_avatar: null,
-      status: "scheduled",
-      meeting_link: "https://zoom.us/j/987654321",
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=800"
-    }
-  ];
-
-  const activeUpcomingSessions = mockSessions.length > 0 ? mockSessions : upcomingSessions;
-  // ---------------------------
+  // Real data only. Two mock blocks used to sit here: a mockDashboard that
+  // overwrote totalStudents and essaysInReview with 1 and 0, and a mockSessions
+  // array selected by `mockSessions.length > 0`, which is always true, so the
+  // real sessions could never render. A counsellor with essays waiting was told
+  // there were none, and was shown two invented sessions with a dead Zoom link.
+  const activeDashboard = dashboard;
+  const activeUpcomingSessions = upcomingSessions;
 
   return (
     <PageWrapper className="!p-0">

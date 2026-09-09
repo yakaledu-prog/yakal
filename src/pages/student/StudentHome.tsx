@@ -5,7 +5,7 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { CalendarDays, Activity, MessagesSquareIcon, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { studentService, getAllAssignments } from "@/services/studentService";
+import { studentService, getAllAssignments, getStudentCourses } from "@/services/studentService";
 import { cn } from "@/utils/cn";
 import { getStudentSessions } from "@/services/sessions";
 import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
@@ -27,6 +27,18 @@ export function StudentHome() {
     enabled: !!user?.id,
   });
   const outstanding = assignments.filter((a) => !a.isSubmitted);
+
+  // The four banner figures were "3" as a literal, and three fields of
+  // MOCK_DASHBOARD_SUMMARY: 12 completed sessions, a 4 day streak and a grade of
+  // A-, identical for every student. The banner line under the welcome came from
+  // the same mock, which is why it announced an AP Calculus session with "Dr.
+  // Alex" while the week beside it said the schedule was clear. Streak and grade
+  // are gone rather than replaced: nothing in the database supports either.
+  const { data: courses = [] } = useQuery({
+    queryKey: ["student-courses", user?.id],
+    queryFn: () => getStudentCourses(user!.id),
+    enabled: !!user?.id,
+  });
 
   // The agenda reads the real sessions rather than the dashboard summary's one
   // shaped "next session", so it can show the week rather than the next hour.
@@ -54,7 +66,13 @@ export function StudentHome() {
   }
 
   const firstName = profile?.full_name?.split(" ")[0] || "Student";
-  const { nextSession, progress } = data;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const nextToday = sessionRows.find(
+    (s: any) => s.date === today && s.status === "upcoming"
+  );
+  const completedSessions = sessionRows.filter((s: any) => s.status === "completed").length;
+  const upcomingSessions = sessionRows.filter((s: any) => s.status === "upcoming").length;
 
   const agendaItems: SessionListItem[] = sessionRows.map((s: any) => ({
     id: s.id,
@@ -79,8 +97,8 @@ export function StudentHome() {
               <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
-                  {nextSession 
-                    ? `You have a ${nextSession.subject.toLowerCase()} session coming up today. Keep up the great work on your learning streak.`
+                  {nextToday
+                    ? `You have ${nextToday.subject} at ${String(nextToday.start_time).slice(0, 5)} today.`
                     : "You have no sessions scheduled today. Enjoy the breather!"}
                 </p>
               </div>
@@ -93,19 +111,12 @@ export function StudentHome() {
               </div>
             </div>
 
-            {/* Bottom row: Integrated Stats + Sparkline */}
+            {/* Bottom row: the four figures, all from the database */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/20">
-              <IntegratedStat label="Active Courses" value="3" />
-              <IntegratedStat label="Completed Sessions" value={progress.completedSessions} />
-              <IntegratedStat label="Learning Streak" value={`${progress.currentStreak} days`} alert={false} />
-
-              <div className="flex flex-col cursor-default opacity-80">
-                <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">Overall Grade</p>
-                <div className="flex items-end justify-between">
-                  <p className="text-3xl font-bold">{progress.overallGrade}</p>
-                  <Sparkline />
-                </div>
-              </div>
+              <IntegratedStat label="Active Courses" value={courses.length} />
+              <IntegratedStat label="Completed Sessions" value={completedSessions} />
+              <IntegratedStat label="Upcoming Sessions" value={upcomingSessions} />
+              <IntegratedStat label="Work Due" value={outstanding.length} />
             </div>
 
           </div>
@@ -253,17 +264,3 @@ function WorkItem({
   );
 }
 
-function Sparkline() {
-  return (
-    <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
-      <path d="M2 18L12 12L22 16L32 6L42 10L58 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M58 2L42 10L32 6L22 16L12 12L2 18V24H58V2Z" fill="url(#sparkline-gradient)" opacity="0.2" />
-      <defs>
-        <linearGradient id="sparkline-gradient" x1="30" y1="2" x2="30" y2="24" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white" />
-          <stop offset="1" stopColor="white" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
