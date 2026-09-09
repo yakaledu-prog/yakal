@@ -3,11 +3,14 @@
 Grouped by whether it stops a launch. Each line names the file so it can be
 picked up without rereading the audit.
 
+**Done** marks something fixed during the audit and verified in a browser
+afterwards. Everything else is still open and is either a decision or a build.
+
 ---
 
 ## Blocks launch
 
-### 1. The counsellor home page is fabricated
+### 1. The counsellor home page is fabricated. DONE
 `src/pages/counselor/CounselorHome.tsx`
 
 Two mock blocks under `// --- MOCK DATA INJECTION ---` override the real
@@ -16,18 +19,29 @@ render. `totalStudents: 1` and `essaysInReview: 0` are hardcoded. A counsellor
 with essays waiting is told there are none, and is shown two invented sessions
 with a dead Zoom link.
 
-Delete both blocks. The real queries beneath them are correct.
+Both blocks deleted. The counsellor now reads 2 students, 1 essay in review and
+0 upcoming sessions, which is what the database holds and what their own
+Sessions page says. The student home had the same disease and the same fix:
+Active Courses was the literal string "3", and the streak and grade came from
+`MOCK_DASHBOARD_SUMMARY`. Streak and grade are gone rather than replaced,
+because nothing supports either.
 
-### 2. No counsellor can be paid
+### 2. No counsellor can be paid. PART DONE, needs a decision from you
 `admissions_tiers.counselor_share_percent`, `AdminTierModal.tsx:318`
 
 Every tier has it NULL, so `counsellorShare()` returns 0 and no earning row is
 ever written. Confirmed live against a real Stripe subscription.
 
-Set the shares. Then make the software refuse to let this happen again: block
-activating a tier with no share, or flag it on the tier list.
+The tier list now says so, in amber, on every active tier: "No counsellor share
+set. Anyone advising on this tier earns nothing, and no earning is recorded to
+settle later." So it can no longer happen silently.
 
-### 3. A refund is invisible everywhere afterwards
+**The number itself is yours.** I have not set one, because what a counsellor
+keeps is a business decision, not a bug. Tutoring runs at 70 percent to the
+tutor ($35.00 of $49.99). Until a share is set on each tier, counselling pays
+nobody.
+
+### 3. A refund is invisible everywhere afterwards. DONE
 `src/services/adminService.ts:101`, the invoice list, the parent billing page
 
 Stripe refunds correctly and `refunds` gets its row, but `invoices.status` stays
@@ -35,9 +49,12 @@ Stripe refunds correctly and `refunds` gets its row, but `invoices.status` stays
 refund ever issued, the admin is offered a Refund button on a refunded invoice,
 and the parent still sees "Paid $99.98".
 
-Join `refunds`, show a refunded state, subtract from revenue.
+Both sides now read the `refunds` table. The admin row shows **Refunded** with
+"$99.98 back" and no longer offers a Refund button on it; revenue went from
+$219.98 to the correct $120.00. The parent sees **Refunded**, "$99.98 back", and
+Paid to date corrected from $219.98 to $120.00.
 
-### 4. The subscription price shown is not the price charged
+### 4. The subscription price shown is not the price charged. DONE
 `ParentBilling`, plan card
 
 The plan card reads `admissions_tiers.price_cents`, but an existing subscription
@@ -46,8 +63,11 @@ $250 to $280, the parent's page said "$280.00 a month" while Stripe will charge
 $250. Lowering the price is the worse direction, because the family finds out
 from their bank.
 
-Read the amount from the subscription; fall back to the tier only when there is
-no subscription.
+`admissions_plans.billed_amount_cents` is synced from the subscription item
+beside `current_period_end`. Verified against Stripe: with a live $120
+subscription, moving Essential to $150 leaves the family's page reading $120,
+which is what Stripe charges. The tier price stands in only for a plan nobody
+has been billed for.
 
 ### 5. FAFSA is shown to students who cannot file it
 `src/services/requirementsService.ts:42`
@@ -74,12 +94,15 @@ by the AI assistant, and impossible to create: the booking function hardcodes
 
 Add a kind argument checked against `mock_interviews_limit`.
 
-### 7. The counsellor cannot write feedback
+### 7. The counsellor cannot write feedback. DONE
 `CounselorEssays.tsx:138`
 
-`essay_reviews.note` exists and `reviewEssay()` accepts it. The UI never passes
-one, so essays come back with no explanation. Highest value per hour of anything
-in this list.
+`essay_reviews.note` existed and `reviewEssay()` accepted it; the UI never
+passed one. Send back now requires a note, Finished takes an optional one, and
+both reach the student on the essay and in the email that already claimed a
+counsellor had "left comments on it". `getEssayReviews` had no caller at all, so
+the whole review history was written and never shown; the student now sees
+"Daniel Haile - sent it back - Sep 9" with the note under it.
 
 ### 8. Elite delivers two of its six promises
 `admissions_tiers.features`
@@ -89,12 +112,15 @@ and waitlist support have no implementation anywhere. The feature list is
 admin-editable, so rewriting it needs no deploy. Do that before launch and build
 the services after.
 
-### 9. Two payout failures notify nobody
+### 9. Two payout failures notify nobody. DONE
 `api/_utils/earnings.ts:311,367`
 
-`no connected account` and `platform balance not settled` both mean somebody is
-owed money and did not get it, and both are silent. `tellAdmins` and the
-`adminNotice` template already exist, used by the branch beside them.
+`no connected account` and `platform balance not settled` both meant somebody
+was owed money and did not get it, and both were silent. The payee is now told
+what is waiting and that connecting a bank releases it; admins are told somebody
+cannot be paid. Latched on a new `payout_blocked_notified_at`, because Supabase
+Cron calls the job hourly and this would otherwise be two dozen messages a day.
+Pinned by `scripts/verify/payout-blocked-notice.ts`.
 
 ### 10. Every counsellor has zero availability
 `/counselor/calendar`
@@ -103,7 +129,7 @@ Nothing prompts a counsellor to publish hours, so the default state of a new one
 blocks the family's main deliverable. Prompt on their home page; give the family
 something to do at the wall besides read a sentence.
 
-### 11. Fake social proof on the buying page
+### 11. Fake social proof, and a wrong price, on the buying page. DONE
 `src/pages/parent/ParentCourseCatalogDetail.tsx:28`
 
 Every course shows "4.8, 320 reviews, 1204 students enrolled" from a hardcoded
@@ -112,6 +138,12 @@ fixture, directly beside three tutors each marked "Not yet rated".
 This exact bug was already found and fixed on the admin course page, with a
 comment explaining it (`AdminCourseDetail.tsx:188`). The fix was applied to the
 page staff see and missed the page customers buy from.
+
+Worse, and found while fixing it: the prices beside those numbers were literals
+too. Every course advertised "$199.96/course" and "starting at $49.99/hr",
+whatever it cost, so the $65.00 Physics course was advertised at $49.99 and
+charged at $65.00. Both now come from the course. Courses are priced per session
+and have no session count, so there is no course total to show and it is gone.
 
 ### 12. Checkout offers the wrong currency
 
@@ -129,12 +161,12 @@ irreversible mistake the software could prevent. See `05-recommendations.md`.
 
 | What | Where |
 | --- | --- |
-| "You have **a ap** calculus ab session coming up today" | `StudentHome` banner |
-| Banner says a session is coming up today; "Your week" beside it says "Your schedule is clear" | `StudentHome` |
+| ~~"You have **a ap** calculus ab session coming up today"~~ DONE. It was not a grammar bug: the whole banner came from `MOCK_DASHBOARD_SUMMARY` | `StudentHome` |
+| ~~Banner says a session is coming up today while "Your week" says the schedule is clear~~ DONE. Same cause, and every figure on that screen now agrees with the panel beside it | `StudentHome` |
 | Parent home shows "NEW MESSAGES 0" while the sidebar badge says 4 | `ParentHome` |
 | Children's Agenda prints raw `2026-09-08` where the rest of the app says "Sep 17" | `ParentHome` |
-| A counsellor is called "This tutor" | `AvailabilityPicker.tsx:149`, `ContactInfoPanel.tsx:128` |
-| "0 of 5 rounds" is the essay quota, not a round count | `CounselorEssays.tsx:371` |
+| ~~A counsellor is called "This tutor"~~ DONE. The picker takes a `personLabel`, and its empty state now says what to do next | `AvailabilityPicker.tsx` |
+| ~~"0 of 5 rounds" is the essay quota, not a round count~~ DONE. Rounds are capped on the personal statement and nowhere else; a supplement now reads "round 2" | `CounselorEssays.tsx` |
 | Past sessions headed "Been and gone", which does not match the tone anywhere else | `StudentAdvising` |
 | Change-plan dialog leaves Confirm enabled while saying the change is impossible | plan change dialog |
 | Availability grid shows three different empties: "Off", "-", "No slots" | `AvailabilityPicker` |

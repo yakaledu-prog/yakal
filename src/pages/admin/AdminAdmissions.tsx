@@ -337,6 +337,20 @@ export function AdminAdmissions() {
                     </p>
                   )}
 
+                  {/* A live tier that pays its counsellor nothing.
+                      counsellorShare returns 0 for a null share and
+                      recordCounsellingEarning then writes no row at all, so
+                      the counsellor works the month and the ledger stays
+                      empty. Every seeded tier shipped this way and nothing
+                      anywhere said so; the first sign would have been a
+                      counsellor asking where their money was. */}
+                  {t.isActive && t.counselorSharePercent == null && (
+                    <p className="mt-4 text-[13px] font-medium text-[#8a6a2a] dark:text-secondary">
+                      No counsellor share set. Anyone advising on this tier earns nothing,
+                      and no earning is recorded to settle later.
+                    </p>
+                  )}
+
                   {/* Quotas */}
                   <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <Stat label="Advising / month" value={quota(t.sessionsPerMonth)} />
