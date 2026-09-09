@@ -59,7 +59,30 @@ export async function getPushState(): Promise<PushState> {
 
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
-  return sub ? "subscribed" : "unsubscribed";
+  if (!sub) return "unsubscribed";
+
+  // The browser having a subscription is only half of it. The server has to
+  // hold the endpoint too, or there is nobody to push to.
+  //
+  // This said "subscribed" on the strength of the browser alone, so a save that
+  // failed once left the toggle reading "Turn off on this browser" for ever
+  // while no notification could ever arrive, and the one control that would
+  // have fixed it was the one that looked like it was already on. Reproduced by
+  // subscribing in the browser with no row on the server.
+  //
+  // A lookup rather than a count of all rows: a person may have several
+  // devices, and only this endpoint says anything about this one.
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("endpoint", sub.endpoint)
+    .maybeSingle();
+
+  // Offline, or signed out. Say what the browser says rather than claiming a
+  // device is unsubscribed on the strength of a request that never arrived.
+  if (error) return "subscribed";
+
+  return data ? "subscribed" : "unsubscribed";
 }
 
 /**
