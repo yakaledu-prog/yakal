@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
-import { diagnosticTests, DiagnosticQuestion } from "@/data/diagnostics";
+import type { StudentDiagnosticQuestion as DiagnosticQuestion } from "@/services/diagnosticService";
 import { useQuery } from "@tanstack/react-query";
-import { getPublishedDiagnostics } from "@/services/diagnosticAdminService";
 import { Search, Loader2, Activity, CheckCircle2, ChevronLeft, Check, X, Lightbulb, RotateCcw, TrendingUp } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { Button } from "@/components/ui/Button";
@@ -36,8 +35,21 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
 // One question, after the fact: what the student picked, what was right, and
 // why. Defined at module scope, not inside the page, so it is a stable
 // component type and its subtree is not remounted on every render.
-function QuestionReview({ index, question, chosen }: { index: number; question: DiagnosticQuestion; chosen: number }) {
-  const isCorrect = chosen === question.correctAnswer;
+function QuestionReview({
+  index,
+  question,
+  chosen,
+  correct,
+  explanation,
+}: {
+  index: number;
+  question: DiagnosticQuestion;
+  chosen: number;
+  /** From the stored result, not the diagnostic: the browser no longer has the key. */
+  correct: number;
+  explanation?: string | null;
+}) {
+  const isCorrect = chosen === correct;
 
   return (
     <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden">
@@ -67,7 +79,7 @@ function QuestionReview({ index, question, chosen }: { index: number; question: 
 
             <div className="flex flex-col gap-2">
               {question.options.map((opt, i) => {
-                const isRight = i === question.correctAnswer;
+                const isRight = i === correct;
                 const isChosenWrong = i === chosen && !isRight;
                 return (
                   <div
@@ -95,10 +107,10 @@ function QuestionReview({ index, question, chosen }: { index: number; question: 
               })}
             </div>
 
-            {question.explanation && (
+            {explanation && (
               <div className="mt-3 flex items-start gap-2 bg-[#1099A1]/5 border-l-2 border-[#1099A1] rounded-r-lg px-3 py-2.5">
                 <Lightbulb size={15} className="text-[#CAA25F] mt-0.5 shrink-0" />
-                <p className="text-[13px] text-[#444] dark:text-[#ccc] leading-relaxed">{question.explanation}</p>
+                <p className="text-[13px] text-[#444] dark:text-[#ccc] leading-relaxed">{explanation}</p>
               </div>
             )}
           </div>
@@ -179,14 +191,14 @@ export function StudentDiagnostics() {
     return [...m.values()];
   }, [attempts]);
 
-  // Written by an admin when there are any, otherwise the ones built into the
-  // app. See getPublishedDiagnostics.
-  const { data: liveTests } = useQuery({
-    queryKey: ["published-diagnostics"],
-    queryFn: getPublishedDiagnostics,
+  // From the database, without the answer key. There used to be a fallback to
+  // src/data/diagnostics.ts, which shipped correctAnswer to the browser and
+  // meant an admin's edits were ignored whenever the fetch was slow or empty.
+  const { data: tests = [] } = useQuery({
+    queryKey: ["student-diagnostics"],
+    queryFn: () => diagnosticService.listForStudent(),
     staleTime: 5 * 60_000,
   });
-  const tests = liveTests ?? diagnosticTests;
 
   const categories = useMemo(() => Array.from(new Set(tests.map(t => t.categoryName))), [tests]);
   const filteredCategories = useMemo(
@@ -194,7 +206,15 @@ export function StudentDiagnostics() {
     [categories, filterText]
   );
 
-  const [selectedCategory, setSelectedCategory] = useState<string>(categories[0] || "");
+  // Derived, not seeded. This was useState(categories[0] || ""), which reads
+  // categories on the first render only. That was fine while the tests were
+  // imported synchronously from a file; now they are fetched, the first render
+  // has none, and the page sat on "No diagnostics available in this category"
+  // for ever with a full list beside it.
+  const [pickedCategory, setPickedCategory] = useState<string>("");
+  const selectedCategory =
+    pickedCategory && categories.includes(pickedCategory) ? pickedCategory : categories[0] ?? "";
+  const setSelectedCategory = setPickedCategory;
   const categoryTests = useMemo(() => tests.filter(t => t.categoryName === selectedCategory), [tests, selectedCategory]);
 
   const [activeTabId, setActiveTabId] = useState<string>("");
@@ -216,10 +236,13 @@ export function StudentDiagnostics() {
   );
   // Show the form over an existing result only while this test is being retaken.
   const takingTest = activeTest && (!activeTestResult || retakingId === activeTabId);
-  // What the student picked, keyed by question id, so the review can line each
-  // answer up against its question. Cheap to rebuild per render.
-  const chosenByQuestion = new Map<string, number>(
-    (activeTestResult?.answers ?? []).map(a => [a.questionId, a.chosen])
+  // The whole stored answer, keyed by question id, so the review can line each
+  // one up against its question. The correct index and the explanation come
+  // from here rather than from the diagnostic: the browser no longer receives
+  // the answer key, and what somebody was shown when they sat it should not
+  // change because a question was reworded since. Cheap to rebuild per render.
+  const answerByQuestion = new Map(
+    (activeTestResult?.answers ?? []).map(a => [a.questionId, a])
   );
 
   const startRetake = () => {
@@ -236,15 +259,14 @@ export function StudentDiagnostics() {
 
     setSubmitting(true);
 
-    // The whole answer sheet, not just a tally: the score is derived from this
-    // in the service, and it is what the mistake review reads back later.
+    // What was chosen, and nothing else. submit_diagnostic marks it against
+    // the stored key and writes the row; the browser no longer decides either.
     const answerList = activeTest.questions.map((q) => ({
       questionId: q.id,
       chosen: answers[q.id] ?? -1,
-      correct: q.correctAnswer,
     }));
 
-    const res = await diagnosticService.saveResult(user.id, activeTest.id, answerList);
+    const res = await diagnosticService.saveResult(activeTest.id, answerList);
     if (!res.ok) {
       toast.error("Could not save your result. Please try again.");
       setSubmitting(false);
@@ -423,7 +445,9 @@ export function StudentDiagnostics() {
                       key={q.id}
                       index={i}
                       question={q}
-                      chosen={chosenByQuestion.get(q.id) ?? -1}
+                      chosen={answerByQuestion.get(q.id)?.chosen ?? -1}
+                      correct={answerByQuestion.get(q.id)?.correct ?? -1}
+                      explanation={answerByQuestion.get(q.id)?.explanation}
                     />
                   ))}
                 </div>
@@ -462,14 +486,17 @@ export function StudentDiagnostics() {
                           ))}
                         </div>
 
-                        <div className="flex justify-between mt-8 pt-6 border-t border-[#e9edef] dark:border-[#2a3942]">
-                          <Button
-                            variant="outline"
-                            disabled={currentQuestionIndex === 0}
-                            onClick={() => setCurrentQuestionIndex(i => i - 1)}
-                          >
-                            Previous
-                          </Button>
+                        <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#e9edef] dark:border-[#2a3942]">
+                          {/* No going back, the same as the onboarding sitting.
+                              Answering, moving on, then returning to change it
+                              makes the score meaningless, and a diagnostic whose
+                              score means nothing is worse than no diagnostic:
+                              a tutor plans around it. Retaking the whole test is
+                              the honest way to have another go, and it is one
+                              click away once this attempt is handed in. */}
+                          <span className="text-[12.5px] text-muted-foreground">
+                            Answers are final once you move on
+                          </span>
                           {isLast ? (
                             <Button
                               className="bg-primary hover:bg-primary-hover"

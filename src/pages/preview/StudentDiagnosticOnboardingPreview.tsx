@@ -1,6 +1,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { diagnosticTests } from "@/data/diagnostics";
+/**
+ * A layout preview, so the content is invented rather than imported.
+ *
+ * This used to import the real diagnostics. That is a public route, and its
+ * chunk therefore carried every question and every correctAnswer into the
+ * shipped bundle, which undid the point of taking the answer key off the wire.
+ * Nothing here is a real question.
+ */
+const diagnosticTests = [
+  {
+    id: "preview-math",
+    title: "Sample Test",
+    categoryName: "Sample Subject",
+    questions: [
+      { id: "p1", text: "This is where the question goes.", options: ["First option", "Second option", "Third option", "Fourth option"] },
+      { id: "p2", text: "And this is the one after it.", options: ["First option", "Second option", "Third option", "Fourth option"] },
+    ],
+  },
+  {
+    id: "preview-second",
+    title: "Another Test",
+    categoryName: "Second Subject",
+    questions: [
+      { id: "p3", text: "A question in the second subject.", options: ["First option", "Second option", "Third option", "Fourth option"] },
+    ],
+  },
+];
 import subjMath from "@/assets/images/subject-algebra.webp";
 
 export function StudentDiagnosticOnboardingPreview() {

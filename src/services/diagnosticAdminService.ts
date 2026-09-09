@@ -106,15 +106,22 @@ export function parseQuestionsJson(text: string): { ok: true; questions: Diagnos
   return validateQuestions(list);
 }
 
-/** An empty test, shown in the JSON view so there is something to fill in. */
+/**
+ * An empty test, shown in the JSON view so there is something to fill in.
+ *
+ * Deliberately not a real question. This used to be the first question of the
+ * elementary maths diagnostic, answer included, and it is a string constant, so
+ * it shipped in the bundle and gave one real answer away to anyone who pulled
+ * the chunk.
+ */
 export const QUESTION_TEMPLATE = JSON.stringify(
   [
     {
       id: "q1",
-      text: "What is 15% of 200?",
-      options: ["15", "20", "30", "45"],
-      correctAnswer: 2,
-      explanation: "0.15 * 200 = 30",
+      text: "Put the question here.",
+      options: ["First option", "Second option", "Third option", "Fourth option"],
+      correctAnswer: 0,
+      explanation: "Optional. Shown to the student after they have answered.",
     },
   ],
   null,

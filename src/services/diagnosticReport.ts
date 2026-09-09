@@ -6,7 +6,12 @@
 // them. The service does the fetching; this does the arithmetic.
 
 import type { DiagnosticResult } from "./diagnosticService";
-import type { DiagnosticTest } from "@/data/diagnostics";
+/**
+ * Only what this module reads. Structural rather than the whole diagnostic, so
+ * it takes either the student's view of a test (no answer key) or an admin's,
+ * and does not drag the question shape into a module that never looks at one.
+ */
+type DiagnosticTest = { id: string; title: string; categoryName: string };
 
 export type CategoryStat = {
   category: string;

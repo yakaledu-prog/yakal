@@ -4,7 +4,6 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService } from "@/services/diagnosticService";
-import { diagnosticTests } from "@/data/diagnostics";
 import { getMyActiveServices } from "@/services/parentService";
 
 export function StudentLayout() {
@@ -19,7 +18,15 @@ export function StudentLayout() {
     }
   }, [user]);
 
-  const incompleteDiagnostics = Math.max(0, diagnosticTests.length - completedDiagnostics);
+  // How many exist, from the database. This counted the tests built into the
+  // app, so the badge was wrong for every student the moment an admin added or
+  // retired one.
+  const { data: allDiagnostics = [] } = useQuery({
+    queryKey: ["student-diagnostics"],
+    queryFn: () => diagnosticService.listForStudent(),
+    staleTime: 5 * 60_000,
+  });
+  const incompleteDiagnostics = Math.max(0, allDiagnostics.length - completedDiagnostics);
 
   // Which services a parent has turned on for this student. It used to read
   // profile.active_services, a column that does not exist on profiles, so it

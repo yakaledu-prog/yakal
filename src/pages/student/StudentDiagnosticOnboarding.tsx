@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,8 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { postAuthPath } from "@/utils/roleRoutes";
 import { fireConfetti } from "@/utils/confetti";
 import { toast } from "sonner";
-import { diagnosticTests } from "@/data/diagnostics";
 import { diagnosticService } from "@/services/diagnosticService";
+import { Loader2 } from "lucide-react";
 import { initialsAvatarUrl } from "@/utils/avatar";
 
 export function StudentDiagnosticOnboarding() {
@@ -16,16 +17,36 @@ export function StudentDiagnosticOnboarding() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // From the database, without the answer key. The page used to import
+  // src/data/diagnostics.ts, which shipped correctAnswer to the browser and
+  // meant an admin could not change a single question.
+  const { data: tests = [], isLoading: testsLoading } = useQuery({
+    queryKey: ["student-diagnostics"],
+    queryFn: () => diagnosticService.listForStudent(),
+  });
+
   // High level wizard state
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  /** Slugs already sat in this sitting, so the tabs can show what is done. */
+  const [done, setDone] = useState<string[]>([]);
 
   // Question level state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
-  const activeTest = diagnosticTests[currentTestIndex];
-  const isLastTest = currentTestIndex === diagnosticTests.length - 1;
+  const activeTest = tests[currentTestIndex];
+  const isLastTest = currentTestIndex === tests.length - 1;
+
+  /**
+   * Whether this test has been started and not yet handed in.
+   *
+   * Switching subject or test used to setAnswers({}), so a student who had
+   * answered four questions and touched a tab lost them without being told.
+   * While a test is in progress the tabs are held, and they open again the
+   * moment it is submitted or skipped.
+   */
+  const inProgress = currentQuestionIndex > 0 || Object.keys(answers).length > 0;
 
   const handleFinishOnboarding = async () => {
     if (!user) return;
@@ -63,15 +84,20 @@ export function StudentDiagnosticOnboarding() {
     }
   };
 
-  const categories = Array.from(new Set(diagnosticTests.map(t => t.categoryName)));
+  const categories = useMemo(
+    () => Array.from(new Set(tests.map(t => t.categoryName))),
+    [tests]
+  );
+
+  const goToTest = (index: number) => {
+    if (index === -1 || index === currentTestIndex || inProgress) return;
+    setCurrentTestIndex(index);
+    setCurrentQuestionIndex(0);
+    setAnswers({});
+  };
 
   const handleCategoryClick = (catName: string) => {
-    const firstTestIndex = diagnosticTests.findIndex(t => t.categoryName === catName);
-    if (firstTestIndex !== -1) {
-      setCurrentTestIndex(firstTestIndex);
-      setCurrentQuestionIndex(0);
-      setAnswers({});
-    }
+    goToTest(tests.findIndex(t => t.categoryName === catName));
   };
 
   const submitCurrentTest = async () => {
@@ -79,27 +105,55 @@ export function StudentDiagnosticOnboarding() {
 
     setSubmitting(true);
 
+    // What was chosen, and nothing else. The correct index is not in the
+    // browser any more and the marking happens in submit_diagnostic.
     const answerList = activeTest.questions.map((q) => ({
       questionId: q.id,
       chosen: answers[q.id] ?? -1,
-      correct: q.correctAnswer,
     }));
 
-    const res = await diagnosticService.saveResult(user.id, activeTest.id, answerList);
+    const res = await diagnosticService.saveResult(activeTest.id, answerList);
     if (!res.ok) {
       toast.error("Could not save your result. Please try again.");
       setSubmitting(false);
       return;
     }
     toast.success(`Scored ${res.score} out of ${res.total} on ${activeTest.title}!`);
+    setDone((d) => (d.includes(activeTest.id) ? d : [...d, activeTest.id]));
     setSubmitting(false);
 
     handleNextTest();
   };
 
-  if (!activeTest) return null;
+  if (testsLoading) {
+    return (
+      <div className="h-screen flex-grow flex items-center justify-center bg-[#f8f9fa] dark:bg-[#111b21]">
+        <Loader2 className="animate-spin text-primary" size={26} />
+      </div>
+    );
+  }
 
-  const testsInCategory = diagnosticTests.filter(t => t.categoryName === activeTest.categoryName);
+  // Nothing published. Better to let somebody in than to hold them at a wall
+  // they cannot pass, and an admin adding one later is a dashboard visit away.
+  if (!activeTest) {
+    return (
+      <div className="h-screen flex-grow flex flex-col items-center justify-center gap-4 bg-[#f8f9fa] px-6 text-center dark:bg-[#111b21]">
+        <h1 className="text-2xl font-bold text-[#111] dark:text-white">You are all set</h1>
+        <p className="max-w-md text-[15px] text-[#54656f] dark:text-[#aebac1]">
+          There are no diagnostics to sit right now. Your tutor will suggest one when there is.
+        </p>
+        <Button
+          onClick={handleFinishOnboarding}
+          disabled={loading}
+          className="bg-primary px-8 text-white hover:bg-primary-hover"
+        >
+          {loading ? "Finishing..." : "Go to my dashboard"}
+        </Button>
+      </div>
+    );
+  }
+
+  const testsInCategory = tests.filter(t => t.categoryName === activeTest.categoryName);
 
   const q = activeTest.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === activeTest.questions.length - 1;
@@ -128,7 +182,13 @@ export function StudentDiagnosticOnboarding() {
             <button
               key={c}
               onClick={() => handleCategoryClick(c)}
-              className={`pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none ${c === activeTest.categoryName
+              disabled={inProgress && c !== activeTest.categoryName}
+              title={
+                inProgress && c !== activeTest.categoryName
+                  ? "Finish or skip this test first"
+                  : undefined
+              }
+              className={`pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none disabled:cursor-not-allowed disabled:opacity-40 ${c === activeTest.categoryName
                 ? "text-white border-white"
                 : "text-white/60 border-transparent hover:text-white/90 hover:border-white/30"
                 }`}
@@ -149,13 +209,19 @@ export function StudentDiagnosticOnboarding() {
               <div className="flex items-center gap-6 overflow-x-auto [scrollbar-width:none]">
                 {testsInCategory.map(t => {
                   const isActive = t.id === activeTest.id;
+                  const isDone = done.includes(t.id);
                   return (
-                    <div
+                    <button
                       key={t.id}
-                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors ${isActive ? 'border-primary text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
+                      type="button"
+                      onClick={() => goToTest(tests.findIndex(x => x.id === t.id))}
+                      disabled={inProgress && !isActive}
+                      title={inProgress && !isActive ? "Finish or skip this test first" : undefined}
+                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${isActive ? 'border-primary text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
                     >
                       {t.title}
-                    </div>
+                      {isDone && <span className="ml-1.5 font-normal text-primary">done</span>}
+                    </button>
                   );
                 })}
               </div>
@@ -199,15 +265,15 @@ export function StudentDiagnosticOnboarding() {
               <span className="text-[14px] font-semibold text-primary shrink-0 mt-1">
                 Question {currentQuestionIndex + 1} / {activeTest.questions.length}
               </span>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  disabled={currentQuestionIndex === 0}
-                  onClick={() => setCurrentQuestionIndex(i => i - 1)}
-                  className="border-[#e9edef] dark:border-[#2a3942]"
-                >
-                  Back
-                </Button>
+              <div className="flex items-center gap-3">
+                {/* Back is gone on purpose. It let a student answer, move on,
+                    come back and change it, which makes the number this
+                    produces mean nothing and is exactly what a placement test
+                    must not allow. The current answer can still be changed
+                    freely until Next is pressed. */}
+                <span className="hidden text-[12.5px] text-muted-foreground sm:inline">
+                  Answers are final once you move on
+                </span>
                 {isLastQuestion ? (
                   <Button
                     className="bg-primary hover:bg-primary-hover text-white px-8"
@@ -238,7 +304,7 @@ export function StudentDiagnosticOnboarding() {
             {currentTestIndex + 1} / {diagnosticTests.length}
           </div> */}
           <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
-            {diagnosticTests.map((_, i) => (
+            {tests.map((_, i) => (
               <div
                 key={i}
                 className={`h-2 flex-1 rounded-full transition-colors ${i < currentTestIndex

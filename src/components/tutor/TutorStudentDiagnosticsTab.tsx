@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
-import { getPublishedDiagnostics } from "@/services/diagnosticAdminService";
-import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
+import type { StudentDiagnostic } from "@/services/diagnosticService";
 import { overall, byCategory } from "@/services/diagnosticReport";
 import { Target, Activity } from "lucide-react";
 import {
@@ -19,7 +18,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 // A test the student has sat shows the real score; one they have not is left
 // plainly as such, so the tutor can see the gaps as well as the marks.
-function TestRow({ test, result }: { test: DiagnosticTest; result?: DiagnosticResult }) {
+function TestRow({ test, result }: { test: StudentDiagnostic; result?: DiagnosticResult }) {
   return (
     <div className="flex items-center justify-between px-2 py-3 border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
       <h4 className="text-[14px] text-[#111] dark:text-white truncate pr-4">{test.title}</h4>
@@ -49,12 +48,13 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
     queryFn: () => diagnosticService.getStudentResults(studentId),
     enabled: !!studentId,
   });
-  const { data: publishedTests } = useQuery({
-    queryKey: ["published-diagnostics"],
-    queryFn: getPublishedDiagnostics,
+  // The database, with no fallback to the file. The fallback meant a tutor
+  // could be reading a list of tests an admin had already replaced.
+  const { data: tests = [] } = useQuery({
+    queryKey: ["student-diagnostics"],
+    queryFn: () => diagnosticService.listForStudent(),
     staleTime: 5 * 60_000,
   });
-  const tests: DiagnosticTest[] = publishedTests ?? diagnosticTests;
 
   if (isLoading) {
     return <div className="p-8 flex justify-center text-muted-foreground">Loading diagnostics...</div>;
@@ -89,11 +89,25 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
       {weakest && (
         <div className="flex items-start gap-2.5 bg-[#1099A1]/5 border-l-2 border-[#1099A1] rounded-r-lg px-4 py-3">
           <Target size={16} className="text-[#CAA25F] mt-0.5 shrink-0" />
+          {/* "The weakest at 100%" is what this said when only one category had
+              been sat, which is the common case early on and reads as nonsense.
+              With one category there is nothing to compare, so it says what was
+              done instead of ranking it against nothing. */}
           <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">
-            Focus area: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span>, the
-            weakest at {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct).
-            {strongest && strongest.category !== weakest.category && (
-              <> Strongest is <span className="font-semibold text-[#111] dark:text-white">{strongest.category}</span> at {strongest.accuracy}%.</>
+            {cats.length < 2 ? (
+              <>
+                So far: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span> at{" "}
+                {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct). Another subject would
+                give this something to compare against.
+              </>
+            ) : (
+              <>
+                Focus area: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span>, the
+                weakest at {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct).
+                {strongest && strongest.category !== weakest.category && (
+                  <> Strongest is <span className="font-semibold text-[#111] dark:text-white">{strongest.category}</span> at {strongest.accuracy}%.</>
+                )}
+              </>
             )}
           </p>
         </div>

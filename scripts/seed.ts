@@ -31,6 +31,9 @@ import {
   USERS,
   type SeedBlogPost,
 } from "./seed/data.ts";
+// The single definition of the diagnostics. Read here to be written to the
+// database; nothing in the app imports it at runtime any more.
+import { diagnosticTests } from "../src/data/diagnostics.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../.env") });
@@ -869,6 +872,50 @@ async function seedReviews() {
   ok(written > 0 ? `seeded  ${written} reviews` : "skipped, already rated");
 }
 
+/**
+ * The diagnostics, into the table that owns them.
+ *
+ * src/data/diagnostics.ts used to be read at runtime by the student onboarding,
+ * the tutor's tab and the sidebar badge, so the app shipped its own answer key
+ * and an admin could not touch any of it. The file is now a seed input and
+ * nothing else: one definition, written to the database that everything reads.
+ *
+ * Upserted on slug, so re-seeding refreshes wording without orphaning the
+ * results already recorded against it. Published, because a diagnostic nobody
+ * can sit is not a fixture worth having.
+ */
+async function seedDiagnostics() {
+  step("Diagnostics");
+  let written = 0;
+  for (const [i, test] of diagnosticTests.entries()) {
+    const row = {
+      slug: test.id,
+      title: test.title,
+      description: test.description,
+      category_id: test.categoryId,
+      category_name: test.categoryName,
+      time_limit_minutes: test.timeLimitMinutes ?? null,
+      questions: test.questions,
+      published: true,
+      sort_order: i,
+    };
+
+    const { data: existing, error: findErr } = await db
+      .from("diagnostics")
+      .select("id")
+      .eq("slug", test.id)
+      .maybeSingle();
+    if (findErr) fail("reading diagnostics", findErr);
+
+    const { error } = existing
+      ? await db.from("diagnostics").update(row).eq("id", existing.id)
+      : await db.from("diagnostics").insert(row);
+    if (error) fail(`writing diagnostic "${test.title}"`, error);
+    written += 1;
+  }
+  ok(`seeded  ${written} diagnostics across ${new Set(diagnosticTests.map((t) => t.categoryName)).size} subjects`);
+}
+
 async function seedBlogPosts() {
   step("Blog posts");
   for (const post of BLOG_POSTS) {
@@ -950,6 +997,7 @@ async function main() {
   await seedAssignments();
   await seedConversations();
   await seedCollegeProfiles();
+  await seedDiagnostics();
   await seedBlogPosts();
   await seedReviews();
 

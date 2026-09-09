@@ -7,6 +7,15 @@ export type DiagnosticAnswer = {
   chosen: number;
   /** The option index that was correct. */
   correct: number;
+  /**
+   * Why, as it was worded when they sat it.
+   *
+   * Stored on the result rather than read from the diagnostic, because the
+   * diagnostic no longer reaches the browser with its answers in it, and
+   * because rewording a question next term must not change what somebody was
+   * shown last term.
+   */
+  explanation?: string | null;
 };
 
 export type DiagnosticResult = {
@@ -17,6 +26,25 @@ export type DiagnosticResult = {
   total: number;
   completedAt: string;
   answers: DiagnosticAnswer[];
+};
+
+/** A question as a student is allowed to see it: no correct index, no explanation. */
+export type StudentDiagnosticQuestion = {
+  id: string;
+  text: string;
+  options: string[];
+};
+
+/** A diagnostic as a student is allowed to see it. */
+export type StudentDiagnostic = {
+  id: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  timeLimitMinutes?: number;
+  courseId: string | null;
+  questions: StudentDiagnosticQuestion[];
 };
 
 /** One test's aggregate, from the admin stats function. */
@@ -42,6 +70,7 @@ function fromRow(r: any): DiagnosticResult {
         questionId: a.question_id,
         chosen: a.chosen,
         correct: a.correct,
+        explanation: a.explanation ?? null,
       }))
     : [];
   return {
@@ -113,37 +142,56 @@ export const diagnosticService = {
   },
 
   /**
+   * Every diagnostic a student may sit, without the answers.
+   *
+   * Through student_diagnostics() rather than the table, because the table's
+   * questions column carries correctAnswer and used to be readable by anon.
+   * The function strips the correct index and the explanation, both of which
+   * give the answer away, and both of which come back afterwards from the
+   * stored result rather than from the diagnostic.
+   */
+  async listForStudent(): Promise<StudentDiagnostic[]> {
+    const { data, error } = await supabase.rpc("student_diagnostics");
+    if (error) {
+      console.error("listForStudent:", error.message);
+      return [];
+    }
+    return (data ?? []).map((r: any) => ({
+      id: r.slug,
+      title: r.title,
+      description: r.description ?? "",
+      categoryId: r.category_id,
+      categoryName: r.category_name,
+      timeLimitMinutes: r.time_limit_minutes ?? undefined,
+      courseId: r.course_id ?? null,
+      questions: (r.questions ?? []) as StudentDiagnosticQuestion[],
+    }));
+  },
+
+  /**
    * Record a completed sitting.
    *
-   * Takes the per-question answers and derives the score from them, so the
-   * stored score can never disagree with the stored answers. Returns the score
-   * it computed on success, for the "you scored X of Y" message.
+   * The browser sends what was chosen and nothing else. It used to compare
+   * chosen to correct itself and insert the score it had worked out, with
+   * authenticated holding INSERT on the table, so a student could post any
+   * score against themselves without going near the UI. submit_diagnostic
+   * marks it against the stored key and is the only way in.
    */
   async saveResult(
-    studentId: string,
     slug: string,
-    answers: DiagnosticAnswer[]
+    answers: { questionId: string; chosen: number }[]
   ): Promise<{ ok: true; score: number; total: number } | { ok: false; error: string }> {
-    const total = answers.length;
-    const score = answers.filter((a) => a.chosen === a.correct).length;
-
-    const { error } = await supabase.from("diagnostic_results").insert({
-      student_id: studentId,
-      diagnostic_slug: slug,
-      score,
-      total,
-      answers: answers.map((a) => ({
-        question_id: a.questionId,
-        chosen: a.chosen,
-        correct: a.correct,
-      })),
+    const { data, error } = await supabase.rpc("submit_diagnostic", {
+      p_slug: slug,
+      p_answers: answers.map((a) => ({ question_id: a.questionId, chosen: a.chosen })),
     });
 
     if (error) {
       console.error("saveResult:", error.message);
       return { ok: false, error: error.message };
     }
-    return { ok: true, score, total };
+    const row = Array.isArray(data) ? data[0] : data;
+    return { ok: true, score: row?.score ?? 0, total: row?.total ?? answers.length };
   },
 
   /**
