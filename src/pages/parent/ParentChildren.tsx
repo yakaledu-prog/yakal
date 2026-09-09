@@ -234,6 +234,10 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
     enabled: !!child.id,
   });
 
+  const upcomingCount = sessionRows.filter((s: any) => s.status === "upcoming").length;
+  const completedCount = sessionRows.filter((s: any) => s.status === "completed").length;
+  const assignmentsDue = assignmentRows.filter((a: any) => !a.isSubmitted).length;
+
   const { data: sessionExtras } = useSessionExtras(sessionRows);
 
   const childSessions: SessionListItem[] = sessionRows.map((s) => ({
@@ -284,9 +288,14 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
             <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
-              <MinimalStat label="Upcoming Sessions" value={child.sessions} />
-              <MinimalStat label="Completed" value={12} />
-              <MinimalStat label="Assignments Due" value={2} />
+              {/* All three from this child's own rows. Completed and Assignments
+                  Due were the literals 12 and 2, so every child showed the same
+                  pair however many sessions they had actually sat, and a second
+                  child with nothing at all read identically to a first with a
+                  full term behind them. */}
+              <MinimalStat label="Upcoming Sessions" value={upcomingCount} />
+              <MinimalStat label="Completed" value={completedCount} />
+              <MinimalStat label="Assignments Due" value={assignmentsDue} />
             </div>
           </div>
         </div>

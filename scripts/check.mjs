@@ -50,6 +50,7 @@ const NEEDS_DB = [
   ['session-dispute.ts', 'reporting a session holds the money until somebody decides'],
   ['push-delivery.ts', 'a notification reaches a device, encrypted'],
   ['payout-blocked-notice.ts', 'a payee who cannot be paid is told, once'],
+  ['messageable-contacts.ts', 'who each role may start a conversation with'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 
