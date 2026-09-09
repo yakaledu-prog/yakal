@@ -175,6 +175,7 @@ export function BookAdvisingDialog({
             </p>
           ) : (
             <AvailabilityPicker
+              personLabel="counsellor"
               tutorId={counselorId}
               studentId={studentId}
               selected={picked}

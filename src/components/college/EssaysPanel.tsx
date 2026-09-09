@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   ExternalLink,
@@ -15,6 +16,7 @@ import { fileIdFromUrl } from "@/services/driveService";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { EssayStatusIcon } from "./EssayStatusIcon";
 import { AddEssayModal, NewEssay } from "./AddEssayModal";
+import { getEssayReviews } from "@/services/essayReviewService";
 
 const STATUS: { value: EssayStatus; label: string }[] = [
   { value: "todo", label: "Not started" },
@@ -364,6 +366,17 @@ function EssayRow({
   creating: boolean;
 }) {
   const [open, setOpen] = useState(false);
+
+  // What the counsellor actually said, fetched only once the row is opened.
+  // essay_reviews has stored every pass with its note from the start and
+  // nothing ever read it back, so "you will get a note" was never true.
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["essay-reviews", essay.id],
+    queryFn: () => getEssayReviews(essay.id),
+    enabled: open,
+  });
+  const notes = reviews.filter((r) => r.note);
+
   const school = schools.find((s) => s.id === essay.college_list_item_id);
   const limit = essay.word_limit ?? null;
   const over = limit !== null && words !== undefined && words > limit;
@@ -539,6 +552,26 @@ function EssayRow({
             <p className="text-[12px] text-secondary">
               With your counselor. You will get a note when they have read it.
             </p>
+          )}
+
+          {notes.length > 0 && (
+            <div className="space-y-2.5 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
+              {notes.map((r) => (
+                <div key={r.id}>
+                  <p className="text-[12px] text-muted-foreground">
+                    {r.counselorName ?? "Your counsellor"}
+                    {" - "}
+                    {r.action === "approved" ? "finished it" : "sent it back"}
+                    {" - "}
+                    {new Date(r.createdAt).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </p>
+                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-foreground">{r.note}</p>
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Both actions on one line: they are the only two things you can do

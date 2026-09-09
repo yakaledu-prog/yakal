@@ -110,16 +110,23 @@ export const essayReview: NotificationTemplate<{
   counselorName?: string;
   roundsUsed?: number;
   roundsLimit?: number | null;
+  /** What the counsellor actually said. The reason the student is reading this. */
+  note?: string | null;
 }> = {
   type: "essay_review",
   label: "Essay reviewed",
   notification: (v) => ({
     title: v.approved ? "Your essay is finished" : "Your essay came back",
-    message: v.approved
-      ? `${v.essayTitle} has been approved. Nothing more to do on it.`
-      : v.counselorName
-        ? `${v.counselorName} left comments on ${v.essayTitle}.`
-        : `There are comments waiting on ${v.essayTitle}.`,
+    // The note first, when there is one. This used to say only that comments
+    // existed, which was the whole complaint: there was nowhere for a
+    // counsellor to write one and nowhere for a student to read it.
+    message: v.note
+      ? `${v.counselorName ?? "Your counsellor"} on ${v.essayTitle}: ${v.note}`
+      : v.approved
+        ? `${v.essayTitle} has been approved. Nothing more to do on it.`
+        : v.counselorName
+          ? `${v.counselorName} left comments on ${v.essayTitle}.`
+          : `There are comments waiting on ${v.essayTitle}.`,
     link: "/student/my-app",
   }),
   email: (v) => ({
@@ -142,6 +149,7 @@ export const essayReview: NotificationTemplate<{
           : ""),
     facts: [
       { label: "Essay", value: v.essayTitle },
+      ...(v.note ? [{ label: "What they said", value: v.note }] : []),
       { label: "Outcome", value: v.approved ? "Approved" : "Comments to work through" },
       ...(v.counselorName ? [{ label: "Reviewed by", value: v.counselorName }] : []),
       ...(v.roundsLimit
@@ -161,6 +169,7 @@ export const essayReview: NotificationTemplate<{
     essayTitle: "Personal statement, draft 2",
     studentName: "Amen Worku",
     counselorName: "Daniel Haile",
+    note: "The opening is doing too much. Start at the moment in paragraph three and cut the rest.",
     roundsUsed: 2,
     roundsLimit: 6,
   },

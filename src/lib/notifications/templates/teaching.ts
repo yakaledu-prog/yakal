@@ -148,6 +148,45 @@ export const payout: NotificationTemplate<{
 };
 
 /**
+ * Money is owed and has nowhere to go.
+ *
+ * The release job leaves an earning pending when the payee has no connected
+ * Stripe account, which is right: the money is still theirs and moves on its
+ * own the day they finish onboarding. Nobody was told, so it simply sat there
+ * and the first sign was a tutor asking why they had not been paid.
+ *
+ * Said once per earning, latched on payout_blocked_notified_at, because the
+ * job runs hourly.
+ */
+export const payoutBlocked: NotificationTemplate<{
+  audience?: "tutor" | "counselor";
+  amount: string;
+}> = {
+  type: "payout",
+  label: "Payout waiting on your bank",
+  notification: (v) => ({
+    title: "Your money is waiting",
+    message: `${v.amount} is ready but there is no bank account to send it to. Connect one and it goes out on the next run.`,
+    link: v.audience === "counselor" ? "/counselor/earnings" : "/tutor/earnings",
+  }),
+  email: (v) => ({
+    subject: `${v.amount} is waiting for your bank details`,
+    heading: "Your money is waiting",
+    intro:
+      `${v.amount} has been earned and held for you, and there is nowhere to send it: the ` +
+      `Stripe onboarding that collects your bank details has not been finished. Nothing is ` +
+      `lost and nothing expires. The transfer goes out on the next run after you connect.`,
+    facts: [{ label: "Waiting", value: v.amount }],
+    cta: {
+      label: "Connect your bank",
+      url: v.audience === "counselor" ? "/counselor/earnings" : "/tutor/earnings",
+    },
+    footer: "Stripe collects those details directly, so we never see or hold them.",
+  }),
+  sample: { audience: "tutor", amount: "$70.00" },
+};
+
+/**
  * A family has said a lesson did not happen as booked.
  *
  * Goes to the tutor as well as to admins, deliberately. Being argued about

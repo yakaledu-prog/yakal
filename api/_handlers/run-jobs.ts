@@ -1,6 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient } from '../_utils/supabase.js';
-import { NOTHING_DELIVERED, recordSessionEarning, releaseDueEarnings } from '../_utils/earnings.js';
+import {
+  NOTHING_DELIVERED,
+  NO_CONNECTED_ACCOUNT,
+  PLATFORM_BALANCE_SHORT,
+  recordSessionEarning,
+  releaseDueEarnings,
+} from '../_utils/earnings.js';
 import { reportServerError } from '../_utils/report.js';
 import { notifyAll } from '../_utils/notify.js';
 
@@ -181,6 +187,9 @@ async function voidStaleInvoices(db: any): Promise<number> {
  * could render them only as a line and a bare Open button, and no email went
  * out at all: an admin who was not in the app never learned about it.
  */
+/** Cents as a person reads them. Matches the other handlers rather than importing from src. */
+const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
 async function tellAdmins(
   db: any,
   title: string,
@@ -245,6 +254,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         db,
         'A counselling month is being held',
         `${undelivered.length} counselling ${undelivered.length === 1 ? 'month has' : 'months have'} ended with no advising session and no essay review. Nothing has been paid out.`
+      );
+    }
+
+    // Money that is owed and cannot move. Both of these used to be silent, and
+    // both mean somebody did not get paid: the first is the payee's to fix and
+    // the second is ours. Latched on the earning, so an hourly job says each
+    // once rather than two dozen times a day.
+    const unbanked = released.skipped.filter((s) => s.reason === NO_CONNECTED_ACCOUNT && s.firstTime);
+    if (unbanked.length > 0) {
+      const owedByPayee = new Map<string, number>();
+      for (const s of unbanked) {
+        if (!s.payeeId) continue;
+        owedByPayee.set(s.payeeId, (owedByPayee.get(s.payeeId) ?? 0) + (s.amountCents ?? 0));
+      }
+      // The payee first: they are the only one who can fix it, and until now
+      // the money simply sat there with nobody saying why.
+      await notifyAll(
+        db,
+        [...owedByPayee].map(([userId, cents]) => ({
+          userId,
+          key: 'payoutBlocked' as const,
+          vars: { amount: money(cents) },
+        }))
+      ).catch(() => undefined);
+
+      await tellAdmins(
+        db,
+        'Somebody cannot be paid',
+        `${owedByPayee.size} ${owedByPayee.size === 1 ? 'payee has' : 'payees have'} money waiting and no connected bank. They have been told; an admin can also settle by hand.`
+      );
+    }
+
+    const short = released.skipped.filter((s) => s.reason === PLATFORM_BALANCE_SHORT && s.firstTime);
+    if (short.length > 0) {
+      const cents = short.reduce((n, s) => n + (s.amountCents ?? 0), 0);
+      await tellAdmins(
+        db,
+        'Payouts are waiting on the platform balance',
+        `${money(cents)} could not be transferred because the Stripe balance has not settled. This usually clears on its own; if it does not, the balance is short.`
       );
     }
 

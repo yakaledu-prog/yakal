@@ -166,18 +166,21 @@ interface DueEarning {
   period_end: string | null;
   note: string | null;
   delivery_flagged_at: string | null;
+  payout_blocked_notified_at: string | null;
 }
 
 export interface ReleaseResult {
   transferred: number;
   amountCents: number;
   /** firstTime marks a skip worth telling somebody about, so a repeated run does not repeat the news. */
-  skipped: { earningId: string; reason: string; firstTime?: boolean }[];
+  skipped: { earningId: string; reason: string; firstTime?: boolean; payeeId?: string; amountCents?: number }[];
   errors: string[];
 }
 
 /** Why a counselling month can be owed and still not payable. */
 export const NOTHING_DELIVERED = 'nothing delivered';
+export const NO_CONNECTED_ACCOUNT = 'no connected account';
+export const PLATFORM_BALANCE_SHORT = 'platform balance not settled';
 
 /**
  * Whether a counselling month may be paid.
@@ -228,7 +231,7 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
   const { data: due, error } = await db
     .from('earnings')
     .select(
-      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note, delivery_flagged_at'
+      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note, delivery_flagged_at, payout_blocked_notified_at'
     )
     .eq('status', 'pending')
     .is('voided_at', null)
@@ -308,7 +311,24 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
     // nowhere for it to go yet, and it moves on its own the day they finish
     // connecting a bank. An admin can also settle it by hand.
     if (!payee?.stripe_account_id || !payee.stripe_payouts_enabled) {
-      result.skipped.push({ earningId: earning.id, reason: 'no connected account' });
+      // Latched the way a held counselling month is, because the job runs
+      // hourly and the payee only needs telling once. Cleared on settle, so
+      // somebody blocked again later hears about it again.
+      const firstTime = !earning.payout_blocked_notified_at;
+      if (firstTime) {
+        await db
+          .from('earnings')
+          .update({ payout_blocked_notified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq('id', earning.id)
+          .eq('status', 'pending');
+      }
+      result.skipped.push({
+        earningId: earning.id,
+        reason: NO_CONNECTED_ACCOUNT,
+        firstTime,
+        payeeId: earning.payee_id,
+        amountCents: earning.amount_cents,
+      });
       continue;
     }
 
@@ -340,6 +360,8 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
           method: 'stripe_connect',
           reference: transfer.id,
           settled_at: new Date().toISOString(),
+          // Cleared so a payee blocked again later is told again.
+          payout_blocked_notified_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', earning.id)
@@ -364,7 +386,21 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
       // Insufficient balance is a wait, not a fault: the charge has not settled
       // yet and the next run will find it again.
       if (/insufficient/i.test(message)) {
-        result.skipped.push({ earningId: earning.id, reason: 'platform balance not settled' });
+        const firstTime = !earning.payout_blocked_notified_at;
+        if (firstTime) {
+          await db
+            .from('earnings')
+            .update({ payout_blocked_notified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+            .eq('id', earning.id)
+            .eq('status', 'pending');
+        }
+        result.skipped.push({
+          earningId: earning.id,
+          reason: PLATFORM_BALANCE_SHORT,
+          firstTime,
+          payeeId: earning.payee_id,
+          amountCents: earning.amount_cents,
+        });
         continue;
       }
       result.errors.push(`earning ${earning.id}: ${message}`);

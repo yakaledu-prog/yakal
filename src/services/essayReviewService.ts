@@ -77,6 +77,7 @@ export async function reviewEssay(input: {
       approved: input.action === "approved",
       essayTitle: input.essayTitle ?? "Your essay",
       counselorName: input.counselorName,
+      note: input.note?.trim() || null,
     }).catch(() => undefined);
   }
 

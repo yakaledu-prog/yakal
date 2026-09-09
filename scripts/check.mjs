@@ -49,6 +49,7 @@ const NEEDS_DB = [
   ['tax-year-totals.ts', 'the 1099 list, and what Stripe cannot see'],
   ['session-dispute.ts', 'reporting a session holds the money until somebody decides'],
   ['push-delivery.ts', 'a notification reaches a device, encrypted'],
+  ['payout-blocked-notice.ts', 'a payee who cannot be paid is told, once'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 

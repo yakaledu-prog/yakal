@@ -80,10 +80,16 @@ function dueLabel(iso: string | null): { text: string; urgent: boolean } | null 
 }
 
 export function CounselorEssays() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterId>("waiting");
   const [busyId, setBusyId] = useState<string | null>(null);
+  // What the counsellor is about to say, and about which essay. Sending an
+  // essay back used to write no note at all: the column existed, reviewEssay
+  // accepted one, and the queue never asked. The student got "your essay came
+  // back" and nothing about why, which for a service sold on expert feedback is
+  // the whole of the thing missing.
+  const [reviewing, setReviewing] = useState<{ essay: ReviewQueueItem; action: ReviewAction } | null>(null);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
 
@@ -132,19 +138,32 @@ export function CounselorEssays() {
     });
   }, [essays, filter, query]);
 
-  async function act(essay: ReviewQueueItem, action: ReviewAction) {
+  /**
+   * Reopening is the counsellor tidying up after themselves and tells the
+   * student nothing, so it needs no note and asks for none. The other two go
+   * through the dialog.
+   */
+  function act(essay: ReviewQueueItem, action: ReviewAction) {
+    if (action === "reopened") return void commit(essay, action, null);
+    setReviewing({ essay, action });
+  }
+
+  async function commit(essay: ReviewQueueItem, action: ReviewAction, note: string | null) {
     if (!user) return;
     setBusyId(essay.id);
     const res = await reviewEssay({
       essayId: essay.id,
       counselorId: user.id,
       action,
+      note: note ?? undefined,
       studentId: essay.studentId,
       essayTitle: essay.title,
+      counselorName: profile?.full_name ?? undefined,
     });
     setBusyId(null);
 
     if (!res.success) return toast.error(res.error ?? "Could not record that.");
+    setReviewing(null);
     toast.success(
       action === "approved"
         ? `${essay.title} is finished.`
@@ -303,7 +322,99 @@ export function CounselorEssays() {
           )}
         </div>
       </div>
+
+      {reviewing && (
+        <ReviewNoteDialog
+          essay={reviewing.essay}
+          action={reviewing.action}
+          busy={busyId === reviewing.essay.id}
+          onCancel={() => setReviewing(null)}
+          onSubmit={(note) => void commit(reviewing.essay, reviewing.action, note)}
+        />
+      )}
     </PageWrapper>
+  );
+}
+
+/**
+ * What the counsellor wants to say, before it is said.
+ *
+ * Required on the way back and optional on the way out: an essay returned
+ * without a reason is the complaint this whole screen exists to answer, while
+ * an approval speaks for itself and a counsellor should not have to invent
+ * something to close one.
+ */
+function ReviewNoteDialog({
+  essay,
+  action,
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  essay: ReviewQueueItem;
+  action: ReviewAction;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (note: string | null) => void;
+}) {
+  const [note, setNote] = useState("");
+  const returning = action === "returned";
+  const firstName = essay.studentName.split(" ")[0];
+  const tooShort = returning && note.trim().length < 2;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl">
+        <div className="border-b border-border p-5">
+          <h2 className="text-[17px] font-semibold text-foreground">
+            {returning ? `Send back to ${firstName}` : `Mark this finished`}
+          </h2>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">{essay.title}</p>
+        </div>
+
+        <div className="p-5">
+          <label htmlFor="review-note" className="mb-2 block text-[13px] font-medium text-foreground">
+            {returning ? "What should they change" : "Anything to add"}
+            {!returning && <span className="ml-1 font-normal text-muted-foreground">optional</span>}
+          </label>
+          <textarea
+            id="review-note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={5}
+            autoFocus
+            placeholder={
+              returning
+                ? "The opening is doing too much. Start at the moment in paragraph three and cut the rest."
+                : "Strong close. Worth reusing the third paragraph on the Stanford supplement."
+            }
+            className="w-full resize-none rounded-xl border border-border bg-background p-3 text-[14px] text-foreground outline-none transition-colors focus:border-primary"
+          />
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            {firstName} sees this on the essay and in the email that goes out.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border p-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-xl border border-border px-4 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy || tooShort}
+            onClick={() => onSubmit(note.trim() || null)}
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : null}
+            {returning ? "Send back" : "Finished"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -322,11 +433,17 @@ function EssayRow({
   const waiting = essay.status === "in_review";
   const finished = essay.status === "done";
 
-  // What this student's tier includes for this kind of essay. Shown, never
-  // enforced.
-  const limit =
-    essay.kind === "personal_statement" ? plan?.tier.psRoundsLimit : plan?.tier.suppEssaysLimit;
-  const quota = { label: "", used: essay.roundsUsed, limit: limit ?? null };
+  // Rounds are capped on the personal statement and nowhere else. This used to
+  // read suppEssaysLimit as the ceiling for a supplement, so a 200 word MIT
+  // answer showed "0 of 5 rounds" when the 5 was the number of supplements the
+  // whole plan covers and rounds on a supplement are not capped at all. A
+  // counsellor reading it believed they owed five rounds on that one essay.
+  const isPersonalStatement = essay.kind === "personal_statement";
+  const quota = {
+    label: "",
+    used: essay.roundsUsed,
+    limit: (isPersonalStatement ? plan?.tier.psRoundsLimit : null) ?? null,
+  };
 
   return (
     <article className="flex flex-wrap items-start gap-4 py-5">
@@ -363,13 +480,19 @@ function EssayRow({
               quotaSpent(quota) && "font-medium text-[#8a6a2a] dark:text-secondary"
             )}
             title={
-              plan
-                ? `${plan.tier.name} includes ${quota.limit == null ? "unlimited" : quota.limit} ${essay.kind === "personal_statement" ? "personal statement rounds" : "supplemental essays"}`
-                : "This student is not on an admissions plan"
+              !plan
+                ? "This student is not on an admissions plan"
+                : isPersonalStatement
+                  ? `${plan.tier.name} includes ${plan.tier.psRoundsLimit == null ? "unlimited" : plan.tier.psRoundsLimit} personal statement rounds`
+                  : `${plan.tier.name} covers ${plan.tier.suppEssaysLimit == null ? "unlimited" : plan.tier.suppEssaysLimit} supplemental essays. Rounds on a supplement are not capped.`
             }
           >
-            {quotaLabel(quota)} {quota.used === 1 ? "round" : "rounds"}
-            {quotaSpent(quota) && ", tier used up"}
+            {isPersonalStatement
+              ? `${quotaLabel(quota)} ${quota.used === 1 ? "round" : "rounds"}`
+              : quota.used === 0
+                ? "not reviewed yet"
+                : `round ${quota.used}`}
+            {isPersonalStatement && quotaSpent(quota) && ", tier used up"}
           </span>
           {!plan && <span className="text-muted-foreground">No plan</span>}
         </div>

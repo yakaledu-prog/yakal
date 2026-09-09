@@ -67,6 +67,13 @@ export function AvailabilityPicker({
   multiple = false,
   /** The hour a session already holds, when one is being moved. */
   currentSlot,
+  /**
+   * What to call the person whose week this is. The counselling side of the
+   * product shares this picker, and calling a counsellor "this tutor" on the
+   * one screen where a family is deciding whether an expensive thing is real
+   * was not doing it any favours.
+   */
+  personLabel = "tutor",
   className,
 }: {
   tutorId: string | null;
@@ -75,6 +82,7 @@ export function AvailabilityPicker({
   onToggle: (slot: PickedSlot) => void;
   multiple?: boolean;
   currentSlot?: { date: string; startTime: string } | null;
+  personLabel?: string;
   className?: string;
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -146,7 +154,8 @@ export function AvailabilityPicker({
   if (!tutorId || !availability) {
     return (
       <p className="py-12 text-center text-[14px] text-muted-foreground">
-        This tutor has not published any hours yet.
+        This {personLabel} has not published any hours yet. Send them a message and
+        they can open some.
       </p>
     );
   }

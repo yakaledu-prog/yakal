@@ -405,6 +405,7 @@ export function ParentAdmissions() {
                     advising sessions. You can skip this and book later from the plan.
                   </p>
                   <AvailabilityPicker
+                    personLabel="counsellor"
                     tutorId={chosenCounselor.id}
                     studentId={activeChildId}
                     selected={slots}
