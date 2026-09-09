@@ -45,9 +45,20 @@ export function StudentRoadmap({
   hideChrome,
   gradeLevel,
   subjectName,
+  generic,
 }: {
   studentId?: string;
   embedded?: boolean;
+  /**
+   * The plan with nobody in it.
+   *
+   * A parent's roadmap is the same advice, read to decide whether a child is
+   * on track, and the parent picks the year themselves. Without this the page
+   * fell back to the signed-in id, so it looked up a college application for
+   * the parent: the header facts came back "Not set" three times and the
+   * timeline anchored on the parent's own grade level, which is nothing.
+   */
+  generic?: boolean;
   /**
    * The student's grade level. Only needed when viewing someone else: the
    * timeline highlights the current year, and reading it off the signed-in
@@ -68,7 +79,7 @@ export function StudentRoadmap({
 }) {
   const { user, profile } = useAuth();
 
-  const targetId = studentId || user?.id;
+  const targetId = generic ? undefined : studentId || user?.id;
   // Read once per mount rather than during render: the compiler rules count a
   // Date() in the render body as impure, and it would also re-sort on every
   // keystroke elsewhere on the page.
@@ -101,7 +112,7 @@ export function StudentRoadmap({
   const major = app?.program_interest || "";
   const gradYear = app?.grad_year ? String(app.grad_year) : "";
 
-  if (!targetId) return null;
+  if (!targetId && !generic) return null;
 
   const content = (
     <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
@@ -220,10 +231,14 @@ export function StudentRoadmap({
           <>
             {tab === "timeline" && (
               <div className="space-y-8">
+                {/* No year, no grade, no name when generic: the timeline
+                    then marks nobody as "here" and every grade is just a
+                    button to read. */}
                 <RoadmapTimeline
-                  gradYear={gradYear ? Number(gradYear) : app?.grad_year}
-                  gradeLevel={studentId ? gradeLevel : profile?.grade_level}
-                  subjectName={subjectName}
+                  gradYear={generic ? undefined : gradYear ? Number(gradYear) : app?.grad_year}
+                  gradeLevel={generic ? undefined : studentId ? gradeLevel : profile?.grade_level}
+                  subjectName={generic ? undefined : subjectName}
+                  anonymous={generic}
                 />
               </div>
             )}

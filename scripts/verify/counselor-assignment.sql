@@ -10,6 +10,14 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
+-- Seed with triggers suppressed. This connects as postgres, not through
+-- PostgREST, so the guard_profile_privileged_columns trigger (which only lets an
+-- admin or the service role change a profile's role) would otherwise refuse the
+-- role updates below, and the auth-user trigger would auto-create the profiles
+-- and turn these inserts into conflicting updates. Reset to origin before the
+-- assertions so RLS and the real behaviour are what is tested.
+SET LOCAL session_replication_role = replica;
+
 -- Two counsellors, so "a counsellor can see it" and "this counsellor can see
 -- it" stop being the same sentence.
 INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -47,6 +55,33 @@ FROM public.admissions_tiers t ORDER BY t.sort_order LIMIT 1;
 
 INSERT INTO public.college_guide_applications (student_id, counselor_id)
 VALUES ('50000000-0000-4000-8000-00000000000a','c0000000-0000-4000-8000-00000000000a');
+
+-- The child records the workspace is actually made of. Before the
+-- assignment-scoped migration these carried is_counselor()-only policies, so
+-- counsellor B below could read and rewrite every one of them. Seeded here as
+-- superuser (RLS does not apply until the SET ROLE further down).
+INSERT INTO public.college_list_items (id, student_id, school_name)
+VALUES ('60000000-0000-4000-8000-00000000000a','50000000-0000-4000-8000-00000000000a','Verify University');
+
+INSERT INTO public.application_requirements (college_list_item_id, label)
+VALUES ('60000000-0000-4000-8000-00000000000a','Verify requirement');
+
+INSERT INTO public.application_tasks (student_id, title)
+VALUES ('50000000-0000-4000-8000-00000000000a','Verify task');
+
+INSERT INTO public.essays (student_id, title, kind)
+VALUES ('50000000-0000-4000-8000-00000000000a','Verify essay','personal_statement');
+
+INSERT INTO public.recommendations (student_id, recommender_name)
+VALUES ('50000000-0000-4000-8000-00000000000a','Verify Recommender');
+
+INSERT INTO public.student_academics (student_id)
+VALUES ('50000000-0000-4000-8000-00000000000a')
+ON CONFLICT DO NOTHING;
+
+-- Back to normal: the assertions below must run with triggers and RLS behaving
+-- exactly as they do in production.
+SET LOCAL session_replication_role = origin;
 
 -- 1. Least loaded picks somebody carrying the fewest live plans.
 --
@@ -143,6 +178,75 @@ BEGIN
   WHERE student_id = '50000000-0000-4000-8000-00000000000a';
   IF n <> 1 THEN RAISE EXCEPTION 'the student sees % of their own plans, expected 1', n; END IF;
   RAISE NOTICE 'ok    the student still sees their own plan';
+END $$;
+
+-- 7. The assigned counsellor sees every child record, not just the shell.
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"c0000000-0000-4000-8000-00000000000a","role":"authenticated"}';
+DO $$
+DECLARE n int;
+BEGIN
+  SELECT count(*) INTO n FROM public.college_list_items    WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % college_list_items, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.essays                WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % essays, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.application_tasks     WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % application_tasks, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.recommendations       WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % recommendations, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.student_academics     WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % student_academics, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.application_requirements WHERE college_list_item_id='60000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'assigned counsellor sees % application_requirements, expected >=1', n; END IF;
+  RAISE NOTICE 'ok    assigned counsellor sees every child record';
+END $$;
+
+-- 8. The unassigned counsellor sees none of them, and cannot write. This is the
+--    hole the migration closes: is_counselor() alone let any counsellor read
+--    and rewrite every student's essays, list, tasks, academics and more.
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"c0000000-0000-4000-8000-00000000000b","role":"authenticated"}';
+DO $$
+DECLARE n int;
+BEGIN
+  SELECT count(*) INTO n FROM public.college_list_items    WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % college_list_items, expected 0', n; END IF;
+  SELECT count(*) INTO n FROM public.essays                WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % essays, expected 0', n; END IF;
+  SELECT count(*) INTO n FROM public.application_tasks     WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % application_tasks, expected 0', n; END IF;
+  SELECT count(*) INTO n FROM public.recommendations       WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % recommendations, expected 0', n; END IF;
+  SELECT count(*) INTO n FROM public.student_academics     WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % student_academics, expected 0', n; END IF;
+  SELECT count(*) INTO n FROM public.application_requirements WHERE college_list_item_id='60000000-0000-4000-8000-00000000000a';
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor sees % application_requirements, expected 0', n; END IF;
+
+  -- Writes are refused too, not just reads.
+  UPDATE public.essays SET title='hijacked' WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor updated % essays, expected 0', n; END IF;
+  UPDATE public.college_list_items SET school_name='hijacked' WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'unassigned counsellor updated % college_list_items, expected 0', n; END IF;
+
+  RAISE NOTICE 'ok    unassigned counsellor sees and writes nothing on the child tables';
+END $$;
+
+-- 9. The student still owns their own records, counsellor scoping or not.
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"50000000-0000-4000-8000-00000000000a","role":"authenticated"}';
+DO $$
+DECLARE n int;
+BEGIN
+  SELECT count(*) INTO n FROM public.essays            WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'the student sees % of their own essays, expected >=1', n; END IF;
+  SELECT count(*) INTO n FROM public.college_list_items WHERE student_id='50000000-0000-4000-8000-00000000000a';
+  IF n < 1 THEN RAISE EXCEPTION 'the student sees % of their own college_list_items, expected >=1', n; END IF;
+  RAISE NOTICE 'ok    the student still sees their own records';
 END $$;
 
 RESET ROLE;

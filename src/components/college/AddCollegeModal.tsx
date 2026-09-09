@@ -27,8 +27,6 @@ import { SchoolTier } from "@/services/collegeService";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
-import { Segmented } from "@/components/ui/Segmented";
-import { Stepper } from "@/components/ui/Stepper";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
 
 export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
@@ -66,7 +64,12 @@ const FIT_TO_TIER: Record<Fit, SchoolTier> = {
   unknown: "target",
 };
 
-const STEPS = ["College", "Deadline", "Your take"];
+// What each step is for, as a phrase rather than a list of its fields.
+// "Deadline" named one of five things on the middle step, and joining them with
+// ampersands would only have named three of five in more words. A noun phrase
+// covers all five: "Applying here" read as a half-asked question, so the middle
+// step is a thing rather than an action.
+const STEPS = ["College", "Your application", "Why this college"];
 
 const input =
   "h-11 w-full rounded-xl border border-[#e9edef] bg-white px-3 text-[14px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white";
@@ -173,6 +176,11 @@ export function AddCollegeModal({
   const choose = (c: College) => {
     setPicked(c);
     setTier(FIT_TO_TIER[computeFit(c, student)]);
+    // Prefilled from the catalogue, which carries every school's homepage.
+    // Scorecard has no admissions-page field, so this is the front door rather
+    // than the right page: a head start to correct, not an answer. Only when
+    // the field is untouched, so it never overwrites something typed.
+    setAppUrl((current) => current.trim() || c.website || "");
     setStep(1);
   };
 
@@ -203,6 +211,10 @@ export function AddCollegeModal({
           // Content sets the height. A floor only moved the void from the
           // middle of the form to the foot of it.
           "max-h-[88vh]",
+          // Eased, because the panel arrives at step two and the dialog has to
+          // grow to hold it. Instant, that read as the whole thing jumping from
+          // portrait to landscape.
+          "transition-[max-width] duration-300 ease-out motion-reduce:transition-none",
           picked && step > 0 ? "max-w-lg md:max-w-3xl" : "max-w-lg",
           "flex-col md:flex-row"
         )}
@@ -214,29 +226,32 @@ export function AddCollegeModal({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="border-b border-[#e9edef] px-5 pb-4 pt-4 dark:border-[#2a3942] md:px-6 md:pb-5 md:pt-5">
-          {/* One row. On a phone it carries the college name, because the
-              side panel that would otherwise say it is not there; from md the
-              panel has the name and this row gives the space to the stepper.
-              The close button stays at the end of it either way. */}
+          {/* One row, and the heading says different things at different
+              widths. On a phone it carries the college name, because the side
+              panel that would otherwise say it is not there. From md the panel
+              has the name already, so the heading says which step you are on
+              instead: without it this row is a close button and nothing else.
+
+              There is no step rail. Three steps with Prev and Next either side
+              of them do not need a diagram, and it was the widest thing in a
+              header that has a college name to fit. */}
           <div className="flex items-center gap-6">
-            <div className={cn("min-w-0 flex-1", step > 0 && picked && "md:hidden")}>
+            <div className="min-w-0 flex-1">
               <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
-                {step === 0 ? "Add a college" : name}
+                <span className={cn(step > 0 && picked && "md:hidden")}>
+                  {step === 0 ? "Add a college" : name}
+                </span>
+                {step > 0 && picked && (
+                  <span className="hidden md:inline">{STEPS[step]}</span>
+                )}
               </h2>
               {step > 0 && picked && (
-                <p className="truncate text-[12px] text-[#717182]">
+                <p className="truncate text-[12px] text-[#717182] md:hidden">
                   {[picked.city, picked.state].filter(Boolean).join(", ")}
                   {picked.control && ` - ${CONTROL_LABEL[picked.control]}`}
                 </p>
               )}
             </div>
-
-            <Stepper
-              className="hidden min-w-0 flex-1 md:flex"
-              steps={STEPS}
-              current={step}
-              onStepClick={(i) => name && setStep(i)}
-            />
 
             <button
               type="button"
@@ -247,15 +262,6 @@ export function AddCollegeModal({
               <X size={18} />
             </button>
           </div>
-
-          {/* The phone keeps its stepper on its own line, where a three step
-              rail beside a title would have nowhere to go. */}
-          <Stepper
-            className="mt-4 md:hidden"
-            steps={STEPS}
-            current={step}
-            onStepClick={(i) => name && setStep(i)}
-          />
         </header>
 
         {/* Facts we already hold, shown as context rather than announced. */}
@@ -277,7 +283,7 @@ export function AddCollegeModal({
               hint="Middle 50 percent of enrolled students who submitted a score. Because many now apply test-optional, this skews higher than the typical admitted student."
             />
             <Stat
-              k="Grad"
+              k="Grad rate"
               v={picked.gradRate === null ? "-" : `${picked.gradRate}%`}
               hint="Share of students who finish a bachelor's degree here within six years."
             />
@@ -356,8 +362,10 @@ export function AddCollegeModal({
 
           {step === 1 && (
             <div className="space-y-5">
-              {/* Round and deadline are one decision, so they share a row. */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Three decisions on one row, then the page you read them on
+                  with the essay count beside it. Two rows rather than three:
+                  the form is short enough that a third was mostly gap. */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <FieldLabel hint="Early rounds close sooner. Early Decision is binding: if admitted you must enrol. Pick Not decided if you are still weighing it.">
                     Round
@@ -371,6 +379,18 @@ export function AddCollegeModal({
                   />
                 </div>
                 <div>
+                  <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">
+                    Your odds
+                  </FieldLabel>
+                  <Dropdown
+                    value={tier}
+                    onChange={(v) => setTier(v as SchoolTier)}
+                    options={TIERS}
+                    buttonClassName="h-11 rounded-xl text-[14px] font-normal"
+                    ariaLabel="Reach, target or safety"
+                  />
+                </div>
+                <div>
                   <FieldLabel hint="The date the application is due, taken from the college's own admissions page. Deadlines are in no federal dataset, so this is the one date only you can supply.">
                     Deadline
                   </FieldLabel>
@@ -381,6 +401,9 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
+              {/* The URL takes what is left rather than half: it is the
+                  longest value on the form and the counter beside it only needs
+                  room for two digits. */}
               <div className="grid grid-cols-[1fr_auto] gap-3">
                 <div>
                   <FieldLabel
@@ -410,25 +433,20 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
+
+
+
+
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-5">
               <div>
-                <FieldLabel hint="Reach, target or safety. We suggest one from your scores against admitted students. Your counselor makes the final call.">Your odds</FieldLabel>
-                <Segmented
-                  value={tier}
-                  onChange={setTier}
-                  options={TIERS}
-                  ariaLabel="Reach, target or safety"
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor="why" hint="Your own reason for wanting it. This becomes the raw material for the supplemental essay, so write it in your words.">Why this college</FieldLabel>
                 <textarea
                   id="why"
-                  rows={5}
+                  aria-label="Why this college"
+                  rows={6}
                   value={why}
                   onChange={(e) => setWhy(e.target.value)}
                   placeholder="What draws you to it?"
@@ -610,14 +628,14 @@ function CollegePanel({ college }: { college: College }) {
     },
     {
       icon: <GraduationCap size={15} />,
-      label: "Grad",
+      label: "Grad rate",
       value: college.gradRate === null ? "-" : `${college.gradRate}%`,
       hint: "Share of students who finish a bachelor's degree here within six years.",
     },
   ];
 
   return (
-    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden border-r border-[#e9edef] bg-[#f7fafb] md:flex dark:border-[#2a3942] dark:bg-[#0f171c]">
+    <aside className="relative hidden w-[250px] shrink-0 flex-col overflow-hidden bg-primary duration-300 animate-in fade-in slide-in-from-left-4 md:flex dark:bg-[#0e161a]">
       {img && (
         <>
           <img
@@ -637,46 +655,77 @@ function CollegePanel({ college }: { college: College }) {
             className="absolute inset-0 dark:hidden"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #f7fafb 0%, #f7fafb 70%, rgba(247,250,251,0.9) 82%, rgba(247,250,251,0.6) 92%, rgba(247,250,251,0.45) 100%)",
+                "linear-gradient(to top, #1099A1 0%, #1099A1 62%, rgba(16,153,161,0.88) 78%, rgba(16,153,161,0.6) 90%, rgba(16,153,161,0.4) 100%)",
             }}
           />
           <div
             className="absolute inset-0 hidden dark:block"
             style={{
               backgroundImage:
-                "linear-gradient(to bottom, #0f171c 0%, #0f171c 70%, rgba(15,23,28,0.9) 82%, rgba(15,23,28,0.6) 92%, rgba(15,23,28,0.45) 100%)",
+                "linear-gradient(to top, #0e161a 0%, #0e161a 55%, rgba(14,22,26,0.97) 70%, rgba(14,22,26,0.94) 85%, rgba(14,22,26,0.9) 100%)",
+            }}
+          />
+          {/* A teal wash over the part of the photograph that still shows,
+              deepening towards the foot so the campus resolves into the brand
+              rather than stopping at an edge.
+
+              Stacked on top of the surface gradient rather than replacing it:
+              that one is what keeps the name and the numbers legible, and a
+              tint alone would leave them sitting on a photograph. Light mode
+              only, where the panel is pale enough for a colour to read as a
+              tint; over the dark surface it would only muddy it. */}
+          <div
+            className="absolute inset-0 dark:opacity-35"
+            style={{
+              backgroundImage:
+                "linear-gradient(to top, rgba(68, 175, 182, 0) 0%, rgba(68, 175, 182, 0.08) 20%, rgba(68, 175, 182, 0.18) 40%, rgba(68, 175, 182, 0.3) 60%, rgba(68, 175, 182, 0.4) 80%, rgba(68, 175, 182, 0.5) 100%)",
             }}
           />
         </>
       )}
 
-      <div className="relative z-10 min-h-0 flex-1 overflow-y-auto p-5">
-        <h3 className="text-[17px] font-bold leading-tight text-[#111] dark:text-white">
+      {/* At the head, where the ground is thinnest and the campus shows. About
+          half of schools have one; without it the panel simply opens on the
+          photograph. */}
+      <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
+        <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
-        <p className="mt-1 text-[12.5px] text-[#717182]">
+        <p className="mt-1 text-[12.5px] text-white/70">
           {[college.city, college.state].filter(Boolean).join(", ")}
           {college.control && ` - ${CONTROL_LABEL[college.control]}`}
         </p>
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-2">
           {rows.map((r) => (
             <div
               key={r.label}
-              className="flex items-center justify-between gap-2 rounded-xl border border-[#e9edef] bg-white px-3 py-2.5 dark:border-[#2a3942] dark:bg-[#111b21]"
+              // Outline only. With a wash behind them a filled card is a second
+              // surface competing with the photograph; a rule is enough to say
+              // these four things belong together.
+              className="flex items-center justify-between gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2.5"
             >
-              <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
-                <span className="text-primary">{r.icon}</span>
-                <span className="truncate">{r.label}</span>
-                <InfoHint text={r.hint} size={11} />
+              {/* Label at one end, figure at the other: that gap is what lets
+                  the eye run down the column of values without reading. */}
+              <span className="min-w-0 truncate text-[12.5px] text-white/75">
+                {r.label}
               </span>
-              <span className="shrink-0 text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+              <span className="shrink-0 text-[14px] font-medium tabular-nums text-white">
                 {r.value}
               </span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Foot of the panel, over the part of the photograph that shows. Small
+          and low contrast on purpose: it is an attribution, not a caption, and
+          the licence asks for it to be present rather than prominent. */}
+      {img && college.credit && (
+        <p className="relative z-10 line-clamp-2 px-5 pb-3 text-[10px] leading-snug text-white/45">
+          Photo: {college.credit}
+        </p>
+      )}
     </aside>
   );
 }

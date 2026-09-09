@@ -1,40 +1,125 @@
 import type { NotificationTemplate } from "../types";
 
-/** A course was paid for and the student is on it. */
+/**
+ * A course was paid for and the student is on it.
+ *
+ * Three people are told, and they are told different things: the student that
+ * their dashboard has a new course, the parent that a payment went through,
+ * the tutor that somebody has joined. The audience is a variable rather than
+ * three templates because it is one event, and because the facts are the same
+ * facts however they are worded. Splitting it was how fulfil ended up writing
+ * five notifications by hand with no template between them.
+ */
 export const enrolment: NotificationTemplate<{
+  audience: "student" | "parent" | "tutor";
   studentName: string;
   courseTitle: string;
+  courseId?: string;
   tutorName: string | null;
   sessionCount: number;
 }> = {
   type: "enrolment",
   label: "Course enrolment",
-  notification: (v) => ({
-    title: "You are on a new course",
-    message: v.tutorName
-      ? `${v.courseTitle} with ${v.tutorName}. ${v.sessionCount} ${v.sessionCount === 1 ? "session" : "sessions"} booked.`
-      : `${v.courseTitle}. ${v.sessionCount} ${v.sessionCount === 1 ? "session" : "sessions"} booked.`,
-    link: "/student/my-learning",
-  }),
-  email: (v) => ({
-    subject: `${v.studentName} is enrolled on ${v.courseTitle}`,
-    heading: "Enrolment confirmed",
-    intro:
-      `${v.studentName} is on ${v.courseTitle}${v.tutorName ? ` with ${v.tutorName}` : ""}. ` +
-      `${v.sessionCount === 1 ? "One session is" : `${v.sessionCount} sessions are`} in the ` +
-      `calendar, each with a meeting link that appears on the session a few minutes before ` +
-      `it starts. Any work set on this course arrives in My Learning.`,
-    facts: [
+  notification: (v) => {
+    const sessions = `${v.sessionCount} ${v.sessionCount === 1 ? "session" : "sessions"} booked`;
+    const noTimes = "Times to be arranged";
+    const line = v.sessionCount > 0 ? sessions : noTimes;
+
+    if (v.audience === "parent") {
+      return {
+        title: "Payment received",
+        message: `${v.studentName} is on ${v.courseTitle}. ${line}.`,
+        link: "/parent/courses",
+      };
+    }
+    if (v.audience === "tutor") {
+      return {
+        title: "A new student",
+        message: `${v.studentName} joined ${v.courseTitle}. ${line}.`,
+        link: v.courseId ? `/tutor/courses/${v.courseId}` : "/tutor/courses",
+      };
+    }
+    return {
+      title: "You are on a new course",
+      message: v.tutorName
+        ? `${v.courseTitle} with ${v.tutorName}. ${line}.`
+        : `${v.courseTitle}. ${line}.`,
+      link: "/student/my-learning",
+    };
+  },
+  email: (v) => {
+    const facts = [
       { label: "Course", value: v.courseTitle },
       { label: "Student", value: v.studentName },
       ...(v.tutorName ? [{ label: "Tutor", value: v.tutorName }] : []),
-      { label: "Sessions booked", value: String(v.sessionCount) },
-    ],
-    cta: { label: "See the sessions", url: "/student/my-learning" },
-    footer:
-      "To move an hour, open the session and reschedule. Doing it in the app tells the tutor.",
-  }),
+      {
+        label: "Sessions booked",
+        value: v.sessionCount > 0 ? String(v.sessionCount) : "To be arranged",
+      },
+    ];
+
+    if (v.audience === "parent") {
+      return {
+        subject: `${v.studentName} is enrolled on ${v.courseTitle}`,
+        heading: "The payment went through",
+        intro:
+          `${v.studentName} is enrolled on ${v.courseTitle}` +
+          (v.tutorName ? ` with ${v.tutorName}` : "") +
+          `. ` +
+          (v.sessionCount > 0
+            ? `${v.sessionCount === 1 ? "One session is" : `${v.sessionCount} sessions are`} in ` +
+              `the calendar. `
+            : `No times are booked yet. `) +
+          `The receipt is on your billing page, and you can follow attendance and any work ` +
+          `set on this course from your own account without asking them how it went.`,
+        facts,
+        cta: { label: "See the receipt", url: "/parent/billing" },
+        footer:
+          "Cancelling an hour more than twenty four hours ahead is free. Inside that window it is charged.",
+      };
+    }
+
+    if (v.audience === "tutor") {
+      return {
+        subject: `${v.studentName} joined ${v.courseTitle}`,
+        heading: "You have a new student",
+        intro:
+          `${v.studentName} has joined ${v.courseTitle}. ` +
+          (v.sessionCount > 0
+            ? `${v.sessionCount === 1 ? "One hour is" : `${v.sessionCount} hours are`} already ` +
+              `in your calendar, each with a meeting link that appears on the session shortly ` +
+              `before it starts.`
+            : `No hours are booked yet, which usually means the times you have published do ` +
+              `not suit them. Opening more is the quickest fix.`),
+        facts,
+        cta: {
+          label: "Open the course",
+          url: v.courseId ? `/tutor/courses/${v.courseId}` : "/tutor/courses",
+        },
+        footer: "You are paid after a session is delivered, not when it is booked.",
+      };
+    }
+
+    return {
+      subject: `You are enrolled on ${v.courseTitle}`,
+      heading: "Enrolment confirmed",
+      intro:
+        `You are on ${v.courseTitle}${v.tutorName ? ` with ${v.tutorName}` : ""}, ` +
+        `${v.studentName}. ` +
+        (v.sessionCount > 0
+          ? `${v.sessionCount === 1 ? "One session is" : `${v.sessionCount} sessions are`} in ` +
+            `the calendar, each with a meeting link that appears on the session a few minutes ` +
+            `before it starts. `
+          : `No times are booked yet. Pick them from the course and they land in your calendar. `) +
+        `Any work set on this course arrives in My Learning.`,
+      facts,
+      cta: { label: "See the sessions", url: "/student/my-learning" },
+      footer:
+        "To move an hour, open the session and reschedule. Doing it in the app tells the tutor.",
+    };
+  },
   sample: {
+    audience: "student",
     studentName: "Amen Worku",
     courseTitle: "Advanced Mathematics, University Entrance Prep",
     tutorName: "Bethlehem Alemu",
@@ -204,6 +289,11 @@ export const sessionMoved: NotificationTemplate<{
  * held. Both are said plainly rather than left to the policy page.
  */
 export const sessionCancelled: NotificationTemplate<{
+  /**
+   * Whoever did not press the button. The link differs, and a tutor sent to
+   * /student/sessions lands on a page they have no route to.
+   */
+  audience: "student" | "tutor";
   subject: string;
   when: string;
   cancelledBy: string;
@@ -219,7 +309,7 @@ export const sessionCancelled: NotificationTemplate<{
       `${v.subject} on ${v.when} is off` +
       (v.reason ? `: ${v.reason}` : "") +
       (v.refund ? `. ${v.refund} refunded` : ""),
-    link: "/student/sessions",
+    link: v.audience === "tutor" ? "/tutor/sessions" : "/student/sessions",
   }),
   email: (v) => ({
     subject: `${v.subject} on ${v.when} is cancelled`,
@@ -238,10 +328,17 @@ export const sessionCancelled: NotificationTemplate<{
       ...(v.refund ? [{ label: "Refunded", value: v.refund }] : []),
       ...(v.reason ? [{ label: "Reason", value: v.reason }] : []),
     ],
-    cta: { label: "See your sessions", url: "/student/sessions" },
-    footer: null,
+    cta: {
+      label: "See your sessions",
+      url: v.audience === "tutor" ? "/tutor/sessions" : "/student/sessions",
+    },
+    footer:
+      v.audience === "tutor"
+        ? "The hour is free again as soon as this lands, so somebody else can take it."
+        : null,
   }),
   sample: {
+    audience: "student",
     subject: "Mathematics",
     when: "Thursday 14 August, 4pm",
     cancelledBy: "Bethlehem Alemu",

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getStripe } from '../_utils/billing.js';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
+import { notify } from '../_utils/notify.js';
 
 // ============================================================
 // An admin settling what somebody is owed, by hand.
@@ -184,13 +185,19 @@ async function tellThem(
   currency: string,
   reference: string
 ): Promise<void> {
-  const { data: payee } = await db.from('profiles').select('role').eq('id', payeeId).single();
-  const { error } = await db.from('notifications').insert({
-    user_id: payeeId,
-    type: 'payout',
-    title: 'You have been paid',
-    message: `${(amountCents / 100).toFixed(2)} ${currency.toUpperCase()} is on its way. Reference ${reference}.`,
-    link: payee?.role === 'counselor' ? '/counselor/earnings' : '/tutor/earnings',
+  const { data: payee } = await db
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', payeeId)
+    .single();
+
+  // Through the payout template, which puts the reference on its own line as a
+  // fact. Buried in a sentence it was the one thing somebody has to copy off
+  // the notification and the hardest thing on it to select.
+  await notify(db, payeeId, 'payout', {
+    audience: payee?.role === 'counselor' ? 'counselor' : 'tutor',
+    tutorName: payee?.full_name ?? '',
+    amount: `${(amountCents / 100).toFixed(2)} ${currency.toUpperCase()}`,
+    reference,
   });
-  if (error) console.error('connect-transfer: could not notify the payee:', error.message);
 }

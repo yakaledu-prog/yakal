@@ -31,12 +31,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const courseId: string | null = req.body?.courseId ?? null;
     if (!courseId) return res.status(400).json({ error: 'courseId is required' });
 
-    const [{ data: profile }, { data: course }] = await Promise.all([
+    // Any tutor on the course counts as staff, not just the one who used to be
+    // in courses.tutor_id. A course carries a roster now, and a tutor teaching
+    // it who was not the column's value could not see its Classroom at all.
+    const [{ data: profile }, { data: course }, { count: onRoster }] = await Promise.all([
       db.from('profiles').select('role').eq('id', user.id).maybeSingle(),
-      db.from('courses').select('tutor_id, google_classroom_url').eq('id', courseId).maybeSingle(),
+      db.from('courses').select('google_classroom_url').eq('id', courseId).maybeSingle(),
+      db
+        .from('course_tutors')
+        .select('tutor_id', { count: 'exact', head: true })
+        .eq('course_id', courseId)
+        .eq('tutor_id', user.id),
     ]);
 
-    const isStaff = profile?.role === 'admin' || (!!course?.tutor_id && course.tutor_id === user.id);
+    const isStaff = profile?.role === 'admin' || (onRoster ?? 0) > 0;
     if (!isStaff) return res.status(403).json({ error: 'Not your course' });
 
     const classUrl = course?.google_classroom_url ?? null;

@@ -5,7 +5,7 @@ import helloImg from "@/assets/images/hello.png";
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { StreamingText, TypingDots, grow, linkify } from "@/components/assistant/chatParts";
+import { StreamingText, TypingDots, grow, formatMessage } from "@/components/assistant/chatParts";
 import {
   speechSupported,
   takeSentences,
@@ -474,7 +474,7 @@ export function SupportDrawer({
                     key={m.id}
                     className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-foreground"
                   >
-                    {linkify(m.content)}
+                    {formatMessage(m.content)}
                   </p>
                 )
               )}
@@ -730,7 +730,7 @@ function VoicePane({
           {question && <p className="text-[13.5px] leading-relaxed text-primary">{question}</p>}
           {interim && <p className="text-[13.5px] leading-relaxed text-primary/50">{interim}</p>}
           {answer && (
-            <p className="text-[13.5px] leading-relaxed text-foreground">{linkify(answer)}</p>
+            <p className="text-[13.5px] leading-relaxed text-foreground">{formatMessage(answer)}</p>
           )}
         </div>
 

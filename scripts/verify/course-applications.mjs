@@ -5,9 +5,13 @@ const psql = (sql) =>
   execSync(`PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAq -c "${sql}"`).toString().trim();
 
 psql('delete from course_applications;');
-// Only Chemistry is open, so the suite is not at the mercy of card order.
-psql("update courses set tutor_id = (select id from profiles where email='tutor@yakal.com') where tutor_id is null;");
-psql("update courses set tutor_id = null where title like 'Chemistry%';");
+// Chemistry is the only course this tutor is not already on, so the suite is
+// not at the mercy of card order. Everything else gets them on its roster.
+//
+// "Open" means they are not on it, not that nobody is: a course can carry
+// several tutors, and the catalog used to hide any course with one.
+psql("insert into course_tutors (course_id, tutor_id) select c.id, p.id from courses c cross join profiles p where p.email='tutor@yakal.com' and c.title not like 'Chemistry%' on conflict do nothing;");
+psql("delete from course_tutors ct using courses c where ct.course_id = c.id and c.title like 'Chemistry%';");
 
 const BASE = process.env.BASE || 'http://localhost:5173';
 const S = '/tmp/claude-1000/-home-binyam-products-yakal/470a1a43-cc42-4652-988d-ac4539a37912/scratchpad/shots';
@@ -51,19 +55,18 @@ await tutor.screenshot({ path: `${S}/tutor-open-courses.png` });
 const card = tutor.locator('article').filter({ hasText: 'Chemistry, Grade 11 Foundations' }).first();
 await card.getByRole('button', { name: 'Apply', exact: true }).click();
 await tutor.waitForTimeout(700);
-// The CV from onboarding is what gets sent, so the dialog has to show it.
-pass('the application shows the CV on file', await tutor.getByText(/No CV on file|\.pdf|\.docx?/i).first().isVisible().catch(() => false));
+// The resume from onboarding is what gets sent, so the dialog has to show it.
+pass('the application shows the resume on file', await tutor.getByText(/Upload your resume|\.pdf|\.docx?/i).first().isVisible().catch(() => false));
 // Opening the menu here would dismiss the dialog, so this only checks the
 // affordance is on the card. The menu's contents are covered separately.
-pass('the CV card offers its options', await tutor.getByRole('button', { name: /CV options|Upload your CV/i }).first().isVisible());
+pass('the resume card offers its options', await tutor.getByRole('button', { name: /Resume options|Upload your resume/i }).first().isVisible());
 await tutor.getByRole('button', { name: /Send application/i }).click();
 await tutor.waitForTimeout(2500);
 pass('the application reaches the database', psql("select count(*) from course_applications where status='pending';") === '1');
 pass('admins are notified', Number(psql("select count(*) from notifications where type='course_application';")) > 0);
 
-await tutor.getByRole('button', { name: /Filter courses/i }).click();
-await tutor.waitForTimeout(400);
-await tutor.getByRole('option', { name: /^Applied/ }).click();
+// The filter is a tab strip on the banner's bottom edge, not a menu.
+await tutor.getByRole('tab', { name: /^Applied \(/ }).click();
 await tutor.waitForTimeout(1500);
 const appliedText = await tutor.locator('body').innerText();
 pass('it appears under Applied', /Chemistry, Grade 11 Foundations/.test(appliedText));
@@ -77,9 +80,7 @@ await tutor.getByRole('button', { name: /Cancel/i }).first().click();
 await tutor.waitForTimeout(600);
 pass('cancelling keeps the application', psql("select count(*) from course_applications where status='pending';") === '1');
 
-await tutor.getByRole('button', { name: /Filter courses/i }).click();
-await tutor.waitForTimeout(400);
-await tutor.getByRole('option', { name: /^Applied/ }).click();
+await tutor.getByRole('tab', { name: /^Applied \(/ }).click();
 await tutor.waitForTimeout(1500);
 // It stays put and shows its state. Vanishing looked like a failed click.
 pass('an applied course stays and says so', /Applied/.test(await tutor.locator('body').innerText()));
@@ -97,20 +98,29 @@ try {
 pass('a tutor cannot accept their own application', selfAccept === '0', `accepted=${selfAccept}`);
 
 // ---------- the admin decides ----------
+// A resume on the applicant, so the admin's card has one to offer. The path
+// only has to exist; it is signed on click, which this does not do.
+psql("update profiles set resume_url = '39b5cc44-5ce1-4822-9414-01c27a9bb940/cv_1.pdf' where email='tutor@yakal.com';");
+
 const admin = await signIn('admin@yakal.com');
 const courseId = psql("select id from courses where title like 'Chemistry%' limit 1;");
 await admin.goto(`${BASE}/admin/courses/${courseId}`, { waitUntil: 'domcontentloaded' });
 await admin.waitForTimeout(3500);
 const adminText = await admin.locator('body').innerText();
 pass('the applicant is listed for the admin', /Bethlehem Alemu/.test(adminText));
-pass('the applicant CV is offered to the admin', /View CV|No CV/i.test(adminText));
+// Only when there is one to offer: ViewCvButton renders nothing without a
+// path, so the row above puts one on the tutor. The assertion used to look for
+// "View CV" or "No CV", and the component has offered neither since it was
+// renamed and its empty state removed, so it could not pass either way.
+pass('the applicant resume is offered to the admin', /View resume/i.test(adminText));
 pass('no invented tutors remain', !/Sarah|4\.9|Verified Pro/i.test(adminText));
-pass('the course reads as unassigned', /No tutor assigned yet/i.test(adminText));
+pass('the course reads as unassigned', /Nobody is teaching this course yet|applied/i.test(adminText));
 await admin.screenshot({ path: `${S}/admin-course-applicants.png`, fullPage: true });
 
-await admin.getByRole('button', { name: /Accept and assign/i }).click();
+await admin.getByRole('button', { name: /Accept and add/i }).click();
 await admin.waitForTimeout(3000);
-pass('the tutor is assigned to the course', psql(`select tutor_id is not null from courses where id='${courseId}';`) === 't');
+pass('the tutor joins the course roster',
+  psql(`select count(*) from course_tutors where course_id='${courseId}';`) === '1');
 pass('the application is marked accepted', psql("select status from course_applications limit 1;") === 'accepted');
 pass('the tutor is told', Number(psql("select count(*) from notifications where type='course_application_decided';")) > 0);
 

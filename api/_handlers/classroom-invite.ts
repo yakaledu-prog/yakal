@@ -54,12 +54,15 @@ async function mayInvite(
     .maybeSingle();
   if (profile?.role === 'admin') return true;
 
-  const { data: course } = await db
-    .from('courses')
-    .select('tutor_id')
-    .eq('id', courseId)
-    .maybeSingle();
-  return !!course?.tutor_id && course.tutor_id === userId;
+  // Any tutor on the course. This read courses.tutor_id, which held one, so a
+  // course with a roster let one of its tutors invite students and refused the
+  // rest.
+  const { count } = await db
+    .from('course_tutors')
+    .select('tutor_id', { count: 'exact', head: true })
+    .eq('course_id', courseId)
+    .eq('tutor_id', userId);
+  return (count ?? 0) > 0;
 }
 
 /**

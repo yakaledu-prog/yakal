@@ -4,11 +4,12 @@ import { toast } from "sonner";
 import { Loader2, X, CreditCard } from "lucide-react";
 import { NotificationsScreen } from "@/components/shared/NotificationsScreen";
 import {
-  sendNotification,
+  sendFromTemplate,
   setNotificationArchived,
   type AppNotification,
 } from "@/services/notificationService";
-import type { ServiceName } from "@/services/parentService";
+import { useAuth } from "@/contexts/AuthContext";
+import { SERVICE_LABEL, type ServiceName } from "@/services/parentService";
 
 // ============================================================
 // The parent's inbox.
@@ -20,11 +21,6 @@ import type { ServiceName } from "@/services/parentService";
 // sent to buy the service for that child. There is no "grant" that hands out
 // something nobody paid for. Declining just tells the child.
 // ============================================================
-
-const SERVICE_LABEL: Record<string, string> = {
-  admissions: "College admissions",
-  tutoring: "Tutoring",
-};
 
 // Where each service is purchased for a specific child.
 const BUY_HREF: Record<ServiceName, (childId: string) => string> = {
@@ -54,6 +50,7 @@ function UnlockRequest({
   done: () => Promise<void>;
 }) {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [busy, setBusy] = useState(false);
   const label = SERVICE_LABEL[request.service] ?? request.service;
 
@@ -66,11 +63,10 @@ function UnlockRequest({
   async function decline() {
     setBusy(true);
     try {
-      await sendNotification({
-        userId: request.studentId,
-        title: "Request not approved",
-        message: `Your request for ${label} was not approved.`,
-        link: null,
+      await sendFromTemplate(request.studentId, "unlockRequestDeclined", {
+        parentName: profile?.full_name ?? "Your parent",
+        service: label,
+        featureName: (notification.vars?.featureName as string) ?? label,
       });
       // Archiving it keeps a decided request out of the inbox.
       await setNotificationArchived(notification.id, true);

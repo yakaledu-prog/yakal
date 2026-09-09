@@ -164,18 +164,18 @@ export async function getConversations(userId: string): Promise<ChatConversation
   });
 }
 
-/** Everyone the user could start a conversation with. */
-export async function getContacts(userId: string): Promise<ContactProfile[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, avatar_url, last_seen_at")
-    .neq("id", userId)
-    .order("full_name");
+/** Everyone the signed-in user could start a conversation with. */
+export async function getContacts(): Promise<ContactProfile[]> {
+  // Scoped to the caller's real relationships by messageable_contacts() in the
+  // database, rather than reading the whole profiles table and filtering in the
+  // browser, which offered every account on the platform as a contact.
+  const { data, error } = await supabase.rpc("messageable_contacts");
   if (error) throw error;
 
-  return (data ?? [])
-    .filter((p: ProfileRow) => p.full_name)
-    .map((p: ProfileRow) => {
+  return ((data ?? []) as ProfileRow[])
+    .filter((p) => p.full_name)
+    .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""))
+    .map((p) => {
       const c = toContact(p, p.id);
       return { id: c.id, name: c.name, role: c.role, avatarUrl: c.avatarUrl };
     });

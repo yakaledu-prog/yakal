@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient, requireUser, emailBaseUrl } from '../_utils/supabase.js';
 import { sendEmail, layout } from '../_utils/email.js';
+import { pushToUser } from '../_utils/push.js';
 import { TEMPLATES } from '../../src/lib/notifications/templates/index.js';
 
 /**
@@ -61,6 +62,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.warn(`notify-email refused: no recent ${String(template)} for ${userId} (caller ${caller.id})`);
     return res.status(403).json({ error: 'No matching notification to send.' });
   }
+  // The push, alongside the email. Both are copies of a row that already
+  // exists, both need credentials the browser does not have, and both are
+  // authorised by the check above, so asking for them separately would be a
+  // second round trip proving the same thing twice.
+  //
+  // Before the address lookup, not after: somebody with no email on file
+  // returns early below, and a student who signed up through an invite often
+  // is exactly that person. Their phone should still buzz.
+  //
+  // The action is still called "email" because that is what every caller
+  // names, and renaming it would break them all for a word.
+  const rendered = (entry.notification as (v: unknown) => {
+    title: string;
+    message: string;
+    link: string | null;
+  })(vars ?? {});
+  void pushToUser(db, userId, {
+    title: rendered.title,
+    body: rendered.message,
+    url: rendered.link,
+    // No tag, for the reason in _utils/notify.ts: keyed on the template it
+    // collapsed two different events into one notification.
+  });
+
   const { data: person } = await db
     .from('profiles')
     .select('email, full_name')
@@ -69,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Not an error worth failing on. The notification is the record; this is the
   // copy, and somebody without an address on file still got the record.
-  if (!person?.email) return res.status(200).json({ sent: false, reason: 'no address on file' });
+  if (!person?.email) return res.status(200).json({ sent: false, pushed: true, reason: 'no address on file' });
 
   try {
     const email = (entry.email as (v: unknown) => {

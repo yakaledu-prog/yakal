@@ -175,8 +175,8 @@ export function ParentProfile() {
       {/* Edit Profile Modal */}
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942]">
+          <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942] shrink-0">
               <h2 className="text-[20px] font-bold text-[#111] dark:text-white">Edit Profile</h2>
               <button
                 onClick={() => setEditOpen(false)}
@@ -186,7 +186,7 @@ export function ParentProfile() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
 
               {/* Avatar Upload in Modal */}
               <div className="flex flex-col items-center gap-3">
@@ -225,7 +225,7 @@ export function ParentProfile() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] shrink-0">
               <Button
                 variant="outline"
                 onClick={() => setEditOpen(false)}

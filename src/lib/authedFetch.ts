@@ -21,6 +21,25 @@ import { supabase } from "@/lib/supabase";
 const REFRESH_MARGIN = 60;
 
 /**
+ * Fired when the session is gone and refreshing it did not help.
+ *
+ * A dead end otherwise: the caller rendered "Your session has expired. Please
+ * sign in again." inside whatever it was doing, over a Confirm button that
+ * could never work, and left the person to work out that they had to reload
+ * and sign in. Nothing on the page offered to do it.
+ *
+ * An event rather than a redirect from here, because this is a lib with no
+ * router: SessionExpiry listens and does it in React, which is also what
+ * keeps the "come back to where you were" part honest.
+ */
+export const SESSION_EXPIRED_EVENT = "yakal:session-expired";
+
+function announceExpiry(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+}
+
+/**
  * Exported for the streaming callers, which cannot use authedPost: that reads
  * the whole body before returning, so a token would not surface until the
  * model had finished writing. They repeat the same one-retry dance instead.
@@ -63,7 +82,10 @@ export async function authedPost<T = any>(
     });
 
   let token = await accessToken();
-  if (!token) return { error: "You must be signed in." } as T & { error: string };
+  if (!token) {
+    announceExpiry();
+    return { error: "You must be signed in." } as T & { error: string };
+  }
 
   let res = await send(token);
 
@@ -76,6 +98,10 @@ export async function authedPost<T = any>(
       res = await send(token);
     }
   }
+
+  // A 401 that survived the retry is a session that is genuinely gone, rather
+  // than a token that went stale in flight.
+  if (res.status === 401) announceExpiry();
 
   let payload: any = {};
   try {

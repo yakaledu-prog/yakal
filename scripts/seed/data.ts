@@ -223,6 +223,138 @@ export const USERS: SeedUser[] = [
       { name: "French", level: "Conversational" },
     ],
   },
+  // Three more tutors, so a course has a roster rather than a single name.
+  //
+  // A course is a subject an admin priced, not a person, and the gallery a
+  // family picks from is the whole point of that. One tutor per course made
+  // the gallery a list of one and hid the choice entirely.
+  //
+  // No Cloudinary portrait for these, so the app falls back to a generated
+  // avatar. Their backgrounds differ on purpose: a family comparing three
+  // identical CVs is not choosing, it is guessing.
+  {
+    id: "c4e1b8a6-3f27-4d92-9a15-6b8e0f3c7d41",
+    email: "tutor2@yakal.com",
+    lastSeenMinutesAgo: 30,
+    fullName: "Yohannes Bekele",
+    role: "tutor",
+    avatarUrl: avatarFor("Yohannes Bekele"),
+    status: "active",
+    isOnboarded: true,
+    bio: "Physics and Mathematics, mostly with students preparing for the university entrance exam. Teaches by working problems rather than talking through them.",
+    phone: "+251911000010",
+    subjects: ["Physics", "Mathematics"],
+    hourlyRate: 400,
+    rateCurrency: "ETB",
+    acceptingStudents: true,
+    education: [
+      {
+        from: "2014",
+        to: "2018",
+        qualification: "B.Sc. in Applied Physics",
+        institution: "Bahir Dar University",
+      },
+    ],
+    workExperience: [
+      {
+        from: "2019",
+        role: "Physics Instructor",
+        organisation: "Yakal Education Services",
+        summary:
+          "Six years of exam preparation, with a habit of starting from the last question a student got wrong.",
+      },
+    ],
+    certifications: [],
+    languages: [
+      { name: "Amharic", level: "Native" },
+      { name: "English", level: "Fluent" },
+    ],
+  },
+  {
+    id: "7a92d5c3-8e14-4b70-b6f2-1d3a9c05e8b7",
+    email: "tutor3@yakal.com",
+    lastSeenMinutesAgo: 200,
+    fullName: "Hanna Girmay",
+    role: "tutor",
+    avatarUrl: avatarFor("Hanna Girmay"),
+    status: "active",
+    isOnboarded: true,
+    bio: "English and writing. Spends most of a first session finding out what the student is actually trying to say.",
+    phone: "+251911000011",
+    subjects: ["English", "SAT Prep"],
+    hourlyRate: 380,
+    rateCurrency: "ETB",
+    acceptingStudents: true,
+    education: [
+      {
+        from: "2015",
+        to: "2019",
+        qualification: "B.A. in English Literature",
+        institution: "Addis Ababa University",
+      },
+    ],
+    workExperience: [
+      {
+        from: "2020",
+        role: "Writing Tutor",
+        organisation: "Yakal Education Services",
+        summary:
+          "Reading comprehension and essay work, from grade eight through the personal statement.",
+      },
+    ],
+    certifications: [
+      { year: "2022", title: "TEFL", issuer: "Cambridge English" },
+    ],
+    languages: [
+      { name: "Tigrinya", level: "Native" },
+      { name: "Amharic", level: "Fluent" },
+      { name: "English", level: "Fluent" },
+    ],
+  },
+  {
+    id: "2f6b0d84-5a39-4c1e-9827-e4b7f1c60a35",
+    email: "tutor4@yakal.com",
+    lastSeenMinutesAgo: 1440,
+    fullName: "Samuel Tesfaye",
+    role: "tutor",
+    avatarUrl: avatarFor("Samuel Tesfaye"),
+    status: "active",
+    isOnboarded: true,
+    bio: "Chemistry and Biology. Ran a school laboratory for nine years, so the practicals are the part he is best at.",
+    phone: "+251911000012",
+    subjects: ["Chemistry", "Biology"],
+    hourlyRate: 420,
+    rateCurrency: "ETB",
+    acceptingStudents: true,
+    education: [
+      {
+        from: "2010",
+        to: "2014",
+        qualification: "B.Sc. in Chemistry",
+        institution: "Hawassa University",
+      },
+      {
+        from: "2016",
+        to: "2018",
+        qualification: "M.Sc. in Analytical Chemistry",
+        institution: "Addis Ababa University",
+      },
+    ],
+    workExperience: [
+      {
+        from: "2014",
+        to: "2023",
+        role: "Laboratory Coordinator",
+        organisation: "Kokebe Tsibah Secondary School",
+        summary: "Ran the chemistry and biology laboratories and taught grades 11 and 12.",
+      },
+    ],
+    certifications: [],
+    languages: [
+      { name: "Amharic", level: "Native" },
+      { name: "English", level: "Fluent" },
+    ],
+  },
   {
     id: "861ab9d4-186c-46c9-bbcf-ed392fe34343",
     email: "counselor@yakal.com",
@@ -491,7 +623,11 @@ export interface SeedCourse {
   classroomUrl?: string;
   subject: string;
   description: string;
-  tutor?: string;
+  /**
+   * Everyone who may teach it. A list because a course is a subject, not a
+   * person: three tutors can teach Algebra II and a family picks between them.
+   */
+  tutors?: string[];
   thumbnailUrl?: string;
   priceCents?: number;
   tutorPayoutCents?: number;
@@ -504,7 +640,7 @@ export const COURSES: SeedCourse[] = [
     subject: "Mathematics",
     description:
       "Calculus, algebra, trigonometry and statistics, shaped around the Ethiopian University Entrance Examination.",
-    tutor: "tutor@yakal.com",
+    tutors: ["tutor@yakal.com", "tutor2@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&q=80",
     priceCents: 6000,
     tutorPayoutCents: 4500,
@@ -514,7 +650,7 @@ export const COURSES: SeedCourse[] = [
     subject: "Physics",
     description:
       "Classical mechanics and electromagnetism, taught through problem solving rather than lecture.",
-    tutor: "tutor@yakal.com",
+    tutors: ["tutor2@yakal.com", "tutor@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=800&q=80",
     priceCents: 6500,
     tutorPayoutCents: 5000,
@@ -536,7 +672,7 @@ export const COURSES: SeedCourse[] = [
     // only the seeded default; changing it in the app works too.
     title: "K-12 Mathematics",
     subject: "Mathematics",
-    tutor: "binyam2537+tutor@gmail.com",
+    tutors: ["binyam2537+tutor@gmail.com", "tutor@yakal.com", "tutor2@yakal.com"],
     classroomUrl: "https://classroom.google.com/c/ODcwNjI3MzQ5NDc2",
     description:
       "Arithmetic through pre-calculus, taught at the pace the student actually needs rather than the one the timetable assumes.",
@@ -549,6 +685,7 @@ export const COURSES: SeedCourse[] = [
     subject: "English",
     description:
       "Reading, writing and analysis across the school years, with the writing feedback that makes the difference.",
+    tutors: ["tutor3@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=800&q=80",
     priceCents: 8900,
     tutorPayoutCents: 6200,
@@ -558,6 +695,7 @@ export const COURSES: SeedCourse[] = [
     subject: "SAT Prep",
     description:
       "SAT and ACT preparation built around a diagnostic, so the time goes where the marks are.",
+    tutors: ["tutor@yakal.com", "tutor3@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
     priceCents: 5500,
     tutorPayoutCents: 3900,
@@ -585,6 +723,7 @@ export const COURSES: SeedCourse[] = [
     subject: "Biology",
     description:
       "Cells, genetics and physiology, with the past-paper practice that turns knowing it into scoring it.",
+    tutors: ["tutor4@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?w=800&q=80",
     priceCents: 5000,
     tutorPayoutCents: 3500,
@@ -603,6 +742,7 @@ export const COURSES: SeedCourse[] = [
     subject: "English",
     description:
       "Reading comprehension, grammar and the vocabulary the national exam actually tests.",
+    tutors: ["tutor3@yakal.com", "tutor@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80",
     priceCents: 5000,
     tutorPayoutCents: 3500,

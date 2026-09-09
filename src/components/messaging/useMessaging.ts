@@ -69,7 +69,7 @@ export function useMessaging({
 
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts", userId],
-    queryFn: () => getContacts(userId!),
+    queryFn: () => getContacts(),
     // A watcher has nobody to start a chat with from here.
     enabled: !!userId && includeContacts && !monitorChildId,
   });

@@ -6,7 +6,7 @@ import { NotificationsScreen } from "@/components/shared/NotificationsScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   setNotificationArchived,
-  sendNotification,
+  sendFromTemplate,
   type AppNotification,
 } from "@/services/notificationService";
 import { getIncomingLinkRequests, respondToChildLink } from "@/services/parentService";
@@ -61,13 +61,9 @@ function ParentLinkRequest({
       const result = await respondToChildLink(request.id, accept);
       if (!result.success) throw new Error(result.error);
 
-      await sendNotification({
-        userId: request.parentId,
-        title: accept ? "Link accepted" : "Link declined",
-        message: accept
-          ? `${profile?.full_name ?? "Your child"} accepted your request. You can now follow their progress.`
-          : `${profile?.full_name ?? "Your child"} declined your request.`,
-        link: accept ? "/parent/children" : null,
+      await sendFromTemplate(request.parentId, "parentLinkDecided", {
+        studentName: profile?.full_name ?? "Your child",
+        accepted: accept,
       });
 
       await setNotificationArchived(notification.id, true);

@@ -1,8 +1,19 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, ExternalLink, Loader2, RotateCcw, Undo2 } from "lucide-react";
+import {
+  Check,
+  ExternalLink,
+  LayoutGrid,
+  List,
+  Loader2,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Undo2,
+} from "lucide-react";
 
+import { Dropdown } from "@/components/ui/Dropdown";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { dicebearUrl } from "@/utils/avatar";
@@ -73,6 +84,8 @@ export function CounselorEssays() {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<FilterId>("waiting");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"list" | "grid">("list");
 
   const { data: students = [] } = useQuery({
     queryKey: ["counselor-students", user?.id],
@@ -101,7 +114,14 @@ export function CounselorEssays() {
   }, [essays]);
 
   const visible = useMemo(() => {
-    const rows = essays.filter(MATCHES[filter]);
+    const needle = query.trim().toLowerCase();
+    const rows = essays.filter(MATCHES[filter]).filter((e) =>
+      !needle
+        ? true
+        : e.title.toLowerCase().includes(needle) ||
+          e.studentName.toLowerCase().includes(needle) ||
+          (e.collegeName ?? "").toLowerCase().includes(needle)
+    );
     // Soonest deadline first within the queue, because that is the order the
     // work actually has to happen in. Undated essays go last.
     return rows.sort((a, b) => {
@@ -110,7 +130,7 @@ export function CounselorEssays() {
       if (!b.dueDate) return -1;
       return a.dueDate.localeCompare(b.dueDate);
     });
-  }, [essays, filter]);
+  }, [essays, filter, query]);
 
   async function act(essay: ReviewQueueItem, action: ReviewAction) {
     if (!user) return;
@@ -138,7 +158,7 @@ export function CounselorEssays() {
   return (
     <PageWrapper className="!p-0">
       <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21] pb-12">
-        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-8">
+        <header className="relative overflow-hidden bg-primary px-6 py-7 text-white md:px-10 md:py-9">
           <svg
             className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
             viewBox="0 0 400 200"
@@ -149,35 +169,100 @@ export function CounselorEssays() {
             <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
           </svg>
 
-          <div className="relative z-10">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Essays</h1>
-            <p className="mt-1 text-[14px] text-white/80">
-              {counts.waiting === 0
-                ? "Nothing is waiting on you."
-                : `${counts.waiting} waiting on you across ${students.length} ${students.length === 1 ? "student" : "students"}.`}
-            </p>
+          <div className="relative z-10 flex flex-wrap items-end justify-between gap-6">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Essays</h1>
+              <p className="mt-1 text-[14px] text-white/80">
+                {counts.waiting === 0
+                  ? "Nothing is waiting on you."
+                  : `${counts.waiting} waiting on you across ${students.length} ${students.length === 1 ? "student" : "students"}.`}
+              </p>
+            </div>
 
-            <nav className="mt-6 flex gap-1 overflow-x-auto">
-              {FILTERS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className={cn(
-                    "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
-                    filter === f.id
-                      ? "border-white font-semibold text-white"
-                      : "border-transparent text-white/60 hover:text-white"
-                  )}
-                >
-                  {f.label}
-                  <span className="ml-1.5 text-white/60">{counts[f.id]}</span>
-                </button>
+            {/* The same four numbers the tabs carried, read rather than
+                clicked. A tab strip made you press one to find out how many
+                were behind it; as figures they are all legible at once. */}
+            <div className="flex flex-wrap items-end gap-8 pb-1">
+              {FILTERS.filter((f) => f.id !== "all").map((f) => (
+                <div key={f.id} className="text-left">
+                  <p className="text-2xl font-bold leading-none tabular-nums">{counts[f.id]}</p>
+                  <p className="mt-1.5 text-[11px] uppercase tracking-wider text-white/70">
+                    {f.label}
+                  </p>
+                </div>
               ))}
-            </nav>
+            </div>
           </div>
         </header>
 
         <div className="p-6 md:p-10">
+          {/* Search, then the two controls that change what it shows. The
+              filter lives at the end of the field rather than beside it,
+              because narrowing by status and narrowing by word are the same
+              action to somebody looking for one essay. */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search essays"
+                className="h-11 w-full rounded-xl border border-border bg-transparent pl-9 pr-11 text-[14px] text-foreground outline-none transition-colors focus:border-primary placeholder:text-muted-foreground"
+              />
+              {/* Inside the field, at the end of it. Narrowing by status and
+                  narrowing by word are the same action to somebody hunting for
+                  one essay, so they share a control. */}
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+                <Dropdown
+                  value={filter}
+                  onChange={(v) => setFilter(v as FilterId)}
+                  options={FILTERS.map((f) => ({
+                    value: f.id,
+                    label: `${f.label} (${counts[f.id]})`,
+                  }))}
+                  align="end"
+                  icon={<SlidersHorizontal size={15} />}
+                  buttonClassName={cn(
+                    "h-8 w-8 justify-center rounded-lg border-0 px-0 hover:border-0",
+                    // Tinted when it is doing something, so an active filter is
+                    // visible without opening the menu.
+                    filter === "waiting"
+                      ? "bg-transparent text-muted-foreground hover:text-foreground"
+                      : "bg-primary/10 text-primary"
+                  )}
+                  ariaLabel="Filter essays by status"
+                />
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center rounded-xl border border-border p-0.5">
+              {([
+                ["list", List, "List"],
+                ["grid", LayoutGrid, "Grid"],
+              ] as const).map(([id, Icon, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setView(id)}
+                  title={label}
+                  aria-label={label}
+                  aria-pressed={view === id}
+                  className={cn(
+                    "grid h-9 w-9 place-items-center rounded-lg transition-colors",
+                    view === id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon size={16} />
+                </button>
+              ))}
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="animate-spin text-primary" />
@@ -189,8 +274,22 @@ export function CounselorEssays() {
                 : "Nothing here."}
             </p>
           ) : (
-            <div className="mx-auto max-w-4xl divide-y divide-border">
-              {visible.map((e) => (
+            <div
+              className={cn(
+                view === "list"
+                  ? "divide-y divide-border"
+                  : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              )}
+            >
+              {visible.map((e) =>
+                view === "grid" ? (
+                  <EssayCard
+                    key={e.id}
+                    essay={e}
+                    busy={busyId === e.id}
+                    onAct={act}
+                  />
+                ) : (
                 <EssayRow
                   key={e.id}
                   essay={e}
@@ -198,7 +297,8 @@ export function CounselorEssays() {
                   busy={busyId === e.id}
                   onAct={act}
                 />
-              ))}
+                )
+              )}
             </div>
           )}
         </div>
@@ -321,5 +421,113 @@ function EssayRow({
         )}
       </div>
     </article>
+  );
+}
+
+/**
+ * One essay as a card, for the grid.
+ *
+ * The same three facts as a row, stacked instead of strung out: whose it is,
+ * what it is for, and how far along. The verbs stay, because a queue you can
+ * only read is a list of things to open somewhere else.
+ *
+ * Deliberately no preview of the writing. The essay lives in a Google Doc and
+ * the point of opening it is to read it there with comments; a thumbnail of
+ * text nobody can read is decoration that costs a request.
+ */
+function EssayCard({
+  essay,
+  busy,
+  onAct,
+}: {
+  essay: ReviewQueueItem;
+  busy: boolean;
+  onAct: (essay: ReviewQueueItem, action: "returned" | "approved" | "reopened") => void;
+}) {
+  const waiting = essay.status === "in_review";
+  const done = essay.status === "done";
+
+  return (
+    <div className="flex flex-col rounded-xl border border-border p-4 transition-colors hover:border-primary/40">
+      <div className="flex items-start gap-3">
+        <img
+          src={essay.studentAvatarUrl || dicebearUrl(essay.studentName)}
+          alt=""
+          className="h-8 w-8 shrink-0 rounded-full object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold text-foreground">{essay.title}</p>
+          <p className="truncate text-[12px] text-muted-foreground">{essay.studentName}</p>
+        </div>
+      </div>
+
+      <p className="mt-3 line-clamp-2 min-h-[2.4em] text-[12.5px] leading-snug text-muted-foreground">
+        {essay.collegeName ??
+          (essay.kind === "personal_statement" ? "Personal statement" : "Supplemental essay")}
+      </p>
+
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+        <span
+          className={cn(
+            "text-[12px] font-medium",
+            waiting ? "text-secondary" : done ? "text-primary" : "text-muted-foreground"
+          )}
+        >
+          {waiting ? "Waiting on you" : done ? "Finished" : "With the student"}
+          {essay.roundsUsed > 0 && (
+            <span className="ml-1.5 font-normal text-muted-foreground">
+              round {essay.roundsUsed}
+            </span>
+          )}
+        </span>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {essay.driveUrl && (
+            <a
+              href={essay.driveUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Open the document"
+              className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <ExternalLink size={15} />
+            </a>
+          )}
+          {waiting && (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onAct(essay, "returned")}
+                title="Send it back"
+                className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
+              >
+                <Undo2 size={15} />
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onAct(essay, "approved")}
+                title="Mark it finished"
+                className="grid h-8 w-8 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+              >
+                <Check size={15} />
+              </button>
+            </>
+          )}
+          {done && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onAct(essay, "reopened")}
+              title="Reopen it"
+              className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
+            >
+              <RotateCcw size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

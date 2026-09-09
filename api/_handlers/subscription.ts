@@ -58,11 +58,30 @@ async function loadPlan(
 
   if (!plan) return { error: 'That plan no longer exists.' as const };
 
-  // The person who bought it, or an admin. A student must not be able to
-  // upgrade the plan their parent is paying for.
+  // The person who bought it, either of the student's parents, or an admin.
+  //
+  // It used to be the purchaser alone, which locked out a second parent on the
+  // same child and anybody whose plan was set up for them: purchased_by is
+  // null on a plan an admin created, so nobody could touch it. Either parent
+  // can already grant a service and pay for a course, so either managing the
+  // subscription is the same rule rather than a new one.
+  //
+  // A student is still refused, which is the point of the check: they must not
+  // be able to upgrade the plan their parent is paying for.
   if (plan.purchased_by !== userId) {
-    const { data: me } = await db.from('profiles').select('role').eq('id', userId).single();
-    if (me?.role !== 'admin') return { error: 'That is not your subscription.' as const };
+    const [{ data: me }, { count: linked }] = await Promise.all([
+      db.from('profiles').select('role').eq('id', userId).single(),
+      db
+        .from('parent_student_links')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_id', userId)
+        .eq('student_id', plan.student_id)
+        .eq('status', 'active'),
+    ]);
+
+    if (me?.role !== 'admin' && (linked ?? 0) === 0) {
+      return { error: 'That is not your subscription.' as const };
+    }
   }
 
   if (!plan.stripe_subscription_id) {
@@ -179,7 +198,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const user = await requireUser(req);
     const db = getServiceClient();
-    const stripe = getStripe();
 
     const planId: string = req.body?.planId;
     const op: string = req.body?.op;
@@ -190,6 +208,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(loaded.error.includes('not your') ? 403 : 400).json({ error: loaded.error });
     }
     const plan = loaded.plan;
+
+    // After the ownership check, not before it. Built first, a deployment with
+    // no Stripe key answered "Could not change that subscription" to a caller
+    // who had no business asking, which is the wrong answer to the wrong
+    // person: whether a plan is theirs is knowable without Stripe, and a
+    // refusal should not depend on a third party being reachable.
+    const stripe = getStripe();
     const sub = await stripe.subscriptions.retrieve(plan.stripe_subscription_id);
 
     // ---- where this subscription actually stands ----

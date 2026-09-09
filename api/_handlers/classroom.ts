@@ -234,13 +234,14 @@ async function readerFor(db: any, userId: string, courseId: string): Promise<Rea
 
   if (profile?.role === 'admin') return { kind: 'staff' };
 
-  // The tutor teaching it.
-  const { data: course } = await db
-    .from('courses')
-    .select('tutor_id')
-    .eq('id', courseId)
-    .maybeSingle();
-  if (course?.tutor_id && course.tutor_id === userId) return { kind: 'staff' };
+  // Any tutor on it. This read courses.tutor_id, so a course with three
+  // tutors gave two of them a student's access to their own class.
+  const { count: onRoster } = await db
+    .from('course_tutors')
+    .select('tutor_id', { count: 'exact', head: true })
+    .eq('course_id', courseId)
+    .eq('tutor_id', userId);
+  if ((onRoster ?? 0) > 0) return { kind: 'staff' };
 
   // A student enrolled on it.
   const { count: enrolled } = await db

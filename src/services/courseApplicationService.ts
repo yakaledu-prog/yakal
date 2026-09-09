@@ -1,13 +1,18 @@
 import { supabase } from "@/lib/supabase";
-import { sendNotification } from "./notificationService";
+import { sendFromTemplate } from "./notificationService";
 
 // ============================================================
 // Tutors applying to teach a course.
 //
-// A course is created by an admin with no tutor. Tutors see the open ones,
-// apply, and an admin accepts one, which sets courses.tutor_id. Before this
-// the column was set by hand and there was nowhere to record that somebody
-// wanted the work.
+// A course is created by an admin with no tutors. Tutors see the ones they are
+// not already on, apply, and an admin accepts them onto the roster in
+// course_tutors. Before this the assignment was a column set by hand and there
+// was nowhere to record that somebody wanted the work.
+//
+// Accepting used to be exclusive: it wrote courses.tutor_id and rejected every
+// other applicant, so a course was closed forever by its first hire. That was
+// never the intent. A course is a subject an admin priced, so several tutors
+// can teach it and a family picks between them.
 //
 // A tutor can read only their own applications, enforced in row level
 // security. How many others applied would change how they price themselves,
@@ -24,7 +29,6 @@ export interface CourseSummary {
   thumbnailUrl: string | null;
   priceCents: number | null;
   tutorPayoutCents: number | null;
-  tutorId: string | null;
   createdAt: Date;
   /** This tutor's own application, if they have one. Null means not applied. */
   myApplication?: { id: string; status: ApplicationStatus } | null;
@@ -43,7 +47,17 @@ export interface CourseApplication {
 }
 
 const COURSE_FIELDS =
-  "id, title, subject, description, thumbnail_url, price_cents, tutor_payout_cents, tutor_id, created_at";
+  "id, title, subject, description, thumbnail_url, price_cents, tutor_payout_cents, created_at";
+
+/**
+ * The roster, embedded.
+ *
+ * created_at is selected because the gallery orders on it. It is not shown.
+ */
+const ROSTER_FIELDS =
+  `roster:course_tutors (created_at,
+     tutor:profiles!course_tutors_tutor_id_fkey
+       (id, full_name, avatar_url, bio, subjects, hourly_rate, education, work_experience, certifications, languages))`;
 
 function toCourse(row: any): CourseSummary | null {
   if (!row) return null;
@@ -55,42 +69,50 @@ function toCourse(row: any): CourseSummary | null {
     thumbnailUrl: row.thumbnail_url ?? null,
     priceCents: row.price_cents ?? null,
     tutorPayoutCents: row.tutor_payout_cents ?? null,
-    tutorId: row.tutor_id ?? null,
     createdAt: new Date(row.created_at),
   };
 }
 
-/** Courses a tutor is already teaching. */
+/** Courses a tutor is already on. */
 export async function getTeachingCourses(tutorId: string): Promise<CourseSummary[]> {
   const { data, error } = await supabase
-    .from("courses")
-    .select(COURSE_FIELDS)
-    .eq("tutor_id", tutorId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .from("course_tutors")
+    .select(`course:courses (${COURSE_FIELDS}, is_active)`)
+    .eq("tutor_id", tutorId);
   if (error) {
     console.error("getTeachingCourses failed:", error);
     return [];
   }
-  return (data ?? []).map(toCourse).filter(Boolean) as CourseSummary[];
+  return (data ?? [])
+    .map((row: any) => row.course)
+    .filter((c: any) => c?.is_active)
+    .map(toCourse)
+    .filter(Boolean)
+    .sort((a, b) => b!.createdAt.getTime() - a!.createdAt.getTime()) as CourseSummary[];
 }
 
 /**
- * Courses with no tutor yet, each carrying this tutor's application if any.
+ * Courses this tutor could apply to, each carrying their application if any.
  *
- * Applied courses used to be filtered out. Applying then emptied the catalog,
- * which read as the click having failed: the card vanished, and the only trace
- * was a count on another view. They stay put now and show their state, so the
- * page still says what happened.
+ * Open means "they are not on it", not "nobody is on it". The filter used to
+ * be `tutor_id IS NULL`, so the first accepted application removed the course
+ * from every other tutor's catalog permanently and there was no way back in.
+ * Several tutors can teach one course, so the only thing that should hide it
+ * is already teaching it.
+ *
+ * Applied courses used to be filtered out too. Applying then emptied the
+ * catalog, which read as the click having failed: the card vanished, and the
+ * only trace was a count on another view. They stay put now and show their
+ * state, so the page still says what happened.
  */
 export async function getOpenCourses(tutorId: string): Promise<CourseSummary[]> {
-  const [coursesRes, mine] = await Promise.all([
+  const [coursesRes, rosterRes, mine] = await Promise.all([
     supabase
       .from("courses")
       .select(COURSE_FIELDS)
-      .is("tutor_id", null)
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
+    supabase.from("course_tutors").select("course_id").eq("tutor_id", tutorId),
     getMyApplications(tutorId),
   ]);
 
@@ -98,6 +120,8 @@ export async function getOpenCourses(tutorId: string): Promise<CourseSummary[]> 
     console.error("getOpenCourses failed:", coursesRes.error);
     return [];
   }
+
+  const alreadyTeaching = new Set((rosterRes.data ?? []).map((r: any) => r.course_id));
 
   // Newest decision per course, so a rejected application followed by a fresh
   // one shows the fresh one.
@@ -108,7 +132,7 @@ export async function getOpenCourses(tutorId: string): Promise<CourseSummary[]> 
 
   return (coursesRes.data ?? [])
     .map(toCourse)
-    .filter((c): c is CourseSummary => !!c)
+    .filter((c): c is CourseSummary => !!c && !alreadyTeaching.has(c.id))
     .map((c) => ({ ...c, myApplication: byCourse.get(c.id) ?? null }));
 }
 
@@ -162,12 +186,10 @@ export async function applyForCourse(input: {
   const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
   await Promise.all(
     (admins ?? []).map((a: { id: string }) =>
-      sendNotification({
-        userId: a.id,
-        title: "New course application",
-        message: `${input.tutorName} applied to teach ${input.courseTitle}.`,
-        type: "course_application",
-        link: `/admin/courses/${input.courseId}`,
+      sendFromTemplate(a.id, "courseApplication", {
+        tutorName: input.tutorName,
+        courseTitle: input.courseTitle,
+        courseId: input.courseId,
       }).catch(() => undefined)
     )
   );
@@ -236,12 +258,16 @@ export async function getApplicants(courseId: string): Promise<Applicant[]> {
 }
 
 /**
- * Accept an applicant.
+ * Accept an applicant onto a course.
  *
- * Assigning the tutor and rejecting the rest are one decision, so they happen
- * together: a course with two accepted applications is a state nobody should
- * have to reason about. The remaining applicants are told, because being left
- * waiting indefinitely is the thing people complain about.
+ * Adds them to the roster and leaves everybody else alone. This used to be
+ * exclusive: it set courses.tutor_id, rejected every pending application, and
+ * told those tutors the course had been "filled". None of that was a decision
+ * anybody made, it followed from the column holding one id. A course can carry
+ * several tutors, so hiring one says nothing about the next.
+ *
+ * An admin who wants to turn the others down does it per applicant, which is
+ * the same button and now means what it says.
  */
 export async function acceptApplicant(input: {
   applicationId: string;
@@ -249,14 +275,20 @@ export async function acceptApplicant(input: {
   tutorId: string;
   adminId: string;
   courseTitle: string;
+  /** For the email, which greets them by name. */
+  tutorName?: string;
   note?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const now = new Date().toISOString();
 
+  // Idempotent: an admin who accepts an already-accepted tutor should get a
+  // no-op, not a duplicate key error thrown at them from a modal.
   const { error: assignErr } = await supabase
-    .from("courses")
-    .update({ tutor_id: input.tutorId, updated_at: now })
-    .eq("id", input.courseId);
+    .from("course_tutors")
+    .upsert(
+      { course_id: input.courseId, tutor_id: input.tutorId },
+      { onConflict: "course_id,tutor_id", ignoreDuplicates: true }
+    );
   if (assignErr) return { success: false, error: assignErr.message };
 
   const { error: acceptErr } = await supabase
@@ -271,42 +303,32 @@ export async function acceptApplicant(input: {
     .eq("id", input.applicationId);
   if (acceptErr) return { success: false, error: acceptErr.message };
 
-  // Everyone else who was still waiting on this course.
-  const { data: others } = await supabase
-    .from("course_applications")
-    .select("id, tutor_id")
-    .eq("course_id", input.courseId)
-    .eq("status", "pending");
+  await sendFromTemplate(input.tutorId, "courseApplicationDecided", {
+    tutorName: input.tutorName ?? "",
+    courseTitle: input.courseTitle,
+    accepted: true,
+  }).catch(() => undefined);
 
-  if (others?.length) {
-    await supabase
-      .from("course_applications")
-      .update({ status: "rejected", decided_by: input.adminId, decided_at: now, updated_at: now })
-      .in(
-        "id",
-        others.map((o: { id: string }) => o.id)
-      );
-  }
+  return { success: true };
+}
 
-  await Promise.all([
-    sendNotification({
-      userId: input.tutorId,
-      title: "You got the course",
-      message: `You are now teaching ${input.courseTitle}.`,
-      type: "course_application_decided",
-      link: "/tutor/courses",
-    }).catch(() => undefined),
-    ...(others ?? []).map((o: { tutor_id: string }) =>
-      sendNotification({
-        userId: o.tutor_id,
-        title: "Course filled",
-        message: `${input.courseTitle} has been assigned to another tutor.`,
-        type: "course_application_decided",
-        link: "/tutor/courses",
-      }).catch(() => undefined)
-    ),
-  ]);
-
+/**
+ * Take a tutor off a course.
+ *
+ * Their past sessions and invoices are untouched: those name the tutor
+ * directly and are a record of work that happened. This only says they are not
+ * taking new bookings on it.
+ */
+export async function removeTutorFromCourse(
+  courseId: string,
+  tutorId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("course_tutors")
+    .delete()
+    .eq("course_id", courseId)
+    .eq("tutor_id", tutorId);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
@@ -315,6 +337,8 @@ export async function rejectApplicant(input: {
   tutorId: string;
   adminId: string;
   courseTitle: string;
+  /** For the email, which greets them by name. */
+  tutorName?: string;
   note?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
@@ -329,12 +353,10 @@ export async function rejectApplicant(input: {
     .eq("id", input.applicationId);
   if (error) return { success: false, error: error.message };
 
-  await sendNotification({
-    userId: input.tutorId,
-    title: "Application not accepted",
-    message: `Your application to teach ${input.courseTitle} was not accepted this time.`,
-    type: "course_application_decided",
-    link: "/tutor/courses",
+  await sendFromTemplate(input.tutorId, "courseApplicationDecided", {
+    tutorName: input.tutorName ?? "",
+    courseTitle: input.courseTitle,
+    accepted: false,
   }).catch(() => undefined);
 
   return { success: true };
@@ -344,35 +366,72 @@ export async function rejectApplicant(input: {
 // Booking a course
 // ------------------------------------------------------------
 
-export interface CourseWithTutor extends CourseSummary {
-  tutor: {
-    id: string;
-    name: string;
-    avatarUrl: string | null;
-    bio: string | null;
-    subjects: string[] | null;
-    hourlyRate: number | null;
-    /** Kept in the database's own shape, which is what TutorResume reads. */
-    education: unknown[];
-    work_experience: unknown[];
-    certifications: unknown[];
-    languages: unknown[];
-  } | null;
+/** One tutor, as the gallery and the booking page need them. */
+export interface TutorCard {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  subjects: string[] | null;
+  hourlyRate: number | null;
+  /** Kept in the database's own shape, which is what TutorResume reads. */
+  education: unknown[];
+  work_experience: unknown[];
+  certifications: unknown[];
+  languages: unknown[];
+}
+
+export interface CourseWithTutors extends CourseSummary {
+  /** Everyone who may teach it, in roster order. Never null, sometimes empty. */
+  tutors: TutorCard[];
+}
+
+function toTutorCard(t: any): TutorCard | null {
+  if (!t) return null;
+  return {
+    id: t.id,
+    name: t.full_name,
+    avatarUrl: t.avatar_url ?? null,
+    bio: t.bio ?? null,
+    subjects: t.subjects ?? null,
+    hourlyRate: t.hourly_rate ?? null,
+    education: t.education ?? [],
+    work_experience: t.work_experience ?? [],
+    certifications: t.certifications ?? [],
+    languages: t.languages ?? [],
+  };
 }
 
 /**
- * A course and the tutor teaching it, for the booking page.
+ * The roster, oldest first.
  *
- * The tutor comes from the accepted application, so the person a parent books
- * with is the person an admin approved. The page used to show four invented
+ * Ties break on id because a seed writes a whole roster in one transaction, so
+ * every row in it carries the same now(). Left to the timestamp alone the
+ * order is the planner's to choose and the gallery reshuffles between visits.
+ */
+function toRoster(rows: any[] | null | undefined): TutorCard[] {
+  return (rows ?? [])
+    .slice()
+    .sort((a, b) => {
+      const byTime = String(a.created_at).localeCompare(String(b.created_at));
+      return byTime !== 0 ? byTime : String(a.tutor?.id).localeCompare(String(b.tutor?.id));
+    })
+    .map((r) => toTutorCard(r.tutor))
+    .filter((t): t is TutorCard => !!t);
+}
+
+/**
+ * A course and everyone who teaches it, for the booking page.
+ *
+ * The roster comes from accepted applications, so the people a parent chooses
+ * between are people an admin approved. The page used to show four invented
  * tutors with invented prices, which meant the id it handed to checkout was
  * not a real profile.
  */
-export async function getCourseForBooking(courseId: string): Promise<CourseWithTutor | null> {
+export async function getCourseForBooking(courseId: string): Promise<CourseWithTutors | null> {
   const { data, error } = await supabase
     .from("courses")
-    .select(`${COURSE_FIELDS},
-             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate, education, work_experience, certifications, languages)`)
+    .select(`${COURSE_FIELDS}, ${ROSTER_FIELDS}`)
     .eq("id", courseId)
     .maybeSingle();
 
@@ -381,45 +440,29 @@ export async function getCourseForBooking(courseId: string): Promise<CourseWithT
     return null;
   }
 
-  const base = toCourse(data)!;
-  const t = (data as any).tutor;
-  return {
-    ...base,
-    tutor: t
-      ? {
-          id: t.id,
-          name: t.full_name,
-          education: t.education ?? [],
-          work_experience: t.work_experience ?? [],
-          certifications: t.certifications ?? [],
-          languages: t.languages ?? [],
-          avatarUrl: t.avatar_url ?? null,
-          bio: t.bio ?? null,
-          subjects: t.subjects ?? null,
-          hourlyRate: t.hourly_rate ?? null,
-        }
-      : null,
-  };
+  return { ...toCourse(data)!, tutors: toRoster((data as any).roster) };
 }
 
 /**
- * The catalog a parent browses: active courses that have a tutor.
+ * The catalog a parent browses: active courses that somebody teaches.
  *
- * A course without one cannot be booked, because there is no calendar to pick
- * a time from, so listing it only produces a dead end. Tutors see those on
- * their own Find Courses page, where the point is to apply for them.
+ * A course with an empty roster cannot be booked, because there is no calendar
+ * to pick a time from, so listing it only produces a dead end. Tutors see
+ * those on their own Find Courses page, where the point is to apply for them.
+ *
+ * The empty ones are dropped here rather than in the query. PostgREST can
+ * filter on an embedded table, but only by dropping rows from the embed, and
+ * an inner join against course_tutors returns one course row per tutor on it.
  *
  * ParentCourses used to hold six hardcoded entries with invented ratings and
  * student counts, and ids like "CAT-01" that matched nothing, so clicking one
  * led to a booking page for a course that did not exist.
  */
-export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
+export async function getCatalogCourses(): Promise<CourseWithTutors[]> {
   const { data, error } = await supabase
     .from("courses")
-    .select(`${COURSE_FIELDS},
-             tutor:profiles!courses_tutor_id_fkey (id, full_name, avatar_url, bio, subjects, hourly_rate, education, work_experience, certifications, languages)`)
+    .select(`${COURSE_FIELDS}, ${ROSTER_FIELDS}`)
     .eq("is_active", true)
-    .not("tutor_id", "is", null)
     .order("title");
 
   if (error) {
@@ -427,24 +470,7 @@ export async function getCatalogCourses(): Promise<CourseWithTutor[]> {
     return [];
   }
 
-  return (data ?? []).map((row: any) => {
-    const t = row.tutor;
-    return {
-      ...toCourse(row)!,
-      tutor: t
-        ? {
-            id: t.id,
-            name: t.full_name,
-          education: t.education ?? [],
-          work_experience: t.work_experience ?? [],
-          certifications: t.certifications ?? [],
-          languages: t.languages ?? [],
-            avatarUrl: t.avatar_url ?? null,
-            bio: t.bio ?? null,
-            subjects: t.subjects ?? null,
-            hourlyRate: t.hourly_rate ?? null,
-          }
-        : null,
-    };
-  });
+  return (data ?? [])
+    .map((row: any) => ({ ...toCourse(row)!, tutors: toRoster(row.roster) }))
+    .filter((c) => c.tutors.length > 0);
 }

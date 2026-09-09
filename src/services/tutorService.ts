@@ -213,12 +213,16 @@ export async function getStudentDetail(tutorId: string, studentId: string): Prom
 
 /** Courses assigned to this tutor. */
 export async function getTutorCourses(tutorId: string) {
+  // Through the roster. This filtered courses.tutor_id, which held one tutor,
+  // so a tutor on three courses saw only the one whose column carried their id.
   const { data } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("tutor_id", tutorId)
-    .order("created_at", { ascending: false });
-  return data ?? [];
+    .from("course_tutors")
+    .select("course:courses (*)")
+    .eq("tutor_id", tutorId);
+  return (data ?? [])
+    .map((r: any) => r.course)
+    .filter(Boolean)
+    .sort((a: any, b: any) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 
 export interface CourseWorkspace {

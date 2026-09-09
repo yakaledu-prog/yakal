@@ -1,4 +1,4 @@
-import { sendEmail, layout, appUrl } from "./email.js";
+import { notifyAll } from "./notify.js";
 import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
 import { inviteOnEnrolment } from "../_handlers/classroom-invite.js";
 
@@ -78,7 +78,7 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
 
   const { data: course } = await db
     .from("courses")
-    .select("id, title, subject, tutor_id")
+    .select("id, title, subject")
     .eq("id", invoice.course_id)
     .single();
   if (!course) {
@@ -86,7 +86,13 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
     return;
   }
 
-  const tutorId = invoice.tutor_id ?? course.tutor_id ?? null;
+  // The invoice, and only the invoice. It used to fall back to
+  // courses.tutor_id, which held one tutor for everybody who bought the
+  // course; a course carries a roster now, so there is no single tutor to fall
+  // back to and picking one off it would be inventing the answer.
+  // create-invoice refuses a course purchase that names nobody, so a tutoring
+  // invoice reaching here has one.
+  const tutorId = invoice.tutor_id ?? null;
 
   // ---- enrolment ----
   // The partial unique index refuses a second active row, so a duplicate
@@ -279,7 +285,9 @@ async function attachZoomMeetings(
 async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   const { data: tier } = await db
     .from("admissions_tiers")
-    .select("id, name, price_cents")
+    // sessions_per_month is for the notification, which tells a family what
+    // their plan actually includes rather than only its name.
+    .select("id, name, price_cents, sessions_per_month")
     .eq("id", invoice.admissions_tier_id)
     .single();
   if (!tier) {
@@ -435,61 +443,44 @@ async function fulfilAdmissions(db: any, invoice: Invoice): Promise<void> {
   // v_student_entitlements derives admissions access from it. Access follows
   // payment, with nothing else to switch on.
 
+  // The counsellor is named in both notifications, so they are looked up with
+  // the family rather than in a query of their own.
   const { data: people } = await db
     .from("profiles")
     .select("id, full_name, email")
-    .in("id", [invoice.student_id, invoice.parent_id]);
+    .in("id", [invoice.student_id, invoice.parent_id, counselorId].filter(Boolean));
 
   const by = new Map<string, any>((people ?? []).map((p: any) => [p.id, p]));
   const student = by.get(invoice.student_id!);
-  const parent = by.get(invoice.parent_id);
+  const counselorName = counselorId ? (by.get(counselorId)?.full_name ?? null) : null;
 
-  const { error: noteErr } = await db.from("notifications").insert([
+  // One template, two readers. This was two hand-written notification rows
+  // plus two hand-built emails saying roughly the same thing in four places,
+  // so the rows carried no facts and no template and the inbox could only
+  // render them as a line and a bare Open button.
+  await notifyAll(db, [
     {
-      user_id: invoice.student_id,
-      type: "admissions_plan",
-      title: "College counselling is open",
-      message: `You are on ${tier.name}. Your college list, essays and roadmap are now yours to work on.`,
-      link: "/student/college-list",
+      userId: invoice.student_id!,
+      key: "admissionsPlan",
+      vars: {
+        audience: "student",
+        studentName: student?.full_name ?? "you",
+        tierName: tier.name,
+        counselorName: counselorName ?? null,
+        sessionsPerMonth: tier.sessions_per_month ?? null,
+      },
     },
     {
-      user_id: invoice.parent_id,
-      type: "admissions_plan",
-      title: "Payment received",
-      message: `${student?.full_name ?? "Your child"} is on ${tier.name} admissions counselling.`,
-      link: "/parent/billing",
+      userId: invoice.parent_id,
+      key: "admissionsPlan",
+      vars: {
+        audience: "parent",
+        studentName: student?.full_name ?? "Your child",
+        tierName: tier.name,
+        counselorName: counselorName ?? null,
+        sessionsPerMonth: tier.sessions_per_month ?? null,
+      },
     },
-  ]);
-  if (noteErr) console.error("fulfil: admissions notifications failed:", noteErr.message);
-
-  const facts = [
-    { label: "Plan", value: tier.name },
-    { label: "Student", value: student?.full_name ?? "Your child" },
-  ];
-
-  await Promise.all([
-    student?.email &&
-      sendEmail({
-        to: student.email,
-        subject: "Your college counselling is open",
-        html: layout({
-          heading: "College counselling is open",
-          intro: `You are on ${tier.name}. Your college list, essays and roadmap are ready when you are.`,
-          facts,
-          cta: { label: "Open your college list", url: appUrl("/student/college-list") },
-        }),
-      }),
-    parent?.email &&
-      sendEmail({
-        to: parent.email,
-        subject: `${tier.name} admissions counselling`,
-        html: layout({
-          heading: "Payment received",
-          intro: `${student?.full_name ?? "Your child"} is on ${tier.name}. You can follow their progress from your dashboard.`,
-          facts,
-          cta: { label: "View your plans", url: appUrl("/parent/billing") },
-        }),
-      }),
   ]);
 }
 
@@ -513,86 +504,53 @@ async function announce(
     (people ?? []).map((p: any) => [p.id, p])
   );
   const student = by.get(input.studentId);
-  const parent = by.get(input.parentId);
   const tutor = input.tutorId ? by.get(input.tutorId) : null;
 
-  const sessionLine =
-    input.sessionCount > 0
-      ? `${input.sessionCount} session${input.sessionCount === 1 ? "" : "s"} booked`
-      : "Times to be arranged";
-
-  const notifications = [
+  // The same three people, the same event, one template. This was three
+  // hand-written rows and three hand-built emails, which is six places one
+  // wording change had to reach and two representations that had already
+  // drifted: the rows said "New student" where the email said "You have a new
+  // student", and neither carried a fact the reader could act on.
+  await notifyAll(db, [
     {
-      user_id: input.studentId,
-      type: "enrolment",
-      title: "You are enrolled",
-      message: `${input.course.title} is now on your dashboard. ${sessionLine}.`,
-      link: "/student/my-learning",
+      userId: input.studentId,
+      key: "enrolment",
+      vars: {
+        audience: "student",
+        studentName: student?.full_name ?? "you",
+        courseTitle: input.course.title,
+        courseId: input.course.id,
+        tutorName: tutor?.full_name ?? null,
+        sessionCount: input.sessionCount,
+      },
     },
     {
-      user_id: input.parentId,
-      type: "enrolment",
-      title: "Payment received",
-      message: `${student?.full_name ?? "Your child"} is enrolled on ${input.course.title}. ${sessionLine}.`,
-      link: "/parent/courses",
+      userId: input.parentId,
+      key: "enrolment",
+      vars: {
+        audience: "parent",
+        studentName: student?.full_name ?? "Your child",
+        courseTitle: input.course.title,
+        courseId: input.course.id,
+        tutorName: tutor?.full_name ?? null,
+        sessionCount: input.sessionCount,
+      },
     },
-  ];
-
-  if (input.tutorId) {
-    notifications.push({
-      user_id: input.tutorId,
-      type: "enrolment",
-      title: "New student",
-      message: `${student?.full_name ?? "A student"} joined ${input.course.title}. ${sessionLine}.`,
-      link: `/tutor/courses/${input.course.id}`,
-    });
-  }
-
-  // The in-app notification is the record; email is the copy. Neither is
-  // allowed to take the transaction down with it.
-  const { error } = await db.from("notifications").insert(notifications);
-  if (error) console.error("fulfil: notifications failed:", error.message);
-
-  const facts = [
-    { label: "Course", value: input.course.title },
-    { label: "Subject", value: input.course.subject },
-    { label: "Tutor", value: tutor?.full_name ?? "To be assigned" },
-    { label: "Sessions", value: sessionLine },
-  ];
-
-  await Promise.all([
-    student?.email &&
-      sendEmail({
-        to: student.email,
-        subject: `You are enrolled on ${input.course.title}`,
-        html: layout({
-          heading: "You are enrolled",
-          intro: `${input.course.title} is now on your dashboard. Everything for it lives under My Learning.`,
-          facts,
-          cta: { label: "Open My Learning", url: appUrl("/student/my-learning") },
-        }),
-      }),
-    parent?.email &&
-      sendEmail({
-        to: parent.email,
-        subject: `Payment received for ${input.course.title}`,
-        html: layout({
-          heading: "Payment received",
-          intro: `${student?.full_name ?? "Your child"} is enrolled on ${input.course.title}. You can follow their progress from your dashboard.`,
-          facts,
-          cta: { label: "View the course", url: appUrl("/parent/courses") },
-        }),
-      }),
-    tutor?.email &&
-      sendEmail({
-        to: tutor.email,
-        subject: `${student?.full_name ?? "A student"} joined ${input.course.title}`,
-        html: layout({
-          heading: "You have a new student",
-          intro: `${student?.full_name ?? "A student"} has been enrolled on ${input.course.title}.`,
-          facts,
-          cta: { label: "Open the course", url: appUrl(`/tutor/courses/${input.course.id}`) },
-        }),
-      }),
+    ...(input.tutorId
+      ? [
+          {
+            userId: input.tutorId,
+            key: "enrolment" as const,
+            vars: {
+              audience: "tutor",
+              studentName: student?.full_name ?? "A student",
+              courseTitle: input.course.title,
+              courseId: input.course.id,
+              tutorName: tutor?.full_name ?? null,
+              sessionCount: input.sessionCount,
+            },
+          },
+        ]
+      : []),
   ]);
 }

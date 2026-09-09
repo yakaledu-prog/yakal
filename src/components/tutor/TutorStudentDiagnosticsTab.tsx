@@ -1,119 +1,141 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { diagnosticService, DiagnosticResult } from "@/services/diagnosticService";
+import { getPublishedDiagnostics } from "@/services/diagnosticAdminService";
 import { diagnosticTests, DiagnosticTest } from "@/data/diagnostics";
-import { Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { overall, byCategory } from "@/services/diagnosticReport";
+import { Target, Activity } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
+} from "recharts";
 
-function getAIAdvice(testId: string) {
-  // Simple mocked AI advice generator based on test ID
-  switch (testId) {
-    case "algebra":
-      return "Strong foundation in basic math concepts but struggles with algebraic problem-solving under time pressure. Focus on breaking down multi-step word problems. Avoid rushing into formulas; build intuition for linear equations first.";
-    case "geometry":
-      return "Good spatial reasoning. Needs more practice with formal proofs and theorem applications. Try using visual aids and real-world examples for volume calculations.";
-    case "reading":
-      return "Excellent reading speed. Needs to work on inferencing and identifying the main author's intent. Practice with more diverse passages, especially historical documents.";
-    case "sat-math":
-      return "Comfortable with most topics but struggles with pacing. Introduce timed practice sessions focusing on the no-calculator section.";
-    default:
-      return "The student shows a solid grasp of core concepts but would benefit from targeted practice on more advanced application questions.";
-  }
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[#e9edef] dark:border-[#2a3942] px-4 py-3">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">{label}</p>
+      <p className="text-xl font-bold text-[#111] dark:text-white">{value}</p>
+    </div>
+  );
 }
 
-function DiagnosticListItem({ test, result }: { test: DiagnosticTest; result?: DiagnosticResult }) {
-  const isCompleted = !!result;
-  const [expanded, setExpanded] = useState(false);
-
+// A test the student has sat shows the real score; one they have not is left
+// plainly as such, so the tutor can see the gaps as well as the marks.
+function TestRow({ test, result }: { test: DiagnosticTest; result?: DiagnosticResult }) {
   return (
-    <div className="flex flex-col border-b border-[#e9edef] dark:border-[#2a3942] last:border-0 bg-transparent py-4 transition-colors hover:bg-gray-50/50 dark:hover:bg-[#182329]/50">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex flex-col flex-1 min-w-0 pr-4 justify-center">
-          <div className="flex items-center gap-2">
-            <h4 className="text-[14px] text-[#111] dark:text-white truncate">
-              {test.title}
-            </h4>
+    <div className="flex items-center justify-between px-2 py-3 border-b border-[#e9edef] dark:border-[#2a3942] last:border-0">
+      <h4 className="text-[14px] text-[#111] dark:text-white truncate pr-4">{test.title}</h4>
+      {result ? (
+        <div className="flex flex-col items-end w-32 shrink-0">
+          <div className="flex justify-between w-full mb-1">
+            <span className="text-[11px] uppercase text-muted-foreground font-semibold">Score</span>
+            <span className="text-[13px] font-semibold text-[#111] dark:text-white">{result.score}/{result.total}</span>
+          </div>
+          <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
+            <div className="h-full bg-[#1099A1] rounded-full" style={{ width: `${(result.score / result.total) * 100}%` }} />
           </div>
         </div>
-
-        <div className="flex items-center gap-6 shrink-0">
-          {isCompleted ? (
-            <div className="flex flex-col items-end w-32">
-              <div className="flex justify-between w-full mb-1">
-                <span className="text-[11px] uppercase text-muted-foreground font-semibold">Score</span>
-                <span className="text-[13px] font-semibold text-[#111] dark:text-white">{result.score}/{result.total}</span>
-              </div>
-              <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{ width: `${(result.score / result.total) * 100}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="w-32 text-right">
-              <span className="text-[13px] text-muted-foreground italic">Not taken yet</span>
-            </div>
-          )}
-
-          {isCompleted && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:bg-primary/10 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0"
-              title="Toggle AI Guide"
-            >
-              {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {expanded && isCompleted && (
-        <div className="mt-4 mx-2 p-4 bg-[#f8f9fa] dark:bg-[#182329] border-l-2 border-primary rounded-r-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb size={16} className="text-secondary" />
-            <span className="text-[13px] font-bold text-[#111] dark:text-white uppercase tracking-wider">AI Teaching Guide</span>
-          </div>
-          <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">
-            {getAIAdvice(test.id)}
-          </p>
-        </div>
+      ) : (
+        <span className="text-[13px] text-muted-foreground italic w-32 text-right shrink-0">Not taken yet</span>
       )}
     </div>
   );
 }
 
 export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string }) {
-  const [results, setResults] = useState<DiagnosticResult[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Which results the tutor may see is decided by RLS; this call just names the
+  // student. react-query owns the loading state, so there is no setState in an
+  // effect to trip the compiler rule.
+  const { data: results = [], isLoading } = useQuery({
+    queryKey: ["diagnostic-results", studentId],
+    queryFn: () => diagnosticService.getStudentResults(studentId),
+    enabled: !!studentId,
+  });
+  const { data: publishedTests } = useQuery({
+    queryKey: ["published-diagnostics"],
+    queryFn: getPublishedDiagnostics,
+    staleTime: 5 * 60_000,
+  });
+  const tests: DiagnosticTest[] = publishedTests ?? diagnosticTests;
 
-  useEffect(() => {
-    diagnosticService.getStudentResults(studentId).then(res => {
-      setResults(res);
-      setLoading(false);
-    });
-  }, [studentId]);
-
-  const categories = Array.from(new Set(diagnosticTests.map(t => t.categoryName)));
-
-  if (loading) {
+  if (isLoading) {
     return <div className="p-8 flex justify-center text-muted-foreground">Loading diagnostics...</div>;
   }
 
+  if (results.length === 0) {
+    return (
+      <div className="p-10 text-center">
+        <Activity size={40} className="mx-auto text-[#aebac1] mb-3" />
+        <h4 className="text-[16px] font-bold text-[#111] dark:text-white mb-1">No diagnostics yet</h4>
+        <p className="text-[14px] text-muted-foreground">This student has not taken any diagnostics.</p>
+      </div>
+    );
+  }
+
+  const o = overall(results);
+  const cats = byCategory(results, tests); // weakest first
+  const weakest = cats[0];
+  const strongest = cats[cats.length - 1];
+  const categories = Array.from(new Set(tests.map((t) => t.categoryName)));
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col min-h-[500px]">
-      <div className="p-0">
-        {categories.map(catName => {
-          const testsInCategory = diagnosticTests.filter(t => t.categoryName === catName);
+    <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard label="Overall accuracy" value={`${o.accuracy}%`} />
+        <StatCard label="Tests completed" value={`${results.length} / ${tests.length}`} />
+        <StatCard label="Questions answered" value={`${o.total}`} />
+      </div>
+
+      {/* Real, computed guidance in place of the old canned paragraph: where the
+          student is weakest, and where they are strongest, from their answers. */}
+      {weakest && (
+        <div className="flex items-start gap-2.5 bg-[#1099A1]/5 border-l-2 border-[#1099A1] rounded-r-lg px-4 py-3">
+          <Target size={16} className="text-[#CAA25F] mt-0.5 shrink-0" />
+          <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">
+            Focus area: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span>, the
+            weakest at {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct).
+            {strongest && strongest.category !== weakest.category && (
+              <> Strongest is <span className="font-semibold text-[#111] dark:text-white">{strongest.category}</span> at {strongest.accuracy}%.</>
+            )}
+          </p>
+        </div>
+      )}
+
+      <div>
+        <h4 className="text-[13px] font-bold uppercase tracking-widest text-primary dark:text-[#aebac1] mb-3">Accuracy by category</h4>
+        <div style={{ height: cats.length * 44 + 24 }} className="w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={cats} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+              <XAxis type="number" domain={[0, 100]} unit="%" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis type="category" dataKey="category" width={120} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
+              <Tooltip
+                cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
+                formatter={(v) => [`${v}%`, "Accuracy"]}
+              />
+              <Bar dataKey="accuracy" radius={[0, 4, 4, 0]}>
+                {/* Teal where they are comfortable, gold where they need work. */}
+                {cats.map((c) => (
+                  <Cell key={c.category} fill={c.accuracy >= 70 ? "#1099a1" : "#CAA25F"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div>
+        {categories.map((catName) => {
+          const testsInCategory = tests.filter((t) => t.categoryName === catName);
+          if (testsInCategory.length === 0) return null;
           return (
-            <div key={catName} className="border-b-4 mb-8 border-[#f8f9fa] dark:border-[#182329] last:border-b-0">
-              <div className="px-5 py-2 bg-gray-50/50 dark:bg-[#182329]/50 border-b border-[#e9edef] dark:border-[#2a3942]">
+            <div key={catName} className="mb-6 last:mb-0">
+              <div className="px-2 py-2 border-b border-[#e9edef] dark:border-[#2a3942]">
                 <h4 className="text-[12px] font-bold uppercase tracking-widest text-primary dark:text-[#aebac1]">{catName}</h4>
               </div>
-              <div className="px-3">
-                {testsInCategory.map(test => {
-                  const result = results.find(r => r.id === test.id);
-                  return <DiagnosticListItem key={test.id} test={test} result={result} />;
-                })}
-              </div>
+              {testsInCategory.map((test) => (
+                <TestRow key={test.id} test={test} result={results.find((r) => r.id === test.id)} />
+              ))}
             </div>
           );
         })}

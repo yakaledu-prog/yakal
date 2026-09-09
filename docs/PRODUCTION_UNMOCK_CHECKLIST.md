@@ -90,10 +90,19 @@ Legend: `[ ]` still needs action before production, `[x]` handled
   `studentService.getDashboardSummary`. Needs a query joining sessions,
   assignments and submissions for the signed-in student.
 
-- [ ] **Diagnostic results live in localStorage.**
-  `src/services/diagnosticService.ts` keeps them in the browser, so they do not
-  follow a student between devices and a tutor sees nothing. Needs a
-  `diagnostic_results` table and a migration.
+- [x] **Diagnostic results live in localStorage.** Now persisted to the
+  `diagnostic_results` table (migration `20260903000100`).
+  `src/services/diagnosticService.ts` reads and writes Postgres, storing the
+  per-question answers so results follow a student between devices and a tutor,
+  parent, or admin can see them under RLS.
+
+- [ ] **The tutor "AI Teaching Guide" is not AI.** The tutor diagnostics tab
+  once showed a mocked guide from a hardcoded `getAIAdvice(testId)`. The
+  diagnostics rebuild replaced it with real computed guidance (a student's
+  weakest and strongest areas, derived from their actual answers in
+  `services/diagnosticReport.ts`), which is honest and useful. A genuine
+  AI-written teaching guide, if wanted, is a separate feature to add back on
+  top of that, not the mock that was removed.
 
 - [x] **Notification screens.** All four roles now read real notifications
   through `notificationService`, sharing one `NotificationsScreen` component.

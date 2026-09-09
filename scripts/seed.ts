@@ -285,7 +285,7 @@ async function seedAvailability() {
 async function seedCourses() {
   step("Courses");
   for (const c of COURSES) {
-    // A course the seed has no tutor for keeps whoever is on it. Writing null
+    // A course the seed has no roster for keeps whoever is on it. Clearing it
     // here meant every re-seed un-assigned the tutors set by hand, which is
     // one of the ways an afternoon of demo data quietly disappeared.
     const row: Record<string, unknown> = {
@@ -297,7 +297,6 @@ async function seedCourses() {
       tutor_payout_cents: c.tutorPayoutCents ?? null,
       is_active: c.isActive ?? true,
     };
-    if (c.tutor) row.tutor_id = idFor(c.tutor);
     if (c.classroomUrl) row.google_classroom_url = c.classroomUrl;
 
     const { data: existing, error: findErr } = await db
@@ -311,6 +310,25 @@ async function seedCourses() {
       ? await db.from("courses").update(row).eq("id", existing.id)
       : await db.from("courses").insert(row);
     if (error) fail(`writing course "${c.title}"`, error);
+
+    // The roster is a separate table now, so it needs a separate write. Only
+    // touched when the seed has one: a course whose tutors were set by hand in
+    // the admin keeps them.
+    if (c.tutors?.length) {
+      const { data: course } = await db
+        .from("courses")
+        .select("id")
+        .eq("title", c.title)
+        .maybeSingle();
+      if (course) {
+        const { error: rosterErr } = await db.from("course_tutors").upsert(
+          c.tutors.map((email) => ({ course_id: course.id, tutor_id: idFor(email) })),
+          { onConflict: "course_id,tutor_id" }
+        );
+        if (rosterErr) fail(`assigning tutors to "${c.title}"`, rosterErr);
+      }
+    }
+
     ok(`${existing ? "updated" : "created"} ${c.title}`);
   }
 }
@@ -373,7 +391,7 @@ async function seedAssignments() {
   for (const a of ASSIGNMENTS) {
     const { data: course } = await db
       .from("courses")
-      .select("id, tutor_id")
+      .select("id")
       .eq("title", a.course)
       .maybeSingle();
 
@@ -384,7 +402,15 @@ async function seedAssignments() {
 
     // Work has to belong to somebody. A course nobody teaches yet still gets
     // its assignments, under the demo tutor, so the page has something to show.
-    const owner = course.tutor_id ?? idFor("tutor@yakal.com");
+    // With a roster, the first on it is the one who set the work: an ordering
+    // that means nothing except that it is stable between re-seeds.
+    const { data: roster } = await db
+      .from("course_tutors")
+      .select("tutor_id")
+      .eq("course_id", course.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const owner = roster?.[0]?.tutor_id ?? idFor("tutor@yakal.com");
 
     const row = {
       course_id: course.id,
@@ -589,10 +615,23 @@ async function seedCollegeProfiles() {
           .in("status", ["active", "past_due"])
           .maybeSingle();
 
+        // Who paid for it. Left null, the plan belonged to nobody: the
+        // subscription endpoints check purchased_by, so a parent opening
+        // Change plan on the seeded engagement was told "That is not your
+        // subscription" about their own child.
+        const { data: link } = await db
+          .from("parent_student_links")
+          .select("parent_id")
+          .eq("student_id", student_id)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+
         const plan = {
           student_id,
           tier_id: tier.id,
           counselor_id: idFor(p.counselor),
+          purchased_by: link?.parent_id ?? null,
           status: "active",
         };
         const { error: planErr } = existingPlan

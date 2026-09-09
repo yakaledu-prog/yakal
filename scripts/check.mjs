@@ -24,6 +24,7 @@ const PURE = [
   ['classroom-visibility.ts', 'individual coursework does not leak between students'],
   ['classroom-submissions.ts', 'submission state, and no draft grade shown as a result'],
   ['notification-templates.ts', 'every notification template renders'],
+  ['notification-links.ts', 'every notification link goes somewhere real'],
   ['support-knowledge.ts', 'support knowledge stays relevant and bounded'],
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
@@ -40,12 +41,14 @@ const NEEDS_DB = [
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
+  ['plan-ownership.ts', 'who may change a child\'s counselling plan'],
   ['earnings.mjs', 'nobody can write themselves an earning, and holds hold'],
   ['session-completion.mjs', 'which lessons are finished, in the right timezone'],
   ['run-jobs.ts', 'the scheduled job completes lessons and holds the money'],
   ['counselling-escrow.ts', 'a counselling month is paid at the end of it, and only if worked'],
   ['tax-year-totals.ts', 'the 1099 list, and what Stripe cannot see'],
   ['session-dispute.ts', 'reporting a session holds the money until somebody decides'],
+  ['push-delivery.ts', 'a notification reaches a device, encrypted'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 

@@ -3,7 +3,7 @@ import { X, Mic, Send, Keyboard, Square, BotMessageSquareIcon } from "lucide-rea
 
 import { cn } from "@/utils/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { StreamingText, TypingDots, grow, linkify } from "./chatParts";
+import { StreamingText, TypingDots, grow, formatMessage } from "./chatParts";
 import { askAssistant, STARTERS, type AssistantTurn } from "@/services/assistantService";
 import { speechSupported, takeSentences, useListener, useSpeaker, useVoices } from "./useSpeech";
 
@@ -320,7 +320,7 @@ function Bubble({ role, text }: { role: "user" | "model"; text: string }) {
   // wrapping it in a second bubble makes a short answer look like a receipt.
   return (
     <p className="max-w-[92%] whitespace-pre-wrap text-[13.5px] leading-relaxed text-[#111]">
-      {linkify(text)}
+      {formatMessage(text)}
     </p>
   );
 }
@@ -454,7 +454,7 @@ function VoicePanel({
           )}
           {interim && <p className="text-[13.5px] leading-relaxed text-primary/50">{interim}</p>}
           {answer && (
-            <p className="text-[13.5px] leading-relaxed text-[#111]">{linkify(answer)}</p>
+            <p className="text-[13.5px] leading-relaxed text-[#111]">{formatMessage(answer)}</p>
           )}
         </div>
 

@@ -103,7 +103,7 @@ pass(
 );
 
 // ---- one clashing slot does not lose the rest of the purchase ----
-const courseId = psql("select id from courses where tutor_id='" + tutorId + "' limit 1;");
+const courseId = psql("select course_id from course_tutors where tutor_id='" + tutorId + "' limit 1;");
 psql(`delete from sessions where course_id='${courseId}' and date in ('${DATE}','2027-03-16');`);
 
 const { data: invoice } = await db

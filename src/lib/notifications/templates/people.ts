@@ -73,36 +73,129 @@ export const accountApproved: NotificationTemplate<{
   sample: { fullName: "Bethlehem Alemu", role: "tutor", approved: true, reason: null },
 };
 
-/** A parent asks for a service to be switched on for their child. */
+/**
+ * A student asks a parent to switch a service on.
+ *
+ * This template used to be written for an administrator, and nothing ever sent
+ * it: the only writer is the locked-nav request in DashboardLayout, which
+ * inserted its own row and so produced a notification with no facts and a bare
+ * "Open" button. The reader is the parent, who is the person who can act, so
+ * the words and the link are theirs.
+ */
 export const unlockRequest: NotificationTemplate<{
-  parentName: string;
   studentName: string;
+  studentId: string;
+  /** "College counselling", "Tutoring". Already in words a parent reads. */
   service: string;
+  /** The key the parent's screen needs to offer a one-click grant. */
+  serviceKey: string;
+  /** What they were trying to open. "Essays", "My list". */
+  featureName: string;
 }> = {
   type: "unlock_request",
-  label: "Service unlock request",
+  label: "Service request from a student",
   notification: (v) => ({
-    title: "Service request",
-    message: `${v.parentName} has asked to switch on ${v.service} for ${v.studentName}.`,
-    link: "/admin/users",
+    title: `${v.studentName} asked for ${v.service}`,
+    message: `They tried to open ${v.featureName}, which ${v.service} covers.`,
+    link: `/parent/children?student=${v.studentId}&service=${v.serviceKey}`,
   }),
   email: (v) => ({
-    subject: `${v.parentName} has asked for ${v.service}`,
-    heading: "A family wants a service switched on",
+    subject: `${v.studentName} has asked for ${v.service}`,
+    heading: "Your child has asked for something",
     intro:
-      `${v.parentName} has asked for ${v.service} to be made available to ${v.studentName}. ` +
-      `Nothing has changed yet; the request is waiting for somebody to act on it.`,
+      `${v.studentName} tried to open ${v.featureName} and found it locked, so they have ` +
+      `asked you for ${v.service}. Nothing has been bought and nothing has changed. If you ` +
+      `have another parent on the account, they were asked too, and either of you can set ` +
+      `it up.`,
     facts: [
-      { label: "Requested by", value: v.parentName },
-      { label: "For", value: v.studentName },
+      { label: "Asked by", value: v.studentName },
+      { label: "Wanted to open", value: v.featureName },
+      { label: "Needs", value: v.service },
+    ],
+    cta: {
+      label: "Set it up",
+      url: `/parent/children?student=${v.studentId}&service=${v.serviceKey}`,
+    },
+    footer:
+      "Access follows the payment. Once it is bought it opens on its own, with nothing else to switch on.",
+  }),
+  sample: {
+    studentName: "Amen Worku",
+    studentId: "9ef3ccc6-977b-44b2-8694-45c27d1e5a09",
+    service: "College counselling",
+    serviceKey: "admissions",
+    featureName: "Essays",
+  },
+};
+
+/** The parent turns that request down. */
+export const unlockRequestDeclined: NotificationTemplate<{
+  parentName: string;
+  service: string;
+  featureName: string;
+}> = {
+  type: "unlock_request",
+  label: "Service request declined",
+  notification: (v) => ({
+    title: `${v.service} was not approved`,
+    message: `${v.parentName} decided against it for now.`,
+    link: "/student/notifications",
+  }),
+  email: (v) => ({
+    subject: `About your request for ${v.service}`,
+    heading: "Your request was not approved",
+    intro:
+      `${v.parentName} has decided against ${v.service} for now, so ${v.featureName} stays ` +
+      `locked. This is not a permanent answer and it is worth asking them why rather than ` +
+      `asking again through the app.`,
+    facts: [
+      { label: "Decided by", value: v.parentName },
       { label: "Service", value: v.service },
     ],
-    cta: { label: "Open the account", url: "/admin/users" },
-    footer: null,
+    cta: null,
+    footer: "Everything you already have access to is unaffected.",
   }),
   sample: {
     parentName: "Tigist Worku",
-    studentName: "Amen Worku",
-    service: "college counselling",
+    service: "College counselling",
+    featureName: "Essays",
   },
+};
+
+/** The student answers a parent's link request. */
+export const parentLinkDecided: NotificationTemplate<{
+  studentName: string;
+  accepted: boolean;
+}> = {
+  type: "parent_link",
+  label: "Parent link decision",
+  notification: (v) => ({
+    title: v.accepted ? "You are linked" : "Link request declined",
+    message: v.accepted
+      ? `${v.studentName} accepted. Their courses, sessions and college list are on your account now.`
+      : `${v.studentName} declined the request.`,
+    link: v.accepted ? "/parent/children" : "/parent/notifications",
+  }),
+  email: (v) => ({
+    subject: v.accepted
+      ? `${v.studentName} accepted your link request`
+      : `${v.studentName} declined your link request`,
+    heading: v.accepted ? "You are linked" : "Your link request",
+    intro: v.accepted
+      ? `${v.studentName} has accepted, so their account is on yours. You can see the ` +
+        `courses they are enrolled on, the sessions they have booked and how their college ` +
+        `list is coming along, and you can buy either service for them. What you cannot ` +
+        `see is their messages with a tutor or a counsellor.`
+      : `${v.studentName} has declined the request to link your accounts. Nothing has ` +
+        `changed and they have not been told anything beyond that you asked.`,
+    facts: [
+      { label: "Student", value: v.studentName },
+      { label: "Decision", value: v.accepted ? "Accepted" : "Declined" },
+    ],
+    cta: v.accepted ? { label: "Open their account", url: "/parent/children" } : null,
+    footer: v.accepted
+      ? null
+      : "If this was a mistake on their part, they can accept a fresh request.",
+  }),
+  sample: { studentName: "Amen Worku", accepted: true },
 };

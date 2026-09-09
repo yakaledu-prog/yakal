@@ -9,6 +9,22 @@
   }
 }
 
+/* ── Switching theme ──
+   Around 150 components carry transition-colors, which animates border-color
+   over 150ms. The theme swap itself is instant, so for that moment near-white
+   borders sat on a freshly dark background and every edge in the app flashed.
+   The same in reverse going back to light.
+
+   The transition is worth keeping for hover, so it is suppressed only while the
+   class is on, which lib/theme.ts adds for one frame. Not a media query and not
+   prefers-reduced-motion: this removes motion rather than adding it. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
 /* ── Shimmer button (hover only) ── */
 @keyframes shimmer {
   0% {

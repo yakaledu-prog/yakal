@@ -209,16 +209,19 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
 
           {/* What it adds up to. The number that matters is lessons a month. */}
           <aside className="h-fit rounded-2xl border border-border bg-card p-5">
-            {course?.tutor && (
+            {/* The demo fixture has a roster of one, and this page is a
+                layout sketch rather than a booking, so it shows the first
+                rather than asking who. The real page picks in the gallery. */}
+            {course?.tutors[0] && (
               <div className="flex items-center gap-3 border-b border-border pb-4">
                 <img
-                  src={course.tutor.avatarUrl || dicebearUrl(course.tutor.name)}
+                  src={course.tutors[0].avatarUrl || dicebearUrl(course.tutors[0].name)}
                   alt=""
                   className="h-11 w-11 rounded-full object-cover"
                 />
                 <div className="min-w-0">
                   <p className="truncate text-[14.5px] font-medium text-foreground">
-                    {course.tutor.name}
+                    {course.tutors[0].name}
                   </p>
                   <p className="text-[12.5px] text-muted-foreground">{course.subject}</p>
                 </div>

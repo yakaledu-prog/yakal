@@ -103,8 +103,14 @@ jobs:
 
       # Supabase runs Postgres 17 and ubuntu-latest ships the 16 client, which
       # pg_dump refuses to use against a newer server.
+      #
+      # Installing 17 is not enough on its own: the runner already has 16 at
+      # /usr/bin/pg_dump, which keeps winning on PATH. So the 17 binaries go on
+      # the front of PATH and the next step asserts the version rather than
+      # trusting that they did.
       - name: Install the Postgres 17 client
         run: |
+          set -euo pipefail
           sudo install -d /usr/share/postgresql-common/pgdg
           sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
             https://www.postgresql.org/media/keys/ACCC4CF8.asc
@@ -113,7 +119,17 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17
-          pg_dump --version
+
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+          # Fail here rather than three steps later with a version mismatch
+          # that reads like a server problem.
+          ACTUAL=$(/usr/lib/postgresql/17/bin/pg_dump --version)
+          echo "$ACTUAL"
+          case "$ACTUAL" in
+            *" 17."*) ;;
+            *) echo "Expected a 17 client, got: $ACTUAL"; exit 1 ;;
+          esac
 
       - name: Dump, then encrypt
         env:
@@ -123,13 +139,21 @@ jobs:
           set -euo pipefail
           STAMP=$(date -u +%F)
 
+          # The absolute path, not PATH. GITHUB_PATH applies to later steps and
+          # this one has already started, so relying on it here would silently
+          # pick the runner's 16 again.
+          PG_DUMP=/usr/lib/postgresql/17/bin/pg_dump
+          "$PG_DUMP" --version
+
           # Plain SQL rather than the custom format: it compresses better and,
           # more importantly, it can be read and partially recovered by hand if
           # the tooling is ever the thing that is broken.
           #
           # --no-owner and --no-privileges so it restores into a fresh project
           # without every GRANT failing on roles that do not exist there yet.
-          pg_dump "$DB_URL" \
+          # Read-only. pg_dump takes ACCESS SHARE locks, which do not block
+          # anybody using the site while this runs.
+          "$PG_DUMP" "$DB_URL" \
             --no-owner --no-privileges --clean --if-exists \
             --quote-all-identifiers \
             -f "dump.sql"

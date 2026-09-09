@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap } from "lucide-react";
+import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService } from "@/services/diagnosticService";
 import { diagnosticTests } from "@/data/diagnostics";
@@ -34,10 +34,26 @@ export function StudentLayout() {
 
   const navItems = [
     { name: "Home", href: "/student", icon: <Home size={20} /> },
-    { name: "My Learning", href: "/student/my-learning", icon: <CheckSquare size={20} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
-    { name: "Diagnostics", href: "/student/diagnostics", icon: <Activity size={20} />, badge: incompleteDiagnostics, isLocked: !hasTutoring, lockedBy: "tutoring" },
+    // Outside both groups on purpose. A calendar answers "what is my week",
+    // which is not a question about one service or the other.
     { name: "Calendar", href: "/student/calendar", icon: <Calendar size={20} /> },
-    { name: "Sessions", href: "/student/sessions", icon: <History size={20} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
+    {
+      // Grouped rather than merged. Each of these does a different job and the
+      // accordion only says which service it belongs to, which is the thing a
+      // student actually needs to know: one of these is what a parent paid for
+      // and the other may not be.
+      name: "Tutoring",
+      href: "/student/my-learning",
+      icon: <BookOpen size={20} />,
+      children: [
+        { name: "My Learning", href: "/student/my-learning", icon: <CheckSquare size={18} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
+        { name: "Diagnostics", href: "/student/diagnostics", icon: <Activity size={18} />, badge: incompleteDiagnostics, isLocked: !hasTutoring, lockedBy: "tutoring" },
+        // "Lessons", not "Sessions". Advising hours are sessions too, and a
+        // list that says Sessions while showing only half of them is a lie the
+        // College group next to it makes obvious.
+        { name: "Lessons", href: "/student/sessions", icon: <History size={18} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
+      ],
+    },
     {
       name: "College",
       href: "/student/college-list",
@@ -46,9 +62,9 @@ export function StudentLayout() {
         { name: "Roadmap", href: "/student/roadmap", icon: <Map size={18} /> },
         { name: "Explore", href: "/student/explore", icon: <Compass size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "My list", href: "/student/college-list", icon: <List size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
-        // Its own entry, because the general Sessions list is locked behind
-        // tutoring: a family who bought counselling and nothing else could not
-        // see the hours they were paying for anywhere at all.
+        // Its own entry, because Lessons is locked behind tutoring: a family
+        // who bought counselling and nothing else could not see the hours they
+        // were paying for anywhere at all.
         { name: "Advising", href: "/student/advising", icon: <CalendarDays size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "Applications", href: "/student/my-app", icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
       ],
@@ -56,6 +72,5 @@ export function StudentLayout() {
     { name: "Messages", href: "/student/messages", icon: <MessagesSquareIcon size={20} /> },
     { name: "Notifications", href: "/student/notifications", icon: <Bell size={20} /> },
   ];
-
   return <DashboardLayout navItems={navItems} basePath="/student" />;
 }

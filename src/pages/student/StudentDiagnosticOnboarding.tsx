@@ -78,13 +78,20 @@ export function StudentDiagnosticOnboarding() {
     if (!user || !activeTest) return;
 
     setSubmitting(true);
-    let correct = 0;
-    activeTest.questions.forEach((q) => {
-      if (answers[q.id] === q.correctAnswer) correct++;
-    });
 
-    await diagnosticService.saveResult(user.id, activeTest.id, correct, activeTest.questions.length);
-    toast.success(`Scored ${correct} out of ${activeTest.questions.length} on ${activeTest.title}!`);
+    const answerList = activeTest.questions.map((q) => ({
+      questionId: q.id,
+      chosen: answers[q.id] ?? -1,
+      correct: q.correctAnswer,
+    }));
+
+    const res = await diagnosticService.saveResult(user.id, activeTest.id, answerList);
+    if (!res.ok) {
+      toast.error("Could not save your result. Please try again.");
+      setSubmitting(false);
+      return;
+    }
+    toast.success(`Scored ${res.score} out of ${res.total} on ${activeTest.title}!`);
     setSubmitting(false);
 
     handleNextTest();

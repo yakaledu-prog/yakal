@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
@@ -23,7 +23,10 @@ import {
 import { toast } from "sonner";
 import { SupportDrawer } from "@/components/support/SupportDrawer";
 import { SUPPORT_ROLES, type SupportChatRole } from "@/services/supportChatService";
+import { applyTheme, currentTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
+import { SERVICE_LABEL } from "@/services/parentService";
+import { sendFromTemplate } from "@/services/notificationService";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreadcrumbLabels } from "../contexts/BreadcrumbContext";
 import { useTopbarActionsContext } from "../contexts/TopbarActionsContext";
@@ -54,7 +57,13 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // One flag, two meanings: expanded or collapsed on a desktop, drawer open or
+  // shut on a phone. It defaulted to true, so every phone landed with the
+  // drawer covering the page and the menu button that closes it underneath.
+  // 768 is Tailwind's md, which is the breakpoint the aside itself switches on.
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === "undefined" || window.innerWidth >= 768
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -62,6 +71,12 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
   const { profile, user } = useAuth();
   const bcLabels = useBreadcrumbLabels();
   const { actions: topbarActions } = useTopbarActionsContext();
+  // Only on a phone: on a desktop the sidebar is not a drawer and closing it
+  // would collapse it every time somebody used it.
+  const closeDrawerOnPhone = useCallback(() => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  }, []);
+
   const badges = useNavBadges();
 
   // Yali answers about how the app works for a given role, so an account
@@ -148,19 +163,25 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       // Asking both is right: either can grant, and neither has to be the one
       // who happens to open the app first.
-      const { error: notifError } = await supabase.from("notifications").insert(
-        parentIds.map((parentId) => ({
-          user_id: parentId,
-          // The type and link carry enough for the parent screen to offer a
-          // one-click grant rather than sending them off to find the setting.
-          type: "unlock_request",
-          title: "Feature unlock request",
-          message: `${profile.full_name} has asked for access to ${lockedItem.name}.`,
-          link: `/parent/children?student=${user.id}&service=${lockedItem.lockedBy ?? "admissions"}`,
-        }))
+      //
+      // Through the template rather than an insert of its own. Written by hand
+      // this produced a row with no template and no vars, which the inbox can
+      // only render as its one stored line and a bare Open button, and which
+      // sent no email at all. The link it builds is unchanged: the parent's
+      // screen reads the student and service out of it to offer a one-click
+      // grant rather than sending them off to find the setting.
+      const serviceKey = lockedItem.lockedBy ?? "admissions";
+      await Promise.all(
+        parentIds.map((parentId) =>
+          sendFromTemplate(parentId, "unlockRequest", {
+            studentName: profile.full_name,
+            studentId: user.id,
+            service: SERVICE_LABEL[serviceKey] ?? serviceKey,
+            serviceKey,
+            featureName: lockedItem.name,
+          })
+        )
       );
-
-      if (notifError) throw notifError;
       toast.success("Request sent. Your parent can add it from their account.", {
         id: "request-access",
       });
@@ -181,6 +202,10 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
+        // Named, because a screen reader announced it as "complementary" and
+        // nothing else. The settings modal has an aside of its own, so this is
+        // also the only way to tell the two apart.
+        aria-label="Sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-50 md:relative md:flex flex-col transition-all duration-300 bg-card dark:bg-[#111b21] border-r dark:border-[#2a3942]",
           sidebarOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full md:w-20 md:translate-x-0"
@@ -189,7 +214,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
         <div className={cn("h-16 flex items-center px-4", sidebarOpen ? "justify-between" : "justify-center")}>
           {sidebarOpen ? (
             <>
-              <Link to="/" className="flex items-center gap-2">
+              <Link to="/" onClick={closeDrawerOnPhone} className="flex items-center gap-2">
                 <img src={logoImg} alt="Yakal" className="h-10 object-contain" />
               </Link>
               <button
@@ -218,6 +243,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 sidebarOpen={sidebarOpen}
                 basePath={basePath}
                 pathname={location.pathname}
+                onNavigate={closeDrawerOnPhone}
               />
             ) : (
               <NavLeaf
@@ -226,6 +252,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 sidebarOpen={sidebarOpen}
                 basePath={basePath}
                 pathname={location.pathname}
+                onNavigate={closeDrawerOnPhone}
               />
             )
           )}
@@ -233,7 +260,9 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
         {/* Profile Card */}
         <div className="p-2 border-t dark:border-[#2a3942]">
-          <Link to={`/${profile?.role || 'student'}/profile`} className={cn("flex items-center gap-3 w-full rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", sidebarOpen ? "p-4" : "p-2 justify-center")}>
+          {/* The same close-on-follow as the nav links above. Without it the
+              drawer stayed over the profile page it had just opened. */}
+          <Link to={`/${profile?.role || 'student'}/profile`} onClick={closeDrawerOnPhone} className={cn("flex items-center gap-3 w-full rounded-lg hover:bg-[#f7f7f7] dark:hover:bg-[#2a394277] transition-colors", sidebarOpen ? "p-4" : "p-2 justify-center")}>
             <img src={profile?.avatar_url || dicebearUrl(profile?.full_name || "user")} alt="Profile" className="h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
               <div className="flex flex-col gap-1 w-full min-w-0">
@@ -241,7 +270,17 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 <div className="flex items-center justify-between gap-2 min-w-0">
                   <p className="text-xs text-muted-foreground truncate capitalize min-w-0">{profile?.role || "Student"}</p>
                   <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
-                    <button onClick={() => document.documentElement.classList.toggle("dark")} className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1" title="Toggle Theme">
+                    {/* Through applyTheme, not classList.toggle. Toggling the
+                        class directly changed the page and nothing else: the
+                        choice was not remembered, so a reload undid it, and
+                        the transition suppression that stops every border
+                        flashing white on the way to dark never ran. */}
+                    <button
+                      onClick={() => applyTheme(currentTheme() === "dark" ? "light" : "dark")}
+                      className="text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted p-1"
+                      title="Toggle theme"
+                      aria-label="Toggle theme"
+                    >
                       <Moon size={12} className="hidden dark:block" />
                       <Sun size={12} className="block dark:hidden" />
                     </button>
@@ -419,6 +458,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 // -- Sidebar items ------------------------------------------------------------
 
 interface NavNodeProps {
+  /** Puts the drawer away on a phone. A no-op on a desktop. */
+  onNavigate?: () => void;
   item: NavItem;
   sidebarOpen: boolean;
   basePath: string;
@@ -432,7 +473,7 @@ function matches(href: string, basePath: string, pathname: string) {
 }
 
 function NavLeaf({
-  item, sidebarOpen, basePath, pathname, nested = false,
+  item, sidebarOpen, basePath, pathname, nested = false, onNavigate,
 }: NavNodeProps) {
   const isActive = matches(item.href ?? "", basePath, pathname);
   const isLocked = !!item.isLocked;
@@ -440,6 +481,12 @@ function NavLeaf({
   return (
     <Link
       to={item.href ?? "#"}
+      // Following a link on a phone puts the drawer away. Without this it
+      // stays over the page you just asked for, and the first tap on the new
+      // page is spent dismissing it. Done here rather than in an effect on the
+      // pathname, which is a setState in an effect and a render with the
+      // drawer still open before it closes.
+      onClick={onNavigate}
       title={!sidebarOpen ? item.name : undefined}
       className={cn(
         "flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
@@ -483,7 +530,7 @@ function NavLeaf({
 }
 
 function NavGroup({
-  item, sidebarOpen, basePath, pathname,
+  item, sidebarOpen, basePath, pathname, onNavigate,
 }: NavNodeProps) {
   const children = item.children ?? [];
   const hasActiveChild = children.some((c) => matches(c.href ?? "", basePath, pathname));
@@ -506,6 +553,7 @@ function NavGroup({
             sidebarOpen={sidebarOpen}
             basePath={basePath}
             pathname={pathname}
+            onNavigate={onNavigate}
           />
         ))}
       </>
@@ -554,6 +602,7 @@ function NavGroup({
               sidebarOpen={sidebarOpen}
               basePath={basePath}
               pathname={pathname}
+              onNavigate={onNavigate}
               nested
             />
           ))}

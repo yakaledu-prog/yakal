@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { authedPost } from "@/lib/authedFetch";
+import { sendFromTemplate } from "@/services/notificationService";
 
 export interface AdminUser {
   id: string;
@@ -41,8 +42,6 @@ export interface AdminCourse {
   thumbnail_url: string | null;
   google_classroom_url: string | null;
   is_active: boolean;
-  /** Null until an admin accepts one of the applicants. */
-  tutor_id: string | null;
 }
 
 export interface ContactMessage {
@@ -238,38 +237,58 @@ export async function getApplicants(
  * Best effort: a failure here must not make the caller think the decision
  * itself failed, because the profile row is already updated by then.
  */
-async function notifyDecision(userId: string, approved: boolean, reason?: string) {
-  const { error } = await supabase.from("notifications").insert({
-    user_id: userId,
-    type: "system",
-    title: approved ? "Your application was approved" : "Your application was not approved",
-    message: approved
-      ? "Welcome aboard. Your account is active and you can start taking on students."
-      : reason?.trim()
-        ? `Reason given: ${reason.trim()}`
-        : "Your application was not approved at this time.",
-    link: approved ? "/" : "/pending-approval",
-  });
-  if (error) console.warn("Could not notify the applicant", error.message);
+async function notifyDecision(
+  userId: string,
+  approved: boolean,
+  reason?: string,
+  applicant?: { fullName?: string | null; role?: string | null }
+) {
+  // Through the accountApproved template, which has existed all along and had
+  // no caller. The insert this replaces wrote type "system" with a link to
+  // "/", so an approved tutor got a notification with no facts, a bare Open
+  // button, and no email telling them their account was live.
+  await sendFromTemplate(userId, "accountApproved", {
+    fullName: applicant?.fullName ?? "",
+    role: applicant?.role ?? "tutor",
+    approved,
+    reason: reason?.trim() || null,
+  }).catch((err) => console.warn("Could not notify the applicant", err?.message));
+}
+
+/**
+ * The applicant's name and role, for the email that greets them by both.
+ *
+ * Read before the update rather than after, so a failed update does not leave
+ * a lookup running for nothing.
+ */
+async function applicantFor(id: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, role")
+    .eq("id", id)
+    .maybeSingle();
+  return { fullName: data?.full_name ?? null, role: data?.role ?? null };
 }
 
 export async function approveUser(id: string): Promise<Result> {
+  const applicant = await applicantFor(id);
   const { error } = await supabase
     .from("profiles")
     .update({ status: "active", rejection_reason: null })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
-  await notifyDecision(id, true);
+  await notifyDecision(id, true, undefined, applicant);
   return { success: true };
 }
 
 export async function rejectUser(id: string, reason: string): Promise<Result> {
+  const applicant = await applicantFor(id);
   const { error } = await supabase
     .from("profiles")
     .update({ status: "rejected", rejection_reason: reason || "Not approved" })
     .eq("id", id);
   if (error) return { success: false, error: error.message };
-  await notifyDecision(id, false, reason);
+  await notifyDecision(id, false, reason, applicant);
   return { success: true };
 }
 
@@ -292,7 +311,7 @@ export async function getAllInvoices(): Promise<AdminInvoice[]> {
 export async function getCourses(): Promise<AdminCourse[]> {
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_id")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
     .order("created_at", { ascending: false });
   return courses || [];
 }
@@ -300,7 +319,7 @@ export async function getCourses(): Promise<AdminCourse[]> {
 export async function getCourse(id: string): Promise<AdminCourse | null> {
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active, tutor_id")
+    .select("id, title, subject, description, price_cents, tutor_payout_cents, thumbnail_url, google_classroom_url, is_active")
     .eq("id", id)
     .single();
   return course || null;
@@ -422,7 +441,13 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
     } else if (role === "tutor") {
       const [sessions, courses, invoices] = await Promise.all([
         rows("tutor sessions", supabase.from("sessions").select("*").eq("tutor_id", id).order("date", { ascending: false }).order("start_time", { ascending: false })),
-        rows("tutor courses", supabase.from("courses").select("*").eq("tutor_id", id)),
+        // Through the roster. This read courses.tutor_id, which held one
+        // tutor, so a tutor on three courses showed whichever one had their id
+        // in the column and none of the rest.
+        rows("tutor courses", supabase
+          .from("course_tutors")
+          .select("course:courses (*)")
+          .eq("tutor_id", id)),
         // Earnings, not invoices. An invoice is what a parent paid us; what a
         // tutor is owed is a different question with a different answer, and
         // showing the first labelled as the second was how a tutor's page came
@@ -435,7 +460,9 @@ export async function getAdminUserDetails(id: string, role: string): Promise<Res
           .order("created_at", { ascending: false })),
       ]);
       details.sessions = sessions;
-      details.courses = courses;
+      // Unwrapped from the join rows, so the modal sees courses rather than
+      // roster entries wrapping them.
+      details.courses = (courses as any[]).map((r) => r.course).filter(Boolean);
       // Shaped like the invoice rows the modal already renders, so it does not
       // have to know which of the two it is looking at.
       details.invoices = invoices.map((e: any) => ({
@@ -638,7 +665,9 @@ export async function getCourseRollups(): Promise<
     supabase.from("enrolments").select("course_id").eq("status", "active"),
     supabase
       .from("courses")
-      .select(`id, tutor:profiles!courses_tutor_id_fkey (full_name, avatar_url)`),
+      .select(`id,
+               roster:course_tutors (created_at,
+                 tutor:profiles!course_tutors_tutor_id_fkey (id, full_name, avatar_url))`),
   ]);
 
   if (enrolRes.error) console.error("getCourseRollups enrolments:", enrolRes.error);
@@ -650,10 +679,24 @@ export async function getCourseRollups(): Promise<
   > = {};
 
   for (const row of (courseRes.data ?? []) as any[]) {
+    // The list has one column for this, so a course with a roster names the
+    // first and counts the rest rather than dropping them. Ordered oldest
+    // first with ties broken on id: a seed writes a whole roster in one
+    // transaction, so the timestamps match and the order would otherwise be
+    // the planner's to pick.
+    const roster = (row.roster ?? []).slice().sort((a: any, b: any) => {
+      const byTime = String(a.created_at).localeCompare(String(b.created_at));
+      return byTime !== 0 ? byTime : String(a.tutor?.id).localeCompare(String(b.tutor?.id));
+    });
+    const lead = roster[0]?.tutor ?? null;
     rollups[row.id] = {
       students: 0,
-      tutorName: row.tutor?.full_name ?? null,
-      tutorAvatarUrl: row.tutor?.avatar_url ?? null,
+      tutorName: lead
+        ? roster.length > 1
+          ? `${lead.full_name} and ${roster.length - 1} other${roster.length > 2 ? "s" : ""}`
+          : lead.full_name
+        : null,
+      tutorAvatarUrl: lead?.avatar_url ?? null,
     };
   }
   for (const row of (enrolRes.data ?? []) as any[]) {

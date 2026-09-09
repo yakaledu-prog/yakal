@@ -1,28 +1,28 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Calendar, PenTool  } from "lucide-react";
+import { BookOpen, Calendar, PenTool } from "lucide-react";
 
-import { ChildViewFrame } from "@/components/shared/ChildViewFrame";
-import { getCollegeProfile } from "@/services/collegeService";
+import { PageWrapper } from "@/components/ui/PageWrapper";
 import { cn } from "@/utils/cn";
 import { ROADMAP_TABS, StudentRoadmap, type RoadmapTab } from "@/pages/student/StudentRoadmap";
 
 // ============================================================
-// The parent's view of a child's college roadmap.
+// The college roadmap, for a parent.
 //
-// Previously a fork of the student page that read and, worse, wrote against
-// the parent's own id: the autosave in the header created a college
-// application row on the parent's account every time the page was opened.
+// The same advice every family gets, with nobody's name on it. It used to be
+// the student page rendered against a chosen child: a child picker down the
+// side, the child's stage, intended major and graduation year in the banner,
+// and the timeline anchored on their year with "Amen is here" against the term
+// they were in.
 //
-// It is now the student's roadmap rendered against the child, read only. The
-// timeline needs the child's grade level to know which year to highlight, so
-// the frame passes it down rather than letting it fall back to the signed-in
-// profile.
+// None of that is what a parent opens this for. They are reading the plan, to
+// see what a year asks for and whether it is being done, and a page that has
+// to be told which child first puts a step in front of that. Where a specific
+// child stands is a different question, and My Children answers it.
 //
-// Stage, major and graduation year sit in the banner beside the title, and the
-// tabs along its bottom edge, matching the counselor's version of the same
-// page. That means the tab lives here rather than inside the roadmap, which is
-// why it is passed down.
+// So the grades are the parent's to click. Nothing here reads a student, which
+// is also what stops the older bug coming back: before the child frame, this
+// page fell through to the signed-in id and created a college application row
+// on the parent's own account every time it was opened.
 // ============================================================
 
 const TAB_ICON: Record<RoadmapTab, React.ReactNode> = {
@@ -31,78 +31,52 @@ const TAB_ICON: Record<RoadmapTab, React.ReactNode> = {
   resources: <BookOpen size={16} />,
 };
 
-function HeaderFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">{label}</p>
-      <p className="mt-0.5 text-[15px] font-medium capitalize text-white">{value}</p>
-    </div>
-  );
-}
-
 export function ParentRoadmap() {
   const [tab, setTab] = useState<RoadmapTab>("timeline");
-  const [childId, setChildId] = useState<string | null>(null);
-
-  // Same query key as the roadmap itself, so this shares its cache rather than
-  // fetching the application twice.
-  const { data } = useQuery({
-    queryKey: ["college-profile", childId],
-    queryFn: () => getCollegeProfile(childId!),
-    enabled: !!childId,
-  });
-  const app = data?.application;
 
   return (
-    <ChildViewFrame
-      onChildChange={setChildId}
-      title="College roadmap"
-      subtitle="Where your child is up to, and what comes next."
-      requiresService="admissions"
-      headerRight={
-        <div className="flex flex-wrap items-start gap-x-10 gap-y-3 pt-1">
-          <HeaderFact
-            label="Stage"
-            value={app?.stage === "research" ? "Researching" : (app?.stage ?? "Not set")}
-          />
-          <HeaderFact label="Intended major" value={app?.program_interest || "Not chosen yet"} />
-          <HeaderFact label="Grad year" value={app?.grad_year ? String(app.grad_year) : "Not set"} />
+    <PageWrapper className="!p-0">
+      <div className="flex-1 min-h-screen bg-background dark:bg-[#111b21]">
+        <div className="relative overflow-hidden bg-primary text-white">
+          <svg
+            className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
+            viewBox="0 0 400 200"
+            preserveAspectRatio="none"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
+          </svg>
+
+          <div className="relative z-10 px-6 pt-6 md:px-10 md:pt-10">
+            <h1 className="text-3xl font-bold tracking-tight md:text-[40px]">College roadmap</h1>
+            <p className="mt-2 max-w-2xl text-[15px] text-white/80">
+              What each year of secondary school asks for, and when. Pick a year to read it.
+            </p>
+
+            <nav className="mt-6 flex gap-1 overflow-x-auto">
+              {ROADMAP_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "flex items-center gap-2 whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
+                    tab === t.id
+                      ? "border-white font-semibold text-white"
+                      : "border-transparent text-white/60 hover:text-white"
+                  )}
+                >
+                  {TAB_ICON[t.id]}
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
-      }
-      headerBottom={
-        <nav className="mt-6 flex gap-1 overflow-x-auto">
-          {ROADMAP_TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "flex items-center gap-2 whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
-                tab === t.id
-                  ? "border-white font-semibold text-white"
-                  : "border-transparent text-white/60 hover:text-white"
-              )}
-            >
-              {TAB_ICON[t.id]}
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      }
-    >
-      {(child) => {
-        return (
-          <StudentRoadmap
-            studentId={child.id}
-            gradeLevel={child.gradeLevel}
-            subjectName={child.name.split(" ")[0]}
-            embedded
-            hideChrome
-            tab={tab}
-            onTabChange={setTab}
-          />
-        );
-      }}
-    </ChildViewFrame>
+
+        <StudentRoadmap generic embedded hideChrome tab={tab} onTabChange={setTab} />
+      </div>
+    </PageWrapper>
   );
 }

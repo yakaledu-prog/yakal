@@ -2,7 +2,7 @@ import type { LinkedChild } from "@/services/parentService";
 import type { BillingData, CoursePackage, PackageSession } from "@/services/packageService";
 import type { SavedCard } from "@/services/billingService";
 import type { TutorAvailability } from "@/services/availability";
-import type { CourseWithTutor } from "@/services/courseApplicationService";
+import type { CourseWithTutors } from "@/services/courseApplicationService";
 
 // ============================================================
 // Fixed data for the alternative screens.
@@ -208,7 +208,7 @@ export const DEMO_CARDS: SavedCard[] = [
   { id: "demo-card-2", brand: "mastercard", last4: "8210", exp_month: 3, exp_year: 2028, isDefault: false },
 ];
 
-export const DEMO_COURSE: CourseWithTutor = {
+export const DEMO_COURSE: CourseWithTutors = {
   id: "demo-course-chemistry",
   title: "Chemistry, Grade 11 Foundations",
   subject: "Chemistry",
@@ -217,9 +217,8 @@ export const DEMO_COURSE: CourseWithTutor = {
   thumbnailUrl: null,
   priceCents: 5500,
   tutorPayoutCents: 3500,
-  tutorId: TUTOR_ID,
   createdAt: new Date(),
-  tutor: {
+  tutors: [{
     id: TUTOR_ID,
     name: "Bethlehem Alemu",
     avatarUrl: null,
@@ -247,7 +246,7 @@ export const DEMO_COURSE: CourseWithTutor = {
       { name: "Amharic", level: "Native" },
       { name: "English", level: "Fluent" },
     ],
-  },
+  }],
 };
 
 /**

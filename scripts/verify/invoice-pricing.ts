@@ -38,20 +38,19 @@ if (signInErr) {
 }
 const token = session.session.access_token;
 
-// A priced course with a tutor, which is what a parent can actually book.
-const { data: course } = await admin
+// A priced course with a roster, which is what a parent can actually book.
+const { data: courses } = await admin
   .from('courses')
-  .select('id, title, price_cents, tutor_payout_cents, tutor_id')
-  .not('tutor_id', 'is', null)
+  .select('id, title, price_cents, tutor_payout_cents, roster:course_tutors (tutor_id)')
   .not('price_cents', 'is', null)
-  .eq('is_active', true)
-  .limit(1)
-  .maybeSingle();
+  .eq('is_active', true);
 
+const course = (courses ?? []).find((c: any) => (c.roster ?? []).length > 0);
 if (!course) {
   console.error('Needs one active course with a tutor and a price. Run npm run db:seed.');
   process.exit(1);
 }
+const rosterIds: string[] = (course as any).roster.map((r: any) => r.tutor_id);
 
 const { data: parent } = await admin.from('profiles').select('id').eq('email', PARENT).maybeSingle();
 if (!parent) {
@@ -92,15 +91,38 @@ const booking = [
   { date: '2027-03-02', startTime: '10:00', durationMinutes: 60 },
 ];
 
+// ---- naming somebody who does not teach the course is refused ----
+//
+// The request may name a tutor now, because a course can carry several and the
+// family chooses. What it may not do is name anybody: the id is checked
+// against the roster. Before rosters existed the handler ignored tutorId
+// outright, which was the same protection by a blunter route.
+const wrongPayee = await call({
+  courseId: course.id,
+  studentId: myChild.student_id,
+  booking,
+  tutorId: parent.id,
+  kind: 'tutoring',
+});
+check(
+  'a payee who does not teach the course is refused',
+  wrongPayee.status === 400,
+  `HTTP ${wrongPayee.status}: ${JSON.stringify(wrongPayee.payload)}`
+);
+if (wrongPayee.status === 200 && wrongPayee.payload?.invoiceId) {
+  await admin.from('invoices').delete().eq('id', wrongPayee.payload.invoiceId);
+}
+
 // ---- a forged price is ignored ----
 const forged = await call({
   courseId: course.id,
   studentId: myChild.student_id,
   booking,
-  // Everything below is the attack, and every one of them used to work.
+  // A real tutor on this course, which is the family's to choose. Everything
+  // below it is the attack, and every one of them used to work.
+  tutorId: rosterIds[0],
   amountCents: 1,
   description: 'Totally legitimate charge',
-  tutorId: parent.id,
   kind: 'tutoring',
 });
 
@@ -118,7 +140,7 @@ if (forged.status !== 200) {
     process.exit(1);
   }
 
-  const expectedAmount = course.price_cents * booking.length;
+  const expectedAmount = course.price_cents! * booking.length;
   const expectedEarning =
     course.tutor_payout_cents != null ? course.tutor_payout_cents * booking.length : null;
 
@@ -133,9 +155,9 @@ if (forged.status !== 200) {
     `${inv.tutor_earning_cents} vs ${expectedEarning} expected`
   );
   check(
-    'the payee is the course tutor, not the one named',
-    inv.tutor_id === course.tutor_id,
-    inv.tutor_id === parent.id ? 'the request redirected the payout' : 'ok'
+    'the payee is the tutor the family chose',
+    inv.tutor_id === rosterIds[0],
+    `${inv.tutor_id} vs ${rosterIds[0]} expected`
   );
   check(
     'the description is built, not accepted',
