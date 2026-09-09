@@ -168,7 +168,7 @@ export function ParentBilling() {
   // the header disagrees with the list underneath it.
   const paidTotal =
     packages.reduce((n, p) => n + p.totalPaidCents, 0) +
-    admissionsPlans.reduce((n, p) => n + p.tier.priceCents, 0);
+    admissionsPlans.reduce((n, p) => n + (p.billedAmountCents ?? p.tier.priceCents), 0);
   const planCount = packages.length + admissionsPlans.length;
   // Money a parent can actually do something about. An abandoned checkout is
   // not a debt and should not be totted up as one.
@@ -759,7 +759,10 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
           })}
         </span>
         <span className="shrink-0">
-          <Money cents={plan.tier.priceCents} /> a month
+          {/* What Stripe bills, not the tier's list price. A subscription keeps
+              the Price it was created with, so after an admin moved Premier
+              from $250 to $280 this said $280 while the card was charged $250. */}
+          <Money cents={plan.billedAmountCents ?? plan.tier.priceCents} /> a month
         </span>
       </div>
 
@@ -1008,7 +1011,7 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
                 {people?.counselor ? ` with ${people.counselor.fullName}` : ""}
               </p>
               <p className="truncate text-[12.5px] text-muted-foreground">
-                {plan.tier.name}, {money(plan.tier.priceCents)} a month
+                {plan.tier.name}, {money(plan.billedAmountCents ?? plan.tier.priceCents)} a month
               </p>
             </div>
           </div>

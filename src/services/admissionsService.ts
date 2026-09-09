@@ -58,6 +58,13 @@ export interface AdmissionsPlan {
   counselorAvatarUrl: string | null;
   /** When the month they have paid for runs out. Null until Stripe says. */
   currentPeriodEnd: string | null;
+  /**
+   * What Stripe actually bills this plan, which is not always the tier's price.
+   * A subscription keeps the Price it was created with when a list price moves,
+   * so showing tier.priceCents told existing families a number nobody was
+   * charging them. Null until a subscription has been seen.
+   */
+  billedAmountCents: number | null;
   /** Leaving at the end of the period. They keep everything until then. */
   cancelAtPeriodEnd: boolean;
   /** A downgrade Stripe will apply when the period ends. */
@@ -263,6 +270,13 @@ export interface TierSubscriber {
   startedAt: string | null;
   /** When the month they have paid for runs out. Null until Stripe says. */
   currentPeriodEnd: string | null;
+  /**
+   * What Stripe actually bills this plan, which is not always the tier's price.
+   * A subscription keeps the Price it was created with when a list price moves,
+   * so showing tier.priceCents told existing families a number nobody was
+   * charging them. Null until a subscription has been seen.
+   */
+  billedAmountCents: number | null;
   /** Leaving at the end of the period. */
   cancelAtPeriodEnd: boolean;
   /** A downgrade waiting for the period to end. */
@@ -280,7 +294,7 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
   const { data, error } = await supabase
     .from("admissions_plans")
     .select(
-      `id, tier_id, status, started_at, current_period_end, cancel_at_period_end, pending_tier_id,
+      `id, tier_id, status, started_at, current_period_end, billed_amount_cents, cancel_at_period_end, pending_tier_id,
        student:profiles!admissions_plans_student_id_fkey(id, full_name, avatar_url),
        parent:profiles!admissions_plans_purchased_by_fkey(id, full_name, avatar_url),
        counselor:profiles!admissions_plans_counselor_id_fkey(id, full_name, avatar_url)`
@@ -310,6 +324,7 @@ export async function getTierSubscribers(): Promise<Map<string, TierSubscriber[]
       status: row.status,
       startedAt: row.started_at,
       currentPeriodEnd: row.current_period_end ?? null,
+      billedAmountCents: row.billed_amount_cents ?? null,
       cancelAtPeriodEnd: !!row.cancel_at_period_end,
       pendingTierId: row.pending_tier_id ?? null,
     });
@@ -446,7 +461,7 @@ export async function setTierFlag(
 export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPlan | null> {
   const { data, error } = await supabase
     .from("admissions_plans")
-    .select(`id, student_id, started_at, status, current_period_end,
+    .select(`id, student_id, started_at, status, current_period_end, billed_amount_cents,
              cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              counselor:profiles!admissions_plans_counselor_id_fkey (full_name, avatar_url),
@@ -470,6 +485,7 @@ export async function getAdmissionsPlan(studentId: string): Promise<AdmissionsPl
     startedAt: data.started_at,
     status: data.status,
     currentPeriodEnd: (data as any).current_period_end ?? null,
+    billedAmountCents: (data as any).billed_amount_cents ?? null,
     cancelAtPeriodEnd: !!(data as any).cancel_at_period_end,
     pendingTierId: (data as any).pending_tier_id ?? null,
     pendingTierName: (data as any).pendingTier?.name ?? null,
@@ -487,7 +503,7 @@ export async function getAdmissionsPlans(
 
   const { data, error } = await supabase
     .from("admissions_plans")
-    .select(`id, student_id, started_at, status, current_period_end,
+    .select(`id, student_id, started_at, status, current_period_end, billed_amount_cents,
              cancel_at_period_end, pending_tier_id,
              student:profiles!admissions_plans_student_id_fkey (full_name),
              tier:admissions_tiers!admissions_plans_tier_id_fkey (${TIER_FIELDS}),
@@ -514,6 +530,7 @@ export async function getAdmissionsPlans(
       counselorName: row.counselor?.full_name ?? null,
       counselorAvatarUrl: row.counselor?.avatar_url ?? null,
       currentPeriodEnd: row.current_period_end ?? null,
+      billedAmountCents: row.billed_amount_cents ?? null,
       cancelAtPeriodEnd: !!row.cancel_at_period_end,
       pendingTierId: row.pending_tier_id ?? null,
       pendingTierName: row.pendingTier?.name ?? null,

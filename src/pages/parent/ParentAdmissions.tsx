@@ -508,7 +508,9 @@ function SwitchPlanDialog({
           <div className="min-w-0">
             <h2 className="text-[17px] font-semibold text-foreground">Change plan</h2>
             <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
-              {plan.studentName} is on {plan.tier.name}, {money(plan.tier.priceCents)} a month
+              {/* What Stripe bills this subscription, not the list price. */}
+              {plan.studentName} is on {plan.tier.name},{" "}
+              {money(plan.billedAmountCents ?? plan.tier.priceCents)} a month
             </p>
           </div>
           <button

@@ -97,6 +97,22 @@ export function priceIdOf(sub: Stripe.Subscription): string | null {
 }
 
 /**
+ * What this subscription actually bills each period.
+ *
+ * Read from the subscription item rather than from the tier, because a Stripe
+ * subscription keeps the Price it was created with when a list price moves.
+ * The plan card used to show the tier price and so told existing families a
+ * number Stripe was not charging them.
+ */
+export function billedAmountOf(sub: Stripe.Subscription): number | null {
+  const item = sub.items?.data?.[0];
+  const price = item?.price;
+  if (!price || typeof price === 'string') return null;
+  if (price.unit_amount == null) return null;
+  return price.unit_amount * (item.quantity ?? 1);
+}
+
+/**
  * Stripe's status, in ours.
  *
  * Deliberately coarse. Stripe distinguishes incomplete, unpaid, paused and
@@ -149,6 +165,7 @@ export async function syncPlanFromSubscription(
     status,
     tier_id: tierId,
     current_period_end: periodEndOf(sub),
+    billed_amount_cents: billedAmountOf(sub),
     cancel_at_period_end: !!sub.cancel_at_period_end,
     updated_at: new Date().toISOString(),
   };
