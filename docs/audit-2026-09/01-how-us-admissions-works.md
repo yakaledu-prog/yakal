@@ -71,51 +71,34 @@ invite. A product that tracks the waiver after the fact has missed the point.
 ## Testing
 
 Most colleges are now test optional, and a good score helps while a missing one
-usually does not hurt. For a student whose first language is not English there
-is a separate and non-optional requirement: **TOEFL, IELTS or Duolingo English
-Test**. Nearly every US college demands one from an international applicant, and
-minimum scores gate admission outright at many.
+usually does not hurt. That makes "should I submit" a real strategic question
+rather than a clerical one, and it is the sort of judgement a counsellor is
+actually for.
 
 ## Money
 
-- **FAFSA**, the federal form. **Only United States citizens and eligible
-  non-citizens may file it.** An Ethiopian student living in Ethiopia cannot.
+- **FAFSA**, the federal form, filed from 1 October. It decides federal grants
+  and loans, and most state and institutional aid keys off it too.
 - **CSS Profile**, run by the College Board, used by roughly 250 mostly private
-  colleges to award their own money. **International students do use this one.**
-- Many colleges also want their **own international aid form**, or the ISFAA,
-  and will ask for proof of family income that does not look like a US tax
-  return.
+  colleges to award their own money. Separate form, separate deadline, and it
+  digs considerably deeper into family finances.
 
-The distinction between need-blind and need-aware matters enormously here. Only
-a handful of US colleges are need-blind for international applicants. At
-everywhere else, asking for aid makes admission harder, and how much to ask for
-is a strategic decision worth real money. That is advice, and advice is what a
-counsellor is for.
+Aid deadlines are frequently earlier than the application deadlines and are
+missed constantly, because they feel like paperwork rather than part of the
+application. Some aid is first come, first served, so filing late costs money
+nothing else will recover. Both forms are already modelled as requirements.
 
 ## After the decision
 
 - Accepted, denied, waitlisted, or deferred from early to regular.
-- A waitlist is worked with a letter of continued interest, which is a real
-  and learnable skill.
-- **For an international student the process is not over at acceptance.** The
-  college issues an **I-20**, the family pays the **SEVIS fee**, and the student
-  books and sits a **visa interview at the US Embassy**. Refusals happen, and a
-  refused visa in August undoes the entire year. The interview needs
-  preparation, and proof of funds needs assembling months earlier.
+- **A deferral is not a rejection** and is worked differently from a waitlist,
+  which catches families out every year.
+- A waitlist is worked with a letter of continued interest, which is a real and
+  learnable skill and one almost nobody does well unprompted.
+- Comparing aid packages across several offers, and appealing the weak ones, is
+  the last piece and often the most valuable in pure money.
 
-## What this means for Yakal
-
-Yakal is an Ethiopian company and its students are international applicants.
-That changes which parts of this process are hard:
-
-- FAFSA is irrelevant to them and currently appears on every college.
-- English proficiency testing is compulsory for them and is barely modelled.
-- Financial aid strategy is harder and higher stakes for them than for an
-  American student.
-- The visa step is theirs alone, is genuinely frightening, and is absent from
-  the product entirely.
-
-Naviance, Scoir and the Common App itself are built for American high schools.
-None of them handle the Addis to Boston pathway well, because it is not their
-customer. That gap is the most defensible thing Yakal could own, and it is
-discussed in `90-fix-list.md`.
+The season does not end when the applications go in. March and April are when
+a family most needs somebody who has seen this before, and they are also the
+months a monthly plan is most likely to be cancelled. That tension is worth
+designing around rather than discovering.

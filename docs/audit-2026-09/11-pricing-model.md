@@ -47,18 +47,19 @@ person decides, every time, under pressure, about several hundred dollars. With
 monthly billing, leaving is cancelling, and the answer is "you keep the month you
 paid for." That is a support policy you can write on one line.
 
-**Ethiopian families are unlikely to put $1,750 on a card in one go.** Card
-limits, foreign transaction handling and simple caution all point the same way.
-Monthly at $250 is a decision; $1,750 is a negotiation with a spouse.
+**$1,750 on a card in one go is a different decision from $250 a month.** Card
+limits aside, one is a purchase and the other is a family conversation. Monthly
+pricing converts better for the same annual revenue, and it lets a family start
+in September without having settled the whole year first.
 
 ## Instalments are monthly billing wearing a costume
 
 Instalments differ from monthly in exactly one way: the family is committed to
 the whole amount, so leaving early is a debt rather than a cancellation. That
 buys Yakal predictable revenue and buys the family nothing. It also means
-chasing an Ethiopian family for a missed payment on a service their child has
-stopped using, which is a support burden and a reputational cost out of all
-proportion to the money.
+chasing a family for a missed payment on a service their child has stopped
+using, which is a support burden and a reputational cost out of all proportion
+to the money.
 
 Stripe supports it, so this is a business decision rather than a technical one,
 and the business answer is no.

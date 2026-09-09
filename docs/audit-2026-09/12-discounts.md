@@ -72,10 +72,10 @@ That is a genuinely nice property. A half-price month pays the counsellor half.
 ### A per-family reduction, granted by an admin
 
 This is the one that matters more for Yakal, and it is not really a discount.
-It is **need-based aid**, and an Ethiopian company selling US admissions
-counselling will be asked for it constantly. A family who cannot pay $250 but
-can pay $100 is a customer worth having, and the difference between "we lowered
-the price for everyone" and "we gave this family a place" is the whole business.
+It is **need-based aid**, and anybody selling admissions counselling at $250 a
+month will be asked for it. A family who cannot pay $250 but can pay $100 is a
+customer worth having, and the difference between "we lowered the price for
+everyone" and "we gave this family a place" is the whole business.
 
 Applied as a coupon on the subscription rather than a different price, so:
 

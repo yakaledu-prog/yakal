@@ -63,7 +63,7 @@ One thing surfaced in the server log during testing:
 That is only the demo accounts, and it would work with real addresses. But it
 fails silently: nobody is told the counsellor cannot open the document. Worth a
 visible error, because in production it will happen to anyone using an address
-that is not a Google account, which in Ethiopia is common.
+that is not a Google account, which plenty of families use.
 
 ## What "better than a dropdown" should mean
 
@@ -85,28 +85,33 @@ turns this into a real service:
 
 ## The moat question
 
-Essay review is not defensible on its own. Every counselling outfit does it, and
-a language model does a passable first pass for nothing. Building a better
-comment box is table stakes, not an advantage.
+You asked for something defensible rather than verbose. Essay review is not it
+on its own: every counselling outfit does it, and a language model does a
+passable first pass for nothing. A better comment box is table stakes.
 
-What is defensible is in `01-how-us-admissions-works.md`: Yakal is an Ethiopian
-company whose students are international applicants, and the international path
-is the part the American tools handle worst.
+What is defensible is the part nobody enjoys building, which is the record. The
+model here is already unusually good at it: every review action is stored with
+its actor, its timestamp and its note; rounds are counted by a trigger rather
+than by a page; quotas are computed from what actually happened rather than from
+what somebody ticked. That is the spine of something Naviance and Scoir do not
+really have, because they are school-side tools rather than a service being sold
+to a family.
 
-- FAFSA appears on every college for every student. **International students
-  cannot file it**, so the product currently instructs its core customer to do
-  something impossible. `requirementsService.ts:42`.
-- English proficiency testing is compulsory for these students and is modelled
-  only as a score field and a document slot. It should be a requirement with a
-  deadline, like the transcript.
-- The **F-1 visa process does not exist in the product at all**. Searching for
-  "visa" returns only the credit card brand. No I-20, no SEVIS fee, no embassy
-  interview, no proof of funds. For an Ethiopian family this is the most
-  frightening part of the year and the part where a refusal undoes everything.
-- Financial aid strategy for internationals, where need-aware admission means
-  asking for money changes the odds, is advice worth real money and is absent.
+Three things would turn that record into the product:
 
-A product that took a student from Addis to a US campus, including the parts
-after the acceptance letter, would be doing something Naviance and Scoir do not
-do and are not trying to do. That is worth more than a better comment box, and
-the comment box should still be built, because it is an afternoon.
+1. **Show the history to the family.** It exists and has never been displayed.
+   A parent who can see round 2 returned on 3 October with the counsellor's
+   note, and round 3 approved on the 11th, is a parent who renews. Right now
+   they are paying $250 a month for something they cannot see happening.
+2. **Make the counsellor's queue the whole job.** It already sorts by deadline
+   across every student, which is the correct and non-obvious thing to do. Add
+   the recommendation chase and the aid deadlines to the same queue and it
+   becomes the thing a counsellor opens each morning.
+3. **Own the end of the season.** Deferrals, waitlist letters, and comparing and
+   appealing aid packages, in March and April. That is where the value is
+   densest, where families most need somebody who has done it before, and where
+   the product currently stops. It is also exactly when a monthly plan gets
+   cancelled, so it defends revenue as well as being worth having.
+
+None of that is a new subsystem. It is displaying what is already recorded and
+extending the queue that already exists.

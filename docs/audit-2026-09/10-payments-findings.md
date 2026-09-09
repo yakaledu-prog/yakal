@@ -131,10 +131,10 @@ few lines beside the existing `NOTHING_DELIVERED` branch.
 ### 4. Stripe Checkout offers the wrong currency
 
 Checkout presented **AED 381.84** as the headline price with a currency chooser,
-for a $99.98 USD charge, on an Ethiopian company's US account. This is Stripe's
-adaptive pricing guessing from the browser. It is a dashboard setting rather than
-a code change, but a family in Addis being quoted UAE dirham is a conversion
-problem and a trust problem.
+for a $99.98 USD charge on a US account billing US families. This is Stripe's
+adaptive pricing guessing from the browser. It is a dashboard setting rather
+than a code change, but a family being quoted UAE dirham at the moment they
+reach for a card is a conversion problem and a trust problem.
 
 **Fix:** turn adaptive pricing off in the Stripe dashboard, or pin the
 presentment currency on the Checkout Session. Decide deliberately rather than

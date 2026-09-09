@@ -69,17 +69,16 @@ subscription, moving Essential to $150 leaves the family's page reading $120,
 which is what Stripe charges. The tier price stands in only for a plan nobody
 has been billed for.
 
-### 5. FAFSA is shown to students who cannot file it
-`src/services/requirementsService.ts:42`
+### 5. WITHDRAWN
 
-`REQUIREMENTS` is a fixed list applied to every college for every student, and it
-includes FAFSA. Only US citizens and eligible non-citizens may file one. Yakal's
-students are international applicants, so the product currently instructs its
-core customer to do something impossible, on every college.
+This slot held a claim that FAFSA should not be shown, on the mistaken
+assumption that the students were international applicants. They are not: Yakal
+is a US company serving US families, and FAFSA belongs on the checklist exactly
+where it is. The inference came from names in the seed data and a line of
+marketing copy, neither of which is evidence of who the customer is.
 
-At minimum make the row conditional. Better, add the citizenship or applicant
-type that the whole product currently lacks: `profiles` has no country field, so
-nothing can tell a domestic applicant from an international one.
+Left in rather than deleted so the numbering below does not shift under anyone
+who has already read this.
 
 ---
 
@@ -185,7 +184,9 @@ irreversible mistake the software could prevent. See `05-recommendations.md`.
 - **Discounts are not price changes**, and should live in their own admin tab
   rather than on the tier form. `12-discounts.md`. Step one is
   `allow_promotion_codes: true`.
-- **The international pathway is the moat.** FAFSA, English testing, and the
-  entire F-1 visa process. `04-essays.md` closing section and
-  `01-how-us-admissions-works.md`. Nothing else in this product is hard for a
-  competitor to copy.
+- **The record is the moat, and the end of the season is where it pays.**
+  `04-essays.md` closing section. Every review is already stored with its actor,
+  its note and its timestamp, and none of it has ever been shown to the family
+  paying for it. Deferrals, waitlist letters and comparing aid offers all land in
+  March and April, which is where the value is densest and where the product
+  currently stops. It is also when a monthly plan gets cancelled.
