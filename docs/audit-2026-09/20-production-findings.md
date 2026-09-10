@@ -3,7 +3,44 @@
 Tested against yakal.me after pushing the September work. Local findings are in
 the other files here; this is only what differs once deployed.
 
-## 1. Zoom cannot work in production. One environment variable.
+## 1. The scheduled job has never run. No tutor has ever been owed anything.
+
+Three independent symptoms, all from the live site:
+
+- Lessons from **17, 18 and 19 August** still read "started 527 hours ago" on
+  the tutor's own Sessions page. That label only appears while a session is
+  `upcoming`. Three weeks after they finished, they have never completed.
+- Admin billing: **$19,687.86 revenue, and PAYOUTS DUE $0.00**, with "Nothing
+  owed. Everybody is settled."
+- Bethlehem Alemu has **12 sessions across 3 students** and her Earnings page
+  says **$0.00, 0 sessions taught**.
+
+`run-jobs` is the one thing that completes a finished lesson and writes the
+earning behind it. Nothing else does, deliberately: a tutor marking their own
+session complete is a tutor authorising their own payment. So if it never runs,
+no session ever completes, no earning is ever written, and no tutor is ever paid
+however much the families have paid in.
+
+**OUTSTANDING of $11,565.00 is the same fault seen from another side.**
+`voidStaleInvoices` is part of the same job, so abandoned checkouts have been
+accumulating as outstanding revenue for weeks instead of being closed after
+seven days.
+
+The job is not part of the deploy. It is a `pg_cron` schedule that has to be
+created once in the Supabase SQL editor, and `docs/PAYMENTS_SETUP.md` carries
+the statement to run. Either it was never created, or the `JOBS_TOKEN` it sends
+does not match the one on Render.
+
+**This is the first thing to fix.** Everything else in the payment system is
+downstream of it, and it is a few minutes of work: run the `cron.schedule`
+statement from `PAYMENTS_SETUP.md` against production with the right token, then
+call the endpoint once by hand and watch the numbers move.
+
+I could not verify the cron myself: the endpoint answers `401` without the
+production `JOBS_TOKEN`, and that same `401` is what it returns whether the
+token is wrong or unset, so it cannot tell the two apart from outside.
+
+## 2. Zoom cannot work in production. One environment variable.
 
 `VITE_ZOOM_MEETING_CLIENT_ID` on the deployment is set to
 **`your-meeting-sdk-client-id`**, the value from `.env.example`.
@@ -41,7 +78,7 @@ One correction to something I said while testing: I claimed the placeholder was
 in the frontend bundle too. It is not. The client id is never baked into the
 browser; the SDK takes it from the signature. This is one variable, server side.
 
-## 2. What is fine
+## 3. What is fine
 
 - The site is up, serving, and the health of the API routes is right: the jobs
   endpoint answers `401` without its token, the refund endpoint answers `401`
@@ -52,18 +89,28 @@ browser; the SDK takes it from the signature. This is one variable, server side.
   pushes to the hosted project, and it passed.
 - CI passed on the same commit.
 
-## 3. To confirm once the deploy lands
+## 4. Confirmed against production after the deploy
 
-The push went in while Render was still serving the previous bundle, so the
-following were checked locally and need one more pass against production:
+All of these were re-checked on yakal.me once the deploy landed, and all hold:
 
-- the install card only on the landing page
-- `/` no longer flashing the marketing page at a signed-in visitor
-- `/login` sending a signed-in visitor to their dashboard
-- diagnostics loading from the database with no answer key in the bundle
-- the refunded state showing on both the admin and parent billing pages
+- the install card shows on the landing page and is gone from `/login`
+- `/` puts a signed-in visitor straight on their dashboard, with no flash
+- `/login` sends a signed-in visitor to their dashboard
+- the student home shows real figures (3 courses, 3 completed, 5 upcoming,
+  2 due) rather than the old hardcoded 12 and "A-"
+- diagnostics load from the database: a real "Grade 9 Algebra" test with a
+  stored 7/20 result, and the review reads its answer key from the stored row
+- **anon can no longer read the diagnostics table.** Before today the whole
+  answer key was readable over REST by the public internet, signed out
+- `profiles` is denied to anon, `invoices` returns an empty set, `blog_posts`
+  is public as intended
 
-## 4. Environment, separately
+One correction to a local finding: **production tiers already have counsellor
+shares configured.** The amber "No counsellor share set" warning does not
+appear on any of them, so the "no counsellor can be paid" problem in
+`10-payments-findings.md` was local seed data, not production.
+
+## 5. Environment, separately
 
 `VITE_DEV_PREVIEW` is on in the production build. The app logs it itself on
 boot:
