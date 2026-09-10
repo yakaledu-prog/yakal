@@ -20,6 +20,7 @@ const PURE = [
   ['api-route-parity.mjs', 'development and production mount every API route'],
   ['api-dispatch.ts', 'the ?action= router'],
   ['api-esm-load.ts', 'every function loads as ESM'],
+  ['zoom-signature.ts', 'a Zoom signature needs real credentials, not the example ones'],
   ['classroom-mapping.ts', 'Google courseWork maps to our shape'],
   ['classroom-visibility.ts', 'individual coursework does not leak between students'],
   ['classroom-submissions.ts', 'submission state, and no draft grade shown as a result'],
