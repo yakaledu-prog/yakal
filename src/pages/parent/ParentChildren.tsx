@@ -9,6 +9,7 @@ import {
   useSessionExtras,
   type SessionListItem,
 } from "@/components/shared/SessionList";
+import { ReportSessionDialog } from "@/components/shared/ReportSessionDialog";
 import { CancelSessionDialog } from "@/components/shared/CancelSessionDialog";
 import { Search, Loader2, Users, UserPlus, X, ChevronLeft, ShieldAlertIcon } from "lucide-react";
 import { PageWrapper } from "@/components/ui/PageWrapper";
@@ -207,6 +208,7 @@ import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTra
 
 function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
+  const [reporting, setReporting] = useState<SessionListItem | null>(null);
   // Whether the scan has picked anything out of this child's conversations, so
   // the Messages tab can say so without being opened first.
   const { data: flaggedStudents } = useQuery({
@@ -339,9 +341,21 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
                 hideIfEmpty
                 onCancel={setCancelling}
               />
-              <PastSessions sessions={childSessions} hideIfEmpty />
+              {/* A parent can report a lesson too. session-dispute has always
+                  allowed it, checking for an active parent link beside the
+                  student themselves, and only the student's own page offered
+                  the button. The parent is the one who paid, the one the
+                  refund goes back to, and usually the one who notices. */}
+              <PastSessions
+                sessions={childSessions}
+                hideIfEmpty
+                onReport={setReporting}
+              />
               {cancelling && (
                 <CancelSessionDialog session={cancelling} onClose={() => setCancelling(null)} />
+              )}
+              {reporting && (
+                <ReportSessionDialog session={reporting} onClose={() => setReporting(null)} />
               )}
             </>
           )
