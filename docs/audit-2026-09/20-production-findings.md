@@ -78,7 +78,50 @@ One correction to something I said while testing: I claimed the placeholder was
 in the frontend bundle too. It is not. The client id is never baked into the
 browser; the SDK takes it from the signature. This is one variable, server side.
 
-## 3. What is fine
+## 3. Stripe on production is a sandbox, so no real money can be taken
+
+The checkout page says it in its own header: **"yakal sandbox"** with a
+**Sandbox** badge, and the session id comes back as `cs_test_...`.
+
+That is the right setting for testing and it is worth knowing deliberately
+rather than discovering on launch day: as it stands the deployment cannot
+accept a real payment from anyone.
+
+Because it is test mode, I put a real purchase through it end to end, and the
+whole chain works:
+
+- checkout session created, card `4242...` accepted
+- **Stripe's webhook reached the deployed server and was accepted**, which is
+  the half only production can prove
+- the invoice was fulfilled: "Paid to date" moved from $1,259.30 to $1,319.30
+- the session was created **with a Zoom meeting attached**
+
+That last point matters for the Zoom finding above: the server-to-server
+credentials that *create* meetings are fine. It is only the Meeting SDK
+credentials that *join* them that are placeholders. Two different Zoom apps,
+and only one is broken.
+
+## 4. Two things about the checkout page itself
+
+**Stripe Link takes over the form for a returning customer.** Paying as
+`parent@yakal.com`, Checkout did not show a card form at all. It showed Link's
+"Confirm it's you, enter the code sent to (...)15". There is a "Pay without
+Link" link underneath, and it works, but a family who has ever used Link
+elsewhere meets a verification code before they can pay.
+
+`stripe-checkout.ts` already sets `payment_method_types: ['card']` and its
+comment says that is to stop Checkout leading with the wallets. It does not
+stop Link. Turning Link off is a switch in the Stripe dashboard, under payment
+methods, not something the code can do.
+
+**The currency chooser leads with AED.** The page offers "AED 229.17" first and
+"$60.00" second, for a $60 course, with the exchange rate underneath. This is
+Stripe's adaptive pricing guessing from the browser. For a US company billing US
+families it is a conversion problem at the worst possible moment, and it is a
+dashboard setting: turn adaptive pricing off, or pin the presentment currency on
+the session.
+
+## 5. What is fine
 
 - The site is up, serving, and the health of the API routes is right: the jobs
   endpoint answers `401` without its token, the refund endpoint answers `401`
@@ -89,7 +132,7 @@ browser; the SDK takes it from the signature. This is one variable, server side.
   pushes to the hosted project, and it passed.
 - CI passed on the same commit.
 
-## 4. Confirmed against production after the deploy
+## 6. Confirmed against production after the deploy
 
 All of these were re-checked on yakal.me once the deploy landed, and all hold:
 
@@ -104,13 +147,17 @@ All of these were re-checked on yakal.me once the deploy landed, and all hold:
   answer key was readable over REST by the public internet, signed out
 - `profiles` is denied to anon, `invoices` returns an empty set, `blog_posts`
   is public as intended
+- the meeting page now fails honestly. Opening a session on production says
+  "Could not get a join signature from the server: Zoom is not configured on
+  this deployment", where before it was handed a signature that looked fine and
+  simply would not open
 
 One correction to a local finding: **production tiers already have counsellor
 shares configured.** The amber "No counsellor share set" warning does not
 appear on any of them, so the "no counsellor can be paid" problem in
 `10-payments-findings.md` was local seed data, not production.
 
-## 5. Environment, separately
+## 7. Environment, separately
 
 `VITE_DEV_PREVIEW` is on in the production build. The app logs it itself on
 boot:
