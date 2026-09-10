@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generateZoomSignature } from '@/services/zoom';
 import { recordAttendance, recordAttendanceEvent } from '@/services/sessions';
 import { Video, RefreshCw } from 'lucide-react';
@@ -32,16 +32,27 @@ function loadScript(src: string) {
 
 let zoomMtgPromise: Promise<any> | null = null;
 /**
- * Whether a participant payload is the person sitting here.
+ * Whether a leave payload is the person sitting here.
  *
- * The SDK reports leaves for everyone in the room, and only our own decides
- * how long we were in it. Matched on the name we joined with, because that is
- * the only identifier both sides of this share.
+ * The SDK reports leaves for everyone in the room and only our own says how
+ * long we were in it, so this has to be exact.
+ *
+ * It used to match on the display name, which is not an identifier. Two people
+ * called the same thing, or the same person's stale connection dropping after a
+ * rejoin, both read as us leaving: observed in testing, where a tutor's
+ * attendance was closed 100 seconds in because an earlier connection of theirs
+ * timed out of the same meeting. The name is the one thing in the payload that
+ * is not unique.
+ *
+ * So it matches on the SDK's own user id, and when we could not learn ours it
+ * does nothing at all. Missing a leave costs the time between it and the next
+ * heartbeat; inventing one ends a lesson that is still running.
  */
-function isSelf(payload: any, userName: string): boolean {
+function isSelf(payload: any, selfUserId: number | string | null): boolean {
+  if (selfUserId == null) return false;
   const list = payload?.userList ?? payload?.users ?? (payload ? [payload] : []);
   return (Array.isArray(list) ? list : [list]).some(
-    (u: any) => u?.userName === userName || u?.displayName === userName
+    (u: any) => u?.userId != null && String(u.userId) === String(selfUserId)
   );
 }
 
@@ -90,6 +101,27 @@ interface ZoomMeetingProps {
 // where a browser is killed and no event ever fires. A slower beat is a third
 // of the writes and, with the edges recorded properly, better data.
 const HEARTBEAT_MS = 180_000;
+
+/**
+ * Zoom's own meeting status codes, from onMeetingStatus.
+ *
+ * 1 connecting, 2 connected, 3 ended, 4 reconnecting. Only the two that say
+ * somebody arrived or left are named here.
+ */
+const MEETING_STATUS_CONNECTED = 2;
+const MEETING_STATUS_ENDED = 3;
+
+/**
+ * Move to in-meeting, keeping the same object if we are already there.
+ *
+ * Both the SDK listener and join's success report arriving, and a fresh
+ * `{ phase: 'in-meeting' }` each time is a new object, so the attendance effect
+ * tore down and rebuilt. Its cleanup records a leave, so the second report
+ * wrote a leave in the same instant as the join and every session banked zero
+ * seconds.
+ */
+const markInMeeting = (prev: Status): Status =>
+  prev.phase === 'in-meeting' ? prev : { phase: 'in-meeting' };
 
 type Status =
   | { phase: 'loading-sdk' }
@@ -147,6 +179,9 @@ export function ZoomMeeting({
 }: ZoomMeetingProps) {
   const [status, setStatus] = useState<Status>({ phase: 'loading-sdk' });
   const [attempt, setAttempt] = useState(0);
+  // Our own id in the meeting, as the SDK knows it. A ref because the leave
+  // listener is registered once and must see the current value.
+  const selfUserId = useRef<number | string | null>(null);
 
   // Attendance is what makes a session payable, so it is measured from being
   // in the meeting rather than from having opened the page. The first beat
@@ -204,6 +239,42 @@ export function ZoomMeeting({
           leaveUrl,
           patchJsMedia: true,
           success: () => {
+            // Registered here rather than inside join's success, because that
+            // callback does not fire.
+            //
+            // The SDK shows its own device preview and only really joins when
+            // the person presses Join on it, and join()'s success never
+            // arrives. So the app never learned anybody was in the room:
+            // session_attendance had not a single row, the heartbeat never
+            // started, and v_open_disputes, whose whole purpose is to hand an
+            // admin "the attendance they need to judge" a complaint, was
+            // joining to an empty view every time.
+            //
+            // onMeetingStatus is the SDK saying where it actually is.
+            // 2 is connected, 3 is ended. Both are client-side events, so
+            // nothing here needs a paid Zoom plan.
+            try {
+              ZoomMtg.inMeetingServiceListener('onMeetingStatus', (payload: any) => {
+                if (payload?.meetingStatus === MEETING_STATUS_CONNECTED) {
+                  if (!cancelled) setStatus(markInMeeting);
+                }
+                if (payload?.meetingStatus === MEETING_STATUS_ENDED && sessionId) {
+                  void recordAttendanceEvent(sessionId, 'leave');
+                }
+              });
+              ZoomMtg.inMeetingServiceListener('onUserLeave', (payload: any) => {
+                // Only our own leaving. Somebody else dropping out says
+                // nothing about how long this person was here.
+                if (sessionId && isSelf(payload, selfUserId.current)) {
+                  void recordAttendanceEvent(sessionId, 'leave');
+                }
+              });
+            } catch (listenerError) {
+              // An SDK without these listeners is not a broken meeting, but it
+              // is one nobody can prove happened.
+              console.warn('Zoom in-meeting listeners unavailable', listenerError);
+            }
+
             ZoomMtg.join({
               signature,
               meetingNumber,
@@ -211,29 +282,24 @@ export function ZoomMeeting({
               userName,
               userEmail,
               success: () => {
-                if (!cancelled) setStatus({ phase: 'in-meeting' });
-
-                // Client-side SDK events: no REST call, so nothing here needs
-                // a paid Zoom plan. onMeetingStatus 3 is the meeting ending,
-                // which is the end of the lesson whoever clicked it.
+                // Who we are in this meeting, so a leave can be recognised by
+                // id rather than by name. Best effort: without it the leave
+                // listener stands down and the other three paths cover us.
                 try {
-                  ZoomMtg.inMeetingServiceListener('onMeetingStatus', (payload: any) => {
-                    if (payload?.meetingStatus === 3 && sessionId) {
-                      void recordAttendanceEvent(sessionId, 'leave');
-                    }
+                  ZoomMtg.getCurrentUser({
+                    success: (res: any) => {
+                      const id = res?.result?.currentUser?.userId;
+                      if (id != null) selfUserId.current = id;
+                    },
                   });
-                  ZoomMtg.inMeetingServiceListener('onUserLeave', (payload: any) => {
-                    // Only our own leaving. Somebody else dropping out says
-                    // nothing about how long this person was here.
-                    if (sessionId && isSelf(payload, userName)) {
-                      void recordAttendanceEvent(sessionId, 'leave');
-                    }
-                  });
-                } catch (listenerError) {
-                  // An SDK without these listeners is not a broken meeting.
-                  // The heartbeat is still running, which is the point of it.
-                  console.warn('Zoom in-meeting listeners unavailable', listenerError);
+                } catch {
+                  // An SDK without it is not a broken meeting.
                 }
+
+                // Kept as well as the listener. On an SDK that does call this
+                // it is the earlier of the two, and markInMeeting makes saying
+                // it twice free.
+                if (!cancelled) setStatus(markInMeeting);
               },
               error: (error: any) => {
                 console.error('Zoom join failed:', error);

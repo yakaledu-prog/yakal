@@ -52,6 +52,7 @@ const NEEDS_DB = [
   ['payout-blocked-notice.ts', 'a payee who cannot be paid is told, once'],
   ['messageable-contacts.ts', 'who each role may start a conversation with'],
   ['diagnostic-scoring.ts', 'a diagnostic is marked by the server, not the browser'],
+  ['session-outcomes.ts', 'what each way a lesson can go does to the money'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
 ];
 
