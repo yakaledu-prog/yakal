@@ -665,6 +665,21 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
             )}
           </div>
 
+          {/* What upholding this actually costs.
+              The only sign used to be the word "settled" in grey beside the
+              amount, while the refund dialog on the invoices tab spells out
+              "Yakal absorbs" before anybody commits. Same money, same decision,
+              and the quieter of the two screens was the one where the loss was
+              easier to miss: the earning is not clawed back on uphold, so the
+              tutor keeps their share and the refund comes out of Yakal. */}
+          {d.earningStatus === "settled" && (
+            <p className="mt-3 text-[13px] font-medium text-[#8a6a2a] dark:text-secondary">
+              {d.earningCents != null ? money(d.earningCents) : "That share"} has already gone out
+              to {d.tutorName}. Upholding refunds the family anyway, and that part is not
+              recoverable from here.
+            </p>
+          )}
+
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <input
               value={note[d.id] ?? ""}
