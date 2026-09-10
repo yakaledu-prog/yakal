@@ -17,7 +17,9 @@ it says so.
 | `10-payments-findings.md` | Escrow, refunds, payouts, subscriptions, tested end to end |
 | `11-pricing-model.md` | Monthly against one-time against instalments, with the numbers |
 | `12-discounts.md` | Why a discount is not an admin price change, and how to build one |
-| `90-fix-list.md` | Everything found, ordered by whether it blocks launch |
+| `13-testing-payments-locally.md` | How to get webhooks working on a dev machine, which was the thing blocking hand testing |
+| `90-fix-list.md` | Everything found, ordered by whether it blocks launch, marked DONE where fixed |
+| `91-open-work.md` | **Start here.** What is still open, split into decisions, builds and tidy-ups |
 
 ## How things were tested
 
