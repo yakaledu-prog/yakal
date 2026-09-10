@@ -157,7 +157,21 @@ shares configured.** The amber "No counsellor share set" warning does not
 appear on any of them, so the "no counsellor can be paid" problem in
 `10-payments-findings.md` was local seed data, not production.
 
-## 7. Environment, separately
+## 7. The advising wall is real on production too
+
+Booking an advising hour as a student on yakal.me opens onto:
+
+> This counsellor has not published any hours yet. Send them a message and they
+> can open some.
+
+That is the corrected wording from this work, and the fact that it says
+"counsellor" rather than "tutor" and offers a next step is the fix landing. The
+wall itself is the finding: the counsellor on a live, paid plan has published no
+availability, so the family cannot book the thing they are paying for. Same as
+`03-counsellor-experience.md` describes locally, with real families on the other
+side of it.
+
+## 8. Environment, separately
 
 `VITE_DEV_PREVIEW` is on in the production build. The app logs it itself on
 boot:
