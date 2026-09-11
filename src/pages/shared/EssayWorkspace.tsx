@@ -335,10 +335,15 @@ export function EssayWorkspace() {
 
               {essay.status === "in_review" && isCounselor && (
                 <>
+                  {/* Gold, the colour this essay is already wearing while it
+                      waits. Sending it back is not a lesser version of marking
+                      it finished, it is the other answer, and a grey outline
+                      beside a filled teal button read as the one you press
+                      when you do not know what to do. */}
                   <button
                     type="button"
                     onClick={() => setStatus.mutate("drafting")}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border/60 px-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md bg-secondary px-3.5 text-sm font-medium text-secondary-foreground transition-opacity hover:opacity-90"
                   >
                     Send it back
                   </button>
@@ -348,7 +353,7 @@ export function EssayWorkspace() {
                     className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     <Check size={15} />
-                    Mark it finished
+                    Mark as done
                   </button>
                 </>
               )}
@@ -566,7 +571,7 @@ export function EssayWorkspace() {
                       type="button"
                       onClick={() => post.mutate(draft.trim())}
                       disabled={!draft.trim() || post.isPending}
-                      className="inline-flex h-8 items-center gap-2 rounded-md bg-primary pl-2.5 pr-3 text-[13px] font-medium leading-none text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                      className="inline-flex h-8 items-center gap-1 rounded-md bg-primary pl-2.5 pr-3 text-[13px] font-medium leading-none text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                     >
                       {post.isPending ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -621,8 +626,12 @@ function Thread({
         </p>
       )}
 
+      {/* Whoever said it, in colour. A thread is two or three people talking
+          and the name is the thing you scan for; grey on grey made every entry
+          look like the same voice. The reply's rule down the side is what
+          separates the sides now. */}
       <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{thread.author}</span>
+        <span className="font-medium text-primary">{thread.author}</span>
         {" · "}
         {dayOf(thread.createdTime)}
       </p>

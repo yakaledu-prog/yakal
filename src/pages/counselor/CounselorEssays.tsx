@@ -531,7 +531,7 @@ function EssayRow({
               onClick={() => onAct(essay, "returned")}
               disabled={busy || !waiting}
               title={waiting ? "Back to the student with your comments" : "Already with the student"}
-              className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-[13px] font-medium transition-colors hover:bg-muted/60 disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-xl bg-secondary px-3.5 py-2 text-[13px] font-medium text-secondary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
               Send back
