@@ -59,13 +59,6 @@ import { getEssayReviews } from "@/services/essayReviewService";
 // way of the real Doc for editing.
 // ============================================================
 
-const STATUS_LABEL: Record<EssayStatus, string> = {
-  todo: "Not started",
-  drafting: "Drafting",
-  in_review: "With the counselor",
-  done: "Finished",
-};
-
 function timeOf(iso: string | null | undefined): string {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
@@ -247,6 +240,22 @@ export function EssayWorkspace() {
   const limit = essay.word_limit ?? null;
   const words = doc?.words ?? null;
   const over = limit !== null && words !== null && words > limit;
+
+  /**
+   * How close the draft is to the ceiling the college enforces.
+   *
+   * Red past it, because an essay over the limit will be cut by the form
+   * rather than by the writer. Gold in the last tenth, which is the point at
+   * which a student should stop adding and start choosing.
+   */
+  const countTone =
+    limit === null || words === null
+      ? ""
+      : over
+        ? "font-medium text-destructive"
+        : words >= limit * 0.9
+          ? "font-medium text-secondary"
+          : "";
   const notes = reviews.filter((r) => r.note);
 
   const open = threads.filter((t) => !t.resolved);
@@ -284,16 +293,16 @@ export function EssayWorkspace() {
 
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-lg font-medium text-foreground">{essay.title}</h1>
+              {/* No status word here. The buttons to the right already say
+                  whose turn it is, and the stamp says it again for a student;
+                  a third telling was three ways to read the same fact. */}
               <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
                 <span>
                   {school?.school_name ??
                     (essay.kind === "supplement" ? "No college attached" : "Every college")}
                 </span>
-                <span className={cn(essay.status === "done" && "text-primary")}>
-                  {STATUS_LABEL[essay.status]}
-                </span>
                 {words !== null && (
-                  <span className={cn("tabular-nums", over && "font-medium text-secondary")}>
+                  <span className={cn("tabular-nums", countTone)}>
                     {limit === null ? `${words} words` : `${words} of ${limit} words`}
                   </span>
                 )}
