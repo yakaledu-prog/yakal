@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -11,6 +12,10 @@ import {
 export function TutorMessages() {
   const { user } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
+  // Somewhere else sent the tutor here to talk to one person: the Message
+  // button on a student's card opens that student rather than whatever thread
+  // happens to be newest. Same shape the parent's page already uses.
+  const nav = (useLocation().state ?? null) as { openWith?: string } | null;
 
   const {
     conversations,
@@ -27,7 +32,7 @@ export function TutorMessages() {
     isPeerTyping,
     typingConversationIds,
     notifyTyping,
-  } = useMessaging({ userId: user?.id });
+  } = useMessaging({ userId: user?.id, openWithUserId: nav?.openWith });
 
   return (
     <PageWrapper className="!p-0 h-full overflow-hidden">

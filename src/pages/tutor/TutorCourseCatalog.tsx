@@ -1,29 +1,14 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  BookOpen,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  LayoutGrid,
-  List,
-  Loader2,
-  Info,
-  Mail,
-  Pencil,
-  Phone,
-  Search,
-  Send,
-  X,
-} from "lucide-react";
+import { BookOpen, Check, ChevronLeft, ChevronRight, Clock, Info, LayoutGrid, List, Loader2, Mail, Pencil, Phone, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 import { Link } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { money } from "@/services/billingService";
 import { ResumePanel } from "@/components/shared/ResumePanel";
 import { dicebearUrl } from "@/utils/avatar";
@@ -53,14 +38,21 @@ import {
 const PER_PAGE = 6;
 
 /** What a tutor wants to narrow the catalog down to. */
-type Filter = "all" | "open" | "pending" | "accepted" | "rejected";
+/**
+ * Three, not five.
+ *
+ * There were tabs for all, not applied, applied, accepted and not accepted,
+ * which is every value the state machine has rather than every question a
+ * tutor arrives with. They arrive with two: what can I still apply to, and
+ * what did I already put my name to. The outcome of an application is on the
+ * card itself, and an accepted course is in My Courses by then anyway.
+ */
+type Filter = "all" | "open" | "applied";
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "All courses" },
-  { value: "open", label: "Not applied" },
-  { value: "pending", label: "Applied" },
-  { value: "accepted", label: "Accepted" },
-  { value: "rejected", label: "Not accepted" },
+  { value: "open", label: "Open to apply" },
+  { value: "applied", label: "Applied" },
 ];
 
 function ApplyDialog({
@@ -229,9 +221,8 @@ export function TutorCourseCatalog() {
     return {
       all: open.length,
       open: open.filter((c) => state(c) === "open" || state(c) === "withdrawn").length,
-      pending: open.filter((c) => state(c) === "pending").length,
-      accepted: open.filter((c) => state(c) === "accepted").length,
-      rejected: open.filter((c) => state(c) === "rejected").length,
+      // Anything this tutor has put their name to, whatever came of it.
+      applied: open.filter((c) => ["pending", "accepted", "rejected"].includes(state(c))).length,
     } as Record<Filter, number>;
   }, [open]);
 
@@ -244,7 +235,7 @@ export function TutorCourseCatalog() {
           ? true
           : filter === "open"
             ? state === "open" || state === "withdrawn"
-            : state === filter;
+            : ["pending", "accepted", "rejected"].includes(state);
       if (!inFilter) return false;
       if (!q) return true;
       return c.title.toLowerCase().includes(q) || c.subject.toLowerCase().includes(q);
@@ -347,6 +338,24 @@ export function TutorCourseCatalog() {
                 />
               </div>
 
+              {/* Beside the search rather than a row of tabs under the banner.
+                  Five tabs scrolled sideways on a phone and still cost a line;
+                  an icon costs nothing and the count is already hard right. */}
+              <Dropdown<Filter>
+                value={filter}
+                onChange={(v) => {
+                  setFilter(v);
+                  setPage(1);
+                }}
+                options={FILTERS.map((f) => ({
+                  value: f.value,
+                  label: `${f.label} (${counts[f.value]})`,
+                }))}
+                tone="onDark"
+                ariaLabel="Filter courses"
+                icon={<SlidersHorizontal size={16} />}
+              />
+
               <div className="ml-auto flex items-center gap-2">
                 {matches.length > 0 && (
                   <span className="text-[13px] text-white/80">
@@ -373,39 +382,6 @@ export function TutorCourseCatalog() {
               </div>
             </div>
 
-            {/* On the banner's bottom edge, so the underline of the active tab
-                doubles as the join between the header and the courses below.
-                Scrolls sideways rather than wrapping: five tabs wrapping to a
-                second line pushed the first card off a phone screen. */}
-            <div
-              role="tablist"
-              aria-label="Filter courses"
-              className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:-mx-8 md:px-8 [&::-webkit-scrollbar]:hidden"
-            >
-              {FILTERS.map((f) => {
-                const active = filter === f.value;
-                return (
-                  <button
-                    key={f.value}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => {
-                      setFilter(f.value);
-                      setPage(1);
-                    }}
-                    className={cn(
-                      "shrink-0 whitespace-nowrap border-b-2 px-3 pb-3 pt-1 text-[14px] transition-colors",
-                      active
-                        ? "border-white font-semibold text-white"
-                        : "border-transparent text-white/70 hover:text-white"
-                    )}
-                  >
-                    {f.label} ({counts[f.value]})
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 

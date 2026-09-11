@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight, Clock, Video, MapPin, Layers } from "lucide-react";
@@ -51,6 +52,19 @@ export interface CalendarSession {
  * because offering hours works identically whoever is offering them.
  */
 export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
+  const navigate = useNavigate();
+
+  /**
+   * Where a session in the grid goes when it is clicked.
+   *
+   * Every one of these rows already carried cursor-pointer and no handler, so
+   * the whole calendar looked clickable and did nothing. A counsellor has a
+   * detail page per session; a tutor does not yet, so theirs lands on the
+   * sessions list, which is where that session actually lives.
+   */
+  const openSession = (id: string) =>
+    navigate(role === "counselor" ? `/counselor/session/${id}` : `/tutor/sessions`);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('week');
   const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false);
@@ -238,11 +252,16 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
                   </div>
                   <div className="space-y-1">
                     {getSessionsForDay(day).map(session => (
-                      <div key={session.id} className="flex items-start gap-1.5 px-2 py-1 rounded-none border-l-2 border-primary bg-primary/5 dark:hover:bg-white/5 cursor-pointer">
+                      <button
+                        key={session.id}
+                        type="button"
+                        onClick={() => openSession(session.id)}
+                        className="flex w-full items-start gap-1.5 rounded-none border-l-2 border-primary bg-primary/5 px-2 py-1 text-left transition-colors hover:bg-primary/10 dark:hover:bg-white/5"
+                      >
                         <span className="text-[11.5px] text-[#222] dark:text-[#e9edef] truncate font-normal">
                           {formatTime(session.startTime)} {session.subject}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </>
@@ -295,9 +314,14 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
                         </div>
                       )}
                       {sessions.map(s => (
-                        <div key={s.id} className="bg-primary/5 text-primary border-l-2 border-primary rounded-none px-2 py-1 text-[11px] font-normal truncate cursor-pointer hover:bg-primary/10 transition-colors">
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => openSession(s.id)}
+                          className="w-full truncate rounded-none border-l-2 border-primary bg-primary/5 px-2 py-1 text-left text-[11px] font-normal text-primary transition-colors hover:bg-primary/10"
+                        >
                           {formatTime(s.startTime)} {s.subject}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   );
@@ -351,14 +375,19 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
                   )}
                   <div className="relative z-10 flex flex-col gap-2">
                     {sessions.map(s => (
-                      <div key={s.id} className="bg-primary/5 text-primary border-l-2 border-primary rounded-none p-3 text-[13px] hover:bg-primary/10 transition-colors cursor-pointer w-full">
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => openSession(s.id)}
+                        className="w-full rounded-none border-l-2 border-primary bg-primary/5 p-3 text-left text-[13px] text-primary transition-colors hover:bg-primary/10"
+                      >
                         <div className="font-medium">{s.subject}</div>
                         <div className="text-primary/80 mt-1 flex items-center gap-2 text-[12px] font-medium">
                           <span>{formatTime(s.startTime)}</span>
-                          <span>•</span>
+                          <span>-</span>
                           <span>{s.tutorName}</span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import {
 } from "@/components/shared/TutorResume";
 import { ResumeEntryDialog } from "@/components/shared/ResumeEntryDialog";
 import { cn } from "@/utils/cn";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DetailRow } from "@/components/shared/DetailRow";
 import { tutorProfileCompleteness } from "@/config/tutorProfile";
 import { Calendar, Camera, CheckCircle, Edit2, Loader2, LogOut, Mail, Phone, Star, Users, X , AlertCircle } from "lucide-react";
@@ -17,6 +18,21 @@ import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/cloudinary";
 import { getTutorSessionsFull, getTutorCourses, getTutorRatings, type TutorRating, SessionRow } from "@/services/tutorService";
 import { dicebearUrl } from "@/utils/avatar";
+
+/** What to call the entry in the confirmation, so it names the thing not the row. */
+function describeEntry(section: ResumeSection, entry: any): string {
+  if (!entry) return "That entry";
+  switch (section) {
+    case "education":
+      return [entry.qualification, entry.institution].filter(Boolean).join(", ") || "That qualification";
+    case "workExperience":
+      return [entry.role, entry.organisation].filter(Boolean).join(" at ") || "That role";
+    case "certifications":
+      return [entry.title, entry.issuer].filter(Boolean).join(", ") || "That certificate";
+    case "languages":
+      return entry.name || "That language";
+  }
+}
 
 export function TutorProfile() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -57,12 +73,34 @@ export function TutorProfile() {
     setAddingTo(null);
   }
 
+  /**
+   * Asked before it happens.
+   *
+   * The remove button used to write straight through, so one stray click took
+   * a qualification or a job off a profile with nothing to undo it and no sign
+   * it had gone. A tutor's background is the thing a family reads before
+   * booking, and retyping a decade of it is not a fair price for a misclick.
+   */
+  const [pendingRemove, setPendingRemove] = useState<{
+    section: ResumeSection;
+    index: number;
+    label: string;
+  } | null>(null);
+
   function removeEntry(section: ResumeSection, index: number) {
+    const entry = (resumeFromProfile(profile)[section] as any[])[index];
+    setPendingRemove({ section, index, label: describeEntry(section, entry) });
+  }
+
+  function confirmRemove() {
+    if (!pendingRemove) return;
+    const { section, index } = pendingRemove;
     const current = resumeFromProfile(profile)[section] as unknown[];
     void writeSection(
       section,
       current.filter((_, i) => i !== index)
     );
+    setPendingRemove(null);
   }
   const [editOpen, setEditOpen] = useState(false);
   const completeness = tutorProfileCompleteness(profile);
@@ -251,6 +289,21 @@ export function TutorProfile() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title="Remove this from your background?"
+        message={
+          <>
+            <span className="font-medium text-foreground">{pendingRemove?.label}</span> comes off
+            your profile. Families see this before they book, and it cannot be brought back.
+          </>
+        }
+        confirmLabel="Remove it"
+        destructive
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemove(null)}
+      />
 
       {editOpen && <EditModal onClose={() => setEditOpen(false)} />}
 

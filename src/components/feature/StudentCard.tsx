@@ -28,12 +28,13 @@ export function StudentCard({ student: s, onMessage }: { student: TutorStudent; 
           <p className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1">Last session</p>
         </div>
       </div>
+      {/* Plain coloured text rather than tinted capsules, like status is
+          everywhere else. A row of pills on a card that already has two tiles
+          on it was three shapes doing the work of one line. */}
       {s.subjects.length > 0 && (
-        <div className="student-card__subjects flex flex-wrap gap-1.5 mb-4">
-          {s.subjects.map((sub) => (
-            <span key={sub} className="text-[11px] font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">{sub}</span>
-          ))}
-        </div>
+        <p className="student-card__subjects mb-4 text-[12px] font-medium text-primary">
+          {s.subjects.join(", ")}
+        </p>
       )}
       <button
         onClick={() => onMessage(s.id)}

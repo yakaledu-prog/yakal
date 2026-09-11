@@ -3,26 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
-import { BookOpen, Users, Clock, Loader2, Search, Calendar, ChevronLeft } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { BookOpen, Loader2, Search, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CourseAssignments } from "@/components/shared/CourseAssignments";
 import { getTutorCourses, getCourseWorkspace, CourseWorkspace } from "@/services/tutorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 
-import { dicebearUrl } from "@/utils/avatar";
-import { ChatBody, ConversationList, useMessaging } from "@/components/messaging";
+import { StudentCard } from "@/components/feature/StudentCard";
+import {
+  PastSessions,
+  UpcomingSessions,
+  type SessionListItem,
+} from "@/components/shared/SessionList";
 
-
-function fmtDate(d?: string | null) {
-  if (!d) return "-";
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-function fmtTime(t?: string) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
-}
 
 export function TutorCourses() {
   // One column at a time on a phone, both on a desktop.
@@ -141,7 +134,23 @@ export function TutorCourses() {
 }
 
 function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void }) {
+  const navigate = useNavigate();
   const { course, students, sessions, assignments } = ws;
+
+  const sessionItems: SessionListItem[] = useMemo(
+    () =>
+      sessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+        title: s.subject,
+        personName: s.student_name ?? null,
+        personAvatarUrl: s.student_avatar,
+      })),
+    [sessions]
+  );
   // Sessions first: teaching the course is the recurring work on it. Overview
   // previewed the sessions and assignments tabs side by side, which is the
   // same information one click further from where it lives.
@@ -195,29 +204,21 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
 
       <div className={cn("mx-auto flex flex-col w-full", activeTab === 'students' ? "flex-1 w-[calc(100%+32px)] md:w-[calc(100%+64px)] -mx-4 md:-mx-8 -mb-4 md:-mb-8 mt-[-32px]" : "")}>
 
+        {/* The shared session list, the same one the Sessions page and every
+            other role render. This tab had its own row layout with a status
+            capsule, so the same lesson looked like a different kind of thing
+            depending on which page you opened it from, and the capsule is
+            against the house preference for plain coloured status text. */}
         {activeTab === 'sessions' && (
-          <div className="animate-in fade-in space-y-4 pt-2">
-            {sessions.length === 0 ? <EmptyMsg text="No sessions for this course yet." /> :
-              <div className="space-y-3">
-                {sessions.map((s) => (
-                  <div key={s.id} className="flex flex-col sm:flex-row sm:items-center gap-4 bg-transparent border-b border-[#e9edef] dark:border-[#2a3942] py-4 last:border-0 hover:bg-[#f8f9fa] dark:hover:bg-[#182329] transition-colors -mx-4 px-4">
-                    <img src={s.student_avatar || dicebearUrl(s.student_name || "S")} alt="" className="w-12 h-12 rounded-none object-cover shrink-0 bg-[#e9edef] dark:bg-[#2a3942]" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-[15px] font-medium text-[#111] dark:text-white">{s.subject}</h3>
-                        <Badge variant={s.status === "completed" ? "success" : s.status === "cancelled" || s.status === "no-show" ? "destructive" : "secondary"}
-                          className="rounded-none text-[10px] font-medium px-2 py-0.5 uppercase tracking-wider">{s.status}</Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-[13px] text-[#54656f] dark:text-[#aebac1]">
-                        <span className="font-medium text-[#111] dark:text-[#e9edef] flex items-center gap-1.5"><Users size={14} className="text-primary" /> {s.student_name}</span>
-                        <span className="flex items-center gap-1.5"><Calendar size={14} className="text-primary" />{fmtDate(s.date)}</span>
-                        <span className="flex items-center gap-1.5"><Clock size={14} className="text-primary" />{fmtTime(s.start_time)} ({s.duration_minutes} min)</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            }
+          <div className="animate-in fade-in space-y-6 pt-2">
+            {sessions.length === 0 ? (
+              <EmptyMsg text="No sessions for this course yet." />
+            ) : (
+              <>
+                <UpcomingSessions sessions={sessionItems} hideIfEmpty />
+                <PastSessions sessions={sessionItems} hideIfEmpty />
+              </>
+            )}
           </div>
         )}
 
@@ -243,9 +244,30 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
           </div>
         )}
 
+        {/* The students on this course, which is what the tab says.
+            It used to render CourseMessagesTab, the tutor's entire conversation
+            list, so parents and administrators turned up under "Students" and
+            the messages page appeared in a third place. The workspace already
+            derives this list from this tutor's own sessions on this course, so
+            it is exactly the right people, and StudentCard has been sitting
+            unused with a comment saying it belongs here. */}
         {activeTab === 'students' && (
-          <div className="animate-in fade-in flex-1 bg-white dark:bg-[#111b21] h-full flex flex-col overflow-hidden border border-[#e9edef] dark:border-[#2a3942] border-b-0 min-h-[500px]">
-            <CourseMessagesTab />
+          <div className="animate-in fade-in flex-1">
+            {students.length === 0 ? (
+              <p className="py-10 text-center text-[14px] text-muted-foreground">
+                Nobody has booked this course with you yet.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {students.map((s) => (
+                  <StudentCard
+                    key={s.id}
+                    student={s}
+                    onMessage={(id) => navigate("/tutor/messages", { state: { openWith: id } })}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -255,52 +277,6 @@ function CourseDetail({ ws, onBack }: { ws: CourseWorkspace; onBack: () => void 
 
 // The tutor's real conversations, in a narrower two-pane arrangement that fits
 // inside the course tab. Used to render mockConversations, so every student
-// listed here was fictional and nothing sent could be delivered.
-function CourseMessagesTab() {
-  const { user } = useAuth();
-  const {
-    conversations,
-    activeConversation,
-    openConversation,
-    sendMessage,
-    searchQuery,
-    setSearchQuery,
-    isLoading,
-    onlineIds,
-    isPeerTyping,
-    notifyTyping,
-  } = useMessaging({ userId: user?.id, includeContacts: false });
-
-  return (
-    <div className="flex flex-1 overflow-hidden h-full">
-      <ConversationList
-        conversations={conversations}
-        activeConversationId={activeConversation?.id}
-        onSelectConversation={openConversation}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        isLoading={isLoading}
-        onlineIds={onlineIds}
-        className="hidden md:flex w-[280px] shrink-0 border-r border-[#e9edef] dark:border-[#2a3942]"
-      />
-      <div className="flex-1 flex flex-col min-w-0">
-        {activeConversation ? (
-          <ChatBody
-            conversation={activeConversation}
-            currentUserId={user?.id}
-            onSendText={sendMessage}
-            onTyping={notifyTyping}
-            isPeerTyping={isPeerTyping}
-          />
-        ) : (
-          <div className="p-10 text-center text-muted-foreground text-[14px]">
-            Select a student to message.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (

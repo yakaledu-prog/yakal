@@ -71,11 +71,6 @@ export function TutorHome() {
     personName: s.student_name ?? null,
     personAvatarUrl: s.student_avatar ?? null,
   }));
-  // The banner used to multiply the profile's hourly rate by the completed
-  // count and label it ETB, while the earnings page showed the real per
-  // session figures in USD. One number, from the ledger, in one currency.
-  const totalEarned = totals.clearing + totals.due + totals.paid;
-
   const firstName = profile?.full_name?.split(" ")[0] || "Tutor";
 
   function join(session: SessionRow) {
@@ -115,19 +110,13 @@ export function TutorHome() {
               </div>
             </div>
 
-            {/* Bottom row: Integrated Stats + Sparkline */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/20">
+            {/* Three figures. Earnings had a fourth tile with a drawn-on
+                sparkline whose shape meant nothing, and the same number is the
+                heading of the Earnings section directly below this banner. */}
+            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/20">
               <IntegratedStat label="Active Students" value={stats.activeStudents} />
               <IntegratedStat label="Upcoming" value={stats.upcoming} />
               <IntegratedStat label="To Review" value={stats.pendingReviews} alert={stats.pendingReviews > 0} />
-
-              <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => navigate("/tutor/earnings")}>
-                <p className="text-white/70 text-[13px] font-medium uppercase tracking-wider mb-1">Earnings</p>
-                <div className="flex items-end justify-between">
-                  <p className="text-3xl font-bold">{money(totalEarned)}</p>
-                  <Sparkline />
-                </div>
-              </div>
             </div>
 
           </div>
@@ -254,17 +243,3 @@ function IntegratedStat({ label, value, alert }: { label: string; value: string 
 }
 
 
-function Sparkline() {
-  return (
-    <svg width="60" height="24" viewBox="0 0 60 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
-      <path d="M2 18L12 12L22 16L32 6L42 10L58 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M58 2L42 10L32 6L22 16L12 12L2 18V24H58V2Z" fill="url(#sparkline-gradient)" opacity="0.2" />
-      <defs>
-        <linearGradient id="sparkline-gradient" x1="30" y1="2" x2="30" y2="24" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white" />
-          <stop offset="1" stopColor="white" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
