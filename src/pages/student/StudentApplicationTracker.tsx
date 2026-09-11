@@ -27,6 +27,7 @@ import {
   deleteEssay,
   deleteRecommendation,
   getCollegeProfile,
+  getStudentIdentity,
   toggleRequirement,
   updateEssay,
   updateSchool,
@@ -85,6 +86,25 @@ export function StudentApplicationTracker({
   const qc = useQueryClient();
   const targetId = studentId || user?.id;
 
+  /**
+   * The student this page is about, which is not always the person reading it.
+   *
+   * Everything Drive-facing below needs their name and their email, and it used
+   * to pass the signed-in user's. A counselor opening a student's Documents tab
+   * therefore had that student's Drive folder shared with the counselor's own
+   * address, and a counselor pressing Create doc filed the essay in a folder
+   * named after themselves.
+   */
+  const { data: student } = useQuery({
+    queryKey: ["student-identity", targetId],
+    queryFn: () => getStudentIdentity(targetId!),
+    enabled: !!targetId,
+    staleTime: 5 * 60_000,
+  });
+
+  const studentName = (studentId ? student?.full_name : profile?.full_name) || "Student";
+  const studentEmail = studentId ? student?.email : user?.email;
+
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", targetId],
     queryFn: () => getCollegeProfile(targetId!),
@@ -106,7 +126,7 @@ export function StudentApplicationTracker({
   // here should degrade the matrix rather than break the page.
   const { data: docs } = useQuery({
     queryKey: ["drive-docs", targetId],
-    queryFn: () => listDocuments(targetId!, profile?.full_name || "Student", user?.email),
+    queryFn: () => listDocuments(targetId!, studentName, studentEmail),
     enabled: !!targetId,
     retry: false,
   });
@@ -379,14 +399,14 @@ export function StudentApplicationTracker({
   };
 
   const makeDoc = async (essay: Essay) => {
-    if (!user) return;
+    if (!targetId) return;
     setCreatingDoc(essay.id);
     try {
       const { file } = await createEssayDoc({
-        studentId: user.id,
-        studentName: profile?.full_name || "Student",
+        studentId: targetId,
+        studentName,
         title: essay.title,
-        studentEmail: user.email,
+        studentEmail,
       });
       await updateEssay(essay.id, { drive_url: file.webViewLink ?? null });
       toast.success("Google Doc created.");
@@ -667,6 +687,7 @@ export function StudentApplicationTracker({
                   essays={essays}
                   schools={schools}
                   role={profile?.role === "counselor" ? "counselor" : "student"}
+                  viewerIsStaff={staffViewing}
                   onAdd={addEssayRow}
                   onAddFromPrompts={addFromPrompts}
                   onEnsureSchool={(preset) =>

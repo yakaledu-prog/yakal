@@ -28,6 +28,7 @@ import {
   EssayStatus,
   getEssay,
   getSchool,
+  getStudentIdentity,
   updateEssay,
 } from "@/services/collegeService";
 import {
@@ -78,7 +79,7 @@ export function EssayWorkspace() {
   const { essayId } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const role = profile?.role ?? "student";
   const isCounselor = role === "counselor" || role === "admin";
 
@@ -98,6 +99,21 @@ export function EssayWorkspace() {
   useSetBreadcrumb(essayId, essay?.title);
 
   const fileId = fileIdFromUrl(essay?.drive_url);
+
+  /**
+   * The student this essay belongs to, who is not always the person reading it.
+   *
+   * The Doc is created in their folder, named after them and shared with them.
+   * This used to read the signed-in user, so a counselor pressing Create doc
+   * filed a student's essay in a folder named after the counselor and shared
+   * it with the counselor's own address.
+   */
+  const { data: owner } = useQuery({
+    queryKey: ["student-identity", essay?.student_id],
+    queryFn: () => getStudentIdentity(essay!.student_id),
+    enabled: !!essay?.student_id,
+    staleTime: 5 * 60_000,
+  });
 
   const { data: school } = useQuery({
     queryKey: ["college-list-item", essay?.college_list_item_id],
@@ -189,9 +205,9 @@ export function EssayWorkspace() {
     mutationFn: async (e: Essay) => {
       const { file } = await createEssayDoc({
         studentId: e.student_id,
-        studentName: profile?.full_name || "Student",
+        studentName: owner?.full_name || "Student",
         title: e.title,
-        studentEmail: user?.email,
+        studentEmail: owner?.email ?? undefined,
       });
       return updateEssay(e.id, {
         drive_url: file.webViewLink ?? null,

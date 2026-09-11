@@ -53,6 +53,13 @@ const STATE_FILTERS: { value: StateFilter; label: string; tone: string }[] = [
   { value: "done", label: "Finished", tone: "border-primary/40 text-primary" },
 ];
 
+/** The same set of essays, named from whichever side is reading the page. */
+function filterLabel(f: StateFilter, staff: boolean): string {
+  if (f === "mine") return staff ? "With the student" : "With me";
+  if (f === "in_review") return staff ? "Waiting on me" : "Under review";
+  return STATE_FILTERS.find((x) => x.value === f)!.label;
+}
+
 const MATCHES_STATE: Record<StateFilter, (e: Essay) => boolean> = {
   all: () => true,
   mine: (e) => e.status === "todo" || e.status === "drafting",
@@ -100,6 +107,7 @@ export function EssaysPanel({
   essays,
   schools,
   role = "student",
+  viewerIsStaff = false,
   onAdd,
   onAddFromPrompts,
   onEnsureSchool,
@@ -115,6 +123,15 @@ export function EssaysPanel({
   schools: CollegeListItem[];
   /** Which dashboard this is inside, so an essay opens on the right route. */
   role?: "student" | "counselor";
+  /**
+   * Somebody looking at a student who is not them.
+   *
+   * Asking for a review is the student handing their draft over, so a
+   * counselor pressing it on a student's page would be sending an essay to
+   * themselves. Everything else here a counselor may legitimately do for a
+   * student: add, delete, and start the document.
+   */
+  viewerIsStaff?: boolean;
   onAdd: (e: NewEssay) => void;
   /** Several essays at once, each from a curated prompt. Given, adding starts
    *  at the college rather than at a blank form. */
@@ -330,7 +347,7 @@ export function EssaysPanel({
                   on ? "bg-current/10 font-medium" : "bg-transparent hover:bg-muted/60"
                 )}
               >
-                {f.label}
+                {filterLabel(f.value, viewerIsStaff)}
                 <span className="tabular-nums opacity-70">{n}</span>
               </button>
             );
@@ -419,6 +436,7 @@ export function EssaysPanel({
                   schools={schools}
                   college={collegeOf(e)}
                   appKey={appOf(e)}
+                  viewerIsStaff={viewerIsStaff}
                   words={counts?.get(fileIdFromUrl(e.drive_url) ?? "")}
                   onOpen={() => openEssay(e)}
                   onCreateDoc={onCreateDoc}
@@ -534,6 +552,7 @@ function EssayRow({
   schools,
   college,
   appKey,
+  viewerIsStaff,
   words,
   onOpen,
   onCreateDoc,
@@ -547,6 +566,7 @@ function EssayRow({
   college: College | null;
   /** Which shared application a personal statement belongs to. */
   appKey: string | null;
+  viewerIsStaff: boolean;
   words?: number;
   onOpen: () => void;
   onCreateDoc: (e: Essay) => void;
@@ -691,7 +711,7 @@ function EssayRow({
             </button>
           )}
 
-          {essay.drive_url && essay.status !== "in_review" && !done && (
+          {!viewerIsStaff && essay.drive_url && essay.status !== "in_review" && !done && (
             <button
               type="button"
               onClick={() => onAskReview(essay)}

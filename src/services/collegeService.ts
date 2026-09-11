@@ -350,6 +350,25 @@ export const deleteRequirement = (id: string) =>
 // --- Essays -------------------------------------------------
 
 /**
+ * Who the page is about, when that is not the person reading it.
+ *
+ * Every Drive call needs the student's own name and email: the folder is named
+ * after them and shared with them. Passing the signed-in user's instead is
+ * silent and wrong in exactly the way that matters, so this exists to make the
+ * right values available on a page a counselor can also open.
+ */
+export async function getStudentIdentity(
+  id: string
+): Promise<{ full_name: string | null; email: string | null } | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as { full_name: string | null; email: string | null }) ?? null;
+}
+
+/**
  * One essay, on its own, for the workspace page.
  *
  * Deliberately not filtered by student: RLS already decides who may read an
