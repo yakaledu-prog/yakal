@@ -21,11 +21,14 @@ import { useId } from "react";
  * The ids are generated per instance. The original ships with ids "a", "b" and
  * "c", and two copies on one page would have the second silently reuse the
  * first one's mask.
+ *
+ * The original's drop shadow is dropped. It is a Gaussian blur sized for an app
+ * icon, and at the 15px this renders at it smeared the page into a blue blob
+ * with no fold and no lines, which was only obvious against the dark theme.
  */
 export function GoogleDocsIcon({ size = 15 }: { size?: number }) {
   const uid = useId();
   const mask = `${uid}-mask`;
-  const blur = `${uid}-blur`;
   const fill = `${uid}-fill`;
 
   return (
@@ -49,9 +52,7 @@ export function GoogleDocsIcon({ size = 15 }: { size?: number }) {
         transform="matrix(6.2502276,0,0,6.2502276,-200.00728,-50.001821)"
       >
         <path d="M159.94 184H31.9999V8h68l59.9991 60z" fill="#3186ff" />
-        <g filter={`url(#${blur})`}>
-          <path d="M43 192h106V20H43Z" fill={`url(#${fill})`} />
-        </g>
+        <path d="M43 192h106V20H43Z" fill={`url(#${fill})`} />
       </g>
       <path
         d="M768.7468 343.7319c-15.6631-11.7554-35.1263-18.72-56.2208-18.72H505.0183c-44.1829 0-80.003-35.8189-80.003-80.0017V0Z"
@@ -71,19 +72,6 @@ export function GoogleDocsIcon({ size = 15 }: { size?: number }) {
           <stop offset=".33" stopColor="#3186FF" />
           <stop offset="1" stopColor="#A9A8FF" />
         </linearGradient>
-        <filter
-          id={blur}
-          x="31"
-          y="8"
-          width="130"
-          height="196"
-          filterUnits="userSpaceOnUse"
-          colorInterpolationFilters="sRGB"
-        >
-          <feFlood floodOpacity="0" result="BackgroundImageFix" />
-          <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-          <feGaussianBlur stdDeviation="6" result="effect1_foregroundBlur" />
-        </filter>
       </defs>
     </svg>
   );

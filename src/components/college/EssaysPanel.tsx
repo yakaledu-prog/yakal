@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, FileText, Loader2, MoreVertical, Plus, Search, Trash2, UserPen } from "lucide-react";
+import { ArrowUpDown, ExternalLink, FileText, Loader2, MoreVertical, Plus, Search, Trash2, UserPen } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
 import { fileIdFromUrl } from "@/services/driveService";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { ApplicationLogo, CollegeLogo } from "./CollegeLogo";
 import { ReviewStamp } from "./ReviewStamp";
@@ -58,6 +59,23 @@ const MATCHES_STATE: Record<StateFilter, (e: Essay) => boolean> = {
   in_review: (e) => e.status === "in_review",
   done: (e) => e.status === "done",
 };
+
+/**
+ * What order to read a list of essays in.
+ *
+ * Deadline leads because it is the only ordering with a consequence: the
+ * service returns them in the order they were created, which is the order they
+ * happened to be added and answers nothing. An essay with no deadline sorts
+ * last rather than first, since a missing date is not urgency.
+ */
+type SortKey = "deadline" | "updated" | "college" | "title";
+
+const SORTS: { value: SortKey; label: string }[] = [
+  { value: "deadline", label: "Deadline" },
+  { value: "updated", label: "Recently updated" },
+  { value: "college", label: "College" },
+  { value: "title", label: "Title" },
+];
 
 export type { NewEssay };
 export type { PromptSelection };
@@ -156,11 +174,11 @@ export function EssaysPanel({
   /** "" is the Common App bucket, otherwise a college id. */
   const [selected, setSelected] = useState<string>("all");
   const [state, setState] = useState<StateFilter>("all");
+  const [sort, setSort] = useState<SortKey>("deadline");
   const [query, setQuery] = useState("");
 
   const core = essays.filter((e) => e.kind === "personal_statement");
   const supplements = essays.filter((e) => e.kind === "supplement");
-  const done = essays.filter((e) => e.status === "done").length;
 
   const forSchool = (id: string) => supplements.filter((e) => e.college_list_item_id === id);
 
@@ -187,8 +205,25 @@ export function EssaysPanel({
           (e.prompt ?? "").toLowerCase().includes(q)
       )
     : inScope;
-  const visible = matching.filter(MATCHES_STATE[state]);
-  const filtered = !!q || state !== "all" || selected !== "all";
+  const nameOf = (e: Essay) =>
+    schools.find((x) => x.id === e.college_list_item_id)?.school_name ?? "";
+
+  const visible = matching.filter(MATCHES_STATE[state]).sort((a, b) => {
+    switch (sort) {
+      case "deadline":
+        // Undated last, whichever way the dates run.
+        if (!a.due_date && !b.due_date) return a.title.localeCompare(b.title);
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      case "updated":
+        return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+      case "college":
+        return nameOf(a).localeCompare(nameOf(b)) || a.title.localeCompare(b.title);
+      default:
+        return a.title.localeCompare(b.title);
+    }
+  });
 
   return (
     <div className="space-y-4">
@@ -250,6 +285,17 @@ export function EssaysPanel({
             />
           </div>
 
+          <Dropdown<SortKey>
+            value={sort}
+            onChange={setSort}
+            options={SORTS}
+            size="sm"
+            align="end"
+            icon={<ArrowUpDown size={15} />}
+            ariaLabel="Sort the essays"
+            buttonClassName="h-9 rounded-md font-normal"
+          />
+
           {/* Starting from the college's actual question rather than a blank
               title field. The old form asked for a title, a college and the
               prompt pasted in from another tab, and the paste is the part that
@@ -300,9 +346,7 @@ export function EssaysPanel({
               ? totalOwed > 0
                 ? `${totalOwed} to add`
                 : "Start with your personal statement"
-              : filtered
-                ? `${visible.length} of ${essays.length}`
-                : `${done} of ${essays.length} finished`}
+              : `${visible.length} shown`}
           </p>
         </div>
       </div>
@@ -532,6 +576,20 @@ function EssayRow({
 
   const due = essay.due_date ? dueMeta(essay.due_date) : null;
 
+  // The bar says how far along, its colour says whose turn it is, and the two
+  // together are readable at a glance down a column. Deliberately the same
+  // colours the card edge and the stamp use: a gold bar under a gold edge is
+  // one fact told twice, not two facts.
+  const barTone = over && !done
+    ? "bg-destructive"
+    : done
+      ? "bg-primary"
+      : essay.status === "in_review"
+        ? "bg-secondary"
+        : essay.status === "drafting"
+          ? "bg-primary/60"
+          : "bg-primary/30";
+
   return (
     <div
       className={cn(
@@ -662,10 +720,7 @@ function EssayRow({
         className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden rounded-b-[5px] bg-muted"
       >
         <div
-          className={cn(
-            "h-full transition-[width] duration-300",
-            over && !done ? "bg-secondary" : done ? "bg-primary" : "bg-primary/60"
-          )}
+          className={cn("h-full transition-[width] duration-300", barTone)}
           style={{ width: `${Math.round((over ? 1 : progress) * 100)}%` }}
         />
       </div>
