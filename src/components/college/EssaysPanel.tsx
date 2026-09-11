@@ -126,10 +126,12 @@ export function EssaysPanel({
   /**
    * Somebody looking at a student who is not them.
    *
-   * Asking for a review is the student handing their draft over, so a
-   * counselor pressing it on a student's page would be sending an essay to
-   * themselves. Everything else here a counselor may legitimately do for a
-   * student: add, delete, and start the document.
+   * The verbs on a card are the student's own: asking for a review is handing
+   * the draft over, which a counselor pressing would be sending an essay to
+   * themselves, and starting the document is the moment the student starts
+   * writing. Staff get neither. What they do get is the list, the way in, and
+   * the two things they legitimately do for a student: put an essay on the
+   * list and take one off.
    */
   viewerIsStaff?: boolean;
   onAdd: (e: NewEssay) => void;
@@ -695,7 +697,7 @@ function EssayRow({
           {/* Not once it is finished. An essay marked done with no document
               behind it is odd data, and offering to start writing it under a
               Finished stamp is odder still. */}
-          {!essay.drive_url && !done && (
+          {!viewerIsStaff && !essay.drive_url && !done && (
             <button
               type="button"
               onClick={() => onCreateDoc(essay)}
@@ -726,6 +728,13 @@ function EssayRow({
               in_review with no document behind it, and saying both "Create doc"
               and this on one row is a contradiction the student has to
               resolve. */}
+          {/* Said, rather than left blank. Without the student's Create doc
+              button a staff row with no document had nothing on it at all and
+              read as a row that had failed to load. */}
+          {viewerIsStaff && !essay.drive_url && !done && (
+            <span className="px-1 text-xs text-muted-foreground">Not started</span>
+          )}
+
           {underReview && <ReviewStamp className="mr-1" />}
 
           {/* One menu rather than a row of icons. A column of ten essays

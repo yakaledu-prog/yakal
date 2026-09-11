@@ -11,6 +11,10 @@ import { cn } from "@/utils/cn";
 import { RequirementsMatrix } from "@/components/college/RequirementsMatrix";
 import { RequirementsCards } from "@/components/college/RequirementsCards";
 import { EssaysPanel, NewEssay, type PromptSelection } from "@/components/college/EssaysPanel";
+import { EssayReviewList } from "@/components/college/EssayReviewList";
+import { getReviewQueue } from "@/services/essayReviewService";
+import { getAdmissionsPlans } from "@/services/admissionsService";
+import { loadCatalog } from "@/services/collegeCatalogService";
 import { DocumentsPanel } from "@/components/college/DocumentsPanel";
 import { RecommendersPanel, NewRecommender } from "@/components/college/RecommendersPanel";
 import {
@@ -100,6 +104,34 @@ export function StudentApplicationTracker({
     queryFn: () => getStudentIdentity(targetId!),
     enabled: !!targetId,
     staleTime: 5 * 60_000,
+  });
+
+  /**
+   * What a counselor sees on this tab.
+   *
+   * The same queue they see on their own Essays page, scoped to this student,
+   * rather than the student's own panel: that panel's verbs are Create doc and
+   * Ask for review, which belong to the person writing, and it carries none of
+   * the counselor's, so a counselor opening a student had no way to send an
+   * essay back from the page they were already on.
+   */
+  const { data: queue = [] } = useQuery({
+    queryKey: ["review-queue", targetId],
+    queryFn: () => getReviewQueue([targetId!]),
+    enabled: !!targetId && staffViewing,
+  });
+
+  const { data: queuePlans } = useQuery({
+    queryKey: ["admissions-plans", targetId],
+    queryFn: () => getAdmissionsPlans([targetId!]),
+    enabled: !!targetId && staffViewing,
+  });
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["college-catalog"],
+    queryFn: loadCatalog,
+    enabled: staffViewing,
+    staleTime: Infinity,
   });
 
   const studentName = (studentId ? student?.full_name : profile?.full_name) || "Student";
@@ -682,7 +714,20 @@ export function StudentApplicationTracker({
                 </div>
               )}
 
-              {tab === "essays" && (
+              {tab === "essays" && staffViewing && (
+                <EssayReviewList
+                  essays={queue}
+                  plans={queuePlans}
+                  catalog={catalog}
+                  counselorId={user?.id}
+                  counselorName={profile?.full_name ?? undefined}
+                  scopedToStudent
+                  onChanged={refresh}
+                  emptyText={`${studentName.split(" ")[0]} has no essays here yet.`}
+                />
+              )}
+
+              {tab === "essays" && !staffViewing && (
                 <EssaysPanel
                   essays={essays}
                   schools={schools}

@@ -328,7 +328,11 @@ export function EssayWorkspace() {
             <div className="flex flex-wrap items-center gap-2">
               {/* Only what this essay can do next. A dropdown of every status
                   let a student mark a draft finished before it existed. */}
-              {!essay.drive_url && (
+              {/* The student starts the document, because starting it is the
+                  moment they start writing. A counselor opening an essay that
+                  has none is looking at something there is nothing to review
+                  in yet. */}
+              {!isCounselor && !essay.drive_url && (
                 <button
                   type="button"
                   onClick={() => makeDoc.mutate(essay)}
