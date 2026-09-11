@@ -1,0 +1,259 @@
+{
+  "cycle": "2026-27",
+  "note": "Questions asked by a shared application rather than by one college. Every prompt here was read from two independent sources that agreed word for word, and the source_url is the one a counselor should open to check it.",
+  "apps": [
+    {
+      "app_key": "common_app",
+      "name": "Common App",
+      "prompts_note": "Choose one and write between 250 and 650 words. The prompts were unchanged for 2026-27.",
+      "source_url": "https://www.commonapp.org/apply/essay-prompts",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "common-app-2026-27-1",
+          "title": "Background, identity, interest or talent",
+          "prompt": "Some students have a background, identity, interest, or talent that is so meaningful they believe their application would be incomplete without it. If this sounds like you, then please share your story.",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-2",
+          "title": "A challenge, setback or failure",
+          "prompt": "The lessons we take from obstacles we encounter can be fundamental to later success. Recount a time when you faced a challenge, setback, or failure. How did it affect you, and what did you learn from the experience?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-3",
+          "title": "Questioning a belief or idea",
+          "prompt": "Reflect on a time when you questioned or challenged a belief or idea. What prompted your thinking? What was the outcome?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-4",
+          "title": "Gratitude",
+          "prompt": "Reflect on something that someone has done for you that has made you happy or thankful in a surprising way. How has this gratitude affected or motivated you?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-5",
+          "title": "Personal growth",
+          "prompt": "Discuss an accomplishment, event, or realization that sparked a period of personal growth and a new understanding of yourself or others.",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-6",
+          "title": "A topic that captivates you",
+          "prompt": "Describe a topic, idea, or concept you find so engaging that it makes you lose all track of time. Why does it captivate you? What or who do you turn to when you want to learn more?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "common-app-2026-27-7",
+          "title": "Topic of your choice",
+          "prompt": "Share an essay on any topic of your choice. It can be one you've already written, one that responds to a different prompt, or one of your own design.",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "common-app-2026-27",
+          "choose_count": 1
+        }
+      ]
+    },
+    {
+      "app_key": "uc",
+      "name": "UC Personal Insight",
+      "prompts_note": "Answer four of the eight. Every University of California campus reads the same four, and there is no separate personal statement.",
+      "source_url": "https://admission.universityofcalifornia.edu/how-to-apply/applying-as-a-freshman/personal-insight-questions.html",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "uc-2026-27-1",
+          "title": "Leadership",
+          "prompt": "Describe an example of your leadership experience in which you have positively influenced others, helped resolve disputes or contributed to group efforts over time.",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-2",
+          "title": "Creative side",
+          "prompt": "Every person has a creative side, and it can be expressed in many ways: problem solving, original and innovative thinking, and artistically, to name a few. Describe how you express your creative side.",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-3",
+          "title": "Greatest talent or skill",
+          "prompt": "What would you say is your greatest talent or skill? How have you developed and demonstrated that talent over time?",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-4",
+          "title": "Educational opportunity or barrier",
+          "prompt": "Describe how you have taken advantage of a significant educational opportunity or worked to overcome an educational barrier you have faced.",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-5",
+          "title": "Most significant challenge",
+          "prompt": "Describe the most significant challenge you have faced and the steps you have taken to overcome this challenge. How has this challenge affected your academic achievement?",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-6",
+          "title": "An academic subject that inspires you",
+          "prompt": "Think about an academic subject that inspires you. Describe how you have furthered this interest inside and/or outside of the classroom.",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-7",
+          "title": "Making your community better",
+          "prompt": "What have you done to make your school or your community a better place?",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        },
+        {
+          "slug": "uc-2026-27-8",
+          "title": "What makes you a strong candidate",
+          "prompt": "Beyond what has already been shared in your application, what do you believe makes you a strong candidate for admissions to the University of California?",
+          "word_limit": 350,
+          "requirement": "choice",
+          "choice_group": "uc-2026-27",
+          "choose_count": 4
+        }
+      ]
+    },
+    {
+      "app_key": "coalition",
+      "name": "Coalition App",
+      "prompts_note": "Choose one and write 500 to 650 words. The Coalition Application runs on Scoir.",
+      "source_url": "https://www.scoir.com/blog/comparing-essay-prompts-coalition-common-app",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "coalition-2026-27-1",
+          "title": "A story from your life",
+          "prompt": "Tell a story from your life, describing an experience that either demonstrates your character or helped to shape it.",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "coalition-2026-27-2",
+          "title": "What interests or excites you",
+          "prompt": "What interests or excites you? How does it shape who you are now or who you might become in the future?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "coalition-2026-27-3",
+          "title": "A positive impact on others",
+          "prompt": "Describe a time when you had a positive impact on others. What were the challenges? What were the rewards?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "coalition-2026-27-4",
+          "title": "An idea of yours questioned",
+          "prompt": "Has there been a time when an idea or belief of yours was questioned? How did you respond? What did you learn?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "coalition-2026-27-5",
+          "title": "Successes and obstacles",
+          "prompt": "What successes have you achieved and what obstacles have you faced? What advice would you give a sibling or friend going through a similar experience?",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        },
+        {
+          "slug": "coalition-2026-27-6",
+          "title": "Topic of your choice",
+          "prompt": "Submit an essay on a topic of your choice.",
+          "word_limit": 650,
+          "requirement": "choice",
+          "choice_group": "coalition-2026-27",
+          "choose_count": 1
+        }
+      ]
+    },
+    {
+      "app_key": "activities",
+      "name": "Activities and Honors",
+      "prompts_note": "Not essays, but the Common App's tightest writing and the part students leave to the last night. Ten activities and five honors, each with its own hard character limit.",
+      "source_url": "https://www.commonapp.org/apply",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "activities-2026-27-description",
+          "title": "Activity description",
+          "prompt": "Describe this activity, including what you accomplished and any recognition you received. You have ten activity slots and 150 characters for each description, which is about twenty-five words.",
+          "char_limit": 150,
+          "requirement": "optional"
+        },
+        {
+          "slug": "activities-2026-27-position",
+          "title": "Position or leadership title",
+          "prompt": "Your position, leadership role or job title for this activity. Optional, and capped at 50 characters.",
+          "char_limit": 50,
+          "requirement": "optional"
+        },
+        {
+          "slug": "activities-2026-27-organisation",
+          "title": "Organisation name",
+          "prompt": "The organisation, club, employer or programme this activity belongs to, in 100 characters.",
+          "char_limit": 100,
+          "requirement": "optional"
+        },
+        {
+          "slug": "activities-2026-27-honor",
+          "title": "Academic honor",
+          "prompt": "An academic honor earned in grades 9 through 12, in 100 characters. Five slots. Merit-based awards belong here; clubs, jobs and leadership belong in Activities and Experiences.",
+          "char_limit": 100,
+          "requirement": "optional"
+        }
+      ]
+    }
+  ]
+}

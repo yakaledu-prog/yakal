@@ -16,6 +16,7 @@ import { fileIdFromUrl } from "@/services/driveService";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { EssayStatusIcon } from "./EssayStatusIcon";
 import { AddEssayModal, NewEssay } from "./AddEssayModal";
+import { EssayPromptPicker, type PromptSelection } from "./EssayPromptPicker";
 import { getEssayReviews } from "@/services/essayReviewService";
 
 const STATUS: { value: EssayStatus; label: string }[] = [
@@ -43,6 +44,7 @@ function dueMeta(iso: string): { label: string; tone: "late" | "soon" | "calm" }
 }
 
 export type { NewEssay };
+export type { PromptSelection };
 
 /**
  * Essays, grouped by what they are for.
@@ -64,6 +66,8 @@ export function EssaysPanel({
   essays,
   schools,
   onAdd,
+  onAddFromPrompts,
+  onEnsureSchool,
   onStatusChange,
   onCreateDoc,
   onAskReview,
@@ -76,6 +80,18 @@ export function EssaysPanel({
   essays: Essay[];
   schools: CollegeListItem[];
   onAdd: (e: NewEssay) => void;
+  /** Several essays at once, each from a curated prompt. Given, adding starts
+   *  at the college rather than at a blank form. */
+  onAddFromPrompts?: (selection: PromptSelection) => void;
+  /**
+   * A college whose questions we do not hold, for the blank form to be scoped
+   * to. Returns the college list row's id, creating it if the student has not
+   * added that college yet: without this the blank form opens with a college
+   * dropdown that does not contain the college they just picked.
+   */
+  onEnsureSchool?: (
+    preset: { unitid: number | null; schoolName: string | null; collegeListItemId: string | null }
+  ) => Promise<string | null>;
   onStatusChange: (id: string, status: EssayStatus) => void;
   onCreateDoc: (essay: Essay) => void;
   onAskReview: (essay: Essay) => void;
@@ -88,6 +104,10 @@ export function EssaysPanel({
   counts?: Map<string, number>;
 }) {
   const [adding, setAdding] = useState(false);
+  const [picking, setPicking] = useState(false);
+  /** A college carried over from the picker's "write it myself", so the blank
+   *  form does not ask again for the school just chosen. */
+  const [ownFor, setOwnFor] = useState<string | null>(null);
 
   /** "" is the Common App bucket, otherwise a college id. */
   const [selected, setSelected] = useState<string>("all");
@@ -127,17 +147,46 @@ export function EssaysPanel({
     <div className="space-y-4">
       <AddEssayModal
         open={adding}
-        onClose={() => setAdding(false)}
+        onClose={() => {
+          setAdding(false);
+          setOwnFor(null);
+        }}
         onSubmit={(e) => {
           onAdd(e);
           setAdding(false);
+          setOwnFor(null);
         }}
         schools={schools}
         presetSchoolId={
-          selected !== "all" && selected !== "common" ? selected : null
+          ownFor ?? (selected !== "all" && selected !== "common" ? selected : null)
         }
         saving={saving}
       />
+
+      {onAddFromPrompts && (
+        <EssayPromptPicker
+          open={picking}
+          onClose={() => setPicking(false)}
+          onSubmit={(selection) => {
+            onAddFromPrompts(selection);
+            setPicking(false);
+          }}
+          onWriteYourOwn={(preset) => {
+            setPicking(false);
+            if (!preset.unitid || preset.collegeListItemId || !onEnsureSchool) {
+              setOwnFor(preset.collegeListItemId);
+              setAdding(true);
+              return;
+            }
+            void onEnsureSchool(preset).then((id) => {
+              setOwnFor(id);
+              setAdding(true);
+            });
+          }}
+          schools={schools}
+          saving={saving}
+        />
+      )}
 
       <div className="flex items-center gap-3">
         <div className="relative w-full max-w-[280px]">
@@ -163,16 +212,19 @@ export function EssaysPanel({
 
         <div className="flex-1" />
 
-        {(
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
-          >
-            <Plus size={15} />
-            Add essay
-          </button>
-        )}
+        {/* Starting from the college's actual question rather than a blank
+            title field. The old form asked for a title, a college and the
+            prompt pasted in from another tab, and the paste is the part that
+            went wrong. Where no prompt picker is wired in, this falls back to
+            that form, which is what the preview page uses. */}
+        <button
+          type="button"
+          onClick={() => (onAddFromPrompts ? setPicking(true) : setAdding(true))}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+        >
+          <Plus size={15} />
+          Add essay
+        </button>
       </div>
 
       {essays.length === 0 && schools.length === 0 ? (

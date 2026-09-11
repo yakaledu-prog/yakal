@@ -71,6 +71,10 @@ export interface Essay {
   updated_at: string;
   /** The college's actual question. Pasted by the student or curated per cycle. */
   prompt?: string | null;
+  /** The curated prompt this was started from, when it was started from one.
+   *  Kept so the picker can grey out questions already being answered, and so
+   *  a reworded prompt can still be traced back to what the student answered. */
+  essay_prompt_id?: string | null;
   /** Colleges enforce these, so a draft is not done until it fits. */
   word_limit?: number | null;
   /** Feedback rounds spent. The tiers sell a fixed number of these. */
@@ -208,7 +212,7 @@ export const addSchool = (studentId: string, patch: Partial<CollegeListItem>) =>
     supabase.from("college_list_items").insert([{ student_id: studentId, ...patch }]).select().single()
   );
 
-export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
+export type DeadlineRound = "ed1" | "ed2" | "ea" | "ea2" | "rea" | "rd" | "rolling";
 
 export interface AddCollegeInput {
   unitid: number | null;

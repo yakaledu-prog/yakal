@@ -79,11 +79,11 @@ outside the curated set, the record still exists with cost, scores and photo, th
 deadline fields are simply blank and marked unverified, and that school enters next
 cycle's curation queue automatically. Demand-driven expansion beats guessing.
 
-For an Ethiopian-American family base concentrated in Maryland, Virginia and DC, the
-top 300 by national enrollment will still miss regional schools that matter to you.
-Before curating, override the ranking to force in every four-year institution in MD,
-VA, DC and PA. That is roughly 150 more schools and it is the difference between the
-catalog feeling national and feeling relevant.
+Ranking by national enrollment alone will miss regional schools that matter to the
+families actually on the platform. Before curating, override the ranking to force in
+every four-year institution in the states our students come from. That is roughly 150
+more schools and it is the difference between the catalog feeling national and feeling
+relevant.
 
 ---
 
@@ -127,6 +127,26 @@ is exactly right for this layer. It is one script and about ten minutes.
 ---
 
 ## 4. What is NOT here, and why you should not trust a scraper for it
+
+> **Update, 2026-09-12. The first sentence below is wrong, and the rest is right.**
+>
+> Deadlines, application fees, fee waiver policy, test policy and recommendation
+> counts **do** have an authoritative machine-readable source: the Common App
+> Requirements Grid, which Common App publishes as a PDF and updates through the
+> cycle. 1,114 member colleges, 948 of which join to this catalog on `unitid`.
+> This section tested three college *websites* and concluded from that that the
+> data did not exist anywhere. It does; it is just not on the colleges' own
+> pages. See `data/common-app/README.md`.
+>
+> Supplemental essay prompts and their word limits are also largely gettable,
+> from each college's own essay page, because a prompt is long, quoted and
+> states its own limit, so a bad extraction is obvious on sight. That works for
+> server-rendered sites and fails for JavaScript ones, which still need a
+> person. See `data/essay-prompts/README.md`.
+>
+> **What stays true:** admitted GPA and the Common Data Set figures are still
+> hand work, a wrong date is far worse than a blank one, and the refusal to
+> generate any of this from memory is the right rule and is still being kept.
 
 The honest part. These fields are what the product actually sells on, and no public API
 provides them:

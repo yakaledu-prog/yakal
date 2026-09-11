@@ -28,8 +28,15 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
+import {
+  getPromptCounts,
+  getRequirements,
+  nextDeadline,
+  recommendationSummary,
+  type CollegeRequirements,
+} from "@/services/collegeCycleService";
 
-export type DeadlineRound = "ed1" | "ed2" | "ea" | "rea" | "rd" | "rolling";
+export type DeadlineRound = "ed1" | "ed2" | "ea" | "ea2" | "rea" | "rd" | "rolling";
 
 export interface AddCollegeInput {
   unitid: number | null;
@@ -46,6 +53,7 @@ const ROUNDS = [
   { value: "ed1" as const, label: "Early Decision" },
   { value: "ed2" as const, label: "Early Decision II" },
   { value: "ea" as const, label: "Early Action" },
+  { value: "ea2" as const, label: "Early Action II" },
   { value: "rea" as const, label: "Restrictive Early Action" },
   { value: "rd" as const, label: "Regular Decision" },
   { value: "rolling" as const, label: "Rolling" },
@@ -120,8 +128,44 @@ export function AddCollegeModal({
   const [appUrl, setAppUrl] = useState("");
   const [essays, setEssays] = useState<number | null>(null);
   const [why, setWhy] = useState("");
+  /** What the Common App grid says this college asks for, once it has been
+   *  looked up. Absent for the schools we hold nothing on, which is the
+   *  ordinary case for a small college or one outside the US. */
+  const [known, setKnown] = useState<CollegeRequirements | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Fill in what the college has already told Common App.
+   *
+   * Deadline, round, application page and how many supplements it asks for
+   * were four questions put to a seventeen-year-old who was being asked to go
+   * and look them up, which is how a list ends up with a deadline that is a
+   * week out. Where we hold the answer it is filled in and still editable;
+   * where we do not, the fields stay blank and are asked for as before.
+   */
+  const prefill = async (c: College) => {
+    const req = await getRequirements(c.unitid);
+    if (!req) return;
+    setKnown(req);
+
+    const due = nextDeadline(req);
+    if (due) {
+      setDeadline((current) => current ?? due.date);
+      setRound((current) => current || (due.round === "ed" ? "ed1" : due.round));
+    } else if (req.is_rolling) {
+      setRound((current) => current || "rolling");
+    }
+    if (req.admissions_url) {
+      // Replaces the homepage guess, not anything the student has typed.
+      setAppUrl((current) =>
+        !current.trim() || current === c.website ? req.admissions_url! : current
+      );
+    }
+    const supplements = await getPromptCounts();
+    const n = supplements.get(c.unitid) ?? 0;
+    if (n > 0) setEssays((current) => current ?? n);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -132,11 +176,16 @@ export function AddCollegeModal({
     setAppUrl("");
     setEssays(null);
     setWhy("");
+    setKnown(null);
 
     if (preselected) {
       setPicked(preselected);
       setTier(FIT_TO_TIER[computeFit(preselected, student)]);
       setStep(1);
+      // The catalogue page opens this with a college already chosen, so
+      // choose() never runs and the deadline, round and admissions page were
+      // left blank on the one route most students take.
+      void prefill(preselected);
       return;
     }
 
@@ -176,13 +225,15 @@ export function AddCollegeModal({
   const choose = (c: College) => {
     setPicked(c);
     setTier(FIT_TO_TIER[computeFit(c, student)]);
-    // Prefilled from the catalogue, which carries every school's homepage.
-    // Scorecard has no admissions-page field, so this is the front door rather
-    // than the right page: a head start to correct, not an answer. Only when
-    // the field is untouched, so it never overwrites something typed.
+    // The university homepage, as a last resort. It is the front door rather
+    // than the right page, and the lookup below replaces it with the actual
+    // admissions page wherever we have one. Only when the field is untouched,
+    // so it never overwrites something typed.
     setAppUrl((current) => current.trim() || c.website || "");
     setStep(1);
+    void prefill(c);
   };
+
 
   const submit = () => {
     if (!name) return;
@@ -391,7 +442,7 @@ export function AddCollegeModal({
                   />
                 </div>
                 <div>
-                  <FieldLabel hint="The date the application is due, taken from the college's own admissions page. Deadlines are in no federal dataset, so this is the one date only you can supply.">
+                  <FieldLabel hint="The date the application is due. Filled in from the Common App Requirements Grid, which is the college's own answer on Common App's own form, and still yours to change.">
                     Deadline
                   </FieldLabel>
                   <DateField
@@ -401,6 +452,21 @@ export function AddCollegeModal({
                   />
                 </div>
               </div>
+
+              {/* Where the filled-in values came from. A prefilled date with no
+                  provenance is a date a student has to go and check anyway, and
+                  then the prefill has saved nobody anything. */}
+              {known && (
+                <p className="-mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+                  From the Common App requirements grid
+                  {known.verified_on &&
+                    `, updated ${new Date(`${known.verified_on}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`}
+                  .
+                  {recommendationSummary(known) && ` They ask for ${recommendationSummary(known)}.`}
+                  {known.application_fee_cents !== null &&
+                    ` The application fee is ${known.application_fee_cents === 0 ? "waived" : `$${Math.round(known.application_fee_cents / 100)}`}.`}
+                </p>
+              )}
               {/* The URL takes what is left rather than half: it is the
                   longest value on the form and the counter beside it only needs
                   room for two digits. */}

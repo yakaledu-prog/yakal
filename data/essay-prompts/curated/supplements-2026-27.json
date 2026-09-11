@@ -1,0 +1,322 @@
+{
+  "cycle": "2026-27",
+  "note": "Supplemental essay questions, transcribed from each college's own admissions page. source_url is the page that was read and verified_on the day it was read, both carried through to the row a student sees, so a prompt that drifts mid-cycle can be checked in one click. Nothing here is written from memory: a school is in this file because its page was fetched and read. Text is verbatim, with the single exception that curly quotes are written as straight ones, because the codebase is plain ASCII throughout.",
+  "schools": [
+    {
+      "unitid": 130794,
+      "name": "Yale University",
+      "source_url": "https://admissions.yale.edu/essay-topics",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "yale-2026-27-academic-interest",
+          "title": "An academic topic that excites you",
+          "prompt": "Tell us about a topic or idea that excites you and is related to one or more academic areas you selected above. Why are you drawn to it?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "yale-2026-27-short-course",
+          "title": "A course, a book or a work of art",
+          "prompt": "If you could teach any college course, write a book, or create an original piece of art of any kind, what would it be?",
+          "char_limit": 200,
+          "requirement": "required",
+          "app_key": "common_app"
+        },
+        {
+          "slug": "yale-2026-27-short-grow",
+          "title": "Something you hope to develop",
+          "prompt": "What is one aspect of yourself that you hope to grow or develop during college?",
+          "char_limit": 200,
+          "requirement": "required",
+          "app_key": "common_app"
+        },
+        {
+          "slug": "yale-2026-27-short-elsewhere",
+          "title": "Not anywhere else in your application",
+          "prompt": "What is something about you that is not included anywhere else in your application?",
+          "char_limit": 200,
+          "requirement": "required",
+          "app_key": "common_app"
+        },
+        {
+          "slug": "yale-2026-27-long-opposing",
+          "title": "An issue discussed with someone who disagreed",
+          "prompt": "Reflect on a time you discussed an issue important to you with someone holding an opposing view. Why did you find the experience meaningful?",
+          "word_limit": 400,
+          "requirement": "choice",
+          "choice_group": "yale-400",
+          "choose_count": 1,
+          "app_key": "common_app"
+        },
+        {
+          "slug": "yale-2026-27-long-community",
+          "title": "A community you feel connected to",
+          "prompt": "Reflect on your membership in a community to which you feel connected. Why is this community meaningful to you? You may define community however you like.",
+          "word_limit": 400,
+          "requirement": "choice",
+          "choice_group": "yale-400",
+          "choose_count": 1,
+          "app_key": "common_app"
+        },
+        {
+          "slug": "yale-2026-27-long-enrich",
+          "title": "What you would bring to Yale",
+          "prompt": "Reflect on an element of your personal experience that you feel will enrich your college. How has it shaped you?",
+          "word_limit": 400,
+          "requirement": "choice",
+          "choice_group": "yale-400",
+          "choose_count": 1,
+          "app_key": "common_app"
+        }
+      ]
+    },
+    {
+      "unitid": 166027,
+      "name": "Harvard University",
+      "source_url": "https://college.harvard.edu/admissions/apply/first-year-applicants/application-requirements",
+      "verified_on": "2026-09-12",
+      "app_key": "common_app",
+      "prompts": [
+        {
+          "slug": "harvard-2026-27-contribute",
+          "title": "Life experiences and what you contribute",
+          "prompt": "Harvard has long recognized the importance of enrolling a student body with a diversity of perspectives and experiences. How will the life experiences that shaped who you are today enable you to contribute to Harvard?",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "harvard-2026-27-disagreed",
+          "title": "A strong disagreement",
+          "prompt": "Describe a time when you strongly disagreed with someone about an idea or issue. How did you communicate or engage with this person? What did you learn from this experience?",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "harvard-2026-27-shaped-you",
+          "title": "Activities, work, travel or family",
+          "prompt": "Briefly describe any of your extracurricular activities, employment experience, travel, or family responsibilities that have shaped who you are.",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "harvard-2026-27-future",
+          "title": "How you will use a Harvard education",
+          "prompt": "How do you hope to use your Harvard education in the future?",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "harvard-2026-27-roommates",
+          "title": "Three things for your roommates",
+          "prompt": "Top 3 things your roommates might like to know about you.",
+          "word_limit": 150,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 215062,
+      "name": "University of Pennsylvania",
+      "source_url": "https://admissions.upenn.edu/how-to-apply/preparing-your-application/writing",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "penn-2026-27-thank-you",
+          "title": "A thank-you note",
+          "prompt": "Write a short thank-you note to someone you have not yet thanked and would like to acknowledge. (We encourage you to share this note with that person, if possible, and reflect on the experience!)",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "penn-2026-27-community",
+          "title": "How you will explore community at Penn",
+          "prompt": "How will you explore community at Penn? Consider how Penn will help shape your perspective, and how your experiences and perspective will help shape Penn.",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "penn-2026-27-college",
+          "title": "College of Arts and Sciences",
+          "prompt": "The College of Arts and Sciences is designed to foster discovery and connection. Describe something you are curious about, something you would like to learn more about or find a new approach to, and how you might pursue that curiosity in the College.",
+          "word_limit": 200,
+          "requirement": "choice",
+          "choice_group": "penn-school",
+          "choose_count": 1,
+          "group_label": "College of Arts and Sciences"
+        },
+        {
+          "slug": "penn-2026-27-wharton",
+          "title": "Wharton",
+          "prompt": "Wharton prepares its students to make an impact by applying business methods and economic theory to real-world problems, including economic, political, and social issues. Discuss a current issue of importance to you and how you hope a Wharton education would help you explore it.",
+          "word_limit": 200,
+          "requirement": "choice",
+          "choice_group": "penn-school",
+          "choose_count": 1,
+          "group_label": "Wharton"
+        },
+        {
+          "slug": "penn-2026-27-engineering",
+          "title": "Penn Engineering",
+          "prompt": "Penn Engineering prepares its students to become leaders in technology by combining a strong foundation in the natural sciences and mathematics with depth of study in focused disciplinary majors. Describe how you plan to pursue your engineering interests at Penn, particularly within the intended major you selected.",
+          "word_limit": 200,
+          "requirement": "choice",
+          "choice_group": "penn-school",
+          "choose_count": 1,
+          "group_label": "Penn Engineering"
+        },
+        {
+          "slug": "penn-2026-27-nursing",
+          "title": "Penn Nursing",
+          "prompt": "Penn Nursing intends to meet the health needs of society in a global and multicultural world by preparing its students to impact healthcare by advancing science. Why are you applying to Nursing, where do you see yourself professionally in the future, and how will you contribute to our mission of promoting equity in healthcare?",
+          "word_limit": 200,
+          "requirement": "choice",
+          "choice_group": "penn-school",
+          "choose_count": 1,
+          "group_label": "Penn Nursing"
+        }
+      ]
+    },
+    {
+      "unitid": 166683,
+      "name": "Massachusetts Institute of Technology",
+      "source_url": "https://mitadmissions.org/apply/firstyear/essays-activities-academics/",
+      "verified_on": "2026-09-12",
+      "app_key": "mit",
+      "prompts": [
+        {
+          "slug": "mit-2026-27-field",
+          "title": "The field of study that appeals to you",
+          "prompt": "What field of study appeals to you the most right now? Reflect on what has led you to this interest.",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "mit-2026-27-unexpected-path",
+          "title": "Doing something different from what was expected",
+          "prompt": "While some reach their goals following well-trodden paths, others blaze their own trails achieving the unexpected. In what ways have you done something different than what was expected in your educational journey?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "mit-2026-27-problems",
+          "title": "Problems you want to tackle",
+          "prompt": "How have your personal and academic experiences influenced the types of problems you would want to tackle with an MIT education and the impact you aim to make on your community?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "mit-2026-27-challenge",
+          "title": "An unexpected situation or challenge",
+          "prompt": "How did you manage a situation or challenge that you didn't expect? What did you learn from it?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "mit-2026-27-hours",
+          "title": "A topic you could talk about for hours",
+          "prompt": "What's a topic, academic or non-academic, that you could talk about for hours?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "mit-2026-27-generalist",
+          "title": "Generalist or specialist",
+          "prompt": "MIT values both \"generalists\" with varied interests and \"specialists\" who focus deeply on one or a few passions. Which do you think best describes you, and why?",
+          "word_limit": 50,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 227757,
+      "name": "Rice University",
+      "source_url": "https://admission.rice.edu/apply/first-year-applicants",
+      "verified_on": "2026-09-12",
+      "app_key": "common_app",
+      "prompts": [
+        {
+          "slug": "rice-2026-27-academic",
+          "title": "Your academic areas at Rice",
+          "prompt": "Please explain what draws you to the academic areas you selected above and how you hope to explore them at Rice University.",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "rice-2026-27-why-rice",
+          "title": "What appeals to you about Rice",
+          "prompt": "Based upon your exploration of Rice University, what elements of the Rice experience appeal to you?",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "rice-2026-27-residential",
+          "title": "The residential college system",
+          "prompt": "The Residential College System is at the heart of Rice student life and is heavily influenced by the particular cultural traditions and unique life experiences each student brings. What life experiences and/or unique perspectives are you looking forward to sharing with fellow Owls in the residential college system?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "rice-2026-27-perspectives",
+          "title": "Perspectives shaped by your background",
+          "prompt": "Rice is strengthened by its diverse community of learning and discovery that produces leaders and change agents across the spectrum of human endeavor. What perspectives shaped by your background, experiences, upbringing, and/or cultural identity inspire you to join our community of change agents at Rice?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "rice-2026-27-the-box",
+          "title": "The Box",
+          "prompt": "One of Rice's long-standing traditions is \"The Box,\" a question on our application where we ask all of our applicants to share an image of something that appeals to them. The Box gives you the opportunity to present us with an image that shares something about yourself, your interests or what is meaningful to you. This image is not used for evaluative purposes in the application, but allows you to put your stamp on the application about who you are aside from what you have achieved. Be sure to choose an image that speaks for itself and does not need an explanation. The Box must be a two-dimensional image that is uploaded in the Common App or uploaded in the Rice Admission Student Portal.",
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 121345,
+      "name": "Pomona College",
+      "source_url": "https://www.pomona.edu/admissions/apply/first-year-applicants",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "pomona-2026-27-academic-interest",
+          "title": "Academic Interest Statement",
+          "prompt": "What draws you to the subject(s) you selected as potential major(s)? If undecided, share more about one of your academic passions or interests.",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "pomona-2026-27-community",
+          "title": "A community you belong to",
+          "prompt": "Pomona is home to a diverse community of faculty, staff and students who, through close ties and collaboration, enable each other to identify and explore their greatest passions. Reflecting on a community that you are a part of, what values or perspectives from that community would you bring to Pomona?",
+          "word_limit": 250,
+          "requirement": "choice",
+          "choice_group": "pomona-short-response",
+          "choose_count": 1
+        },
+        {
+          "slug": "pomona-2026-27-outside-classroom",
+          "title": "An experience outside the classroom",
+          "prompt": "Pomona is home to a diverse community of faculty, staff and students who, through close ties and collaboration, enable each other to identify and explore their greatest passions. Describe an experience you had outside the classroom that changed the way you think and/or how you engage with your peers. What was that experience and what did you learn from it?",
+          "word_limit": 250,
+          "requirement": "choice",
+          "choice_group": "pomona-short-response",
+          "choose_count": 1
+        }
+      ]
+    },
+    {
+      "unitid": 168218,
+      "name": "Wellesley College",
+      "source_url": "https://www.wellesley.edu/admission/apply/firstyear",
+      "verified_on": "2026-09-12",
+      "prompts": [
+        {
+          "slug": "wellesley-2026-27-bridges",
+          "title": "Working alongside different perspectives",
+          "prompt": "Wellesley students actively seek ways to build bridges and to change the world for the better. Tell us about an experience working with and alongside people of different backgrounds and/or perspectives from your own. Why was this important to you, and what lessons from this will you bring with you to Wellesley?",
+          "requirement": "required"
+        }
+      ]
+    }
+  ]
+}

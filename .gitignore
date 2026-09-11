@@ -56,3 +56,7 @@ desktop.ini
 # Written by the local Supabase Studio container, owned by root, and holding
 # one-off queries somebody typed into a browser. Not project code.
 supabase/snippets/
+
+# Python bytecode from the data build scripts
+__pycache__/
+*.pyc

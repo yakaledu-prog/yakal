@@ -10,7 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/utils/cn";
 import { RequirementsMatrix } from "@/components/college/RequirementsMatrix";
 import { RequirementsCards } from "@/components/college/RequirementsCards";
-import { EssaysPanel, NewEssay } from "@/components/college/EssaysPanel";
+import { EssaysPanel, NewEssay, type PromptSelection } from "@/components/college/EssaysPanel";
 import { DocumentsPanel } from "@/components/college/DocumentsPanel";
 import { RecommendersPanel, NewRecommender } from "@/components/college/RecommendersPanel";
 import {
@@ -22,6 +22,7 @@ import {
   RecStatus,
   Recommendation,
   addEssay,
+  addSchoolFromCatalog,
   addRecommendation,
   addRequirement,
   deleteEssay,
@@ -33,6 +34,11 @@ import {
   updateRecommendation,
 } from "@/services/collegeService";
 import { OVERRIDE_LABEL, ReqKey, StudentContext } from "@/services/requirementsService";
+import {
+  getRequirements,
+  nextDeadline,
+  ROUND_LABEL,
+} from "@/services/collegeCycleService";
 import {
   createEssayDoc,
   fileIdFromUrl,
@@ -264,6 +270,113 @@ export function StudentApplicationTracker({
     if (!res.success) return toast.error(res.error || "Could not add that essay.");
     toast.success(`${e.title} added.`);
     refresh();
+  };
+
+  /**
+   * Essays started from curated prompts, several at a time.
+   *
+   * A student ticking four of Yale's questions means four drafts, each already
+   * carrying its own question and word limit. If Yale is not on their list yet,
+   * ticking its questions is a clear enough statement of intent to add it, and
+   * the deadline and application page come along from the cycle data rather
+   * than being asked for.
+   */
+  /**
+   * Put a college on the list, if it is not already, and say which row it is.
+   *
+   * Shared by both ways into the essay picker, because both hit the same
+   * problem: a student can tick Yale's questions, or ask to write their own for
+   * Yale, without Yale being on their list yet. Ticking a college's questions
+   * is a clear enough statement of intent to add it, and the deadline and
+   * application page come along from the cycle data rather than being asked for.
+   */
+  const ensureSchool = async (
+    unitid: number | null,
+    schoolName: string | null,
+    existing: string | null,
+    essaysWanted: number | null
+  ): Promise<string | null> => {
+    if (!targetId || !canEdit) return existing;
+    if (existing || !unitid || !schoolName) return existing;
+
+    const req = await getRequirements(unitid);
+    const due = req ? nextDeadline(req) : null;
+    const created = await addSchoolFromCatalog(
+      targetId,
+      {
+        unitid,
+        school_name: schoolName,
+        // Nothing here knows how reachable this school is for this student,
+        // and the list is theirs to categorise. Target is the neutral placing,
+        // and the row records who added it.
+        tier: "target",
+        deadline: due?.date ?? null,
+        deadline_round: (due?.round === "ed" ? "ed1" : due?.round) ?? null,
+        application_url: req?.admissions_url ?? null,
+        supp_essay_count: essaysWanted,
+        why_school: null,
+      },
+      profile?.id
+    );
+    if (!created.success || !created.data) {
+      toast.error(created.error || `Could not add ${schoolName}.`);
+      return null;
+    }
+    toast.success(
+      due
+        ? `${schoolName} added, ${ROUND_LABEL[due.round]} closes ${new Date(`${due.date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "long" })}.`
+        : `${schoolName} added to your list.`
+    );
+    refresh();
+    return created.data.id;
+  };
+
+  const addFromPrompts = async (selection: PromptSelection) => {
+    if (!targetId || !canEdit) return;
+    const { prompts, unitid, schoolName } = selection;
+    if (!prompts.length) return;
+
+    setSaving(true);
+    try {
+      const listItemId = await ensureSchool(
+        unitid,
+        schoolName,
+        selection.collegeListItemId,
+        prompts.length
+      );
+      if (unitid && !listItemId) return;
+
+      const results = await Promise.all(
+        prompts.map((p) =>
+          addEssay(targetId, {
+            title: p.title,
+            kind: unitid ? "supplement" : "personal_statement",
+            college_list_item_id: unitid ? listItemId : null,
+            prompt: p.prompt,
+            word_limit: p.word_limit ?? null,
+            essay_prompt_id: p.id,
+          })
+        )
+      );
+
+      const failed = results.filter((r) => !r.success).length;
+      if (failed) {
+        toast.error(
+          failed === results.length
+            ? "Could not add those essays."
+            : `${results.length - failed} added, ${failed} could not be.`
+        );
+      } else {
+        toast.success(
+          results.length === 1
+            ? `${prompts[0].title} added.`
+            : `${results.length} drafts added.`
+        );
+      }
+      refresh();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const setEssayStatusM = useOptimistic<{ id: string; status: EssayStatus }>(
@@ -567,6 +680,10 @@ export function StudentApplicationTracker({
                   essays={essays}
                   schools={schools}
                   onAdd={addEssayRow}
+                  onAddFromPrompts={addFromPrompts}
+                  onEnsureSchool={(preset) =>
+                    ensureSchool(preset.unitid, preset.schoolName, preset.collegeListItemId, null)
+                  }
                   onStatusChange={setEssayStatus}
                   onCreateDoc={makeDoc}
                   onAskReview={askReview}
