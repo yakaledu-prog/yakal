@@ -30,6 +30,7 @@ const PURE = [
   ['support-chat-request.ts', 'support requests ignore client role claims'],
   ['support-rate-limit.ts', 'support quota and concurrency limits'],
   ['error-scrubbing.ts', 'no credential leaves in an error report'],
+  ['essay-doc-render.ts', 'what survives the trip from a Google Doc onto our page'],
   ['email-links.ts', 'links in email do not point at localhost'],
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
   ['cancellation-policy.ts', 'the published cancellation policy, applied'],

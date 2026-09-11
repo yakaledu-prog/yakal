@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import {
   Check,
+  ChevronRight,
   ExternalLink,
   LayoutGrid,
   List,
@@ -499,15 +501,16 @@ function EssayRow({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {/* The workspace rather than Google Docs. The draft, the question it
+            answers and the comment thread are all on one page there, and Docs
+            is one click further on for anyone who wants to edit. */}
         {essay.driveUrl ? (
-          <a
-            href={essay.driveUrl}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            to={`/counselor/essay/${essay.id}`}
             className="flex items-center gap-1.5 rounded-xl border border-primary px-3.5 py-2 text-[13px] font-medium text-primary transition-colors hover:bg-primary/10"
           >
-            Open <ExternalLink size={14} />
-          </a>
+            Open <ChevronRight size={14} />
+          </Link>
         ) : (
           <span className="text-[12.5px] text-muted-foreground">No document yet</span>
         )}

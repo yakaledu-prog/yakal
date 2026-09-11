@@ -18,7 +18,6 @@ import {
   CollegeProfile,
   Essay,
   SchoolStatus,
-  EssayStatus,
   RecStatus,
   Recommendation,
   addEssay,
@@ -379,18 +378,6 @@ export function StudentApplicationTracker({
     }
   };
 
-  const setEssayStatusM = useOptimistic<{ id: string; status: EssayStatus }>(
-    ({ id, status }, prev) => ({
-      ...prev,
-      essays: prev.essays.map((e) => (e.id === id ? { ...e, status } : e)),
-    }),
-    ({ id, status }) => updateEssay(id, { status }),
-    "Could not update that essay."
-  );
-
-  const setEssayStatus = (id: string, status: EssayStatus) =>
-    setEssayStatusM.mutate({ id, status });
-
   const makeDoc = async (essay: Essay) => {
     if (!user) return;
     setCreatingDoc(essay.id);
@@ -679,12 +666,12 @@ export function StudentApplicationTracker({
                 <EssaysPanel
                   essays={essays}
                   schools={schools}
+                  role={profile?.role === "counselor" ? "counselor" : "student"}
                   onAdd={addEssayRow}
                   onAddFromPrompts={addFromPrompts}
                   onEnsureSchool={(preset) =>
                     ensureSchool(preset.unitid, preset.schoolName, preset.collegeListItemId, null)
                   }
-                  onStatusChange={setEssayStatus}
                   onCreateDoc={makeDoc}
                   onAskReview={askReview}
                   onSetSuppCount={setSuppCount}

@@ -107,7 +107,6 @@ export function TrackerPreview() {
           essays={ESSAYS}
           schools={SCHOOLS}
           onAdd={() => {}}
-          onStatusChange={() => {}}
           onCreateDoc={() => {}}
           onAskReview={() => {}}
           onSetSuppCount={() => {}}

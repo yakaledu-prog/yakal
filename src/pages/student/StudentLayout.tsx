@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen } from "lucide-react";
+import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService } from "@/services/diagnosticService";
 import { getMyActiveServices } from "@/services/parentService";
@@ -74,6 +74,11 @@ export function StudentLayout() {
         // were paying for anywhere at all.
         { name: "Advising", href: "/student/advising", icon: <CalendarDays size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "Applications", href: "/student/my-app", icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
+        // Out of the Applications tab strip and into the nav. Essays are what
+        // a counselling tier is actually sold on and where a student spends
+        // most of the autumn, and they were two clicks behind a page about
+        // deadlines.
+        { name: "Essays", href: "/student/essays", icon: <FileText size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
       ],
     },
     { name: "Messages", href: "/student/messages", icon: <MessagesSquareIcon size={20} /> },

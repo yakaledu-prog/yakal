@@ -82,3 +82,49 @@ body {
   max-width: 100%;
   overflow-x: auto;
 }
+
+/* A Google Doc, exported and rendered here rather than iframed.
+ *
+ * The export carries its own inline styles for everything the writer chose,
+ * so this deliberately sets almost nothing: only the things Google states on
+ * the <body> we discarded, and the spacing that a Doc gets from its page
+ * rather than from its markup. Colour is stripped server side, so the text
+ * inherits the theme and reads in dark mode. */
+.essay-doc p {
+  margin: 0 0 0.85em;
+  min-height: 1em;
+}
+
+.essay-doc h1,
+.essay-doc h2,
+.essay-doc h3 {
+  margin: 1.4em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.essay-doc ul,
+.essay-doc ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.5em;
+  list-style: revert;
+}
+
+.essay-doc a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* An image pasted into a Doc carries its original width in points and will
+ * happily be wider than this column. */
+.essay-doc img {
+  max-width: 100%;
+  height: auto;
+}
+
+.essay-doc table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
