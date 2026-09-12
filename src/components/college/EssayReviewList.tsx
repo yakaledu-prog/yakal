@@ -178,6 +178,16 @@ export function EssayReviewList({
   /** Set when the list is already about one student, which drops the rail's
    *  student group and the name repeated on every row. */
   scopedToStudent = false,
+  /**
+   * Rows only: no search, no filters, no rail.
+   *
+   * The home page shows the four essays actually waiting in a half-width
+   * column. The chrome around this list is a page's worth, and searching four
+   * rows is not a thing anybody does, but the rows themselves have to be the
+   * same rows: a counsellor acting on one here and one on the queue should not
+   * be looking at two different components.
+   */
+  compact = false,
   onChanged,
   emptyText,
   children,
@@ -189,6 +199,7 @@ export function EssayReviewList({
   counselorName: string | undefined;
   students?: ReviewListStudent[];
   scopedToStudent?: boolean;
+  compact?: boolean;
   onChanged?: () => void;
   emptyText?: string;
   /** Anything the page wants beside the search field, such as Add essay. */
@@ -327,6 +338,8 @@ export function EssayReviewList({
   return (
     <>
       <div className="min-w-0">
+          {!compact && (
+          <>
           {/* Search, then the two controls that change what it shows. The
               filter lives at the end of the field rather than beside it,
               because narrowing by status and narrowing by word are the same
@@ -394,11 +407,14 @@ export function EssayReviewList({
             </p>
           </div>
 
-          <div className="flex gap-5">
+          </>
+          )}
+
+          <div className={cn(compact ? "" : "flex gap-5")}>
             {/* The rail is students here, not colleges. A counsellor's first
                 question about an essay is whose it is; a student never has to
                 ask. */}
-            {(colleges.length > 1 || (students.length > 1 && !scopedToStudent)) && (
+            {!compact && (colleges.length > 1 || (students.length > 1 && !scopedToStudent)) && (
               <nav className="hidden w-[210px] shrink-0 flex-col gap-0.5 md:flex">
                 <RailItem
                   label="All essays"

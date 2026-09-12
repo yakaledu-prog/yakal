@@ -1,32 +1,43 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
-import { getCounselorDashboard, getCounselorSessionsFull } from "@/services/counselorService";
-import { CalendarDays, Loader2, MessagesSquareIcon, Video, CalendarClock, Check } from "lucide-react";
-import { cn } from "@/utils/cn";
-import { dicebearUrl } from "@/utils/avatar";
-function getDaysLeft(deadline: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(deadline + "T00:00:00");
-  const diffTime = d.getTime() - today.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
-
-function fmtDate(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
+import {
+  getCounselorCaseload,
+  getCounselorDashboard,
+  getCounselorSessionsFull,
+  getCounselorStudents,
+} from "@/services/counselorService";
+import {
+  CalendarDays,
+  Compass,
+  FileText,
+  Loader2,
+  Map as MapIcon,
+  MessagesSquareIcon,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { loadCatalog } from "@/services/collegeCatalogService";
+import { getReviewQueue } from "@/services/essayReviewService";
+import { getAdmissionsPlans } from "@/services/admissionsService";
+import { EssayReviewList } from "@/components/college/EssayReviewList";
+import { SessionList, SessionListItem } from "@/components/shared/SessionList";
+import { CaseloadList } from "@/components/counselor/CaseloadList";
 export function CounselorHome() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [expandedReqs, setExpandedReqs] = useState<Record<string, boolean>>({});
 
-  const { data: dashboard, isLoading: dashLoading } = useQuery({
+  const { data: dashboard } = useQuery({
     queryKey: ["counselor-dashboard", user?.id],
     queryFn: () => getCounselorDashboard(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const { data: caseload = [], isLoading: caseloadLoading } = useQuery({
+    queryKey: ["counselor-caseload", user?.id],
+    queryFn: () => getCounselorCaseload(user!.id),
     enabled: !!user?.id,
   });
 
@@ -36,23 +47,58 @@ export function CounselorHome() {
     enabled: !!user?.id,
   });
 
+  const { data: students = [] } = useQuery({
+    queryKey: ["counselor-students", user?.id],
+    queryFn: () => getCounselorStudents(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const studentIds = students.map((s) => s.id);
+
+  const { data: essays = [], isLoading: essaysLoading } = useQuery({
+    queryKey: ["review-queue", studentIds.join(",")],
+    queryFn: () => getReviewQueue(studentIds),
+    enabled: studentIds.length > 0,
+  });
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["college-catalog"],
+    queryFn: loadCatalog,
+    staleTime: Infinity,
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["admissions-plans", studentIds.join(",")],
+    queryFn: () => getAdmissionsPlans(studentIds),
+    enabled: studentIds.length > 0,
+  });
+
   const firstName = profile?.full_name?.split(" ")[0] || "Counselor";
-
-  // Get upcoming sessions for "What's next"
-  const now = new Date();
-  const upcomingSessions = sessions.filter(s => {
-    const sessionDate = new Date(`${s.date}T${s.start_time}`);
-    return sessionDate >= now || s.date === now.toISOString().split('T')[0];
-  }).slice(0, 5); // Limit to 5
-
 
   // Real data only. Two mock blocks used to sit here: a mockDashboard that
   // overwrote totalStudents and essaysInReview with 1 and 0, and a mockSessions
   // array selected by `mockSessions.length > 0`, which is always true, so the
   // real sessions could never render. A counsellor with essays waiting was told
   // there were none, and was shown two invented sessions with a dead Zoom link.
-  const activeDashboard = dashboard;
-  const activeUpcomingSessions = upcomingSessions;
+  const now = new Date();
+  const upcoming: SessionListItem[] = sessions
+    .filter((s) => new Date(`${s.date}T${s.start_time}`) >= now)
+    .slice(0, 4)
+    .map((s) => ({
+      id: s.id,
+      date: s.date,
+      startTime: s.start_time.slice(0, 5),
+      durationMinutes: s.duration_minutes,
+      status: s.status,
+      title: s.subject,
+      personName: s.student_name ?? null,
+      personAvatarUrl: s.student_avatar ?? null,
+    }));
+
+  // Only what is actually on the counsellor's desk. The full queue is a page of
+  // its own, and a column on the home screen that repeats it is a second place
+  // to keep in sync.
+  const waiting = essays.filter((e) => e.status === "in_review").slice(0, 4);
 
   return (
     <PageWrapper className="!p-0">
@@ -71,178 +117,109 @@ export function CounselorHome() {
               <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
-                  {activeUpcomingSessions.length > 0
-                    ? `You have ${activeUpcomingSessions.length} upcoming session${activeUpcomingSessions.length === 1 ? '' : 's'}. Guide your students through their college journey.`
+                  {upcoming.length > 0
+                    ? `You have ${upcoming.length} upcoming session${upcoming.length === 1 ? "" : "s"}. Guide your students through their college journey.`
                     : "You have no sessions scheduled today. Enjoy the breather!"}
                 </p>
               </div>
 
-              {/* Toolbar Quick Actions */}
-              <div className="flex items-center gap-2 bg-black/10 p-1.5 rounded-lg">
+              {/* Everything in the sidebar that a counsellor opens daily. Two
+                  of eight was not a toolbar, it was the two somebody happened
+                  to add first. */}
+              <div className="flex flex-wrap items-center gap-1 rounded-lg bg-black/10 p-1.5">
+                <TooltipButton icon={<Users size={18} />} label="Students" onClick={() => navigate("/counselor/students")} />
+                <TooltipButton icon={<FileText size={18} />} label="Essays" onClick={() => navigate("/counselor/essays")} />
                 <TooltipButton icon={<CalendarDays size={18} />} label="Calendar" onClick={() => navigate("/counselor/calendar")} />
+                <TooltipButton icon={<MapIcon size={18} />} label="Roadmap" onClick={() => navigate("/counselor/roadmap")} />
+                <TooltipButton icon={<Compass size={18} />} label="Explore" onClick={() => navigate("/counselor/explore")} />
                 <TooltipButton icon={<MessagesSquareIcon size={18} />} label="Messages" onClick={() => navigate("/counselor/messages")} />
+                <TooltipButton icon={<Wallet size={18} />} label="Earnings" onClick={() => navigate("/counselor/earnings")} />
               </div>
             </div>
 
             {/* Bottom row: Integrated Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/20">
-              <IntegratedStat label="Total Students" value={activeDashboard?.totalStudents ?? "-"} />
-              <IntegratedStat label="Essays in Review" value={activeDashboard?.essaysInReview ?? "-"} />
-              <IntegratedStat label="Upcoming Deadlines" value={activeDashboard?.upcomingDeadlines.length ?? "-"} />
-              <IntegratedStat label="Upcoming Sessions" value={activeUpcomingSessions.length} />
+              <IntegratedStat label="Total Students" value={dashboard?.totalStudents ?? "-"} />
+              <IntegratedStat label="Essays in Review" value={dashboard?.essaysInReview ?? "-"} />
+              <IntegratedStat label="Upcoming Deadlines" value={dashboard?.upcomingDeadlines.length ?? "-"} />
+              <IntegratedStat label="Upcoming Sessions" value={upcoming.length} />
             </div>
           </div>
         </div>
 
-        {/* Content Below Banner (2 Columns) */}
-        <div className="max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+        <div className="mx-auto max-w-[1440px] space-y-10 p-6 md:p-10">
+          {/* What is on the desk today, in two columns. Both are the shared
+              component the full page uses, so a counsellor reading a row here
+              and a row there is reading the same row. */}
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+            <section>
+              <SectionHead
+                title="Essays waiting on you"
+                onAll={() => navigate("/counselor/essays")}
+              />
+              <EssayReviewList
+                essays={waiting}
+                plans={plans}
+                catalog={catalog}
+                counselorId={user?.id}
+                counselorName={profile?.full_name ?? undefined}
+                students={students}
+                compact
+                emptyText="Nothing is waiting on you."
+              />
+              {essaysLoading && waiting.length === 0 && (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="animate-spin text-primary" size={20} />
+                </div>
+              )}
+            </section>
 
-          {/* Left: Upcoming Deadlines */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
-                <CalendarClock size={20} className="text-primary" /> Upcoming Deadlines
-              </h2>
-            </div>
-
-            {dashLoading ? (
-              <div className="flex h-32 items-center justify-center">
-                <Loader2 className="animate-spin text-muted-foreground" size={24} />
-              </div>
-            ) : !activeDashboard || activeDashboard.upcomingDeadlines.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 bg-card border border-dashed rounded-xl p-6 text-center">
-                <p className="text-[14px] text-muted-foreground">No deadlines on file.</p>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                {activeDashboard!.upcomingDeadlines.map((d, i) => {
-                  const daysLeft = getDaysLeft(d.deadline);
-                  const isUrgent = daysLeft <= 7;
-
-                  return (
-                    <div key={i} className="flex flex-col py-6 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
-                      <div className="flex items-start gap-5">
-                        {/* Bigger Image on the left */}
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 bg-slate-100/0 flex items-center justify-center shrink-0 border border-border/0 overflow-hidden rounded-xl" style={{ boxShadow: "inset 10px 10px 8px 8px rgba(0, 0, 0, 0.85);" }}>
-                          <img src={d.image ? d.image : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.school)}&background=f1f5f9&color=64748b&size=128&rounded=false`} alt={d.school} className="w-full h-full object-cover" />
-                        </div>
-
-                        {/* Right side content */}
-                        <div className="flex-1 min-w-0 flex flex-col">
-                          <div className="flex items-start justify-between">
-                            <div className="min-w-0 pr-4">
-                              <p className="text-[16px] sm:text-[17px] font-semibold text-foreground truncate leading-tight">{d.school}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <img src={d.studentAvatar || dicebearUrl(d.student)} alt={d.student} className="w-5 h-5 rounded-full object-cover shrink-0" />
-                                <p className="text-[13px] font-medium text-muted-foreground truncate">{d.student}</p>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end shrink-0">
-                              <span className={cn("text-[14px] font-bold", isUrgent ? "text-red-500" : "text-primary")}>
-                                {fmtDate(d.deadline)}
-                              </span>
-                              {isUrgent && (
-                                <span className="text-[11px] font-semibold mt-0.5 uppercase tracking-wider text-red-500">
-                                  {daysLeft === 0 ? "Today" : daysLeft < 0 ? "Passed" : `${daysLeft} days`}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Requirements directly below the text, beside the image */}
-                          {d.requirements && d.requirements.length > 0 && (
-                            <div className="mt-4">
-                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
-                                {(expandedReqs[d.id] ? d.requirements : d.requirements.slice(0, 2)).map((r, ri) => (
-                                  <span key={ri} className={cn("inline-flex items-center text-[11px] px-2.5 py-1.5 rounded-md font-medium border truncate", r.is_complete ? "bg-primary/10 text-primary border-primary/20" : "bg-transparent text-muted-foreground border-border")}>
-                                    {r.is_complete && <Check size={12} className="mr-1.5 shrink-0" />}
-                                    <span className="truncate">{r.label}</span>
-                                  </span>
-                                ))}
-                              </div>
-                              {d.requirements.length > 2 && (
-                                <button
-                                  onClick={() => setExpandedReqs(prev => ({ ...prev, [d.id]: !prev[d.id] }))}
-                                  className="mt-2 text-[12px] font-medium text-primary hover:underline"
-                                >
-                                  {expandedReqs[d.id] ? "View less" : `View all ${d.requirements.length} requirements`}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <section>
+              <SectionHead
+                title="Upcoming sessions"
+                onAll={() => navigate("/counselor/sessions")}
+              />
+              <SessionList
+                sessions={upcoming}
+                isLoading={sessionsLoading}
+                compact
+                emptyText="No sessions scheduled."
+              />
+            </section>
           </div>
 
-          {/* Right: What's Next (Sessions) */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-normal flex items-center gap-2 text-foreground">
-                <CalendarDays size={20} className="text-primary" /> What's next
-              </h2>
-              <button
-                onClick={() => navigate("/counselor/sessions")}
-                className="text-[13px] font-medium text-primary hover:underline"
-              >
-                View all
-              </button>
-            </div>
-
-            {sessionsLoading ? (
-              <div className="flex h-32 items-center justify-center">
-                <Loader2 className="animate-spin text-muted-foreground" size={24} />
-              </div>
-            ) : activeUpcomingSessions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 bg-card border border-dashed rounded-xl p-6 text-center">
-                <p className="text-[14px] text-muted-foreground">No upcoming sessions scheduled.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {activeUpcomingSessions.map((session: any, index) => (
-                  <div key={session.id} className="relative flex flex-col py-5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors -mx-4 px-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[12px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                        <Video size={14} /> {fmtDate(session.date)} • {session.start_time.slice(0, 5)}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-[15px] mb-1 truncate">{session.subject}</h3>
-                    <div className="flex items-center gap-2 mt-3">
-                      {session.student_avatar ? (
-                        <img src={session.student_avatar} alt={session.student_name} className="w-6 h-6 rounded-full" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                          {session.student_name?.charAt(0) || "S"}
-                        </div>
-                      )}
-                      <span className="text-[13px] text-muted-foreground truncate">{session.student_name}</span>
-                    </div>
-
-                    {index === 0 && session.meeting_link && (
-                      <div className="mt-4">
-                        <a
-                          href={session.meeting_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 bg-primary text-white text-[13px] font-medium rounded-lg hover:bg-[#0d828a] transition-colors"
-                        >
-                          Join Session
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+          {/* The caseload, full width, because the comparison runs down the
+              column: whose bar is short, whose date is red. */}
+          <section>
+            <SectionHead title="Your students" onAll={() => navigate("/counselor/students")} />
+            <CaseloadList rows={caseload} catalog={catalog} isLoading={caseloadLoading} />
+          </section>
         </div>
       </div>
     </PageWrapper>
+  );
+}
+
+/**
+ * A heading that stays out of the way.
+ *
+ * These were 18px with a coloured icon and a rule under them, which made three
+ * section titles compete with the content they label. The page is the list.
+ */
+function SectionHead({ title, onAll }: { title: string; onAll?: () => void }) {
+  return (
+    <div className="mb-3 flex items-baseline justify-between gap-3">
+      <h2 className="text-[14px] font-medium text-foreground">{title}</h2>
+      {onAll && (
+        <button
+          type="button"
+          onClick={onAll}
+          className="text-[13px] font-medium text-primary hover:underline"
+        >
+          View all
+        </button>
+      )}
+    </div>
   );
 }
 

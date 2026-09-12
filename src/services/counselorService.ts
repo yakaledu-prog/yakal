@@ -141,6 +141,118 @@ export async function getCounselorDashboard(counselorId: string): Promise<Counse
   };
 }
 
+/**
+ * One row per student, with enough to rank them.
+ *
+ * getCounselorDashboard answers "how is the caseload", in four totals and the
+ * eight soonest deadlines across everybody. That is a different question from
+ * "who needs me next", which is what a counsellor opens this page to find out,
+ * and it cannot be answered from a list capped at eight rows: a student with
+ * nine colleges and nothing done can be entirely absent from it.
+ *
+ * So this reads every college on every student's list and folds it down per
+ * student. Separate from the dashboard rather than bolted onto it, because the
+ * stats banner wants the cheap version and should not pay for this one.
+ */
+export interface CaseloadRow {
+  student: CounselorStudent;
+  /**
+   * The soonest deadline on their list, which is what makes them urgent.
+   *
+   * applicationUrl carries the crest for colleges outside IPEDS. A student's
+   * list is not limited to US institutions, and Cape Town and Toronto have no
+   * unitid, so nothing in the catalog can be matched to them: without a domain
+   * to take a favicon from they fall back to a letter in a circle.
+   */
+  nextDeadline: {
+    school: string;
+    unitid: number | null;
+    applicationUrl: string | null;
+    date: string;
+  } | null;
+  /** Negative once it has passed. Null when they have no dated college. */
+  daysLeft: number | null;
+  colleges: number;
+  /** Requirements ticked across every college they have added. */
+  done: number;
+  total: number;
+  essaysWaiting: number;
+}
+
+export async function getCounselorCaseload(counselorId: string): Promise<CaseloadRow[]> {
+  const students = await getCounselorStudents(counselorId);
+  const studentIds = students.map((s) => s.id);
+  if (studentIds.length === 0) return [];
+
+  const [{ data: schools }, { data: essays }] = await Promise.all([
+    supabase
+      .from("college_list_items")
+      .select("id, school_name, deadline, student_id, unitid, application_url")
+      .in("student_id", studentIds),
+    supabase
+      .from("essays")
+      .select("student_id")
+      .in("student_id", studentIds)
+      .eq("status", "in_review"),
+  ]);
+
+  const schoolIds = (schools || []).map((s) => s.id);
+  const { data: reqs } = schoolIds.length
+    ? await supabase
+      .from("application_requirements")
+      .select("college_list_item_id, is_complete")
+      .in("college_list_item_id", schoolIds)
+    : { data: [] as { college_list_item_id: string; is_complete: boolean }[] };
+
+  const studentBySchool = new Map((schools || []).map((s) => [s.id, s.student_id]));
+
+  const done = new Map<string, number>();
+  const total = new Map<string, number>();
+  for (const r of reqs || []) {
+    const sid = studentBySchool.get(r.college_list_item_id);
+    if (!sid) continue;
+    total.set(sid, (total.get(sid) ?? 0) + 1);
+    if (r.is_complete) done.set(sid, (done.get(sid) ?? 0) + 1);
+  }
+
+  const waiting = new Map<string, number>();
+  for (const e of essays || []) {
+    waiting.set(e.student_id, (waiting.get(e.student_id) ?? 0) + 1);
+  }
+
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+
+  return students.map((student) => {
+    const mine = (schools || []).filter((s) => s.student_id === student.id);
+    const dated = mine
+      .filter((s) => s.deadline)
+      .sort((a, b) => String(a.deadline).localeCompare(String(b.deadline)));
+    const soonest = dated[0];
+
+    return {
+      student,
+      nextDeadline: soonest
+        ? {
+          school: soonest.school_name,
+          unitid: soonest.unitid ?? null,
+          applicationUrl: soonest.application_url ?? null,
+          date: soonest.deadline as string,
+        }
+        : null,
+      daysLeft: soonest
+        ? Math.ceil(
+          (new Date(`${soonest.deadline}T00:00:00`).getTime() - midnight.getTime()) / 86_400_000
+        )
+        : null,
+      colleges: mine.length,
+      done: done.get(student.id) ?? 0,
+      total: total.get(student.id) ?? 0,
+      essaysWaiting: waiting.get(student.id) ?? 0,
+    };
+  });
+}
+
 // Basic profile lookup for the student-detail header.
 export async function getStudentProfile(studentId: string) {
   const { data } = await supabase
