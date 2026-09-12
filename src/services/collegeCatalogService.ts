@@ -493,3 +493,34 @@ export async function toggleBookmark(
   if (error && error.code !== "23505") throw new Error(error.message);
   return true;
 }
+
+/**
+ * Net price as the spread it actually is, in one line.
+ *
+ * The single average is the most misleading figure in the catalog. Ohio State
+ * reports $17k, which is nearly four times what a family under $30,000 pays
+ * and well under what one over $110,000 pays. Williams reports $17,716 and is
+ * free below $75,000.
+ *
+ * The five bands as five rows was the first attempt and it was too much: eight
+ * lines of chrome to correct one number, in a pane meant for fields somebody
+ * edits. The range carries the same correction in the space the wrong number
+ * was already taking, which is the only place it was ever needed.
+ *
+ * Null when a college reports fewer than two bands, where there is no spread
+ * to show and the average is all there is.
+ */
+export function netPriceRange(college: College): { low: string; high: string } | null {
+  const amounts = college.netByIncome
+    .map((b) => b.amount)
+    .filter((a): a is number => a !== null);
+  if (amounts.length < 2) return null;
+
+  // Negative is real: the aid exceeds the cost of attendance and the college
+  // pays the difference. "Free" is what that means to a family.
+  const short = (n: number) => (n <= 0 ? "Free" : `$${Math.round(n / 1000)}k`);
+  const low = Math.min(...amounts);
+  const high = Math.max(...amounts);
+  if (short(low) === short(high)) return null;
+  return { low: short(low), high: short(high) };
+}

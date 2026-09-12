@@ -21,6 +21,7 @@ import {
   collegeImageUrl,
   computeFit,
   filterCatalog,
+  netPriceRange,
   EMPTY_FILTERS,
 } from "@/services/collegeCatalogService";
 import { SchoolTier } from "@/services/collegeService";
@@ -28,7 +29,6 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
-import { NetPriceByIncome } from "./NetPriceByIncome";
 import {
   getPromptCounts,
   getRequirements,
@@ -468,11 +468,6 @@ export function AddCollegeModal({
                     ` The application fee is ${known.application_fee_cents === 0 ? "waived" : `$${Math.round(known.application_fee_cents / 100)}`}.`}
                 </p>
               )}
-              {/* Cost, where the decision is actually made. A student weighing
-                  whether to add a college has just read one net price average,
-                  and at most colleges that average is true of nobody. */}
-              {picked && <NetPriceByIncome college={picked} />}
-
               {/* The URL takes what is left rather than half: it is the
                   longest value on the form and the counter beside it only needs
                   room for two digits. */}
@@ -689,8 +684,15 @@ function CollegePanel({ college }: { college: College }) {
     {
       icon: <DollarSign size={15} />,
       label: "Net price",
-      value: college.netPrice === null ? "-" : `$${(college.netPrice / 1000).toFixed(0)}k`,
-      hint: "Average yearly cost after grants for students receiving federal aid, not the sticker price and not a quote for you.",
+      // The spread, not the average. One number here told a family earning
+      // $60,000 that Williams costs $17,716 when it is free for them, and a
+      // family over $110,000 that it costs $17,716 when it is $49,594.
+      value: (() => {
+        const range = netPriceRange(college);
+        if (range) return `${range.low} to ${range.high}`;
+        return college.netPrice === null ? "-" : `$${(college.netPrice / 1000).toFixed(0)}k`;
+      })(),
+      hint: "Yearly cost after grants, across family income bands, for students receiving federal aid. Not the sticker price and not a quote for you.",
     },
     {
       icon: <BarChart3 size={15} />,
