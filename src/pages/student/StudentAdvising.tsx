@@ -122,10 +122,10 @@ export function StudentAdvising() {
           {tone && allowance ? (
             <div
               className={cn(
-                // A card rather than a band: rounded, ruled the whole way
-                // round, with the accent as a thicker left edge. Flat against
-                // the page it read as a warning strip rather than a balance.
-                "mb-8 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-xl border border-l-[3px] px-6 py-5",
+                // A band with one ruled edge, the same shape the earnings page
+                // uses for its own state strip. The padding is what it was
+                // missing, not a border on all four sides.
+                "mb-8 flex flex-wrap items-center justify-between gap-6 border-l-2 px-6 py-5",
                 tone.rule,
                 tone.wash
               )}
@@ -136,7 +136,7 @@ export function StudentAdvising() {
                 </span>
                 {left != null && (
                   <span className="text-[15px] leading-none text-muted-foreground tabular-nums">
-                    / {allowance.limit}
+                    / &nbsp; {allowance.limit}
                   </span>
                 )}
                 <span className="text-[11px] uppercase leading-none tracking-wider text-muted-foreground">
@@ -157,7 +157,7 @@ export function StudentAdvising() {
                 onClick={() => setBooking(true)}
                 disabled={!canBook}
                 className={cn(
-                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
                   tone.button
                 )}
               >
