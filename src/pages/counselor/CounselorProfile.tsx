@@ -185,18 +185,22 @@ export function CounselorProfile() {
                   value={profile?.phone || "Not set"}
                   copy={!!profile?.phone}
                 />
-                {/* A fallback, not the normal route. Every booked session is
-                    given a Zoom meeting of its own, and this is only used by
-                    sessions booked before that or when Zoom is unavailable. It
-                    is no longer shown in the contact panel: one URL shared by
-                    every student is somebody else's hour to walk into. */}
-                <DetailRow
-                  icon={<Link2 size={18} />}
-                  label="Backup meeting room"
-                  value={profile?.zoom_link || "Not set, and not usually needed"}
-                  copy={!!profile?.zoom_link}
-                  truncate
-                />
+                {/* Only when there is one. Every booked session is given a
+                    Zoom meeting of its own, so this is a fallback for sessions
+                    booked before that or for a deployment with no Zoom, and an
+                    empty row telling a counsellor about a thing they do not
+                    need is noise. The edit form still offers the field. It is
+                    no longer shown in the contact panel either: one URL shared
+                    by every student is somebody else's hour to walk into. */}
+                {profile?.zoom_link && (
+                  <DetailRow
+                    icon={<Link2 size={18} />}
+                    label="Backup meeting room"
+                    value={profile.zoom_link}
+                    copy
+                    truncate
+                  />
+                )}
               </div>
 
               {/* The CV given at onboarding, and the thing an admin opened
