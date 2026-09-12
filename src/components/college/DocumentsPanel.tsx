@@ -43,7 +43,7 @@ import { VerifiedBadge } from "./VerifiedBadge";
 type ViewMode = "grid" | "list";
 type SortKey = "suggested" | "name" | "recent" | "missing";
 
-/** Remembered per browser: a counselor who prefers list wants it every time. */
+/** Remembered per browser: a counselor who prefers grid wants it every time. */
 const VIEW_KEY = "yakal.documents.view";
 
 const VIEWS: { id: ViewMode; label: string }[] = [
@@ -107,12 +107,15 @@ export function DocumentsPanel({
   const qc = useQueryClient();
   const [busySlot, setBusySlot] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // List by default. Eleven slots is a list of things to get through, and the
+  // cards spend most of the year empty, so the grid was two columns of mostly
+  // description. Grid is one click away and remembered once chosen.
   const [view, setView] = useState<ViewMode>(() => {
     try {
       const v = localStorage.getItem(VIEW_KEY);
-      return v === "list" || v === "grid" ? v : "grid";
+      return v === "list" || v === "grid" ? v : "list";
     } catch {
-      return "grid";
+      return "list";
     }
   });
   const [sort, setSort] = useState<SortKey>("suggested");
@@ -651,15 +654,20 @@ function SlotCard({
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors disabled:opacity-50",
               // Both empty states are a button you can see; the colour is what
-              // ranks them. Teal for a missing essential, the soft green for an
-              // optional one. Not the gold: it means "needs attention" on the
-              // flag and the review stamp, and eight gold buttons down the page
-              // would read as eight warnings.
+              // ranks them. Teal for a missing essential, a neutral slate for
+              // an optional one: it reads as available without competing, and
+              // it is the same grey the rest of this panel already uses for
+              // things that are not decisions.
+              //
+              // Not a brand colour. Gold means "needs attention" on the flag
+              // and the review stamp, and the green read as a second kind of
+              // yes. Eight of either down the page says something is going on
+              // when nothing is.
               filled
                 ? "text-[#54656f] hover:text-primary dark:text-[#aebac1]"
                 : slot.required
                   ? "bg-primary text-white hover:bg-primary-hover"
-                  : "bg-tertiary text-tertiary-foreground hover:opacity-90"
+                  : "bg-[#54656f] text-white hover:bg-[#445261] dark:bg-[#2a3942] dark:hover:bg-[#36454f]"
             )}
           >
             {busy ? (
