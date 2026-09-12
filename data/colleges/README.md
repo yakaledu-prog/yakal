@@ -106,7 +106,8 @@ Fill rates across all 1,944 schools, and across the top 300 where it matters mor
 | Tuition in / out of state | 95% | - |
 | Cost of attendance | 91% | 99% |
 | Average net price | 91% | 99% |
-| Net price for family income under $30k | 89% | - |
+| Net price by family income, five bands | 80-89% | - |
+| Net price calculator link | 100% | - |
 | Retention and 6-year graduation rate | 91-92% | - |
 | Median earnings 10 years out | 92% | - |
 | Admit rate | 82% | 93% |
@@ -290,3 +291,39 @@ one at a time where we can read a real source together. I will not bulk-generate
 **The thing to internalise:** the free data is the commodity, and every competitor has
 it. The 28 hand-filled columns are the product. Do not let the fact that I could produce
 them quickly and wrongly tempt you into skipping the week that makes them right.
+
+---
+
+## Net price is five numbers, not one
+
+`avg_net_price` is the single most misleading field in this catalog, and for a
+while it was the only one we kept. Williams College reports $17,716. That figure
+is true of almost nobody who goes there: it is **free** for families under
+$75,000, where the aid exceeds the cost of attendance outright, and **$49,594**
+above $110,000. A student whose family earns $60,000, reading $17,716 and
+crossing Williams off, has been told the wrong thing by us.
+
+The Scorecard reports all five bands (`NPT41` to `NPT45`, public and private in
+separate columns as usual). `build_catalog.py` now keeps every one, and
+`NetPriceByIncome` shows them where a student is deciding whether to add a
+college.
+
+`net_price_calculator_url` is kept for the same reason and is the honest end of
+the sentence: the bands are averages within a bracket, and only the college's
+own calculator gives this family their number. Federal law requires every
+college to publish one, and 1,939 of 1,944 do.
+
+### Backfilling without a full rebuild
+
+`build_catalog.py` is an annual, whole-catalog operation: it downloads a 200 MB
+release and replaces every field for all 1,944 colleges. Using it to add four
+columns would churn admit rates, test bands and costs at the same time, so
+`backfill_net_price.py` reads the same fields from the Scorecard API instead and
+touches nothing else.
+
+```bash
+python3 build/backfill_net_price.py --catalog out/colleges.ndjson
+```
+
+After the next annual refresh it has nothing left to do, which is the intended
+end state rather than a limitation.

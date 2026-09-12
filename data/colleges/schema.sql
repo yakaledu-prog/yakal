@@ -58,7 +58,14 @@ create table if not exists colleges (
   tuition_in_state            integer,
   tuition_out_of_state        integer,
   avg_net_price               integer,
+  -- Net price by family income. The average alone misleads in both directions:
+  -- MIT is -$2,533 for families under $30k and $48,479 above $110k, and its
+  -- single average tells a family on either end the wrong thing.
   avg_net_price_income_0_30k  integer,
+  avg_net_price_income_30_48k integer,
+  avg_net_price_income_48_75k integer,
+  avg_net_price_income_75_110k integer,
+  avg_net_price_income_110k_plus integer,
   pct_pell                    numeric(4,1),
 
   image_url                   text,

@@ -21,6 +21,7 @@ import {
   collegeImageUrl,
   computeFit,
   filterCatalog,
+  netPriceRange,
   EMPTY_FILTERS,
 } from "@/services/collegeCatalogService";
 import { SchoolTier } from "@/services/collegeService";
@@ -683,8 +684,15 @@ function CollegePanel({ college }: { college: College }) {
     {
       icon: <DollarSign size={15} />,
       label: "Net price",
-      value: college.netPrice === null ? "-" : `$${(college.netPrice / 1000).toFixed(0)}k`,
-      hint: "Average yearly cost after grants for students receiving federal aid, not the sticker price and not a quote for you.",
+      // The spread, not the average. One number here told a family earning
+      // $60,000 that Williams costs $17,716 when it is free for them, and a
+      // family over $110,000 that it costs $17,716 when it is $49,594.
+      value: (() => {
+        const range = netPriceRange(college);
+        if (range) return `${range.low} to ${range.high}`;
+        return college.netPrice === null ? "-" : `$${(college.netPrice / 1000).toFixed(0)}k`;
+      })(),
+      hint: "Yearly cost after grants, across family income bands, for students receiving federal aid. Not the sticker price and not a quote for you.",
     },
     {
       icon: <BarChart3 size={15} />,
@@ -750,10 +758,11 @@ function CollegePanel({ college }: { college: College }) {
         </>
       )}
 
-      {/* At the head, where the ground is thinnest and the campus shows. About
-          half of schools have one; without it the panel simply opens on the
-          photograph. */}
-      <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
+      {/* Centred. It was pinned to the foot with mt-auto, which reads as
+          deliberate only while the dialog is tall: once the form shortened,
+          the name sat at the bottom of a panel with an empty band above it
+          and the photograph cropped to a sliver. */}
+      <div className="relative z-10 my-auto min-h-0 overflow-y-auto p-5">
         <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
