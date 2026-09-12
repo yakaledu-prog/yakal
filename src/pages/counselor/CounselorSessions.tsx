@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
-import { Search, CalendarRange, CheckCheck, X, Loader2, ChevronLeft } from "lucide-react";
+import { Search, CheckCheck, X, Loader2, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import {
   splitSessions,
   type SessionListItem,
 } from "@/components/shared/SessionList";
+import { SessionsBanner } from "@/components/shared/SessionsBanner";
 
 export function CounselorSessions() {
   const { user, profile } = useAuth();
@@ -157,50 +158,30 @@ export function CounselorSessions() {
           detailClass
         )}
       >
-        {/* Integrated Header */}
-        <div className="bg-primary text-white pt-6 px-6 md:pt-8 md:px-8 relative overflow-hidden shrink-0">
-          <svg className="absolute right-0 top-0 h-full w-[60%] md:w-[40%] text-white/5 pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="none" fill="none">
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
-
-          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Only the phone needs this: on desktop the course list is
-                  still beside the sessions, so there is nothing to go back to. */}
-              <button
-                type="button"
-                onClick={closeDetail}
-                aria-label="Back to courses"
-                className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
-              >
-                <ChevronLeft size={22} />
-              </button>
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{selectedCourse || "All Sessions"}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-white/80 text-[13px] mt-1">
-                  <span className="flex items-center gap-1.5"><CalendarRange size={13} /> {courseSessions.length} Total Sessions</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 flex-1 justify-end">
-              <div className="flex items-center justify-between xl:justify-end gap-6 sm:gap-12 w-full sm:w-auto">
-                <MinimalStat label="Total" value={courseSessions.length} />
-                <MinimalStat label="Completed" value={completedCount} />
-                <MinimalStat label="Upcoming" value={upcoming.length} />
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex items-center gap-6 mt-8 border-b border-white/20 overflow-x-auto">
-            <TabButton active={activeTab === 'upcoming'} onClick={() => setActiveTab('upcoming')} label="Upcoming" />
-            <TabButton active={activeTab === 'past'} onClick={() => setActiveTab('past')} label="Past Sessions" />
-          </div>
-        </div>
+        <SessionsBanner
+          title={selectedCourse || "All Sessions"}
+          total={courseSessions.length}
+          completed={completedCount}
+          upcoming={upcoming.length}
+          tabs={[
+            { id: "upcoming", label: "Upcoming" },
+            { id: "past", label: "Past Sessions" },
+          ]}
+          activeTab={activeTab}
+          onTab={(id) => setActiveTab(id as "upcoming" | "past")}
+          leading={
+            // Only the phone needs this: on desktop the list is still beside
+            // the sessions, so there is nothing to go back to.
+            <button
+              type="button"
+              onClick={closeDetail}
+              aria-label="Back"
+              className="-ml-2 shrink-0 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <ChevronLeft size={22} />
+            </button>
+          }
+        />
 
         <div className="p-4 md:p-8 w-full flex-1">
           {activeTab === "upcoming" ? (
@@ -231,26 +212,7 @@ export function CounselorSessions() {
   );
 }
 
-function MinimalStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="flex flex-col items-center">
-      <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-xl font-bold leading-none">{value}</p>
-    </div>
-  );
-}
 
-function TabButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn("pb-3 px-1 text-[14px] font-medium transition-colors border-b-2 relative top-[1px] whitespace-nowrap outline-none",
-        active ? "text-white border-white" : "text-white/60 border-transparent hover:text-white/90 hover:border-white/30")}
-    >
-      {label}
-    </button>
-  );
-}
 
 function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClose: () => void; onSaved: () => void }) {
   const [notes, setNotes] = useState(session.notes || "");
