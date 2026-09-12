@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { Fragment, useState, useEffect, useMemo, useCallback } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
@@ -44,6 +44,31 @@ interface NavItem {
   lockedBy?: string;
   /** Renders this item as a collapsible group instead of a link. */
   children?: NavItem[];
+  /**
+   * Draws a plain rule above this item.
+   *
+   * A rule and no heading on purpose. Six flat entries under College said
+   * nothing about which of them belong together, and labelling the groups
+   * would have added three more lines of text to a sidebar the point of which
+   * is to be scanned.
+   */
+  startsSection?: boolean;
+}
+
+/**
+ * The rule an item with `startsSection` draws above itself.
+ *
+ * `my-1.5` rather than a gap, so the space belongs to the rule and two
+ * adjacent sections cannot end up with a different gap than the rows inside
+ * one.
+ */
+function SectionRule({ inset }: { inset?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("my-1.5 h-px bg-border", inset ? "ml-1" : "mx-1")}
+    />
+  );
 }
 
 /** Groups are containers, so route matching only ever runs against leaves. */
@@ -247,7 +272,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
               />
             ) : (
               <NavLeaf
-                key={item.href}
+                key={item.href ?? item.name}
                 item={item}
                 sidebarOpen={sidebarOpen}
                 basePath={basePath}
@@ -547,14 +572,16 @@ function NavGroup({
     return (
       <>
         {children.map((c) => (
-          <NavLeaf
-            key={c.href}
-            item={c}
-            sidebarOpen={sidebarOpen}
-            basePath={basePath}
-            pathname={pathname}
-            onNavigate={onNavigate}
-          />
+          <Fragment key={c.href ?? c.name}>
+            {c.startsSection && <SectionRule />}
+            <NavLeaf
+              item={c}
+              sidebarOpen={sidebarOpen}
+              basePath={basePath}
+              pathname={pathname}
+              onNavigate={onNavigate}
+            />
+          </Fragment>
         ))}
       </>
     );
@@ -596,15 +623,17 @@ function NavGroup({
             className="absolute inset-y-1 left-0 w-px bg-[#e9edef] dark:bg-[#2a3942]"
           />
           {children.map((c) => (
-            <NavLeaf
-              key={c.href}
-              item={c}
-              sidebarOpen={sidebarOpen}
-              basePath={basePath}
-              pathname={pathname}
-              onNavigate={onNavigate}
-              nested
-            />
+            <Fragment key={c.href ?? c.name}>
+              {c.startsSection && <SectionRule inset />}
+              <NavLeaf
+                item={c}
+                sidebarOpen={sidebarOpen}
+                basePath={basePath}
+                pathname={pathname}
+                onNavigate={onNavigate}
+                nested
+              />
+            </Fragment>
           ))}
         </div>
       )}

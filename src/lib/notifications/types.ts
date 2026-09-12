@@ -25,6 +25,7 @@ export type NotificationType =
   | "parent_link"
   | "application"
   | "unlock_request"
+  | "course_request"
   | "course_application"
   | "course_application_decided"
   | "enrolment"

@@ -94,6 +94,7 @@ const StudentMeeting = lazy(() => import("../pages/student/StudentMeeting").then
 const StudentMyLearning = lazy(() => import("../pages/student/StudentMyLearning").then((m) => ({ default: m.StudentMyLearning })));
 const StudentMessages = lazy(() => import("../pages/student/StudentMessages").then((m) => ({ default: m.StudentMessages })));
 const StudentNotifications = lazy(() => import("../pages/student/StudentNotifications").then((m) => ({ default: m.StudentNotifications })));
+const StudentCourses = lazy(() => import("../pages/student/StudentCourses").then((m) => ({ default: m.StudentCourses })));
 const StudentProfile = lazy(() => import("../pages/student/StudentProfile").then((m) => ({ default: m.StudentProfile })));
 const StudentRoadmap = lazy(() => import("../pages/student/StudentRoadmap").then((m) => ({ default: m.StudentRoadmap })));
 const StudentSessions = lazy(() => import("../pages/student/StudentSessions").then((m) => ({ default: m.StudentSessions })));
@@ -482,6 +483,7 @@ const router = createBrowserRouter([
           { path: "essays", element: <StudentApplicationTracker forcedTab="essays" /> },
           { path: "essay/:essayId", element: <EssayWorkspace /> },
           { path: "sessions", element: <StudentSessions /> },
+          { path: "courses", element: <StudentCourses /> },
           { path: "profile", element: <StudentProfile /> },
           { path: "notifications", element: <StudentNotifications /> },
           { path: "meeting/:sessionId", element: <StudentMeeting /> },

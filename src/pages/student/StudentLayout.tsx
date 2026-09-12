@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { CalendarDays, Home, Calendar, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen, FileText } from "lucide-react";
+import { Home, Calendar, Clock, Search, CheckSquare, Bell, History, MessagesSquareIcon, Map, List, ClipboardList, Activity, Compass, GraduationCap, BookOpen, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { diagnosticService } from "@/services/diagnosticService";
 import { getMyActiveServices } from "@/services/parentService";
@@ -59,6 +59,10 @@ export function StudentLayout() {
         // list that says Sessions while showing only half of them is a lie the
         // College group next to it makes obvious.
         { name: "Lessons", href: "/student/sessions", icon: <History size={18} />, isLocked: !hasTutoring, lockedBy: "tutoring" },
+        // Not locked, unlike the three above it. The student this page is for
+        // is the one with no tutoring yet, and putting the catalogue behind
+        // tutoring would gate it on the thing the catalogue is how you ask for.
+        { name: "Find courses", href: "/student/courses", startsSection: true, icon: <Search size={18} /> },
       ],
     },
     {
@@ -67,13 +71,13 @@ export function StudentLayout() {
       icon: <GraduationCap size={20} />,
       children: [
         { name: "Roadmap", href: "/student/roadmap", icon: <Map size={18} /> },
-        { name: "Explore", href: "/student/explore", icon: <Compass size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
+        { name: "Explore", href: "/student/explore", startsSection: true, icon: <Compass size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         { name: "My list", href: "/student/college-list", icon: <List size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
+        { name: "Applications", href: "/student/my-app", startsSection: true, icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         // Its own entry, because Lessons is locked behind tutoring: a family
         // who bought counselling and nothing else could not see the hours they
         // were paying for anywhere at all.
-        { name: "Advising", href: "/student/advising", icon: <CalendarDays size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
-        { name: "Applications", href: "/student/my-app", icon: <ClipboardList size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
+        { name: "Advising", href: "/student/advising", icon: <Clock size={18} />, isLocked: !hasAdmissions, lockedBy: "admissions" },
         // Out of the Applications tab strip and into the nav. Essays are what
         // a counselling tier is actually sold on and where a student spends
         // most of the autumn, and they were two clicks behind a page about

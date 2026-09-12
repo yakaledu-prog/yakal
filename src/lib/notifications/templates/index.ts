@@ -11,6 +11,7 @@ import {
   accountApproved,
   unlockRequest,
   unlockRequestDeclined,
+  courseRequest,
 } from "./people.js";
 import {
   enrolment,
@@ -46,6 +47,7 @@ export const TEMPLATES = {
   accountApproved,
   unlockRequest,
   unlockRequestDeclined,
+  courseRequest,
   enrolment,
   booking,
   sessionMoved,
