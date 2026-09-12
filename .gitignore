@@ -60,3 +60,9 @@ supabase/snippets/
 # Python bytecode from the data build scripts
 __pycache__/
 *.pyc
+
+# Scratch downloads. The QuestBridge community prompt spreadsheet landed here
+# and was committed by a broad 'git add'. It is somebody else's compilation,
+# shared for applicants, and we decided to use it as a worklist rather than a
+# source. Keeping a copy in the repo is the copying we declined to do.
+temp/
