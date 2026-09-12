@@ -650,12 +650,16 @@ function SlotCard({
             aria-label={`Upload ${slot.label}`}
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors disabled:opacity-50",
-              // Solid only for a missing essential. An optional slot that has
-              // never been filled is not a call to action, and eight primary
-              // buttons down the page made the two that matter invisible.
-              filled || !slot.required
+              // Both empty states are a button you can see; the colour is what
+              // ranks them. Teal for a missing essential, the soft green for an
+              // optional one. Not the gold: it means "needs attention" on the
+              // flag and the review stamp, and eight gold buttons down the page
+              // would read as eight warnings.
+              filled
                 ? "text-[#54656f] hover:text-primary dark:text-[#aebac1]"
-                : "bg-primary text-white hover:bg-primary-hover"
+                : slot.required
+                  ? "bg-primary text-white hover:bg-primary-hover"
+                  : "bg-tertiary text-tertiary-foreground hover:opacity-90"
             )}
           >
             {busy ? (
