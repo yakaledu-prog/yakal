@@ -23,7 +23,11 @@
  *
  *   data/essay-prompts/curated/universal-<cycle>.json
  *   data/essay-prompts/curated/supplements-<cycle>.json
- *     -> essay_prompts. The questions themselves.
+ *   data/essay-prompts/out/supplements-<cycle>.machine.json
+ *     -> essay_prompts. The questions themselves. The first two were read by a
+ *        person; the third was extracted by a script and is marked as such, so
+ *        the picker can say which is which rather than presenting both as
+ *        equally settled.
  *
  * Upserts on the natural key, so running it twice changes nothing and running
  * it after a grid refresh updates in place. An admin's later correction to a
@@ -182,12 +186,14 @@ interface PromptFile {
     app_key?: string | null;
     source_url?: string;
     verified_on?: string;
+    /** manual when a person read the page, machine when a script did. */
+    extraction?: "manual" | "machine";
     prompts: any[];
   }[];
 }
 
 function promptRows(file: PromptFile): any[] {
-  const rows: any[] = [];
+  let rows: any[] = [];
 
   const push = (p: any, extra: Record<string, unknown>, order: number) =>
     rows.push({
@@ -203,6 +209,9 @@ function promptRows(file: PromptFile): any[] {
       group_label: p.group_label ?? null,
       sort_order: order,
       is_active: true,
+      // Default manual: everything hand-written predates the extractor and
+      // was read by a person.
+      extraction: p.extraction ?? "manual",
       ...extra,
     });
 
@@ -223,7 +232,9 @@ function promptRows(file: PromptFile): any[] {
         app_key: p.app_key ?? school.app_key ?? null,
         unitid: school.unitid,
         source_url: p.source_url ?? school.source_url ?? null,
+        // A machine row has no verified date by definition: nobody has looked.
         verified_on: p.verified_on ?? school.verified_on ?? null,
+        extraction: p.extraction ?? school.extraction ?? "manual",
       }, i)
     );
   }
@@ -235,9 +246,11 @@ async function loadPrompts(db: SupabaseClient) {
   const files = [
     `data/essay-prompts/curated/universal-${cycle}.json`,
     `data/essay-prompts/curated/supplements-${cycle}.json`,
+    // Last, so a college done by hand wins on a slug clash.
+    `data/essay-prompts/out/supplements-${cycle}.machine.json`,
   ];
 
-  const rows: any[] = [];
+  let rows: any[] = [];
   for (const rel of files) {
     const path = resolve(root, rel);
     if (!existsSync(path)) {
@@ -247,6 +260,17 @@ async function loadPrompts(db: SupabaseClient) {
     rows.push(...promptRows(JSON.parse(readFileSync(path, "utf8"))));
   }
   if (!rows.length) return;
+
+  // A college done by hand and then picked up by the extractor would arrive
+  // twice. The hand-written one is read first and keeps the slug.
+  const byUnitid = new Set(
+    rows.filter((r) => r.extraction === "manual" && r.unitid).map((r) => r.unitid)
+  );
+  const before = rows.length;
+  rows = rows.filter((r) => r.extraction !== "machine" || !byUnitid.has(r.unitid));
+  if (before !== rows.length) {
+    console.log(`  ${before - rows.length} machine prompts dropped for colleges already done by hand`);
+  }
 
   const seen = new Set<string>();
   for (const r of rows) {

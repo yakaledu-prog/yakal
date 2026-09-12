@@ -1,30 +1,20 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ChevronDown,
-  ExternalLink,
-  Loader2,
-  Plus,
-  Search,
-  Trash2,
-  UserPen,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowUpDown, ExternalLink, FileText, Loader2, MoreVertical, Plus, Search, Trash2, UserPen } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { CollegeListItem, Essay, EssayStatus } from "@/services/collegeService";
-import { Dropdown } from "@/components/ui/Dropdown";
 import { fileIdFromUrl } from "@/services/driveService";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { NumberStepper } from "@/components/ui/NumberStepper";
-import { EssayStatusIcon } from "./EssayStatusIcon";
+import { ApplicationLogo, CollegeLogo } from "./CollegeLogo";
+import { ReviewStamp } from "./ReviewStamp";
+import { College, loadCatalog } from "@/services/collegeCatalogService";
+import { CURRENT_CYCLE, getUniversalPrompts } from "@/services/collegeCycleService";
 import { AddEssayModal, NewEssay } from "./AddEssayModal";
 import { EssayPromptPicker, type PromptSelection } from "./EssayPromptPicker";
-import { getEssayReviews } from "@/services/essayReviewService";
 
-const STATUS: { value: EssayStatus; label: string }[] = [
-  { value: "todo", label: "Not started" },
-  { value: "drafting", label: "Drafting" },
-  { value: "in_review", label: "With counselor" },
-  { value: "done", label: "Done" },
-];
+
 
 
 /**
@@ -42,6 +32,57 @@ function dueMeta(iso: string): { label: string; tone: "late" | "soon" | "calm" }
   if (days <= 7) return { label: `in ${days} days`, tone: "soon" };
   return { label: `in ${days} days`, tone: "calm" };
 }
+
+/**
+ * The other axis from the rail: how far along an essay is, not who it is for.
+ *
+ * Three, not five. Not started and Drafting are the same answer to the only
+ * question this filter exists to settle, which is whose turn it is: both of
+ * them are the student's. Splitting them made a five-item list where four of
+ * the items were rarely what anybody wanted.
+ *
+ * Each one wears the colour its cards wear, so the filter and the list agree
+ * without a legend.
+ */
+type StateFilter = "all" | "mine" | "in_review" | "done";
+
+const STATE_FILTERS: { value: StateFilter; label: string; tone: string }[] = [
+  { value: "all", label: "All", tone: "border-border/60 text-muted-foreground" },
+  { value: "mine", label: "With me", tone: "border-border/60 text-foreground" },
+  { value: "in_review", label: "Under review", tone: "border-secondary/50 text-secondary" },
+  { value: "done", label: "Finished", tone: "border-primary/40 text-primary" },
+];
+
+/** The same set of essays, named from whichever side is reading the page. */
+function filterLabel(f: StateFilter, staff: boolean): string {
+  if (f === "mine") return staff ? "With the student" : "With me";
+  if (f === "in_review") return staff ? "Waiting on me" : "Under review";
+  return STATE_FILTERS.find((x) => x.value === f)!.label;
+}
+
+const MATCHES_STATE: Record<StateFilter, (e: Essay) => boolean> = {
+  all: () => true,
+  mine: (e) => e.status === "todo" || e.status === "drafting",
+  in_review: (e) => e.status === "in_review",
+  done: (e) => e.status === "done",
+};
+
+/**
+ * What order to read a list of essays in.
+ *
+ * Deadline leads because it is the only ordering with a consequence: the
+ * service returns them in the order they were created, which is the order they
+ * happened to be added and answers nothing. An essay with no deadline sorts
+ * last rather than first, since a missing date is not urgency.
+ */
+type SortKey = "deadline" | "updated" | "college" | "title";
+
+const SORTS: { value: SortKey; label: string }[] = [
+  { value: "deadline", label: "Deadline" },
+  { value: "updated", label: "Recently updated" },
+  { value: "college", label: "College" },
+  { value: "title", label: "Title" },
+];
 
 export type { NewEssay };
 export type { PromptSelection };
@@ -65,10 +106,11 @@ export type { PromptSelection };
 export function EssaysPanel({
   essays,
   schools,
+  role = "student",
+  viewerIsStaff = false,
   onAdd,
   onAddFromPrompts,
   onEnsureSchool,
-  onStatusChange,
   onCreateDoc,
   onAskReview,
   onDelete,
@@ -79,6 +121,19 @@ export function EssaysPanel({
 }: {
   essays: Essay[];
   schools: CollegeListItem[];
+  /** Which dashboard this is inside, so an essay opens on the right route. */
+  role?: "student" | "counselor";
+  /**
+   * Somebody looking at a student who is not them.
+   *
+   * The verbs on a card are the student's own: asking for a review is handing
+   * the draft over, which a counselor pressing would be sending an essay to
+   * themselves, and starting the document is the moment the student starts
+   * writing. Staff get neither. What they do get is the list, the way in, and
+   * the two things they legitimately do for a student: put an essay on the
+   * list and take one off.
+   */
+  viewerIsStaff?: boolean;
   onAdd: (e: NewEssay) => void;
   /** Several essays at once, each from a curated prompt. Given, adding starts
    *  at the college rather than at a blank form. */
@@ -92,7 +147,6 @@ export function EssaysPanel({
   onEnsureSchool?: (
     preset: { unitid: number | null; schoolName: string | null; collegeListItemId: string | null }
   ) => Promise<string | null>;
-  onStatusChange: (id: string, status: EssayStatus) => void;
   onCreateDoc: (essay: Essay) => void;
   onAskReview: (essay: Essay) => void;
   onDelete: (essay: Essay) => void;
@@ -103,19 +157,47 @@ export function EssaysPanel({
   /** Live counts from Drive, keyed by file id. Absent while they load. */
   counts?: Map<string, number>;
 }) {
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [picking, setPicking] = useState(false);
   /** A college carried over from the picker's "write it myself", so the blank
    *  form does not ask again for the school just chosen. */
   const [ownFor, setOwnFor] = useState<string | null>(null);
 
+  // Crests, and which shared application a personal statement belongs to. Both
+  // are cached queries shared with the picker, so opening this costs nothing
+  // extra once either has been opened.
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["college-catalog"],
+    queryFn: loadCatalog,
+    staleTime: Infinity,
+  });
+
+  const { data: universal = [] } = useQuery({
+    queryKey: ["essay-prompts-universal", CURRENT_CYCLE],
+    queryFn: () => getUniversalPrompts(),
+  });
+
+  const appOf = (essay: Essay) =>
+    universal.find((p) => p.id === essay.essay_prompt_id)?.app_key ?? null;
+
+  const collegeOf = (essay: Essay): College | null => {
+    const unitid = schools.find((s) => s.id === essay.college_list_item_id)?.unitid;
+    return unitid ? catalog.find((c) => c.unitid === unitid) ?? null : null;
+  };
+
+  /** Where an essay opens. The route differs per role but the page does not. */
+  const openEssay = (essay: Essay) =>
+    navigate(`/${role === "counselor" ? "counselor" : "student"}/essay/${essay.id}`);
+
   /** "" is the Common App bucket, otherwise a college id. */
   const [selected, setSelected] = useState<string>("all");
+  const [state, setState] = useState<StateFilter>("all");
+  const [sort, setSort] = useState<SortKey>("deadline");
   const [query, setQuery] = useState("");
 
   const core = essays.filter((e) => e.kind === "personal_statement");
   const supplements = essays.filter((e) => e.kind === "supplement");
-  const done = essays.filter((e) => e.status === "done").length;
 
   const forSchool = (id: string) => supplements.filter((e) => e.college_list_item_id === id);
 
@@ -135,13 +217,32 @@ export function EssaysPanel({
   // Prompt text is searched too: a student remembers "the one about community"
   // far more often than they remember what they titled it.
   const q = query.trim().toLowerCase();
-  const visible = q
+  const matching = q
     ? inScope.filter(
         (e) =>
           e.title.toLowerCase().includes(q) ||
           (e.prompt ?? "").toLowerCase().includes(q)
       )
     : inScope;
+  const nameOf = (e: Essay) =>
+    schools.find((x) => x.id === e.college_list_item_id)?.school_name ?? "";
+
+  const visible = matching.filter(MATCHES_STATE[state]).sort((a, b) => {
+    switch (sort) {
+      case "deadline":
+        // Undated last, whichever way the dates run.
+        if (!a.due_date && !b.due_date) return a.title.localeCompare(b.title);
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      case "updated":
+        return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+      case "college":
+        return nameOf(a).localeCompare(nameOf(b)) || a.title.localeCompare(b.title);
+      default:
+        return a.title.localeCompare(b.title);
+    }
+  });
 
   return (
     <div className="space-y-4">
@@ -188,43 +289,85 @@ export function EssaysPanel({
         />
       )}
 
-      <div className="flex items-center gap-3">
-        <div className="relative w-full max-w-[280px]">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a8adb8]"
+      <div>
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search a title or a prompt"
+              className="h-9 w-full rounded-md border border-border/60 bg-card pl-8 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+
+          <Dropdown<SortKey>
+            value={sort}
+            onChange={setSort}
+            options={SORTS}
+            size="sm"
+            align="end"
+            icon={<ArrowUpDown size={15} />}
+            ariaLabel="Sort the essays"
+            buttonClassName="h-9 rounded-md font-normal"
           />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search essays"
-            className="h-9 w-full rounded-lg border border-[#e9edef] bg-white pl-8 pr-3 text-[13px] text-[#111] outline-none transition-colors placeholder:text-[#a8adb8] focus:border-primary dark:border-[#2a3942] dark:bg-[#1c2a32] dark:text-white"
-          />
+
+          {/* Starting from the college's actual question rather than a blank
+              title field. The old form asked for a title, a college and the
+              prompt pasted in from another tab, and the paste is the part that
+              went wrong. Where no prompt picker is wired in, this falls back to
+              that form, which is what the preview page uses. */}
+          <button
+            type="button"
+            onClick={() => (onAddFromPrompts ? setPicking(true) : setAdding(true))}
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+          >
+            <Plus size={15} />
+            Add essay
+          </button>
         </div>
 
-        <p className="hidden shrink-0 text-[13px] text-[#54656f] sm:block dark:text-[#aebac1]">
-          {essays.length === 0
-            ? totalOwed > 0
-              ? `${totalOwed} supplements to add`
-              : "Start with your personal statement"
-            : `${done} of ${essays.length} finished${totalOwed > 0 ? `, ${totalOwed} to add` : ""}`}
-        </p>
+        {/* Where a college is chosen from the rail, these are the other axis:
+            whose turn it is. The two compose, so "Pomona" plus "Under review"
+            is a question a student actually has. */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+          {STATE_FILTERS.map((f) => {
+            const n = matching.filter(MATCHES_STATE[f.value]).length;
+            const on = state === f.value;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setState(f.value)}
+                aria-pressed={on}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors",
+                  f.tone,
+                  on ? "bg-current/10 font-medium" : "bg-transparent hover:bg-muted/60"
+                )}
+              >
+                {filterLabel(f.value, viewerIsStaff)}
+                <span className="tabular-nums opacity-70">{n}</span>
+              </button>
+            );
+          })}
 
-        <div className="flex-1" />
-
-        {/* Starting from the college's actual question rather than a blank
-            title field. The old form asked for a title, a college and the
-            prompt pasted in from another tab, and the paste is the part that
-            went wrong. Where no prompt picker is wired in, this falls back to
-            that form, which is what the preview page uses. */}
-        <button
-          type="button"
-          onClick={() => (onAddFromPrompts ? setPicking(true) : setAdding(true))}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          <Plus size={15} />
-          Add essay
-        </button>
+          {/* Pushed to the far end of the filter row. It is a fact about the
+              list rather than a control, so it sits with them without being
+              one of them, and it describes the list actually on screen: a
+              tally that ignored the filters was answering a question nobody
+              had asked. */}
+          <p className="ml-auto shrink-0 text-xs text-muted-foreground">
+            {essays.length === 0
+              ? totalOwed > 0
+                ? `${totalOwed} to add`
+                : "Start with your personal statement"
+              : `${visible.length} shown`}
+          </p>
+        </div>
       </div>
 
       {essays.length === 0 && schools.length === 0 ? (
@@ -293,8 +436,11 @@ export function EssaysPanel({
                   key={e.id}
                   essay={e}
                   schools={schools}
+                  college={collegeOf(e)}
+                  appKey={appOf(e)}
+                  viewerIsStaff={viewerIsStaff}
                   words={counts?.get(fileIdFromUrl(e.drive_url) ?? "")}
-                  onStatusChange={onStatusChange}
+                  onOpen={() => openEssay(e)}
                   onCreateDoc={onCreateDoc}
                   onAskReview={onAskReview}
                   onDelete={onDelete}
@@ -390,19 +536,27 @@ const STATUS_PROGRESS: Record<EssayStatus, number> = {
 };
 
 /**
- * One essay.
+ * One essay, as a way in rather than a thing to operate.
  *
- * Progress rides the bottom edge of the card rather than sitting inside it: it
- * is glanceable down a column of ten essays without competing with the title
- * for attention. It tracks words against the college's limit where both are
- * known, since that is the concrete thing, and falls back to the status
- * pipeline otherwise.
+ * This used to expand, and carry a status dropdown beside a Create doc button.
+ * The dropdown was the problem: it offered four states at all times, so a
+ * student could mark an essay finished before a document existed and the
+ * progress bar had to be taught to disbelieve it. What is left is what this
+ * essay can actually do next, and everything else, the prompt, the draft, the
+ * counselor's comments, now lives on the essay's own page.
+ *
+ * The icon is the college's crest. A status glyph told you something the row
+ * already says in words; a crest tells you at a glance which of eleven
+ * supplements you are looking at.
  */
 function EssayRow({
   essay,
   schools,
+  college,
+  appKey,
+  viewerIsStaff,
   words,
-  onStatusChange,
+  onOpen,
   onCreateDoc,
   onAskReview,
   onDelete,
@@ -410,35 +564,26 @@ function EssayRow({
 }: {
   essay: Essay;
   schools: CollegeListItem[];
+  /** The catalog row for this essay's college, when it has one. */
+  college: College | null;
+  /** Which shared application a personal statement belongs to. */
+  appKey: string | null;
+  viewerIsStaff: boolean;
   words?: number;
-  onStatusChange: (id: string, s: EssayStatus) => void;
+  onOpen: () => void;
   onCreateDoc: (e: Essay) => void;
   onAskReview: (e: Essay) => void;
   onDelete: (e: Essay) => void;
   creating: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-
-  // What the counsellor actually said, fetched only once the row is opened.
-  // essay_reviews has stored every pass with its note from the start and
-  // nothing ever read it back, so "you will get a note" was never true.
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["essay-reviews", essay.id],
-    queryFn: () => getEssayReviews(essay.id),
-    enabled: open,
-  });
-  const notes = reviews.filter((r) => r.note);
-
   const school = schools.find((s) => s.id === essay.college_list_item_id);
   const limit = essay.word_limit ?? null;
   const over = limit !== null && words !== undefined && words > limit;
-
   const done = essay.status === "done";
+  const underReview = !!essay.drive_url && essay.status === "in_review";
 
-  // Progress has to agree with reality. A student can set the dropdown to
-  // Drafting before a document exists, and a bar claiming a third done for a
-  // file nobody has opened is simply wrong. No doc means no progress, whatever
-  // the status says.
+  // Progress has to agree with reality. No doc means no progress, whatever the
+  // status says.
   const progress = !essay.drive_url
     ? 0
     : limit !== null && words !== undefined
@@ -453,219 +598,158 @@ function EssayRow({
 
   const due = essay.due_date ? dueMeta(essay.due_date) : null;
 
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-[#e9edef] bg-white pb-1 dark:border-[#2a3942] dark:bg-[#182229]">
-      <div className="flex items-start gap-3 p-3">
-        <EssayStatusIcon status={essay.status} className="mt-0.5" />
+  // The bar says how far along, its colour says whose turn it is, and the two
+  // together are readable at a glance down a column. Deliberately the same
+  // colours the card edge and the stamp use: a gold bar under a gold edge is
+  // one fact told twice, not two facts.
+  const barTone = over && !done
+    ? "bg-destructive"
+    : done
+      ? "bg-primary"
+      : essay.status === "in_review"
+        ? "bg-secondary"
+        : essay.status === "drafting"
+          ? "bg-primary/60"
+          : "bg-primary/30";
 
-        {/* Only the title block toggles, so the status dropdown and the doc
-            button do not have to fight the expand for the same click. */}
+  return (
+    <div
+      className={cn(
+        // No overflow-hidden here. It was clipping the row menu, which opens
+        // below the card; the progress bar clips itself instead.
+        "group relative rounded-md bg-card transition-colors",
+        // The edge is what you read first down a column of ten essays, so it
+        // carries the state: teal for finished, gold for waiting on somebody
+        // else, and nothing at all for the ones still in the student's hands.
+        done
+          ? "border border-primary/40 bg-primary/5 hover:border-primary/60"
+          : underReview
+            ? "border border-secondary/50 bg-secondary/5 hover:border-secondary/70"
+            : "border border-border/60 hover:border-primary/40"
+      )}
+    >
+      <div className="flex items-center gap-3 p-3 pr-2">
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="min-w-0 flex-1 text-left"
+          onClick={onOpen}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          <div className="flex items-center gap-1.5">
+          {school?.unitid || college ? (
+            <CollegeLogo
+              name={collegeLabel}
+              logo={college?.logo ?? null}
+              website={college?.website ?? null}
+              size={38}
+            />
+          ) : (
+            <ApplicationLogo
+              appKey={appKey ?? "common_app"}
+              name={collegeLabel}
+              size={38}
+            />
+          )}
+
+          <span className="min-w-0 flex-1">
+            {/* Finished is colour, not a rule through the words. A title with
+                a line through it reads as cancelled, which is the opposite of
+                what finishing an essay means. */}
             <span
               className={cn(
-                "truncate text-[14px]",
-                done ? "text-[#a8adb8] line-through" : "text-[#111] dark:text-white"
+                "block truncate text-sm font-medium",
+                done ? "text-primary" : "text-foreground"
               )}
             >
               {essay.title}
             </span>
-            <ChevronDown
-              size={14}
-              className={cn(
-                "shrink-0 text-[#a8adb8] transition-transform",
-                open && "rotate-180"
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+              <span className="truncate">{collegeLabel}</span>
+
+              {words !== undefined && (
+                <span className={cn("tabular-nums", over && "font-medium text-secondary")}>
+                  {limit === null ? `${words} words` : `${words}/${limit} words`}
+                </span>
               )}
-            />
-          </div>
-          <div className="truncate text-[12px] text-[#717182]">{collegeLabel}</div>
 
-          {/* Words and deadline get their own row instead of a grey run-on
-              line. Over the limit and past due are the two facts a student has
-              to act on, and they only work if they are legible at a glance down
-              a column of ten essays. */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {words !== undefined && (
-              <span
-                className={cn(
-                  "text-[12px] tabular-nums",
-                  over ? "font-medium text-[#d4183d]" : "text-[#717182]"
-                )}
-              >
-                {/* Only the Common App personal statement has a fixed limit,
-                    650, so it is filled in. Supplement limits vary per prompt
-                    and per college and are entered by hand, which is why an
-                    unknown limit shows a plain count rather than a fraction. */}
-                {limit === null ? `${words} words` : `${words}/${limit} words`}
-              </span>
-            )}
-
-            {due && (
-              <span
-                className={cn(
-                  "text-[12px] tabular-nums",
-                  done
-                    ? "text-[#a8adb8]"
-                    : due.tone === "late"
-                      ? "font-medium text-[#d4183d]"
-                      : due.tone === "soon"
+              {due && (
+                <span
+                  className={cn(
+                    "tabular-nums",
+                    done
+                      ? ""
+                      : due.tone === "late"
                         ? "font-medium text-secondary"
-                        : "text-[#717182]"
-                )}
-              >
-                {/* Once it is finished the deadline is history, not a threat. */}
-                {done ? "submitted" : due.label}
-              </span>
-            )}
+                        : due.tone === "soon"
+                          ? "font-medium text-secondary"
+                          : ""
+                  )}
+                >
+                  {done ? "submitted" : due.label}
+                </span>
+              )}
 
-            {(essay.rounds_used ?? 0) > 0 && (
-              <span className="text-[12px] text-[#717182]">round {essay.rounds_used}</span>
-            )}
-          </div>
+              {(essay.rounds_used ?? 0) > 0 && <span>round {essay.rounds_used}</span>}
+            </span>
+          </span>
         </button>
 
-        {/* Status first, then what you would do about it. */}
-        <div className="flex w-[150px] shrink-0 flex-col gap-1.5">
-          <Dropdown
-            value={essay.status}
-            onChange={(v) => onStatusChange(essay.id, v as EssayStatus)}
-            options={STATUS}
-            size="sm"
-            align="end"
-            buttonClassName={cn(
-              "font-normal",
-              // Finished should read as finished wherever it appears, not only
-              // on the title.
-              done && "border-primary/40 font-medium text-primary"
-            )}
-            ariaLabel={`Status for ${essay.title}`}
-          />
-
-          {essay.drive_url ? (
-            <a
-              href={essay.drive_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-primary hover:text-primary dark:border-[#2a3942] dark:text-[#aebac1]"
-            >
-              Open doc
-              <ExternalLink size={11} />
-            </a>
-          ) : (
+        {/* Only what this essay can do next. */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {/* Not once it is finished. An essay marked done with no document
+              behind it is odd data, and offering to start writing it under a
+              Finished stamp is odder still. */}
+          {!viewerIsStaff && !essay.drive_url && !done && (
             <button
               type="button"
               onClick={() => onCreateDoc(essay)}
               disabled={creating}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e9edef] text-[12px] font-medium text-[#54656f] transition-colors hover:border-primary hover:text-primary disabled:opacity-50 dark:border-[#2a3942] dark:text-[#aebac1]"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
             >
-              {creating && <Loader2 size={11} className="animate-spin" />}
+              {creating ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <FileText size={13} />
+              )}
               Create doc
             </button>
           )}
+
+          {!viewerIsStaff && essay.drive_url && essay.status !== "in_review" && !done && (
+            <button
+              type="button"
+              onClick={() => onAskReview(essay)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+            >
+              <UserPen size={13} />
+              Ask for review
+            </button>
+          )}
+
+          {/* Only once there is something to review. A draft can be marked
+              in_review with no document behind it, and saying both "Create doc"
+              and this on one row is a contradiction the student has to
+              resolve. */}
+          {/* Said, rather than left blank. Without the student's Create doc
+              button a staff row with no document had nothing on it at all and
+              read as a row that had failed to load. */}
+          {viewerIsStaff && !essay.drive_url && !done && (
+            <span className="px-1 text-xs text-muted-foreground">Not started</span>
+          )}
+
+          {underReview && <ReviewStamp className="mr-1" />}
+
+          {/* One menu rather than a row of icons. A column of ten essays
+              should not be a column of ten delete buttons, and the chevron
+              that used to sit here only repeated what the whole card does. */}
+          <RowMenu essay={essay} onDelete={onDelete} />
         </div>
       </div>
 
-      {open && (
-        <div className="space-y-3 border-t border-[#e9edef] px-3 py-3 dark:border-[#2a3942]">
-          {essay.prompt ? (
-            <div>
-              <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.06em] text-[#a8adb8]">
-                Prompt
-              </p>
-              <p className="text-[13px] leading-relaxed text-[#54656f] dark:text-[#aebac1]">
-                {essay.prompt}
-              </p>
-            </div>
-          ) : (
-            <p className="text-[12px] text-[#a8adb8]">
-              No prompt saved. Paste the college's question so it sits beside the
-              draft.
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-[#717182]">
-            {limit !== null && <span>Limit {limit} words</span>}
-            {essay.last_feedback_at && (
-              <span>
-                Last feedback {new Date(essay.last_feedback_at).toLocaleDateString()}
-              </span>
-            )}
-            {essay.updated_at && (
-              <span>Updated {new Date(essay.updated_at).toLocaleDateString()}</span>
-            )}
-          </div>
-
-          {essay.status === "in_review" && (
-            <p className="text-[12px] text-secondary">
-              With your counselor. You will get a note when they have read it.
-            </p>
-          )}
-
-          {notes.length > 0 && (
-            <div className="space-y-2.5 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
-              {notes.map((r) => (
-                <div key={r.id}>
-                  <p className="text-[12px] text-muted-foreground">
-                    {r.counselorName ?? "Your counsellor"}
-                    {" - "}
-                    {r.action === "approved" ? "finished it" : "sent it back"}
-                    {" - "}
-                    {new Date(r.createdAt).toLocaleDateString(undefined, {
-                      day: "numeric",
-                      month: "short",
-                    })}
-                  </p>
-                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-foreground">{r.note}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Both actions on one line: they are the only two things you can do
-              from here, and stacking them made the panel taller than its
-              contents warranted. */}
-          <div className="flex items-center gap-1 border-t border-[#e9edef] pt-3 dark:border-[#2a3942]">
-            {/* The handoff the tiers are sold on. Pointless before a doc
-                exists, redundant once it is already with the counselor. */}
-            {essay.drive_url && essay.status !== "in_review" && (
-              <button
-                type="button"
-                onClick={() => onAskReview(essay)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/10"
-              >
-                <UserPen size={13} />
-                Ask for review
-              </button>
-            )}
-
-            <div className="flex-1" />
-
-            <button
-              type="button"
-              onClick={() => onDelete(essay)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10"
-            >
-              <Trash2 size={13} />
-              Delete essay
-            </button>
-          </div>
-        </div>
-      )}
-
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-[3px] bg-[#f3f3f5] dark:bg-[#1c2a32]"
+        className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden rounded-b-[5px] bg-muted"
       >
         <div
-          className={cn(
-            "h-full transition-[width] duration-300",
-            over && !done ? "bg-[#d4183d]" : done ? "bg-primary" : "bg-primary/60"
-          )}
+          className={cn("h-full transition-[width] duration-300", barTone)}
           style={{ width: `${Math.round((over ? 1 : progress) * 100)}%` }}
         />
       </div>
@@ -673,6 +757,78 @@ function EssayRow({
   );
 }
 
+
+/**
+ * The per-essay actions that are not what this essay does next.
+ *
+ * Opening the Doc and deleting the essay are always available and almost never
+ * what you came to the row for, so they sit behind a menu while the one action
+ * that matters now keeps its place on the row.
+ */
+function RowMenu({
+  essay,
+  onDelete,
+}: {
+  essay: Essay;
+  onDelete: (e: Essay) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const item =
+    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted/70";
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={`More for ${essay.title}`}
+        aria-expanded={open}
+        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border border-border/60 bg-card p-1 shadow-lg">
+          {essay.drive_url && (
+            <a
+              href={essay.drive_url}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setOpen(false)}
+              className={cn(item, "text-foreground")}
+            >
+              <ExternalLink size={14} />
+              Open in Google Docs
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onDelete(essay);
+            }}
+            className={cn(item, "text-destructive")}
+          >
+            <Trash2 size={14} />
+            Delete essay
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * What an empty panel should say depends on why it is empty, and the three

@@ -176,3 +176,75 @@ export function isConfigured(err: unknown): boolean {
   const m = err instanceof Error ? err.message : String(err);
   return !/GOOGLE_OAUTH_REFRESH_TOKEN|GOOGLE_SERVICE_ACCOUNT_JSON|GOOGLE_SHARED_DRIVE_ID/.test(m);
 }
+
+// --- one essay, opened ------------------------------------------------------
+
+export interface EssayDoc {
+  file: {
+    id: string;
+    name: string;
+    modifiedTime?: string;
+    webViewLink?: string;
+    capabilities?: { canComment?: boolean; canEdit?: boolean };
+  };
+  /** The Doc's body, exported and stripped. See api/_handlers/drive.ts. */
+  html: string;
+  words: number;
+  /** When this snapshot was taken. Editing happens in the Doc, so the page has
+   *  to be honest that what it shows can be a minute old. */
+  fetchedAt: string;
+}
+
+export interface CommentReply {
+  id: string;
+  createdTime: string;
+  author: string;
+  authorPhoto: string | null;
+  content: string;
+  action: string | null;
+}
+
+export interface CommentThread {
+  id: string;
+  createdTime: string;
+  modifiedTime: string;
+  resolved: boolean;
+  /** The passage the comment hangs off, when Docs recorded one. */
+  quoted: string | null;
+  author: string;
+  authorPhoto: string | null;
+  content: string;
+  replies: CommentReply[];
+}
+
+export function getEssayDoc(fileId: string) {
+  return call<EssayDoc>({ action: "doc", fileId });
+}
+
+export async function getComments(fileId: string) {
+  const { threads } = await call<{ threads: CommentThread[] }>({ action: "comments", fileId });
+  return threads;
+}
+
+/**
+ * `authorName` is not decoration.
+ *
+ * Every write reaches Google as the single Yakal account that holds the
+ * credential, so without it a counselor's comment appears in the Doc authored
+ * by us and the student cannot tell who said it. The server writes the name
+ * into the text and strips it again on the way back.
+ */
+export function addComment(fileId: string, content: string, authorName?: string | null) {
+  return call<{ id: string }>({ action: "comment", fileId, content, authorName });
+}
+
+export function replyToComment(args: {
+  fileId: string;
+  commentId: string;
+  content?: string;
+  authorName?: string | null;
+  resolve?: boolean;
+  reopen?: boolean;
+}) {
+  return call<{ id: string }>({ action: "reply", ...args });
+}

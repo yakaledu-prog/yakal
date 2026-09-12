@@ -11,6 +11,10 @@ import { cn } from "@/utils/cn";
 import { RequirementsMatrix } from "@/components/college/RequirementsMatrix";
 import { RequirementsCards } from "@/components/college/RequirementsCards";
 import { EssaysPanel, NewEssay, type PromptSelection } from "@/components/college/EssaysPanel";
+import { EssayReviewList } from "@/components/college/EssayReviewList";
+import { getReviewQueue } from "@/services/essayReviewService";
+import { getAdmissionsPlans } from "@/services/admissionsService";
+import { loadCatalog } from "@/services/collegeCatalogService";
 import { DocumentsPanel } from "@/components/college/DocumentsPanel";
 import { RecommendersPanel, NewRecommender } from "@/components/college/RecommendersPanel";
 import {
@@ -18,7 +22,6 @@ import {
   CollegeProfile,
   Essay,
   SchoolStatus,
-  EssayStatus,
   RecStatus,
   Recommendation,
   addEssay,
@@ -28,6 +31,7 @@ import {
   deleteEssay,
   deleteRecommendation,
   getCollegeProfile,
+  getStudentIdentity,
   toggleRequirement,
   updateEssay,
   updateSchool,
@@ -86,6 +90,53 @@ export function StudentApplicationTracker({
   const qc = useQueryClient();
   const targetId = studentId || user?.id;
 
+  /**
+   * The student this page is about, which is not always the person reading it.
+   *
+   * Everything Drive-facing below needs their name and their email, and it used
+   * to pass the signed-in user's. A counselor opening a student's Documents tab
+   * therefore had that student's Drive folder shared with the counselor's own
+   * address, and a counselor pressing Create doc filed the essay in a folder
+   * named after themselves.
+   */
+  const { data: student } = useQuery({
+    queryKey: ["student-identity", targetId],
+    queryFn: () => getStudentIdentity(targetId!),
+    enabled: !!targetId,
+    staleTime: 5 * 60_000,
+  });
+
+  /**
+   * What a counselor sees on this tab.
+   *
+   * The same queue they see on their own Essays page, scoped to this student,
+   * rather than the student's own panel: that panel's verbs are Create doc and
+   * Ask for review, which belong to the person writing, and it carries none of
+   * the counselor's, so a counselor opening a student had no way to send an
+   * essay back from the page they were already on.
+   */
+  const { data: queue = [] } = useQuery({
+    queryKey: ["review-queue", targetId],
+    queryFn: () => getReviewQueue([targetId!]),
+    enabled: !!targetId && staffViewing,
+  });
+
+  const { data: queuePlans } = useQuery({
+    queryKey: ["admissions-plans", targetId],
+    queryFn: () => getAdmissionsPlans([targetId!]),
+    enabled: !!targetId && staffViewing,
+  });
+
+  const { data: catalog = [] } = useQuery({
+    queryKey: ["college-catalog"],
+    queryFn: loadCatalog,
+    enabled: staffViewing,
+    staleTime: Infinity,
+  });
+
+  const studentName = (studentId ? student?.full_name : profile?.full_name) || "Student";
+  const studentEmail = studentId ? student?.email : user?.email;
+
   const { data, isLoading } = useQuery({
     queryKey: ["college-profile", targetId],
     queryFn: () => getCollegeProfile(targetId!),
@@ -107,7 +158,7 @@ export function StudentApplicationTracker({
   // here should degrade the matrix rather than break the page.
   const { data: docs } = useQuery({
     queryKey: ["drive-docs", targetId],
-    queryFn: () => listDocuments(targetId!, profile?.full_name || "Student", user?.email),
+    queryFn: () => listDocuments(targetId!, studentName, studentEmail),
     enabled: !!targetId,
     retry: false,
   });
@@ -379,27 +430,15 @@ export function StudentApplicationTracker({
     }
   };
 
-  const setEssayStatusM = useOptimistic<{ id: string; status: EssayStatus }>(
-    ({ id, status }, prev) => ({
-      ...prev,
-      essays: prev.essays.map((e) => (e.id === id ? { ...e, status } : e)),
-    }),
-    ({ id, status }) => updateEssay(id, { status }),
-    "Could not update that essay."
-  );
-
-  const setEssayStatus = (id: string, status: EssayStatus) =>
-    setEssayStatusM.mutate({ id, status });
-
   const makeDoc = async (essay: Essay) => {
-    if (!user) return;
+    if (!targetId) return;
     setCreatingDoc(essay.id);
     try {
       const { file } = await createEssayDoc({
-        studentId: user.id,
-        studentName: profile?.full_name || "Student",
+        studentId: targetId,
+        studentName,
         title: essay.title,
-        studentEmail: user.email,
+        studentEmail,
       });
       await updateEssay(essay.id, { drive_url: file.webViewLink ?? null });
       toast.success("Google Doc created.");
@@ -675,16 +714,30 @@ export function StudentApplicationTracker({
                 </div>
               )}
 
-              {tab === "essays" && (
+              {tab === "essays" && staffViewing && (
+                <EssayReviewList
+                  essays={queue}
+                  plans={queuePlans}
+                  catalog={catalog}
+                  counselorId={user?.id}
+                  counselorName={profile?.full_name ?? undefined}
+                  scopedToStudent
+                  onChanged={refresh}
+                  emptyText={`${studentName.split(" ")[0]} has no essays here yet.`}
+                />
+              )}
+
+              {tab === "essays" && !staffViewing && (
                 <EssaysPanel
                   essays={essays}
                   schools={schools}
+                  role={profile?.role === "counselor" ? "counselor" : "student"}
+                  viewerIsStaff={staffViewing}
                   onAdd={addEssayRow}
                   onAddFromPrompts={addFromPrompts}
                   onEnsureSchool={(preset) =>
                     ensureSchool(preset.unitid, preset.schoolName, preset.collegeListItemId, null)
                   }
-                  onStatusChange={setEssayStatus}
                   onCreateDoc={makeDoc}
                   onAskReview={askReview}
                   onSetSuppCount={setSuppCount}

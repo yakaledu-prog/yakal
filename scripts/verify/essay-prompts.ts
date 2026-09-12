@@ -107,14 +107,38 @@ const { data: prompts } = await db.from("essay_prompts").select("*").eq("cycle",
 const all = prompts ?? [];
 pass("prompts loaded", all.length > 0, `${all.length}`);
 
+// Every prompt has to be checkable. A hand-written one also says when somebody
+// last did; a machine-extracted one says nobody has, which is the honest
+// answer and the thing the picker shows on the row.
 pass(
-  "every prompt says where it came from and when it was checked",
-  all.every((p) => p.source_url && p.verified_on),
+  "every prompt says where it came from",
+  all.every((p) => p.source_url),
+  all.filter((p) => !p.source_url).map((p) => p.slug).slice(0, 3).join(", ")
+);
+
+const manual = all.filter((p) => p.extraction !== "machine");
+pass(
+  "every hand-written prompt says when it was checked",
+  manual.every((p) => p.verified_on),
+  manual.filter((p) => !p.verified_on).map((p) => p.slug).slice(0, 3).join(", ")
+);
+
+pass(
+  "no machine prompt claims to have been checked",
+  all.filter((p) => p.extraction === "machine").every((p) => !p.verified_on),
   all
-    .filter((p) => !p.source_url || !p.verified_on)
+    .filter((p) => p.extraction === "machine" && p.verified_on)
     .map((p) => p.slug)
     .slice(0, 3)
     .join(", ")
+);
+
+// The shared applications are the ones every student reads, so they are never
+// allowed to be machine guesses.
+pass(
+  "the shared applications were read by a person",
+  all.filter((p) => !p.unitid).every((p) => p.extraction !== "machine"),
+  all.filter((p) => !p.unitid && p.extraction === "machine").map((p) => p.slug).join(", ")
 );
 
 pass(
@@ -149,6 +173,17 @@ pass(
   "a word limit and a character limit are never both set",
   all.every((p) => !(p.word_limit && p.char_limit)),
   all.filter((p) => p.word_limit && p.char_limit).map((p) => p.slug).join(", ")
+);
+
+const handDone = new Set(
+  all.filter((p) => p.unitid && p.extraction !== "machine").map((p) => p.unitid)
+);
+pass(
+  "no college has both hand-written and machine prompts",
+  !all.some((p) => p.extraction === "machine" && handDone.has(p.unitid)),
+  [...new Set(all.filter((p) => p.extraction === "machine" && handDone.has(p.unitid)).map((p) => p.unitid))]
+    .slice(0, 3)
+    .join(", ")
 );
 
 console.log(failures === 0 ? "\nall good" : `\n${failures} failed`);

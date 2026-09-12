@@ -124,6 +124,7 @@ export interface ReviewQueueItem {
   studentName: string;
   studentAvatarUrl: string | null;
   collegeName: string | null;
+  collegeUnitid: number | null;
 }
 
 /**
@@ -141,7 +142,7 @@ export async function getReviewQueue(studentIds: string[]): Promise<ReviewQueueI
     .select(`id, title, kind, status, drive_url, due_date, word_limit, prompt,
              rounds_used, updated_at, student_id,
              student:profiles!essays_student_id_fkey (full_name, avatar_url),
-             college:college_list_items (school_name)`)
+             college:college_list_items (school_name, unitid)`)
     .in("student_id", studentIds)
     .order("updated_at", { ascending: false });
 
@@ -165,5 +166,8 @@ export async function getReviewQueue(studentIds: string[]): Promise<ReviewQueueI
     studentName: e.student?.full_name ?? "Student",
     studentAvatarUrl: e.student?.avatar_url ?? null,
     collegeName: e.college?.school_name ?? null,
+    // For the crest. The queue shows essays from every student at once, so a
+    // row has to say whose and which college's before it says anything else.
+    collegeUnitid: e.college?.unitid ?? null,
   }));
 }

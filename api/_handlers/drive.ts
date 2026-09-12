@@ -273,6 +273,154 @@ async function grant(
   });
 }
 
+
+/**
+ * The exported Doc, ready to put on a page.
+ *
+ * Google's HTML export is machine generated and predictable: a <head> with a
+ * charset, then a <body class="doc-content"> of paragraphs carrying inline
+ * styles. It is still stripped rather than trusted, because "predictable"
+ * describes today's output and this ends up inside our origin.
+ *
+ * Why export at all, rather than an iframe. Docs has no embeddable editor:
+ * smart canvas is a feature of the Docs editor, not an SDK, and the only
+ * framable view is /preview, which authenticates the *viewer*. Our whole Drive
+ * design exists so that students never sign in to Google and counselors are
+ * granted access by us rather than by a sixteen-year-old, so /preview would
+ * show "you need access" to exactly the people this page is for. Exporting
+ * server-side works for everyone, under our access rules, and lets the page
+ * carry the prompt and the comments beside the text.
+ *
+ * The cost is that this is a snapshot. Editing still happens in the real Doc,
+ * which is why every view of it carries the time it was taken and a way back.
+ */
+/**
+ * Properties Google writes that describe a sheet of US Letter rather than
+ * anything the writer chose.
+ *
+ * Colour is the one that matters. Left in, every span carries color:#000000
+ * and a student's essay renders as black on black in the dark theme. Margins
+ * and line height are next: margin:0 on the element beats any stylesheet we
+ * write, so paragraphs sit flush against each other. Weight, italics,
+ * underline, alignment, size and vertical alignment are real choices and stay.
+ */
+const DROPPED_STYLES = new Set([
+  'color',
+  'background',
+  'background-color',
+  'line-height',
+  'font-family',
+  'max-width',
+  'width',
+  'height',
+  'min-height',
+  'orphans',
+  'widows',
+]);
+
+const DROPPED_PREFIXES = ['margin', 'padding'];
+
+/**
+ * Alignment is two different things wearing one property name.
+ *
+ * Docs writes text-align:left onto every paragraph whether or not anybody
+ * chose it, so keeping all of it would mean the page could never set its own
+ * measure. Left and start are the default and come out; centre, right and
+ * justify were somebody pressing a button and stay.
+ */
+const DEFAULT_ALIGNMENTS = new Set(['left', 'start']);
+
+/**
+ * Rewrite one inline style attribute, keeping the declarations worth keeping.
+ *
+ * Declaration by declaration rather than by one regex over the whole document.
+ * The regex version anchored on `^|;` and so never removed the FIRST property
+ * in an attribute, which is exactly where Google puts color, so every span
+ * kept its black and the bug only showed up in the dark theme.
+ */
+function filterInlineStyle(style: string): string {
+  return style
+    .split(';')
+    .map((d) => d.trim())
+    .filter((d) => {
+      if (!d) return false;
+      const prop = d.slice(0, d.indexOf(':')).trim().toLowerCase();
+      if (!prop) return false;
+      if (DROPPED_STYLES.has(prop)) return false;
+      if (prop === 'text-align') {
+        return !DEFAULT_ALIGNMENTS.has(d.slice(d.indexOf(':') + 1).trim().toLowerCase());
+      }
+      return !DROPPED_PREFIXES.some((p) => prop === p || prop.startsWith(`${p}-`));
+    })
+    .join(';');
+}
+
+export function sanitiseExportedHtml(html: string): string {
+  // Only the body: the export's <head> carries nothing we want and its <style>
+  // block would leak Google's classes into the page.
+  const body = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? html;
+
+  return body
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<link\b[^>]*>/gi, '')
+    .replace(/<meta\b[^>]*>/gi, '')
+    // on* handlers, quoted or bare.
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/(href|src)\s*=\s*"\s*javascript:[^"]*"/gi, '$1="#"')
+    .replace(/(href|src)\s*=\s*'\s*javascript:[^']*'/gi, "$1='#'")
+    .replace(/\sstyle\s*=\s*"([^"]*)"/gi, (_m, style: string) => {
+      const kept = filterInlineStyle(style);
+      return kept ? ` style="${kept}"` : '';
+    })
+    .replace(/\sstyle\s*=\s*'([^']*)'/gi, (_m, style: string) => {
+      const kept = filterInlineStyle(style);
+      return kept ? ` style="${kept}"` : '';
+    });
+}
+
+/**
+ * Comments read as a thread rather than as a flat list.
+ *
+ * quotedFileContent is the passage the comment hangs off, and it is the only
+ * usable link back to the text: `anchor` is an opaque Docs region id that
+ * means nothing outside the editor. So the pane shows the quote, which is what
+ * a student needs to know which sentence is being talked about.
+ */
+function threadFields(): string {
+  return [
+    'comments(id,createdTime,modifiedTime,resolved,author(displayName,photoLink),',
+    'content,quotedFileContent(value),',
+    'replies(id,createdTime,author(displayName,photoLink),content,action))',
+  ].join('');
+}
+
+/**
+ * Whose words these are.
+ *
+ * Every write goes to Google as the one Yakal account that holds the
+ * credential, so a counselor's comment would appear in the Doc authored by
+ * "Yakal" and a student would have no idea who wrote it. Naming the author in
+ * the text is the only way to get that right from a shared credential, and it
+ * is stripped again on the way back out so our own pane shows a proper author.
+ */
+const AUTHOR_PREFIX = /^([^:\n]{1,60}):\s/;
+
+function withAuthor(content: string, authorName?: string | null): string {
+  const name = (authorName || '').trim();
+  return name ? `${name}: ${content}` : content;
+}
+
+function splitAuthor(content: string | null | undefined, fallback: string) {
+  const text = content ?? '';
+  const m = text.match(AUTHOR_PREFIX);
+  return m
+    ? { author: m[1], text: text.slice(m[0].length) }
+    : { author: fallback, text };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -438,6 +586,127 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         return res.status(200).json({ file: updated.data });
+      }
+
+
+      /**
+       * One essay Doc, with its text, for the workspace page.
+       *
+       * Everything a page needs in one request: the metadata, the rendered
+       * body, and the word count, because three round trips to show one
+       * document is three chances to render half a screen.
+       */
+      case 'doc': {
+        const { fileId } = req.body;
+        if (!fileId) return res.status(400).json({ error: 'fileId is required' });
+
+        const meta = await ctx.drive.files.get({
+          fileId,
+          fields: 'id,name,modifiedTime,webViewLink,capabilities(canComment,canEdit)',
+          supportsAllDrives: true,
+        });
+
+        const [htmlOut, textOut] = await Promise.all([
+          ctx.drive.files.export({ fileId, mimeType: 'text/html' }, { responseType: 'text' }),
+          ctx.drive.files.export({ fileId, mimeType: 'text/plain' }, { responseType: 'text' }),
+        ]);
+
+        const text = String(textOut.data ?? '');
+        return res.status(200).json({
+          file: meta.data,
+          html: sanitiseExportedHtml(String(htmlOut.data ?? '')),
+          words: text.trim() ? text.trim().split(/\s+/).length : 0,
+          fetchedAt: new Date().toISOString(),
+        });
+      }
+
+      /** Every comment thread on a Doc, newest last within each thread. */
+      case 'comments': {
+        const { fileId } = req.body;
+        if (!fileId) return res.status(400).json({ error: 'fileId is required' });
+
+        const out = await ctx.drive.comments.list({
+          fileId,
+          fields: threadFields(),
+          includeDeleted: false,
+          pageSize: 100,
+        });
+
+        const threads = (out.data.comments ?? []).map((c) => {
+          const owner = c.author?.displayName ?? 'Someone';
+          const head = splitAuthor(c.content, owner);
+          return {
+            id: c.id,
+            createdTime: c.createdTime,
+            modifiedTime: c.modifiedTime,
+            resolved: !!c.resolved,
+            quoted: c.quotedFileContent?.value ?? null,
+            author: head.author,
+            authorPhoto: c.author?.photoLink ?? null,
+            content: head.text,
+            replies: (c.replies ?? [])
+              // A resolve is recorded as a reply with no words in it. It is an
+              // event, not something anybody said, so it does not belong in a
+              // conversation.
+              .filter((r) => (r.content ?? '').trim() || !r.action)
+              .map((r) => {
+                const rep = splitAuthor(r.content, r.author?.displayName ?? 'Someone');
+                return {
+                  id: r.id,
+                  createdTime: r.createdTime,
+                  author: rep.author,
+                  authorPhoto: r.author?.photoLink ?? null,
+                  content: rep.text,
+                  action: r.action ?? null,
+                };
+              }),
+          };
+        });
+
+        return res.status(200).json({ threads });
+      }
+
+      /** A new comment on the document as a whole. */
+      case 'comment': {
+        const { fileId, content, authorName } = req.body;
+        if (!fileId || !String(content || '').trim()) {
+          return res.status(400).json({ error: 'fileId and content are required' });
+        }
+
+        const made = await ctx.drive.comments.create({
+          fileId,
+          fields: 'id',
+          requestBody: { content: withAuthor(String(content).trim(), authorName) },
+        });
+        return res.status(200).json({ id: made.data.id });
+      }
+
+      /**
+       * A reply, and optionally resolving or reopening the thread.
+       *
+       * Drive has no separate resolve call: resolving is a reply carrying
+       * action 'resolve', which is also why the list above drops empty ones.
+       */
+      case 'reply': {
+        const { fileId, commentId, content, authorName, resolve, reopen } = req.body;
+        if (!fileId || !commentId) {
+          return res.status(400).json({ error: 'fileId and commentId are required' });
+        }
+        const words = String(content || '').trim();
+        if (!words && !resolve && !reopen) {
+          return res.status(400).json({ error: 'nothing to say' });
+        }
+
+        const made = await ctx.drive.replies.create({
+          fileId,
+          commentId,
+          fields: 'id',
+          requestBody: {
+            content: words ? withAuthor(words, authorName) : undefined,
+            action: resolve ? 'resolve' : reopen ? 'reopen' : undefined,
+          },
+        });
+        return res.status(200).json({ id: made.data.id });
       }
 
       /**

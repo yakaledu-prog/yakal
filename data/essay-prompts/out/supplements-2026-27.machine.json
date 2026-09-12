@@ -1,0 +1,651 @@
+{
+  "cycle": "2026-27",
+  "note": "Read off each college's own admissions page by build/extract_prompts.py on 2026-09-12. Every prompt is a quotation from a page that was fetched; nothing here is generated. Marked extraction=machine because no person has checked it, which the picker says on the row.",
+  "schools": [
+    {
+      "unitid": 164465,
+      "name": "Amherst College",
+      "source_url": "https://www.amherst.edu/admission/apply/firstyear/writingsupplement",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "amherst-college-2026-27-m1",
+          "title": "How do you experience curiosity in your own life",
+          "prompt": "What does curiosity mean to you? How do you experience curiosity in your own life?",
+          "word_limit": 350,
+          "requirement": "required"
+        },
+        {
+          "slug": "amherst-college-2026-27-m2",
+          "title": "In what ways could your unique experiences enhance our understanding",
+          "prompt": "In what ways could your unique experiences enhance our understanding of our nation and our world?",
+          "word_limit": 350,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 217156,
+      "name": "Brown University",
+      "source_url": "https://admission.brown.edu/apply/how-apply",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "brown-university-2026-27-m1",
+          "title": "If you could teach a class on any one thing",
+          "prompt": "If you could teach a class on any one thing, whether academic or otherwise, what would it be? (100-",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "brown-university-2026-27-m2",
+          "title": "Tell us something about yourself, beyond your interest in medicine",
+          "prompt": "Tell us something about yourself, beyond your interest in medicine, that you think will make you a great doctor",
+          "word_limit": 250,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 183910,
+      "name": "Caldwell University",
+      "source_url": "https://www.caldwell.edu/admissions/requirements/application-essay-topics/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "caldwell-university-2026-27-m1",
+          "title": "Who are the people who have done the most to",
+          "prompt": "Who are the people who have done the most to influence your personal development and in what ways were they influential?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "caldwell-university-2026-27-m2",
+          "title": "How do you feel a college degree will allow you",
+          "prompt": "How do you feel a college degree will allow you to be a better person and help others?",
+          "word_limit": 500,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 110404,
+      "name": "California Institute of Technology",
+      "source_url": "https://www.admissions.caltech.edu/apply/32-program/supplemental-32-application-essays",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "california-institute-of-technology-2026-27-m1",
+          "title": "Why did you choose that area of interest",
+          "prompt": "If you had to choose a major today, what would you choose? Why do you think Caltech is the right place to pursue this interest? Why did you choose that area of interest? (Min: 100/Max",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m2",
+          "title": "Tell us how you initially found your interest and passion",
+          "prompt": "Tell us how you initially found your interest and passion for science or any STEM topic, and how you have pursued or developed this interest or passion over time. (Min: 100 / Max",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m3",
+          "title": "Tell us about a STEM-related experience from the last few",
+          "prompt": "Tell us about a STEM-related experience from the last few years and share how and why it inspired your curiosity. (Min: 100 / Max",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m4",
+          "title": "What is an interest or hobby you do for fun",
+          "prompt": "What is an interest or hobby you do for fun, and why does it bring you joy?",
+          "word_limit": 250,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m5",
+          "title": "If you could teach a class on any topic or",
+          "prompt": "If you could teach a class on any topic or concept, what would it be and why?",
+          "word_limit": 250,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m6",
+          "title": "What is a core piece of your identity or being",
+          "prompt": "What is a core piece of your identity or being that shapes how you view and/or interact with the world?",
+          "word_limit": 250,
+          "requirement": "required"
+        },
+        {
+          "slug": "california-institute-of-technology-2026-27-m7",
+          "title": "What is a concept that blew your mind or baffled",
+          "prompt": "What is a concept that blew your mind or baffled you when you first encountered it?",
+          "word_limit": 250,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 198215,
+      "name": "Catawba College",
+      "source_url": "https://www.catawba.edu:443/essayprompts/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "catawba-college-2026-27-m1",
+          "title": "Could you please share how you first learned about Catawba",
+          "prompt": "For over 173 years, Catawba College has been recognized for its rich legacy and traditions, sometimes even referred to as a best-kept secret. Could you please share how you first learned about Catawba and what motivated you to apply to our institution?",
+          "word_limit": 600,
+          "requirement": "required"
+        },
+        {
+          "slug": "catawba-college-2026-27-m2",
+          "title": "What are your future plans, and why are you interested",
+          "prompt": "What are your future plans, and why are you interested in the academic program or major you selected? If you are undecided, please share which academic areas you wish to explore at Catawba and why",
+          "word_limit": 600,
+          "requirement": "required"
+        },
+        {
+          "slug": "catawba-college-2026-27-m3",
+          "title": "What \"good\" do you hope to make at Catawba and",
+          "prompt": "Catawba is deeply invested in the greater good, cultivating a thriving and livable world for all. Our students, faculty, and staff learn, create, research, explore, and grow. Our good goes far. What \"good\" do you hope to make at Catawba and beyond?",
+          "word_limit": 600,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 126678,
+      "name": "Colorado College",
+      "source_url": "https://ccbasecamp.coloradocollege.edu/register/qbwritingsupplement",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "colorado-college-2026-27-m1",
+          "title": "If you\u2019d like to supplement your narrative response by sharing",
+          "prompt": "If you\u2019d like to supplement your narrative response by sharing the outcome \u2014 a project, performance, paper, or other result \u2014 you may optionally upload a document or provide a URL. If you choose not to submit additional material, you will not be penalized. Select an option below",
+          "word_limit": 300,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 190150,
+      "name": "Columbia University in the City of New York",
+      "source_url": "https://undergrad.admissions.columbia.edu/apply/process/columbia-questions",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "columbia-university-in-the-city-of-n-2026-27-m1",
+          "title": "List the titles of texts, resources and outlets that have",
+          "prompt": "List the titles of texts, resources and outlets that have contributed to your intellectual development outside of academic courses, including but not limited to books, journals, websites, podcasts, essays, plays, presentations, videos, museums and other content that you enjoy",
+          "word_limit": 100,
+          "requirement": "required"
+        },
+        {
+          "slug": "columbia-university-in-the-city-of-n-2026-27-m2",
+          "title": "Tell us about an aspect of your life so far",
+          "prompt": "Tell us about an aspect of your life so far or your lived experience that is important to you, and describe how it has shaped the way you would learn from and contribute to Columbia's multidimensional and collaborative environment",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "columbia-university-in-the-city-of-n-2026-27-m3",
+          "title": "Why are you interested in attending Columbia University",
+          "prompt": "Why are you interested in attending Columbia University? We encourage you to consider the aspect(s) that you find unique and compelling about Columbia",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "columbia-university-in-the-city-of-n-2026-27-m4",
+          "title": "What attracts you to your preferred areas of study at",
+          "prompt": "What attracts you to your preferred areas of study at Columbia College or Columbia Engineering?",
+          "word_limit": 150,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 190415,
+      "name": "Cornell University",
+      "source_url": "https://admissions.cornell.edu/first-year-cals-applicants",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "cornell-university-2026-27-m1",
+          "title": "What interests you about the major you selected",
+          "prompt": "What interests you about the major you selected? Tell us about experiences (both in and outside of the classroom), questions, and goals that influenced your choice",
+          "word_limit": 350,
+          "requirement": "required"
+        },
+        {
+          "slug": "cornell-university-2026-27-m2",
+          "title": "What draws you to Cornell\u2019s College of Agriculture and Life",
+          "prompt": "What draws you to Cornell\u2019s College of Agriculture and Life Sciences (CALS)? Reflect on the learning, community, or impact opportunities that matter most to you, and share how they align with Cornell CALS (as you understand it currently)",
+          "word_limit": 350,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 212009,
+      "name": "Dickinson College",
+      "source_url": "https://www.dickinson.edu/info/20256/apply/1026/essay_writing_tips_and_prompts",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "dickinson-college-2026-27-m1",
+          "title": "What topic or idea could you write or converse about",
+          "prompt": "What topic or idea could you write or converse about endlessly?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "dickinson-college-2026-27-m2",
+          "title": "What is something new that you'd like to experience, learn",
+          "prompt": "What is something new that you'd like to experience, learn or try that might surprise your friends and family?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "dickinson-college-2026-27-m3",
+          "title": "What are the qualities that make you proud to be",
+          "prompt": "What are the qualities that make you proud to be you?",
+          "word_limit": 50,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 212911,
+      "name": "Haverford College",
+      "source_url": "https://www.haverford.edu/admission/supplement",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "haverford-college-2026-27-m1",
+          "title": "How do you hope to engage with this topic or",
+          "prompt": "Tell us about a topic or issue that sparks your curiosity and gets you intellectually excited. How do you hope to engage with this topic or issue at Haverford? (Please limit your response to 150-",
+          "word_limit": 200,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 162928,
+      "name": "Johns Hopkins University",
+      "source_url": "https://apply.jhu.edu/how-to-apply/application-deadlines-requirements/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "johns-hopkins-university-2026-27-m1",
+          "title": "If you could graduate from Hopkins debt-free, what would you",
+          "prompt": "If you could graduate from Hopkins debt-free, what would you do next?",
+          "word_limit": 350,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 161509,
+      "name": "Maine College of Art & Design",
+      "source_url": "https://meca.edu/admissions/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "maine-college-of-art-design-2026-27-m1",
+          "title": "What\u2019s the difference between attending a school dedicated to art",
+          "prompt": "What\u2019s the difference between attending a school dedicated to art and design versus pursuing an art program within a liberal arts college?",
+          "word_limit": 300,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 147767,
+      "name": "Northwestern University",
+      "source_url": "https://admissions.northwestern.edu/apply/requirements.html",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "northwestern-university-2026-27-m1",
+          "title": "What would you paint on The Rock, and why",
+          "prompt": "Painting \u201cThe Rock\u201d is a tradition at Northwestern that invites all forms of expression\u2014students promote campus events or extracurricular groups, support social or activist causes, show their Wildcat spirit (what we call \u201cPurple Pride\u201d), celebrate their culture, and more. What would you paint on The Rock, and why?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "northwestern-university-2026-27-m2",
+          "title": "Who might be some ideal classmates or collaborators",
+          "prompt": "Northwestern fosters a distinctively interdisciplinary culture. We believe discovery and innovation thrive at the intersection of diverse ideas, perspectives, and academic interests. Within this setting, if you could dream up an undergraduate class, research project, or creative effort (a start-up, a design prototype, a performance, etc.), what would it be? Who might be some ideal classmates or collaborators?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "northwestern-university-2026-27-m3",
+          "title": "What aspects of our location are most compelling to you",
+          "prompt": "Northwestern\u2019s location is special: on the shore of Lake Michigan, steps from downtown Evanston, just a few miles from Chicago. What aspects of our location are most compelling to you, and why?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "northwestern-university-2026-27-m4",
+          "title": "How might your individual background contribute to this diversity of",
+          "prompt": "Northwestern is a place where people with diverse backgrounds from all over the world can study, live, and talk with one another. This range of experiences and viewpoints immeasurably enriches learning. How might your individual background contribute to this diversity of perspectives in Northwestern\u2019s classrooms and around our campus?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "northwestern-university-2026-27-m5",
+          "title": "We want to be sure we\u2019re considering your application in",
+          "prompt": "We want to be sure we\u2019re considering your application in the context of your personal experiences: What aspects of your background, your identity, or your school, community, and/or household settings have most shaped how you see yourself engaging in Northwestern\u2019s community, be it academically, extracurricularly, culturally, politically, socially, or otherwise?",
+          "word_limit": 300,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 186131,
+      "name": "Princeton University",
+      "source_url": "https://admission.princeton.edu/apply/princeton-specific-questions",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "princeton-university-2026-27-m1",
+          "title": "What is a new skill you would like to learn",
+          "prompt": "What is a new skill you would like to learn in college?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "princeton-university-2026-27-m2",
+          "title": "What song represents the soundtrack of your life at this",
+          "prompt": "What song represents the soundtrack of your life at this moment?",
+          "word_limit": 50,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 243780,
+      "name": "Purdue University-Main Campus",
+      "source_url": "https://admissions.purdue.edu/become-student/guide/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "purdue-university-main-campus-2026-27-m1",
+          "title": "Discuss your reasons for choosing your major and your interest",
+          "prompt": "Briefly discuss your reasons for choosing your major and your interest in studying at this campus location (Indianapolis or West Lafayette)",
+          "word_limit": 250,
+          "requirement": "required"
+        },
+        {
+          "slug": "purdue-university-main-campus-2026-27-m2",
+          "title": "How did it impact you",
+          "prompt": "Tell us about an experience you had which connected ideas from more than one discipline or subject. How did it impact you?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "purdue-university-main-campus-2026-27-m3",
+          "title": "What did you take away from that experience",
+          "prompt": "Tell us about a time you were able to get involved with or explore a topic you are passionate about. What did you take away from that experience?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "purdue-university-main-campus-2026-27-m4",
+          "title": "Share about a destination you would like to travel to",
+          "prompt": "Share about a destination you would like to travel to, why it interests you, and how you would engage with the culture while there",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "purdue-university-main-campus-2026-27-m5",
+          "title": "How did this shape your approach to leadership",
+          "prompt": "Describe a leadership experience you have had in your school or community. How did this shape your approach to leadership?",
+          "word_limit": 200,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 137032,
+      "name": "Saint Leo University",
+      "source_url": "https://www.saintleo.edu/admissions/application-documents",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "saint-leo-university-2026-27-m1",
+          "title": "What are your professional goals and how will a Creative",
+          "prompt": "What are your professional goals and how will a Creative Writing degree from Saint Leo University benefit you in reaching those goals?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m2",
+          "title": "What are your professional goals and how will a Master",
+          "prompt": "What are your professional goals and how will a Master of Science in Criminal Justice from Saint Leo University benefit you in reaching those goals?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m3",
+          "title": "Based on your previous collegiate, professional, and life",
+          "prompt": "Based on your previous collegiate, professional, and life experience, why do you think this is the right time for you to enroll into the Master of Science in Criminal Justice program?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m4",
+          "title": "How would the Saint Leo University Master of Social Work",
+          "prompt": "What are your specific professional goals? How would the Saint Leo University Master of Social Work Program, with its emphasis on advanced clinical practice, help you to achieve your goals?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m5",
+          "title": "Describe how you would complete the normal daytime work hours",
+          "prompt": "Please describe how you would complete the normal daytime work hours for internships",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m6",
+          "title": "How have both been demonstrated",
+          "prompt": "What particular personal strengths do you bring to the social work profession? What limitations do you perceive you have? How have both been demonstrated?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m7",
+          "title": "What other personal or professional experience or qualities do you",
+          "prompt": "What other personal or professional experience or qualities do you see as aiding you in your goals?",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "saint-leo-university-2026-27-m8",
+          "title": "Explain how your professional experience and academic background",
+          "prompt": "Explain how your professional experience and academic background make you an ideal candidate for doctoral studies (1 page minimum)",
+          "word_limit": 500,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 243744,
+      "name": "Stanford University",
+      "source_url": "https://admission.stanford.edu/apply/first-year/apply.html",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "stanford-university-2026-27-m1",
+          "title": "What is the most significant challenge that society faces today",
+          "prompt": "What is the most significant challenge that society faces today?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m2",
+          "title": "What historical moment or event do you wish you could",
+          "prompt": "What historical moment or event do you wish you could have witnessed?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m3",
+          "title": "Elaborate on one of your extracurricular activities, a job you",
+          "prompt": "Briefly elaborate on one of your extracurricular activities, a job you hold, or responsibilities you have for your family",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m4",
+          "title": "Describe what aspects of your life experiences, interests, and character",
+          "prompt": "Please describe what aspects of your life experiences, interests, and character would help you make a distinctive contribution as an undergraduate to Stanford University",
+          "word_limit": 100,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 228875,
+      "name": "Texas Christian University",
+      "source_url": "https://admissions.tcu.edu/frequently-asked-questions/what-are-the-essay-questions.php",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "texas-christian-university-2026-27-m1",
+          "title": "Tell us about the most significant person, experience, or circumstance",
+          "prompt": "Tell us about the most significant person, experience, or circumstance which has shaped",
+          "word_limit": 500,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 228778,
+      "name": "The University of Texas at Austin",
+      "source_url": "https://admissions.utexas.edu/apply/application-materials/essays-and-short-answers/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "the-university-of-texas-at-austin-2026-27-m1",
+          "title": "Why are you interested in the major you indicated as",
+          "prompt": "Why are you interested in the major you indicated as your first-choice major?",
+          "word_limit": 300,
+          "requirement": "required"
+        },
+        {
+          "slug": "the-university-of-texas-at-austin-2026-27-m2",
+          "title": "Which one are you most proud of and why",
+          "prompt": "Think of all the activities \u2014 both in and outside of school \u2014 that you have been involved with during high school. Which one are you most proud of and why? ( Guidance for student s: This can include an extracurricular activity, a club/organization, volunteer activity, work or a family responsibility.)",
+          "word_limit": 300,
+          "requirement": "required"
+        },
+        {
+          "slug": "the-university-of-texas-at-austin-2026-27-m3",
+          "title": "Share background on events or special circumstances that you feel",
+          "prompt": "Please share background on events or special circumstances that you feel may have impacted your high school academic performance",
+          "word_limit": 300,
+          "requirement": "required"
+        },
+        {
+          "slug": "the-university-of-texas-at-austin-2026-27-m4",
+          "title": "What did you do to act upon your new thinking",
+          "prompt": "Personal interaction with objects, images and spaces can be so powerful as to change the way one thinks about particular issues or topics. For your intended area of study, describe an experience where instruction in that area or your personal interaction with an object, image or space effected this type of change in your thinking. What did you do to act upon your new thinking and what have you done to prepare yourself for further study in this area?",
+          "word_limit": 650,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 168148,
+      "name": "Tufts University",
+      "source_url": "https://admissions.tufts.edu/apply/short-answer-questions/",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "tufts-university-2026-27-m1",
+          "title": "What was the assignment and why did you enjoy it",
+          "prompt": "Tell us about one of your favorite school assignments in the past two years. What was the assignment and why did you enjoy it?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "tufts-university-2026-27-m2",
+          "title": "What was the project and what was your role",
+          "prompt": "Tell us about an engineering or science-related project that you have helped build, design, create, or iterate in the past two years. What was the project and what was your role?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "tufts-university-2026-27-m3",
+          "title": "What were the ideas you intended to explore, and how",
+          "prompt": "Tell us more about a specific piece in your portfolio. What were the ideas you intended to explore, and how did those ideas inform the process of making the piece?",
+          "word_limit": 200,
+          "requirement": "required"
+        },
+        {
+          "slug": "tufts-university-2026-27-m4",
+          "title": "Or, how did making this piece influence your academic interests",
+          "prompt": "Tell us more about a specific piece in your portfolio. How did an academic course, project, or interest inspire the ideas that you explored in this piece? Or, how did making this piece influence your academic interests?",
+          "word_limit": 200,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 150534,
+      "name": "University of Evansville",
+      "source_url": "https://www.evansville.edu/admission/essayrequirements.cfm",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "university-of-evansville-2026-27-m1",
+          "title": "If you have observed in a physical therapy setting, you",
+          "prompt": "If you have observed in a physical therapy setting, you must choose one of the American Physical Therapy Association's (APTA) core values and write an essay that describes how you observed a physical therapist demonstrate this value. Use the APTA's description of the core value for your essay completion",
+          "word_limit": 500,
+          "requirement": "required"
+        },
+        {
+          "slug": "university-of-evansville-2026-27-m2",
+          "title": "Other than the desire to help people, why do you",
+          "prompt": "If you have not observed in a physical therapy setting, describe in detail what you have done to explore the role of the physical therapist. Other than the desire to help people, why do you want to be a physical therapist?",
+          "word_limit": 500,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 204185,
+      "name": "University of Mount Union",
+      "source_url": "https://www.mountunion.edu/admission/application-essay-instructions",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "university-of-mount-union-2026-27-m1",
+          "title": "How have they impacted your life",
+          "prompt": "What significant leadership or volunteer roles have you played? How have they impacted your life?",
+          "word_limit": 300,
+          "requirement": "required"
+        },
+        {
+          "slug": "university-of-mount-union-2026-27-m2",
+          "title": "What values do you cherish the most and how have",
+          "prompt": "What values do you cherish the most and how have you demonstrated them through the choices that you have made?",
+          "word_limit": 300,
+          "requirement": "required"
+        },
+        {
+          "slug": "university-of-mount-union-2026-27-m3",
+          "title": "Write a three paragraph essay describing your educational goals",
+          "prompt": "Please write a three paragraph essay describing your educational goals",
+          "word_limit": 300,
+          "requirement": "required"
+        }
+      ]
+    }
+  ]
+}

@@ -319,6 +319,16 @@ export const verifySchool = (
       .single()
   );
 
+/** One college list row, for a page that was opened knowing only an essay. */
+export async function getSchool(id: string): Promise<CollegeListItem | null> {
+  const { data } = await supabase
+    .from("college_list_items")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as CollegeListItem) ?? null;
+}
+
 export const updateSchool = (id: string, patch: Partial<CollegeListItem>) =>
   write<CollegeListItem>(supabase.from("college_list_items").update(patch).eq("id", id).select().single());
 
@@ -338,6 +348,38 @@ export const deleteRequirement = (id: string) =>
   write(supabase.from("application_requirements").delete().eq("id", id));
 
 // --- Essays -------------------------------------------------
+
+/**
+ * Who the page is about, when that is not the person reading it.
+ *
+ * Every Drive call needs the student's own name and email: the folder is named
+ * after them and shared with them. Passing the signed-in user's instead is
+ * silent and wrong in exactly the way that matters, so this exists to make the
+ * right values available on a page a counselor can also open.
+ */
+export async function getStudentIdentity(
+  id: string
+): Promise<{ full_name: string | null; email: string | null } | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as { full_name: string | null; email: string | null }) ?? null;
+}
+
+/**
+ * One essay, on its own, for the workspace page.
+ *
+ * Deliberately not filtered by student: RLS already decides who may read an
+ * essay, and adding a student_id here would mean the page had to know whose
+ * essay it was opening before it could open it.
+ */
+export async function getEssay(id: string): Promise<Essay | null> {
+  const { data } = await supabase.from("essays").select("*").eq("id", id).maybeSingle();
+  return (data as Essay) ?? null;
+}
+
 export const addEssay = (studentId: string, patch: Partial<Essay>) =>
   write<Essay>(supabase.from("essays").insert([{ student_id: studentId, ...patch }]).select().single());
 

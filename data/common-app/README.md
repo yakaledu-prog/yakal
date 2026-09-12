@@ -34,9 +34,12 @@ python3 build/match_to_catalog.py \
   --out out/requirements-2026-27.matched.ndjson \
   --unmatched out/requirements-2026-27.unmatched.csv
 
+python3 build/harvest_explore.py --out out/commonapp-explore.ndjson
+
 python3 build/resolve_admissions_host.py \
   --catalog ../colleges/out/colleges.ndjson \
   --requirements out/requirements-2026-27.matched.ndjson \
+  --commonapp out/commonapp-explore.ndjson \
   --out out/admissions-urls.csv
 
 npm run db:load:admissions
@@ -137,3 +140,67 @@ loses the admissions words from its path is treated as a miss.
 
 This is prefill, never a requirement. A student adding a college still gets a
 field they can type into.
+
+---
+
+## The other file Common App publishes
+
+The grid is not the only thing. `commonapp.org/explore` carries a page for each
+of its **1,167 member colleges**, listed in the published sitemap, and Gatsby
+serves each one's data as static JSON at a parallel `/page-data` path.
+`build/harvest_explore.py` reads it into `out/commonapp-explore.ndjson`.
+
+It was found by checking three competitor prompt aggregators. One of them says
+in its own FAQ where its data comes from: "straight from each school's Common
+App application". That is true of all of them, and it settles a question this
+repo had been circling. The supplemental prompts are inside the logged-in
+application, which is why no crawl of public college pages will ever find them
+all, and why each of those sites represents real transcription work rather than
+a lookup somebody automated. We use them as a worklist of which colleges to go
+and read, never as a source of text.
+
+The prompts are not in this file. These are:
+
+| Field | Why it matters |
+|---|---|
+| `unitid` | The IPEDS id, **stated**. `match_to_catalog.py` exists because the grid gives only a name; here the join key is given outright. 1,098 of 1,167 carry one, 1,051 join to our catalogue |
+| `admissions_url` | The college's own first-year admissions page. 1,149 of 1,167. The probe in `resolve_admissions_host.py` reached 872 of 951; with these it reaches 931, and 869 of the links are now stated rather than inferred |
+| `alternate_names` | "VU, Vandy" for Vanderbilt. 854 colleges. The college search matches the catalogue name only, so a student typing Vandy currently gets nothing |
+| `logo_url` | The college's own logo as supplied to Common App, 1,077 of them. `CollegeLogo` falls through Commons crest, then favicon, then a monogram; this is the college's answer |
+| `fy_personal_essay`, `fy_recommendations`, `fy_fee`, `fy_test_policy` | First-year application facts, agreeing with the grid and covering colleges the grid does not |
+
+`robots.txt` allows this. It blocks the training crawlers by name and allows
+everything else, the pages are in the sitemap, and each fetch is the same static
+JSON a browser gets. Nothing here is asked for that a visitor is not given.
+
+### The logos are real, and the wrong shape
+
+`logo_url` is a genuine logo, not a campus photo: Amherst's is its crest and
+wordmark on transparency. It is deliberately **not** wired into `CollegeLogo`,
+because measuring a 16-college sample killed the idea:
+
+| | |
+|---|---|
+| Median aspect ratio | **1.60**, and only 4 of 16 were near-square. These are wordmarks. `CollegeLogo` draws a 40px square, so an 800x500 wordmark lands as an illegible 40x25 smear |
+| Median file size | **65 KB**, one of them 428 KB, for an icon drawn at 40px, with no resizing service in front of it |
+| Colour modes | mixed, including CMYK. Yale's is a 641 KB CMYK JPEG, which some browsers render with the colours inverted |
+| URL stability | Gatsby content hashes, which change when the image changes, so links rot silently |
+
+The gain would have been 256 colleges over the 1,024 Commons crests we already
+ship. Not worth a worse image for the other 1,024.
+
+To revisit: run them through Cloudinary or a Python pass to square-crop,
+flatten CMYK to sRGB and resize, then ship the result the way the house rule
+says public images go (`src/lib/cloudinary.ts`). The field stays in the NDJSON
+for that day. What would suit these without any of that work is a wide slot,
+where a wordmark reads properly, rather than the square avatar.
+
+**The stated admissions link is not always the better one.** Common App's is
+usually more specific, `/admissions/first-year/apply` where the probe stopped at
+`/admissions`. Sometimes it is worse: Alverno's points at `/visit`, and a few
+are recorded as `http` on sites that answer `https`. So the harvest is filtered
+through the same `is_admissions_link` guard the probe uses, and upgraded to
+`https`, rather than trusted wholesale. That guard tests the host as well as the
+path: a dedicated admissions subdomain is the answer whatever it lands on, and a
+path-only version rejected `https://admission.brown.edu/` for having an empty
+path.

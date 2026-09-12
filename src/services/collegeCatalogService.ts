@@ -9,8 +9,12 @@ import { supabase } from "@/lib/supabase";
  * search, which is what makes typing feel instant.
  *
  * What is NOT in here: application deadlines, supplemental essay prompts and
- * recommendation requirements. No public API supplies them. See
- * data/colleges/README.md and collegeCycleService for how those are handled.
+ * recommendation requirements. Deadlines and recommendation counts DO have a
+ * public source, the Common App requirements grid, which
+ * data/common-app/README.md explains; prompts largely do not, and are curated.
+ * Either way they live on college_requirements and essay_prompts rather than
+ * here, because this payload is replaced wholesale once a year and those are
+ * edited through the cycle. See collegeCycleService.
  */
 
 export type Control = "public" | "private_nonprofit" | "private_for_profit";
@@ -46,6 +50,11 @@ export interface College {
   website: string | null;
   /** Commons filename for the crest. About half of schools have one. */
   logo: string | null;
+  /**
+   * "VU, Vandy". What the college itself calls itself on its Common App
+   * membership record, for 756 of the 1,944. Search only, never displayed.
+   */
+  aliases: string | null;
 }
 
 const CONTROL: Control[] = ["public", "private_nonprofit", "private_for_profit"];
@@ -87,7 +96,7 @@ function decode(payload: {
     actLow: i("actLow"), actHigh: i("actHigh"),
     netPrice: i("netPrice"), cost: i("cost"), ratio: i("ratio"),
     gradRate: i("gradRate"), image: i("image"), credit: i("credit"),
-    website: i("website"), logo: i("logo"),
+    website: i("website"), logo: i("logo"), aliases: i("aliases"),
   };
 
   return payload.rows.map((r) => ({
@@ -113,6 +122,7 @@ function decode(payload: {
     credit: r[c.credit] as string | null,
     website: r[c.website] as string | null,
     logo: r[c.logo] as string | null,
+    aliases: r[c.aliases] as string | null,
   }));
 }
 
@@ -297,6 +307,28 @@ function matchesQuery(name: string, query: string): boolean {
   return initials.startsWith(q.replace(/\s+/g, ""));
 }
 
+/**
+ * The same match, against what the college calls itself as well as its
+ * catalog name.
+ *
+ * "Vandy" and "UND" are what a student types and neither appears in
+ * "Vanderbilt University" or "University of Notre Dame", so the name test
+ * alone returned nothing for both. The aliases come from each college's own
+ * Common App membership record, via data/common-app/build/harvest_explore.py.
+ *
+ * Each alias is matched as if it were the name rather than searched as one
+ * string, because "VU, Vandy" is two names: run together, its initials come
+ * out as "vv" and a search for "vu" would miss.
+ */
+function matchesCollege(c: College, query: string): boolean {
+  if (matchesQuery(c.name, query)) return true;
+  if (!c.aliases) return false;
+  return c.aliases
+    .split(",")
+    .map((a) => a.trim())
+    .some((a) => a.length > 0 && matchesQuery(a, query));
+}
+
 export function filterCatalog(
   colleges: College[],
   filters: CatalogFilters,
@@ -308,7 +340,7 @@ export function filterCatalog(
   } = filters;
 
   return colleges.filter((c) => {
-    if (query && !matchesQuery(c.name, query)) return false;
+    if (query && !matchesCollege(c, query)) return false;
     if (states.length && (!c.state || !states.includes(c.state))) return false;
     if (controls.length && (!c.control || !controls.includes(c.control))) return false;
     if (locales.length && (!c.locale || !locales.includes(c.locale))) return false;

@@ -78,6 +78,15 @@ export interface EssayPrompt {
   group_label: string | null;
   source_url: string | null;
   verified_on: string | null;
+  /**
+   * Who read this off the college's page.
+   *
+   * "manual" means a person did and verified_on says when. "machine" means a
+   * script quoted it from the page at source_url and nobody has checked it,
+   * which the picker says on the row: coverage is worth having, and a student
+   * is entitled to know which of the two they are looking at.
+   */
+  extraction?: "manual" | "machine";
   sort_order: number;
   /** Hidden prompts stay in the table so an essay written against one can
    *  still say where its question came from. Only the admin list shows them. */

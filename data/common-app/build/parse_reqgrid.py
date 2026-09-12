@@ -200,7 +200,15 @@ def parse(pdf: str) -> list[dict]:
             "personal_essay_required": clean(r["personal_essay"]) == "Y",
             "courses_grades_required": clean(r["courses_grades"]) == "Y",
             "portfolio": clean(r["portfolio"]),
-            "writing_supplement_required": clean(r["writing_supplement"]) == "Y",
+            # The 2026-27 grid prints this column's heading on all 54 pages
+            # and leaves every cell blank, so "not Y" means "not stated", not
+            # "not required". Emitting False here claimed all 1,114 colleges
+            # had waived their supplement, Yale included. None says what we
+            # actually know. load-admissions-data.ts already writes null for
+            # the same reason; this stops the NDJSON disagreeing with it.
+            "writing_supplement_required":
+                (clean(r["writing_supplement"]) or None)
+                and clean(r["writing_supplement"]) == "Y",
             "test_policy": clean(r["test_policy"]),
             "tests_used": clean(r["tests_used"]),
             "english_proficiency": clean(r["english_proficiency"]),
@@ -226,11 +234,12 @@ def main() -> int:
         for row in rows:
             fh.write(json.dumps(row) + "\n")
 
-    supp = sum(1 for r in rows if r["writing_supplement_required"])
+    # None, not False: the column is blank for everybody in this grid.
+    supp = sum(1 for r in rows if r["writing_supplement_required"] is not None)
     dated = sum(1 for r in rows if any(r["deadlines"].values()))
     print(f"{len(rows)} schools -> {args.out}")
     print(f"  {dated} with at least one dated deadline")
-    print(f"  {supp} requiring a writing supplement")
+    print(f"  {supp} stating a writing supplement either way")
     return 0
 
 
