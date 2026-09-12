@@ -497,7 +497,18 @@ function Picker({ onClose, onSubmit, onWriteYourOwn, schools, saving }: PickerPr
                               {host && (
                                 <span className="mt-1.5 block text-xs text-muted-foreground/80">
                                   {host}
-                                  {p.verified_on && ` · checked ${readableDate(p.verified_on)}`}
+                                  {p.verified_on
+                                    ? ` · checked ${readableDate(p.verified_on)}`
+                                    : null}
+                                  {p.extraction === "machine" && (
+                                    // Said plainly. Most of these are right and
+                                    // some are not, and a student who knows
+                                    // that opens the college's page before
+                                    // writing nine hundred words to it.
+                                    <span className="text-secondary">
+                                      {" · read automatically, worth checking"}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </span>

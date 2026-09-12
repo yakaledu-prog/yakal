@@ -21,6 +21,11 @@ export default [
       "node_modules/**",
       "supabase/**",
       "public/**",
+      // The data build scripts. They are standalone Node and Python tools that
+      // run by hand a few times a year, not part of the app or its API, and
+      // linting them against the browser globals only reports that Node has a
+      // console.
+      "data/**",
       "**/*.config.js",
     ],
   },

@@ -22,7 +22,8 @@ ends up in the product with no prompts and nobody noticing.
     python3 fetch_pages.py --sources ../curated/sources-2026-27.csv --out ../out/pages
 """
 
-import argparse, csv, html, os, re, sys, textwrap
+import argparse, csv, html, os, re, sys, textwrap, threading
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request, urllib.error
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -118,40 +119,52 @@ def main() -> int:
     ap.add_argument("--sources", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--only", help="fetch one unitid")
+    ap.add_argument("--refresh", action="store_true", help="re-fetch pages already on disk")
+    ap.add_argument("--workers", type=int, default=12,
+                    help="pages at a time, each from a different institution")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
     rows = list(csv.DictReader(open(args.sources)))
-    ok = empty = failed = 0
+    lock = threading.Lock()
+    tally = {"ok": 0, "empty": 0, "failed": 0}
 
-    for row in rows:
+    def handle(row) -> None:
         unitid, url = row["unitid"].strip(), row["url"].strip()
         if not unitid or not url:
-            continue
+            return
         if args.only and unitid != args.only:
-            continue
+            return
+        path = os.path.join(args.out, f"{unitid}.txt")
+        if os.path.exists(path) and not args.refresh:
+            return
 
         try:
             text = strip_html(fetch(url))
         except Exception as exc:  # noqa: BLE001 - the reason is for a human
-            print(f"FAIL  {row['name'][:40]:42s} {type(exc).__name__}: {exc}")
-            failed += 1
-            continue
+            with lock:
+                tally["failed"] += 1
+                print(f"FAIL  {row['name'][:40]:42s} {type(exc).__name__}", flush=True)
+            return
 
         lines = keep(text.split("\n"))
         if not any(LIMIT.search(l) for l in lines):
-            print(f"EMPTY {row['name'][:40]:42s} no word limit found, check {url}")
-            empty += 1
-            continue
+            with lock:
+                tally["empty"] += 1
+                print(f"EMPTY {row['name'][:40]:42s} {url}", flush=True)
+            return
 
-        path = os.path.join(args.out, f"{unitid}.txt")
+        body = "\n\n".join(textwrap.fill(l, 100) for l in lines)
         with open(path, "w") as fh:
-            fh.write(f"# {row['name']}\n# {url}\n\n")
-            fh.write("\n\n".join(textwrap.fill(l, 100) for l in lines))
-        print(f"OK    {row['name'][:40]:42s} {len(lines):3d} candidates")
-        ok += 1
+            fh.write(f"# {row['name']}\n# {url}\n\n{body}")
+        with lock:
+            tally["ok"] += 1
+            print(f"OK    {row['name'][:40]:42s} {len(lines):3d} candidates", flush=True)
 
-    print(f"\n{ok} fetched, {empty} with nothing prompt-shaped, {failed} failed")
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        list(pool.map(handle, rows))
+
+    print(f"\n{tally['ok']} fetched, {tally['empty']} with nothing prompt-shaped, {tally['failed']} failed")
     return 0
 
 

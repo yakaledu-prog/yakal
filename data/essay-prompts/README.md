@@ -40,6 +40,83 @@ looks right, is a property of dates, not of paragraphs.
 
 ---
 
+## Two ways a prompt gets here
+
+**A person read it.** `curated/supplements-2026-27.json`. Somebody opened the
+college's page, read it, and wrote the JSON. `extraction` is `manual` and
+`verified_on` is the day they did it. This is the good kind and it does not
+scale: it is a few minutes per college.
+
+**A script read it.** `out/supplements-2026-27.machine.json`, written by
+`build/extract_prompts.py`. It quotes the sentences on a fetched page that look
+like application questions with word limits attached. `extraction` is `machine`
+and `verified_on` is null, because nobody has checked it. The picker says so on
+the row: "read automatically, worth checking", next to the page it came from.
+
+Both are quotations. Neither is generated. The rule from
+`data/colleges/README.md` stands: a plausible invented prompt is far worse than
+a missing one, and nothing here is invented.
+
+A college that has been done by hand is never also done by machine. The loader
+drops the machine rows for it and `scripts/verify/essay-prompts.ts` asserts it,
+because two versions of the same question, one checked and one not, is worse
+than either alone.
+
+## What the whole run does
+
+```bash
+# 1. Find each college's essay page. Sitemap, then path guesses, then a crawl.
+python3 build/discover_pages.py \
+  --catalog ../colleges/out/colleges.ndjson \
+  --out curated/sources-2026-27.csv --workers 20 --budget 32
+
+# 2. The same, in a browser, for the sites that render their prompts in
+#    JavaScript. Slower, so it runs second and only over what step 1 missed.
+node build/render_pages.mjs --sources curated/sources-2026-27.csv \
+  --out out/pages --workers 6
+
+# 3. Fetch each page found and reduce it to the lines worth reading.
+python3 build/fetch_pages.py --sources curated/sources-2026-27.csv --out out/pages
+
+# 4. Quote the prompts out of them.
+python3 build/extract_prompts.py --pages out/pages \
+  --sources curated/sources-2026-27.csv \
+  --catalog ../colleges/out/colleges.ndjson \
+  --manual curated/supplements-2026-27.json \
+  --out out/supplements-2026-27.machine.json
+
+npm run db:load:admissions
+```
+
+## How well it works, measured
+
+On the twenty most selective colleges in the catalog, step 1 finds a real
+prompts page for **five**. Across a broader run it settles around **one in
+nine**. That is the honest number and it is worth understanding why, because
+the reasons are different and only one of them is fixable:
+
+- **Many colleges never publish the text.** The supplement exists only inside
+  the Common App, behind a login. Nothing can scrape what is not on the web.
+- **Some render it in JavaScript.** Brown, Duke, Columbia, Vanderbilt. Step 2
+  exists for these and helps some of them.
+- **Some name the page something unguessable.** Princeton's lives at
+  `/apply/princeton-specific-questions`, which is why the sitemap filter looks
+  for "question" as well as "essay". Every one of these found is a pattern
+  added by hand after looking at a miss.
+
+Three bugs in step 1 were each invisible from outside, and all three reported
+the same thing: that colleges do not publish their prompts.
+
+- The `<loc>` pattern had been double-escaped by a patch script, so it matched
+  a literal backslash and **every sitemap returned zero URLs**.
+- Sitemaps may hold relative paths. Princeton's are all `/apply/...`, so even a
+  working pattern yielded nothing without resolving them against the sitemap.
+- The crawl could never start: its queue was seeded with pages already marked
+  visited, so it emptied before its first request.
+
+If the yield ever drops to near zero again, suspect the finder rather than the
+colleges.
+
 ## Adding a college
 
 ```bash
