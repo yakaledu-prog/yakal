@@ -208,7 +208,12 @@ export function Dropdown<T extends string = string>({
             transform: rect.flip ? "translateY(-100%)" : undefined,
           }}
           className={cn(
-            "z-[100] max-h-72 overflow-y-auto rounded-lg border border-[#e9edef] bg-white py-1 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]"
+            // Above the modal layer. This popover is portalled to the body, so
+            // it stacks against a dialog rather than inside it, and at z-100
+            // against a z-110 modal it opened behind the dialog's own backdrop.
+            // Four modals carry one: the prompt picker, add-essay, and the two
+            // on the admin prompts page.
+            "z-[130] max-h-72 overflow-y-auto rounded-lg border border-[#e9edef] bg-white py-1 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]"
           )}
         >
           {options.map((o, i) => {

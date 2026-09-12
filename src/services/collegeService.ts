@@ -91,6 +91,14 @@ export interface StudentAcademics {
   act_score: number | null;
   toefl_score: number | null;
   ap_courses: string[] | null;
+  /**
+   * When the student completed the FERPA Release Authorization in Common App.
+   *
+   * Self-reported. Common App has no API, so this is what the student told us,
+   * not something Yakal can check. Null means not done, and until it is done
+   * they cannot invite a single recommender.
+   */
+  ferpa_released_on?: string | null;
 }
 
 export interface Recommendation {
