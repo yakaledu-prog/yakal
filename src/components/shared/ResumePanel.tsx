@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Download, ExternalLink, Loader2, MoreVertical, Upload } from "lucide-react";
+import { Download, ExternalLink, FileText, Loader2, MoreVertical, Upload } from "lucide-react";
 
 import { cn } from "@/utils/cn";
 import { getResumeUrl, resumeFileName, uploadResume } from "@/services/resumeService";
@@ -73,17 +73,62 @@ function DocumentGlyph({ label }: { label: string }) {
   );
 }
 
+/**
+ * Open / Download / Replace.
+ *
+ * Module level: a component declared during render is a new type each render,
+ * so React would remount the menu and lose the open state under it.
+ */
+function ResumeMenu({
+  onOpen,
+  onDownload,
+  onReplace,
+}: {
+  onOpen: () => void;
+  onDownload: () => void;
+  onReplace: () => void;
+}) {
+  return (
+    <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-lg border border-border bg-card py-1 shadow-lg">
+      {[
+        { label: "Open", icon: ExternalLink, run: onOpen },
+        { label: "Download", icon: Download, run: onDownload },
+        { label: "Replace", icon: Upload, run: onReplace },
+      ].map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={item.run}
+          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13.5px] text-foreground transition-colors hover:bg-muted/60"
+        >
+          <item.icon size={15} className="text-muted-foreground" />
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ResumePanel({
   userId,
   resumePath,
   onReplaced,
   className,
+  /**
+   * "row" is the student profile's contact rail, where this sits under an
+   * email written as a DetailRow. A dashed drop-target the size of four of
+   * those rows made the CV the loudest thing in the column, and it is the
+   * least of what is on the page.
+   */
+  variant = "card",
 }: {
   userId: string;
   /** profiles.resume_url: a storage path, not a URL. */
   resumePath: string | null;
   onReplaced?: (path: string) => void;
   className?: string;
+  variant?: "card" | "row";
 }) {
   const [path, setPath] = useState(resumePath);
   const [busy, setBusy] = useState(false);
@@ -118,6 +163,79 @@ export function ResumePanel({
     setPath(res.path);
     onReplaced?.(res.path);
     toast.success("Resume updated.");
+  }
+
+  const picker = (
+    <input
+      ref={input}
+      type="file"
+      accept={ACCEPT}
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) void replace(file);
+        e.target.value = "";
+      }}
+    />
+  );
+
+  if (!path && variant === "row") {
+    return (
+      <div className={cn("flex items-start gap-4", className)}>
+        <div className="mt-0.5 shrink-0 text-muted-foreground">
+          <Upload size={18} />
+        </div>
+        <div className="min-w-0">
+          <p className="mb-0.5 text-[12px] font-medium text-muted-foreground">Resume</p>
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            disabled={busy}
+            className="inline-flex items-center gap-2 text-[14px] text-primary transition-opacity hover:underline disabled:opacity-50"
+          >
+            {busy && <Loader2 size={13} className="animate-spin" />}
+            Upload your resume
+          </button>
+        </div>
+        {picker}
+      </div>
+    );
+  }
+
+  if (path && variant === "row") {
+    return (
+      <div className={cn("relative flex items-start gap-4", className)}>
+        <div className="mt-0.5 shrink-0 text-muted-foreground">
+          <FileText size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="mb-0.5 text-[12px] font-medium text-muted-foreground">Resume</p>
+          <button
+            type="button"
+            onClick={() => void open(false)}
+            className="block max-w-full truncate text-left text-[14px] text-primary hover:underline"
+          >
+            {resumeFileName(path)}
+          </button>
+        </div>
+        {busy || opening ? (
+          <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-primary" />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMenu((m) => !m)}
+            onBlur={() => setTimeout(() => setMenu(false), 160)}
+            aria-label="Resume options"
+            aria-expanded={menu}
+            className="-mt-1 shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          >
+            <MoreVertical size={16} />
+          </button>
+        )}
+        {menu && <ResumeMenu onOpen={() => void open(false)} onDownload={() => void open(true)} onReplace={() => { setMenu(false); input.current?.click(); }} />}
+        {picker}
+      </div>
+    );
   }
 
   if (!path) {
@@ -186,30 +304,15 @@ export function ResumePanel({
       </div>
 
       {menu && (
-        <div className="absolute right-3 top-14 z-20 w-44 overflow-hidden rounded-lg border border-border bg-card py-1 shadow-lg">
-          {[
-            { label: "Open", icon: ExternalLink, run: () => void open(false) },
-            { label: "Download", icon: Download, run: () => void open(true) },
-            {
-              label: "Replace",
-              icon: Upload,
-              run: () => {
-                setMenu(false);
-                input.current?.click();
-              },
-            },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={item.run}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13.5px] text-foreground transition-colors hover:bg-muted/60"
-            >
-              <item.icon size={15} className="text-muted-foreground" />
-              {item.label}
-            </button>
-          ))}
+        <div className="absolute right-3 top-3">
+          <ResumeMenu
+            onOpen={() => void open(false)}
+            onDownload={() => void open(true)}
+            onReplace={() => {
+              setMenu(false);
+              input.current?.click();
+            }}
+          />
         </div>
       )}
 

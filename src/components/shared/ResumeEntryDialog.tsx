@@ -3,12 +3,13 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import type { ResumeSection } from "@/components/shared/TutorResume";
+import type { StudentSection } from "@/components/shared/StudentActivities";
 
 // ============================================================
 // Adding one line to a resume.
 //
-// Four shapes, one dialog, because the difference between a degree and a job
-// is which words label the boxes. A form per section would be four files that
+// Six shapes, one dialog, because the difference between a degree and a job
+// is which words label the boxes. A form per section would be six files that
 // drift apart the first time one of them gains a field.
 //
 // Only the first field is required. A tutor who remembers the year can put it
@@ -25,7 +26,9 @@ interface Field {
   half?: boolean;
 }
 
-const FIELDS: Record<ResumeSection, { title: string; fields: Field[] }> = {
+type Section = ResumeSection | StudentSection;
+
+const FIELDS: Record<Section, { title: string; fields: Field[] }> = {
   certifications: {
     title: "Add a certification",
     fields: [
@@ -60,6 +63,29 @@ const FIELDS: Record<ResumeSection, { title: string; fields: Field[] }> = {
       { key: "level", label: "Level", placeholder: "Native, Fluent, Conversational" },
     ],
   },
+  activities: {
+    title: "Add an activity",
+    fields: [
+      { key: "activity", label: "Activity", placeholder: "Varsity debate", required: true },
+      { key: "role", label: "Your role", placeholder: "Captain" },
+      { key: "organisation", label: "Organisation", placeholder: "Lincoln High School" },
+      { key: "from", label: "From", placeholder: "Grade 9", half: true },
+      { key: "to", label: "To", placeholder: "Leave blank if ongoing", half: true },
+      // One box rather than Common App's separate hours-per-week and
+      // weeks-per-year. Two number inputs to say "5 hours a week" turn a CV
+      // into a form, and nothing reads inside this field.
+      { key: "hours", label: "Time spent", placeholder: "5 hrs a week, 30 weeks a year" },
+      { key: "summary", label: "What you did", multiline: true },
+    ],
+  },
+  honors: {
+    title: "Add an honor",
+    fields: [
+      { key: "title", label: "Honor", placeholder: "National Merit Semifinalist", required: true },
+      { key: "level", label: "Level", placeholder: "School, State, National, International" },
+      { key: "year", label: "Year", placeholder: "Grade 11", half: true },
+    ],
+  },
 };
 
 export function ResumeEntryDialog({
@@ -67,7 +93,7 @@ export function ResumeEntryDialog({
   onSave,
   onClose,
 }: {
-  section: ResumeSection;
+  section: Section;
   onSave: (entry: Record<string, string>) => void;
   onClose: () => void;
 }) {
