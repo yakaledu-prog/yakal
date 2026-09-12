@@ -11,7 +11,6 @@ import {
   LayoutGrid,
   List,
   Loader2,
-  MessageSquare,
   MoreVertical,
   Plus,
   Search,
@@ -120,10 +119,13 @@ export function DocumentsPanel({
   });
   const [sort, setSort] = useState<SortKey>("suggested");
   const [group, setGroup] = useState<string>("all");
-  // The file a counselor is writing a note about. "Needs attention" with no
-  // reason is not something a student can act on, and reviewDocument has
-  // always taken a note that no screen ever sent.
-  const [noting, setNoting] = useState<DriveFile | null>(null);
+  // The review a counselor is in the middle of. Both verdicts ask for a note
+  // rather than only the flag: a separate "leave a note" action was a third
+  // way to say the same thing, and "verified, and here is why" is worth as
+  // much to a student as "flagged, and here is why". The note stays optional.
+  const [reviewing, setReviewing] = useState<
+    { file: DriveFile; verdict: ReviewVerdict } | null
+  >(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["drive-docs", studentId],
@@ -164,11 +166,60 @@ export function DocumentsPanel({
   const review = useMutation({
     mutationFn: ({ file, verdict, note }: { file: DriveFile; verdict: ReviewVerdict; note?: string }) =>
       reviewDocument({ fileId: file.id, verdict, reviewerId, note }),
-    onSuccess: () => {
-      toast.success("Review saved.");
-      qc.invalidateQueries({ queryKey: ["drive-docs", studentId] });
+
+    /**
+     * Paint the verdict before the round trip, the way upload already does.
+     *
+     * Invalidating alone left the card on its old colour for seconds: the
+     * refetch walks the whole Drive tree, roughly ten calls, so a counselor
+     * marked a transcript verified, got "Review saved", and watched it sit
+     * there red. Rolled back if the write fails, and reconciled either way.
+     */
+    onMutate: async ({ file, verdict, note }) => {
+      await qc.cancelQueries({ queryKey: ["drive-docs", studentId] });
+      const previous = qc.getQueryData<DriveListing>(["drive-docs", studentId]);
+
+      const patch = (f: DriveFile): DriveFile =>
+        f.id === file.id
+          ? {
+            ...f,
+            appProperties: {
+              ...f.appProperties,
+              review: verdict,
+              reviewedBy: reviewerId ?? "",
+              reviewedAt: new Date().toISOString(),
+              // The server writes an empty string when there is no note, so a
+              // file verified after being flagged loses the old reason. Match
+              // that here, or the stale complaint stays on screen.
+              reviewNote: note || "",
+            },
+          }
+          : f;
+
+      qc.setQueryData<DriveListing>(["drive-docs", studentId], (prev) =>
+        prev
+          ? {
+            ...prev,
+            loose: prev.loose.map(patch),
+            sections: prev.sections.map((sec) => ({
+              ...sec,
+              files: sec.files.map(patch),
+            })),
+          }
+          : prev
+      );
+
+      return { previous };
     },
-    onError: (e: Error) => toast.error(e.message),
+
+    onSuccess: () => toast.success("Review saved."),
+    onError: (e: Error, _vars, ctx) => {
+      if (ctx?.previous) {
+        qc.setQueryData(["drive-docs", studentId], ctx.previous);
+      }
+      toast.error(e.message);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["drive-docs", studentId] }),
   });
 
   /** Held between asking and confirming, so the dialog knows what it is about. */
@@ -428,20 +479,19 @@ export function DocumentsPanel({
             upload.mutate({ slot, file });
           }}
           onRemove={setPendingDelete}
-          onReview={(file, verdict) => review.mutate({ file, verdict })}
-          onNote={setNoting}
+          onReview={(file, verdict) => setReviewing({ file, verdict })}
           removingId={remove.isPending ? remove.variables?.id : undefined}
         />
       ))}
 
       <NoteDialog
-        file={noting}
+        pending={reviewing}
         busy={review.isPending}
-        onCancel={() => setNoting(null)}
+        onCancel={() => setReviewing(null)}
         onSubmit={(text) => {
-          if (!noting) return;
-          review.mutate({ file: noting, verdict: "needs_attention", note: text });
-          setNoting(null);
+          if (!reviewing) return;
+          review.mutate({ ...reviewing, note: text });
+          setReviewing(null);
         }}
       />
 
@@ -479,7 +529,6 @@ function SlotGroupSection({
   onFile,
   onRemove,
   onReview,
-  onNote,
   removingId,
 }: {
   title: string;
@@ -492,7 +541,6 @@ function SlotGroupSection({
   onFile: (slot: Slot, file: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
-  onNote: (f: DriveFile) => void;
   removingId?: string;
 }) {
   return (
@@ -516,7 +564,6 @@ function SlotGroupSection({
             onFile={(file) => onFile(slot, file)}
             onRemove={onRemove}
             onReview={onReview}
-            onNote={onNote}
             removingId={removingId}
           />
         ))}
@@ -535,7 +582,6 @@ function SlotCard({
   onFile,
   onRemove,
   onReview,
-  onNote,
   removingId,
 }: {
   slot: Slot;
@@ -547,7 +593,6 @@ function SlotCard({
   onFile: (f: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
-  onNote: (f: DriveFile) => void;
   removingId?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -564,6 +609,7 @@ function SlotCard({
   // what a transcript is. Timing stays, because chasing a mid-year report in
   // February is exactly their job.
   const teaching = !canReview;
+  const state = filled ? slotState(files) : "pending";
 
   return (
     <div
@@ -583,14 +629,20 @@ function SlotCard({
         view === "list" ? "px-3 py-2" : "p-3",
         over
           ? "border-primary bg-primary/5"
-          : filled
-            ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
-            : // A still-missing essential is tinted the whole way round. Enough
-            // to pull the eye first, not enough to read as an error: no
-            // mid-year report in September is normal, not a mistake.
-            slot.required
-              ? "border-primary/35 dark:border-primary/40"
-              : "border border-[#e9edef] dark:border-[#2a3942]"
+          : // A reviewed slot carries its verdict on the whole card, not on a
+          // badge inside it. Whether a transcript passed is the fact about the
+          // slot, and it has to be readable from across the page.
+          //
+          // A still-missing essential used to be tinted too. Two tinted states
+          // meaning unrelated things is one too many, and the upload button is
+          // already teal where it matters.
+          filled && state === "verified"
+            ? "border-primary/40 bg-primary/[0.04]"
+            : filled && state === "needs_attention"
+              ? "border-[#d4183d]/40 bg-[#d4183d]/[0.04]"
+              : filled
+                ? "border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#182229]"
+                : "border-[#e9edef] dark:border-[#2a3942]"
       )}
     >
       <div className="flex items-start gap-2">
@@ -599,7 +651,13 @@ function SlotCard({
             <span
               className={cn(
                 "truncate text-[14px]",
-                filled ? "text-[#111] dark:text-white" : "text-[#54656f] dark:text-[#aebac1]"
+                state === "verified"
+                  ? "font-medium text-primary"
+                  : state === "needs_attention"
+                    ? "font-medium text-[#d4183d]"
+                    : filled
+                      ? "text-[#111] dark:text-white"
+                      : "text-[#54656f] dark:text-[#aebac1]"
               )}
             >
               {slot.label}
@@ -706,10 +764,8 @@ function SlotCard({
               key={f.id}
               file={f}
               compact
-              slot={slot}
               canReview={canReview}
               onReview={onReview}
-              onNote={() => onNote(f)}
               onRemove={() => onRemove(f)}
               removing={removingId === f.id}
             />
@@ -753,13 +809,9 @@ function slotState(files: DriveFile[]): ReviewVerdict {
  */
 function FileMenu({
   file,
-  canReview,
-  onNote,
   onRemove,
 }: {
   file: DriveFile;
-  canReview: boolean;
-  onNote: () => void;
   onRemove: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -815,19 +867,6 @@ function FileMenu({
               <Download size={14} className="text-[#717182]" />
               Download
             </a>
-            {canReview && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onNote();
-                }}
-                className={cn(item, "text-[#111] dark:text-white")}
-              >
-                <MessageSquare size={14} className="text-[#717182]" />
-                Leave a note
-              </button>
-            )}
             <button
               type="button"
               onClick={() => {
@@ -848,18 +887,14 @@ function FileMenu({
 
 function FileRow({
   file,
-  slot,
   onRemove,
-  onNote,
   removing,
   compact = false,
   canReview = false,
   onReview,
 }: {
   file: DriveFile;
-  slot?: Slot;
   onRemove: () => void;
-  onNote?: () => void;
   removing: boolean;
   compact?: boolean;
   canReview?: boolean;
@@ -895,15 +930,27 @@ function FileRow({
       )}
     >
       <div className="flex items-center gap-2">
-        <Icon size={16} className="shrink-0 text-[#717182]" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] text-[#111] dark:text-white">{file.name}</div>
-          <div className="text-[11px] text-[#717182]">
-            {file.modifiedTime && new Date(file.modifiedTime).toLocaleDateString()}
-            {size && ` \u00b7 ${size}`}
-            {slot && ` \u00b7 ${slot.label}`}
-          </div>
-        </div>
+        {/* The row opens the file. A counselor's first move on a transcript is
+            to read it, and asking them to find a menu for that was a step in
+            the way. The slot name is not repeated here: it is the title of the
+            card this row is already inside. */}
+        <a
+          href={file.webViewLink ?? `https://drive.google.com/file/d/${file.id}/view`}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-lg py-0.5 transition-colors hover:text-primary"
+        >
+          <Icon size={16} className="shrink-0 text-[#717182]" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] text-[#111] dark:text-white">
+              {file.name}
+            </span>
+            <span className="block text-[11px] text-[#717182]">
+              {file.modifiedTime && new Date(file.modifiedTime).toLocaleDateString()}
+              {size && ` \u00b7 ${size}`}
+            </span>
+          </span>
+        </a>
 
         {canReview && onReview && (
           <div className="flex shrink-0 items-center gap-1">
@@ -917,7 +964,7 @@ function FileRow({
             </button>
             <button
               type="button"
-              onClick={() => onNote?.()}
+              onClick={() => onReview(file, "needs_attention")}
               className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10"
             >
               Flag
@@ -925,18 +972,22 @@ function FileRow({
           </div>
         )}
 
-        <FileMenu
-          file={file}
-          canReview={canReview}
-          onNote={() => onNote?.()}
-          onRemove={onRemove}
-        />
+        <FileMenu file={file} onRemove={onRemove} />
       </div>
 
-      {/* The reason a file was flagged is the only part a student can act on,
-          so it sits with the file rather than in a tooltip. */}
-      {note && verdict === "needs_attention" && (
-        <p className="mt-1 pl-6 text-[11px] leading-snug text-[#d4183d]">{note}</p>
+      {/* What the counselor said, quoted. It is somebody's words rather than a
+          status, and the rule down its left says so without a label. */}
+      {note && verdict !== "pending" && (
+        <blockquote
+          className={cn(
+            "mt-1.5 border-l-2 pl-2.5 text-[11px] leading-snug",
+            verdict === "verified"
+              ? "border-primary text-[#54656f] dark:text-[#aebac1]"
+              : "border-[#d4183d] text-[#d4183d]"
+          )}
+        >
+          {note}
+        </blockquote>
       )}
     </div>
   );
@@ -944,41 +995,47 @@ function FileRow({
 
 
 /**
- * Why a file was flagged, in the counselor's own words.
+ * What the counselor wants to say about a file, in their own words.
  *
- * A separate dialog rather than an inline field because the note is the whole
- * point of the flag: a student who sees "needs attention" and no reason has
- * been given a chore, not a correction. Empty is allowed - sometimes the
- * conversation has already happened in messages - but the box asks first.
+ * Asked on both verdicts. A separate "leave a note" action was a third way to
+ * say the same thing, and a student who sees "needs attention" and no reason
+ * has been given a chore rather than a correction. Empty is allowed, because
+ * sometimes the conversation already happened in messages, but the box asks.
  */
 function NoteDialog({
-  file,
+  pending,
   busy,
   onCancel,
   onSubmit,
 }: {
-  file: DriveFile | null;
+  pending: { file: DriveFile; verdict: ReviewVerdict } | null;
   busy: boolean;
   onCancel: () => void;
   onSubmit: (note: string) => void;
 }) {
   const [text, setText] = useState("");
-  if (!file) return null;
+  if (!pending) return null;
+
+  const flagging = pending.verdict === "needs_attention";
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl border border-[#e9edef] bg-white p-5 dark:border-[#2a3942] dark:bg-[#182229]">
         <h3 className="text-[15px] font-medium text-[#111] dark:text-white">
-          What needs fixing?
+          {flagging ? "What needs fixing?" : "Anything to add?"}
         </h3>
-        <p className="mt-1 truncate text-[13px] text-[#717182]">{file.name}</p>
+        <p className="mt-1 truncate text-[13px] text-[#717182]">{pending.file.name}</p>
 
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}
           autoFocus
-          placeholder="Scanned upside down, or the mid-year grades are missing"
+          placeholder={
+            flagging
+              ? "Scanned upside down, or the mid-year grades are missing"
+              : "Optional. Anything the student should know."
+          }
           className="mt-3 w-full resize-none rounded-xl border border-[#e9edef] bg-white p-2.5 text-[13px] outline-none transition-colors focus:border-primary dark:border-[#2a3942] dark:bg-[#111b21] dark:text-white"
         />
 
@@ -994,10 +1051,13 @@ function NoteDialog({
             type="button"
             disabled={busy}
             onClick={() => onSubmit(text.trim())}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-white transition-colors disabled:opacity-50",
+              flagging ? "bg-[#d4183d] hover:opacity-90" : "bg-primary hover:bg-primary-hover"
+            )}
           >
             {busy && <Loader2 size={13} className="animate-spin" />}
-            Flag for the student
+            {flagging ? "Flag for the student" : "Mark verified"}
           </button>
         </div>
       </div>
