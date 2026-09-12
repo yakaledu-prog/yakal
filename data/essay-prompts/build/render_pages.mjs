@@ -151,7 +151,12 @@ async function findFor(ctx, row) {
   }
 
   await page.close();
-  return best && best.score >= 8 ? best : null;
+  // Lower than the static pass on purpose. This runs only over pages the
+  // static pass could not read at all, so the choice is a weaker signal or
+  // nothing, and extract_prompts.py is the thing that decides what is a
+  // question. A page carrying word limits next to two questions is worth
+  // keeping even when its URL says nothing.
+  return best && best.score >= 5 ? best : null;
 }
 
 /** One page, rendered, when we already know which page. */

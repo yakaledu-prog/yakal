@@ -90,19 +90,63 @@ npm run db:load:admissions
 
 ## How well it works, measured
 
-On the twenty most selective colleges in the catalog, step 1 finds a real
-prompts page for **five**. Across a broader run it settles around **one in
-nine**. That is the honest number and it is worth understanding why, because
-the reasons are different and only one of them is fixable:
+A full run over all 951 colleges we hold requirements for, on 2026-09-12:
+
+| | |
+|---|---:|
+| Colleges tried | 951 |
+| Admissions site found | 872 |
+| Essay page found by the static pass | 39 |
+| Essay page found by the browser pass | **0 of 850** |
+| Colleges with prompts extracted | 17 |
+| Prompts extracted | 54 |
+
+Add the seven colleges done by hand and the shared applications, and the
+catalogue holds **24 colleges and 112 prompts**.
+
+**The browser pass found nothing, and that is the most useful result here.**
+It was built on the assumption that the blocker was JavaScript, since Brown,
+Duke, Columbia and Vanderbilt all serve empty shells to curl. Rendering them
+changed nothing: 0 of 850. The blocker is not rendering, it is that these
+pages are not reachable by crawling from the admissions homepage at all. Given
+the URL, the browser pass does work and is worth keeping for that
+(`--fetchOnly`): Columbia answers curl with a 403 and a browser with the page.
+
+So the ceiling on *finding* pages is low, and it breaks down as:
 
 - **Many colleges never publish the text.** The supplement exists only inside
-  the Common App, behind a login. Nothing can scrape what is not on the web.
-- **Some render it in JavaScript.** Brown, Duke, Columbia, Vanderbilt. Step 2
-  exists for these and helps some of them.
+  the Common App, behind a login. Nothing can scrape what is not on the web,
+  and this is most of the 951.
+- **Some are not linked from anywhere a crawler starts.** Two hops from the
+  admissions homepage does not reach them and more hops finds noise.
 - **Some name the page something unguessable.** Princeton's lives at
   `/apply/princeton-specific-questions`, which is why the sitemap filter looks
-  for "question" as well as "essay". Every one of these found is a pattern
-  added by hand after looking at a miss.
+  for "question" as well as "essay".
+
+**What would actually move this.** A search engine. One query per college,
+"<college> supplemental essay prompts 2026-27", returns the right URL nearly
+every time, and `--fetchOnly` turns a URL into prompts reliably. We have no
+search API key; a person with a browser, or a key, is the unlock. Everything
+downstream of the URL already works.
+
+## What the extractor throws away
+
+Precision matters more than recall here, so the filters are aggressive and
+each one is a real page that fooled an earlier version:
+
+- **A limit belonging to somebody else.** Pages say "the Common App essay is
+  650 words" near the top, and every question below it inherited 650, so an
+  admissions FAQ came out as four 650-word prompts.
+- **The college's own copy of the Common App prompts.** Purdue reprints all
+  seven; we already hold those once, correctly, for everybody.
+- **FAQs in the applicant's voice.** "I am an international student. What is
+  different about the admission process for me?"
+- **Instructions.** "Please keep your essay between 500-650 words."
+- **Lines cut off by the layout**, which end on a preposition.
+- **Form fields.** "What is your religious affiliation? * African Methodist ..."
+
+A stated limit reaches only five lines down the page. Without that bound, MIT's
+"40 to 50 words each" landed on the paragraph about their activities form.
 
 Three bugs in step 1 were each invisible from outside, and all three reported
 the same thing: that colleges do not publish their prompts.

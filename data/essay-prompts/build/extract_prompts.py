@@ -48,14 +48,35 @@ ASKS = re.compile(
     re.I,
 )
 
+# A limit that belongs to the personal statement, not to this college's
+# supplements. Pages say "the Common App essay is 650 words" near the top and
+# every question below it inherited that, so Austin College's admissions FAQ
+# came out as four 650 word prompts.
+SOMEBODY_ELSES_LIMIT = re.compile(
+    r"common\s*app|coalition|personal\s+statement|main\s+essay", re.I
+)
+
+# Truncated by the page's own layout: a line that stops on a preposition was
+# cut mid-sentence and is not a question anybody can answer.
+TRUNCATED = re.compile(
+    r"\b(of|the|a|an|to|for|with|and|or|in|on|that|is|are|was|were)$", re.I
+)
+
 # Questions about the process rather than questions the college is asking. They
 # are the same shape and they are all over an admissions page: "What if my
 # scores have already been sent", "Carefully consider which teachers to ask".
 PROCESS = re.compile(
     r"^(what if|when (should|do|can|will)|do i|can i|should i|how do i|"
     r"who (should|can) i|where (do|should)|is there|are there|will i|"
+    r"what (coursework|factors|documents|materials|tests?|is your)|"
+    r"how (many|much|long|often|will|does|is|are|quickly|soon)|"
+    r"how \w+ (will|do|does|can|should) i|"
+    # First person: an FAQ written in the applicant's voice, not the college's
+    # question. "I am an international student. What is different..."
+    r"i am |i.m an? |my (application|transcript|scores)|"
+    r"(please )?(use|submit|keep|respond|complete|contact|see|visit|review) |"
     r"(please )?use (our|the) form|how you fill|fill out (this|the) form|"
-    r"carefully consider|make sure|be sure to|note that|"
+    r"carefully consider|make sure|be sure to|note that|think of these|"
     r"if you have (any )?question)",
     re.I,
 )
@@ -68,6 +89,8 @@ NOT_A_PROMPT = re.compile(
     r"we recommend that you|admitted students|class of 20\d\d|"
     r"application fee|fee waiver|test scores?|transcript|recommendation letter|"
     r"make or break|resume|activities list|self-report|"
+    r"required to be considered|considered for admission|"
+    r"depth, not breadth|there.s a limit of|"
     r"deadline is|deadlines are|apply by|notification date)\b",
     re.I,
 )
@@ -108,6 +131,14 @@ def looks_like_prompt(line: str) -> bool:
     # bare list marker has had its question left somewhere else.
     if re.match(r"^[A-Za-z0-9][.)]\s", line):
         return False
+    # A question starts where the page started it. A line opening in lower case
+    # was cut off at the front by the layout.
+    if not line[0].isupper():
+        return False
+    # A form's list of options, not a question: "What is your religious
+    # affiliation? * African Methodist Episcopal Apostolic ..."
+    if line.count("*") >= 2 or line.count("|") >= 2:
+        return False
     if PROCESS.match(line) or NOT_A_PROMPT.search(line) or ADVICE.search(line):
         return False
     return bool(ASKS.match(line)) or line.rstrip().endswith("?")
@@ -117,15 +148,25 @@ def title_of(prompt: str) -> str:
     """A few words a student can scan, taken from the question itself.
 
     Not summarised: summarising is inventing, and the whole point of a machine
-    row is that every word in it was on the page. The first clause is nearly
-    always what the question is about.
+    row is that every word in it was on the page.
+
+    The last interrogative sentence, not the first clause. A supplement usually
+    opens with a paragraph about the college and ends with what it is actually
+    asking, so the opening makes a title that repeats the first line of the
+    body underneath it and says nothing. Northwestern's Rock prompt spends two
+    sentences on the tradition and then asks "What would you paint on The Rock,
+    and why?", which is the part worth putting in the list.
     """
-    first = re.split(r"(?<=[.?])\s", prompt.strip())[0]
-    words = re.sub(r"^(please|briefly)\s+", "", first, flags=re.I).split()
-    short = " ".join(words[:9]).rstrip(",;:")
+    sentences = [s.strip() for s in re.split(r"(?<=[.?!])\s+", prompt.strip()) if s.strip()]
+    questions = [s for s in sentences if s.endswith("?")]
+    pick = questions[-1] if questions else (sentences[0] if sentences else prompt)
+
+    pick = re.sub(r"^(please|briefly|and|so|then)\s+", "", pick, flags=re.I)
+    words = pick.split()
+    short = " ".join(words[:10]).rstrip(",;:?")
     if len(short) > 72:
-        short = short[:69].rsplit(" ", 1)[0] + "..."
-    return short[0].upper() + short[1:] if short else prompt[:60]
+        short = short[:69].rsplit(" ", 1)[0]
+    return (short[0].upper() + short[1:]) if short else prompt[:60]
 
 
 def slugify(name: str, cycle: str, index: int) -> str:
@@ -133,7 +174,23 @@ def slugify(name: str, cycle: str, index: int) -> str:
     return f"{base}-{cycle}-m{index}"
 
 
-def extract(path: str) -> tuple[str, list[dict]]:
+def load_universal(path: str | None) -> list[str]:
+    """The shared applications' prompts, normalised for comparison.
+
+    Colleges reproduce the Common App's seven on their own pages, and without
+    this Purdue arrives with eight "supplements" that are the personal
+    statement prompts we already hold once, correctly, for everybody.
+    """
+    if not path or not os.path.exists(path):
+        return []
+    out = []
+    for app in json.load(open(path)).get("apps", []):
+        for p in app.get("prompts", []):
+            out.append(re.sub(r"[^a-z0-9]", "", p["prompt"].lower())[:90])
+    return out
+
+
+def extract(path: str, universal: list[str] | None = None) -> tuple[str, list[dict]]:
     """(source url, prompts) from one fetched page."""
     lines = open(path, encoding="utf-8", errors="replace").read().split("\n\n")
     source = ""
@@ -164,8 +221,9 @@ def extract(path: str) -> tuple[str, list[dict]]:
         words, chars = parse_limit(line)
         if not looks_like_prompt(line):
             # Not a question, but it may be the sentence that sets the limit
-            # for the ones below it.
-            if words or chars:
+            # for the ones below it, unless the limit it states is the personal
+            # statement's.
+            if (words or chars) and not SOMEBODY_ELSES_LIMIT.search(line):
                 pending, reach = (words, chars), 5
             else:
                 reach -= 1
@@ -186,7 +244,7 @@ def extract(path: str) -> tuple[str, list[dict]]:
         # rest. Leaving it in makes the prompt read like a form field.
         text = re.sub(r"\s*\(?\b\d{2,4}\s*(?:-|–)?\s*(?:word|character)s?[^)]*\)?\s*$", "", line).strip()
         text = re.sub(r"\s*\(\s*\)\s*$", "", text).strip(" .;:")
-        if len(text) < 40:
+        if len(text) < 40 or TRUNCATED.search(text):
             continue
 
         found.append({"prompt": text + ("?" if line.rstrip().endswith("?") and not text.endswith("?") else ""),
@@ -197,10 +255,13 @@ def extract(path: str) -> tuple[str, list[dict]]:
     seen: set[str] = set()
     unique = []
     for f in found:
-        key = re.sub(r"[^a-z0-9]", "", f["prompt"].lower())[:120]
-        if key in seen:
+        key = re.sub(r"[^a-z0-9]", "", f["prompt"].lower())
+        if key[:120] in seen:
             continue
-        seen.add(key)
+        # A college quoting the Common App at us is not a supplement.
+        if universal and any(u and u in key for u in universal):
+            continue
+        seen.add(key[:120])
         unique.append(f)
 
     # A page offering fifteen "prompts" has matched its own navigation.
@@ -215,6 +276,7 @@ def main() -> int:
     ap.add_argument("--cycle", default="2026-27")
     ap.add_argument("--manual", help="skip colleges already done by hand")
     ap.add_argument("--catalog", help="colleges.ndjson, for names the sources file lacks")
+    ap.add_argument("--universal", help="universal-<cycle>.json, to drop colleges' copies of it")
     args = ap.parse_args()
 
     names = {}
@@ -228,6 +290,8 @@ def main() -> int:
         for line in open(args.catalog):
             c = json.loads(line)
             names.setdefault(str(c["unitid"]), c["name"])
+
+    universal = load_universal(args.universal)
 
     done: set[int] = set()
     if args.manual and os.path.exists(args.manual):
@@ -243,7 +307,7 @@ def main() -> int:
         if not unitid.isdigit() or int(unitid) in done:
             continue
 
-        source, prompts = extract(os.path.join(args.pages, filename))
+        source, prompts = extract(os.path.join(args.pages, filename), universal)
         if not prompts or not source:
             continue
 
