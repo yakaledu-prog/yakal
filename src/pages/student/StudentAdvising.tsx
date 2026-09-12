@@ -122,25 +122,30 @@ export function StudentAdvising() {
           {tone && allowance ? (
             <div
               className={cn(
-                "mb-6 flex flex-wrap items-center justify-between gap-4 border-l-2 px-5 py-4",
+                // A card rather than a band: rounded, ruled the whole way
+                // round, with the accent as a thicker left edge. Flat against
+                // the page it read as a warning strip rather than a balance.
+                "mb-8 flex flex-wrap items-center justify-between gap-6 overflow-hidden rounded-xl border border-l-[3px] px-6 py-5",
                 tone.rule,
                 tone.wash
               )}
             >
-              {/* The number and what it counts. The sentence it replaced made
-                  a student do the subtraction, and a pip per hour was a
-                  drawing of a figure already on the screen. */}
-              <div>
-                <p className={cn("text-2xl font-bold leading-none tabular-nums", tone.text)}>
-                  {left == null ? "Unlimited" : `${left}/${allowance.limit}`}
-                </p>
-                <p className="mt-1 text-[12.5px] text-muted-foreground">
+              <div className="flex items-baseline gap-3">
+                <span className={cn("text-3xl font-bold leading-none tabular-nums", tone.text)}>
+                  {left == null ? "Unlimited" : left}
+                </span>
+                {left != null && (
+                  <span className="text-[15px] leading-none text-muted-foreground tabular-nums">
+                    / {allowance.limit}
+                  </span>
+                )}
+                <span className="text-[11px] uppercase leading-none tracking-wider text-muted-foreground">
                   {left == null
                     ? "advising hours"
                     : left === 0
                       ? "hours left, back on the 1st"
-                      : `${left === 1 ? "hour" : "hours"} left`}
-                </p>
+                      : `${left === 1 ? "hour" : "hours"} left this month`}
+                </span>
               </div>
 
               {/* Either the student or a linked parent can book: the family
@@ -152,7 +157,7 @@ export function StudentAdvising() {
                 onClick={() => setBooking(true)}
                 disabled={!canBook}
                 className={cn(
-                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
                   tone.button
                 )}
               >
@@ -160,7 +165,7 @@ export function StudentAdvising() {
               </button>
             </div>
           ) : (
-            <p className="mb-6 text-[13px] text-muted-foreground">
+            <p className="mb-8 text-[13px] text-muted-foreground">
               Counselling is not on this account.
             </p>
           )}
