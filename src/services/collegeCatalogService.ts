@@ -39,6 +39,19 @@ export interface College {
   actLow: number | null;
   actHigh: number | null;
   netPrice: number | null;
+  /**
+   * Net price by family income, the five bands the College Scorecard reports.
+   *
+   * The average on its own misleads in both directions. MIT's is $20,111,
+   * while a family under $30,000 is paid $2,533 to attend and one over
+   * $110,000 pays $48,479. A student who rules a college out on the average
+   * has been told the wrong thing by us.
+   */
+  netByIncome: {
+    label: string;
+    /** Undefined where the college does not report that band. */
+    amount: number | null;
+  }[];
   cost: number | null;
   ratio: number | null;
   gradRate: number | null;
@@ -48,6 +61,12 @@ export interface College {
   credit: string | null;
   /** The institution's homepage, from Scorecard. Present for every school. */
   website: string | null;
+  /**
+   * The college's own net price calculator, which federal law requires it to
+   * publish. Present for 1,939 of 1,944. The only route to a number for this
+   * family rather than an average of every family.
+   */
+  npc: string | null;
   /** Commons filename for the crest. About half of schools have one. */
   logo: string | null;
   /**
@@ -95,6 +114,9 @@ function decode(payload: {
     satLow: i("satLow"), satHigh: i("satHigh"),
     actLow: i("actLow"), actHigh: i("actHigh"),
     netPrice: i("netPrice"), cost: i("cost"), ratio: i("ratio"),
+    net0_30k: i("net0_30k"), net30_48k: i("net30_48k"),
+    net48_75k: i("net48_75k"), net75_110k: i("net75_110k"),
+    net110k: i("net110k"), npc: i("npc"),
     gradRate: i("gradRate"), image: i("image"), credit: i("credit"),
     website: i("website"), logo: i("logo"), aliases: i("aliases"),
   };
@@ -115,12 +137,20 @@ function decode(payload: {
     actLow: r[c.actLow] as number | null,
     actHigh: r[c.actHigh] as number | null,
     netPrice: r[c.netPrice] as number | null,
+    netByIncome: [
+      { label: "Under $30k", amount: r[c.net0_30k] as number | null },
+      { label: "$30k to $48k", amount: r[c.net30_48k] as number | null },
+      { label: "$48k to $75k", amount: r[c.net48_75k] as number | null },
+      { label: "$75k to $110k", amount: r[c.net75_110k] as number | null },
+      { label: "Over $110k", amount: r[c.net110k] as number | null },
+    ],
     cost: r[c.cost] as number | null,
     ratio: r[c.ratio] as number | null,
     gradRate: r[c.gradRate] as number | null,
     image: r[c.image] as string | null,
     credit: r[c.credit] as string | null,
     website: r[c.website] as string | null,
+    npc: r[c.npc] as string | null,
     logo: r[c.logo] as string | null,
     aliases: r[c.aliases] as string | null,
   }));

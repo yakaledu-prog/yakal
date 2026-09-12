@@ -28,6 +28,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DateField } from "@/components/ui/DateField";
 import { NumberStepper } from "@/components/ui/NumberStepper";
 import { FieldLabel, InfoHint } from "@/components/ui/InfoHint";
+import { NetPriceByIncome } from "./NetPriceByIncome";
 import {
   getPromptCounts,
   getRequirements,
@@ -467,6 +468,11 @@ export function AddCollegeModal({
                     ` The application fee is ${known.application_fee_cents === 0 ? "waived" : `$${Math.round(known.application_fee_cents / 100)}`}.`}
                 </p>
               )}
+              {/* Cost, where the decision is actually made. A student weighing
+                  whether to add a college has just read one net price average,
+                  and at most colleges that average is true of nobody. */}
+              {picked && <NetPriceByIncome college={picked} />}
+
               {/* The URL takes what is left rather than half: it is the
                   longest value on the form and the counter beside it only needs
                   room for two digits. */}

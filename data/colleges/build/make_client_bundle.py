@@ -39,12 +39,26 @@ COLUMNS = [
     "actLow",
     "actHigh",
     "netPrice",
+    # Net price by family income, the five Scorecard bands. The average alone
+    # tells a family on either end the wrong thing: MIT is -$2,533 under $30k
+    # and $48,479 above $110k.
+    "net0_30k",
+    "net30_48k",
+    "net48_75k",
+    "net75_110k",
+    "net110k",
     "cost",
     "ratio",
     "gradRate",
     "image",         # Commons filename only, the client builds the URL
     "credit",        # photographer, for the attribution line
     "website",       # the institution's homepage, from Scorecard INSTURL
+    # Every college is required by federal law to publish one, and 1,939 of
+    # 1,944 do. It is the only way a family gets a number for their own
+    # circumstances rather than an average of everybody's. Costs 24 KB gzipped
+    # on a payload fetched once a session, which is worth a link that exists
+    # for every college on the list.
+    "npc",           # net price calculator, from Scorecard NPCURL
     "logo",          # Commons filename for the crest, or null
     # "VU, Vandy". Comma-separated, as the college wrote it on its Common App
     # membership record. A student typing Vandy used to get nothing back.
@@ -122,12 +136,18 @@ def main():
             r.get("act_composite_25"),
             r.get("act_composite_75"),
             r.get("avg_net_price"),
+            r.get("avg_net_price_income_0_30k"),
+            r.get("avg_net_price_income_30_48k"),
+            r.get("avg_net_price_income_48_75k"),
+            r.get("avg_net_price_income_75_110k"),
+            r.get("avg_net_price_income_110k_plus"),
             r.get("cost_of_attendance"),
             rnd(r.get("student_faculty_ratio"), 1),
             rnd(r.get("grad_rate_6yr_pct")),
             img,
             credits.get(uid) or None,
             r.get("website"),
+            r.get("net_price_calculator_url"),
             # The crest, as a Commons filename like the photograph. Shipping
             # the filename rather than the URL keeps the bundle small and lets
             # the client ask for the size it wants.

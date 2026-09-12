@@ -35,7 +35,14 @@ SCORECARD_COLS = [
     "SATVR25", "SATVR75", "SATMT25", "SATMT75", "SAT_AVG", "ACTCM25", "ACTCM75",
     "UGDS", "STUFACR",
     "COSTT4_A", "TUITIONFEE_IN", "TUITIONFEE_OUT",
-    "NPT4_PUB", "NPT4_PRIV", "NPT41_PUB", "NPT41_PRIV",
+    "NPT4_PUB", "NPT4_PRIV",
+    # Net price by family income, all five bands. Only the first was pulled for
+    # a long time, and the other four are the ones that change a decision:
+    # MIT is -$2,533 at the bottom band and $48,479 at the top, and a family
+    # reading one average of $19k concludes the wrong thing in both directions.
+    "NPT41_PUB", "NPT41_PRIV", "NPT42_PUB", "NPT42_PRIV",
+    "NPT43_PUB", "NPT43_PRIV", "NPT44_PUB", "NPT44_PRIV",
+    "NPT45_PUB", "NPT45_PRIV",
     "PCTPELL", "C150_4", "RET_FT4", "MD_EARN_WNE_P10",
 ]
 
@@ -83,9 +90,19 @@ def net_price(row):
     return pub if pub is not None else priv
 
 
-def net_price_lowest_bracket(row):
-    """Average net price for families earning $0-30k, the number that matters most."""
-    pub, priv = num(row.get("NPT41_PUB")), num(row.get("NPT41_PRIV"))
+# The five Scorecard income bands, in the order a family reads them.
+INCOME_BANDS = [
+    ("0_30k", "NPT41"),
+    ("30_48k", "NPT42"),
+    ("48_75k", "NPT43"),
+    ("75_110k", "NPT44"),
+    ("110k_plus", "NPT45"),
+]
+
+
+def net_price_bracket(row, prefix):
+    """One income band. Public and private live in different columns, as above."""
+    pub, priv = num(row.get(f"{prefix}_PUB")), num(row.get(f"{prefix}_PRIV"))
     return pub if pub is not None else priv
 
 
@@ -167,7 +184,10 @@ def build_row(row, wd):
         "tuition_in_state": num(row.get("TUITIONFEE_IN"), int),
         "tuition_out_of_state": num(row.get("TUITIONFEE_OUT"), int),
         "avg_net_price": num(net_price(row), int),
-        "avg_net_price_income_0_30k": num(net_price_lowest_bracket(row), int),
+        **{
+            f"avg_net_price_income_{name}": num(net_price_bracket(row, col), int)
+            for name, col in INCOME_BANDS
+        },
         "pct_pell": pct(row.get("PCTPELL")),
 
         # media, from Wikidata
