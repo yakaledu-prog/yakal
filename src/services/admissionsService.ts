@@ -864,7 +864,7 @@ export async function bookAdvisingSlots(
   const errors: string[] = [];
 
   for (const slot of slots) {
-    const { error } = await supabase.rpc("book_advising_session", {
+    const { data: sessionId, error } = await supabase.rpc("book_advising_session", {
       p_student: studentId,
       p_date: slot.date,
       p_start: slot.startTime,
@@ -872,8 +872,25 @@ export async function bookAdvisingSlots(
     });
     if (error) {
       errors.push(`${slot.date} ${slot.startTime}: ${error.message}`);
-    } else {
-      booked += 1;
+      continue;
+    }
+
+    booked += 1;
+
+    /**
+     * Give the hour a room of its own.
+     *
+     * The booking is a database function, so it cannot call Zoom, and an hour
+     * with no meeting falls back to the counsellor's personal room: one URL
+     * shared by every student, and invisible to both attendance systems.
+     *
+     * Deliberately not awaited into the result. The hour is booked either way,
+     * and the sweep in the scheduled job comes back for any room this missed,
+     * so a Zoom outage must not turn a successful booking into an error
+     * message.
+     */
+    if (sessionId) {
+      void authedPost("/api/stripe?action=session-meeting", { sessionId });
     }
   }
 

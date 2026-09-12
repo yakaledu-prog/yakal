@@ -185,13 +185,22 @@ export function CounselorProfile() {
                   value={profile?.phone || "Not set"}
                   copy={!!profile?.phone}
                 />
-                <DetailRow
-                  icon={<Link2 size={18} />}
-                  label="Session Link"
-                  value={profile?.zoom_link || "Not set"}
-                  copy={!!profile?.zoom_link}
-                  truncate
-                />
+                {/* Only when there is one. Every booked session is given a
+                    Zoom meeting of its own, so this is a fallback for sessions
+                    booked before that or for a deployment with no Zoom, and an
+                    empty row telling a counsellor about a thing they do not
+                    need is noise. The edit form still offers the field. It is
+                    no longer shown in the contact panel either: one URL shared
+                    by every student is somebody else's hour to walk into. */}
+                {profile?.zoom_link && (
+                  <DetailRow
+                    icon={<Link2 size={18} />}
+                    label="Backup meeting room"
+                    value={profile.zoom_link}
+                    copy
+                    truncate
+                  />
+                )}
               </div>
 
               {/* The CV given at onboarding, and the thing an admin opened
@@ -282,7 +291,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
         <div className="p-6 space-y-4">
           <div className="space-y-1.5"><label className={lbl}>Full Name</label><input className={field} value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
           <div className="space-y-1.5"><label className={lbl}>Phone</label><input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Session Link (Zoom / Meet)</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /></div>
+          <div className="space-y-1.5"><label className={lbl}>Backup meeting room</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /><p className="text-[12px] text-muted-foreground">Sessions get their own room. This is only used for one booked before that, or if Zoom is down.</p></div>
           <div className="space-y-1.5"><label className={lbl}>Rate per session</label>
             {/* No rate field. A counsellor is paid a share of the plan a
                 family is on, and the share is the admin's to set. The display

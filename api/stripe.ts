@@ -8,6 +8,7 @@ import subscription from './_handlers/subscription.js';
 import sessionCancel from './_handlers/session-cancel.js';
 import adminRefund from './_handlers/admin-refund.js';
 import sessionDispute from './_handlers/session-dispute.js';
+import sessionMeeting from './_handlers/session-meeting.js';
 
 export default dispatch({
   'checkout': checkout,
@@ -19,4 +20,7 @@ export default dispatch({
   'session-cancel': sessionCancel,
   'refund': adminRefund,
   'dispute': sessionDispute,
+  // Not a payment, but it lives beside the other things done to a session
+  // after it is booked, and this file is already where those are routed.
+  'session-meeting': sessionMeeting,
 });

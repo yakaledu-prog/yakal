@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays } from "lucide-react";
+import { SessionsBanner } from "@/components/shared/SessionsBanner";
+import { cn } from "@/utils/cn";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +33,7 @@ export function StudentAdvising() {
   const { user, profile } = useAuth();
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
   const [booking, setBooking] = useState(false);
+  const [tab, setTab] = useState("upcoming");
 
   const { data: raw, isLoading } = useQuery({
     queryKey: ["student-sessions", user?.id],
@@ -67,88 +70,122 @@ export function StudentAdvising() {
   const left =
     allowance == null ? null : allowance.limit == null ? null : allowance.limit - allowance.used;
 
+  const completed = advising.filter((s) => s.status === "completed").length;
+  const upcomingCount = advising.filter((s) => s.status === "upcoming").length;
+  const canBook = allowance != null && (left == null || left > 0);
+
+  /**
+   * The balance, and one colour for the whole strip.
+   *
+   * "0 of 1 hours" made a student do the subtraction before they knew whether
+   * they could book, and a sentence is a poor way to show a countable balance.
+   * Monthly allowances here are one to eight hours, which is few enough to
+   * draw: a pip per hour, filled for the ones spent, so what is left can be
+   * counted rather than read.
+   *
+   * Gold on the last hour, because that is the one worth spending carefully.
+   * Red when there are none: nothing is wrong, but the answer to "can I book"
+   * is no until the month turns.
+   */
+  const tone =
+    allowance == null
+      ? null
+      : left == null
+        ? { rule: "border-primary", wash: "bg-primary/5", pip: "bg-primary", text: "text-primary", button: "bg-primary hover:bg-primary-hover text-white" }
+        : left <= 0
+          ? { rule: "border-[#d4183d]", wash: "bg-[#d4183d]/5", pip: "bg-[#d4183d]", text: "text-[#d4183d]", button: "bg-[#d4183d] text-white" }
+          : left === 1
+            ? { rule: "border-secondary", wash: "bg-secondary/10", pip: "bg-secondary", text: "text-secondary", button: "bg-secondary text-secondary-foreground hover:opacity-90" }
+            : { rule: "border-primary", wash: "bg-primary/5", pip: "bg-primary", text: "text-primary", button: "bg-primary hover:bg-primary-hover text-white" };
+
   return (
-    <PageWrapper>
+    <PageWrapper className="!p-0">
       <div className="min-h-screen flex-1 bg-background pb-12 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-primary px-6 pt-6 text-white md:px-10 md:pt-10">
-          <svg
-            className="pointer-events-none absolute right-0 top-0 h-full w-[60%] text-white/5 md:w-[40%]"
-            viewBox="0 0 400 200"
-            preserveAspectRatio="none"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-          </svg>
+        <SessionsBanner
+          title="Advising"
+          total={advising.length}
+          completed={completed}
+          upcoming={upcomingCount}
+          tabs={[
+            { id: "upcoming", label: "Upcoming" },
+            { id: "past", label: "Past Sessions" },
+          ]}
+          activeTab={tab}
+          onTab={setTab}
+        />
 
-          <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col justify-between gap-6 border-b border-white/20 pb-8 md:flex-row md:items-end">
-            <div className="space-y-1">
-              <h1 className="mb-2 text-[14px] font-medium uppercase tracking-wider text-white/80">
-                Advising
-              </h1>
-              <span className="text-4xl font-bold tracking-tight md:text-5xl">
-                {allowance == null
-                  ? "-"
-                  : allowance.limit == null
-                    ? allowance.used
-                    : `${allowance.used} of ${allowance.limit}`}
-              </span>
-              <p className="pt-1 text-[14px] text-white/70">
-                {allowance == null
-                  ? "Counselling is not on this account."
-                  : allowance.limit == null
-                    ? "hours with your counsellor this month, with no ceiling"
-                    : "hours with your counsellor this month"}
-              </p>
-            </div>
-
-            {/* Either the student or a linked parent can book: the family
-                function book_advising_session authorises both, so the student
-                arranges their own hours here rather than being sent to a
-                parent's billing page for a plan that may be their own. */}
-            {allowance != null && (
-              <div className="pb-2 text-left md:text-right">
-                <button
-                  onClick={() => setBooking(true)}
-                  disabled={left != null && left <= 0}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 font-semibold text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <CalendarDays size={16} /> Book a session
-                </button>
-                <p className="mt-1.5 text-[12px] text-white/70">
-                  {left != null && left > 0
-                    ? `${left} ${left === 1 ? "hour" : "hours"} left this month`
+        <div className="p-4 md:p-8">
+          {/* Booking sits with the list rather than in the banner or a card of
+              its own. The balance is the whole of the decision, so the button
+              belongs beside that sentence, and a full-height card would spend
+              a third of the page on one button and one number. */}
+          {tone && allowance ? (
+            <div
+              className={cn(
+                // A band with one ruled edge, the same shape the earnings page
+                // uses for its own state strip. The padding is what it was
+                // missing, not a border on all four sides.
+                "mb-8 flex flex-wrap items-center justify-between gap-6 border-l-2 px-6 py-5",
+                tone.rule,
+                tone.wash
+              )}
+            >
+              <div className="flex items-baseline gap-3">
+                <span className={cn("text-3xl font-bold leading-none tabular-nums", tone.text)}>
+                  {left == null ? "Unlimited" : left}
+                </span>
+                {left != null && (
+                  <span className="text-[15px] leading-none text-muted-foreground tabular-nums">
+                    &#8260; &nbsp; {allowance.limit}
+                  </span>
+                )}
+                <span className="text-[11px] uppercase leading-none tracking-wider text-muted-foreground">
+                  {left == null
+                    ? "advising hours"
                     : left === 0
-                      ? "You have used this month's hours"
-                      : "You or your parent can book these"}
-                </p>
+                      ? "hours left, back on the 1st"
+                      : `${left === 1 ? "hour" : "hours"} left this month`}
+                </span>
               </div>
-            )}
-          </div>
-        </header>
 
-        <div className="mx-auto max-w-[1440px] space-y-10 p-6 md:p-10">
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-              <CalendarDays size={18} className="text-primary" />
-              <h2 className="text-[18px] font-semibold text-foreground">Coming up</h2>
+              {/* Either the student or a linked parent can book: the family
+                  function book_advising_session authorises both, so the student
+                  arranges their own hours here rather than being sent to a
+                  parent's billing page for a plan that may be their own. */}
+              <button
+                type="button"
+                onClick={() => setBooking(true)}
+                disabled={!canBook}
+                className={cn(
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
+                  tone.button
+                )}
+              >
+                <CalendarDays size={15} /> Book a session
+              </button>
             </div>
+          ) : (
+            <p className="mb-8 text-[13px] text-muted-foreground">
+              Counselling is not on this account.
+            </p>
+          )}
+
+          {tab === "upcoming" ? (
             <UpcomingSessions
               // Whether a lesson is billable is not a student's question.
               showAwaitingConfirmation={false}
               sessions={advising}
               isLoading={isLoading}
-              emptyText="Nothing booked this month."
+              emptyText="Nothing booked yet."
               onCancel={setCancelling}
             />
-          </section>
-
-          <section className="space-y-4">
-            <div className="border-b border-border/50 pb-3">
-              <h2 className="text-[18px] font-semibold text-foreground">Been and gone</h2>
-            </div>
-            <PastSessions sessions={advising} />
-          </section>
+          ) : (
+            <PastSessions
+              sessions={advising}
+              isLoading={isLoading}
+              emptyText="No past sessions."
+            />
+          )}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { notifyAll } from "./notify.js";
-import { zoomConfigured, createMeeting, deleteMeeting } from "./zoom.js";
+import { zoomConfigured } from "./zoom.js";
+import { attachMeeting } from "./meeting.js";
 import { inviteOnEnrolment } from "../_handlers/classroom-invite.js";
 
 // ============================================================
@@ -214,10 +215,10 @@ async function fulfilOne(db: any, invoice: Invoice): Promise<void> {
  * Sessions were being written with a null zoom_meeting_id and nothing ever
  * filled it in, so every booked lesson had a time and no room.
  *
- * The webhook and the confirm redirect can both be here at once, which would
- * book two meetings for one session. The update is guarded on the column still
- * being null, so exactly one of them wins and the loser tidies its meeting
- * away rather than leaving it on the calendar.
+ * The per-session half is attachMeeting, shared with advising, which is what
+ * keeps the two from drifting on settings like join_before_host. It also owns
+ * the race: the webhook and the confirm redirect can both be here at once, and
+ * the claim is guarded so exactly one of them wins.
  */
 async function attachZoomMeetings(
   db: any,
@@ -239,35 +240,7 @@ async function attachZoomMeetings(
   }
 
   for (const session of pending ?? []) {
-    try {
-      const meeting = await createMeeting({
-        topic: input.topic,
-        date: session.date,
-        startTime: String(session.start_time),
-        durationMinutes: session.duration_minutes ?? 60,
-      });
-
-      const { data: claimed } = await db
-        .from("sessions")
-        .update({
-          zoom_meeting_id: meeting.meetingId,
-          zoom_password: meeting.password,
-          zoom_link: meeting.joinUrl,
-        })
-        .eq("id", session.id)
-        .is("zoom_meeting_id", null)
-        .select("id");
-
-      // Someone else got there first. Two meetings for one session would leave
-      // half the people in an empty room.
-      if (!claimed?.length) {
-        await deleteMeeting(meeting.meetingId).catch(() => {});
-      }
-    } catch (err: any) {
-      // The session keeps its time and loses only its room, which the next
-      // delivery, or a rebooking, can still put right.
-      console.error(`fulfil: no Zoom meeting for session ${session.id}:`, err?.message ?? err);
-    }
+    await attachMeeting(db, session, input.topic);
   }
 }
 

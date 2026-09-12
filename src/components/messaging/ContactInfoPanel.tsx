@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Mail, Phone, X, GraduationCap, BookOpen, Video, CalendarClock } from "lucide-react";
+import { Loader2, Mail, Phone, X, GraduationCap, BookOpen, CalendarClock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getTutorAvailability } from "@/services/availability";
 import type { ChatContact } from "@/services/messageService";
@@ -26,7 +26,6 @@ interface ProfileDetail {
   bio: string | null;
   subjects: string[] | null;
   grade_level: string | null;
-  zoom_link: string | null;
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -172,7 +171,7 @@ export function ContactInfoPanel({
     queryFn: async (): Promise<ProfileDetail | null> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, role, avatar_url, email, phone, bio, subjects, grade_level, zoom_link")
+        .select("id, full_name, role, avatar_url, email, phone, bio, subjects, grade_level")
         .eq("id", contact.id)
         .maybeSingle();
       if (error) throw error;
@@ -187,7 +186,6 @@ export function ContactInfoPanel({
     !!profile?.email ||
     !!profile?.phone ||
     !!profile?.grade_level ||
-    !!profile?.zoom_link ||
     subjects.length > 0;
 
   return (
@@ -248,14 +246,12 @@ export function ContactInfoPanel({
           {subjects.length > 0 && (
             <Field icon={<BookOpen size={16} />} label="Subjects" value={subjects.join(", ")} />
           )}
-          {profile?.zoom_link && (
-            <Field
-              icon={<Video size={16} />}
-              label="Meeting room"
-              value="Open meeting link"
-              href={profile.zoom_link}
-            />
-          )}
+          {/* The personal meeting room is not shown here any more.
+              It is one URL shared by every student a counsellor or tutor
+              sees, so a permanent link to it in the contact panel let anybody
+              holding it walk into somebody else's hour. Sessions carry rooms
+              of their own now, reached from the session, which is the only
+              place a join link should live. */}
 
           {!hasDetails && role !== "tutor" && (
             <p className="px-4 py-6 text-center text-[13px] text-[#667781] dark:text-[#8696a0]">
