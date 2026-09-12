@@ -55,6 +55,10 @@ PATHS = [
     "application-questions", "apply/application-questions",
     "short-answer-questions", "apply/short-answer-questions",
     "first-year/essays", "apply/first-year/essays",
+    # Found by searching for the pages this crawler had missed. Each one is a
+    # real college's real URL, kept so the next run reaches it directly.
+    "how-to-apply/first-year-applicants/cornell-first-year-writing-supplement-prompts",
+    "faqs/writing-supplements", "apply/how-apply",
     "how-to-apply/essays", "apply/first-year-applicants",
     "apply/first-year", "first-year-applicants",
     "apply/application-requirements",
