@@ -13,6 +13,7 @@ order is emitted in the payload header so the client stays in sync automatically
 Usage:
   python3 make_client_bundle.py --catalog ../out/colleges.ndjson \
       --licenses ../out/image_licenses.ndjson \
+      --commonapp ../../common-app/out/commonapp-explore.ndjson \
       --out ../../../public/data/colleges.json
 """
 
@@ -45,6 +46,9 @@ COLUMNS = [
     "credit",        # photographer, for the attribution line
     "website",       # the institution's homepage, from Scorecard INSTURL
     "logo",          # Commons filename for the crest, or null
+    # "VU, Vandy". Comma-separated, as the college wrote it on its Common App
+    # membership record. A student typing Vandy used to get nothing back.
+    "aliases",
 ]
 
 CONTROL = {"public": 0, "private_nonprofit": 1, "private_for_profit": 2}
@@ -68,6 +72,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--licenses", required=True)
+    ap.add_argument("--commonapp", help="harvest_explore.py output, for the "
+                    "search aliases colleges give Common App")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -80,6 +86,15 @@ def main():
         artist = rec.get("artist") if rec.get("attribution_required") else None
         for uid in rec.get("unitids", []):
             credits[uid] = artist or ""
+
+    # unitid -> "VU, Vandy". Only 756 colleges have any, so a missing one is
+    # the normal case and not a gap to fill.
+    aliases = {}
+    if args.commonapp and os.path.exists(args.commonapp):
+        for line in open(args.commonapp):
+            rec = json.loads(line)
+            if rec.get("unitid") and rec.get("alternate_names"):
+                aliases[rec["unitid"]] = rec["alternate_names"]
 
     rows, dropped = [], 0
     for line in open(args.catalog):
@@ -117,6 +132,7 @@ def main():
             # the filename rather than the URL keeps the bundle small and lets
             # the client ask for the size it wants.
             commons_filename(r.get("logo_url")),
+            aliases.get(uid),
         ])
 
     rows.sort(key=lambda x: -(x[6] or 0))
@@ -133,10 +149,12 @@ def main():
         json.dump(payload, f, separators=(",", ":"))
 
     size = os.path.getsize(args.out)
-    with_img = sum(1 for r in rows if r[17])
+    with_img = sum(1 for r in rows if r[COLUMNS.index("image")])
+    with_alias = sum(1 for r in rows if r[COLUMNS.index("aliases")])
     print(f"wrote {len(rows)} schools to {args.out}")
     print(f"  {size / 1024:.0f} KB raw")
     print(f"  {with_img} with a licensed image, {dropped} dropped for unclear licence")
+    print(f"  {with_alias} with search aliases")
 
 
 if __name__ == "__main__":

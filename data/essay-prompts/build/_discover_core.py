@@ -46,6 +46,56 @@ SITEMAP_AVOID = re.compile(
     re.I,
 )
 
+# Unambiguous enough to beat SITEMAP_AVOID and AVOID. Several admissions
+# offices publish their prompts in their own news or stories section rather
+# than under /apply, and the avoid list was written for student blogs without
+# noticing it also threw those away. Notre Dame's prompts are at
+# /visit-engage/stories-news/the-notre-dame-writing-section-we-walk-you-
+# through-our-essay-and-short-answer-prompts, which /stories excluded outright.
+#
+# Nothing is trusted on the strength of its URL: a page let through here is
+# still scored, and the scorer is what rejects advice pieces about how to write
+# an essay. This only buys the page a reading.
+STRONG = re.compile(
+    r"essay[-_]?prompt|prompt[-_]?guide|supplemental[-_]?essay|"
+    r"writing[-_]?supplement|writing[-_]?section|essay[-_]?question|"
+    r"short[-_]?answer|supplemental[-_]?question",
+    re.I,
+)
+
+# "writing" on its own is an academic department, not an admissions question.
+# Vassar's sitemap offered /english/courses-and-requirements/creative-writing,
+# a playwriting competition and a poetry workshop, and the shortest-first sort
+# put all three ahead of anything from the admissions site.
+ACADEMIC = re.compile(
+    r"/(courses?|academics?|majors?|departments?|programs?|centers?)/|"
+    r"creative[-_]?writing|playwriting|screenwriting|poetry|workshop|"
+    r"curriculum|syllabus|course[-_]catalog",
+    re.I,
+)
+
+
+def sitemap_worth_reading(url: str) -> bool:
+    if STRONG.search(url):
+        return True
+    if SITEMAP_AVOID.search(url) or ACADEMIC.search(url):
+        return False
+    return bool(SITEMAP_WANT.search(url))
+
+
+def sitemap_rank(url: str) -> tuple[int, int]:
+    """Best first. Sorted by length alone, Vassar's creative writing course
+    beat every admissions page on the site."""
+    score = 0
+    if STRONG.search(url):
+        score += 4
+    if re.search(r"/(admission|admissions|apply|undergrad)", url, re.I):
+        score += 3
+    if re.search(r"first[-_]?year|freshman", url, re.I):
+        score += 1
+    # Shorter is still a tiebreak: the canonical page is rarely the deepest.
+    return (-score, len(url))
+
 # Where admissions offices keep this page, most specific first.
 PATHS = [
     "essay-prompts", "essays", "apply/essays", "apply/essay-prompts",
@@ -86,6 +136,7 @@ AVOID = re.compile(
 )
 
 RANK = [
+    (STRONG, 4),
     (re.compile(r"essay|prompt|short[-_ ]?answer|writing[-_ ]?supplement|question", re.I), 3),
     (re.compile(r"supplement", re.I), 2),
     (re.compile(r"first[-_ ]?year|freshman", re.I), 1),
@@ -141,13 +192,12 @@ def sitemap_candidates(host: str, fetch, log) -> list[str]:
             # Princeton's sitemap is all relative paths, so an absolute URL is
             # not something to assume.
             url = up.urljoin(base, loc)
-            if SITEMAP_WANT.search(url) and not SITEMAP_AVOID.search(url):
+            if sitemap_worth_reading(url):
                 found.append(url)
         if found:
             break
 
-    # Shortest first: a shorter path is nearly always the canonical one.
-    found = sorted(dict.fromkeys(found), key=len)
+    found = sorted(dict.fromkeys(found), key=sitemap_rank)
     if found:
         log(f"      sitemap offered {len(found)}")
     return found[:6]
@@ -189,6 +239,17 @@ def discover(
         except Exception as exc:  # noqa: BLE001
             log(f"      skip {url} ({type(exc).__name__})")
             return None
+        # Score where it LANDED, not where it was asked for, and check that
+        # too. A guess at /essays that redirects into the news section is a
+        # page AVOID would have rejected outright had the crawl proposed it:
+        # Babson's landed on a summer programme for high schoolers, Bryn
+        # Mawr's on a student blog post, Bucknell's on a podcast episode.
+        # Only the requested URL was ever filtered, so all three scored.
+        if not STRONG.search(final) and (
+            SITEMAP_AVOID.search(final) or ACADEMIC.search(final)
+        ):
+            log(f"      landed somewhere excluded: {final}")
+            return raw
         n = score(final, raw)
         if n and (best is None or n > best[0]):
             best = (n, final)
@@ -256,7 +317,9 @@ def discover(
             root = up.urlparse(website).netloc.removeprefix("www.")
             if not parsed.netloc.endswith(root):
                 continue
-            if AVOID.search(href) or not WANT.search(f"{href} {label}"):
+            if not STRONG.search(href) and AVOID.search(href):
+                continue
+            if not WANT.search(f"{href} {label}"):
                 continue
             queue.append((rank(href, label), 1, href))
 
@@ -271,7 +334,9 @@ def discover(
             root = up.urlparse(website).netloc.removeprefix("www.")
             if parsed.scheme not in ("http", "https") or not parsed.netloc.endswith(root):
                 continue
-            if AVOID.search(href) or not WANT.search(f"{href} {label}") or href in seen:
+            if not STRONG.search(href) and AVOID.search(href):
+                continue
+            if not WANT.search(f"{href} {label}") or href in seen:
                 continue
             queue.append((rank(href, label), depth + 1, href))
 

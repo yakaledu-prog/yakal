@@ -41,7 +41,7 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parent))
 import argparse, csv, html, json, os, re, sys, threading
 from concurrent.futures import ThreadPoolExecutor
 
-from _discover_core import discover
+from _discover_core import STRONG, discover
 import urllib.parse as up
 import urllib.request, urllib.error
 
@@ -175,6 +175,33 @@ def links(raw: str, base: str):
         yield up.urljoin(base, href), label
 
 
+# The cycle being built. A page the college filed under another one is not a
+# candidate at all: Georgia's /blog/2015-essay-questions/ scored perfectly well
+# and is eleven cycles old. Set from --cycle in main so the two never drift.
+CYCLE_YEARS = {2026, 2027}
+YEAR_IN_PATH = re.compile(r"\b(?:19|20)\d\d\b")
+
+
+def names_other_cycle(url: str) -> str | None:
+    path = re.sub(r"^https?://[^/]+", "", url)
+    for m in YEAR_IN_PATH.finditer(path):
+        if int(m.group(0)) not in CYCLE_YEARS:
+            return m.group(0)
+    return None
+
+
+NOT_THE_PAGE = re.compile(
+    r"episode[-_]?\d|/podcast|summer[-_](at|program|session|institute)|"
+    r"high[-_]school[-_]learner|pre[-_]college|/webinar|[-/]stor(y|ies)[-/]|"
+    r"how[-_]i[-_]|killer[-_]application|tips[-_]for[-_]writing|"
+    # A dictionary entry for the phrase, not the questions. Dartmouth's
+    # /glossary-term/writing-supplement is named in this module's own
+    # docstring as the wrong answer and was still being returned.
+    r"glossary|/definition|essay[-_]tips|writing[-_]tips",
+    re.I,
+)
+
+
 def prompt_score(url: str, raw: str) -> int:
     """How much this page looks like the college's essay questions.
 
@@ -182,6 +209,20 @@ def prompt_score(url: str, raw: str) -> int:
     marks anywhere on the page, because an admissions FAQ is nothing but
     question marks and has no prompts on it at all.
     """
+    # An essay page and a page ABOUT essays look alike to a structural test:
+    # both talk about essays and word counts. These are the shapes that are
+    # never the questions, and each one is a page this scorer actually
+    # returned. Babson's was a summer programme for high schoolers, Bucknell's
+    # a podcast episode called "how I crafted a killer application essay".
+    # STRONG wins: Notre Dame publishes its questions inside its admissions
+    # stories section, and an unambiguous URL beats a shape heuristic.
+    if NOT_THE_PAGE.search(url) and not STRONG.search(url):
+        return 0
+    # Unlike the others this one is absolute. A page for another cycle is
+    # wrong however strongly its address says "essay prompts".
+    if names_other_cycle(url):
+        return 0
+
     body = text_of(raw)
     if not (LIMIT.search(body) or WORDY.search(body)):
         return 0
@@ -214,7 +255,13 @@ def main() -> int:
                          "institution, so this is not extra load on anybody")
     ap.add_argument("--refresh", action="store_true",
                     help="re-discover schools that already have a url")
+    ap.add_argument("--cycle", default="2026-27",
+                    help="reject pages a college filed under another cycle")
     args = ap.parse_args()
+
+    global CYCLE_YEARS
+    start = int(args.cycle.split("-")[0])
+    CYCLE_YEARS = {start, start + 1}
 
     catalog = {c["unitid"]: c for c in
                (json.loads(l) for l in open(args.catalog))}

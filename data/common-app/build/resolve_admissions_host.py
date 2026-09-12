@@ -17,6 +17,13 @@ still takes a typed URL.
 Threaded because every request is to a different institution, so there is no
 one host being hammered. Each host is asked at most once per run.
 
+Most of the probing is now unnecessary. Common App publishes each member
+college's own first-year admissions link, so --commonapp fills those in from
+harvest_explore.py before any request goes out and this run asks 164 colleges
+rather than 951. The probe still exists for the colleges Common App does not
+carry, and as the guard on the ones it does: looks_like_admissions rejects a
+stated link the same way it rejects a guessed one.
+
     python3 resolve_admissions_host.py --catalog ../../colleges/out/colleges.ndjson \
         --requirements ../out/requirements-2026-27.matched.ndjson \
         --out ../out/admissions-urls.csv
@@ -57,6 +64,18 @@ ADMISSIONS_WORD = re.compile(
 def looks_like_admissions(path: str) -> bool:
     first = path.strip("/").split("/")[0]
     return bool(first) and bool(ADMISSIONS_WORD.match(first))
+
+
+# A dedicated admissions subdomain is the answer whatever path it lands on,
+# which is why resolve() returns a subdomain hit without consulting the path at
+# all. The path test alone rejects "https://admission.brown.edu/", whose path
+# is empty, and did until this existed.
+def is_admissions_link(url: str) -> bool:
+    parts = up.urlparse(url)
+    host = parts.netloc.removeprefix("www.").split(".")[0]
+    if host in SUBDOMAINS:
+        return True
+    return looks_like_admissions(parts.path)
 
 
 def reachable(url: str, timeout: int = 8) -> str | None:
@@ -117,6 +136,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--requirements", help="only resolve schools in this file")
+    ap.add_argument("--commonapp", help="harvest_explore.py output; stated "
+                    "admissions links are taken over probing for one")
     ap.add_argument("--out", required=True)
     ap.add_argument("--workers", type=int, default=12)
     args = ap.parse_args()
@@ -136,6 +157,30 @@ def main() -> int:
         for row in csv.DictReader(open(args.out)):
             if row.get("admissions_url"):
                 have[int(row["unitid"])] = row["admissions_url"]
+
+    # What the college itself told Common App beats what we can infer by
+    # probing its DNS, and it is first-year specific, which a probe cannot be:
+    # this finds /admissions/first-year/apply where the probe stops at
+    # /admissions. Still filtered through looks_like_admissions, because the
+    # stated value is not always better - Alverno's points at /visit - and
+    # is_admissions_link is exactly the guard that catches it.
+    stated = 0
+    if args.commonapp and os.path.exists(args.commonapp):
+        for line in open(args.commonapp):
+            row = json.loads(line)
+            unitid, url = row.get("unitid"), row.get("admissions_url")
+            # Common App has members we do not carry: foreign universities and
+            # a few without an IPEDS id at all. The catalogue is the roster.
+            if not unitid or not url or unitid not in catalog:
+                continue
+            # http where https exists is a stale membership record, not a
+            # choice. Every one spot-checked answers on https.
+            url = re.sub(r"^http://", "https://", url.strip())
+            if not is_admissions_link(url):
+                continue
+            have[int(unitid)] = url
+            stated += 1
+        print(f"{stated} admissions links stated by the college via Common App")
 
     todo = [u for u in wanted if u in catalog and catalog[u].get("website") and u not in have]
     print(f"{len(have)} already on file, resolving {len(todo)}")
@@ -161,7 +206,12 @@ def main() -> int:
         for unitid in sorted(have, key=lambda u: catalog[u]["name"]):
             w.writerow([unitid, catalog[unitid]["name"], have[unitid]])
 
-    print(f"{len(have)} of {len(wanted)} have an admissions site -> {args.out}")
+    # Not "of len(wanted)": Common App states links for catalogue colleges
+    # outside the requirements grid too, and those are worth keeping. A student
+    # can add any college in the catalogue, not only the 951 on the grid.
+    asked = sum(1 for u in wanted if u in have)
+    print(f"{asked} of {len(wanted)} requested, {len(have)} rows in total "
+          f"({stated} stated by the college) -> {args.out}")
     return 0
 
 

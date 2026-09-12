@@ -35,6 +35,8 @@ const PURE = [
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
   ['cancellation-policy.ts', 'the published cancellation policy, applied'],
   ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],
+  ['commonapp-explore.ts', 'the Common App member data, and where an admissions link sends a student'],
+  ['essay-source-urls.ts', 'every machine-read prompt came from the right page, for the right cycle'],
 ];
 
 /** Needs the local Supabase. Skipped when it is not answering. */

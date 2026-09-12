@@ -2,7 +2,7 @@ unitid,name,url,admissions_url,note
 222178,Abilene Christian University,,https://apply.acu.edu/,
 126182,Adams State University,,https://apply.adams.edu/,
 188429,Adelphi University,,https://admission.adelphi.edu/,
-138600,Agnes Scott College,,https://www.agnesscott.edu/admission/,
+138600,Agnes Scott College,,https://www.agnesscott.edu/admission/,essay page not found
 100724,Alabama State University,,https://www.alasu.edu/admissions/,
 188526,Albany College of Pharmacy and Health Sciences,,https://admissions.acphs.edu/,
 128498,Albertus Magnus College,,https://admissions.albertus.edu/,
@@ -13,17 +13,17 @@ unitid,name,url,admissions_url,note
 210669,Allegheny College,,https://admissions.allegheny.edu/,
 217624,Allen University,,,
 168591,Alma College,,https://admissions.alma.edu/,
-210775,Alvernia University,,https://admissions.alvernia.edu/,
+210775,Alvernia University,,https://admissions.alvernia.edu/,essay page not found
 238193,Alverno College,,https://www.alverno.edu/undergraduate,
 164447,American International College,,https://www.aic.edu/admissions-tuition/,
-131159,American University,,,
+131159,American University,,,essay page not found
 164465,Amherst College,https://www.amherst.edu/admission/apply/firstyear/writingsupplement,https://admission.amherst.edu/,
 217633,Anderson University,,https://andersonuniversity.edu/admissions-requirements/,
 150066,Anderson University,,https://apply.anderson.edu/,
 168740,Andrews University,,https://apply.andrews.edu/,
 222831,Angelo State University,,https://www.angelo.edu/admissions-and-aid/,
 483018,Antioch College,,https://antiochcollege.edu/admission/,
-197869,Appalachian State University,,https://admissions.appstate.edu/,
+197869,Appalachian State University,,https://admissions.appstate.edu/,essay page not found
 168786,Aquinas College,,https://admissions.aquinas.edu/,
 211088,Arcadia University,,https://www.arcadia.edu/admissions,
 105899,Arizona Christian University,,https://apply.arizonachristian.edu/,
@@ -40,17 +40,17 @@ unitid,name,url,admissions_url,note
 222983,Austin College,https://www.austincollege.edu/admission/apply,https://admissions.austincollege.edu/,
 219602,Austin Peay State University,,https://apply.apsu.edu/,
 446048,Ave Maria University,,https://apply.avemaria.edu/,
-164580,Babson College,https://www.babson.edu/summer-at-babson/high-school-learners/the-arthur-m-blank-school-summer-program/apply-and-cost/,https://www.babson.edu/undergraduate/how-to-apply/,essay page not found
+164580,Babson College,,https://www.babson.edu/undergraduate/how-to-apply/,essay page not found
 168847,Baker College,,https://apply.baker.edu/,
 201195,Baldwin Wallace University,,https://admission.bw.edu/,
 150136,Ball State University,,https://admissions.bsu.edu/,
-189088,Bard College,,https://www.bard.edu/admission/,
-189097,Barnard College,https://barnard.edu/barnard-short-answer-questions,https://admissions.barnard.edu/,
+189088,Bard College,,https://www.bard.edu/admission/,essay page not found
+189097,Barnard College,,https://admissions.barnard.edu/,essay page not found
 132471,Barry University,,https://my.barry.edu/admission/,
 197911,Barton College,,https://admissions.barton.edu/,
 160977,Bates College,,https://apply.bates.edu/,
 164632,Bay Path University,,https://www.baypath.edu/admissions-aid/undergraduate-admissions/,
-223232,Baylor University,,https://admissions.web.baylor.edu/,
+223232,Baylor University,,https://admissions.web.baylor.edu/,essay page not found
 384254,Beacon College,,https://www.beaconcollege.edu/admissions-aid/,
 175421,Belhaven University,,https://www.belhaven.edu/admission/,
 156286,Bellarmine University,,https://apply.bellarmine.edu/,
@@ -59,9 +59,10 @@ unitid,name,url,admissions_url,note
 238333,Beloit College,,https://admissions.beloit.edu/,
 154712,Benedictine College,,https://apply.benedictine.edu/,
 145619,Benedictine University,,https://ben.edu/admissions/,
-230816,Bennington College,,https://admissions.bennington.edu/,
-164739,Bentley University,,https://admissions.bentley.edu/,
-139144,Berry College,,https://www.berry.edu/admission/,
+230816,Bennington College,,https://admissions.bennington.edu/,essay page not found
+164739,Bentley University,,https://admissions.bentley.edu/,essay page not found
+139144,Berry College,,https://www.berry.edu/admission/,essay page not found
+154721,Bethany College,,,essay page not found
 173142,Bethany Lutheran College,,https://admissions.blc.edu/,
 219718,Bethel University,,https://apply.bethelu.edu/,
 173160,Bethel University,,https://apply.bethel.edu/,
@@ -69,12 +70,12 @@ unitid,name,url,admissions_url,note
 110097,Biola University,,https://undergrad.biola.edu/,
 143288,Blackburn College,,https://apply.blackburn.edu/,
 201371,Bluffton University,,https://www.bluffton.edu/admissions/,
-164924,Boston College,https://www.bc.edu/bc-web/admission/apply.html,https://admission.bc.edu/,
-164988,Boston University,https://www.bu.edu/admissions/apply/first-year/,https://www.bu.edu/admissions/,essay page not found
-161004,Bowdoin College,,https://admissions.bowdoin.edu/,
+164924,Boston College,,https://admission.bc.edu/,essay page not found
+164988,Boston University,,https://www.bu.edu/admissions/,essay page not found
+161004,Bowdoin College,,https://admissions.bowdoin.edu/,essay page not found
 201441,Bowling Green State University-Main Campus,,https://admissions.bgsu.edu/,
 143358,Bradley University,,https://apply.bradley.edu/,
-165015,Brandeis University,,https://admissions.brandeis.edu/,
+165015,Brandeis University,,https://admissions.brandeis.edu/,essay page not found
 139199,Brenau University,,https://apply.brenau.edu/,
 156356,Brescia University,,,
 198066,Brevard College,,https://apply.brevard.edu/,
@@ -84,23 +85,23 @@ unitid,name,url,admissions_url,note
 217156,Brown University,https://admission.brown.edu/apply/how-apply,https://admission.brown.edu/,
 217165,Bryant University,,https://admission.bryant.edu/,
 210492,Bryn Athyn College of the New Church,,https://apply.brynathyn.edu/,
-211273,Bryn Mawr College,https://www.brynmawr.edu/stories/mawr-insight-college-essay,https://admissions.brynmawr.edu/,
-211291,Bucknell University,https://www.bucknell.edu/episode-31-how-i-crafted-killer-application-essay,https://admissions.bucknell.edu/,
+211273,Bryn Mawr College,https://www.brynmawr.edu/admissions-aid/apply,https://admissions.brynmawr.edu/,
+211291,Bucknell University,,https://admissions.bucknell.edu/,essay page not found
 153001,Buena Vista University,,https://www.bvu.edu/admissions,
 209409,Bushnell University,,,
-150163,Butler University,,https://admission.butler.edu/,
+150163,Butler University,,https://admission.butler.edu/,essay page not found
 215114,Cairn University-Langhorne,https://cairn.edu/application-requirements/,https://admissions.cairn.edu/,
 183910,Caldwell University,https://www.caldwell.edu/admissions/requirements/application-essay-topics/,https://apply.caldwell.edu/,
 110404,California Institute of Technology,https://www.admissions.caltech.edu/apply/32-program/supplemental-32-application-essays,https://apply.caltech.edu/,
-110413,California Lutheran University,,https://admissions.callutheran.edu/,
+110413,California Lutheran University,,https://admissions.callutheran.edu/,essay page not found
 169080,Calvin University,,https://admissions.calvin.edu/,
 198136,Campbell University,,https://apply.campbell.edu/,
 189705,Canisius University,,https://www.canisius.edu/apply-to-canisius,
 201548,Capital University,,https://apply.capital.edu/,
-162061,Capitol Technology University,,https://www.captechu.edu/admissions-and-financial-aid,
-173258,Carleton College,,https://www.carleton.edu/admissions/,
+162061,Capitol Technology University,,https://www.captechu.edu/admissions-and-financial-aid,essay page not found
+173258,Carleton College,,https://www.carleton.edu/admissions/,essay page not found
 211431,Carlow University,,https://admissions.carlow.edu/,
-211440,Carnegie Mellon University,,https://admission.cmu.edu/,
+211440,Carnegie Mellon University,,https://admission.cmu.edu/,essay page not found
 180106,Carroll College,,https://admission.carroll.edu/,
 238458,Carroll University,,https://apply.carrollu.edu/,
 219806,Carson-Newman University,,https://admissions.cn.edu/,
@@ -114,10 +115,10 @@ unitid,name,url,admissions_url,note
 128771,Central Connecticut State University,,https://www.ccsu.edu/admissions,
 169248,Central Michigan University,,https://admissions.cmich.edu/,
 234827,Central Washington University,,https://admissions.cwu.edu/,
-156408,Centre College,,https://admission.centre.edu/,
+156408,Centre College,,https://admission.centre.edu/,essay page not found
 141486,Chaminade University of Honolulu,,https://apply.chaminade.edu/,
 230852,Champlain College,,https://www.champlain.edu/admissions/,
-111948,Chapman University,,https://www.chapman.edu/admission/,
+111948,Chapman University,,https://www.chapman.edu/admission/,essay page not found
 111966,Charles R Drew University of Medicine and Science,,https://apply.cdrewu.edu/,
 217688,Charleston Southern University,,https://apply.charlestonsouthern.edu/,
 211556,Chatham University,,https://admission.chatham.edu/,
@@ -127,27 +128,27 @@ unitid,name,url,admissions_url,note
 219833,Christian Brothers University,,https://admissions.cbu.edu/,
 231712,Christopher Newport University,,https://cnu.edu/admission/,
 217873,Claflin University,,https://apply.claflin.edu/,
-112260,Claremont McKenna College,,https://admission.cmc.edu/,
+112260,Claremont McKenna College,,https://admission.cmc.edu/,essay page not found
 138947,Clark Atlanta University,,https://www.cau.edu/admissions,
-165334,Clark University,,https://apply.clarku.edu/,
+165334,Clark University,,https://apply.clarku.edu/,essay page not found
 190044,Clarkson University,,https://www.clarkson.edu/admissions-aid,
-217882,Clemson University,,https://admissions.clemson.edu/,
+217882,Clemson University,,https://admissions.clemson.edu/,essay page not found
 202046,Cleveland Institute of Art,,,
 202134,Cleveland State University,,https://www.csuohio.edu/admissions,
-218724,Coastal Carolina University,,https://apply.coastal.edu/,
+218724,Coastal Carolina University,,https://apply.coastal.edu/,essay page not found
 153144,Coe College,,https://admission.coe.edu/,
 217907,Coker University,,https://www.coker.edu/admissions/,
 161086,Colby College,,https://admissions.colby.edu/,
 182634,Colby-Sawyer College,,https://apply.colby-sawyer.edu/,
-190099,Colgate University,,https://admission.colgate.edu/,
+190099,Colgate University,,https://admission.colgate.edu/,essay page not found
 169442,College for Creative Studies,,https://www.ccsdetroit.edu/admissions/,
-217819,College of Charleston,,https://www.charleston.edu/admission/,
+217819,College of Charleston,,https://www.charleston.edu/admission/,essay page not found
 174747,College of Saint Benedict,,https://admissions.csbsju.edu/,
 181604,College of Saint Mary,,https://www.csm.edu/admissions/,
 160959,College of the Atlantic,,https://apply.coa.edu/,
 166124,College of the Holy Cross,,https://admissions.holycross.edu/,
 126678,Colorado College,https://ccbasecamp.coloradocollege.edu/register/qbwritingsupplement,https://www.coloradocollege.edu/admission/,
-126775,Colorado School of Mines,,https://admissions.mines.edu/,
+126775,Colorado School of Mines,,https://admissions.mines.edu/,essay page not found
 128106,Colorado State University Pueblo,,https://www.csupueblo.edu/admissions/,
 126818,Colorado State University-Fort Collins,https://admissions.colostate.edu/2017/08/04/academic-explanation-gap-writing-prompts/,https://admissions.colostate.edu/,
 217934,Columbia College,,https://admissions.columbiasc.edu/,
@@ -160,7 +161,7 @@ unitid,name,url,admissions_url,note
 144351,Concordia University-Chicago,,https://www.cuchicago.edu/admission-aid/,
 112075,Concordia University-Irvine,,https://www.cui.edu/apply/,
 238616,Concordia University-Wisconsin,,https://apply.cuw.edu/,
-128902,Connecticut College,,https://admission.conncoll.edu/,
+128902,Connecticut College,,https://admission.conncoll.edu/,essay page not found
 217961,Converse University,,https://apply.converse.edu/,
 162283,Coppin State University,,https://apply.coppin.edu/,
 210331,Corban University,,https://undergrad.corban.edu/,
@@ -170,7 +171,7 @@ unitid,name,url,admissions_url,note
 177117,Cottey College,,https://apply.cottey.edu/,
 139393,Covenant College,,https://www.covenant.edu/admissions/,
 181002,Creighton University,https://www.creighton.edu/student-experience/safety-well-being/physical-wellness/immunization-requirements,https://admissions.creighton.edu/,
-177144,Culver-Stockton College,,https://culver.edu/admissions/cost-financial-aid/,
+177144,Culver-Stockton College,,https://culver.edu/admissions/cost-financial-aid/,essay page not found
 219949,Cumberland University,,https://admissions.cumberland.edu/,
 165529,Curry College,,https://www.curry.edu/admission-and-aid/undergraduate-admission,
 190716,D'Youville  University,,https://apply.dyu.edu/,
@@ -178,14 +179,14 @@ unitid,name,url,admissions_url,note
 224226,Dallas Baptist University,,https://admissions.dbu.edu/,
 182670,Dartmouth College,https://admissions.dartmouth.edu/glossary-term/writing-supplement,https://admissions.dartmouth.edu/,
 169479,Davenport University,https://www.davenport.edu/financial-aid/scholarships/Foundation-Essay-Scholarships,https://www.davenport.edu/admissions-aid,
-198385,Davidson College,https://www.davidson.edu/admission-and-financial-aid/apply/first-year-applicants,https://admission.davidson.edu/,
+198385,Davidson College,,https://admission.davidson.edu/,essay page not found
+144740,DePaul University,,https://www.depaul.edu/admission,
+150400,DePauw University,,https://apply.depauw.edu/,
+210739,DeSales University,,https://www.desales.edu/admissions/,
 165574,Dean College,,https://admission.dean.edu/,
 202514,Defiance College,,https://www.defiance.edu/admissions/,
 211981,Delaware Valley University,,https://delval.edu/apply,
 202523,Denison University,,https://admission.denison.edu/,
-144740,DePaul University,,https://www.depaul.edu/admission,
-150400,DePauw University,,https://apply.depauw.edu/,
-210739,DeSales University,,https://www.desales.edu/admissions/,
 212009,Dickinson College,https://www.dickinson.edu/info/20256/apply/1026/essay_writing_tips_and_prompts,https://admissions.dickinson.edu/,
 158802,Dillard University,,https://apply.dillard.edu/,
 148496,Dominican University,,https://www.dom.edu/admission,
@@ -193,11 +194,11 @@ unitid,name,url,admissions_url,note
 113698,Dominican University of California,,https://admissions.dominican.edu/,
 153269,Drake University,,https://apply.drake.edu/,
 184348,Drew University,,,
-212054,Drexel University,,https://admissions.drexel.edu/,
+212054,Drexel University,,https://admissions.drexel.edu/,essay page not found
 177214,Drury University,,https://apply.drury.edu/,
-198419,Duke University,,https://admissions.duke.edu/,
+198419,Duke University,,https://admissions.duke.edu/,essay page not found
 212106,Duquesne University,,https://apply.duq.edu/,
-150455,Earlham College,,https://admissions.earlham.edu/,
+150455,Earlham College,,https://admissions.earlham.edu/,essay page not found
 198464,East Carolina University,,https://admissions.ecu.edu/,
 207041,East Central University,,https://apply.ecok.edu/,
 212115,East Stroudsburg University of Pennsylvania,,https://apply.esu.edu/,
@@ -215,11 +216,12 @@ unitid,name,url,admissions_url,note
 212197,Elizabethtown College,,,
 144962,Elmhurst University,,https://apply.elmhurst.edu/,
 190983,Elmira College,,https://apply.elmira.edu/,
-198516,Elon University,,https://admissions.elon.edu/,
-165662,Emerson College,,https://admissions.emerson.edu/,
+198516,Elon University,,https://admissions.elon.edu/,essay page not found
+165662,Emerson College,,https://admissions.emerson.edu/,essay page not found
 165671,Emmanuel College,,https://www.emmanuel.edu/admissions-aid/undergraduate/undergraduate-admissions,
 232025,Emory & Henry University,,https://www.emoryhenry.edu/admission/,
-139658,Emory University,,https://apply.emory.edu/,
+139658,Emory University,,https://apply.emory.edu/,essay page not found
+165699,Endicott College,,https://apply.endicott.edu/,essay page not found
 144971,Eureka College,,https://www.eureka.edu/apply,
 177339,Evangel University,,,
 129242,Fairfield University,,https://www.fairfield.edu/admission-and-aid/apply/,
@@ -230,7 +232,7 @@ unitid,name,url,admissions_url,note
 165802,Fisher College,,https://apply.fisher.edu/,
 220181,Fisk University,,https://www.fisk.edu/admissions/,
 165820,Fitchburg State University,,https://admissions.fitchburgstate.edu/,
-133711,Flagler College,,https://www.flagler.edu/admissions-aid,
+133711,Flagler College,,https://www.flagler.edu/admissions-aid,essay page not found
 133650,Florida Agricultural and Mechanical University,,https://admissions.famu.edu/,
 133669,Florida Atlantic University,,https://admissions.fau.edu/,
 433660,Florida Gulf Coast University,,https://apply.fgcu.edu/,
@@ -239,14 +241,14 @@ unitid,name,url,admissions_url,note
 482936,Florida Polytechnic University,,https://apply.floridapoly.edu/,
 134079,Florida Southern College,,https://admissions.flsouthern.edu/,
 134097,Florida State University,,https://admissions.fsu.edu/,
-191241,Fordham University,,,
+191241,Fordham University,,,essay page not found
 127185,Fort Lewis College,,https://apply.fortlewis.edu/,
 165866,Framingham State University,,https://admissions.framingham.edu/,
 160074,Franciscan Missionaries of Our Lady University,,https://apply.franu.edu/,
-212577,Franklin and Marshall College,,https://apply.fandm.edu/,
 150604,Franklin College,,,
 182795,Franklin Pierce University,,https://franklinpierce.edu/admissions/,
 441982,Franklin W Olin College of Engineering,,https://admission.olin.edu/,
+212577,Franklin and Marshall College,,https://apply.fandm.edu/,
 114813,Fresno Pacific University,,https://apply.fresno.edu/,
 162584,Frostburg State University,,https://apply.frostburg.edu/,
 218070,Furman University,,https://admission.furman.edu/,
@@ -254,18 +256,18 @@ unitid,name,url,admissions_url,note
 198561,Gardner-Webb University,,https://admissions.gardner-webb.edu/,
 212656,Geneva College,,https://apply.geneva.edu/,
 208822,George Fox University,,https://admissions.georgefox.edu/,
-232186,George Mason University,,https://admissions.gmu.edu/,
-131469,George Washington University,,https://apply.gwu.edu/,
+232186,George Mason University,,https://admissions.gmu.edu/,essay page not found
+131469,George Washington University,,https://apply.gwu.edu/,essay page not found
 156745,Georgetown College,,https://admissions.georgetowncollege.edu/,
-131496,Georgetown University,https://uadmissions.georgetown.edu/apply/first-year-applicants/application-requirements-and-forms/,https://www.georgetown.edu/admissions/,
+131496,Georgetown University,,https://www.georgetown.edu/admissions/,essay page not found
 139861,Georgia College & State University,,https://admissions.gcsu.edu/,
 139755,Georgia Institute of Technology-Main Campus,,https://admission.gatech.edu/,
 139931,Georgia Southern University,,https://admissions.georgiasouthern.edu/,
-139940,Georgia State University,,https://admissions.gsu.edu/,
+139940,Georgia State University,,https://admissions.gsu.edu/,essay page not found
 184773,Georgian Court University,,https://georgian.edu/admissions/,
 212674,Gettysburg College,,https://admissions.gettysburg.edu/,
 130989,Goldey-Beacom College,,https://www.gbc.edu/admissions-aid/,
-235316,Gonzaga University,,https://www.gonzaga.edu/admission,
+235316,Gonzaga University,,https://apply.gonzaga.edu/,essay page not found
 165936,Gordon College,,https://apply.gordon.edu/,
 150668,Goshen College,,,
 162654,Goucher College,,https://apply.goucher.edu/,
@@ -281,49 +283,51 @@ unitid,name,url,admissions_url,note
 198613,Guilford College,,https://apply.guilford.edu/,
 173647,Gustavus Adolphus College,,https://apply.gustavus.edu/,
 212832,Gwynedd Mercy University,,https://apply.gmercyu.edu/,
-191515,Hamilton College,,https://admission.hamilton.edu/,
+191515,Hamilton College,,https://admission.hamilton.edu/,essay page not found
 173665,Hamline University,,https://admissions.hamline.edu/,
 232256,Hampden-Sydney College,,https://admission.hsc.edu/,
+166018,Hampshire College,,,essay page not found
 232265,Hampton University,,https://admissions.hamptonu.edu/,
 150756,Hanover College,,https://www.hanover.edu/admission/,
 225247,Hardin-Simmons University,,https://www.hsutx.edu/admissions/,
 446640,Harrisburg University of Science and Technology,,https://apply.harrisburgu.edu/,
 191533,Hartwick College,,https://www.hartwick.edu/admissions/,
 166027,Harvard University,https://college.harvard.edu/admissions/apply/first-year-applicants/application-requirements,https://college.harvard.edu/,
-115409,Harvey Mudd College,,https://admission.hmc.edu/,
+115409,Harvey Mudd College,,https://admission.hmc.edu/,essay page not found
 181127,Hastings College,,https://www.hastings.edu/admissions/,
 212911,Haverford College,https://www.haverford.edu/admission/supplement,https://www.haverford.edu/admission,
 141644,Hawaii Pacific University,,https://www.hpu.edu/admissions/,
 203085,Heidelberg University,,https://admission.heidelberg.edu/,
 166054,Hellenic College-Holy Cross Greek Orthodox School of Theology,,https://www.hchc.edu/admissions-apply/,
 107080,Hendrix College,,https://apply.hendrix.edu/,
-198695,High Point University,,https://www.highpoint.edu/admissions/,
+198695,High Point University,,https://www.highpoint.edu/admissions/,essay page not found
 191621,Hilbert College,,https://www.hilbert.edu/apply/,
-170286,Hillsdale College,,https://www.hillsdale.edu/admissions-aid/admissions-2/,
+170286,Hillsdale College,,https://www.hillsdale.edu/admissions-aid/admissions-2/,essay page not found
 203128,Hiram College,,,
-191649,Hofstra University,,https://admissions.hofstra.edu/,
+191649,Hofstra University,,https://admissions.hofstra.edu/,essay page not found
 232308,Hollins University,,https://admissions.hollins.edu/,
 150774,Holy Cross College,,https://admissions.hcc-nd.edu/,
 162760,Hood College,,https://www.hood.edu/admission-aid,
 170301,Hope College,,https://hope.edu/admissions/,
 191676,Houghton University,,https://admission.houghton.edu/,
 225399,Houston Christian University,,https://hc.edu/admissions/,
-131520,Howard University,,https://admission.howard.edu/,
+131520,Howard University,,https://admission.howard.edu/,essay page not found
 150941,Huntington University,,https://admissions.huntington.edu/,
 487524,Husson University,,https://admissions.husson.edu/,
 145691,Illinois College,,https://apply.ic.edu/,
-145725,Illinois Institute of Technology,,https://admission.iit.edu/,
+145725,Illinois Institute of Technology,,https://admission.iit.edu/,essay page not found
 145813,Illinois State University,,https://admissions.illinoisstate.edu/,
-145646,Illinois Wesleyan University,,https://admissions.iwu.edu/,
+145646,Illinois Wesleyan University,,https://admissions.iwu.edu/,essay page not found
 213011,Immaculata University,,https://admissions.immaculata.edu/,
 151324,Indiana State University,,https://www.indianastate.edu/admissions,
+151351,Indiana University-Bloomington,https://bloomington.iu.edu/admissions/apply/application-faqs.html,,
 151111,Indiana University-Indianapolis,,https://admissions.indianapolis.iu.edu/,
 151360,Indiana University-Northwest,,https://northwest.iu.edu/admissions/,
 151342,Indiana University-South Bend,,,
 151379,Indiana University-Southeast,,https://southeast.iu.edu/admissions/,
 191931,Iona University,,https://apply.iona.edu/,
 153603,Iowa State University,,https://admissions.iastate.edu/,
-191968,Ithaca College,,https://www.ithaca.edu/admission,
+191968,Ithaca College,,https://www.ithaca.edu/admission,essay page not found
 175856,Jackson State University,,https://admissions.jsums.edu/,
 134945,Jacksonville University,,https://admissions.ju.edu/,
 232423,James Madison University,https://www.jmu.edu/admissions/apply/first-year/essay-tips.shtml,,
@@ -333,7 +337,7 @@ unitid,name,url,admissions_url,note
 217235,Johnson & Wales University-Providence,,https://apply.jwu.edu/,
 198756,Johnson C Smith University,,https://www.jcsu.edu/admissions,
 213251,Juniata College,,,
-170532,Kalamazoo College,,https://admission.kzoo.edu/,
+170532,Kalamazoo College,,https://admission.kzoo.edu/,essay page not found
 177746,Kansas City Art Institute,,https://apply.kcai.edu/,
 155399,Kansas State University,,https://admissions.k-state.edu/,
 185262,Kean University,,https://admissions.kean.edu/,
@@ -350,7 +354,7 @@ unitid,name,url,admissions_url,note
 213358,La Roche University,,https://admissions.laroche.edu/,
 213367,La Salle University,,https://apply.lasalle.edu/,
 117627,La Sierra University,,https://admissions.lasierra.edu/,
-213385,Lafayette College,,https://admissions.lafayette.edu/,
+213385,Lafayette College,,https://admissions.lafayette.edu/,essay page not found
 203580,Lake Erie College,,https://apply.lec.edu/,
 146481,Lake Forest College,https://apply.lakeforest.edu/register/first-year-application?utm_source=website&utm_medium=web&utm_campaign=2021-22,https://admissions.lakeforest.edu/,
 170639,Lake Superior State University,,https://www.lssu.edu/admissions/,
@@ -360,48 +364,48 @@ unitid,name,url,admissions_url,note
 170675,Lawrence Technological University,,https://apply.ltu.edu/,
 239017,Lawrence University,,https://admissions.lawrence.edu/,
 192323,Le Moyne College,,https://www.lemoyne.edu/admission-financial-aid/,
+226231,LeTourneau University,,https://admissions.letu.edu/,
 213507,Lebanon Valley College,,https://www.lvc.edu/admission-aid/,
 198808,Lees-McRae College,,https://admissions.lmc.edu/,
-213543,Lehigh University,,https://admissions.lehigh.edu/,
+213543,Lehigh University,,https://admissions.lehigh.edu/,essay page not found
 198835,Lenoir-Rhyne University,,https://apply.lr.edu/,
 166452,Lesley University,,https://apply.lesley.edu/,
-226231,LeTourneau University,,https://admissions.letu.edu/,
 209056,Lewis & Clark College,https://college.lclark.edu/offices/admissions/apply/essay_topics/,https://apply.lclark.edu/,
 146612,Lewis University,,,
 232557,Liberty University,,https://apply.liberty.edu/,
 140252,Life University,,https://apply.life.edu/,
 220631,Lincoln Memorial University,,https://www.lmunet.edu/admissions,
 177968,Lindenwood University,,https://apply.lindenwood.edu/,
-209065,Linfield University,,https://apply.linfield.edu/,
+209065,Linfield University,,https://apply.linfield.edu/,essay page not found
 219976,Lipscomb University,,https://admission.lipscomb.edu/,
 198862,Livingstone College,,,
 192448,Long Island University,,https://apply.liu.edu/,
 232566,Longwood University,,https://www.longwood.edu/admissions/,
 153825,Loras College,,https://loras.edu/admission/,
-117946,Loyola Marymount University,,https://admission.lmu.edu/,
+117946,Loyola Marymount University,,https://admission.lmu.edu/,essay page not found
 146719,Loyola University Chicago,,https://www.luc.edu/admissions-aid/,
-163046,Loyola University Maryland,,https://admission.loyola.edu/,
+163046,Loyola University Maryland,,https://admission.loyola.edu/,essay page not found
 159656,Loyola University New Orleans,,https://admissions.loyno.edu/,
 226383,Lubbock Christian University,,https://apply.lcu.edu/,
 153834,Luther College,,https://admissions.luther.edu/,
 213668,Lycoming College,,https://www.lycoming.edu/admissions/,
-132657,Lynn University,,https://www.lynn.edu/admission,
+132657,Lynn University,,https://www.lynn.edu/admission,essay page not found
 106342,Lyon College,,https://www.lyon.edu/admissions,
-173902,Macalester College,,https://admissions.macalester.edu/,
+173902,Macalester College,,https://admissions.macalester.edu/,essay page not found
 170806,Madonna University,,https://apply.madonna.edu/,
 161509,Maine College of Art & Design,https://meca.edu/admissions/,https://apply.meca.edu/,
 161299,Maine Maritime Academy,,https://admissions.mainemaritime.edu/,
 203775,Malone University,,https://admissions.malone.edu/,
-151777,Manchester University,,https://admissions.manchester.edu/,
+151777,Manchester University,,https://admissions.manchester.edu/,essay page not found
 192703,Manhattan University,,https://apply.manhattan.edu/,
 192749,Manhattanville University,,https://www.mville.edu/admissions-and-aid/admissions/,
 239080,Marian University,,https://www.marianuniversity.edu/admission/,
 151786,Marian University,,https://www.marian.edu/admissions/,
 203845,Marietta College,,https://apply.marietta.edu/,
-192819,Marist University,,https://admission.marist.edu/,
+192819,Marist University,,https://admission.marist.edu/,essay page not found
 239105,Marquette University,,https://admissions.marquette.edu/,
 237525,Marshall University,,https://apply.marshall.edu/,
-232672,Mary Baldwin University,,https://apply.marybaldwin.edu/,
+232672,Mary Baldwin University,,https://apply.marybaldwin.edu/,essay page not found
 163295,Maryland Institute College of Art,,https://apply.mica.edu/,
 232706,Marymount University,,https://apply.marymount.edu/,
 213826,Marywood University,,https://admissions.marywood.edu/,
@@ -417,7 +421,7 @@ unitid,name,url,admissions_url,note
 140447,Mercer University,,https://undergrad.mercer.edu/,
 193016,Mercy University,https://mercy.edu/academics/special-programs/global-honors/honors-supplemental-application,https://apply.mercy.edu/,
 213987,Mercyhurst University,,https://apply.mercyhurst.edu/,
-198950,Meredith College,,https://www.meredith.edu/admissions,
+198950,Meredith College,,https://www.meredith.edu/admissions,essay page not found
 166850,Merrimack College,,https://admission.merrimack.edu/,
 213996,Messiah University,,https://admissions.messiah.edu/,
 198969,Methodist University,,https://apply.methodist.edu/,
@@ -445,7 +449,7 @@ unitid,name,url,admissions_url,note
 178387,Missouri Western State University,,https://apply.missouriwestern.edu/,
 129774,Mitchell College,,https://admissions.mitchell.edu/,
 193292,Molloy University,,https://apply.molloy.edu/,
-147341,Monmouth College,,https://www.monmouthcollege.edu/admission/,
+147341,Monmouth College,,https://www.monmouthcollege.edu/admission/,essay page not found
 185572,Monmouth University,,https://apply.monmouth.edu/,
 180461,Montana State University,,https://admissions.montana.edu/,
 180179,Montana State University Billings,,https://admissions.msubillings.edu/,
@@ -453,14 +457,14 @@ unitid,name,url,admissions_url,note
 199032,Montreat College,,https://apply.montreat.edu/,
 166911,Montserrat College of Art,,https://apply.montserrat.edu/,
 214148,Moore College of Art and Design,,https://admissions.moore.edu/,
-214157,Moravian University,,https://apply.moravian.edu/,
+214157,Moravian University,,https://apply.moravian.edu/,essay page not found
 157386,Morehead State University,,https://admissions.moreheadstate.edu/,
-140553,Morehouse College,,https://apply.morehouse.edu/,
+140553,Morehouse College,,https://apply.morehouse.edu/,essay page not found
 163453,Morgan State University,,https://undergrad.morgan.edu/,
 154004,Morningside University,,https://apply.morningside.edu/,
 140571,Morris Brown College,,https://morrisbrown.edu/admissions/,
 214166,Mount Aloysius College,,https://apply.mtaloy.edu/,
-166939,Mount Holyoke College,,https://admission.mtholyoke.edu/,
+166939,Mount Holyoke College,,https://admission.mtholyoke.edu/,essay page not found
 219198,Mount Marty University,,https://admission.mountmarty.edu/,
 239390,Mount Mary University,,https://apply.mtmary.edu/,
 193353,Mount Saint Mary College,,https://www.msmc.edu/admissions-aid/,
@@ -480,19 +484,19 @@ unitid,name,url,admissions_url,note
 187967,New Mexico Institute of Mining and Technology,,https://apply.nmt.edu/,
 188030,New Mexico State University-Main Campus,,https://admissions.nmsu.edu/,
 194091,New York Institute of Technology,,https://apply.nyit.edu/,
-193900,New York University,,https://admissions.nyu.edu/,
+193900,New York University,,https://admissions.nyu.edu/,essay page not found
+496803,NewU University,,https://newu.university/apply-now/,
 218414,Newberry College,,https://admissions.newberry.edu/,
 155335,Newman University,,,
-496803,NewU University,,https://newu.university/apply-now/,
 193973,Niagara University,,https://apply.niagara.edu/,
 167260,Nichols College,,https://www.nichols.edu/admissions/,
 232937,Norfolk State University,,https://www.nsu.edu/admissions,
 199102,North Carolina A & T State University,https://www.ncat.edu/provost/academic-affairs/title-iii/title-iii-hbgi-supplementary-award.php,https://apply.ncat.edu/,
 199157,North Carolina Central University,,https://www.nccu.edu/admissions,
-199193,North Carolina State University at Raleigh,,https://admissions.ncsu.edu/,
+199193,North Carolina State University at Raleigh,,https://admissions.ncsu.edu/,essay page not found
 199209,North Carolina Wesleyan University,,https://ncwu.edu/admissions/,
 147660,North Central College,,https://www.northcentralcollege.edu/admissions,
-147679,North Park University,,https://www.northpark.edu/admissions-aid/,
+147679,North Park University,,https://www.northpark.edu/admissions-aid/,essay page not found
 147776,Northeastern Illinois University,,https://admission.neiu.edu/,
 207263,Northeastern State University,,https://admissions.nsuok.edu/,
 167358,Northeastern University,https://admissions.northeastern.edu/how-to-apply/first-year-applicants/,https://admissions.northeastern.edu/,
@@ -509,7 +513,7 @@ unitid,name,url,admissions_url,note
 163578,Notre Dame of Maryland University,,https://ndm.edu/admissions/,
 136215,Nova Southeastern University,,https://apply.nova.edu/,
 171571,Oakland University,,https://apply.oakland.edu/,
-120254,Occidental College,,https://admission.oxy.edu/,
+120254,Occidental College,,https://admission.oxy.edu/,essay page not found
 140696,Oglethorpe University,,https://apply.oglethorpe.edu/,
 204617,Ohio Dominican University,,https://www.ohiodominican.edu/admissions/,
 204635,Ohio Northern University,,https://www.onu.edu/admissions-aid,
@@ -518,7 +522,7 @@ unitid,name,url,admissions_url,note
 204909,Ohio Wesleyan University,,https://admission.owu.edu/,
 207403,Oklahoma Baptist University,,https://admissions.okbu.edu/,
 207324,Oklahoma Christian University,,https://admissions.oc.edu/,
-207458,Oklahoma City University,,,
+207458,Oklahoma City University,,,essay page not found
 207388,Oklahoma State University-Main Campus,,,
 232982,Old Dominion University,,https://admission.odu.edu/,
 207582,Oral Roberts University,,https://admissions.oru.edu/,
@@ -531,10 +535,10 @@ unitid,name,url,admissions_url,note
 209603,Pacific Northwest College of Art,,https://apply.willamette.edu/,
 136330,Palm Beach Atlantic University,,https://apply.pba.edu/,
 498571,Pennsylvania Western University,,https://www.pennwest.edu//admissions/,
-121150,Pepperdine University,,https://admission.pepperdine.edu/,
+121150,Pepperdine University,,https://admission.pepperdine.edu/,essay page not found
 199306,Pfeiffer University,,https://apply.pfeiffer.edu/,
 140818,Piedmont University,,https://www.piedmont.edu/admissions-aid/apply/admissions-advisors/,
-121257,Pitzer College,,https://www.pitzer.edu/admission-aid,
+121257,Pitzer College,,https://www.pitzer.edu/admission-aid,essay page not found
 183080,Plymouth State University,,https://www.plymouth.edu/admissions,
 121309,Point Loma Nazarene University,,https://www.pointloma.edu/undergraduate,
 215442,Point Park University,,https://www.pointpark.edu/admissions/index,
@@ -545,7 +549,7 @@ unitid,name,url,admissions_url,note
 105589,Prescott College,,https://prescott.edu/admissions/,
 186131,Princeton University,https://admission.princeton.edu/apply/princeton-specific-questions,https://admission.princeton.edu/,
 148016,Principia College,,https://www.principiacollege.edu/admissions,
-217402,Providence College,,https://admission.providence.edu/,
+217402,Providence College,,https://admission.providence.edu/,essay page not found
 151102,Purdue University Fort Wayne,,https://apply.pfw.edu/,
 490805,Purdue University Northwest,,https://www.pnw.edu/admissions,
 243780,Purdue University-Main Campus,https://admissions.purdue.edu/become-student/guide/,https://admissions.purdue.edu/,
@@ -556,14 +560,14 @@ unitid,name,url,admissions_url,note
 186201,Ramapo College of New Jersey,,https://apply.ramapo.edu/,
 233301,Randolph College,,https://admission.randolphcollege.edu/,
 233295,Randolph-Macon College,,https://apply.rmc.edu/,
-209922,Reed College,,https://apply.reed.edu/,
+209922,Reed College,,https://apply.reed.edu/,essay page not found
 231651,Regent University,https://www.regent.edu/admissions-aid/apply/,https://apply.regent.edu/,
 167598,Regis College,,https://www.regiscollege.edu/admissions,
 127918,Regis University,,https://www.regis.edu/admissions/,
 140872,Reinhardt University,,,
-194824,Rensselaer Polytechnic Institute,,https://admissions.rpi.edu/,
+194824,Rensselaer Polytechnic Institute,,https://admissions.rpi.edu/,essay page not found
 217420,Rhode Island College,,https://www.ric.edu/admissions-financial-aid,
-217493,Rhode Island School of Design,,https://admissions.risd.edu/,
+217493,Rhode Island School of Design,,https://admissions.risd.edu/,essay page not found
 221351,Rhodes College,,https://admission.rhodes.edu/,
 227757,Rice University,https://admission.rice.edu/apply/first-year-applicants,https://admission.rice.edu/,
 186283,Rider University,,https://admissions.rider.edu/,
@@ -574,27 +578,34 @@ unitid,name,url,admissions_url,note
 215655,Robert Morris University,,https://admissions.rmu.edu/,
 194958,Roberts Wesleyan University,,https://apply.roberts.edu/,
 170967,Rochester Christian University,,https://rcu.edu/admissions/,
-195003,Rochester Institute of Technology,,https://admissions.rit.edu/,
+195003,Rochester Institute of Technology,,https://admissions.rit.edu/,essay page not found
 148405,Rockford University,,https://www.rockford.edu/admission/,
 179043,Rockhurst University,,,
-217518,Roger Williams University,,https://www.rwu.edu/undergraduate/admission-aid,
-136950,Rollins College,,https://apply.rollins.edu/,
+217518,Roger Williams University,,https://www.rwu.edu/undergraduate/admission-aid,essay page not found
+136950,Rollins College,,https://apply.rollins.edu/,essay page not found
 148487,Roosevelt University,,https://www.roosevelt.edu/admission,
 152318,Rose-Hulman Institute of Technology,,https://admissions.rose-hulman.edu/,
 184782,Rowan University,,https://admissions.rowan.edu/,
 195128,Russell Sage College,,,
+196130,SUNY Buffalo State University,,https://suny.buffalostate.edu/admissions,
+196167,SUNY College at Geneseo,,https://admissions.geneseo.edu/,
+196103,SUNY College of Environmental Science and Forestry,,https://apply.esf.edu/,
+196015,SUNY College of Technology at Canton,,https://admissions.canton.edu/,
+196291,SUNY Maritime College,,https://apply.sunymaritime.edu/,
+196185,SUNY Oneonta,,https://suny.oneonta.edu/admissions,
+196112,SUNY Polytechnic Institute,,,
 130253,Sacred Heart University,,https://apply.sacredheart.edu/,
-183239,Saint Anselm College,,https://admission.anselm.edu/,
-186618,Saint Elizabeth University,,https://apply.steu.edu/,
+183239,Saint Anselm College,,https://admission.anselm.edu/,essay page not found
+186618,Saint Elizabeth University,,https://apply.steu.edu/,essay page not found
 215743,Saint Francis University,,https://www.francis.edu/admissions,
 161518,Saint Joseph's College of Maine,,https://apply.sjcme.edu/,
 215770,Saint Joseph's University - Philadelphia,,https://admission.sju.edu/,
 137032,Saint Leo University,https://www.saintleo.edu/admissions/application-documents,https://apply.saintleo.edu/,
 179159,Saint Louis University,,https://admission.slu.edu/,
 236452,Saint Martin's University,,https://admissions.stmartin.edu/,
-152381,Saint Mary-of-the-Woods College,,https://apply.smwc.edu/,
 123554,Saint Mary's College of California,,https://admissions.stmarys-ca.edu/,
 174817,Saint Mary's University of Minnesota,,https://www.smumn.edu/admissions,
+152381,Saint Mary-of-the-Woods College,,https://apply.smwc.edu/,
 231059,Saint Michael's College,,,
 186432,Saint Peter's University,,https://admissions.saintpeters.edu/,
 215798,Saint Vincent College,,https://www.stvincent.edu/admission-aid/index.html,
@@ -606,17 +617,17 @@ unitid,name,url,admissions_url,note
 227881,Sam Houston State University,,https://apply.shsu.edu/,
 102049,Samford University,,https://www.samford.edu/admissions,
 120166,San Francisco Bay University,,https://www.sfbu.edu/admissions,
-122931,Santa Clara University,,https://apply.scu.edu/,
-195304,Sarah Lawrence College,,https://www.sarahlawrence.edu/admissions/,
+122931,Santa Clara University,,https://apply.scu.edu/,essay page not found
+195304,Sarah Lawrence College,,https://www.sarahlawrence.edu/admissions/,essay page not found
 494542,Sattler College,https://sattler.edu/application-essay-instructions/,https://apply.sattler.edu/,
 140951,Savannah College of Art and Design,,https://www.scad.edu/admission/apply,
 140960,Savannah State University,,https://savannahstate.edu/admissions/,
-143048,School of the Art Institute of Chicago,,https://www.saic.edu/admissions,
 197151,School of Visual Arts,,https://admissions.sva.edu/,
+143048,School of the Art Institute of Chicago,,https://www.saic.edu/admissions,
 228042,Schreiner University,,https://schreiner.edu/admissions/,
-123165,Scripps College,,https://www.scrippscollege.edu/admission/,
-236577,Seattle Pacific University,,https://admissions.spu.edu/,
-236595,Seattle University,,https://admissions.seattleu.edu/,
+123165,Scripps College,,https://www.scrippscollege.edu/admission/,essay page not found
+236577,Seattle Pacific University,,https://admissions.spu.edu/,essay page not found
+236595,Seattle University,,https://admissions.seattleu.edu/,essay page not found
 186584,Seton Hall University,,https://admissions.shu.edu/,
 215947,Seton Hill University,,https://apply.setonhill.edu/,
 199643,Shaw University,,https://www.shawu.edu/admissions-aid/,
@@ -628,14 +639,14 @@ unitid,name,url,admissions_url,note
 154350,Simpson College,,https://simpson.edu/admissions-aid/,
 123457,Simpson University,,https://simpsonu.edu/admissions/,
 195526,Skidmore College,,https://admissions.skidmore.edu/,
-167835,Smith College,,https://apply.smith.edu/,
-399911,Soka University of America,,https://admissions.soka.edu/,
+167835,Smith College,,https://apply.smith.edu/,essay page not found
+399911,Soka University of America,,https://admissions.soka.edu/,essay page not found
 179557,Southeast Missouri State University,,https://apply.semo.edu/,
 137564,Southeastern University,,,
 130493,Southern Connecticut State University,,https://apply.southernct.edu/,
 149231,Southern Illinois University Edwardsville,,https://admissions.siue.edu/,
 149222,Southern Illinois University-Carbondale,,https://admissions.siu.edu/,
-228246,Southern Methodist University,,https://admission.smu.edu/,
+228246,Southern Methodist University,,https://admission.smu.edu/,essay page not found
 206862,Southern Nazarene University,,https://www.snu.edu/undergraduate-admissions/,
 183026,Southern New Hampshire University,,https://admission.snhu.edu/,
 210146,Southern Oregon University,,https://apply.sou.edu/,
@@ -645,7 +656,7 @@ unitid,name,url,admissions_url,note
 179326,Southwest Baptist University,,https://apply.sbuniv.edu/,
 228343,Southwestern University,,https://admission.southwestern.edu/,
 157757,Spalding University,,https://apply.spalding.edu/,
-141060,Spelman College,,https://apply.spelman.edu/,
+141060,Spelman College,,https://apply.spelman.edu/,essay page not found
 172334,Spring Arbor University,,,
 102234,Spring Hill College,,https://apply.shc.edu/,
 167899,Springfield College,,https://admissions.springfield.edu/,
@@ -666,21 +677,14 @@ unitid,name,url,admissions_url,note
 228431,Stephen F Austin State University,,https://www.sfasu.edu/admissions,
 179548,Stephens College,,https://stephens.edu/admissions-aid/,
 137546,Stetson University,,,
-186867,Stevens Institute of Technology,,https://www.stevens.edu/admissions,
+186867,Stevens Institute of Technology,,https://www.stevens.edu/admissions,essay page not found
 164173,Stevenson University,,https://admissions.stevenson.edu/,
 186876,Stockton University,,https://admissions.stockton.edu/,
-167996,Stonehill College,,https://apply.stonehill.edu/,
+167996,Stonehill College,,https://apply.stonehill.edu/,essay page not found
 168005,Suffolk University,,https://www.suffolk.edu/admission,
-196130,SUNY Buffalo State University,,https://suny.buffalostate.edu/admissions,
-196167,SUNY College at Geneseo,,https://admissions.geneseo.edu/,
-196103,SUNY College of Environmental Science and Forestry,,https://apply.esf.edu/,
-196015,SUNY College of Technology at Canton,,https://admissions.canton.edu/,
-196291,SUNY Maritime College,,https://apply.sunymaritime.edu/,
-196185,SUNY Oneonta,,https://suny.oneonta.edu/admissions,
-196112,SUNY Polytechnic Institute,,,
-216287,Swarthmore College,,https://admissions.swarthmore.edu/,
+216287,Swarthmore College,,https://admissions.swarthmore.edu/,essay page not found
 233718,Sweet Briar College,,https://admissions.sbc.edu/,
-196413,Syracuse University,,https://www.syracuse.edu/admissions-aid/,
+196413,Syracuse University,,https://www.syracuse.edu/admissions-aid/,essay page not found
 228529,Tarleton State University,,https://www.tarleton.edu/admissions/,
 152530,Taylor University,,https://admissions.taylor.edu/,
 216339,Temple University,,https://admissions.temple.edu/,
@@ -690,17 +694,17 @@ unitid,name,url,admissions_url,note
 228884,Texas College,,,
 228981,Texas Lutheran University,,https://apply.tlu.edu/,
 228459,Texas State University,,https://admission.txst.edu/,
-229115,Texas Tech University,,https://www.ttu.edu/admissions/,
+229115,Texas Tech University,,https://www.ttu.edu/admissions/,essay page not found
 229160,Texas Wesleyan University,,https://apply.txwes.edu/,
 229179,Texas Woman's University,,https://twu.edu/admissions/,
 131283,The Catholic University of America,,https://admission.catholic.edu/,
-142294,The College of Idaho,,https://collegeofidaho.edu/apply/,
+142294,The College of Idaho,,https://collegeofidaho.edu/apply/,essay page not found
 187134,The College of New Jersey,,https://admissions.tcnj.edu/,
-206589,The College of Wooster,,https://wooster.edu/admissions,
-190372,The Cooper Union for the Advancement of Science and Art,,https://admissions.cooper.edu/,
+206589,The College of Wooster,,https://wooster.edu/admissions,essay page not found
+190372,The Cooper Union for the Advancement of Science and Art,,https://admissions.cooper.edu/,essay page not found
 235167,The Evergreen State College,,https://admissions.evergreen.edu/,
 117751,The Master's University and Seminary,,https://www.masters.edu/admissions-aid/,
-193654,The New School,,https://apply.newschool.edu/,
+193654,The New School,,https://apply.newschool.edu/,essay page not found
 100751,The University of Alabama,,https://admissions.ua.edu/,
 202763,The University of Findlay,,https://apply.findlay.edu/,
 180489,The University of Montana,,https://admissions.umt.edu/,
@@ -710,12 +714,12 @@ unitid,name,url,admissions_url,note
 221740,The University of Tennessee-Chattanooga,,https://apply.utc.edu/,
 221759,The University of Tennessee-Knoxville,,https://admissions.utk.edu/,
 221768,The University of Tennessee-Martin,,https://admissions.utm.edu/,
+229018,The University of Texas Permian Basin,,https://admissions.utpb.edu/,
 228769,The University of Texas at Arlington,,https://admissions.uta.edu/,
 228778,The University of Texas at Austin,https://admissions.utexas.edu/apply/application-materials/essays-and-short-answers/,https://admissions.utexas.edu/,
 228787,The University of Texas at Dallas,,https://admission.utdallas.edu/,
 228796,The University of Texas at El Paso,,https://www.utep.edu/admissions/,
 229027,The University of Texas at San Antonio,,https://future.utsa.edu/apply/,
-229018,The University of Texas Permian Basin,,https://admissions.utpb.edu/,
 216357,Thiel College,,https://www.thiel.edu/admissions,
 161563,Thomas College,,https://apply.thomas.edu/,
 216366,Thomas Jefferson University,,https://admissions.jefferson.edu/,
@@ -725,12 +729,12 @@ unitid,name,url,admissions_url,note
 157818,Transylvania University,,https://apply.transy.edu/,
 221892,Trevecca Nazarene University,,https://admissions.trevecca.edu/,
 152567,Trine University,,https://www.trine.edu/admission-aid/index.aspx,
-130590,Trinity College,,https://www.trincoll.edu/admissions/,
+130590,Trinity College,,https://www.trincoll.edu/admissions/,essay page not found
 229267,Trinity University,,,
 131876,Trinity Washington University,,https://www2.trinitydc.edu/admissions/,
 178615,Truman State University,,https://admission.truman.edu/,
 168148,Tufts University,https://admissions.tufts.edu/apply/short-answer-questions/,https://admissions.tufts.edu/,
-160755,Tulane University of Louisiana,,https://admission.tulane.edu/,
+160755,Tulane University of Louisiana,,https://admission.tulane.edu/,essay page not found
 221953,Tusculum University,,https://apply.tusculum.edu/,
 102377,Tuskegee University,,https://apply.tuskegee.edu/,
 196866,Union College,,https://admissions.union.edu/,
@@ -742,11 +746,11 @@ unitid,name,url,admissions_url,note
 106397,University of Arkansas,,https://admissions.uark.edu/,
 128744,University of Bridgeport,,https://admissions.bridgeport.edu/,
 106704,University of Central Arkansas,,https://admissions.uca.edu/,
-132903,University of Central Florida,,https://undergrad.ucf.edu/,
+132903,University of Central Florida,,https://undergrad.ucf.edu/,essay page not found
 176965,University of Central Missouri,,https://admissions.ucmo.edu/,
 237312,University of Charleston,,https://www.ucwv.edu/admissions/,
-144050,University of Chicago,,https://admissions.uchicago.edu/,
-201885,University of Cincinnati-Main Campus,,https://admissions.uc.edu/,
+144050,University of Chicago,,https://admissions.uchicago.edu/,essay page not found
+201885,University of Cincinnati-Main Campus,,https://admissions.uc.edu/,essay page not found
 126614,University of Colorado Boulder,https://www.colorado.edu/admissions/process/first-year/faqs,https://www.colorado.edu/admissions,
 126580,University of Colorado Colorado Springs,,https://apply.uccs.edu/,
 126562,University of Colorado Denver/Anschutz Medical Campus,,https://www.cudenver.edu/admissions,
@@ -758,15 +762,15 @@ unitid,name,url,admissions_url,note
 169716,University of Detroit Mercy,,https://admission.udmercy.edu/,
 153278,University of Dubuque,,https://universityofdubuque.my.site.com/apply/,
 150534,University of Evansville,https://www.evansville.edu/admission/essayrequirements.cfm,https://www.evansville.edu/admission/,
-134130,University of Florida,,https://admissions.ufl.edu/,
-139959,University of Georgia,,https://admissions.uga.edu/,
+134130,University of Florida,,https://admissions.ufl.edu/,essay page not found
+139959,University of Georgia,,https://admissions.uga.edu/,essay page not found
 129525,University of Hartford,,https://www.hartford.edu/admission/,
 160065,University of Holy Cross,,https://apply.uhcno.edu/,
 225511,University of Houston,,https://www.uh.edu/undergraduate-admissions/apply/,
 142285,University of Idaho,,https://apply.uidaho.edu/,
-145600,University of Illinois Chicago,,https://admissions.uic.edu/,
+145600,University of Illinois Chicago,,https://admissions.uic.edu/,essay page not found
 148654,University of Illinois Springfield,,https://apply.uis.edu/,
-145637,University of Illinois Urbana-Champaign,,https://admissions.illinois.edu/,
+145637,University of Illinois Urbana-Champaign,,https://admissions.illinois.edu/,essay page not found
 151263,University of Indianapolis,,https://admissions.uindy.edu/,
 153658,University of Iowa,,https://admissions.uiowa.edu/,
 155317,University of Kansas,,https://admissions.ku.edu/,
@@ -782,22 +786,23 @@ unitid,name,url,admissions_url,note
 226471,University of Mary Hardin-Baylor,,https://www.umhb.edu/admissions/home,
 232681,University of Mary Washington,,https://admissions.umw.edu/,
 163338,University of Maryland Eastern Shore,,https://www.umes.edu/admissions/,
-166629,University of Massachusetts-Amherst,,https://www.umass.edu/admissions,
+166629,University of Massachusetts-Amherst,,https://www.umass.edu/admissions,essay page not found
 166638,University of Massachusetts-Boston,,https://admissions.umb.edu/,
 167987,University of Massachusetts-Dartmouth,,https://apply.umassd.edu/,
-166513,University of Massachusetts-Lowell,,https://www.uml.edu/admissions/,
+166513,University of Massachusetts-Lowell,,https://www.uml.edu/admissions/,essay page not found
 220862,University of Memphis,,https://admissions.memphis.edu/,
-135726,University of Miami,,https://admissions.miami.edu/,
+135726,University of Miami,,https://admissions.miami.edu/,essay page not found
 171137,University of Michigan-Dearborn,,https://apply.umdearborn.edu/,
 171146,University of Michigan-Flint,,https://umflint.my.site.com/apply/,
 174075,University of Minnesota-Crookston,,https://admissions.crk.umn.edu/,
 174233,University of Minnesota-Duluth,,https://admissions.d.umn.edu/,
 174251,University of Minnesota-Morris,,https://morris.umn.edu/apply,
 456959,University of Minnesota-Rochester,,https://apply.r.umn.edu/,
-174066,University of Minnesota-Twin Cities,,,
+174066,University of Minnesota-Twin Cities,,,essay page not found
+176017,University of Mississippi,,https://admissions.olemiss.edu/,essay page not found
 178402,University of Missouri-Kansas City,,https://www.umkc.edu/admissions/,
 178420,University of Missouri-St Louis,https://www.umsl.edu/admissions/faqs.html,https://admissions.umsl.edu/,
-193399,University of Mount Saint Vincent,,https://admission.mountsaintvincent.edu/,
+193399,University of Mount Saint Vincent,,https://admission.mountsaintvincent.edu/,essay page not found
 204185,University of Mount Union,https://www.mountunion.edu/admission/application-essay-instructions,https://admission.mountunion.edu/,
 181464,University of Nebraska-Lincoln,,https://admissions.unl.edu/,
 182281,University of Nevada-Las Vegas,,https://www.unlv.edu/admissions,
@@ -807,10 +812,11 @@ unitid,name,url,admissions_url,note
 129941,University of New Haven,,https://admissions.newhaven.edu/,
 187985,University of New Mexico-Main Campus,,https://admissions.unm.edu/,
 199111,University of North Carolina Asheville,,https://www.unca.edu/admission/apply/,
-199120,University of North Carolina at Chapel Hill,https://admissions.unc.edu/application-prompts-for-2025-2026/,https://admissions.unc.edu/,
-199139,University of North Carolina at Charlotte,,https://admissions.charlotte.edu/,
+199218,University of North Carolina Wilmington,,https://apply.uncw.edu/,essay page not found
+199120,University of North Carolina at Chapel Hill,,https://admissions.unc.edu/,essay page not found
+199139,University of North Carolina at Charlotte,,https://admissions.charlotte.edu/,essay page not found
+199148,University of North Carolina at Greensboro,,https://admissions.uncg.edu/,essay page not found
 199281,University of North Carolina at Pembroke,,https://admissions.uncp.edu/,
-199218,University of North Carolina Wilmington,,https://apply.uncw.edu/,
 200280,University of North Dakota,,https://und.edu/admissions/index.html,
 136172,University of North Florida,,https://www.unf.edu/admissions/,
 482680,University of North Georgia,,https://ung.edu/admissions/,
@@ -818,18 +824,18 @@ unitid,name,url,admissions_url,note
 127741,University of Northern Colorado,,https://admissions.unco.edu/,
 154095,University of Northern Iowa,,https://admissions.uni.edu/,
 174491,University of Northwestern-St Paul,,https://apply.unwsp.edu/,
-152080,University of Notre Dame,,https://admissions.nd.edu/,
-209551,University of Oregon,,https://admission.uoregon.edu/,
+152080,University of Notre Dame,https://admissions.nd.edu/visit-engage/stories-news/the-notre-dame-writing-section-we-walk-you-through-our-essay-and-short-answer-prompts/,https://admissions.nd.edu/,
+209551,University of Oregon,,https://admission.uoregon.edu/,essay page not found
 215062,University of Pennsylvania,https://admissions.upenn.edu/how-to-apply/preparing-your-application/writing,https://admissions.upenn.edu/,
-209825,University of Portland,,https://admissions.up.edu/,
+209825,University of Portland,,https://admissions.up.edu/,essay page not found
 236328,University of Puget Sound,https://www.pugetsound.edu/essay-guidelines,https://admission.pugetsound.edu/,
 121691,University of Redlands,,https://admissions.redlands.edu/,
 217484,University of Rhode Island,,https://web.uri.edu/admission/,
-233374,University of Richmond,,https://admission.richmond.edu/,
-195030,University of Rochester,,https://admissions.rochester.edu/,
+233374,University of Richmond,,https://admission.richmond.edu/,essay page not found
+195030,University of Rochester,,https://admissions.rochester.edu/,essay page not found
 130314,University of Saint Joseph,,,
-122436,University of San Diego,,https://apply.sandiego.edu/,
-122612,University of San Francisco,,https://apply.usfca.edu/,
+122436,University of San Diego,,https://apply.sandiego.edu/,essay page not found
+122612,University of San Francisco,,https://apply.usfca.edu/,essay page not found
 207722,University of Science and Arts of Oklahoma,,https://admissions.usao.edu/,
 215929,University of Scranton,,https://admissions.scranton.edu/,
 219383,University of Sioux Falls,,https://apply.usiouxfalls.edu/,
@@ -839,30 +845,30 @@ unitid,name,url,admissions_url,note
 218742,University of South Carolina-Upstate,,https://apply.uscupstate.edu/,
 219471,University of South Dakota,,https://apply.usd.edu/,
 137351,University of South Florida,,https://admissions.usf.edu/,
-123961,University of Southern California,,https://admission.usc.edu/,
+123961,University of Southern California,,https://admission.usc.edu/,essay page not found
 161554,University of Southern Maine,,,
 176372,University of Southern Mississippi,,https://undergrad.usm.edu/,
 148584,University of St Francis,,https://stfrancis.edu/admissions-aid/,
 174914,University of St Thomas,,https://www.stthomas.edu/admissions/,
-225627,University of the Incarnate Word,,https://apply.uiw.edu/,
-120883,University of the Pacific,,https://admissions.pacific.edu/,
-207971,University of Tulsa,,https://admission.utulsa.edu/,
+207971,University of Tulsa,,https://admission.utulsa.edu/,essay page not found
 230764,University of Utah,,https://admissions.utah.edu/,
-231174,University of Vermont,,https://admissions.uvm.edu/,
-234076,University of Virginia-Main Campus,,https://admission.virginia.edu/,
+231174,University of Vermont,,https://admissions.uvm.edu/,essay page not found
 233897,University of Virginia's College at Wise,,https://apply.uvawise.edu/,
+234076,University of Virginia-Main Campus,,https://admission.virginia.edu/,essay page not found
 377555,University of Washington-Bothell Campus,,https://admissions.uwb.edu/,
 377564,University of Washington-Tacoma Campus,,https://apply.tacoma.uw.edu/,
 138354,University of West Florida,,https://apply.uwf.edu/,
 141334,University of West Georgia,,https://apply.westga.edu/,
 240268,University of Wisconsin-Eau Claire,,https://apply.uwec.edu/,
-240444,University of Wisconsin-Madison,,https://admissions.wisc.edu/,
+240444,University of Wisconsin-Madison,,https://admissions.wisc.edu/,essay page not found
 240453,University of Wisconsin-Milwaukee,,https://admissions.uwm.edu/,
 240374,University of Wisconsin-Parkside,,https://www.uwp.edu/apply/admissions/,
 240471,University of Wisconsin-River Falls,,https://apply.uwrf.edu/,
 240480,University of Wisconsin-Stevens Point,,https://apply.uwsp.edu/,
 240189,University of Wisconsin-Whitewater,,https://www.uww.edu/admissions,
-240727,University of Wyoming,,https://www.uwyo.edu/admissions/,
+240727,University of Wyoming,,https://www.uwyo.edu/admissions/,essay page not found
+225627,University of the Incarnate Word,,https://apply.uiw.edu/,
+120883,University of the Pacific,,https://admissions.pacific.edu/,
 154493,Upper Iowa University,,https://uiu.edu/admissions,
 216524,Ursinus College,,https://admission.ursinus.edu/,
 206349,Ursuline College,,https://apply.ursuline.edu/,
@@ -870,29 +876,29 @@ unitid,name,url,admissions_url,note
 197045,Utica University,,https://admissions.utica.edu/,
 141264,Valdosta State University,,https://apply.valdosta.edu/,
 152600,Valparaiso University,,https://www.valpo.edu/admission/apply/,
-221999,Vanderbilt University,,https://admissions.vanderbilt.edu/,
+221999,Vanderbilt University,,https://admissions.vanderbilt.edu/,essay page not found
 123651,Vanguard University of Southern California,,https://apply.vanguard.edu/,
-197133,Vassar College,,https://admission.vassar.edu/,
+197133,Vassar College,,https://admission.vassar.edu/,essay page not found
 231165,Vermont State University,,https://vermontstate.edu/admission/,
 197142,Villa Maria College,,https://apply.villa.edu/,
-216597,Villanova University,,https://admission.villanova.edu/,
-234030,Virginia Commonwealth University,,https://admissions.vcu.edu/,
+216597,Villanova University,,https://admission.villanova.edu/,essay page not found
+234030,Virginia Commonwealth University,,https://admissions.vcu.edu/,essay page not found
 234085,Virginia Military Institute,,https://apply.vmi.edu/,
 234155,Virginia State University,,https://www.vsu.edu/admissions/,
 240107,Viterbo University,,,
 152673,Wabash College,,https://apply.wabash.edu/,
 197197,Wagner College,,https://wagner.edu/admissions/,
-199847,Wake Forest University,,https://admissions.wfu.edu/,
+199847,Wake Forest University,,https://admissions.wfu.edu/,essay page not found
 206437,Walsh University,,https://apply.walsh.edu/,
 210304,Warner Pacific University,,https://admissions.warnerpacific.edu/,
 199865,Warren Wilson College,,https://admissions.warren-wilson.edu/,
 154527,Wartburg College,,,
 216667,Washington & Jefferson College,,https://www.washjeff.edu/admissions/,
 162210,Washington Adventist University,,,
-234207,Washington and Lee University,https://www.wlu.edu/admissions/apply/supplemental-application-prompts,https://admissions.wlu.edu/,
 164216,Washington College,,https://www.washcoll.edu/admissions/,
 236939,Washington State University,,https://admission.wsu.edu/,
-179867,Washington University in St Louis,,https://admissions.washu.edu/,
+179867,Washington University in St Louis,,https://admissions.washu.edu/,essay page not found
+234207,Washington and Lee University,https://www.wlu.edu/admissions/apply/supplemental-application-prompts,https://admissions.wlu.edu/,
 172644,Wayne State University,,https://admissions.wayne.edu/,
 216694,Waynesburg University,,https://apply.waynesburg.edu/,
 197221,Webb Institute,,https://www.webb.edu/admissions/,
@@ -931,19 +937,19 @@ unitid,name,url,admissions_url,note
 229887,Wiley University,,,
 216931,Wilkes University,,https://apply.wilkes.edu/,
 210401,Willamette University,,https://apply.willamette.edu/,
-231624,William & Mary,,https://admission.wm.edu/,
+231624,William & Mary,,https://admission.wm.edu/,essay page not found
 179955,William Jewell College,,https://jewell.edu/admission-guide/,
 199272,William Peace University,,https://admissions.peace.edu/,
 179964,William Woods University,,https://apply.williamwoods.edu/,
-168342,Williams College,,https://admissions.williams.edu/,
+168342,Williams College,,https://admissions.williams.edu/,essay page not found
 206507,Wilmington College,,https://www.wilmington.edu/admission,
 217013,Wilson College,,https://admissions.wilson.edu/,
 199962,Wingate University,,https://www.wingate.edu/admissions,
 218964,Winthrop University,,https://apply.winthrop.edu/,
 240338,Wisconsin Lutheran College,,https://admissions.wlc.edu/,
 206525,Wittenberg University,,https://apply.wittenberg.edu/,
-218973,Wofford College,,https://admission.wofford.edu/,
-168421,Worcester Polytechnic Institute,,https://www.wpi.edu/admissions,
+218973,Wofford College,,https://admission.wofford.edu/,essay page not found
+168421,Worcester Polytechnic Institute,,https://www.wpi.edu/admissions,essay page not found
 168430,Worcester State University,,https://www.worcester.edu/admissions-aid/,
 206604,Wright State University-Main Campus,,https://www.wright.edu/admissions,
 206622,Xavier University,,https://admissions.xavier.edu/,

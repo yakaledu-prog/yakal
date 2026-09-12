@@ -96,6 +96,23 @@ NOT_A_PROMPT = re.compile(
     re.I,
 )
 
+# A real prompt, for somebody who is not our student. Admissions pages put the
+# first-year and transfer questions on one page under separate headings, and a
+# line-by-line reader has no headings: Northwestern's "Please share with us why
+# you would like to transfer to Northwestern" was published as a first-year
+# prompt, where a seventeen-year-old would have found it and tried to answer.
+#
+# Separate from NOT_A_PROMPT because these ARE prompts. The distinction is who
+# is being asked, and it is worth keeping legible for when we carry transfer
+# applicants too.
+WRONG_APPLICANT = re.compile(
+    r"\b(transfer|transferring)\b|"
+    r"\byour (current|previous|former) (college|university|institution)\b|"
+    r"\b(graduate|doctoral|master.s|MBA|PhD) (program|study|degree|school)\b|"
+    r"\bas a (transfer|graduate|returning) (student|applicant)\b",
+    re.I,
+)
+
 # A page's own advice about essay writing, which reads exactly like a prompt.
 ADVICE = re.compile(
     r"\b(your essay should|we look for|admissions officers|tips?|"
@@ -140,6 +157,8 @@ def looks_like_prompt(line: str) -> bool:
     # affiliation? * African Methodist Episcopal Apostolic ..."
     if line.count("*") >= 2 or line.count("|") >= 2:
         return False
+    if WRONG_APPLICANT.search(line):
+        return False
     if PROCESS.match(line) or NOT_A_PROMPT.search(line) or ADVICE.search(line):
         return False
     return bool(ASKS.match(line)) or line.rstrip().endswith("?")
@@ -168,6 +187,38 @@ def title_of(prompt: str) -> str:
     if len(short) > 72:
         short = short[:69].rsplit(" ", 1)[0]
     return (short[0].upper() + short[1:]) if short else prompt[:60]
+
+
+# "2026-2027", "2026-27" and "2026/27" all appear in real URLs and headings.
+CYCLE_PAIR = re.compile(r"\b(20\d\d)\s*[-/_]\s*(20)?(\d\d)\b")
+
+
+# A lone year, where no pair follows it. Georgia's discovered page was
+# /blog/2015-essay-questions/, eleven cycles stale, and a pair test walks
+# straight past it because there is no pair.
+LONE_YEAR = re.compile(r"\b(19|20)\d\d\b")
+
+
+def names_other_cycle(source: str, cycle: str) -> str | None:
+    """The cycle a URL names, when it is not the one being built.
+
+    URL only. Page bodies mention past years for honest reasons - a college
+    linking its archive, a note about what changed - and rejecting on those
+    would throw away good pages. A year in the address is the college filing
+    the page under a cycle.
+    """
+    start = int(cycle.split("-")[0])
+    ours = {start, start + 1}
+    for m in CYCLE_PAIR.finditer(source):
+        if int(m.group(1)) != start:
+            return f"{m.group(1)}-{m.group(3)}"
+    # Strip the host: a college with a year in its domain is not filing by
+    # cycle, and no real one does, but the path is where dates live.
+    path = re.sub(r"^https?://[^/]+", "", source)
+    for m in LONE_YEAR.finditer(path):
+        if int(m.group(0)) not in ours:
+            return m.group(0)
+    return None
 
 
 def slugify(name: str, cycle: str, index: int) -> str:
@@ -316,6 +367,18 @@ def main() -> int:
 
         source, prompts = extract(os.path.join(args.pages, filename), universal)
         if not prompts or not source:
+            continue
+
+        # A page for a different cycle is worse than no page. Colleges leave
+        # last year's up: UNC's discovered URL was
+        # /application-prompts-for-2025-2026/, and nothing downstream would
+        # have noticed, because the cycle is a label this script applies
+        # rather than something it reads. A student would have written 650
+        # careful words answering a question that is no longer asked.
+        other = names_other_cycle(source, args.cycle)
+        if other:
+            print(f"  skip {unitid} {names.get(unitid, '')}: page is {other}, "
+                  f"not {args.cycle}", file=sys.stderr)
             continue
 
         name = names.get(unitid, f"Unitid {unitid}")

@@ -268,3 +268,46 @@ do not exist yet.
 A correction mid-cycle does not need any of this. `/admin/essay-prompts` edits
 the row a student's picker reads, and stamps today as the day it was checked.
 Fix the data file too, or the next import will undo it.
+
+## The worklist
+
+`curated/worklist-2026-27.csv` is the 158 colleges that two prompt aggregators
+list and we hold nothing for, most selective first. It exists because automated
+discovery has a ceiling and we hit it: a crawl of exactly these 158 found two
+usable pages.
+
+The reason is not a weak crawler. **Most selective colleges do not publish their
+supplements outside the Common App application**, which needs a student login.
+Vassar's own first-year page gives deadlines and a checklist and never uses the
+word "essay"; a site-restricted search on `vassar.edu`, `emory.edu` or `wpi.edu`
+returns nothing, while the same search on `nd.edu` returns Notre Dame's prompts
+page immediately. Some colleges publish, most do not, and no crawler fix changes
+the second group.
+
+So these are filled in by hand. For each row:
+
+1. Open the college's section of the Common App, or its own prompts page if it
+   has one. `admissions_url` is the starting point and is filled for 152 of the
+   158, mostly stated by the college itself via its Common App membership record.
+2. Copy each prompt **verbatim**. Do not paraphrase and do not tidy. A plausible
+   invented prompt is far worse than a missing one, which is the rule the whole
+   of `data/colleges/README.md` is built on.
+3. Record the URL you read it from in `source_url`. A prompt nobody can check is
+   not worth having.
+4. Add the college to `curated/supplements-2026-27.json`, not to the machine
+   file. The loader drops machine rows for any college that appears in the
+   curated one, and `scripts/verify/essay-prompts.ts` asserts a college is never
+   in both.
+
+`extraction` becomes `manual` when `verified_on` is set; a migration trigger
+does that, so a hand-checked prompt stops carrying the "read automatically,
+worth checking" caveat in the picker.
+
+**Where not to get them.** The aggregators that list these colleges are useful
+as a worklist and nothing else. Their prompt text is their transcription work,
+carries no source we can check, and goes stale when they update and we do not.
+One of them, mysupplementals.com, forbids it outright in its terms. The
+QuestBridge community spreadsheet has a further problem: those are QuestBridge
+Match prompts, which differ from regular-decision prompts at the same college -
+its own Amherst row reads "No for match; Yes for RD" - so for an ordinary
+applicant a good fraction of it is not stale but wrong.
