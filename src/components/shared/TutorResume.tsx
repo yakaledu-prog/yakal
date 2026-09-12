@@ -1,6 +1,7 @@
 import { Award, Briefcase, GraduationCap, Languages as LanguagesIcon } from "lucide-react";
 
 import { cn } from "@/utils/cn";
+import { Entry, Section, SectionEmpty, period } from "@/components/shared/ResumeParts";
 
 // ============================================================
 // A tutor's background.
@@ -48,87 +49,6 @@ export interface TutorResumeData {
   languages: ResumeLanguage[];
 }
 
-/** "2016 - 2020", "2022 - Present", or nothing at all. */
-function period(from?: string, to?: string): string {
-  if (!from && !to) return "";
-  if (from && !to) return `${from} - Present`;
-  if (!from) return to!;
-  return `${from} - ${to}`;
-}
-
-function Section({
-  icon,
-  title,
-  onAdd,
-  addLabel,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  onAdd?: () => void;
-  addLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <div className="mb-5 flex items-end justify-between border-b border-border pb-2">
-        <span className="inline-flex items-center gap-2 border-b-2 border-primary pb-2 text-[16px] font-bold text-foreground">
-          {icon} {title}
-        </span>
-        {onAdd && (
-          <button
-            type="button"
-            onClick={onAdd}
-            className="pb-2 text-[13px] font-medium text-primary transition-colors hover:underline"
-          >
-            {addLabel}
-          </button>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-/** A dated row: the period on the left, the substance on the right. */
-function Entry({
-  when,
-  title,
-  subtitle,
-  body,
-  onRemove,
-}: {
-  when: string;
-  title: string;
-  subtitle?: string;
-  body?: string;
-  onRemove?: () => void;
-}) {
-  return (
-    <div className="group flex flex-col gap-1 sm:flex-row sm:gap-4">
-      <div className="w-32 shrink-0 pt-0.5 text-[14px] font-medium text-muted-foreground">
-        {when}
-      </div>
-      <div className="min-w-0 flex-1">
-        <h4 className="text-[16px] font-bold text-foreground">{title}</h4>
-        {subtitle && <p className="text-[14px] text-muted-foreground">{subtitle}</p>}
-        {body && <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{body}</p>}
-      </div>
-      {onRemove && (
-        // Only on hover: a row of Remove links down the page reads as a form,
-        // and this is a CV the rest of the time.
-        <button
-          type="button"
-          onClick={onRemove}
-          className="shrink-0 self-start text-[13px] text-muted-foreground opacity-0 transition-opacity hover:text-secondary focus:opacity-100 group-hover:opacity-100"
-        >
-          Remove
-        </button>
-      )}
-    </div>
-  );
-}
-
 export type ResumeSection = "certifications" | "education" | "workExperience" | "languages";
 
 export function TutorResume({
@@ -169,7 +89,7 @@ export function TutorResume({
         >
           <div className="space-y-6">
             {certifications.length === 0 && (
-              <p className="text-[14px] text-muted-foreground">Nothing added yet.</p>
+              <SectionEmpty />
             )}
             {certifications.map((c, i) => (
               <Entry
@@ -193,7 +113,7 @@ export function TutorResume({
         >
           <div className="space-y-6">
             {education.length === 0 && (
-              <p className="text-[14px] text-muted-foreground">Nothing added yet.</p>
+              <SectionEmpty />
             )}
             {education.map((e, i) => (
               <Entry
@@ -217,7 +137,7 @@ export function TutorResume({
         >
           <div className="space-y-6">
             {workExperience.length === 0 && (
-              <p className="text-[14px] text-muted-foreground">Nothing added yet.</p>
+              <SectionEmpty />
             )}
             {workExperience.map((w, i) => (
               <Entry
@@ -242,7 +162,7 @@ export function TutorResume({
         >
           <div className="space-y-2">
             {languages.length === 0 && (
-              <p className="text-[14px] text-muted-foreground">Nothing added yet.</p>
+              <SectionEmpty />
             )}
             {languages.map((l, i) => (
               <div key={i} className="group flex items-center gap-3">

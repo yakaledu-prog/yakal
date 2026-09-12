@@ -82,6 +82,35 @@ export interface Essay {
   last_feedback_at?: string | null;
 }
 
+/**
+ * One line of the Common App activities list.
+ *
+ * Every field but `activity` is optional. A student filling this in the week
+ * they start is not going to remember the hours, and refusing the entry until
+ * they do means the list stays empty instead of half full.
+ */
+export interface StudentActivity {
+  from?: string;
+  to?: string;
+  activity: string;
+  role?: string;
+  organisation?: string;
+  /** Free text rather than hours-per-week and weeks-per-year as two numbers. */
+  hours?: string;
+  summary?: string;
+}
+
+export interface StudentHonor {
+  year?: string;
+  title: string;
+  /** School, state, national, international. Common App's own four. */
+  level?: string;
+}
+
+/** What Common App accepts. More than this cannot be submitted. */
+export const MAX_ACTIVITIES = 10;
+export const MAX_HONORS = 5;
+
 export interface StudentAcademics {
   id: string;
   student_id: string;
@@ -91,6 +120,9 @@ export interface StudentAcademics {
   act_score: number | null;
   toefl_score: number | null;
   ap_courses: string[] | null;
+  /** Written whole by the student. See 20260913000100_student_activities_honors.sql. */
+  activities?: StudentActivity[] | null;
+  honors?: StudentHonor[] | null;
   /**
    * When the student completed the FERPA Release Authorization in Common App.
    *
