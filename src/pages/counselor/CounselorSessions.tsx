@@ -19,6 +19,7 @@ import {
   type SessionListItem,
 } from "@/components/shared/SessionList";
 import { SessionsBanner } from "@/components/shared/SessionsBanner";
+import { dicebearUrl } from "@/utils/avatar";
 
 export function CounselorSessions() {
   const { user, profile } = useAuth();
@@ -27,20 +28,31 @@ export function CounselorSessions() {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [filterText, setFilterText] = useState("");
   const [notesFor, setNotesFor] = useState<SessionRow | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  /**
+   * Which student's sessions, or all of them.
+   *
+   * This rail used to group by subject and call them courses, which is a
+   * tutoring idea. book_advising_session hardcodes subject to 'College
+   * advising' on every insert, so the list could only ever hold "All Sessions"
+   * and one entry meaning the same thing, under a box labelled Search courses
+   * on a page that has no courses.
+   *
+   * Whose session it is is the counsellor's actual first question, and it is
+   * the one thing on the row that differs.
+   */
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
 
   // One column at a time on a phone, both on a desktop.
   const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
 
-  // Picking a course on a phone replaces the list with its sessions, the way
-  // opening a conversation does.
-  const openCourse = (course: string | null) => {
-    setSelectedCourse(course);
+  // Picking a student on a phone replaces the list with their sessions, the
+  // way opening a conversation does.
+  const openStudent = (id: string | null) => {
+    setSelectedStudent(id);
     openDetail();
   };
 
-  useSetBreadcrumb(selectedCourse ?? "All", selectedCourse ?? "All Sessions");
 
   const { data: sessions = [], isLoading: loading } = useQuery({
     queryKey: ['counselor-sessions', user?.id],
@@ -62,15 +74,36 @@ export function CounselorSessions() {
 
 
 
-  const courses = useMemo(() => Array.from(new Set(sessions.map((s) => s.subject))), [sessions]);
-  const filteredCourses = useMemo(
-    () => courses.filter((c) => c.toLowerCase().includes(filterText.toLowerCase())),
-    [courses, filterText]
+  /** Everyone this counsellor has a session with, and how many each. */
+  const students = useMemo(() => {
+    const by = new Map<string, { id: string; name: string; avatar?: string; count: number }>();
+    for (const s of sessions) {
+      const id = s.student_id;
+      const row = by.get(id) ?? {
+        id,
+        name: s.student_name ?? "Student",
+        avatar: s.student_avatar,
+        count: 0,
+      };
+      row.count += 1;
+      by.set(id, row);
+    }
+    return [...by.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [sessions]);
+
+  const selectedName = selectedStudent
+    ? students.find((st) => st.id === selectedStudent)?.name ?? "Student"
+    : null;
+  useSetBreadcrumb(selectedName ?? "All", selectedName ?? "All Sessions");
+
+  const filteredStudents = useMemo(
+    () => students.filter((c) => c.name.toLowerCase().includes(filterText.toLowerCase())),
+    [students, filterText]
   );
 
   const courseSessions = useMemo(
-    () => sessions.filter((s) => (selectedCourse ? s.subject === selectedCourse : true)),
-    [sessions, selectedCourse]
+    () => sessions.filter((s) => (selectedStudent ? s.student_id === selectedStudent : true)),
+    [sessions, selectedStudent]
   );
 
   const { data: extras } = useSessionExtras(courseSessions);
@@ -112,7 +145,7 @@ export function CounselorSessions() {
             <input
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Search courses"
+              placeholder="Search students"
               className="bg-transparent text-[14px] text-[#111] dark:text-white placeholder:text-[#8696a0] flex-1 outline-none"
             />
           </div>
@@ -124,24 +157,28 @@ export function CounselorSessions() {
           ) : (
             <>
               <button
-                onClick={() => openCourse(null)}
+                onClick={() => openStudent(null)}
                 className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
-                  selectedCourse === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
+                  selectedStudent === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                 <div className="min-w-0">
-                  <p className={cn("text-[14px] font-semibold truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
+                  <p className={cn("text-[14px] font-medium truncate", selectedStudent === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
                   <p className="text-[12px] text-muted-foreground truncate">{sessions.length} sessions total</p>
                 </div>
               </button>
-              {filteredCourses.map((c) => {
-                const active = c === selectedCourse;
-                const cSessions = sessions.filter(s => s.subject === c);
+              {filteredStudents.map((st) => {
+                const active = st.id === selectedStudent;
                 return (
-                  <button key={c} onClick={() => openCourse(c)}
+                  <button key={st.id} onClick={() => openStudent(st.id)}
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
+                    <img
+                      src={st.avatar || dicebearUrl(st.name)}
+                      alt=""
+                      className="h-9 w-9 shrink-0 rounded-full object-cover"
+                    />
                     <div className="min-w-0">
-                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
-                      <p className="text-[12px] text-muted-foreground truncate">{cSessions.length} sessions</p>
+                      <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{st.name}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">{st.count} {st.count === 1 ? "session" : "sessions"}</p>
                     </div>
                   </button>
                 );
@@ -159,7 +196,7 @@ export function CounselorSessions() {
         )}
       >
         <SessionsBanner
-          title={selectedCourse || "All Sessions"}
+          title={selectedName ?? "All Sessions"}
           total={courseSessions.length}
           completed={completedCount}
           upcoming={upcoming.length}

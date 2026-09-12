@@ -77,46 +77,26 @@ export function StudentAdvising() {
   /**
    * The balance, and one colour for the whole strip.
    *
-   * The hours left are the decision, not the hours used: "0 of 1" makes a
-   * student work out the subtraction before they know whether they can book.
-   * And the strip says what state it is in the way the earnings one does,
-   * with the rule, the wash and the button agreeing rather than a teal button
-   * sitting on a grey line whatever the number says.
+   * "0 of 1 hours" made a student do the subtraction before they knew whether
+   * they could book, and a sentence is a poor way to show a countable balance.
+   * Monthly allowances here are one to eight hours, which is few enough to
+   * draw: a pip per hour, filled for the ones spent, so what is left can be
+   * counted rather than read.
    *
    * Gold on the last hour, because that is the one worth spending carefully.
    * Red when there are none: nothing is wrong, but the answer to "can I book"
    * is no until the month turns.
    */
-  const balance =
+  const tone =
     allowance == null
       ? null
       : left == null
-        ? {
-          text: "You have unlimited hours with your counsellor.",
-          rule: "border-primary",
-          wash: "bg-primary/5",
-          button: "bg-primary hover:bg-primary-hover text-white",
-        }
+        ? { rule: "border-primary", wash: "bg-primary/5", pip: "bg-primary", text: "text-primary", button: "bg-primary hover:bg-primary-hover text-white" }
         : left <= 0
-          ? {
-            text: "No hours left this month. Your allowance resets on the 1st.",
-            rule: "border-[#d4183d]",
-            wash: "bg-[#d4183d]/5",
-            button: "bg-[#d4183d] text-white",
-          }
+          ? { rule: "border-[#d4183d]", wash: "bg-[#d4183d]/5", pip: "bg-[#d4183d]", text: "text-[#d4183d]", button: "bg-[#d4183d] text-white" }
           : left === 1
-            ? {
-              text: `1 hour left this month, of ${allowance.limit}.`,
-              rule: "border-secondary",
-              wash: "bg-secondary/10",
-              button: "bg-secondary text-secondary-foreground hover:opacity-90",
-            }
-            : {
-              text: `${left} hours left this month, of ${allowance.limit}.`,
-              rule: "border-primary",
-              wash: "bg-primary/5",
-              button: "bg-primary hover:bg-primary-hover text-white",
-            };
+            ? { rule: "border-secondary", wash: "bg-secondary/10", pip: "bg-secondary", text: "text-secondary", button: "bg-secondary text-secondary-foreground hover:opacity-90" }
+            : { rule: "border-primary", wash: "bg-primary/5", pip: "bg-primary", text: "text-primary", button: "bg-primary hover:bg-primary-hover text-white" };
 
   return (
     <PageWrapper className="!p-0">
@@ -139,15 +119,29 @@ export function StudentAdvising() {
               its own. The balance is the whole of the decision, so the button
               belongs beside that sentence, and a full-height card would spend
               a third of the page on one button and one number. */}
-          {balance ? (
+          {tone && allowance ? (
             <div
               className={cn(
                 "mb-6 flex flex-wrap items-center justify-between gap-4 border-l-2 px-5 py-4",
-                balance.rule,
-                balance.wash
+                tone.rule,
+                tone.wash
               )}
             >
-              <p className="text-[14px] text-foreground">{balance.text}</p>
+              {/* The number and what it counts. The sentence it replaced made
+                  a student do the subtraction, and a pip per hour was a
+                  drawing of a figure already on the screen. */}
+              <div>
+                <p className={cn("text-2xl font-bold leading-none tabular-nums", tone.text)}>
+                  {left == null ? "Unlimited" : `${left}/${allowance.limit}`}
+                </p>
+                <p className="mt-1 text-[12.5px] text-muted-foreground">
+                  {left == null
+                    ? "advising hours"
+                    : left === 0
+                      ? "hours left, back on the 1st"
+                      : `${left === 1 ? "hour" : "hours"} left`}
+                </p>
+              </div>
 
               {/* Either the student or a linked parent can book: the family
                   function book_advising_session authorises both, so the student
@@ -159,7 +153,7 @@ export function StudentAdvising() {
                 disabled={!canBook}
                 className={cn(
                   "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
-                  balance.button
+                  tone.button
                 )}
               >
                 <CalendarDays size={15} /> Book a session
