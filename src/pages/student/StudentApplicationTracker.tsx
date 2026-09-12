@@ -36,6 +36,7 @@ import {
   updateEssay,
   updateSchool,
   updateRecommendation,
+  upsertAcademics,
 } from "@/services/collegeService";
 import { OVERRIDE_LABEL, ReqKey, StudentContext } from "@/services/requirementsService";
 import {
@@ -536,6 +537,24 @@ export function StudentApplicationTracker({
     refresh();
   };
 
+  /**
+   * The FERPA release, which the student reports and nobody can verify.
+   *
+   * Stored as the date rather than a flag, because "released on 14 September"
+   * is what a counselor asking "has this been done yet" actually wants, and a
+   * boolean throws that away.
+   */
+  const setFerpa = async (done: boolean) => {
+    if (!targetId || !canEdit) return;
+    setSaving(true);
+    const res = await upsertAcademics(targetId, {
+      ferpa_released_on: done ? new Date().toISOString().slice(0, 10) : null,
+    });
+    setSaving(false);
+    if (!res.success) return toast.error(res.error || "Could not save that.");
+    refresh();
+  };
+
 
   const content = (
     <>
@@ -766,10 +785,15 @@ export function StudentApplicationTracker({
                 <RecommendersPanel
                   recommendations={recommendations}
                   earliestDeadline={earliestDeadline}
+                  ferpaReleasedOn={data?.academics?.ferpa_released_on ?? null}
                   onAdd={addRec}
                   onStatusChange={setRecStatus}
                   onRemove={removeRec}
+                  onFerpaChange={setFerpa}
                   saving={saving}
+                  // Same reason the documents panel takes this: every sentence
+                  // on that page is written to the applicant.
+                  staff={staffViewing}
                 />
               )}
             </>

@@ -11,6 +11,14 @@ export interface NewRecommender {
   recommender_email: string | null;
   relationship: string | null;
   status: RecStatus;
+  /**
+   * The date column, not prose.
+   *
+   * This used to go out as notes: `Asked on ${date}`, so asked_on stayed null
+   * for everybody added through this form and the "asked 26 days ago" line the
+   * list uses to decide whether to nudge never appeared for any of them.
+   */
+  asked_on: string | null;
   notes: string | null;
 }
 
@@ -57,7 +65,8 @@ export function AddRecommenderModal({
       recommender_email: email.trim() || null,
       relationship: role.trim() || null,
       status: "requested",
-      notes: askedOn ? `Asked on ${askedOn}` : null,
+      asked_on: askedOn,
+      notes: null,
     });
   };
 
@@ -70,43 +79,26 @@ export function AddRecommenderModal({
       onMouseDown={(e) => e.target === e.currentTarget && !saving && onClose()}
     >
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
-        <header className="relative overflow-hidden bg-primary px-5 py-4 text-white">
-          <svg
-            className="pointer-events-none absolute right-0 top-0 h-full w-[55%] text-white/10"
-            viewBox="0 0 400 200"
-            preserveAspectRatio="none"
-            fill="none"
-            aria-hidden
-          >
-            <path d="M 0 200 Q 100 50, 200 120 T 400 0 L 400 200 Z" fill="currentColor" />
-            <path
-              d="M 0 200 L 100 80 L 200 150 L 300 40 L 400 100 L 400 200 Z"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.3"
-            />
-            <circle cx="100" cy="80" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="200" cy="150" r="4" fill="currentColor" opacity="0.5" />
-            <circle cx="300" cy="40" r="4" fill="currentColor" opacity="0.5" />
-          </svg>
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="flex-1">
-              <h2 className="text-[16px] font-semibold">Add a recommender</h2>
-              <p className="text-[12px] text-white/80">
-                Ask in person first. Adding them here only tracks it.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              aria-label="Close"
-              className="text-white/70 transition-colors hover:text-white disabled:opacity-40"
-            >
-              <X size={18} />
-            </button>
+        {/* Plain. The teal banner and its wave belonged to a page header, and
+            on a 420px dialog it was half the height before a single field. */}
+        <header className="flex items-start gap-3 px-5 pb-3 pt-5">
+          <div className="flex-1">
+            <h2 className="text-[16px] font-medium text-[#111] dark:text-white">
+              Add a recommender
+            </h2>
+            <p className="mt-0.5 text-[13px] text-[#717182]">
+              Ask in person first. Adding them here only tracks it.
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            aria-label="Close"
+            className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#54656f] disabled:opacity-40 dark:hover:bg-[#1c2a32]"
+          >
+            <X size={16} />
+          </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
@@ -167,7 +159,7 @@ export function AddRecommenderModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="h-10 rounded-xl px-3 text-[14px] font-medium text-[#54656f] transition-colors hover:text-[#111] disabled:opacity-40 dark:text-[#aebac1] dark:hover:text-white"
+            className="h-10 rounded-xl border border-[#e9edef] px-3 text-[14px] font-medium text-[#54656f] transition-colors hover:bg-[#f3f3f5] disabled:opacity-40 dark:border-[#2a3942] dark:text-[#aebac1] dark:hover:bg-[#1c2a32]"
           >
             Cancel
           </button>
@@ -176,7 +168,7 @@ export function AddRecommenderModal({
             onClick={submit}
             disabled={!name.trim() || saving}
             className={cn(
-              "inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+              "inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             )}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}

@@ -848,7 +848,9 @@ function FileMenu({
                 href={file.webViewLink}
                 target="_blank"
                 rel="noreferrer"
-                onClick={() => setOpen(false)}
+                // Next tick: closing here unmounted the anchor in the same
+                // commit and the browser never followed the href.
+                onClick={() => setTimeout(() => setOpen(false), 0)}
                 className={cn(item, "text-[#111] dark:text-white")}
               >
                 <ExternalLink size={14} className="text-[#717182]" />
@@ -861,7 +863,7 @@ function FileMenu({
               href={`https://drive.google.com/uc?export=download&id=${file.id}`}
               target="_blank"
               rel="noreferrer"
-              onClick={() => setOpen(false)}
+              onClick={() => setTimeout(() => setOpen(false), 0)}
               className={cn(item, "text-[#111] dark:text-white")}
             >
               <Download size={14} className="text-[#717182]" />

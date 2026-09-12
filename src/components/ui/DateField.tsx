@@ -173,7 +173,11 @@ export function DateField({
             left: pos.left,
             transform: pos.flip ? "translateY(-100%)" : undefined,
           }}
-          className="z-[100] w-[288px] rounded-xl border border-[#e9edef] bg-white p-3 shadow-xl dark:border-[#2a3942] dark:bg-[#202c33]"
+          // Above the modal layer, not below it. Modals are z-110 and this was
+          // z-100, so a date field inside one opened its calendar behind the
+          // dialog's own backdrop: blurred, dimmed and unclickable, which is
+          // every date field on a form that lives in a dialog.
+          className="z-[130] w-[288px] rounded-xl border border-[#e9edef] bg-white p-3 shadow-xl dark:border-[#2a3942] dark:bg-[#202c33]"
         >
           <div className="mb-2 flex items-center justify-between">
             <button

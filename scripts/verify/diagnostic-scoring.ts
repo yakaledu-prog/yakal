@@ -44,6 +44,22 @@ const other = psql("select id from profiles where email='tutor2@yakal.com';");
 
 psql(`delete from diagnostic_results where student_id='${student}' and diagnostic_slug='elem-math';`);
 
+/**
+ * The lesson that makes this tutor theirs.
+ *
+ * teaches_student() answers from sessions and enrolments, and the base seed
+ * creates neither: this check only ever passed on whatever a previous
+ * scenarios run had left lying around, so a clean db:reset failed it and a
+ * scenarios clear failed it again. It sets up its own relationship now, and
+ * takes it away at the end, the way it already does for the result rows.
+ */
+const FIXTURE = 'verify-diagnostic-scoring';
+psql(`delete from sessions where subject='${FIXTURE}';`);
+psql(`
+  insert into sessions (student_id, tutor_id, subject, date, start_time, status)
+  values ('${student}', '${tutor}', '${FIXTURE}', current_date - 7, '10:00', 'completed');
+`);
+
 // ---- the key does not leave the server ----
 pass(
   'anon cannot read the diagnostics table',
@@ -109,6 +125,7 @@ pass(
 );
 
 psql(`delete from diagnostic_results where student_id='${student}' and diagnostic_slug='elem-math';`);
+psql(`delete from sessions where subject='${FIXTURE}';`);
 
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);
