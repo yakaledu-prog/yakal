@@ -128,6 +128,61 @@ export const unlockRequest: NotificationTemplate<{
   },
 };
 
+/**
+ * A student asks a parent to book a course.
+ *
+ * The sibling of unlockRequest above, and deliberately not the same type. That
+ * one's link carries a service key the parent's screen reads to offer a
+ * one-click grant; this one carries a course, and the parent has to pick slots
+ * and a tutor, so it lands them on the course itself with the child already
+ * chosen.
+ *
+ * Nothing is bought and nothing is stored. A student can ask again, and the
+ * only record is the notification, which is what "the ask" is.
+ */
+export const courseRequest: NotificationTemplate<{
+  studentName: string;
+  studentId: string;
+  courseId: string;
+  courseTitle: string;
+  /** Said the way the catalog says it, so the two agree. */
+  price: string;
+}> = {
+  type: "course_request",
+  label: "Course request from a student",
+  notification: (v) => ({
+    title: `${v.studentName} asked for ${v.courseTitle}`,
+    message: `${v.price}. Pick a tutor and the hours to book it.`,
+    link: `/parent/courses/${v.courseId}?student=${v.studentId}`,
+  }),
+  email: (v) => ({
+    subject: `${v.studentName} has asked for ${v.courseTitle}`,
+    heading: "Your child has asked for a course",
+    intro:
+      `${v.studentName} found ${v.courseTitle} in the catalogue and asked you to book it. ` +
+      `Nothing has been bought and nothing has changed. If you have another parent on the ` +
+      `account, they were asked too, and either of you can do it.`,
+    facts: [
+      { label: "Asked by", value: v.studentName },
+      { label: "Course", value: v.courseTitle },
+      { label: "Price", value: v.price },
+    ],
+    cta: {
+      label: "See the course",
+      url: `/parent/courses/${v.courseId}?student=${v.studentId}`,
+    },
+    footer:
+      "You choose the tutor and the hours at checkout. The course opens for them as soon as it is paid.",
+  }),
+  sample: {
+    studentName: "Amen Worku",
+    studentId: "9ef3ccc6-977b-44b2-8694-45c27d1e5a09",
+    courseId: "3a1f9c22-1f4a-4a58-9f4a-2f0a5b6c7d8e",
+    courseTitle: "SAT Math Intensive",
+    price: "$60 an hour",
+  },
+};
+
 /** The parent turns that request down. */
 export const unlockRequestDeclined: NotificationTemplate<{
   parentName: string;

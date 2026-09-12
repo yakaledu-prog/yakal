@@ -474,3 +474,70 @@ export async function getCatalogCourses(): Promise<CourseWithTutors[]> {
     .map((row: any) => ({ ...toCourse(row)!, tutors: toRoster(row.roster) }))
     .filter((c) => c.tutors.length > 0);
 }
+
+// --- A student asking a parent to book -----------------------
+
+/**
+ * How many linked parents there are to ask.
+ *
+ * Read before the button is drawn rather than on the click, so a student with
+ * no parent on the account gets told that instead of a button whose only
+ * possible outcome is an error toast.
+ */
+export async function countLinkedParents(studentId: string): Promise<number> {
+  const { count } = await supabase
+    .from("parent_student_links")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .eq("status", "active");
+  return count ?? 0;
+}
+
+/**
+ * Ask every linked parent to book a course.
+ *
+ * The same shape as the locked-nav request in DashboardLayout, for the same
+ * reasons. Every parent, not one: two links is a mother and a father rather
+ * than an error, either can act, and neither has to be the one who happens to
+ * open the app first.
+ *
+ * Through the template rather than an insert of its own. Written by hand this
+ * produces a row with no template and no vars, which the inbox can only render
+ * as its one stored line and a bare Open button, and which sends no email at
+ * all. See docs/NOTIFICATION_GAPS.md.
+ *
+ * Nothing is stored beyond the notification. A student can ask twice, which is
+ * what asking a parent for something is.
+ */
+export async function askParentForCourse(input: {
+  studentId: string;
+  studentName: string;
+  courseId: string;
+  courseTitle: string;
+  price: string;
+}): Promise<{ success: boolean; error?: string; asked?: number }> {
+  const { data: links, error } = await supabase
+    .from("parent_student_links")
+    .select("parent_id")
+    .eq("student_id", input.studentId)
+    .eq("status", "active");
+
+  const parentIds = [...new Set((links ?? []).map((l: any) => l.parent_id).filter(Boolean))];
+  if (error || parentIds.length === 0) {
+    return { success: false, error: "No linked parent account found." };
+  }
+
+  await Promise.all(
+    parentIds.map((parentId) =>
+      sendFromTemplate(parentId as string, "courseRequest", {
+        studentName: input.studentName,
+        studentId: input.studentId,
+        courseId: input.courseId,
+        courseTitle: input.courseTitle,
+        price: input.price,
+      })
+    )
+  );
+
+  return { success: true, asked: parentIds.length };
+}

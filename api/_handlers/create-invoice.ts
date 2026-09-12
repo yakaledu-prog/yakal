@@ -145,6 +145,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Name a course or a plan to pay for.' });
     }
 
+    // Students never pay, and until now that rule lived entirely in the
+    // absence of a button. The ownership check below only runs when studentId
+    // is somebody else, so a student naming themselves walked straight through
+    // it and got an open invoice with parent_id set to their own id. Checkout
+    // scopes by parent_id, so they could then pay it, and the enrolment and
+    // the invoice would carry a student in the column every billing screen,
+    // refund path and 1099 total reads as the parent.
+    const { data: caller } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (caller?.role === 'student') {
+      return res.status(403).json({ error: 'A parent has to buy this.' });
+    }
+
     // Whose invoice this is. studentId arrives from the browser, and without
     // this a parent could book onto another family's child: they would be
     // paying, but the enrolment, the sessions and the plan would land on
