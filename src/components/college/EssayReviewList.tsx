@@ -813,7 +813,7 @@ function EssayRow({
     // was being clipped by it, so the progress bar clips itself instead.
     <article
       className={cn(
-        "group relative flex flex-wrap items-center gap-3 rounded-xl border bg-card transition-colors",
+        "group relative flex flex-wrap items-center gap-3 rounded border bg-card transition-colors",
         compact ? "px-3 py-2.5" : "items-start gap-4 px-4 py-4",
         finished
           ? "border-primary/40 bg-primary/5 hover:border-primary/60"
@@ -911,7 +911,7 @@ function EssayRow({
 
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden rounded-b-xl bg-muted"
+        className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden rounded-b bg-muted"
       >
         <div
           className={cn("h-full transition-[width] duration-300", barTone)}
