@@ -2,11 +2,17 @@ import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  ArrowUpDown,
+  Download,
   ExternalLink,
   FileImage,
   FileSpreadsheet,
   FileText,
+  LayoutGrid,
+  List,
   Loader2,
+  MessageSquare,
+  MoreVertical,
   Plus,
   Search,
   Trash2,
@@ -24,10 +30,40 @@ import {
   reviewDocument,
   uploadDocument,
 } from "@/services/driveService";
-import { SLOT_GROUPS, Slot } from "@/services/documentSlots";
-import { InfoHint } from "@/components/ui/InfoHint";
+import {
+  SENDER_LINK_LABEL,
+  SENDER_NOTE,
+  SLOT_GROUPS,
+  Slot,
+} from "@/services/documentSlots";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { VerifiedBadge } from "./VerifiedBadge";
+
+type ViewMode = "grid" | "list";
+type SortKey = "suggested" | "name" | "recent" | "missing";
+
+/** Remembered per browser: a counselor who prefers list wants it every time. */
+const VIEW_KEY = "yakal.documents.view";
+
+const VIEWS: { id: ViewMode; label: string }[] = [
+  { id: "grid", label: "Grid view" },
+  { id: "list", label: "List view" },
+];
+
+const SORTS: { value: SortKey; label: string }[] = [
+  // The order the groups are declared in, which is the order a student is
+  // asked for them. Anything else is a way of finding one thing.
+  { value: "suggested", label: "Suggested" },
+  { value: "missing", label: "Missing first" },
+  { value: "name", label: "Name" },
+  { value: "recent", label: "Recently updated" },
+];
+
+const TAGS: { id: string; label: string }[] = [
+  { id: "all", label: "All" },
+  ...SLOT_GROUPS.map((g) => ({ id: g.key, label: g.title })),
+];
 
 /** The icon answers "what kind of file is this", which no badge should. */
 function fileIcon(mimeType?: string) {
@@ -71,6 +107,20 @@ export function DocumentsPanel({
   const qc = useQueryClient();
   const [busySlot, setBusySlot] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<ViewMode>(() => {
+    try {
+      const v = localStorage.getItem(VIEW_KEY);
+      return v === "list" || v === "grid" ? v : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  const [sort, setSort] = useState<SortKey>("suggested");
+  const [group, setGroup] = useState<string>("all");
+  // The file a counselor is writing a note about. "Needs attention" with no
+  // reason is not something a student can act on, and reviewDocument has
+  // always taken a note that no screen ever sent.
+  const [noting, setNoting] = useState<DriveFile | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["drive-docs", studentId],
@@ -147,24 +197,42 @@ export function DocumentsPanel({
   });
 
   /**
-   * Files grouped by the slot they were uploaded into. Anything without a slot
-   * predates this model or was dropped into Drive by hand, so it is shown in
-   * its own section rather than silently hidden.
+   * Files grouped by the slot they were uploaded into.
+   *
+   * A file with no slot was dropped into Drive by hand or predates this model.
+   * It used to get its own "Not filed" section at the bottom, which was a
+   * second place to look for the same thing and taught nobody anything. It is
+   * filed by the Drive folder it is sitting in instead: the folder is the
+   * section, and every section has a slot that accepts more than one file.
    */
-  const { bySlot, unfiled } = useMemo(() => {
+  const { bySlot } = useMemo(() => {
     const bySlot = new Map<string, DriveFile[]>();
-    const unfiled: DriveFile[] = [];
-    const all = [
-      ...(data?.loose ?? []),
-      ...(data?.sections.flatMap((s) => s.files) ?? []),
-    ];
+    const fallback: Record<string, string> = {
+      Transcripts: "transcript_previous",
+      "Test scores": "score_ap",
+      Other: "extra_awards",
+    };
+    const add = (slot: string, f: DriveFile) =>
+      bySlot.set(slot, [...(bySlot.get(slot) ?? []), f]);
 
-    for (const f of all) {
-      const slot = f.appProperties?.slot;
-      if (slot) bySlot.set(slot, [...(bySlot.get(slot) ?? []), f]);
-      else unfiled.push(f);
+    for (const sec of data?.sections ?? []) {
+      // Essay drafts are not application documents. They have their own tab,
+      // their own workspace and their own review flow, and they were only ever
+      // on this page because the old "Not filed" bucket swept up anything
+      // without a slot. Filed by folder instead, four drafts turned up under
+      // "Awards and certificates", which is worse than the bucket was.
+      if (sec.name === "Essays") continue;
+      for (const f of sec.files) {
+        add(f.appProperties?.slot || fallback[sec.name] || "extra_awards", f);
+      }
     }
-    return { bySlot, unfiled };
+    for (const f of data?.loose ?? []) {
+      if (!f.appProperties?.slot && f.mimeType === "application/vnd.google-apps.document") {
+        continue;
+      }
+      add(f.appProperties?.slot || "extra_awards", f);
+    }
+    return { bySlot };
   }, [data]);
 
   if (isLoading) {
@@ -199,56 +267,147 @@ export function DocumentsPanel({
   }
 
   const q = search.trim().toLowerCase();
-  const groups = q
-    ? SLOT_GROUPS.map((g) => ({
-        ...g,
-        slots: g.slots.filter(
-          (sl) =>
-            sl.label.toLowerCase().includes(q) ||
-            sl.description.toLowerCase().includes(q) ||
-            (bySlot.get(sl.id) ?? []).some((f: any) =>
-              String(f.name ?? "").toLowerCase().includes(q)
-            )
-        ),
-      })).filter((g) => g.slots.length > 0)
-    : SLOT_GROUPS;
+  const latest = (sl: Slot) =>
+    Math.max(
+      0,
+      ...(bySlot.get(sl.id) ?? []).map((f) =>
+        f.modifiedTime ? Date.parse(f.modifiedTime) : 0
+      )
+    );
+
+  const groups = SLOT_GROUPS
+    .filter((g) => group === "all" || g.key === group)
+    .map((g) => {
+      const slots = q
+        ? g.slots.filter(
+            (sl) =>
+              sl.label.toLowerCase().includes(q) ||
+              sl.description.toLowerCase().includes(q) ||
+              (bySlot.get(sl.id) ?? []).some((f) =>
+                String(f.name ?? "").toLowerCase().includes(q)
+              )
+          )
+        : g.slots;
+
+      const ordered = [...slots];
+      if (sort === "name") ordered.sort((a, b) => a.label.localeCompare(b.label));
+      // Empty first, and required ahead of optional inside that, which is the
+      // order somebody catching up actually works in.
+      if (sort === "missing") {
+        const weight = (sl: Slot) =>
+          ((bySlot.get(sl.id)?.length ?? 0) > 0 ? 2 : 0) + (sl.required ? 0 : 1);
+        ordered.sort((a, b) => weight(a) - weight(b));
+      }
+      if (sort === "recent") ordered.sort((a, b) => latest(b) - latest(a));
+      return { ...g, slots: ordered };
+    })
+    .filter((g) => g.slots.length > 0);
 
   const allSlots = SLOT_GROUPS.flatMap((g) => g.slots);
   const requiredSlots = allSlots.filter((s) => s.required);
   const done = requiredSlots.filter((s) => (bySlot.get(s.id)?.length ?? 0) > 0).length;
 
+  const changeView = (v: ViewMode) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // A browser refusing storage is not a reason to refuse the click.
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {/* Where the reassurance about Drive used to be. Eleven slots across
-            three groups is enough to want to jump to one, and the sentence was
-            only ever read once. */}
-        <div className="relative min-w-[220px] flex-1 md:max-w-xs">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a8adb8]"
+      {/* Row one is the field and the two controls that change how it is
+          drawn. Row two is what is being shown and how much of it is done,
+          which is the answer to a different question and belongs on its own
+          line. */}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a8adb8]"
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search documents"
+              className="h-9 w-full rounded-xl border border-[#e9edef] bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-primary dark:border-[#2a3942] dark:bg-[#182229]"
+            />
+          </div>
+
+          <Dropdown<SortKey>
+            value={sort}
+            onChange={setSort}
+            options={SORTS}
+            size="sm"
+            align="end"
+            icon={<ArrowUpDown size={15} />}
+            ariaLabel="Sort documents"
+            buttonClassName="h-9 rounded-xl font-normal"
           />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search documents"
-            className="h-9 w-full rounded-xl border border-[#e9edef] bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-primary dark:border-[#2a3942] dark:bg-[#182229]"
-          />
+
+          {/* One control, two states, the way Drive does it. */}
+          <div className="flex h-9 shrink-0 items-center rounded-xl border border-[#e9edef] p-0.5 dark:border-[#2a3942]">
+            {VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => changeView(v.id)}
+                aria-label={v.label}
+                aria-pressed={view === v.id}
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-[10px] transition-colors",
+                  view === v.id
+                    ? "bg-[#f3f3f5] text-[#111] dark:bg-[#1c2a32] dark:text-white"
+                    : "text-[#a8adb8] hover:text-[#54656f] dark:hover:text-[#aebac1]"
+                )}
+              >
+                {v.id === "grid" ? <LayoutGrid size={15} /> : <List size={15} />}
+              </button>
+            ))}
+          </div>
         </div>
-        <span className="text-[13px] tabular-nums text-[#a8adb8]">
-          {done} of {requiredSlots.length} essentials
-        </span>
-        {data?.folderUrl && (
-          <a
-            href={data.folderUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-primary hover:underline"
-          >
-            Open in Drive
-            <ExternalLink size={12} />
-          </a>
-        )}
+
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2">
+          {TAGS.map((t) => {
+            const on = group === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setGroup(t.id)}
+                aria-pressed={on}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors",
+                  on
+                    ? "border-primary/40 bg-primary/10 font-medium text-primary"
+                    : "border-[#e9edef] text-[#54656f] hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1] dark:hover:bg-[#1c2a32]"
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+
+          <span className="ml-auto flex shrink-0 items-center gap-3 text-[13px] text-[#a8adb8]">
+            <span className="tabular-nums">
+              {done} of {requiredSlots.length} essentials
+            </span>
+            {data?.folderUrl && (
+              <a
+                href={data.folderUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                Open in Drive
+                <ExternalLink size={12} />
+              </a>
+            )}
+          </span>
+        </div>
       </div>
 
       {groups.map((group) => (
@@ -256,6 +415,7 @@ export function DocumentsPanel({
           key={group.key}
           title={group.title}
           slots={group.slots}
+          view={view}
           bySlot={bySlot}
           busySlot={busySlot}
           canReview={canReview}
@@ -266,9 +426,21 @@ export function DocumentsPanel({
           }}
           onRemove={setPendingDelete}
           onReview={(file, verdict) => review.mutate({ file, verdict })}
+          onNote={setNoting}
           removingId={remove.isPending ? remove.variables?.id : undefined}
         />
       ))}
+
+      <NoteDialog
+        file={noting}
+        busy={review.isPending}
+        onCancel={() => setNoting(null)}
+        onSubmit={(text) => {
+          if (!noting) return;
+          review.mutate({ file: noting, verdict: "needs_attention", note: text });
+          setNoting(null);
+        }}
+      />
 
       <ConfirmDialog
         open={!!pendingDelete}
@@ -289,24 +461,6 @@ export function DocumentsPanel({
         onCancel={() => setPendingDelete(null)}
       />
 
-      {unfiled.length > 0 && (
-        <section>
-          <h3 className="mb-2.5 flex items-center gap-1 text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
-            Not filed
-            <InfoHint text="Uploaded before these categories existed, or added straight into Drive. Still safe, just not sorted." />
-          </h3>
-          <div className="grid gap-2 lg:grid-cols-2">
-            {unfiled.map((f) => (
-              <FileRow
-                key={f.id}
-                file={f}
-                onRemove={() => setPendingDelete(f)}
-                removing={remove.isPending && remove.variables?.id === f.id}
-              />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
@@ -314,6 +468,7 @@ export function DocumentsPanel({
 function SlotGroupSection({
   title,
   slots,
+  view,
   bySlot,
   busySlot,
   canReview,
@@ -321,10 +476,12 @@ function SlotGroupSection({
   onFile,
   onRemove,
   onReview,
+  onNote,
   removingId,
 }: {
   title: string;
   slots: Slot[];
+  view: ViewMode;
   bySlot: Map<string, DriveFile[]>;
   busySlot: string | null;
   canReview: boolean;
@@ -332,6 +489,7 @@ function SlotGroupSection({
   onFile: (slot: Slot, file: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
+  onNote: (f: DriveFile) => void;
   removingId?: string;
 }) {
   return (
@@ -339,13 +497,15 @@ function SlotGroupSection({
       <h3 className="mb-2.5 text-[13px] font-medium text-[#54656f] dark:text-[#aebac1]">
         {title}
       </h3>
-      {/* Two columns: slots are short and mostly empty early on, so one tall
-          column would read as a longer to-do list than it really is. */}
-      <div className="grid gap-3 lg:grid-cols-2">
+      {/* Two columns in grid: slots are short and mostly empty early on, so one
+          tall column would read as a longer to-do list than it really is. List
+          gives one row each, for scanning names rather than working through. */}
+      <div className={cn(view === "grid" ? "grid gap-3 lg:grid-cols-2" : "space-y-1.5")}>
         {slots.map((slot) => (
           <SlotCard
             key={slot.id}
             slot={slot}
+            view={view}
             files={bySlot.get(slot.id) ?? []}
             busy={busySlot === slot.id}
             canReview={canReview}
@@ -353,6 +513,7 @@ function SlotGroupSection({
             onFile={(file) => onFile(slot, file)}
             onRemove={onRemove}
             onReview={onReview}
+            onNote={onNote}
             removingId={removingId}
           />
         ))}
@@ -363,6 +524,7 @@ function SlotGroupSection({
 
 function SlotCard({
   slot,
+  view,
   files,
   busy,
   canReview,
@@ -370,9 +532,11 @@ function SlotCard({
   onFile,
   onRemove,
   onReview,
+  onNote,
   removingId,
 }: {
   slot: Slot;
+  view: ViewMode;
   files: DriveFile[];
   busy: boolean;
   canReview: boolean;
@@ -380,6 +544,7 @@ function SlotCard({
   onFile: (f: File) => void;
   onRemove: (f: DriveFile) => void;
   onReview: (f: DriveFile, verdict: ReviewVerdict) => void;
+  onNote: (f: DriveFile) => void;
   removingId?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -389,6 +554,13 @@ function SlotCard({
   // Staff review, they do not upload: a transcript is the student's record
   // and nobody else has a copy to add.
   const canAdd = canUpload && (slot.multiple || !filled);
+  // Every description and sender note on this page is written to the student:
+  // "Your full high school record", "You upload this yourself". A counselor
+  // reading a student's page was being addressed as the applicant, which is
+  // the same wrong voice the essay panel had. They also do not need telling
+  // what a transcript is. Timing stays, because chasing a mid-year report in
+  // February is exactly their job.
+  const teaching = !canReview;
 
   return (
     <div
@@ -404,7 +576,8 @@ function SlotCard({
         if (f && canAdd) onFile(f);
       }}
       className={cn(
-        "rounded-xl border p-3 transition-colors",
+        "rounded-xl border transition-colors",
+        view === "list" ? "px-3 py-2" : "p-3",
         over
           ? "border-primary bg-primary/5"
           : filled
@@ -430,21 +603,42 @@ function SlotCard({
             </span>
             {filled && <VerifiedBadge provenance={slotState(files)} size={13} />}
             {!slot.required && !filled && (
-              <span className="shrink-0 text-[11px] text-[#a8adb8]">optional</span>
+              <span className="shrink-0 text-[11px] text-[#a8adb8]">(optional)</span>
             )}
           </div>
 
-          {!filled && (
+          {!filled && view === "grid" && (
             <>
-              <p className="mt-0.5 pr-2 text-[12px] leading-snug text-[#717182]">
-                {slot.description}
-              </p>
+              {teaching && (
+                <p className="mt-0.5 pr-2 text-[12px] leading-snug text-[#717182]">
+                  {slot.description}
+                </p>
+              )}
               {slot.timing && (
                 <p className="mt-1 text-[11px] text-[#8a6a2f] dark:text-[#e0c48a]">
                   {slot.timing}
                 </p>
               )}
             </>
+          )}
+
+          {/* Nothing here is sent to a college from Yakal, and a student who
+              assumes it is misses a deadline believing they are done. Shown on
+              a filled slot because that is the moment the assumption forms. */}
+          {filled && view === "grid" && teaching && (
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] leading-snug text-[#717182]">
+              {SENDER_NOTE[slot.sender]}
+              {slot.senderUrl && (
+                <a
+                  href={slot.senderUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary hover:underline"
+                >
+                  {SENDER_LINK_LABEL[slot.sender]}
+                </a>
+              )}
+            </p>
           )}
         </div>
 
@@ -456,7 +650,10 @@ function SlotCard({
             aria-label={`Upload ${slot.label}`}
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors disabled:opacity-50",
-              filled
+              // Solid only for a missing essential. An optional slot that has
+              // never been filled is not a call to action, and eight primary
+              // buttons down the page made the two that matter invisible.
+              filled || !slot.required
                 ? "text-[#54656f] hover:text-primary dark:text-[#aebac1]"
                 : "bg-primary text-white hover:bg-primary-hover"
             )}
@@ -484,14 +681,23 @@ function SlotCard({
       )}
 
       {filled && (
-        <div className="mt-2.5 space-y-1.5 border-t border-[#e9edef] pt-2.5 dark:border-[#2a3942]">
+        <div
+          className={cn(
+            "space-y-1.5",
+            view === "grid"
+              ? "mt-2.5 border-t border-[#e9edef] pt-2.5 dark:border-[#2a3942]"
+              : "mt-1.5"
+          )}
+        >
           {files.map((f) => (
             <FileRow
               key={f.id}
               file={f}
               compact
+              slot={slot}
               canReview={canReview}
               onReview={onReview}
+              onNote={() => onNote(f)}
               onRemove={() => onRemove(f)}
               removing={removingId === f.id}
             />
@@ -526,16 +732,122 @@ function slotState(files: DriveFile[]): ReviewVerdict {
   return "pending";
 }
 
+/**
+ * Everything a file can have done to it, behind one button.
+ *
+ * Open, download and delete were three controls competing with Verify and
+ * Flag on a row that is mostly filename. The two that are a judgement stay
+ * visible; the three that are plumbing move in here.
+ */
+function FileMenu({
+  file,
+  canReview,
+  onNote,
+  onRemove,
+}: {
+  file: DriveFile;
+  canReview: boolean;
+  onNote: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const item =
+    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]";
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={`Actions for ${file.name}`}
+        aria-expanded={open}
+        className="grid h-7 w-7 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#54656f] dark:hover:bg-[#1c2a32]"
+      >
+        <MoreVertical size={15} />
+      </button>
+
+      {open && (
+        <>
+          {/* Catches the click that closes it, including one on another row's
+              kebab, which otherwise opened a second menu behind this one. */}
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-10 cursor-default"
+          />
+          <div className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl border border-[#e9edef] bg-white py-1 shadow-lg dark:border-[#2a3942] dark:bg-[#182229]">
+            {file.webViewLink && (
+              <a
+                href={file.webViewLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setOpen(false)}
+                className={cn(item, "text-[#111] dark:text-white")}
+              >
+                <ExternalLink size={14} className="text-[#717182]" />
+                Open in Drive
+              </a>
+            )}
+            {/* Drive's own export endpoint. A blob fetched through us would
+                need the file's bytes to pass through the browser twice. */}
+            <a
+              href={`https://drive.google.com/uc?export=download&id=${file.id}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setOpen(false)}
+              className={cn(item, "text-[#111] dark:text-white")}
+            >
+              <Download size={14} className="text-[#717182]" />
+              Download
+            </a>
+            {canReview && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onNote();
+                }}
+                className={cn(item, "text-[#111] dark:text-white")}
+              >
+                <MessageSquare size={14} className="text-[#717182]" />
+                Leave a note
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onRemove();
+              }}
+              className={cn(item, "text-[#d4183d]")}
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FileRow({
   file,
+  slot,
   onRemove,
+  onNote,
   removing,
   compact = false,
   canReview = false,
   onReview,
 }: {
   file: DriveFile;
+  slot?: Slot;
   onRemove: () => void;
+  onNote?: () => void;
   removing: boolean;
   compact?: boolean;
   canReview?: boolean;
@@ -576,20 +888,10 @@ function FileRow({
           <div className="truncate text-[13px] text-[#111] dark:text-white">{file.name}</div>
           <div className="text-[11px] text-[#717182]">
             {file.modifiedTime && new Date(file.modifiedTime).toLocaleDateString()}
-            {size && ` · ${size}`}
+            {size && ` \u00b7 ${size}`}
+            {slot && ` \u00b7 ${slot.label}`}
           </div>
         </div>
-
-        {file.webViewLink && (
-          <a
-            href={file.webViewLink}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 text-[12px] font-medium text-primary underline active:scale-95 transition ease-in-out hover:opacity-85"
-          >
-            Open
-          </a>
-        )}
 
         {canReview && onReview && (
           <div className="flex shrink-0 items-center gap-1">
@@ -603,24 +905,20 @@ function FileRow({
             </button>
             <button
               type="button"
-              onClick={() => onReview(file, "needs_attention")}
-              disabled={verdict === "needs_attention"}
-              className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10 disabled:opacity-40"
+              onClick={() => onNote?.()}
+              className="rounded-lg px-2 py-1 text-[12px] font-medium text-[#d4183d] transition-colors hover:bg-[#d4183d]/10"
             >
               Flag
             </button>
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={removing}
-          aria-label={`Remove ${file.name}`}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#a8adb8] transition-colors hover:bg-[#f3f3f5] hover:text-[#d4183d] disabled:opacity-40 dark:hover:bg-[#1c2a32]"
-        >
-          {removing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />}
-        </button>
+        <FileMenu
+          file={file}
+          canReview={canReview}
+          onNote={() => onNote?.()}
+          onRemove={onRemove}
+        />
       </div>
 
       {/* The reason a file was flagged is the only part a student can act on,
@@ -628,6 +926,69 @@ function FileRow({
       {note && verdict === "needs_attention" && (
         <p className="mt-1 pl-6 text-[11px] leading-snug text-[#d4183d]">{note}</p>
       )}
+    </div>
+  );
+}
+
+
+/**
+ * Why a file was flagged, in the counselor's own words.
+ *
+ * A separate dialog rather than an inline field because the note is the whole
+ * point of the flag: a student who sees "needs attention" and no reason has
+ * been given a chore, not a correction. Empty is allowed - sometimes the
+ * conversation has already happened in messages - but the box asks first.
+ */
+function NoteDialog({
+  file,
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  file: DriveFile | null;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (note: string) => void;
+}) {
+  const [text, setText] = useState("");
+  if (!file) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="w-full max-w-md rounded-xl border border-[#e9edef] bg-white p-5 dark:border-[#2a3942] dark:bg-[#182229]">
+        <h3 className="text-[15px] font-medium text-[#111] dark:text-white">
+          What needs fixing?
+        </h3>
+        <p className="mt-1 truncate text-[13px] text-[#717182]">{file.name}</p>
+
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          autoFocus
+          placeholder="Scanned upside down, or the mid-year grades are missing"
+          className="mt-3 w-full resize-none rounded-xl border border-[#e9edef] bg-white p-2.5 text-[13px] outline-none transition-colors focus:border-primary dark:border-[#2a3942] dark:bg-[#111b21] dark:text-white"
+        />
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-xl border border-[#e9edef] px-3 py-1.5 text-[13px] font-medium text-[#54656f] transition-colors hover:bg-[#f3f3f5] dark:border-[#2a3942] dark:text-[#aebac1] dark:hover:bg-[#1c2a32]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onSubmit(text.trim())}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+          >
+            {busy && <Loader2 size={13} className="animate-spin" />}
+            Flag for the student
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
