@@ -178,6 +178,16 @@ export function EssayReviewList({
   /** Set when the list is already about one student, which drops the rail's
    *  student group and the name repeated on every row. */
   scopedToStudent = false,
+  /**
+   * Rows only: no search, no filters, no rail.
+   *
+   * The home page shows the four essays actually waiting in a half-width
+   * column. The chrome around this list is a page's worth, and searching four
+   * rows is not a thing anybody does, but the rows themselves have to be the
+   * same rows: a counsellor acting on one here and one on the queue should not
+   * be looking at two different components.
+   */
+  compact = false,
   onChanged,
   emptyText,
   children,
@@ -189,6 +199,7 @@ export function EssayReviewList({
   counselorName: string | undefined;
   students?: ReviewListStudent[];
   scopedToStudent?: boolean;
+  compact?: boolean;
   onChanged?: () => void;
   emptyText?: string;
   /** Anything the page wants beside the search field, such as Add essay. */
@@ -327,6 +338,8 @@ export function EssayReviewList({
   return (
     <>
       <div className="min-w-0">
+          {!compact && (
+          <>
           {/* Search, then the two controls that change what it shows. The
               filter lives at the end of the field rather than beside it,
               because narrowing by status and narrowing by word are the same
@@ -394,11 +407,14 @@ export function EssayReviewList({
             </p>
           </div>
 
-          <div className="flex gap-5">
+          </>
+          )}
+
+          <div className={cn(compact ? "" : "flex gap-5")}>
             {/* The rail is students here, not colleges. A counsellor's first
                 question about an essay is whose it is; a student never has to
                 ask. */}
-            {(colleges.length > 1 || (students.length > 1 && !scopedToStudent)) && (
+            {!compact && (colleges.length > 1 || (students.length > 1 && !scopedToStudent)) && (
               <nav className="hidden w-[210px] shrink-0 flex-col gap-0.5 md:flex">
                 <RailItem
                   label="All essays"
@@ -467,6 +483,7 @@ export function EssayReviewList({
                       : null
                   }
                   showStudent={!scopedToStudent}
+                  compact={compact}
                   busy={busyId === e.id}
                   onAct={act}
                 />
@@ -710,6 +727,7 @@ function EssayRow({
   plan,
   college,
   showStudent,
+  compact,
   busy,
   onAct,
 }: {
@@ -719,6 +737,14 @@ function EssayRow({
   college: College | null;
   /** False on a page that is already about one student. */
   showStudent: boolean;
+  /**
+   * The home column, where this is four rows beside a session list.
+   *
+   * A queue row carries a due date, a document state, a plan warning and a
+   * rounds count, all of which a counsellor wants when triaging forty. Beside
+   * four, it is four rows of small print. Same row, less of it.
+   */
+  compact: boolean;
   busy: boolean;
   onAct: (essay: ReviewQueueItem, action: ReviewAction) => void;
 }) {
@@ -787,7 +813,8 @@ function EssayRow({
     // was being clipped by it, so the progress bar clips itself instead.
     <article
       className={cn(
-        "group relative flex flex-wrap items-start gap-4 rounded border bg-card px-4 py-4 transition-colors",
+        "group relative flex flex-wrap items-center gap-3 rounded border bg-card transition-colors",
+        compact ? "px-3 py-2.5" : "items-start gap-4 px-4 py-4",
         finished
           ? "border-primary/40 bg-primary/5 hover:border-primary/60"
           : waiting
@@ -802,7 +829,7 @@ function EssayRow({
           collegeName={essay.collegeName}
           collegeLogo={college?.logo ?? null}
           collegeWebsite={college?.website ?? null}
-          size={40}
+          size={compact ? 34 : 40}
         />
       ) : essay.collegeName ? (
         // One student's page already says whose these are, so the crest is the
@@ -811,19 +838,22 @@ function EssayRow({
           name={essay.collegeName}
           logo={college?.logo ?? null}
           website={college?.website ?? null}
-          size={38}
+          size={compact ? 34 : 38}
         />
       ) : (
         // A personal statement belongs to no college, so it wears the mark of
         // the application that asks for it. Without this it fell back to a
         // letter in a box, which is the thing crests were meant to replace.
-        <ApplicationLogo appKey="common_app" name={essay.title} size={38} />
+        <ApplicationLogo appKey="common_app" name={essay.title} size={compact ? 34 : 38} />
       )}
 
       <div className="min-w-0 flex-1">
         <Link
           to={`/counselor/essay/${essay.id}`}
-          className="text-[15px] font-medium text-foreground transition-colors hover:text-primary"
+          className={cn(
+            "font-medium text-foreground transition-colors hover:text-primary",
+            compact ? "text-[14px]" : "text-[15px]"
+          )}
         >
           {essay.title}
         </Link>
@@ -840,6 +870,7 @@ function EssayRow({
             .join(" - ")}
         </p>
 
+        {!compact && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px]">
           {due && (
             <span className={due.urgent ? "font-medium text-[#8a6a2a] dark:text-secondary" : "text-muted-foreground"}>
@@ -854,6 +885,7 @@ function EssayRow({
           )}
           {!plan && <span className="text-muted-foreground">No plan</span>}
         </div>
+        )}
       </div>
 
       {/* Where the two verbs used to sit. A queue of forty rows carrying three
