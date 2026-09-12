@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays } from "lucide-react";
 import { SessionsBanner } from "@/components/shared/SessionsBanner";
+import { cn } from "@/utils/cn";
 
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +74,50 @@ export function StudentAdvising() {
   const upcomingCount = advising.filter((s) => s.status === "upcoming").length;
   const canBook = allowance != null && (left == null || left > 0);
 
+  /**
+   * The balance, and one colour for the whole strip.
+   *
+   * The hours left are the decision, not the hours used: "0 of 1" makes a
+   * student work out the subtraction before they know whether they can book.
+   * And the strip says what state it is in the way the earnings one does,
+   * with the rule, the wash and the button agreeing rather than a teal button
+   * sitting on a grey line whatever the number says.
+   *
+   * Gold on the last hour, because that is the one worth spending carefully.
+   * Red when there are none: nothing is wrong, but the answer to "can I book"
+   * is no until the month turns.
+   */
+  const balance =
+    allowance == null
+      ? null
+      : left == null
+        ? {
+          text: "You have unlimited hours with your counsellor.",
+          rule: "border-primary",
+          wash: "bg-primary/5",
+          button: "bg-primary hover:bg-primary-hover text-white",
+        }
+        : left <= 0
+          ? {
+            text: "No hours left this month. Your allowance resets on the 1st.",
+            rule: "border-[#d4183d]",
+            wash: "bg-[#d4183d]/5",
+            button: "bg-[#d4183d] text-white",
+          }
+          : left === 1
+            ? {
+              text: `1 hour left this month, of ${allowance.limit}.`,
+              rule: "border-secondary",
+              wash: "bg-secondary/10",
+              button: "bg-secondary text-secondary-foreground hover:opacity-90",
+            }
+            : {
+              text: `${left} hours left this month, of ${allowance.limit}.`,
+              rule: "border-primary",
+              wash: "bg-primary/5",
+              button: "bg-primary hover:bg-primary-hover text-white",
+            };
+
   return (
     <PageWrapper className="!p-0">
       <div className="min-h-screen flex-1 bg-background pb-12 dark:bg-[#111b21]">
@@ -91,35 +136,40 @@ export function StudentAdvising() {
 
         <div className="p-4 md:p-8">
           {/* Booking sits with the list rather than in the banner or a card of
-              its own. The allowance is the whole of the decision - "two of four
-              this month" is what tells a student whether to book at all - and a
-              full-height card beside the list would spend a third of the page
-              on one button and one number. */}
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[13px] text-muted-foreground">
-              {allowance == null
-                ? "Counselling is not on this account."
-                : allowance.limit == null
-                  ? `${allowance.used} ${allowance.used === 1 ? "hour" : "hours"} with your counsellor this month, with no ceiling`
-                  : `${allowance.used} of ${allowance.limit} hours with your counsellor this month`}
-            </p>
+              its own. The balance is the whole of the decision, so the button
+              belongs beside that sentence, and a full-height card would spend
+              a third of the page on one button and one number. */}
+          {balance ? (
+            <div
+              className={cn(
+                "mb-6 flex flex-wrap items-center justify-between gap-4 border-l-2 px-5 py-4",
+                balance.rule,
+                balance.wash
+              )}
+            >
+              <p className="text-[14px] text-foreground">{balance.text}</p>
 
-            {/* Either the student or a linked parent can book: the family
-                function book_advising_session authorises both, so the student
-                arranges their own hours here rather than being sent to a
-                parent's billing page for a plan that may be their own. */}
-            {allowance != null && (
+              {/* Either the student or a linked parent can book: the family
+                  function book_advising_session authorises both, so the student
+                  arranges their own hours here rather than being sent to a
+                  parent's billing page for a plan that may be their own. */}
               <button
                 type="button"
                 onClick={() => setBooking(true)}
                 disabled={!canBook}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                title={canBook ? undefined : "You have used this month's hours"}
+                className={cn(
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
+                  balance.button
+                )}
               >
                 <CalendarDays size={15} /> Book a session
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <p className="mb-6 text-[13px] text-muted-foreground">
+              Counselling is not on this account.
+            </p>
+          )}
 
           {tab === "upcoming" ? (
             <UpcomingSessions

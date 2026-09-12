@@ -121,11 +121,14 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
+      // relative, not a negative margin. The row scrolls sideways on a phone,
+      // and an overflow container clips a child pulled outside its content
+      // box, which took the active tab's underline off the screen entirely.
       className={cn(
-        "-mb-px shrink-0 border-b-2 px-1 pb-3 text-[14px] transition-colors",
+        "relative top-px shrink-0 whitespace-nowrap border-b-2 px-1 pb-3 text-[14px] outline-none transition-colors",
         active
           ? "border-white font-medium text-white"
-          : "border-transparent text-white/70 hover:text-white"
+          : "border-transparent text-white/60 hover:border-white/30 hover:text-white/90"
       )}
     >
       {label}
