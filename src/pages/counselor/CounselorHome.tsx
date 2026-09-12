@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import {
-  getCounselorCaseload,
   getCounselorDashboard,
   getCounselorSessionsFull,
   getCounselorStudents,
@@ -24,7 +23,6 @@ import { getReviewQueue } from "@/services/essayReviewService";
 import { getAdmissionsPlans } from "@/services/admissionsService";
 import { EssayReviewList } from "@/components/college/EssayReviewList";
 import { SessionList, SessionListItem } from "@/components/shared/SessionList";
-import { CaseloadList } from "@/components/counselor/CaseloadList";
 export function CounselorHome() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -32,12 +30,6 @@ export function CounselorHome() {
   const { data: dashboard } = useQuery({
     queryKey: ["counselor-dashboard", user?.id],
     queryFn: () => getCounselorDashboard(user!.id),
-    enabled: !!user?.id,
-  });
-
-  const { data: caseload = [], isLoading: caseloadLoading } = useQuery({
-    queryKey: ["counselor-caseload", user?.id],
-    queryFn: () => getCounselorCaseload(user!.id),
     enabled: !!user?.id,
   });
 
@@ -188,12 +180,6 @@ export function CounselorHome() {
             </section>
           </div>
 
-          {/* The caseload, full width, because the comparison runs down the
-              column: whose bar is short, whose date is red. */}
-          <section>
-            <SectionHead title="Your students" onAll={() => navigate("/counselor/students")} />
-            <CaseloadList rows={caseload} catalog={catalog} isLoading={caseloadLoading} />
-          </section>
         </div>
       </div>
     </PageWrapper>
