@@ -74,6 +74,7 @@ PROCESS = re.compile(
     # First person: an FAQ written in the applicant's voice, not the college's
     # question. "I am an international student. What is different..."
     r"i am |i.m an? |my (application|transcript|scores)|"
+    r"if you believe that|if you previously attended|"
     r"(please )?(use|submit|keep|respond|complete|contact|see|visit|review) |"
     r"(please )?use (our|the) form|how you fill|fill out (this|the) form|"
     r"carefully consider|make sure|be sure to|note that|think of these|"
@@ -90,7 +91,7 @@ NOT_A_PROMPT = re.compile(
     r"application fee|fee waiver|test scores?|transcript|recommendation letter|"
     r"make or break|resume|activities list|self-report|"
     r"required to be considered|considered for admission|"
-    r"depth, not breadth|there.s a limit of|"
+    r"depth, not breadth|there.s a limit of|core attributes are|"
     r"deadline is|deadlines are|apply by|notification date)\b",
     re.I,
 )
@@ -243,6 +244,12 @@ def extract(path: str, universal: list[str] | None = None) -> tuple[str, list[di
         # The limit is usually parenthesised at the end; the question is the
         # rest. Leaving it in makes the prompt read like a form field.
         text = re.sub(r"\s*\(?\b\d{2,4}\s*(?:-|–)?\s*(?:word|character)s?[^)]*\)?\s*$", "", line).strip()
+        # Amherst labels its two routes "Prompt 1 Question:" and the label is
+        # the page's scaffolding, not part of what the college is asking.
+        text = re.sub(
+            r"^(prompt\s*\d+\s*(question)?|option\s*[A-Z]|question\s*\d+)\s*[:.\-]?\s*",
+            "", text, flags=re.I,
+        ).strip()
         text = re.sub(r"\s*\(\s*\)\s*$", "", text).strip(" .;:")
         if len(text) < 40 or TRUNCATED.search(text):
             continue

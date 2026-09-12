@@ -55,9 +55,16 @@ PATHS = [
     "application-questions", "apply/application-questions",
     "short-answer-questions", "apply/short-answer-questions",
     "first-year/essays", "apply/first-year/essays",
+    # Unhyphenated. Amherst's is /admission/apply/firstyear/writingsupplement
+    # and the hyphenated guesses walked straight past it; a college that writes
+    # "firstyear" as one word usually writes "writingsupplement" that way too.
+    "writingsupplement", "apply/writingsupplement",
+    "admission/apply/firstyear/writingsupplement",
+    "firstyear/writingsupplement", "essayprompts", "apply/essayprompts",
     # Found by searching for the pages this crawler had missed. Each one is a
     # real college's real URL, kept so the next run reaches it directly.
     "how-to-apply/first-year-applicants/cornell-first-year-writing-supplement-prompts",
+    "apply/first-year-applicants/application-requirements-and-forms",
     "faqs/writing-supplements", "apply/how-apply",
     "how-to-apply/essays", "apply/first-year-applicants",
     "apply/first-year", "first-year-applicants",

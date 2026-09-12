@@ -98,11 +98,19 @@ A full run over all 951 colleges we hold requirements for, on 2026-09-12:
 | Admissions site found | 872 |
 | Essay page found by the static pass | 39 |
 | Essay page found by the browser pass | **0 of 850** |
-| Colleges with prompts extracted | 17 |
-| Prompts extracted | 54 |
+| Colleges with prompts extracted | 21 |
+| Prompts extracted | 63 |
 
 Add the seven colleges done by hand and the shared applications, and the
-catalogue holds **24 colleges and 112 prompts**.
+catalogue holds **28 colleges and 121 prompts**.
+
+The last four came a different way and it is the way that works: an aggregator
+listing which colleges have supplements, used as a worklist, then a
+site-restricted search for each one's own page. Amherst publishes its
+supplement at `/admission/apply/firstyear/writingsupplement`, one word, which
+is why the path list now carries unhyphenated variants; Stanford, Haverford and
+Barnard all publish theirs too. **The colleges do put this on the web. Finding
+the page is the whole problem, and a search engine solves it in one query.**
 
 **The browser pass found nothing, and that is the most useful result here.**
 It was built on the assumption that the blocker was JavaScript, since Brown,

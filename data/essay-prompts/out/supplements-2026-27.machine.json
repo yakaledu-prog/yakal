@@ -3,6 +3,50 @@
   "note": "Read off each college's own admissions page by build/extract_prompts.py on 2026-09-12. Every prompt is a quotation from a page that was fetched; nothing here is generated. Marked extraction=machine because no person has checked it, which the picker says on the row.",
   "schools": [
     {
+      "unitid": 164465,
+      "name": "Amherst College",
+      "source_url": "https://www.amherst.edu/admission/apply/firstyear/writingsupplement",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "amherst-college-2026-27-m1",
+          "title": "How do you experience curiosity in your own life",
+          "prompt": "What does curiosity mean to you? How do you experience curiosity in your own life?",
+          "word_limit": 350,
+          "requirement": "required"
+        },
+        {
+          "slug": "amherst-college-2026-27-m2",
+          "title": "In what ways could your unique experiences enhance our understanding",
+          "prompt": "In what ways could your unique experiences enhance our understanding of our nation and our world?",
+          "word_limit": 350,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
+      "unitid": 217156,
+      "name": "Brown University",
+      "source_url": "https://admission.brown.edu/apply/how-apply",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "brown-university-2026-27-m1",
+          "title": "If you could teach a class on any one thing",
+          "prompt": "If you could teach a class on any one thing, whether academic or otherwise, what would it be? (100-",
+          "word_limit": 150,
+          "requirement": "required"
+        },
+        {
+          "slug": "brown-university-2026-27-m2",
+          "title": "Tell us something about yourself, beyond your interest in medicine",
+          "prompt": "Tell us something about yourself, beyond your interest in medicine, that you think will make you a great doctor",
+          "word_limit": 250,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
       "unitid": 183910,
       "name": "Caldwell University",
       "source_url": "https://www.caldwell.edu/admissions/requirements/application-essay-topics/",
@@ -220,6 +264,21 @@
       ]
     },
     {
+      "unitid": 212911,
+      "name": "Haverford College",
+      "source_url": "https://www.haverford.edu/admission/supplement",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "haverford-college-2026-27-m1",
+          "title": "How do you hope to engage with this topic or",
+          "prompt": "Tell us about a topic or issue that sparks your curiosity and gets you intellectually excited. How do you hope to engage with this topic or issue at Haverford? (Please limit your response to 150-",
+          "word_limit": 200,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
       "unitid": 162928,
       "name": "Johns Hopkins University",
       "source_url": "https://apply.jhu.edu/how-to-apply/application-deadlines-requirements/",
@@ -242,13 +301,6 @@
       "prompts": [
         {
           "slug": "maine-college-of-art-design-2026-27-m1",
-          "title": "If you previously attended Maine College of Art & Design",
-          "prompt": "If you previously attended Maine College of Art & Design and wish to return, contact the Registrar\u2019s Office (registrar@meca.edu) to discuss your next steps",
-          "word_limit": 300,
-          "requirement": "required"
-        },
-        {
-          "slug": "maine-college-of-art-design-2026-27-m2",
           "title": "What\u2019s the difference between attending a school dedicated to art",
           "prompt": "What\u2019s the difference between attending a school dedicated to art and design versus pursuing an art program within a liberal arts college?",
           "word_limit": 300,
@@ -372,6 +424,42 @@
       ]
     },
     {
+      "unitid": 243744,
+      "name": "Stanford University",
+      "source_url": "https://admission.stanford.edu/apply/first-year/apply.html",
+      "extraction": "machine",
+      "prompts": [
+        {
+          "slug": "stanford-university-2026-27-m1",
+          "title": "What is the most significant challenge that society faces today",
+          "prompt": "What is the most significant challenge that society faces today?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m2",
+          "title": "What historical moment or event do you wish you could",
+          "prompt": "What historical moment or event do you wish you could have witnessed?",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m3",
+          "title": "Elaborate on one of your extracurricular activities, a job you",
+          "prompt": "Briefly elaborate on one of your extracurricular activities, a job you hold, or responsibilities you have for your family",
+          "word_limit": 50,
+          "requirement": "required"
+        },
+        {
+          "slug": "stanford-university-2026-27-m4",
+          "title": "Describe what aspects of your life experiences, interests, and character",
+          "prompt": "Please describe what aspects of your life experiences, interests, and character would help you make a distinctive contribution as an undergraduate to Stanford University",
+          "word_limit": 100,
+          "requirement": "required"
+        }
+      ]
+    },
+    {
       "unitid": 228875,
       "name": "Texas Christian University",
       "source_url": "https://admissions.tcu.edu/frequently-asked-questions/what-are-the-essay-questions.php",
@@ -466,20 +554,13 @@
       "prompts": [
         {
           "slug": "university-of-evansville-2026-27-m1",
-          "title": "Which of these are you most excited about in your",
-          "prompt": "UE\u2019s core attributes are offering 1) academic academics, which challenge the status quo of traditional education, 2) a caring culture, which sees and values you as an individual, and 3) extraordinary experiences, such as studying at Harlaxton, our manor house in England. Which of these are you most excited about in your college experience and why?",
-          "word_limit": 500,
-          "requirement": "required"
-        },
-        {
-          "slug": "university-of-evansville-2026-27-m2",
           "title": "If you have observed in a physical therapy setting, you",
           "prompt": "If you have observed in a physical therapy setting, you must choose one of the American Physical Therapy Association's (APTA) core values and write an essay that describes how you observed a physical therapist demonstrate this value. Use the APTA's description of the core value for your essay completion",
           "word_limit": 500,
           "requirement": "required"
         },
         {
-          "slug": "university-of-evansville-2026-27-m3",
+          "slug": "university-of-evansville-2026-27-m2",
           "title": "Other than the desire to help people, why do you",
           "prompt": "If you have not observed in a physical therapy setting, describe in detail what you have done to explore the role of the physical therapist. Other than the desire to help people, why do you want to be a physical therapist?",
           "word_limit": 500,
