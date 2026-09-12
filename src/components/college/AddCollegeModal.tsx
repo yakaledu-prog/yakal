@@ -758,10 +758,11 @@ function CollegePanel({ college }: { college: College }) {
         </>
       )}
 
-      {/* At the head, where the ground is thinnest and the campus shows. About
-          half of schools have one; without it the panel simply opens on the
-          photograph. */}
-      <div className="relative z-10 mt-auto min-h-0 overflow-y-auto p-5">
+      {/* Centred. It was pinned to the foot with mt-auto, which reads as
+          deliberate only while the dialog is tall: once the form shortened,
+          the name sat at the bottom of a panel with an empty band above it
+          and the photograph cropped to a sliver. */}
+      <div className="relative z-10 my-auto min-h-0 overflow-y-auto p-5">
         <h3 className="text-[17px] font-bold leading-tight text-white">
           {college.name}
         </h3>
