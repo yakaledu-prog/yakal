@@ -343,7 +343,10 @@ export function EarningsScreen({
 
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
           {connect && !connect.payoutsEnabled && (
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-muted/30 px-5 py-4">
+            // One state, one colour. The rule was gold, the wash was grey and
+            // the button was teal, so a strip whose whole job is to say
+            // "something is waiting on you" said it three ways at once.
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-secondary bg-secondary/10 px-5 py-4">
               <p className="text-[14px] text-foreground">
                 Connect your bank and what you earn pays out to you on its own. Until then it
                 waits here and an admin pays it by hand.
@@ -357,7 +360,7 @@ export function EarningsScreen({
                   setConnecting(false);
                   if (result.error) toast.error(result.error);
                 }}
-                className="h-10 shrink-0 rounded-md bg-primary px-5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="h-10 shrink-0 rounded-md bg-secondary px-5 text-[14px] font-medium text-secondary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {connecting ? "Opening..." : connect.accountId ? "Finish connecting" : "Connect bank"}
               </button>
@@ -365,7 +368,9 @@ export function EarningsScreen({
           )}
 
           {connect?.payoutsEnabled && (
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 bg-muted/30 px-5 py-4 rounded">
+            // Connected is not a warning, so it takes the brand colour rather
+            // than the one that means attention.
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-l-2 border-primary bg-primary/5 px-5 py-4">
               <p className="text-[14px] text-foreground">
                 Payouts reach your bank weekly. Your Stripe dashboard has the history, your
                 bank details and your tax forms, and can pay you out early.
@@ -379,7 +384,7 @@ export function EarningsScreen({
                   setOpeningDashboard(false);
                   if (result.error) toast.error(result.error);
                 }}
-                className="h-10 shrink-0 rounded-md border border-foreground px-5 text-[14px] font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                className="h-10 shrink-0 rounded-md border border-primary/50 px-5 text-[14px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
               >
                 {openingDashboard ? "Opening..." : "Open Stripe dashboard"}
               </button>
