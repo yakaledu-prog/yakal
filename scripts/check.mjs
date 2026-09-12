@@ -59,6 +59,7 @@ const NEEDS_DB = [
   ['essay-prompts.ts', 'the cycle data: real deadlines, and prompts that say where they came from'],
   ['session-outcomes.ts', 'what each way a lesson can go does to the money'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
+  ['advising-meeting.ts', 'an advising hour gets a room, and an empty one is not delivery'],
 ];
 
 /** Needs the local Supabase and the Vite loader, because it imports src/. */

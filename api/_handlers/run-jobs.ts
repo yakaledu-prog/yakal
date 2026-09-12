@@ -7,6 +7,7 @@ import {
   recordSessionEarning,
   releaseDueEarnings,
 } from '../_utils/earnings.js';
+import { attachMeeting } from '../_utils/meeting.js';
 import { reportServerError } from '../_utils/report.js';
 import { notifyAll } from '../_utils/notify.js';
 
@@ -29,6 +30,42 @@ import { notifyAll } from '../_utils/notify.js';
 // the connected account, which runs without us. Transfers are free and instant,
 // so batching them here would only delay a tutor seeing their balance.
 // ============================================================
+
+/**
+ * Give a room to every booked session that still has none.
+ *
+ * The backstop for the call made at booking time: a Zoom outage, a browser
+ * closed before it landed, and every advising hour booked before sessions were
+ * given rooms of their own. Without one the hour falls back to the
+ * counsellor's personal room, which neither attendance system can see, and an
+ * hour with no attendance completes itself and pays a counsellor who may never
+ * have turned up.
+ *
+ * Only sessions still ahead: backfilling a room onto an hour that has already
+ * passed books a meeting nobody will use and tells Zoom about a date in the
+ * past.
+ */
+export async function attachMissingMeetings(
+  db: any,
+  /** Swappable so the check can assert which sessions are picked without Zoom. */
+  attach: typeof attachMeeting = attachMeeting
+): Promise<{ attached: number }> {
+  const { data: pending, error } = await db
+    .from('sessions')
+    .select('id, subject, date, start_time, duration_minutes')
+    .eq('status', 'upcoming')
+    .is('zoom_meeting_id', null)
+    .gte('date', new Date().toISOString().slice(0, 10))
+    .limit(200);
+
+  if (error || !pending?.length) return { attached: 0 };
+
+  let attached = 0;
+  for (const session of pending) {
+    if (await attach(db, session, session.subject || 'Yakal session')) attached += 1;
+  }
+  return { attached };
+}
 
 /** A lesson with nobody in the room did not happen. Anything else is a judgement for a person. */
 function nobodyAttended(attendance: unknown): boolean {
@@ -239,6 +276,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Order matters: a lesson that finishes in this run should have its earning
     // written before the release step looks, even though its hold means it will
     // not move until three days from now.
+    // Before completion, so an hour booked minutes ago is not swept past.
+    const rooms = await attachMissingMeetings(db);
     const sessions = await completeFinishedSessions(db);
     const released = await releaseDueEarnings(db);
     const voided = await voidStaleInvoices(db);
@@ -306,6 +345,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({
+      meetingsAttached: rooms.attached,
       sessions: {
         completed: sessions.completed,
         noShows: sessions.noShows,

@@ -136,7 +136,7 @@ export function StudentAdvising() {
                 </span>
                 {left != null && (
                   <span className="text-[15px] leading-none text-muted-foreground tabular-nums">
-                    / &nbsp; {allowance.limit}
+                    &#8260; &nbsp; {allowance.limit}
                   </span>
                 )}
                 <span className="text-[11px] uppercase leading-none tracking-wider text-muted-foreground">

@@ -185,10 +185,15 @@ export function CounselorProfile() {
                   value={profile?.phone || "Not set"}
                   copy={!!profile?.phone}
                 />
+                {/* A fallback, not the normal route. Every booked session is
+                    given a Zoom meeting of its own, and this is only used by
+                    sessions booked before that or when Zoom is unavailable. It
+                    is no longer shown in the contact panel: one URL shared by
+                    every student is somebody else's hour to walk into. */}
                 <DetailRow
                   icon={<Link2 size={18} />}
-                  label="Session Link"
-                  value={profile?.zoom_link || "Not set"}
+                  label="Backup meeting room"
+                  value={profile?.zoom_link || "Not set, and not usually needed"}
                   copy={!!profile?.zoom_link}
                   truncate
                 />
@@ -282,7 +287,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
         <div className="p-6 space-y-4">
           <div className="space-y-1.5"><label className={lbl}>Full Name</label><input className={field} value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
           <div className="space-y-1.5"><label className={lbl}>Phone</label><input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div className="space-y-1.5"><label className={lbl}>Session Link (Zoom / Meet)</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /></div>
+          <div className="space-y-1.5"><label className={lbl}>Backup meeting room</label><input className={field} value={zoomLink} onChange={(e) => setZoomLink(e.target.value)} placeholder="https://meet.google.com/..." /><p className="text-[12px] text-muted-foreground">Sessions get their own room. This is only used for one booked before that, or if Zoom is down.</p></div>
           <div className="space-y-1.5"><label className={lbl}>Rate per session</label>
             {/* No rate field. A counsellor is paid a share of the plan a
                 family is on, and the share is the admin's to set. The display
