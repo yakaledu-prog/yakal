@@ -33,6 +33,71 @@ function subtitle(parts: (string | undefined)[]): string | undefined {
   return parts.filter(Boolean).join(" \u00b7 ") || undefined;
 }
 
+/**
+ * A page of entries that is not there yet, with an award on it.
+ *
+ * Drawn here rather than taken from the icon set, the same reasoning as the
+ * document glyph in ResumePanel: this stands in for the content, so it wants
+ * to read as a picture rather than as another interface icon at the weight of
+ * the buttons around it. currentColor throughout, so it takes the theme.
+ */
+function NothingYet() {
+  return (
+    <svg
+      width="128"
+      height="104"
+      viewBox="0 0 128 104"
+      fill="none"
+      aria-hidden="true"
+      className="mx-auto text-muted-foreground"
+    >
+      <g className="text-muted-foreground" opacity="0.55">
+        <rect
+          x="20"
+          y="10"
+          width="62"
+          height="80"
+          rx="7"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7">
+          <path d="M33 30h36" />
+          <path d="M33 42h36" />
+          <path d="M33 54h22" />
+        </g>
+      </g>
+
+      {/* The award, in the brand teal, so the drawing says what the section is
+          for rather than just "a page". */}
+      <g className="text-primary">
+        <path
+          d="M79 78l7-9 7 9-7 4-7-4Z"
+          fill="currentColor"
+          fillOpacity="0.25"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <circle
+          cx="86"
+          cy="58"
+          r="17"
+          fill="currentColor"
+          fillOpacity="0.12"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M86 49.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9 2.6-5.3Z"
+          fill="currentColor"
+          fillOpacity="0.55"
+        />
+      </g>
+    </svg>
+  );
+}
+
 export function StudentActivities({
   activities,
   honors,
@@ -52,7 +117,12 @@ export function StudentActivities({
   // Somebody else's empty list is a sentence. Your own is two headings and two
   // ways to start filling them, because the point of the page is doing it.
   if (activities.length === 0 && honors.length === 0 && !onAdd) {
-    return <p className="py-16 text-center text-[14px] text-muted-foreground">{emptyText}</p>;
+    return (
+      <div className="py-14 text-center">
+        <NothingYet />
+        <p className="mt-5 text-[14px] text-muted-foreground">{emptyText}</p>
+      </div>
+    );
   }
 
   const activitiesFull = activities.length >= MAX_ACTIVITIES;

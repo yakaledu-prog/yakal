@@ -205,6 +205,8 @@ import { StudentCollegeList } from "@/pages/student/StudentCollegeList";
 import { getAllAssignments } from "@/services/studentService";
 import { getFlaggedStudentIds } from "@/services/reports";
 import { StudentApplicationTracker } from "@/pages/student/StudentApplicationTracker";
+import { StudentActivities } from "@/components/shared/StudentActivities";
+import { getAcademics } from "@/services/collegeService";
 
 function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) {
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
@@ -259,10 +261,22 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
   // ask. Overview was a feed of invented activity, naming tutors and homework
   // that do not exist, so it is gone rather than moved.
   const [activeTab, setActiveTab] = useState<
-    "sessions" | "assignments" | "applications" | "colleges" | "messages"
+    "sessions" | "assignments" | "applications" | "colleges" | "activities" | "messages"
   >("sessions");
 
   const hasAdmissions = child.active_services?.includes('admissions');
+
+  // Read only, and not for want of a policy: student_academics gives a linked
+  // parent SELECT and nothing more. That is the right way round. The list is
+  // the student's own Common App self-report, which is how every comparable
+  // platform treats it, and two people editing one jsonb array through a
+  // read-modify-write would silently lose whichever save landed second. A
+  // parent who knows about something the child forgot has Messages.
+  const { data: academics } = useQuery({
+    queryKey: ["child-academics", child.id],
+    queryFn: () => getAcademics(child.id),
+    enabled: !!child.id && !!hasAdmissions,
+  });
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -312,6 +326,9 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
               filter rails of their own, which is why those two are pages. */}
           {hasAdmissions && (
             <TabButton active={activeTab === 'colleges'} onClick={() => setActiveTab('colleges')} label="College List" />
+          )}
+          {hasAdmissions && (
+            <TabButton active={activeTab === 'activities'} onClick={() => setActiveTab('activities')} label="Activities" />
           )}
           <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} label="Messages" alert={hasFlaggedChat} />
         </div>
@@ -407,6 +424,16 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
         {activeTab === 'colleges' && (
           // Read only here. A parent adds from Explore, where the catalogue is.
           <StudentCollegeList studentId={child.id} embedded canEdit={false} />
+        )}
+
+        {activeTab === 'activities' && (
+          // No onAdd or onRemove, so the same component the student edits
+          // renders here as a plain list.
+          <StudentActivities
+            activities={academics?.activities ?? []}
+            honors={academics?.honors ?? []}
+            emptyText={`${child.name.split(" ")[0]} has not added any activities or honors yet.`}
+          />
         )}
 
         {activeTab === 'messages' && (

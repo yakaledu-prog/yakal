@@ -430,6 +430,25 @@ export const deleteEssay = (id: string) =>
   write(supabase.from("essays").delete().eq("id", id));
 
 // --- Academics ----------------------------------------------
+
+/**
+ * One student's academics row on its own.
+ *
+ * getCollegeProfile carries this too, but it also reads essays, tasks and
+ * recommendations, and a parent's read of their child's activities has no
+ * business pulling six tables to find one. Returns null where the student has
+ * never had a row written, which is the common case before they fill anything
+ * in.
+ */
+export async function getAcademics(studentId: string): Promise<StudentAcademics | null> {
+  const { data } = await supabase
+    .from("student_academics")
+    .select("*")
+    .eq("student_id", studentId)
+    .maybeSingle();
+  return (data as StudentAcademics) ?? null;
+}
+
 export async function upsertAcademics(
   studentId: string,
   patch: Partial<StudentAcademics>

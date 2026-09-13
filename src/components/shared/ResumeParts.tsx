@@ -31,7 +31,8 @@ export function Section({
   icon: React.ReactNode;
   title: string;
   onAdd?: () => void;
-  addLabel: string;
+  /** Only meaningful with onAdd; a section that cannot be added to omits both. */
+  addLabel?: string;
   note?: string;
   children: React.ReactNode;
 }) {
