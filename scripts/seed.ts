@@ -150,10 +150,16 @@ async function seedUsers() {
     const existing = idByEmail.get(key);
 
     if (existing) {
-      // Reset the password so a demo account is always usable, and keep the
-      // metadata the profile trigger reads in step with the dataset.
+      // Locally, reset the password so a demo account is always usable, and
+      // keep the metadata in step with the dataset.
+      //
+      // Never on a hosted project. This list includes real accounts
+      // (yakaledu@gmail.com is the client's operations login), and the one
+      // remote run, on 6 Aug, reset every one of them to DEMO_PASSWORD, which
+      // is published in this repository. An existing hosted account keeps the
+      // password its owner set.
       const { error } = await db.auth.admin.updateUserById(existing, {
-        password: DEMO_PASSWORD,
+        ...(target === "local" ? { password: DEMO_PASSWORD } : {}),
         email_confirm: true,
         user_metadata: { full_name: u.fullName, role: u.role, avatar_url: u.avatarUrl },
       });
@@ -163,7 +169,9 @@ async function seedUsers() {
       const { data, error } = await db.auth.admin.createUser({
         id: u.id,
         email: u.email,
-        password: DEMO_PASSWORD,
+        // A new hosted account gets a password nobody knows rather than the
+        // published one. Whoever needs it uses password recovery.
+        password: target === "local" ? DEMO_PASSWORD : `${globalThis.crypto.randomUUID()}Aa1!`,
         email_confirm: true,
         user_metadata: { full_name: u.fullName, role: u.role, avatar_url: u.avatarUrl },
       });

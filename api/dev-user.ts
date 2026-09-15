@@ -13,11 +13,19 @@ import { createClient } from "@supabase/supabase-js";
 //      deployment that simply does not set it is safe.
 //   2. A production deployment is refused outright regardless of the flag.
 //
+// Production is Render, which never sets VERCEL_ENV, so that check alone was
+// relying on NODE_ENV being set by hand. RENDER is set by the platform itself
+// on every Render service, so it holds even when somebody forgets NODE_ENV.
+//
 // Tracked in docs/PRODUCTION_UNMOCK_CHECKLIST.md.
 // ============================================================
 
 function devToolsAllowed(): { ok: boolean; reason?: string } {
-  if (process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production") {
+  if (
+    process.env.RENDER ||
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production"
+  ) {
     return { ok: false, reason: "Developer tools are disabled in production." };
   }
   if (process.env.DEV_TOOLS_ENABLED !== "true") {

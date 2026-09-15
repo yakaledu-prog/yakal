@@ -34,14 +34,6 @@ on:
         description: "Apply pending migrations to the hosted project"
         type: boolean
         default: true
-      seed_demo_data:
-        description: "Load demo accounts and sample data"
-        type: boolean
-        default: false
-      fresh_seed:
-        description: "With seeding on, clear the dataset's rows first"
-        type: boolean
-        default: false
       adopt_existing_schema:
         description: "One time only. For a database that already has the tables but an empty ledger."
         type: boolean
@@ -180,32 +172,8 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: supabase migration list --db-url "$SUPABASE_DB_URL"
 
-  seed:
-    name: Seed the hosted project
-    needs: deploy
-    # Manual only. Seeding rewrites profiles and can add conversations, so it
-    # should be something you asked for rather than a side effect of a push.
-    if: github.event_name == 'workflow_dispatch' && inputs.seed_demo_data
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      - name: Seed
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SEED_CONFIRM: "yes"
-        run: |
-          if [ "${{ inputs.fresh_seed }}" = "true" ]; then
-            npx tsx scripts/seed.ts --target=remote --fresh
-          else
-            npx tsx scripts/seed.ts --target=remote
-          fi
+# There is no job that seeds the hosted project, on purpose. The hosted project
+# is production. A manual "Seed the hosted project" job ran once, on 6 Aug, and
+# because seeding sets the demo password on every listed account, including
+# ones that already exist, it reset real admin accounts to a password published
+# in this repository. Demo data belongs on a local stack.

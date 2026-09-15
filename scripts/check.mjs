@@ -42,6 +42,7 @@ const PURE = [
 /** Needs the local Supabase. Skipped when it is not answering. */
 const NEEDS_DB = [
   ['profiles-not-public.mjs', 'profiles is not readable signed out'],
+  ['signup-role.mjs', 'nobody signs up as admin or claims a child'],
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
