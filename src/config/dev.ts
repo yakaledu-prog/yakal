@@ -10,28 +10,21 @@
  * Exposes the no-auth preview routes (`/preview/*`), the `/dev` console, and
  * the one-click demo logins on the sign-in page.
  *
- * Driven by `VITE_DEV_PREVIEW` so it can be on for a deployment you are
- * testing and off for the one real people use, without editing code and
- * redeploying to move between them. It was a hardcoded constant, which meant
- * the only way to demo anything was to ship the flag turned on and hope
- * somebody remembered to turn it back off.
+ * Driven by `VITE_DEV_PREVIEW` so it can be on for `npm run dev` without
+ * editing code. It was a hardcoded constant, which meant the only way to demo
+ * anything was to ship the flag turned on and hope somebody remembered to turn
+ * it back off.
  *
- * **Turning this on publishes accounts whose password is in this repository.**
- * `demo123` signs in as an admin, and the `/dev` console lists every account
- * and signs in as any of them. On a URL a customer can reach, that is the
- * whole database. Set it only where that is acceptable, and unset it before
- * anybody real has an account.
+ * **Never in a production build, whatever the variable says.** This used to
+ * trust the variable and print a red console warning when it was on in a
+ * production build, on the theory that a deployment you were testing and the
+ * one real people use would be different URLs. There is one deployment, it is
+ * production, and the variable was left on there: `demo123` signed in as an
+ * admin from the login page, and `/dev` listed every account and signed in as
+ * any of them. A warning nobody opens the console to read protected nothing,
+ * so the build decides now, not the environment.
  *
  * Absent is off. It has to be exactly "true", so a stray value cannot open it
  * by accident.
  */
-export const DEV_PREVIEW = import.meta.env.VITE_DEV_PREVIEW === "true";
-
-if (DEV_PREVIEW && import.meta.env.PROD) {
-  // Loud, and every reload, because the cost of forgetting is every account.
-
-  console.warn(
-    "%c[YAKAL] DEV_PREVIEW is ON in a production build: demo logins and /preview are public. Unset VITE_DEV_PREVIEW to close them.",
-    "background:#b91c1c;color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold"
-  );
-}
+export const DEV_PREVIEW = import.meta.env.VITE_DEV_PREVIEW === "true" && !import.meta.env.PROD;

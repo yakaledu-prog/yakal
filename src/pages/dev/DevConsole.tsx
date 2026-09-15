@@ -18,6 +18,12 @@ import { cn } from "@/utils/cn";
 //
 // Gated on DEV_PREVIEW and refused outright in a production build, so it cannot
 // ship by accident. See docs/PRODUCTION_UNMOCK_CHECKLIST.md.
+//
+// That second guard was promised here and never written: the route flag was the
+// only gate, the flag was on in production, and this page listed every account
+// and signed in as any of them. DevConsole below is the guard now, and
+// DEV_PREVIEW is forced off in production builds as well, so either one alone
+// keeps it closed.
 // ============================================================
 
 const DEMO_PASSWORD = "demo123";
@@ -112,7 +118,19 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+/**
+ * Renders nothing in a production build.
+ *
+ * A wrapper rather than an early return in the body, because the body calls
+ * hooks and a return before them breaks the rules of hooks. Module level, so it
+ * is not a new component type on every render.
+ */
 export function DevConsole() {
+  if (import.meta.env.PROD) return null;
+  return <DevConsoleBody />;
+}
+
+function DevConsoleBody() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { profile: me } = useAuth();

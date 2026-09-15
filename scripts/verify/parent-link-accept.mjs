@@ -32,8 +32,11 @@ await p.getByRole('button',{name:/^accept$/i}).click();
 await p.waitForTimeout(3500);
 const {data:link}=await db.from('parent_student_links').select('status').eq('student_id',created.user.id).maybeSingle();
 pass('accepting activates the link', link?.status==='active', link?.status);
-const {data:pn}=await db.from('notifications').select('title').eq('user_id',parent.id).order('created_at',{ascending:false}).limit(1);
-pass('parent is told', /accepted/i.test(pn?.[0]?.title??''), pn?.[0]?.title);
+// The template, not a word in the title. This looked for "accepted" until the
+// 6 Sep move to templates retitled it "You are linked", and it failed from
+// then on while the parent was being told perfectly well.
+const {data:pn}=await db.from('notifications').select('title, template').eq('user_id',parent.id).order('created_at',{ascending:false}).limit(1);
+pass('parent is told', pn?.[0]?.template==='parentLinkDecided', `${pn?.[0]?.template} / ${pn?.[0]?.title}`);
 pass('no page errors', errs.length===0, errs[0]?.slice(0,110)??'');
 await b.close();
 await db.auth.admin.deleteUser(created.user.id);
