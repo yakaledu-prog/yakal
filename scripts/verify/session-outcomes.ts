@@ -1,19 +1,26 @@
 // What each way a lesson can go does to the money.
 //
-// The completion job has one rule and it is deliberately narrow: a lesson Zoom
-// looked at and found empty is a no-show, and everything else completes and
-// pays. The comment on nobodyAttended() calls the rest "a judgement for a
-// person", which is right, but it means the interesting cases are the ones the
-// job deliberately does not decide:
+// The completion job decides two things:
+//
+//   nobody in the room            a no-show, and nobody is paid
+//   somebody there, no tutor      completes, but the pay is held and reported
+//
+// and deliberately does not judge the rest:
 //
 //   only the tutor turned up      the family paid for a lesson nobody attended
-//   only the student turned up    the tutor is paid for an hour they missed
 //   Zoom never reported           no evidence either way, and it still pays
 //
-// All three complete and pay, and the way any of them gets put right is a
-// family reporting it and an admin deciding, on the attendance in
-// v_open_disputes. So this pins both halves: what the job does on its own, and
-// that the evidence an admin needs is actually there.
+// Those two complete and pay, and the way either gets put right is a family
+// reporting it and an admin deciding, on the attendance in v_open_disputes.
+//
+// The held case used to pay like the others, on the theory that a tutor missing
+// an hour was a judgement for a person. It still is: the job holds the money and
+// opens the report rather than refusing the pay outright, because Zoom gives no
+// email for somebody joining through the Meeting SDK, and a tutor who joined
+// from the Zoom app must not lose their pay to a guess.
+//
+// So this pins what the job does on its own, and that the evidence an admin
+// needs is actually there.
 //
 // The attendance rows are written the way the meeting page writes them, through
 // record_attendance_event as the person themselves, so the guard on that
@@ -150,8 +157,15 @@ pass('and nobody is owed anything for it', earningOf(nobodyIn) === 'none', earni
 pass('only the tutor turning up still completes', statusOf(tutorOnly) === 'completed', statusOf(tutorOnly));
 pass('and still pays, for a family to dispute', earningOf(tutorOnly) === 'pending', earningOf(tutorOnly));
 
-pass('only the student turning up still completes', statusOf(studentOnly) === 'completed', statusOf(studentOnly));
-pass('and still pays the absent tutor, for a family to dispute', earningOf(studentOnly) === 'pending', earningOf(studentOnly));
+pass('a lesson the tutor never joined still completes', statusOf(studentOnly) === 'completed', statusOf(studentOnly));
+pass('but the pay is held rather than sent', earningOf(studentOnly) === 'held', earningOf(studentOnly));
+pass(
+  'and the job opened the report itself',
+  psql(
+    `select coalesce((select 'yes' from session_disputes
+       where session_id='${studentOnly}' and status='open' and reason='no_show' and raised_by is null limit 1),'no');`
+  ) === 'yes'
+);
 
 pass('a lesson Zoom never reported on still completes', statusOf(unchecked) === 'completed', statusOf(unchecked));
 pass('and pays, because no evidence is not evidence of absence', earningOf(unchecked) === 'pending', earningOf(unchecked));
@@ -169,22 +183,19 @@ pass('and knows when only one of them was', tutorOnlySummary === 'true/false', t
 
 // The dispute view is the screen an admin decides on, and it exists to carry
 // that attendance. It joined to an empty table for as long as the meeting page
-// never recorded a join, which is the bug this pins.
-const disputeId = psql(
-  `insert into session_disputes (session_id, raised_by, reason, detail, status)
-   values ('${studentOnly}','${parent}','no_show','The tutor never joined the room.','open') returning id;`
-);
+// never recorded a join, which is the bug this pins. The report here is the one
+// the job raised above, so this also checks that a report with no author reaches
+// that screen the same way a family's does.
 const evidence = psql(
   `select coalesce(tutor_present::text,'null') || '/' || coalesce(student_present::text,'null')
-     from v_open_disputes where id='${disputeId}';`
+     from v_open_disputes where session_id='${studentOnly}';`
 );
 pass(
-  'an open dispute carries the attendance an admin judges on',
+  'an open report carries the attendance an admin judges on',
   evidence === 'false/true',
   evidence + ' (tutor/student present)'
 );
 
-psql(`delete from session_disputes where id='${disputeId}';`);
 clean();
 
 console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`);

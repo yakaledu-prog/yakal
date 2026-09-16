@@ -626,8 +626,10 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-semibold text-[#111] dark:text-white">{d.subject}</p>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                {d.tutorName} with {d.studentName} - {fmtDate(d.sessionDate)} - reported by{" "}
-                {d.raisedByName}
+                {d.tutorName} with {d.studentName} - {fmtDate(d.sessionDate)} -{" "}
+                {/* No raiser means the scheduled check opened it: somebody was in
+                    the room and the tutor was not, so the pay is held for this call. */}
+                {d.raisedByName ? `reported by ${d.raisedByName}` : "flagged by the attendance check"}
               </p>
             </div>
             <span className="shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">

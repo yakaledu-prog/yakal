@@ -3,6 +3,7 @@ import { getServiceClient } from '../_utils/supabase.js';
 import {
   NOTHING_DELIVERED,
   NO_CONNECTED_ACCOUNT,
+  NO_SOURCE_CHARGE,
   PLATFORM_BALANCE_SHORT,
   recordSessionEarning,
   releaseDueEarnings,
@@ -72,10 +73,37 @@ function nobodyAttended(attendance: unknown): boolean {
   return Array.isArray(attendance) && attendance.length === 0;
 }
 
+/**
+ * Whether the evidence says the tutor never joined a lesson somebody attended.
+ *
+ * Only for a lesson Zoom has reported on, with somebody in the room (an empty
+ * room is already a no-show), and never in person. The tutor counts as present
+ * if the app recorded their own join, or if Zoom lists their email. Zoom gives
+ * no email for people joining through the Meeting SDK, so the app's record is
+ * the one that can be trusted, and a miss is held for a person to decide rather
+ * than refused: a tutor who joined from the Zoom app under another name must
+ * not lose their pay to a guess.
+ */
+function tutorDidNotJoin(
+  session: any,
+  joined: Set<string> | undefined,
+  tutorEmail: string | undefined
+): boolean {
+  if (session.mode === 'in-person') return false;
+  if (!session.attendance_checked_at) return false;
+  if (!Array.isArray(session.attendance) || session.attendance.length === 0) return false;
+  if (joined?.has(session.tutor_id)) return false;
+  if (tutorEmail && session.attendance.some((p: any) => (p?.email ?? '').toLowerCase() === tutorEmail)) {
+    return false;
+  }
+  return true;
+}
+
 interface CompletionResult {
   completed: number;
   noShows: number;
   earningsWritten: number;
+  held: number;
   errors: string[];
 }
 
@@ -92,11 +120,17 @@ interface CompletionResult {
  * Zoom attendance is evidence, not the gate. It can say two people were in a
  * room; it cannot say a lesson was taught, it reports no email for guests
  * joining through the Meeting SDK, and sessions.mode already allows in-person.
- * The single thing it says with confidence is that nobody joined at all, and
- * that alone holds a session back for review.
+ * What it says with confidence is that nobody joined at all, which makes a
+ * no-show. The app's own join record adds one more thing it can say: that
+ * somebody was there and the tutor was not, which holds the tutor's earning and
+ * opens a report for an admin rather than paying it.
+ *
+ * And a lesson pays only what a paid purchase holds for it. Sessions used to be
+ * insertable from the browser, and a row nobody bought looked exactly like one
+ * somebody did.
  */
 async function completeFinishedSessions(db: any): Promise<CompletionResult> {
-  const result: CompletionResult = { completed: 0, noShows: 0, earningsWritten: 0, errors: [] };
+  const result: CompletionResult = { completed: 0, noShows: 0, earningsWritten: 0, held: 0, errors: [] };
 
   const { data: due, error } = await db.rpc('sessions_due_for_completion', {
     p_timezone: process.env.ZOOM_TIMEZONE || 'America/New_York',
@@ -109,13 +143,36 @@ async function completeFinishedSessions(db: any): Promise<CompletionResult> {
   }
   if (!due || due.length === 0) return result;
 
-  // The charge behind each lesson, so the transfer can draw on it later. One
-  // query for the batch: several lessons usually come from one purchase.
+  // What paid for each lesson, so the earning can be checked against it and the
+  // transfer can draw on its charge later. One query for the batch: several
+  // lessons usually come from one purchase.
   const invoiceIds = [...new Set(due.map((s: any) => s.invoice_id).filter(Boolean))];
   const { data: invoices } = invoiceIds.length
-    ? await db.from('invoices').select('id, stripe_charge_id, currency').in('id', invoiceIds)
+    ? await db
+        .from('invoices')
+        .select('id, stripe_charge_id, currency, status, tutor_earning_cents')
+        .in('id', invoiceIds)
     : { data: [] };
   const chargeByInvoice = new Map<string, any>((invoices ?? []).map((i: any) => [i.id, i]));
+
+  // Who joined through the app, recorded against the signed-in person, and each
+  // tutor's email for Zoom's list. One query each for the batch.
+  const { data: joins } = await db
+    .from('session_attendance')
+    .select('session_id, user_id')
+    .in('session_id', due.map((s: any) => s.id));
+  const joinedBy = new Map<string, Set<string>>();
+  for (const j of joins ?? []) {
+    if (!joinedBy.has(j.session_id)) joinedBy.set(j.session_id, new Set());
+    joinedBy.get(j.session_id)!.add(j.user_id);
+  }
+  const { data: tutors } = await db
+    .from('profiles')
+    .select('id, email')
+    .in('id', [...new Set(due.map((s: any) => s.tutor_id))]);
+  const emailOf = new Map<string, string>(
+    (tutors ?? []).map((t: any) => [t.id, (t.email ?? '').toLowerCase()])
+  );
 
   const now = new Date().toISOString();
 
@@ -162,25 +219,88 @@ async function completeFinishedSessions(db: any): Promise<CompletionResult> {
     }
     result.completed += 1;
 
-    // An advising hour completes like anything else, because the counselling
-    // delivery check reads status = 'completed' and a session that never
-    // completes makes its counsellor look like they did nothing. It must not
-    // earn here though: that work is paid through the subscription, and a
-    // second earning against the same hour would pay them twice.
-    if (session.kind === 'advising') continue;
+    // An advising hour, or a mock interview, completes like anything else,
+    // because the counselling delivery check reads status = 'completed' and a
+    // session that never completes makes its counsellor look like they did
+    // nothing. It must not earn here though: that work is paid through the
+    // subscription, and a second earning against the same hour would pay them
+    // twice.
+    if (session.kind !== 'lesson') continue;
 
+    const amount = session.tutor_earning_cents ?? 0;
+    if (amount <= 0) continue;
+
+    // A lesson pays only what a paid purchase holds for it. Anything else is a
+    // row nobody bought, or one whose amount was changed after the purchase, and
+    // both are for a person to look at before anybody is paid. Said once: the
+    // session is completed now, so the next run does not see it again.
     const invoice = session.invoice_id ? chargeByInvoice.get(session.invoice_id) : null;
+    const problem = !invoice
+      ? 'it has no invoice'
+      : invoice.status !== 'paid'
+        ? `its invoice is ${invoice.status}`
+        : amount > (invoice.tutor_earning_cents ?? 0)
+          ? 'it asks for more than its invoice holds'
+          : null;
+    if (problem) {
+      await tellAdmins(
+        db,
+        'A lesson finished with no payment behind it',
+        `${session.subject} on ${session.session_date} completed, but ${problem}. Nothing was recorded for the tutor.`,
+        undefined,
+        [
+          { label: 'Subject', value: String(session.subject) },
+          { label: 'Date', value: String(session.session_date) },
+          { label: 'Asked for', value: money(amount) },
+        ]
+      );
+      continue;
+    }
+
+    const tutorAbsent = tutorDidNotJoin(session, joinedBy.get(session.id), emailOf.get(session.tutor_id));
+
     const { created, error: earnErr } = await recordSessionEarning(db, {
       sessionId: session.id,
       payeeId: session.tutor_id,
-      amountCents: session.tutor_earning_cents ?? 0,
-      currency: invoice?.currency ?? 'usd',
-      invoiceId: session.invoice_id ?? null,
-      sourceChargeId: invoice?.stripe_charge_id ?? null,
+      amountCents: amount,
+      currency: invoice.currency ?? 'usd',
+      invoiceId: session.invoice_id,
+      sourceChargeId: invoice.stripe_charge_id ?? null,
+      status: tutorAbsent ? 'held' : 'pending',
     });
 
     if (earnErr) result.errors.push(`session ${session.id} earning: ${earnErr}`);
     if (created) result.earningsWritten += 1;
+
+    // Somebody was there and the tutor was not. The earning is held, and the
+    // report is what puts it in front of an admin: a held earning with no report
+    // appears nowhere and would wait forever. Resolving it is the existing flow,
+    // upheld refunds the family and rejected releases the pay.
+    if (created && tutorAbsent) {
+      result.held += 1;
+      const { error: reportErr } = await db.from('session_disputes').insert({
+        session_id: session.id,
+        raised_by: null,
+        reason: 'no_show',
+        detail:
+          'Raised by the attendance check: somebody joined, and neither the app nor Zoom shows the tutor. ' +
+          'They may have joined from the Zoom app under another name, so the pay is held for a person to decide.',
+      });
+      // 23505: the family reported it first, and the earning is held either way.
+      if (reportErr && reportErr.code !== '23505') {
+        result.errors.push(`session ${session.id} report: ${reportErr.message}`);
+      }
+
+      const { data: admins } = await db.from('profiles').select('id').eq('role', 'admin');
+      await notifyAll(
+        db,
+        [...(admins ?? []).map((a: any) => a.id), session.tutor_id].map((userId: string) => ({
+          userId,
+          key: 'sessionDisputed' as const,
+          vars: { subject: session.subject, date: session.session_date, paymentHeld: true },
+        }))
+      ).catch(() => undefined);
+    }
   }
 
   return result;
@@ -332,6 +452,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         db,
         'Payouts are waiting on the platform balance',
         `${money(cents)} could not be transferred because the Stripe balance has not settled. This usually clears on its own; if it does not, the balance is short.`
+      );
+    }
+
+    // Held back rather than paid from the platform balance. Either the purchase
+    // never completed, or the lesson was never bought, and both are for a
+    // person to look at before anybody is paid.
+    const chargeless = released.skipped.filter((s) => s.reason === NO_SOURCE_CHARGE && s.firstTime);
+    if (chargeless.length > 0) {
+      const cents = chargeless.reduce((n, s) => n + (s.amountCents ?? 0), 0);
+      await tellAdmins(
+        db,
+        'A lesson payout has no payment behind it',
+        `${money(cents)} across ${chargeless.length} ${chargeless.length === 1 ? 'lesson was' : 'lessons were'} not paid out because there is no charge to draw on. Check the invoice before settling by hand.`
       );
     }
 
