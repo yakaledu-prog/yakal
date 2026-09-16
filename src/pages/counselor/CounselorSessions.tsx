@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import { useMasterDetail } from "@/hooks/useMasterDetail";
-import { Search, CheckCheck, X, Loader2, ChevronLeft } from "lucide-react";
+import { Search, X, Loader2, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getCounselorSessionsFull, completeSession, saveSessionNotes, SessionRow,
+  getCounselorSessionsFull, saveSessionNotes, SessionRow,
 } from "@/services/counselorService";
 import { useSetBreadcrumb } from "@/contexts/BreadcrumbContext";
 import {
@@ -256,14 +256,16 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
   const [saving, setSaving] = useState(false);
   const isUpcoming = session.status === "upcoming";
 
+  // Notes only. Marking an advising hour complete from here let a counsellor
+  // make a month count as delivered for a session that never happened, which is
+  // what releases their monthly pay. The hourly job completes it once it has
+  // ended, with the attendance in front of it.
   const submit = async () => {
     setSaving(true);
-    const ok = isUpcoming
-      ? await completeSession(session.id, notes.trim() || undefined)
-      : await saveSessionNotes(session.id, notes.trim());
+    const ok = await saveSessionNotes(session.id, notes.trim());
     setSaving(false);
     if (ok) {
-      toast.success(isUpcoming ? "Session marked complete." : "Notes saved.");
+      toast.success(isUpcoming ? "Notes saved. It completes on its own once it ends." : "Notes saved.");
       onSaved();
     } else {
       toast.error("Something went wrong.");
@@ -275,7 +277,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942]">
           <h2 className="text-[18px] font-bold text-[#111] dark:text-white">
-            {isUpcoming ? "Complete session" : "Session notes"}
+            Session notes
           </h2>
           <button onClick={onClose} className="p-1.5 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]">
             <X size={20} />
@@ -296,7 +298,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
           <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-2">
-            {isUpcoming && <CheckCheck size={16} />} <span>{saving ? "Saving..." : isUpcoming ? "Mark As Done" : "Save Notes"}</span>
+            <span>{saving ? "Saving..." : "Save Notes"}</span>
           </Button>
         </div>
       </div>

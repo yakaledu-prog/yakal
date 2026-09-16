@@ -37,6 +37,11 @@ export interface SessionEarningInput {
   sourceChargeId?: string | null;
   /** Defaults to now + HOLD_HOURS. A late cancellation fee releases sooner. */
   releasableAt?: Date;
+  /**
+   * 'held' when the evidence says the tutor was not there. Release only moves
+   * pending rows, so a held one waits for an admin to decide.
+   */
+  status?: 'pending' | 'held';
 }
 
 /**
@@ -58,6 +63,15 @@ export async function recordSessionEarning(
     return { created: false };
   }
 
+  if (!input.invoiceId) {
+    // A lesson with no purchase behind it pays nobody. Sessions used to be
+    // insertable from the browser, so a student could create a past lesson
+    // naming any tutor and any amount; this wrote the earning and release then
+    // paid it out of the platform balance. Fulfilment always sets an invoice, so
+    // nothing legitimate arrives here without one.
+    return { created: false, error: 'no invoice behind this lesson' };
+  }
+
   const releasableAt =
     input.releasableAt ?? new Date(Date.now() + HOLD_HOURS * 60 * 60 * 1000);
 
@@ -69,7 +83,7 @@ export async function recordSessionEarning(
     currency: input.currency ?? 'usd',
     invoice_id: input.invoiceId ?? null,
     source_charge_id: input.sourceChargeId ?? null,
-    status: 'pending',
+    status: input.status ?? 'pending',
     releasable_at: releasableAt.toISOString(),
   });
 
@@ -160,6 +174,7 @@ interface DueEarning {
   amount_cents: number;
   currency: string;
   source_charge_id: string | null;
+  invoice_id: string | null;
   session_id: string | null;
   plan_id: string | null;
   period_start: string | null;
@@ -181,6 +196,8 @@ export interface ReleaseResult {
 export const NOTHING_DELIVERED = 'nothing delivered';
 export const NO_CONNECTED_ACCOUNT = 'no connected account';
 export const PLATFORM_BALANCE_SHORT = 'platform balance not settled';
+/** A lesson earning with no charge to draw on: paying it would come out of the platform balance. */
+export const NO_SOURCE_CHARGE = 'no charge behind this lesson';
 
 /**
  * Whether a counselling month may be paid.
@@ -231,7 +248,7 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
   const { data: due, error } = await db
     .from('earnings')
     .select(
-      'id, payee_id, kind, amount_cents, currency, source_charge_id, session_id, plan_id, period_start, period_end, note, delivery_flagged_at, payout_blocked_notified_at'
+      'id, payee_id, kind, amount_cents, currency, source_charge_id, invoice_id, session_id, plan_id, period_start, period_end, note, delivery_flagged_at, payout_blocked_notified_at'
     )
     .eq('status', 'pending')
     .is('voided_at', null)
@@ -303,6 +320,47 @@ export async function releaseDueEarnings(db: any): Promise<ReleaseResult> {
     } catch (err: any) {
       result.errors.push(`earning ${earning.id}: ${err?.message ?? 'delivery check failed'}`);
       continue;
+    }
+
+    // A lesson earning draws on the charge that paid for it. Without one,
+    // transfers.create drops source_transaction and Stripe takes the money from
+    // the platform balance, so a lesson nobody paid for is paid by Yakal. The
+    // charge id can be missing on a genuine purchase (chargeIdFor swallows a
+    // Stripe error at checkout), so look at the invoice again before giving up.
+    if (earning.kind === 'tutoring_session' && !earning.source_charge_id) {
+      const { data: invoice } = earning.invoice_id
+        ? await db
+            .from('invoices')
+            .select('stripe_charge_id, status')
+            .eq('id', earning.invoice_id)
+            .maybeSingle()
+        : { data: null };
+
+      if (invoice?.status === 'paid' && invoice.stripe_charge_id) {
+        earning.source_charge_id = invoice.stripe_charge_id;
+        await db
+          .from('earnings')
+          .update({ source_charge_id: invoice.stripe_charge_id, updated_at: new Date().toISOString() })
+          .eq('id', earning.id)
+          .eq('status', 'pending');
+      } else {
+        const firstTime = !earning.payout_blocked_notified_at;
+        if (firstTime) {
+          await db
+            .from('earnings')
+            .update({ payout_blocked_notified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+            .eq('id', earning.id)
+            .eq('status', 'pending');
+        }
+        result.skipped.push({
+          earningId: earning.id,
+          reason: NO_SOURCE_CHARGE,
+          firstTime,
+          payeeId: earning.payee_id,
+          amountCents: earning.amount_cents,
+        });
+        continue;
+      }
     }
 
     const payee = byId.get(earning.payee_id);

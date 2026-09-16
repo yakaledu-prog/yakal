@@ -352,20 +352,12 @@ export function computeEarnings(sessions: SessionRow[], rate: number): EarningsS
 }
 
 // -- Sessions: tutor actions ---------------------------------
-export async function completeSession(id: string, notes?: string) {
-  const patch: Record<string, unknown> = { status: "completed" };
-  if (notes !== undefined) patch.notes = notes;
-  const { error } = await supabase.from("sessions").update(patch).eq("id", id);
-  return !error;
-}
-
+// Notes are the only thing a tutor writes to a session from the browser, and the
+// only column the database lets them write. Completion belongs to the scheduled
+// job, and cancelling goes through /api/stripe?action=session-cancel so the
+// refund and the earning move with it.
 export async function saveSessionNotes(id: string, notes: string) {
   const { error } = await supabase.from("sessions").update({ notes }).eq("id", id);
-  return !error;
-}
-
-export async function cancelSession(id: string) {
-  const { error } = await supabase.from("sessions").update({ status: "cancelled" }).eq("id", id);
   return !error;
 }
 

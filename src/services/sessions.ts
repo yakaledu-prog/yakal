@@ -2,38 +2,9 @@ import { supabase } from '@/lib/supabase';
 import { authedPost } from '@/lib/authedFetch';
 import { sendFromTemplate } from '@/services/notificationService';
 
-export interface CreateSessionParams {
-  tutor_id: string;
-  student_id: string;
-  subject: string;
-  date: string; // YYYY-MM-DD
-  start_time: string; // HH:mm:ss
-  duration_minutes: number;
-  mode: 'online' | 'in-person' | 'both';
-  meeting_room_id: string;
-  zoom_meeting_id?: string;
-  zoom_password?: string;
-  status?: string; // 'upcoming' | 'completed' | 'canceled'
-}
-
-export const createSession = async (params: CreateSessionParams) => {
-  try {
-    const { data, error } = await supabase
-      .from('sessions')
-      .insert([{ ...params, status: params.status || 'upcoming' }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Failed to create session', error);
-      return { success: false, error: error.message };
-    }
-    return { success: true, data };
-  } catch (e: any) {
-    console.error('Failed to create session', e);
-    return { success: false, error: e.message };
-  }
-};
+// Sessions are created on the server only: fulfilment after a payment, and
+// book_advising_session. The browser has no insert grant on the table, because
+// a browser that could insert one could name any tutor and any payout.
 
 export const getSessionById = async (sessionId: string) => {
   const { data, error } = await supabase
@@ -55,18 +26,6 @@ export const getSessionById = async (sessionId: string) => {
     tutor_name: profiles?.find((p: any) => p.id === data.tutor_id)?.full_name || 'Tutor',
     student_name: profiles?.find((p: any) => p.id === data.student_id)?.full_name || 'Student',
   };
-};
-
-export const updateSessionStatus = async (sessionId: string, status: string) => {
-  const { error } = await supabase
-    .from('sessions')
-    .update({ status })
-    .eq('id', sessionId);
-
-  if (error) {
-    console.error('Failed to update session status', error);
-  }
-  return !error;
 };
 
 export const getStudentSessions = async (studentId: string) => {

@@ -198,20 +198,11 @@ export async function getCounselorSessionsFull(counselorId: string): Promise<Ses
   }) as SessionRow[];
 }
 
-export async function completeSession(id: string, notes?: string) {
-  const patch: Record<string, unknown> = { status: "completed" };
-  if (notes !== undefined) patch.notes = notes;
-  const { error } = await supabase.from("sessions").update(patch).eq("id", id);
-  return !error;
-}
-
+// Notes only, the same as a tutor. A counsellor completing their own advising
+// hour made the month count as delivered, which releases their pay; the
+// scheduled job completes it instead.
 export async function saveSessionNotes(id: string, notes: string) {
   const { error } = await supabase.from("sessions").update({ notes }).eq("id", id);
-  return !error;
-}
-
-export async function cancelSession(id: string) {
-  const { error } = await supabase.from("sessions").update({ status: "cancelled" }).eq("id", id);
   return !error;
 }
 
