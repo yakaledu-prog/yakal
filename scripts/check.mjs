@@ -34,6 +34,7 @@ const PURE = [
   ['email-links.ts', 'links in email do not point at localhost'],
   ['assistant-client-ip.ts', 'the landing rate limit counts a forged X-Forwarded-For from the right'],
   ['cancellation-policy.ts', 'the published cancellation policy, applied'],
+  ['seo.ts', 'what a crawler and a link preview see'],
   ['support-stream-frames.ts', 'SSE frames parse whether they end in LF or CRLF'],
   ['commonapp-explore.ts', 'the Common App member data, and where an admissions link sends a student'],
   ['essay-source-urls.ts', 'every machine-read prompt came from the right page, for the right cycle'],

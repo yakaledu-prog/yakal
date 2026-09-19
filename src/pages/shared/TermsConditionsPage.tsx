@@ -2,9 +2,12 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
+import { Seo } from "@/components/seo/Seo";
 
 export function TermsConditionsPage() {
   return (
+    <>
+      <Seo title="Terms and conditions" description="The terms families, tutors and counsellors agree to when using Yakal." />
     <PageWrapper className="!p-0">
       <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background dark:bg-[#111b21]">
         
@@ -58,5 +61,6 @@ export function TermsConditionsPage() {
         
       </div>
     </PageWrapper>
+    </>
   );
 }

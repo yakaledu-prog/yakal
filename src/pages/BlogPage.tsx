@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getPost, BlogPost } from "@/services/cmsService";
 import { BlockEditor } from "@/components/ui/BlockEditor";
+import { Seo } from "@/components/seo/Seo";
 
 export default function BlogPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,12 +63,28 @@ export default function BlogPage() {
     }
   };
 
+  // The first 30 words of the post, as the search result and the link preview.
+  const summary = blog.content
+    .replace(/<[^>]*>?/gm, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .slice(0, 30)
+    .join(" ");
+
+  // flex-col until lg, which BlogsPage has and this did not.
+  // Without a direction the container defaults to a row, so on a phone the
+  // header and the article became two columns side by side, each asking for
+  // w-full and each getting about half of it.
   return (
-    // flex-col until lg, which BlogsPage has and this did not.
-    // Without a direction the container defaults to a row, so on a phone the
-    // header and the article became two columns side by side, each asking for
-    // w-full and each getting about half of it.
-    <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-white text-[#111827]">
+    <>
+      <Seo
+        title={blog.title}
+        description={summary}
+        image={blog.thumbnail_url}
+        type="article"
+      />
+      <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-white text-[#111827]">
       {/* Reading progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-transparent pointer-events-none">
         <div
@@ -143,6 +160,7 @@ export default function BlogPage() {
           <BlockEditor value={blog.content} editable={false} theme="light" />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -8,7 +8,7 @@
 // an essay review round.
 //
 // Needs the local Supabase and the seeded accounts (student@ has a live plan
-// with counselor@; student2@ does not). Puts student@'s plan back on its own
+// with counselor@). Puts student@'s plan back on its own
 // tier and removes everything it made.
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
@@ -38,8 +38,22 @@ async function as(email: string) {
 
 const MARK = `mock-interviews-verify-${Date.now()}`;
 const student = await as('student@yakal.com');
-const student2 = await as('student2@yakal.com');
 const counselor = await as('counselor@yakal.com');
+
+// A student this counsellor does not advise, chosen from the data rather than
+// named: a reseed can put student2 on their books, and then the "not your
+// student" checks are checking nothing.
+const advisees: any[] = (
+  await db.from('admissions_plans').select('student_id').eq('counselor_id', counselor.id).in('status', ['active', 'past_due'])
+).data ?? [];
+const demoStudents: any[] = (
+  await db.from('profiles').select('id, email').eq('role', 'student').or('email.like.%@yakal.com,email.like.%@yakal.demo')
+).data ?? [];
+const strangerRow = demoStudents.find(
+  (s: any) => s.id !== student.id && !advisees.some((a: any) => a.student_id === s.id)
+);
+if (!strangerRow) throw new Error('need a demo student this counsellor does not advise');
+const stranger = await as(strangerRow.email);
 
 const { data: plan } = await db
   .from('admissions_plans')
@@ -98,7 +112,7 @@ try {
   pass('an unlimited plan books as many as asked', !r.error && !r2.error, r.error?.message ?? r2.error?.message);
 
   // ---- who may book ----
-  r = await student2.c.rpc('book_mock_interview', slot(5, 2));
+  r = await stranger.c.rpc('book_mock_interview', slot(5, 2));
   pass("another student cannot book on somebody else's plan", !!r.error, r.error?.message ?? 'booked');
 
   // ---- an interview is delivery ----
@@ -120,7 +134,7 @@ try {
 
   // ---- essay reviews ----
   const { data: own } = await db.from('essays').insert({ student_id: student.id, title: MARK, kind: 'supplement' }).select('id').single();
-  const { data: other } = await db.from('essays').insert({ student_id: student2.id, title: MARK, kind: 'supplement' }).select('id').single();
+  const { data: other } = await db.from('essays').insert({ student_id: stranger.id, title: MARK, kind: 'supplement' }).select('id').single();
   essayIds.push(own!.id, other!.id);
 
   let e = await counselor.c.from('essay_reviews').insert({ essay_id: own!.id, counselor_id: counselor.id, action: 'returned', note: MARK });
@@ -131,7 +145,7 @@ try {
   await db.from('essay_reviews').insert({ essay_id: other!.id, counselor_id: counselor.id, action: 'returned', note: MARK });
   const seen = await counselor.c.from('essay_reviews').select('id').eq('essay_id', other!.id);
   pass("nor read that student's review history", (seen.data ?? []).length === 0, seen.error?.message ?? `${(seen.data ?? []).length} rows`);
-  const family = await student2.c.from('essay_reviews').select('id').eq('essay_id', other!.id);
+  const family = await stranger.c.from('essay_reviews').select('id').eq('essay_id', other!.id);
   pass('which the student still can', (family.data ?? []).length === 1, family.error?.message ?? `${(family.data ?? []).length} rows`);
 } finally {
   await db.from('admissions_plans').update({ tier_id: plan.tier_id }).eq('id', plan.id);

@@ -123,8 +123,18 @@ try {
 
   r = await counselor.c.from('notifications').insert(note(student.id, 'essayReview'));
   pass('a counsellor can tell their own advisee', !r.error, r.error?.message);
-  r = await counselor.c.from('notifications').insert(note(student2.id, 'essayReview'));
-  pass("but not somebody else's student", !!r.error, r.error?.message ?? 'inserted');
+  // Not student2 by name: a reseed can put any student on this counsellor's
+  // books, and then "somebody else's student" is not somebody else's at all.
+  const advisees: any[] = (await db.from('admissions_plans').select('student_id')
+    .eq('counselor_id', counselor.id).in('status', ['active', 'past_due'])).data ?? [];
+  const students: any[] = (await db.from('profiles').select('id').eq('role', 'student')).data ?? [];
+  const stranger = students.map((x) => x.id).find((id) => !advisees.some((a) => a.student_id === id));
+  if (stranger) {
+    r = await counselor.c.from('notifications').insert(note(stranger, 'essayReview'));
+    pass("but not somebody else's student", !!r.error, r.error?.message ?? 'inserted');
+  } else {
+    console.log('skip  this counsellor advises every student, so there is no stranger to try');
+  }
 
   r = await admin.c.from('notifications').insert(note(student.id, 'accountApproved'));
   pass('an admin can send an admin template', !r.error, r.error?.message);

@@ -15,6 +15,7 @@ import Contact from "@/sections/Contact";
 import Footer from "@/sections/Footer";
 import { LandingAssistant } from "@/components/assistant/LandingAssistant";
 import type { Page } from "@/types";
+import { Seo } from "@/components/seo/Seo";
 
 export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
   const location = useLocation();
@@ -70,6 +71,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
   }
 
   return (
+    <>
+      <Seo description="One-on-one tutoring and college admissions counselling for students in Math, Science, English and SAT prep, online or in person." />
     <div className="bg-white text-[#111827] flex flex-col gap-[20px] md:gap-[60px] items-center md:p-[20px] p-0 min-h-screen w-full">
       <Hero onNav={scrollTo} />
       <About />
@@ -92,5 +95,6 @@ export default function HomePage({ onNavigate }: { onNavigate: (page: Page) => v
           "I cannot see that", which is worse than no button at all. */}
       <LandingAssistant />
     </div>
+    </>
   );
 }
