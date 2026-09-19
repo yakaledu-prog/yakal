@@ -40,7 +40,12 @@ export function SortHeader<C extends string>({
       className={cn(
         // Quiet on purpose: a header labels the column, the figures under it
         // are the content. Anything heavier competes with the rows.
-        "pb-2 text-[10.5px] font-medium uppercase tracking-[0.08em]",
+        //
+        // Sentence case rather than uppercase with wide tracking. Set in caps,
+        // "Students" and "Tutor" ran into each other on a narrow column and the
+        // row read as a shout above the figures; lower case is both smaller and
+        // quieter, and needs about a quarter less width for the same word.
+        "pb-2.5 text-[11px] font-medium tracking-normal",
         align === "right" ? "text-right" : "text-left",
         className
       )}
@@ -49,7 +54,7 @@ export function SortHeader<C extends string>({
         type="button"
         onClick={() => onSort({ col, dir: active && sort.dir === "asc" ? "desc" : "asc" })}
         className={cn(
-          "group inline-flex items-center gap-1.5 uppercase tracking-[0.08em] transition-colors",
+          "group inline-flex items-center gap-1.5 tracking-normal transition-colors",
           align === "right" && "flex-row-reverse",
           active ? "text-foreground/70" : "text-muted-foreground/70 hover:text-foreground/70"
         )}
