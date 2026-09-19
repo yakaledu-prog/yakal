@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getServiceClient, requireUser } from '../_utils/supabase.js';
-import { costToUs, refundInvoice } from '../_utils/refunds.js';
+import { costToUs, endAccessForInvoice, refundInvoice } from '../_utils/refunds.js';
 import { cancelEarningsForCharge } from '../_utils/earnings.js';
 
 // ============================================================
@@ -111,11 +111,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
+    // All of it back means none of it bought: the upcoming lessons, the course
+    // and the plan end with it. A partial refund is goodwill on something the
+    // family keeps. The webhook would do this too when Stripe reports the
+    // refund; doing it here means the admin sees the result straight away,
+    // and running twice changes nothing.
+    const fullyRefunded = refundedSoFar + amountCents >= (invoice.amount_cents ?? 0);
+    const ended = fullyRefunded ? await endAccessForInvoice(db, invoice.id, 'refund') : null;
+
     return res.status(200).json({
       refunded: true,
       amountCents: result.amountCents,
       earningsCancelled: cancelled,
       earningsAlreadyPaid: alreadySettled,
+      accessEnded: ended,
     });
   } catch (err: any) {
     console.error('admin-refund error:', err);
