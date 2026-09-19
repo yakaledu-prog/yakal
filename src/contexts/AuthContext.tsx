@@ -103,11 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
       // maybeSingle, not single: a missing row is a state to handle, not a 406.
+      // Through full_profiles, not the table: select('*') would include the
+      // private columns (phone, Stripe, resume), which only the owner and
+      // admins may read and which the table no longer hands to anybody.
       const { data, error } = await supabase
-        .from('profiles')
+        .rpc('full_profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .maybeSingle<Profile>();
 
       if (data && !error) {
         // An admin disabled this account. New sign-ins are already refused at

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { sendFromTemplate } from "./notificationService";
+import { fullProfilesById } from "@/lib/fullProfiles";
 
 // ============================================================
 // Tutors applying to teach a course.
@@ -232,13 +233,22 @@ export async function getApplicants(courseId: string): Promise<Applicant[]> {
     .from("course_applications")
     .select(`id, message, status, created_at,
              tutor:profiles!course_applications_tutor_id_fkey
-               (id, full_name, email, avatar_url, bio, subjects, hourly_rate, resume_url)`)
+               (id, full_name, email, avatar_url, bio, subjects, hourly_rate)`)
     .eq("course_id", courseId)
     .order("created_at", { ascending: false });
   if (error) {
     console.error("getApplicants failed:", error);
     return [];
   }
+
+  // The CV separately. resume_url is a private column, and an embed reads the
+  // table, so asking for it there would fail the whole list rather than just
+  // the one field. This screen is admin-only, which is what full_profiles
+  // answers.
+  const tutorIds = [...new Set((data ?? []).map((row: any) => row.tutor?.id).filter(Boolean))] as string[];
+  const cvs = await fullProfilesById<{ id: string; resume_url: string | null }>("id, resume_url", tutorIds);
+  const cvBy = new Map<string, string | null>(cvs.map((p) => [p.id, p.resume_url ?? null]));
+
   return (data ?? []).map((row: any) => ({
     id: row.id,
     message: row.message,
@@ -252,7 +262,7 @@ export async function getApplicants(courseId: string): Promise<Applicant[]> {
       bio: row.tutor?.bio ?? null,
       subjects: row.tutor?.subjects ?? null,
       hourlyRate: row.tutor?.hourly_rate ?? null,
-      resumeUrl: row.tutor?.resume_url ?? null,
+      resumeUrl: cvBy.get(row.tutor?.id) ?? null,
     },
   }));
 }

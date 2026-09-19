@@ -773,7 +773,9 @@ export interface CounselorCard {
 export async function getCounselors(): Promise<CounselorCard[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, bio, subjects, resume_url")
+    // No resume_url: a private column, and the path points into a private
+    // bucket a family could never open anyway.
+    .select("id, full_name, avatar_url, bio, subjects")
     .eq("role", "counselor")
     .eq("status", "active")
     .order("full_name");

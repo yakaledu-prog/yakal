@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { authedPost } from "@/lib/authedFetch";
+import { fullProfilesById } from "@/lib/fullProfiles";
 
 // ============================================================
 // What a tutor or counsellor is owed, and what they have been paid.
@@ -258,8 +259,10 @@ export interface ConnectStatus {
 }
 
 export async function getConnectStatus(profileId: string): Promise<ConnectStatus> {
+  // Yourself, or an admin looking at somebody: the two cases full_profiles
+  // answers. Anybody else gets no row, and reads as not connected.
   const { data } = await supabase
-    .from("profiles")
+    .rpc("full_profiles")
     .select("stripe_account_id, stripe_payouts_enabled")
     .eq("id", profileId)
     .maybeSingle();
@@ -348,7 +351,7 @@ export async function getOwedEarnings(): Promise<OwedRow[]> {
     .from("earnings")
     .select(
       `${FIELDS}, payee_id,
-       payee:profiles!earnings_payee_id_fkey (full_name, stripe_payouts_enabled)`
+       payee:profiles!earnings_payee_id_fkey (full_name)`
     )
     .eq("status", "pending")
     .is("voided_at", null)
@@ -359,11 +362,21 @@ export async function getOwedEarnings(): Promise<OwedRow[]> {
     return [];
   }
 
+  // Whether each payee can take a transfer, asked separately. An embed reads
+  // the table, and stripe_payouts_enabled is not selectable there; one
+  // full_profiles call for the lot, not one per row.
+  const payeeIds = [...new Set((data ?? []).map((r: any) => r.payee_id as string))];
+  const ready = await fullProfilesById<{ id: string; stripe_payouts_enabled: boolean | null }>(
+    "id, stripe_payouts_enabled",
+    payeeIds
+  );
+  const canTransfer = new Set(ready.filter((p) => p.stripe_payouts_enabled).map((p) => p.id));
+
   return (data ?? []).map((r: any) => ({
     ...toRow(r),
     payeeId: r.payee_id,
     payeeName: r.payee?.full_name ?? null,
-    payoutsEnabled: !!r.payee?.stripe_payouts_enabled,
+    payoutsEnabled: canTransfer.has(r.payee_id),
   }));
 }
 
