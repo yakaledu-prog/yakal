@@ -220,7 +220,10 @@ export function ZoomMeeting({
         setStatus({ phase: 'signature' });
         let signature: string;
         try {
-          signature = await generateZoomSignature(meetingNumber, role);
+          // The server picks the role from who you are on the session; the
+          // role prop still drives what this page says, never what Zoom grants.
+          if (!sessionId) throw new Error('No session to join.');
+          signature = await generateZoomSignature(sessionId);
         } catch (e: any) {
           if (!cancelled)
             setStatus({

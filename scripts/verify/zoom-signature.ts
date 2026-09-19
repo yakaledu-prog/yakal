@@ -11,10 +11,16 @@
 // from a good one until Zoom refuses it, and by then somebody is sitting in
 // front of a meeting that will not open.
 //
+// The credential rules live in signFor, which the handler calls once it has
+// decided who the caller is and which meeting and role they get. The handler
+// itself is checked with real sessions in drive-zoom-auth.ts.
+//
 // Needs nothing.
 export {};
 
-const handler = (await import('../../api/_handlers/zoom-signature.js')).default;
+const mod = await import('../../api/_handlers/zoom-signature.js');
+const handler = mod.default;
+const { signFor } = mod;
 
 let failures = 0;
 const pass = (s: string, ok: boolean, d = '') => {
@@ -23,14 +29,8 @@ const pass = (s: string, ok: boolean, d = '') => {
 };
 
 function call(body: any) {
-  const out: any = {};
-  const res: any = {
-    status(c: number) { out.code = c; return this; },
-    json(b: any) { out.body = b; return this; },
-    end() { return this; },
-  };
-  handler({ method: 'POST', body } as any, res);
-  return out;
+  const out = signFor(String(body.meetingNumber ?? ''), body.role ?? 0);
+  return { code: out.status, body: out.body };
 }
 
 const realish = { key: 'abcDEF123456', secret: 'sshhhhSecret0123456789' };
@@ -73,7 +73,15 @@ pass(
   'a refusal says what an administrator has to do',
   /not configured/i.test(withEnv(undefined, undefined, { meetingNumber: '123', role: 0 }).body?.error ?? '')
 );
-pass('a request with no meeting number is still a 400', withEnv(realish.key, realish.secret, {}).code === 400);
+// The handler asks who is calling before anything else. This used to sign for
+// anybody who posted a meeting number and a role.
+const anon: any = {};
+await handler({ method: 'POST', headers: {}, body: { meetingNumber: '123', role: 1 } } as any, {
+  status(c: number) { anon.code = c; return this; },
+  json(b: any) { anon.body = b; return this; },
+  end() { return this; },
+} as any);
+pass('the handler refuses a caller with no token', anon.code === 401, String(anon.code));
 
 withEnv(saved.key, saved.secret, { meetingNumber: '1', role: 0 });
 

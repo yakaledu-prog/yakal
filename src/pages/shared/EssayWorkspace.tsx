@@ -150,14 +150,14 @@ export function EssayWorkspace() {
     refetch: refetchDoc,
   } = useQuery({
     queryKey: ["essay-doc", fileId],
-    queryFn: () => getEssayDoc(fileId!),
-    enabled: !!fileId,
+    queryFn: () => getEssayDoc(essayId!),
+    enabled: !!fileId && !!essayId,
   });
 
   const { data: threads = [], isLoading: loadingComments } = useQuery({
     queryKey: ["essay-comments", fileId],
-    queryFn: () => getComments(fileId!),
-    enabled: !!fileId,
+    queryFn: () => getComments(essayId!),
+    enabled: !!fileId && !!essayId,
   });
 
   const { data: reviews = [] } = useQuery({
@@ -170,8 +170,7 @@ export function EssayWorkspace() {
     qc.invalidateQueries({ queryKey: ["essay-comments", fileId] });
 
   const post = useMutation({
-    mutationFn: (content: string) =>
-      addComment(fileId!, content, profile?.full_name ?? null),
+    mutationFn: (content: string) => addComment(essayId!, content),
     onSuccess: () => {
       setDraft("");
       void refreshComments();
@@ -182,11 +181,7 @@ export function EssayWorkspace() {
 
   const reply = useMutation({
     mutationFn: (args: { commentId: string; content?: string; resolve?: boolean; reopen?: boolean }) =>
-      replyToComment({
-        fileId: fileId!,
-        authorName: profile?.full_name ?? null,
-        ...args,
-      }),
+      replyToComment({ essayId: essayId!, ...args }),
     onSuccess: () => {
       setReplyTo(null);
       setReplyText("");

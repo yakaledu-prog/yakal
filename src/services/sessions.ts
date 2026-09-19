@@ -237,7 +237,7 @@ export const rescheduleSession = async (
   const moved = Array.isArray(data) ? data[0] : data;
   if (moved?.zoom_meeting_id) {
     try {
-      await updateZoomMeeting(moved.zoom_meeting_id, date, startTime, moved.duration_minutes ?? 60);
+      await updateZoomMeeting(moved.zoom_meeting_id);
     } catch (e) {
       console.error('Session moved but its Zoom meeting did not', e);
     }
@@ -259,18 +259,17 @@ export const rescheduleSession = async (
 };
 
 /** PATCH the meeting to the session's new date and time. */
-async function updateZoomMeeting(
-  meetingId: string,
-  date: string,
-  startTime: string,
-  durationMinutes: number
-) {
-  const res = await fetch('/api/zoom?action=meetings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ meetingId, date, time: startTime, duration: durationMinutes }),
-  });
-  if (!res.ok) throw new Error(await res.text());
+/**
+ * Move the session's Zoom meeting to where the session now is.
+ *
+ * Only the meeting id: the server reads the new date and time from the session
+ * row that reschedule_session just moved, and only lets somebody on that
+ * session do it. This used to send the times from the browser to an endpoint
+ * that let anyone move any meeting.
+ */
+async function updateZoomMeeting(meetingId: string) {
+  const out = await authedPost('/api/zoom?action=meetings', { meetingId });
+  if (out.error) throw new Error(out.error);
 }
 
 // ============================================================

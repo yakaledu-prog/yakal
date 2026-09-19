@@ -1,3 +1,5 @@
+import { authedPost } from "@/lib/authedFetch";
+
 /**
  * Client for the server-side Drive endpoint.
  *
@@ -51,22 +53,25 @@ export type DocumentSection = "Transcripts" | "Essays" | "Test scores" | "Other"
  */
 export const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 
+/**
+ * Signed in, and throwing on failure.
+ *
+ * This was a plain fetch with no token, to an endpoint that asked nobody who
+ * they were. authedPost carries the session and refreshes it; it returns
+ * { error } rather than throwing, so this throws, because react-query's error
+ * states and isConfigured() below both expect a thrown Error.
+ */
 async function call<T>(body: Record<string, unknown>): Promise<T> {
-  const res = await fetch("/api/google?action=drive", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || `Drive request failed (${res.status})`);
-  return json as T;
+  const out = await authedPost<T>("/api/google?action=drive", body);
+  if (out.error) throw new Error(out.error);
+  return out as T;
 }
 
 /**
- * `studentEmail` is what makes "Open in Drive" work without the student having
- * to request access. The folder belongs to the Yakal account, so the server
- * shares it with them on every call rather than leaving them locked out of
- * their own documents.
+ * The name and email are no longer read by the server, which looks both up
+ * from the student's profile; they stay in the signature so callers compile.
+ * Sending them is what let a counsellor's own email be shared as writer on a
+ * student's folder, because the tracker passed the signed-in user's.
  */
 export function listDocuments(
   studentId: string,
@@ -135,9 +140,10 @@ export type ReviewVerdict = "pending" | "verified" | "needs_attention";
  * must never read as a pass.
  */
 export function reviewDocument(args: {
+  /** Whose document. The server checks the file is in their folder. */
+  studentId: string;
   fileId: string;
   verdict: ReviewVerdict;
-  reviewerId?: string | null;
   note?: string | null;
 }) {
   return call<{ file: DriveFile }>({ action: "review", ...args });
@@ -149,10 +155,11 @@ export function reviewDocument(args: {
  * Batched deliberately: one request for a whole page of essays rather than one
  * per row, since each count is a full text export on the server.
  */
-export async function wordCounts(fileIds: string[]) {
+export async function wordCounts(studentId: string, fileIds: string[]) {
   if (fileIds.length === 0) return new Map<string, number>();
   const { counts } = await call<{ counts: { fileId: string; words: number | null }[] }>({
     action: "wordCount",
+    studentId,
     fileIds,
   });
   return new Map(
@@ -166,8 +173,8 @@ export function fileIdFromUrl(url: string | null | undefined): string | null {
   return url.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ?? null;
 }
 
-export function deleteDocument(fileId: string) {
-  return call<{ ok: true }>({ action: "delete", fileId });
+export function deleteDocument(studentId: string, fileId: string) {
+  return call<{ ok: true }>({ action: "delete", studentId, fileId });
 }
 
 export function isConfigured(err: unknown): boolean {
@@ -217,32 +224,31 @@ export interface CommentThread {
   replies: CommentReply[];
 }
 
-export function getEssayDoc(fileId: string) {
-  return call<EssayDoc>({ action: "doc", fileId });
+// By essay rather than by file: the server finds the Doc from the essay row
+// and checks it is in that student's folder, so a file id alone opens nothing.
+export function getEssayDoc(essayId: string) {
+  return call<EssayDoc>({ action: "doc", essayId });
 }
 
-export async function getComments(fileId: string) {
-  const { threads } = await call<{ threads: CommentThread[] }>({ action: "comments", fileId });
+export async function getComments(essayId: string) {
+  const { threads } = await call<{ threads: CommentThread[] }>({ action: "comments", essayId });
   return threads;
 }
 
 /**
- * `authorName` is not decoration.
- *
- * Every write reaches Google as the single Yakal account that holds the
- * credential, so without it a counselor's comment appears in the Doc authored
- * by us and the student cannot tell who said it. The server writes the name
- * into the text and strips it again on the way back.
+ * The author is named in the text, because every write reaches Google as the
+ * single Yakal account that holds the credential. The server takes the name
+ * from the signed-in person's profile now, not from here, so a comment cannot
+ * be signed as somebody else.
  */
-export function addComment(fileId: string, content: string, authorName?: string | null) {
-  return call<{ id: string }>({ action: "comment", fileId, content, authorName });
+export function addComment(essayId: string, content: string) {
+  return call<{ id: string }>({ action: "comment", essayId, content });
 }
 
 export function replyToComment(args: {
-  fileId: string;
+  essayId: string;
   commentId: string;
   content?: string;
-  authorName?: string | null;
   resolve?: boolean;
   reopen?: boolean;
 }) {
