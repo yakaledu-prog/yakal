@@ -14,7 +14,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
 
-type CourseCol = "title" | "subject" | "price" | "payout" | "students" | "tutor" | "status";
+type CourseCol = "title" | "price" | "payout" | "students" | "tutor" | "status";
 
 const STATUSES = [
   { value: "all", label: "Any status" },
@@ -98,7 +98,6 @@ export function AdminCourses() {
     });
     return sortRows(matched, sort, (c) => {
       switch (sort.col) {
-        case "subject": return (c.subject ?? "").toLowerCase();
         case "price": return c.price_cents ?? -1;
         case "payout": return c.tutor_payout_cents ?? -1;
         case "students": return rollups?.[c.id]?.students ?? 0;
@@ -220,14 +219,13 @@ export function AdminCourses() {
               <table className="w-full min-w-[900px] table-fixed">
                 <thead>
                   <tr className="border-b border-border">
-                    <SortHeader label="Course" col="title" sort={sort} onSort={setSort} className="w-[30%] pr-4" />
-                    <SortHeader label="Subject" col="subject" sort={sort} onSort={setSort} className="w-[12%] pr-4" />
-                    <SortHeader label="Parent pays" col="price" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
-                    <SortHeader label="Tutor gets" col="payout" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
-                    <SortHeader label="Students" col="students" sort={sort} onSort={setSort} align="right" className="w-[12%] pr-10" />
-                    <SortHeader label="Tutor" col="tutor" sort={sort} onSort={setSort} className="w-[15%] pr-4" />
-                    <SortHeader label="Active" col="status" sort={sort} onSort={setSort} className="w-[7%] pr-2" />
-                    <th className="w-[80px] pb-2" />
+                    <SortHeader label="Course" col="title" sort={sort} onSort={setSort} className="w-[34%] whitespace-nowrap pr-4" />
+                    <SortHeader label="Parent pays" col="price" sort={sort} onSort={setSort} align="right" className="w-[13%] whitespace-nowrap pr-6" />
+                    <SortHeader label="Tutor gets" col="payout" sort={sort} onSort={setSort} align="right" className="w-[13%] whitespace-nowrap pr-8" />
+                    <SortHeader label="Students" col="students" sort={sort} onSort={setSort} align="right" className="w-[10%] whitespace-nowrap pr-10" />
+                    <SortHeader label="Tutor" col="tutor" sort={sort} onSort={setSort} className="w-[18%] whitespace-nowrap pr-4" />
+                    <SortHeader label="Active" col="status" sort={sort} onSort={setSort} className="w-[8%] whitespace-nowrap pr-2" />
+                    <th className="w-[76px] pb-2" />
                   </tr>
                 </thead>
                 <tbody>
@@ -244,29 +242,33 @@ export function AdminCourses() {
                             <div className="h-10 w-14 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-[#202c33]">
                               {c.thumbnail_url && <img src={c.thumbnail_url} alt="" className="h-full w-full object-cover" />}
                             </div>
+                            {/* The subject sits under the title rather than in
+                                a column of its own: the filter above answers
+                                "show me English", and the column was a word
+                                repeated down the page. */}
                             <div className="min-w-0">
                               <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">{c.title}</p>
-                              {c.google_classroom_url && (
-                                <a
-                                  href={c.google_classroom_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center gap-1 text-[12px] text-primary hover:underline"
-                                >
-                                  <ExternalLink size={12} /> Classroom
-                                </a>
-                              )}
+                              <p className="flex items-center gap-2 truncate text-[12px] text-muted-foreground">
+                                <span className="truncate">{c.subject}</span>
+                                {c.google_classroom_url && (
+                                  <a
+                                    href={c.google_classroom_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <ExternalLink size={12} /> Classroom
+                                  </a>
+                                )}
+                              </p>
                             </div>
                           </div>
-                        </td>
-                        <td className="py-3 pr-4 align-middle text-[13px] text-muted-foreground">
-                          <span className="block truncate">{c.subject}</span>
                         </td>
                         <td className="py-3 pr-6 text-right align-middle text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
                           {c.price_cents != null ? money(c.price_cents) : "-"}
                         </td>
-                        <td className="py-3 pr-6 text-right align-middle text-[13px] tabular-nums text-primary">
+                        <td className="py-3 pr-8 text-right align-middle text-[13px] tabular-nums text-primary">
                           {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "-"}
                         </td>
                         <td className="py-3 pr-10 text-right align-middle text-[13px] tabular-nums text-muted-foreground">
@@ -382,23 +384,28 @@ export function AdminCourses() {
 
                     <div className="my-4 border-t border-[#e9edef] dark:border-[#2a3942]" />
 
-                    {/* Bottom Row: Tutors and Admin Actions */}
-                    <div className="flex justify-between items-center flex-wrap gap-4">
+                    {/* Bottom row: on or off, who teaches it, and Edit.
+                        The switch is pinned to the left end rather than sitting
+                        next to Edit: a long tutor name wrapped the row and left
+                        it stranded in the middle of the card. */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                      <ActiveSwitch on={c.is_active} onToggle={() => void toggleActive(c)} />
+
                       {/* The tutor teaching it, or that nobody is.
                           Three generated faces above "+ 9 available tutors" sat
                           here on every row. It read as a roster and was a
                           placeholder. A course has one tutor, and whether it
                           has one at all is what an admin needs to see: without
                           one it never reaches the parent catalog. */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
                         {rollups?.[c.id]?.tutorName ? (
                           <>
                             <img
                               src={rollups[c.id].tutorAvatarUrl || dicebearUrl(rollups[c.id].tutorName!)}
                               alt=""
-                              className="w-8 h-8 rounded-full border-2 border-white dark:border-[#111b21] object-cover"
+                              className="h-8 w-8 shrink-0 rounded-full border-2 border-white object-cover dark:border-[#111b21]"
                             />
-                            <span className="text-[14px] font-medium text-[#111] dark:text-white">
+                            <span className="truncate text-[14px] font-medium text-[#111] dark:text-white">
                               {rollups[c.id].tutorName}
                             </span>
                           </>
@@ -409,9 +416,7 @@ export function AdminCourses() {
                         )}
                       </div>
 
-                      {/* Admin Actions */}
-                      <div className="flex items-center gap-4 ml-auto">
-                        <ActiveSwitch on={c.is_active} onToggle={() => void toggleActive(c)} />
+                      <div className="ml-auto flex items-center">
                         <Button
                           variant="outline"
                           onClick={(e) => {
