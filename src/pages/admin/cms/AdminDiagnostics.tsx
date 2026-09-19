@@ -606,7 +606,7 @@ function AddQuestionsDialog({
         className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl"
       >
         <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 md:px-6">
-          <h2 className="text-[15px] font-semibold tracking-tight">Add questions to {test.title}</h2>
+          <h2 className="text-[15px] font-medium tracking-tight">Add questions to {test.title}</h2>
           <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
             <X size={18} />
           </button>
@@ -886,7 +886,7 @@ export function AdminDiagnostics() {
                       onClick={() => { setSubject(name); setTestId(null); openDetail(); }}
                       className="min-w-0 flex-1 p-4 text-left"
                     >
-                      <p className={cn("truncate text-[14px] font-semibold", active ? "text-primary" : "text-[#111] dark:text-white")}>
+                      <p className={cn("truncate text-[14px] font-medium", active ? "text-primary" : "text-[#111] dark:text-white")}>
                         {name}
                       </p>
                       <p className="truncate text-[12px] text-muted-foreground">
@@ -1014,7 +1014,7 @@ export function AdminDiagnostics() {
                   <div className="space-y-10">
                     {activeTest.questions.map((q, i) => (
                       <div key={q.id ?? i}>
-                        <p className="text-[16px] font-semibold">
+                        <p className="text-[16px] font-medium">
                           {i + 1}. {q.text || <span className="font-normal text-muted-foreground">No question text</span>}
                         </p>
 
@@ -1096,7 +1096,7 @@ export function AdminDiagnostics() {
             aria-label="Rename subject"
             className="w-full max-w-md rounded-2xl bg-card p-5 shadow-xl md:p-6"
           >
-            <h2 className="text-[15px] font-semibold tracking-tight">Rename subject</h2>
+            <h2 className="text-[15px] font-medium tracking-tight">Rename subject</h2>
             <p className="mt-1 text-[13px] text-muted-foreground">
               Every test grouped under {renaming.from} moves with it.
             </p>
