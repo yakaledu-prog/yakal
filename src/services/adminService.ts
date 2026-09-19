@@ -95,7 +95,7 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
     supabase.from("profiles").select("role, status"),
     supabase.from("sessions").select("id", { count: "exact", head: true }),
     supabase.from("invoices").select("amount_cents, status"),
-    supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new"),
+    supabase.from("contact_messages").select("id", { count: "exact", head: true }).neq("status", "handled"),
     supabase.from("refunds").select("amount_cents").eq("status", "succeeded"),
   ]);
 

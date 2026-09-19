@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceClient } from './_utils/supabase.js';
+import { escapeHtml } from './_utils/email.js';
 
 export default async function handler(req: any, res: any) {
   // Only allow POST
@@ -9,12 +10,20 @@ export default async function handler(req: any, res: any) {
 
   // Initialize services (keys are loaded via dotenv in local-api.ts)
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  // The service client, not the anon key. The inbox holds visitors' names,
+  // emails and phone numbers, so the browser roles can no longer insert into
+  // it or read it; this endpoint is the only way in, and admins the only
+  // readers.
+  const supabase = getServiceClient();
 
   try {
-    const { firstName, lastName, email, phone, subject, message } = req.body;
+    const { firstName, lastName, email, phone, subject, message } = req.body ?? {};
+    if (!email || !message) {
+      return res.status(400).json({ error: 'An email address and a message are required.' });
+    }
+    // Everything below lands in an HTML email to Yakal's own inbox. Unescaped,
+    // a visitor could put a link or a fake form in front of whoever reads it.
+    const e = (v: unknown) => escapeHtml(String(v ?? ''));
 
     // 1. Insert into Supabase `contact_messages` table for Admin Dashboard notifications
     const { error: dbError } = await supabase
@@ -56,16 +65,16 @@ export default async function handler(req: any, res: any) {
     const { error: emailError } = await resend.emails.send({
       from: 'Yakal Contact Form <onboarding@resend.dev>', // resend.dev is the default for free testing
       to: [destinationEmail],
-      subject: `New Contact Form Submission: ${subject || 'No Subject'}`,
+      subject: `New Contact Form Submission: ${String(subject || 'No Subject').replace(/[\r\n]+/g, ' ')}`,
       html: `
         <h2>New Contact Form Message</h2>
-        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-        <p><strong>Subject:</strong> ${subject || 'N/A'}</p>
+        <p><strong>Name:</strong> ${e(firstName)} ${e(lastName)}</p>
+        <p><strong>Email:</strong> ${e(email)}</p>
+        <p><strong>Phone:</strong> ${e(phone || 'N/A')}</p>
+        <p><strong>Subject:</strong> ${e(subject || 'N/A')}</p>
         <br/>
         <h3>Message:</h3>
-        <p style="white-space: pre-wrap;">${message}</p>
+        <p style="white-space: pre-wrap;">${e(message)}</p>
       `,
     });
 

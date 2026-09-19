@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getServiceClient, requireUser, emailBaseUrl } from '../_utils/supabase.js';
+import { getServiceClient, emailBaseUrl } from '../_utils/supabase.js';
+import { callerOrNull } from '../_utils/access.js';
 import { sendEmail, layout } from '../_utils/email.js';
 import { pushToUser } from '../_utils/push.js';
 import { TEMPLATES } from '../../src/lib/notifications/templates/index.js';
@@ -24,13 +25,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const caller = await requireUser(req);
+  const caller = await callerOrNull(req);
+  if (!caller) return res.status(401).json({ error: 'Sign in first.' });
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body ?? {};
-  const { userId, template, vars } = body as {
+  // vars in the body is ignored. It used to be rendered straight into the
+  // email, so a row that passed the check could be mailed out saying
+  // something else entirely.
+  const { userId, template } = body as {
     userId?: string;
     template?: keyof typeof TEMPLATES;
-    vars?: Record<string, unknown>;
   };
 
   if (!userId || !template) return res.status(400).json({ error: 'userId and template are required.' });
@@ -49,19 +53,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    * whoever is entitled to write it, so requiring a matching row from the last
    * minute makes this endpoint the email half of something already authorised
    * rather than an independent way to send mail.
+   *
+   * And a row this caller wrote. created_by is stamped by a database trigger
+   * and may_notify decided the row could exist at all, so without this a
+   * stranger could have mailed out somebody else's notification a second
+   * time. The email is rendered from that row's own vars, never the request.
    */
   const { data: raised } = await db
     .from('notifications')
-    .select('id')
+    .select('id, vars')
     .eq('user_id', userId)
     .eq('template', template)
+    .eq('created_by', caller.id)
     .gte('created_at', new Date(Date.now() - 60_000).toISOString())
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (!raised?.length) {
     console.warn(`notify-email refused: no recent ${String(template)} for ${userId} (caller ${caller.id})`);
     return res.status(403).json({ error: 'No matching notification to send.' });
   }
+  const vars = (raised[0].vars as Record<string, unknown> | null) ?? {};
+
   // The push, alongside the email. Both are copies of a row that already
   // exists, both need credentials the browser does not have, and both are
   // authorised by the check above, so asking for them separately would be a
@@ -77,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     title: string;
     message: string;
     link: string | null;
-  })(vars ?? {});
+  })(vars);
   void pushToUser(db, userId, {
     title: rendered.title,
     body: rendered.message,
@@ -104,7 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       facts: { label: string; value: string }[];
       cta: { label: string; url: string } | null;
       footer: string | null;
-    })(vars ?? {});
+    })(vars);
 
     const result = await sendEmail({
       to: person.email,
