@@ -67,19 +67,24 @@ export function BookAdvisingDialog({
   }
 
   function toggle(slot: PickedSlot) {
-    setPicked((prev) => {
-      const on = prev.some((s) => s.key === slot.key);
-      if (on) return prev.filter((s) => s.key !== slot.key);
-      if (prev.length >= remaining) {
-        toast.error(
-          remaining === 1
-            ? "One hour left this month."
-            : `Only ${remaining} hours left this month.`
-        );
-        return prev;
-      }
-      return [...prev, slot];
-    });
+    if (picked.some((s) => s.key === slot.key)) {
+      setPicked(picked.filter((s) => s.key !== slot.key));
+      return;
+    }
+    if (picked.length < remaining) {
+      setPicked([...picked, slot]);
+      return;
+    }
+    // One hour left: a second click is somebody changing their mind, so the
+    // pick moves. Refusing it read as the first slot having been booked
+    // already, when nothing is booked until the button at the bottom.
+    if (remaining === 1) {
+      setPicked([slot]);
+      return;
+    }
+    toast.error(
+      remaining <= 0 ? "No hours left this month." : `Only ${remaining} hours left this month.`
+    );
   }
 
   async function confirm() {
