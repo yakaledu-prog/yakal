@@ -22,7 +22,8 @@ interface ProfileDetail {
   role: string | null;
   avatar_url: string | null;
   email: string | null;
-  phone: string | null;
+  /** Never fetched now (private column); kept so an admin build could add it back. */
+  phone?: string | null;
   bio: string | null;
   subjects: string[] | null;
   grade_level: string | null;
@@ -171,7 +172,9 @@ export function ContactInfoPanel({
     queryFn: async (): Promise<ProfileDetail | null> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, role, avatar_url, email, phone, bio, subjects, grade_level")
+        // No phone: it is a private column now, readable by its owner and
+        // admins only, and the people in somebody's inbox are neither.
+        .select("id, full_name, role, avatar_url, email, bio, subjects, grade_level")
         .eq("id", contact.id)
         .maybeSingle();
       if (error) throw error;

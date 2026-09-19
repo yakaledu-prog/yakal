@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { authedPost } from "@/lib/authedFetch";
 import { sendFromTemplate } from "@/services/notificationService";
+import { fullProfilesById } from "@/lib/fullProfiles";
 
 export interface AdminUser {
   id: string;
@@ -145,11 +146,12 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
 export async function getConnectReadiness(tutorIds: string[]): Promise<Map<string, boolean>> {
   const out = new Map<string, boolean>();
   if (tutorIds.length === 0) return out;
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, stripe_payouts_enabled")
-    .in("id", tutorIds);
-  for (const p of data ?? []) out.set(p.id, !!p.stripe_payouts_enabled);
+  // Admin-only: Stripe readiness is a private column, read through full_profiles.
+  const data = await fullProfilesById<{ id: string; stripe_payouts_enabled: boolean | null }>(
+    "id, stripe_payouts_enabled",
+    tutorIds
+  );
+  for (const p of data) out.set(p.id, !!p.stripe_payouts_enabled);
   return out;
 }
 
@@ -181,8 +183,9 @@ async function rows<T = any>(
 
 // ---- Users / approvals ----
 export async function getUsers(role?: string): Promise<AdminUser[]> {
+  // full_profiles, because phone and rejection_reason are admin-only columns.
   let q = supabase
-    .from("profiles")
+    .rpc("full_profiles")
     .select("id, full_name, email, role, status, avatar_url, created_at, last_seen_at, phone, rejection_reason, subjects")
     // Deleting is soft, so the row survives for sessions and invoices to point
     // at. It should still leave this list, or a delete looks like it did
@@ -197,7 +200,7 @@ export async function getUsers(role?: string): Promise<AdminUser[]> {
 
 export async function getPendingApprovals(): Promise<AdminUser[]> {
   const { data } = await supabase
-    .from("profiles")
+    .rpc("full_profiles")
     .select("id, full_name, email, role, status, avatar_url, created_at, last_seen_at, phone, rejection_reason, subjects")
     .in("role", ["tutor", "counselor"])
     .eq("status", "pending")
@@ -232,7 +235,7 @@ export async function getApplicants(
   status: "pending" | "active" | "rejected" | "all" = "pending"
 ): Promise<Applicant[]> {
   let query = supabase
-    .from("profiles")
+    .rpc("full_profiles")
     .select(
       "id, full_name, email, role, status, avatar_url, created_at, rejection_reason, bio, phone, subjects, hourly_rate, rate_currency, resume_url"
     )
@@ -408,7 +411,7 @@ export async function restoreUser(id: string): Promise<Result> {
 export async function getAdminUserDetails(id: string, role: string): Promise<Result & { data?: UserDetails }> {
   try {
     const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
+      .rpc("full_profiles")
       .select(
         // bio and resume_url were missing, so the modal's View Resume button
         // was reading an undefined cv_url and never rendered for anybody.
