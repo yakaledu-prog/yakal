@@ -667,15 +667,9 @@ function monthStart(): string {
 }
 
 export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsUsage> {
-  const [plan, essaysRes, interviewsRes, advisingRes] = await Promise.all([
+  const [plan, essaysRes, advisingRes] = await Promise.all([
     getAdmissionsPlan(studentId),
     supabase.from("essays").select("id, kind, rounds_used").eq("student_id", studentId),
-    supabase
-      .from("sessions")
-      .select("id", { count: "exact", head: true })
-      .eq("student_id", studentId)
-      .eq("kind", "mock_interview")
-      .eq("status", "completed"),
     // Advising is the one quota that refills. Booked counts against it as much
     // as attended: a slot held is a slot nobody else can have, and letting a
     // cancellation the morning of return it would make the allowance meaningless.
@@ -695,6 +689,18 @@ export async function getAdmissionsUsage(studentId: string): Promise<AdmissionsU
     console.error("getAdmissionsUsage failed:", essaysRes.error);
     return { plan, lines: [] };
   }
+
+  // Mock interviews count over the plan's life, booked as well as held: the
+  // rule book_mock_interview enforces. Counting completed ones only showed a
+  // family an interview still available after they had booked it.
+  let interviews = supabase
+    .from("sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .eq("kind", "mock_interview")
+    .in("status", ["upcoming", "completed"]);
+  if (plan?.startedAt) interviews = interviews.gte("created_at", plan.startedAt);
+  const interviewsRes = await interviews;
 
   const rows = essaysRes.data ?? [];
   const psRounds = rows
@@ -860,13 +866,18 @@ export async function buyTier(input: {
  */
 export async function bookAdvisingSlots(
   studentId: string,
-  slots: { date: string; startTime: string; durationMinutes?: number }[]
+  slots: { date: string; startTime: string; durationMinutes?: number }[],
+  kind: CounsellingKind = "advising"
 ): Promise<{ booked: number; errors: string[] }> {
   let booked = 0;
   const errors: string[] = [];
 
+  // Same arguments, same checks, a different allowance: mock interviews are
+  // counted over the plan rather than the month (book_mock_interview).
+  const fn = kind === "mock_interview" ? "book_mock_interview" : "book_advising_session";
+
   for (const slot of slots) {
-    const { data: sessionId, error } = await supabase.rpc("book_advising_session", {
+    const { data: sessionId, error } = await supabase.rpc(fn, {
       p_student: studentId,
       p_date: slot.date,
       p_start: slot.startTime,
@@ -952,25 +963,31 @@ export interface AdvisingSession {
 }
 
 /** Advising hours booked for the month containing `on`, soonest first. */
+export type CounsellingKind = "advising" | "mock_interview";
+
+/**
+ * Advising hours booked this month, or, for mock interviews, every one on the
+ * plan: that allowance does not refill monthly, so the month is the wrong
+ * window to show it in.
+ */
 export async function getAdvisingSessions(
   studentId: string,
-  on: Date = new Date()
+  on: Date = new Date(),
+  kind: CounsellingKind = "advising"
 ): Promise<AdvisingSession[]> {
   const from = new Date(on.getFullYear(), on.getMonth(), 1);
   const to = new Date(on.getFullYear(), on.getMonth() + 1, 1);
   const iso = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-  const { data, error } = await supabase
+  let q = supabase
     .from("sessions")
     .select("id, date, start_time, status")
     .eq("student_id", studentId)
-    .eq("kind", "advising")
-    .in("status", ["upcoming", "completed"])
-    .gte("date", iso(from))
-    .lt("date", iso(to))
-    .order("date")
-    .order("start_time");
+    .eq("kind", kind)
+    .in("status", ["upcoming", "completed"]);
+  if (kind === "advising") q = q.gte("date", iso(from)).lt("date", iso(to));
+  const { data, error } = await q.order("date").order("start_time");
 
   if (error) {
     console.error("getAdvisingSessions:", error.message);

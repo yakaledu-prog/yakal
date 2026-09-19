@@ -32,7 +32,7 @@ import { getStudentSessions } from "@/services/sessions";
 export function StudentAdvising() {
   const { user, profile } = useAuth();
   const [cancelling, setCancelling] = useState<SessionListItem | null>(null);
-  const [booking, setBooking] = useState(false);
+  const [booking, setBooking] = useState<"advising" | "mock_interview" | null>(null);
   const [tab, setTab] = useState("upcoming");
 
   const { data: raw, isLoading } = useQuery({
@@ -47,12 +47,13 @@ export function StudentAdvising() {
     enabled: !!user?.id,
   });
 
-  // Advising only. The rest of a student's timetable is lessons, and mixing the
-  // two here would make the allowance beside them look like it counted both.
+  // Counselling only: advising hours and mock interviews, both with the
+  // counsellor. The rest of a student's timetable is lessons, and mixing those
+  // in would make the allowance beside them look like it counted both.
   const advising: SessionListItem[] = useMemo(
     () =>
       ((raw?.data ?? []) as any[])
-        .filter((s) => s.kind === "advising")
+        .filter((s) => s.kind === "advising" || s.kind === "mock_interview")
         .map((s) => ({
           id: s.id,
           date: s.date,
@@ -73,6 +74,12 @@ export function StudentAdvising() {
   const completed = advising.filter((s) => s.status === "completed").length;
   const upcomingCount = advising.filter((s) => s.status === "upcoming").length;
   const canBook = allowance != null && (left == null || left > 0);
+
+  // Absent when the tier has none: getAdmissionsUsage leaves the line out for
+  // a limit of 0, so there is no button to find disabled.
+  const interviews = usage?.lines.find((l) => l.label === "Mock interviews");
+  const interviewsLeft =
+    interviews == null ? 0 : interviews.limit == null ? Infinity : interviews.limit - interviews.used;
 
   /**
    * The balance, and one colour for the whole strip.
@@ -154,7 +161,7 @@ export function StudentAdvising() {
                   parent's billing page for a plan that may be their own. */}
               <button
                 type="button"
-                onClick={() => setBooking(true)}
+                onClick={() => setBooking("advising")}
                 disabled={!canBook}
                 className={cn(
                   "inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-5 text-[14px] font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-60",
@@ -163,6 +170,18 @@ export function StudentAdvising() {
               >
                 <CalendarDays size={15} /> Book a session
               </button>
+              {interviews && (
+                <button
+                  type="button"
+                  onClick={() => setBooking("mock_interview")}
+                  disabled={interviewsLeft <= 0}
+                  title={interviewsLeft <= 0 ? "This plan's mock interviews are used" : undefined}
+                  className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-primary px-5 text-[14px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Book a mock interview
+                  {interviewsLeft !== Infinity && ` (${Math.max(0, interviewsLeft)})`}
+                </button>
+              )}
             </div>
           ) : (
             <p className="mb-8 text-[13px] text-muted-foreground">
@@ -197,8 +216,9 @@ export function StudentAdvising() {
         <BookAdvisingDialog
           studentId={user!.id}
           studentName={profile?.full_name ?? null}
-          remaining={left ?? 99}
-          onClose={() => setBooking(false)}
+          kind={booking}
+          remaining={booking === "mock_interview" ? interviewsLeft : (left ?? Infinity)}
+          onClose={() => setBooking(null)}
         />
       )}
     </PageWrapper>

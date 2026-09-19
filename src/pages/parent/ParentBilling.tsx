@@ -850,7 +850,7 @@ function AdmissionsCard({ plan, compact }: { plan: AdmissionsPlan; compact?: boo
         <BookAdvisingDialog
           studentId={plan.studentId}
           studentName={plan.studentName}
-          remaining={remaining === Infinity ? 99 : remaining}
+          remaining={remaining}
           onClose={() => setBooking(false)}
         />
       )}
