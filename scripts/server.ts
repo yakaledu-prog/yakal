@@ -17,6 +17,7 @@ import express from 'express';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 import stripeHandler from '../api/stripe.js';
 import connectHandler from '../api/connect.js';
@@ -27,6 +28,8 @@ import newsletterHandler from '../api/newsletter.js';
 import notifyHandler from '../api/notify.js';
 import invitesHandler from '../api/invites.js';
 import { handleHealth } from '../api/_utils/health.js';
+import { getServiceClient } from '../api/_utils/supabase.js';
+import { buildSitemap, injectMeta, summarise, PUBLIC_PAGES } from '../api/_utils/seo.js';
 import { reportServerError, startServerReporting } from '../api/_utils/report.js';
 import devUserHandler from '../api/dev-user.js';
 import stripeWebhookHandler from '../api/stripe-webhook.js';
@@ -147,6 +150,87 @@ for (const [path, handler] of Object.entries(routes)) {
 // which surfaces as "Unexpected token < in JSON".
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'No such endpoint.' });
+});
+
+/**
+ * Where the site is, for anything that has to be absolute.
+ *
+ * A crawler is told one canonical origin, not whichever host header it used to
+ * arrive, or the same page is indexed twice under two names.
+ */
+const origin = (process.env.PUBLIC_APP_URL || process.env.APP_BASE_URL || 'https://yakal.me').replace(/\/$/, '');
+
+/**
+ * Every public page, and every published post.
+ *
+ * Built on request rather than at deploy: a post published on Tuesday should
+ * be in Tuesday's sitemap, and the app deploys when code changes, not when
+ * somebody writes. Held for ten minutes so a crawler cannot turn this into a
+ * query per request.
+ */
+let sitemapCache: { xml: string; at: number } | null = null;
+
+app.get('/sitemap.xml', async (_req, res) => {
+  try {
+    if (!sitemapCache || Date.now() - sitemapCache.at > 10 * 60 * 1000) {
+      const { data } = await getServiceClient()
+        .from('blog_posts')
+        .select('id, updated_at, created_at')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      const posts = (data ?? []).map((p: any) => ({
+        path: `/post/${p.id}`,
+        lastModified: p.updated_at ?? p.created_at,
+        changeFrequency: 'monthly' as const,
+      }));
+
+      sitemapCache = { xml: buildSitemap(origin, [...PUBLIC_PAGES, ...posts]), at: Date.now() };
+    }
+    res.type('application/xml').setHeader('Cache-Control', 'public, max-age=600');
+    res.send(sitemapCache.xml);
+  } catch (err: any) {
+    // The static pages are still worth serving; a database having a bad minute
+    // should not take the whole sitemap down.
+    console.error('sitemap failed:', err?.message);
+    res.type('application/xml').send(buildSitemap(origin, PUBLIC_PAGES));
+  }
+});
+
+/**
+ * A blog post, with its own title and picture in the HTML.
+ *
+ * Google runs the app and sees the tags the page sets for itself. WhatsApp,
+ * LinkedIn, Slack and Facebook do not run anything, so a post shared anywhere
+ * arrived as the site's name and the app icon. This fills the shell in before
+ * it goes out. Anything not a post falls through to the plain shell below.
+ */
+app.get('/post/:id', async (req, res, next) => {
+  try {
+    const { data: post } = await getServiceClient()
+      .from('blog_posts')
+      .select('id, title, content, thumbnail_url, status, created_at')
+      .eq('id', req.params.id)
+      .eq('status', 'published')
+      .maybeSingle();
+
+    if (!post) return next();
+
+    const html = await readFile(join(dist, 'index.html'), 'utf8');
+    res.type('html').setHeader('Cache-Control', 'no-cache');
+    res.send(
+      injectMeta(html, {
+        title: post.title,
+        description: summarise(post.content ?? ''),
+        image: post.thumbnail_url ?? null,
+        url: `${origin}/post/${post.id}`,
+        type: 'article',
+      })
+    );
+  } catch (err: any) {
+    console.error('post meta failed:', err?.message);
+    next();
+  }
 });
 
 // Hashed filenames never change contents, so they can be cached hard. Anything

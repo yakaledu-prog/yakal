@@ -2,9 +2,12 @@ import { PageWrapper } from "@/components/ui/PageWrapper";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
+import { Seo } from "@/components/seo/Seo";
 
 export function PrivacyPolicyPage() {
   return (
+    <>
+      <Seo title="Privacy policy" description="What Yakal collects, why, and what families can ask us to delete." />
     <PageWrapper className="!p-0">
       <div className="flex flex-col md:flex-row min-h-screen md:h-screen md:overflow-hidden bg-background dark:bg-[#111b21]">
         
@@ -58,5 +61,6 @@ export function PrivacyPolicyPage() {
         
       </div>
     </PageWrapper>
+    </>
   );
 }

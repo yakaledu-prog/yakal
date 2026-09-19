@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { getPosts, BlogPost } from "@/services/cmsService";
 import { useNavigate } from "react-router-dom";
 import imgCover from "@/assets/images/landing-page/hero-cover.jpg";
+import { Seo } from "@/components/seo/Seo";
 
 export default function BlogsPage() {
   const navigate = useNavigate();
@@ -22,6 +23,11 @@ export default function BlogsPage() {
   }, []);
 
   return (
+    <>
+      <Seo
+        title="Blog"
+        description="Study skills, admissions advice and guidance for parents, written by the Yakal tutors and counsellors."
+      />
     // Text colour pinned rather than inherited. The page hardcodes a white
     // background, so in dark mode the inherited near-white heading colour left
     // every post title invisible.
@@ -107,6 +113,7 @@ export default function BlogsPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

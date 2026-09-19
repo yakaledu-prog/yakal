@@ -1,0 +1,30 @@
+# The marketing pages are for crawlers; the app behind the sign-in is not.
+# Everything under a role is somebody's own dashboard, needs an account, and
+# would be a soft 404 to a crawler that followed it.
+
+User-agent: *
+Allow: /$
+Allow: /posts
+Allow: /post/
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+Allow: /cancellation-policy
+
+Disallow: /admin
+Disallow: /parent
+Disallow: /student
+Disallow: /tutor
+Disallow: /counselor
+Disallow: /dev
+Disallow: /preview
+Disallow: /login
+Disallow: /invite
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /confirm-email
+Disallow: /unsubscribe
+Disallow: /proposal
+Disallow: /api/
+
+Sitemap: https://yakal.me/sitemap.xml
