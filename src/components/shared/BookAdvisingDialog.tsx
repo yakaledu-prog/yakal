@@ -10,6 +10,7 @@ import {
   cancelAdvisingSession,
   getAdvisingSessions,
   getPlanPeople,
+  type CounsellingKind,
 } from "@/services/admissionsService";
 
 /**
@@ -25,18 +26,29 @@ import {
  * allowance, the counsellor's other bookings and who may book for whom, and it
  * is the only thing that can: neither a parent nor a student has a direct
  * insert on sessions.
+ *
+ * Mock interviews use the same dialog with kind="mock_interview": the same
+ * counsellor, the same calendar, a different allowance. That one is counted
+ * over the plan rather than the month (book_mock_interview), so the wording
+ * says so.
  */
 export function BookAdvisingDialog({
   studentId,
   studentName,
   remaining,
+  kind = "advising",
   onClose,
 }: {
   studentId: string;
   studentName: string | null;
+  /** Infinity when the plan sets no ceiling. */
   remaining: number;
+  kind?: CounsellingKind;
   onClose: () => void;
 }) {
+  const mock = kind === "mock_interview";
+  const period = mock ? "on this plan" : "this month";
+  const unit = mock ? "interview" : "hour";
   const qc = useQueryClient();
   const [picked, setPicked] = useState<PickedSlot[]>([]);
   const [saving, setSaving] = useState(false);
@@ -49,8 +61,8 @@ export function BookAdvisingDialog({
   const counselorId = people?.counselor?.id ?? null;
 
   const { data: booked = [] } = useQuery({
-    queryKey: ["advising-sessions", studentId],
-    queryFn: () => getAdvisingSessions(studentId),
+    queryKey: ["advising-sessions", studentId, kind],
+    queryFn: () => getAdvisingSessions(studentId, new Date(), kind),
   });
 
   async function release(sessionId: string) {
@@ -83,7 +95,7 @@ export function BookAdvisingDialog({
       return;
     }
     toast.error(
-      remaining <= 0 ? "No hours left this month." : `Only ${remaining} hours left this month.`
+      remaining <= 0 ? `No ${unit}s left ${period}.` : `Only ${remaining} ${unit}s left ${period}.`
     );
   }
 
@@ -92,7 +104,8 @@ export function BookAdvisingDialog({
     setSaving(true);
     const { booked: madeCount, errors } = await bookAdvisingSlots(
       studentId,
-      picked.map((s) => ({ date: s.date, startTime: s.startTime, durationMinutes: 60 }))
+      picked.map((s) => ({ date: s.date, startTime: s.startTime, durationMinutes: 60 })),
+      kind
     );
     setSaving(false);
 
@@ -117,10 +130,14 @@ export function BookAdvisingDialog({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">Choose advising slots</h2>
+            <h2 className="text-[17px] font-semibold text-foreground">
+              {mock ? "Choose a mock interview slot" : "Choose advising slots"}
+            </h2>
             <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              For {studentName ?? "you"}. {remaining} {remaining === 1 ? "hour" : "hours"} left
-              this month.
+              For {studentName ?? "you"}.{" "}
+              {remaining === Infinity
+                ? "No limit on this plan."
+                : `${remaining} ${remaining === 1 ? unit : `${unit}s`} left ${period}.`}
             </p>
           </div>
           <button
@@ -138,7 +155,9 @@ export function BookAdvisingDialog({
               spent has no way to move an hour. */}
           {booked.length > 0 && (
             <div className="mb-5 rounded-xl border border-border bg-muted/30 p-4">
-              <p className="mb-2 text-[13px] font-medium text-foreground">Booked this month</p>
+              <p className="mb-2 text-[13px] font-medium text-foreground">
+                {mock ? "Booked on this plan" : "Booked this month"}
+              </p>
               <ul className="space-y-1.5">
                 {booked.map((session) => (
                   <li key={session.id} className="flex items-center justify-between gap-3">

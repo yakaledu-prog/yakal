@@ -64,6 +64,7 @@ const NEEDS_DB = [
   ['diagnostic-scoring.ts', 'a diagnostic is marked by the server, not the browser'],
   ['essay-prompts.ts', 'the cycle data: real deadlines, and prompts that say where they came from'],
   ['session-outcomes.ts', 'what each way a lesson can go does to the money'],
+  ['mock-interviews.ts', 'mock interviews book per plan, count as delivery, and essay reviews stay with the counsellor'],
   ['zoom-webhook.ts', 'only Zoom can post attendance'],
   ['advising-meeting.ts', 'an advising hour gets a room, and an empty one is not delivery'],
 ];
