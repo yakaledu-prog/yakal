@@ -16,13 +16,13 @@ import {
 import { RecordPayoutModal } from "@/components/admin/RecordPayoutModal";
 import { RefundDialog } from "@/components/admin/RefundDialog";
 import { money } from "@/services/billingService";
-import { Loader2, CheckCircle2, Clock, Check, ChevronRight, FileText, Search } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Check, ChevronRight, ChevronDown, FileText, Search } from "lucide-react";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 
-type TabId = "reports" | "owed" | "invoices" | "tax";
+type TabId = "todo" | "invoices";
 type InvoiceCol = "description" | "kind" | "status" | "amount";
 
 /** What a family would call it, rather than the column value. */
@@ -31,11 +31,14 @@ const KIND_LABELS: Record<string, string> = {
   admissions: "Counselling",
 };
 
+// Two tabs, split by whether a person has to act. This used to be four
+// (Reports, Owed, Invoices, Tax forms): two of them were the same question
+// asked twice, "what is waiting on me", and the tax view is a January job that
+// sat beside the daily ones, so most days an admin clicked through three empty
+// tabs to learn there was nothing to do.
 const TABS: { id: TabId; label: string }[] = [
-  { id: "reports", label: "Reports" },
-  { id: "owed", label: "Owed" },
+  { id: "todo", label: "To do" },
   { id: "invoices", label: "Invoices" },
-  { id: "tax", label: "Tax forms" },
 ];
 
 const KINDS = [
@@ -79,7 +82,12 @@ export function AdminBilling() {
   const [recording, setRecording] = useState<OwedRow | null>(null);
   const [refunding, setRefunding] = useState<(typeof invoices)[number] | null>(null);
   const [openInvoice, setOpenInvoice] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabId>("owed");
+  // Null until somebody picks one: open on whatever is waiting, or on the
+  // ledger when nothing is, rather than on an empty list.
+  const [picked, setPicked] = useState<TabId | null>(null);
+  const todoCount = disputes.length + payouts.length;
+  const tab: TabId = picked ?? (todoCount > 0 ? "todo" : "invoices");
+  const [taxOpen, setTaxOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<Sort<InvoiceCol>>({ col: "description", dir: "asc" });
   const [kind, setKind] = useState("all");
@@ -149,75 +157,44 @@ export function AdminBilling() {
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => setPicked(t.id)}
               className={cn(
                 "-mb-px border-b-2 px-4 py-3 text-[14px] font-medium transition-colors",
                 tab === t.id
-                  ? "border-white font-semibold text-white"
+                  ? "border-white text-white"
                   : "border-transparent text-white/70 hover:border-white/40 hover:text-white"
               )}
             >
               {t.label}
-              {t.id === "owed" && payouts.length > 0 && (
-                <span className="ml-2 text-[12px] tabular-nums text-white/60">{payouts.length}</span>
-              )}
-              {t.id === "reports" && disputes.length > 0 && (
-                <span className="ml-2 text-[12px] tabular-nums text-white/60">{disputes.length}</span>
+              {t.id === "todo" && todoCount > 0 && (
+                <span className="ml-2 text-[12px] tabular-nums text-white/60">{todoCount}</span>
               )}
             </button>
           ))}
         />
 
         <div className="p-6 md:p-10">
-          <div className={cn(tab !== "reports" && "hidden")}>
-            <Reports disputes={disputes} onDone={refresh} />
-          </div>
-
-          {/* Tutor payouts */}
-          <div className={cn(tab !== "owed" && "hidden")}>
-            {payouts.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground py-4">Nothing owed. Everybody is settled.</p>
+          <div className={cn(tab !== "todo" && "hidden")}>
+            {todoCount === 0 ? (
+              <p className="py-16 text-center text-[14px] text-muted-foreground">
+                Nothing needs you. No lesson is reported and nobody is owed money.
+              </p>
             ) : (
-              <div className="divide-y divide-border border-b border-border">
-                {payouts.map((p: OwedRow) => {
-                  const clearing = !!p.releasableAt && new Date(p.releasableAt) > new Date();
-                  return (
-                    <div key={p.id} className="flex items-center gap-4 p-4">
-                      <img src={dicebearUrl(p.payeeName ?? "Yakal")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-[#111] dark:text-white truncate">{p.payeeName ?? "Payee"}</p>
-                        <p className="text-[12px] text-muted-foreground truncate">
-                          {p.subject}
-                          {p.studentName ? ` - ${p.studentName}` : ""}
-                          {clearing && p.releasableAt ? ` - clears ${fmtDate(p.releasableAt)}` : " - due now"}
-                        </p>
-                      </div>
-                      <span className="text-[15px] font-bold text-primary w-24 text-right">{money(p.amountCents, p.currency)}</span>
-                      {/* Two ways to settle, and which one is offered is not a
-                        choice: somebody Stripe has not cleared cannot receive a
-                        transfer, so for them the only honest option is to pay
-                        by hand and write down how. */}
-                      {p.payoutsEnabled ? (
-                        <button
-                          onClick={() => void payByTransfer(p)}
-                          disabled={busyId === p.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover shrink-0 disabled:opacity-50"
-                        >
-                          {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                          Pay via Stripe
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setRecording(p)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-[12px] font-semibold hover:bg-primary/10 shrink-0"
-                          title="This tutor has not connected a bank. Record how you paid them."
-                        >
-                          Record payment
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="space-y-12">
+                {/* Reports first: each one is holding somebody's pay until it
+                    is decided, and upholding one changes what is owed below. */}
+                {disputes.length > 0 && (
+                  <section>
+                    <SectionTitle title="Reported lessons" count={disputes.length} />
+                    <Reports disputes={disputes} onDone={refresh} />
+                  </section>
+                )}
+                {payouts.length > 0 && (
+                  <section>
+                    <SectionTitle title="Payouts due" count={payouts.length} />
+                    <Payouts payouts={payouts} busyId={busyId} onTransfer={payByTransfer} onRecord={setRecording} />
+                  </section>
+                )}
               </div>
             )}
           </div>
@@ -359,11 +336,27 @@ export function AdminBilling() {
                 </tbody>
               </table>
             )}
+
+            {/* Once a year, so folded away under the ledger it is drawn from
+                rather than given a tab of its own next to the daily work. */}
+            <div className="mt-12 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setTaxOpen((o) => !o)}
+                className="flex w-full items-center gap-2 text-left text-[15px] font-medium text-[#111] dark:text-white"
+              >
+                <FileText size={17} className="text-primary" />
+                1099 forms
+                <ChevronDown size={16} className={cn("ml-auto text-muted-foreground transition-transform", taxOpen && "rotate-180")} />
+              </button>
+              {taxOpen && (
+                <div className="mt-4">
+                  <TaxYear />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className={cn(tab !== "tax" && "hidden")}>
-            <TaxYear />
-          </div>
         </div>
       </div>
       {refunding && (
@@ -380,6 +373,72 @@ export function AdminBilling() {
         />
       )}
     </PageWrapper>
+  );
+}
+
+function SectionTitle({ title, count }: { title: string; count: number }) {
+  return (
+    <h2 className="mb-2 flex items-baseline gap-2 text-[15px] font-medium text-[#111] dark:text-white">
+      {title}
+      <span className="text-[13px] tabular-nums text-muted-foreground">{count}</span>
+    </h2>
+  );
+}
+
+/** Tutors and counsellors owed money, oldest hold first as the service returns them. */
+function Payouts({
+  payouts,
+  busyId,
+  onTransfer,
+  onRecord,
+}: {
+  payouts: OwedRow[];
+  busyId: string | null;
+  onTransfer: (p: OwedRow) => void;
+  onRecord: (p: OwedRow) => void;
+}) {
+  return (
+    <div className="divide-y divide-border border-y border-border">
+      {payouts.map((p) => {
+        const clearing = !!p.releasableAt && new Date(p.releasableAt) > new Date();
+        return (
+          <div key={p.id} className="flex items-center gap-4 py-4">
+            <img src={dicebearUrl(p.payeeName ?? "Yakal")} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-medium text-[#111] dark:text-white truncate">{p.payeeName ?? "Payee"}</p>
+              <p className="text-[12px] text-muted-foreground truncate">
+                {p.subject}
+                {p.studentName ? ` - ${p.studentName}` : ""}
+                {clearing && p.releasableAt ? ` - clears ${fmtDate(p.releasableAt)}` : " - due now"}
+              </p>
+            </div>
+            <span className="text-[15px] font-medium tabular-nums text-primary w-24 text-right">{money(p.amountCents, p.currency)}</span>
+            {/* Two ways to settle, and which one is offered is not a
+              choice: somebody Stripe has not cleared cannot receive a
+              transfer, so for them the only honest option is to pay
+              by hand and write down how. */}
+            {p.payoutsEnabled ? (
+              <button
+                onClick={() => onTransfer(p)}
+                disabled={busyId === p.id}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-[12px] font-medium hover:bg-primary-hover shrink-0 disabled:opacity-50"
+              >
+                {busyId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                Pay via Stripe
+              </button>
+            ) : (
+              <button
+                onClick={() => onRecord(p)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-[12px] font-medium hover:bg-primary/10 shrink-0"
+                title="This tutor has not connected a bank. Record how you paid them."
+              >
+                Record payment
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -493,18 +552,8 @@ function TaxYear() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-border/50 pb-3">
-        <FileText size={18} className="text-primary" />
-        <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Tax forms</h3>
-        <Dropdown
-          value={String(year)}
-          onChange={(v) => setYear(Number(v))}
-          options={years.map((y) => ({ value: String(y), label: String(y) }))}
-          className="ml-auto w-[120px]"
-        />
-      </div>
-
-      <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
+      <div className="mb-4 flex flex-wrap items-start gap-4">
+      <p className="min-w-[240px] flex-1 text-[13px] leading-relaxed text-muted-foreground">
         Yakal files these, not Stripe. Anybody paid {money(FORM_1099_THRESHOLD_CENTS)} or more in{" "}
         {year} needs a 1099-NEC.{" "}
         {needsCorrection.length > 0 ? (
@@ -520,6 +569,13 @@ function TaxYear() {
           "Stripe's own records cover everybody here, so its draft forms need no correction."
         )}
       </p>
+        <Dropdown
+          value={String(year)}
+          onChange={(v) => setYear(Number(v))}
+          options={years.map((y) => ({ value: String(y), label: String(y) }))}
+          className="w-[120px]"
+        />
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -608,14 +664,6 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
         : "Rejected. The payment carries on as normal."
     );
     onDone();
-  }
-
-  if (disputes.length === 0) {
-    return (
-      <p className="py-16 text-center text-[14px] text-muted-foreground">
-        Nothing reported. Every finished lesson is settled or on its way.
-      </p>
-    );
   }
 
   return (
