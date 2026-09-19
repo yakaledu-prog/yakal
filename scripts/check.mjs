@@ -48,6 +48,7 @@ const NEEDS_DB = [
   ['testimonials.mjs', 'testimonials RLS'],
   ['push-shared-browser.mjs', 'a shared browser can turn notifications on'],
   ['public-writes.ts', 'the blog, the contact inbox and notifications answer only to the right people'],
+  ['refund-ends-access.ts', 'a full refund ends what it bought, a dispute cancels what is to come'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
   ['plan-ownership.ts', 'who may change a child\'s counselling plan'],

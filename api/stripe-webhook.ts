@@ -11,6 +11,7 @@ import {
   recordCounsellingEarning,
 } from './_utils/earnings.js';
 import { syncPlanFromSubscription } from './_utils/subscriptions.js';
+import { endAccessForInvoice } from './_utils/refunds.js';
 
 // Vercel: receive the raw body so we can verify the Stripe signature.
 export const config = { api: { bodyParser: false } };
@@ -373,6 +374,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
       }
       console.log(`webhook: ${event.type} on ${chargeId} cancelled ${cancelled} pending earning(s)`);
+
+      // And what the payment bought. A refund ends it only when it is the whole
+      // charge; a dispute cancels the lessons still to come and leaves the rest
+      // until it is decided. See endAccessForInvoice.
+      const fullRefund =
+        event.type === 'charge.refunded' &&
+        (event.data.object as Stripe.Charge).amount_refunded >= (event.data.object as Stripe.Charge).amount;
+      if (fullRefund || event.type === 'charge.dispute.created') {
+        // By charge, or by payment intent: a paid invoice can be missing its
+        // charge id (see billing.ts), and then only the intent finds it.
+        const obj = event.data.object as Stripe.Charge | Stripe.Dispute;
+        const intent =
+          typeof obj.payment_intent === 'string' ? obj.payment_intent : (obj.payment_intent?.id ?? null);
+        const { data: paid } = await getServiceClient()
+          .from('invoices')
+          .select('id')
+          .or(
+            intent
+              ? `stripe_charge_id.eq.${chargeId},stripe_payment_intent_id.eq.${intent}`
+              : `stripe_charge_id.eq.${chargeId}`
+          );
+        for (const inv of paid ?? []) {
+          await endAccessForInvoice(
+            getServiceClient(),
+            inv.id,
+            event.type === 'charge.refunded' ? 'refund' : 'dispute'
+          );
+        }
+      }
     }
 
     // A reversal begun in the Stripe dashboard rather than by us. Transfers are
