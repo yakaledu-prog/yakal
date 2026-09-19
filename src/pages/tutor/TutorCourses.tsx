@@ -98,7 +98,7 @@ export function TutorCourses() {
                     ? <img src={c.thumbnail_url} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />
                     : <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><BookOpen size={18} className="text-primary" /></div>}
                   <div className="min-w-0">
-                    <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c.title}</p>
+                    <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c.title}</p>
                     <p className="text-[12px] text-muted-foreground truncate">{c.subject}</p>
                   </div>
                 </button>
@@ -118,7 +118,7 @@ export function TutorCourses() {
         {courses.length === 0 && !loadingCourses ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-20">
             <BookOpen size={48} className="text-[#aebac1] mb-4" />
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No courses yet</h3>
+            <h3 className="text-[18px] font-medium text-[#111] dark:text-white mb-2">No courses yet</h3>
             <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">The admin hasn't assigned any courses to you.</p>
           </div>
         ) : loadingWs ? (

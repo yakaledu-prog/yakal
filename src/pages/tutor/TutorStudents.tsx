@@ -88,7 +88,7 @@ export function TutorStudents() {
         {/* Accepting-students toggle */}
         <div className="students-list__accepting flex items-center justify-between gap-3 p-3.5 border-b border-[#e9edef] dark:border-[#2a3942]">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[#111] dark:text-white">Accepting new students</p>
+            <p className="text-[13px] font-medium text-[#111] dark:text-white">Accepting new students</p>
             <p className="text-[12px] text-muted-foreground">Families can request you</p>
           </div>
           <button
@@ -132,7 +132,7 @@ export function TutorStudents() {
                     active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                   <img src={s.avatar_url || dicebearUrl(s.full_name)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
                   <div className="min-w-0">
-                    <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{s.full_name}</p>
+                    <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{s.full_name}</p>
                     <p className="text-[12px] text-muted-foreground truncate">{s.sessionCount} sessions</p>
                   </div>
                 </button>
@@ -152,7 +152,7 @@ export function TutorStudents() {
         {students.length === 0 && !loading ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-20">
             <Users size={48} className="text-[#aebac1] mb-4" />
-            <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No students yet</h3>
+            <h3 className="text-[18px] font-medium text-[#111] dark:text-white mb-2">No students yet</h3>
             <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Students appear here once they book a session with you.</p>
           </div>
         ) : detailLoading ? (
@@ -362,7 +362,7 @@ function StudentDetailView({
 function MinimalStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex flex-col items-center justify-center text-center">
-      <p className="text-white/70 text-[11px] font-bold uppercase tracking-widest mb-2.5">{label}</p>
+      <p className="text-white/70 text-[11px] font-medium uppercase tracking-widest mb-2.5">{label}</p>
       <p className="text-2xl font-bold leading-none">{value}</p>
     </div>
   );

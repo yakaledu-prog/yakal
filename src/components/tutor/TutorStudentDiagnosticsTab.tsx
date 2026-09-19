@@ -10,8 +10,8 @@ import {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-[#e9edef] dark:border-[#2a3942] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">{label}</p>
-      <p className="text-xl font-bold text-[#111] dark:text-white">{value}</p>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-1">{label}</p>
+      <p className="text-xl font-medium text-[#111] dark:text-white">{value}</p>
     </div>
   );
 }
@@ -25,8 +25,8 @@ function TestRow({ test, result }: { test: StudentDiagnostic; result?: Diagnosti
       {result ? (
         <div className="flex flex-col items-end w-32 shrink-0">
           <div className="flex justify-between w-full mb-1">
-            <span className="text-[11px] uppercase text-muted-foreground font-semibold">Score</span>
-            <span className="text-[13px] font-semibold text-[#111] dark:text-white">{result.score}/{result.total}</span>
+            <span className="text-[11px] uppercase text-muted-foreground font-medium">Score</span>
+            <span className="text-[13px] font-medium text-[#111] dark:text-white">{result.score}/{result.total}</span>
           </div>
           <div className="h-1.5 w-full bg-[#e9edef] dark:bg-[#2a3942] rounded-full overflow-hidden">
             <div className="h-full bg-[#1099A1] rounded-full" style={{ width: `${(result.score / result.total) * 100}%` }} />
@@ -64,7 +64,7 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
     return (
       <div className="p-10 text-center">
         <Activity size={40} className="mx-auto text-[#aebac1] mb-3" />
-        <h4 className="text-[16px] font-bold text-[#111] dark:text-white mb-1">No diagnostics yet</h4>
+        <h4 className="text-[16px] font-medium text-[#111] dark:text-white mb-1">No diagnostics yet</h4>
         <p className="text-[14px] text-muted-foreground">This student has not taken any diagnostics.</p>
       </div>
     );
@@ -96,16 +96,16 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
           <p className="text-[14px] text-[#444] dark:text-[#ccc] leading-relaxed">
             {cats.length < 2 ? (
               <>
-                So far: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span> at{" "}
+                So far: <span className="font-medium text-[#111] dark:text-white">{weakest.category}</span> at{" "}
                 {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct). Another subject would
                 give this something to compare against.
               </>
             ) : (
               <>
-                Focus area: <span className="font-semibold text-[#111] dark:text-white">{weakest.category}</span>, the
+                Focus area: <span className="font-medium text-[#111] dark:text-white">{weakest.category}</span>, the
                 weakest at {weakest.accuracy}% ({weakest.correct} of {weakest.total} correct).
                 {strongest && strongest.category !== weakest.category && (
-                  <> Strongest is <span className="font-semibold text-[#111] dark:text-white">{strongest.category}</span> at {strongest.accuracy}%.</>
+                  <> Strongest is <span className="font-medium text-[#111] dark:text-white">{strongest.category}</span> at {strongest.accuracy}%.</>
                 )}
               </>
             )}
@@ -114,7 +114,7 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
       )}
 
       <div>
-        <h4 className="text-[13px] font-bold uppercase tracking-widest text-primary dark:text-[#aebac1] mb-3">Accuracy by category</h4>
+        <h4 className="text-[13px] font-medium uppercase tracking-widest text-primary dark:text-[#aebac1] mb-3">Accuracy by category</h4>
         <div style={{ height: cats.length * 44 + 24 }} className="w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={cats} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
@@ -145,7 +145,7 @@ export function TutorStudentDiagnosticsTab({ studentId }: { studentId: string })
           return (
             <div key={catName} className="mb-6 last:mb-0">
               <div className="px-2 py-2 border-b border-[#e9edef] dark:border-[#2a3942]">
-                <h4 className="text-[12px] font-bold uppercase tracking-widest text-primary dark:text-[#aebac1]">{catName}</h4>
+                <h4 className="text-[12px] font-medium uppercase tracking-widest text-primary dark:text-[#aebac1]">{catName}</h4>
               </div>
               {testsInCategory.map((test) => (
                 <TestRow key={test.id} test={test} result={results.find((r) => r.id === test.id)} />

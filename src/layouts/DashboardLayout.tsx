@@ -291,7 +291,7 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
             <img src={profile?.avatar_url || dicebearUrl(profile?.full_name || "user")} alt="Profile" className="h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-background ring-2 ring-background shadow-sm object-cover" />
             {sidebarOpen && (
               <div className="flex flex-col gap-1 w-full min-w-0">
-                <p className="text-sm font-semibold truncate">{profile?.full_name || user?.email || "User"}</p>
+                <p className="text-sm font-medium truncate">{profile?.full_name || user?.email || "User"}</p>
                 <div className="flex items-center justify-between gap-2 min-w-0">
                   <p className="text-xs text-muted-foreground truncate capitalize min-w-0">{profile?.role || "Student"}</p>
                   <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
@@ -544,7 +544,7 @@ function NavLeaf({
           {isLocked ? (
             <Lock size={14} className="ml-auto text-muted-foreground opacity-70" />
           ) : item.badge !== undefined && item.badge > 0 ? (
-            <span className="ml-auto min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+            <span className="ml-auto min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[11px] font-medium text-white">
               {item.badge}
             </span>
           ) : null}

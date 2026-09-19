@@ -13,7 +13,7 @@ export function NotFoundPage() {
       </div>
 
       <h1 className="text-6xl sm:text-8xl font-bold text-primary mb-4">404</h1>
-      <h2 className="text-2xl sm:text-3xl font-semibold text-foreground mb-4">Page Not Found</h2>
+      <h2 className="text-2xl sm:text-3xl font-medium text-foreground mb-4">Page Not Found</h2>
       <p className="text-muted-foreground mb-8 max-w-md">
         Sorry, the page you're looking for doesn't exist or has been moved.
       </p>

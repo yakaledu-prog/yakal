@@ -331,7 +331,7 @@ export function SessionList({
                       <button
                         type="button"
                         onClick={() => onRate(s)}
-                        className="rounded-md border border-secondary bg-secondary/10 px-3 py-1.5 text-[12.5px] font-semibold text-[#8a6a2a] transition-colors hover:bg-secondary/20 dark:text-secondary"
+                        className="rounded-md border border-secondary bg-secondary/10 px-3 py-1.5 text-[12.5px] font-medium text-[#8a6a2a] transition-colors hover:bg-secondary/20 dark:text-secondary"
                       >
                         Rate
                       </button>
@@ -492,7 +492,7 @@ export function UpcomingSessions({
               type="button"
               onClick={() => onJoin(s)}
               className={cn(
-                "h-10 rounded-md px-6 text-[14px] font-semibold transition-all",
+                "h-10 rounded-md px-6 text-[14px] font-medium transition-all",
                 live
                   ? "bg-primary text-white shadow-sm hover:opacity-90"
                   : "border border-primary/40 text-primary hover:border-primary hover:bg-primary/5"

@@ -181,7 +181,7 @@ export function MessagingLayout({
               {emptyState ?? (
                 <>
                   <MessageSquarePlus size={40} className="text-[#aebac1]" />
-                  <p className="text-[15px] font-semibold text-[#111] dark:text-white">
+                  <p className="text-[15px] font-medium text-[#111] dark:text-white">
                     No conversation selected
                   </p>
                   <p className="text-[13px] text-[#667781] dark:text-[#8696a0] max-w-xs">

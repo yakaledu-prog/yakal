@@ -25,7 +25,7 @@ export function FitBar({
       <div className="space-y-1">
         {showLabels && (
           <div className="flex items-baseline justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
               SAT range
             </span>
             <span className="text-[11px] text-muted-foreground">Not reported</span>
@@ -49,7 +49,7 @@ export function FitBar({
     <div className="space-y-1">
       {showLabels && (
         <div className="flex items-baseline justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
             SAT range
           </span>
           <span className="text-[11px] tabular-nums text-foreground/70">

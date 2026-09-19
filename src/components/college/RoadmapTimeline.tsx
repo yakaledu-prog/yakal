@@ -228,7 +228,7 @@ export function RoadmapTimeline({
                   className={cn(
                     "text-[14px]",
                     here
-                      ? "font-semibold text-[#111] dark:text-white"
+                      ? "font-medium text-[#111] dark:text-white"
                       : "text-[#54656f] dark:text-[#aebac1]"
                   )}
                 >

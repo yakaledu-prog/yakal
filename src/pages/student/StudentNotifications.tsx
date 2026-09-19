@@ -81,7 +81,7 @@ function ParentLinkRequest({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Request from</p>
-          <p className="text-[14px] font-semibold text-foreground mt-0.5 truncate">
+          <p className="text-[14px] font-medium text-foreground mt-0.5 truncate">
             {request.parentName}
           </p>
           {request.parentEmail && (
@@ -99,7 +99,7 @@ function ParentLinkRequest({
           <button
             onClick={() => decide(true)}
             disabled={busy}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             Accept

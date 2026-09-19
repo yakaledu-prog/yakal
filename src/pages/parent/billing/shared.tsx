@@ -216,7 +216,7 @@ export function PackageActions({
     <div className="flex flex-wrap items-center gap-2">
       <button
         onClick={onAddSlots}
-        className={cn(base, "bg-primary font-semibold text-white hover:bg-primary-hover")}
+        className={cn(base, "bg-primary font-medium text-white hover:bg-primary-hover")}
       >
         Add slots
       </button>
@@ -374,13 +374,13 @@ export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
           return (
             <div key={di} className="text-center">
               <div className="mb-2 border-b-2 border-secondary pb-2">
-                <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                <p className="text-[11px] font-medium uppercase text-muted-foreground">
                   {day.toLocaleDateString(undefined, { weekday: "short" })}
                 </p>
                 <p
                   className={cn(
                     "mt-0.5 text-[16px]",
-                    isToday ? "font-bold text-primary" : "text-foreground"
+                    isToday ? "font-medium text-primary" : "text-foreground"
                   )}
                 >
                   {day.getDate()}
@@ -401,7 +401,7 @@ export function SessionWeekGrid({ pkg }: { pkg: CoursePackage }) {
                       key={h}
                       title={s.status}
                       className={cn(
-                        "rounded py-2 text-[12.5px] font-bold",
+                        "rounded py-2 text-[12.5px] font-medium",
                         s.status === "completed"
                           ? "bg-primary text-white"
                           : s.status === "upcoming"
@@ -517,7 +517,7 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
               {days.map((day, di) => (
                 <div key={di} className="text-center">
                   <div className="mb-2 border-b-2 border-secondary pb-2">
-                    <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                    <p className="text-[11px] font-medium uppercase text-muted-foreground">
                       {day.toLocaleDateString(undefined, { weekday: "short" })}
                     </p>
                     <p className="mt-0.5 text-[16px] text-foreground">{day.getDate()}</p>
@@ -552,7 +552,7 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
                             }
                             title={already ? "Already booked" : undefined}
                             className={cn(
-                              "w-full rounded py-2 text-[12.5px] font-bold transition-colors",
+                              "w-full rounded py-2 text-[12.5px] font-medium transition-colors",
                               already
                                 ? "cursor-not-allowed bg-muted text-muted-foreground"
                                 : on
@@ -595,7 +595,7 @@ export function AddSlotsModal({ pkg, onClose }: { pkg: CoursePackage; onClose: (
             </button>
             <button
               disabled={picked.length === 0}
-              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {picked.length === 0 ? "Pay" : <>Pay <Money cents={unit * picked.length} /></>}
             </button>

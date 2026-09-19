@@ -114,7 +114,7 @@ function ChildPicker({
           alt=""
           className="w-6 h-6 rounded-full object-cover shrink-0"
         />
-        <span className="flex-1 min-w-0 truncate text-[14px] font-semibold text-[#111] dark:text-white">
+        <span className="flex-1 min-w-0 truncate text-[14px] font-medium text-[#111] dark:text-white">
           {selected?.full_name}
         </span>
         <ChevronDown
@@ -648,7 +648,7 @@ export function ParentCourseCatalogDetail() {
                     {rating?.averageStars != null ? (
                       <div className="flex items-center gap-1.5 text-[15px]">
                         <Star size={16} className="text-secondary" fill="currentColor" strokeWidth={0} />
-                        <span className="font-semibold text-white">{rating.averageStars.toFixed(1)}</span>
+                        <span className="font-medium text-white">{rating.averageStars.toFixed(1)}</span>
                         <span className="text-white/70">
                           ({rating.ratingCount} {rating.ratingCount === 1 ? "rating" : "ratings"})
                         </span>
@@ -706,7 +706,7 @@ export function ParentCourseCatalogDetail() {
                  anything to book. A roster of one never gets here, it is
                  selected on arrival. */
               <div className="pb-4">
-                <h2 className="text-[18px] font-semibold text-[#111] dark:text-white">
+                <h2 className="text-[18px] font-medium text-[#111] dark:text-white">
                   Choose a tutor
                 </h2>
                 <p className="mt-1 text-[13.5px] text-[#54656f] dark:text-[#aebac1]">
@@ -730,7 +730,7 @@ export function ParentCourseCatalogDetail() {
                             className="h-14 w-14 shrink-0 rounded-full object-cover"
                           />
                           <div className="min-w-0">
-                            <p className="truncate text-[15.5px] font-semibold text-[#111] dark:text-white">
+                            <p className="truncate text-[15.5px] font-medium text-[#111] dark:text-white">
                               {t.name}
                             </p>
                             <p className="truncate text-[12.5px] text-[#54656f] dark:text-[#aebac1]">
@@ -755,7 +755,7 @@ export function ParentCourseCatalogDetail() {
                           </p>
                         )}
 
-                        <span className="mt-4 inline-flex items-center gap-1 pt-1 text-[13px] font-semibold text-primary">
+                        <span className="mt-4 inline-flex items-center gap-1 pt-1 text-[13px] font-medium text-primary">
                           See availability <ChevronRight size={14} />
                         </span>
                       </button>
@@ -795,8 +795,8 @@ export function ParentCourseCatalogDetail() {
                     {activeTab === "Availability" && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-bold">Book a session with {selectedTutor?.name}</h3>
-                        <div className="text-xl font-bold text-primary">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
+                        <h3 className="text-xl font-medium">Book a session with {selectedTutor?.name}</h3>
+                        <div className="text-xl font-medium text-primary">{selectedTutor?.price}<span className="text-[14px] text-[#54656f] font-normal">/hr</span></div>
                       </div> */}
 
                         {(
@@ -818,7 +818,7 @@ export function ParentCourseCatalogDetail() {
                                   <Button variant="outline" size="icon" aria-label="Next week" className="h-8 w-8" onClick={() => setCurrentWeekOffset(prev => prev + 1)}>
                                     <ChevronRight size={16} />
                                   </Button>
-                                  <span className="text-[14px] font-bold text-[#111] dark:text-white ml-2">
+                                  <span className="text-[14px] font-medium text-[#111] dark:text-white ml-2">
                                     {weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                   </span>
                                 </div>
@@ -854,7 +854,7 @@ export function ParentCourseCatalogDetail() {
                                 {weekDays.map((day, dIndex) => (
                                   <div key={dIndex} className="text-center">
                                     <div className="pb-3 mb-3 border-b-2 border-secondary">
-                                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-bold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                                      <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] uppercase font-medium">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                                       <div className="text-[18px] text-[#111] dark:text-white mt-1">{day.getDate()}</div>
                                     </div>
 
@@ -904,7 +904,7 @@ export function ParentCourseCatalogDetail() {
                                               disabled={!!taken}
                                               title={taken ?? undefined}
                                               className={cn(
-                                                "w-full py-2 text-[13px] font-bold rounded transition-all flex flex-col items-center justify-center gap-0.5",
+                                                "w-full py-2 text-[13px] font-medium rounded transition-all flex flex-col items-center justify-center gap-0.5",
                                                 taken
                                                   ? "bg-[#f8f9fa] dark:bg-[#111b21] text-[#c2c7d0] dark:text-[#54656f] border border-[#e9edef] dark:border-[#2a3942] cursor-not-allowed line-through"
                                                   : getModeClasses(mode, isSelected)
@@ -927,7 +927,7 @@ export function ParentCourseCatalogDetail() {
                           <div className="xl:hidden sticky bottom-4 space-y-3 rounded-xl border border-[#e9edef] bg-white p-4 shadow-lg dark:border-[#2a3942] dark:bg-[#202c33]">
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="text-[15px] font-bold">
+                                <div className="text-[15px] font-medium">
                                   {selectedSlots.length} slot{selectedSlots.length === 1 ? "" : "s"} selected
                                 </div>
                                 <div className="text-[13px] text-[#54656f] dark:text-[#aebac1]">
@@ -937,7 +937,7 @@ export function ParentCourseCatalogDetail() {
                               <Button
                                 onClick={handleBookSlot}
                                 disabled={isBooking || children.length === 0}
-                                className="shrink-0 bg-primary hover:bg-primary-hover text-white px-6 !h-11 text-[15px] font-bold rounded-xl transition-all"
+                                className="shrink-0 bg-primary hover:bg-primary-hover text-white px-6 !h-11 text-[15px] font-medium rounded-xl transition-all"
                               >
                                 {isBooking ? "Booking..." : "Checkout"}
                               </Button>
@@ -1000,7 +1000,7 @@ export function ParentCourseCatalogDetail() {
                                   className="h-10 w-10 rounded-full object-cover"
                                 />
                                 <div>
-                                  <h4 className="text-[15px] font-bold text-[#111] dark:text-white">
+                                  <h4 className="text-[15px] font-medium text-[#111] dark:text-white">
                                     {review.reviewerName}
                                   </h4>
                                   <p className="text-[12px] text-[#54656f] dark:text-[#aebac1]">
@@ -1066,7 +1066,7 @@ export function ParentCourseCatalogDetail() {
                           alt={selectedTutor?.name}
                           className="w-24 h-24 rounded-full object-cover shadow-sm border-2 border-white dark:border-[#182329] mb-4"
                         />
-                        <h3 className="text-[20px] font-bold text-[#111] dark:text-white mb-3">
+                        <h3 className="text-[20px] font-medium text-[#111] dark:text-white mb-3">
                           {selectedTutor?.name}
                         </h3>
                         <p className="text-[13px] text-[#54656f] dark:text-[#aebac1] leading-relaxed mb-2">
@@ -1096,7 +1096,7 @@ export function ParentCourseCatalogDetail() {
                           </div>
 
                           <div className="shrink-0 text-right">
-                            <div className="text-[20px] font-bold leading-none text-[#111] dark:text-white">
+                            <div className="text-[20px] font-medium leading-none text-[#111] dark:text-white">
                               ${(parseFloat((selectedTutor?.price || "$0").replace('$', '')) * Math.max(1, selectedSlots.length)).toFixed(2)}
                             </div>
                             <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] mt-1">
@@ -1108,7 +1108,7 @@ export function ParentCourseCatalogDetail() {
                         <Button
                           onClick={activeTab !== "Availability" && selectedSlots.length === 0 ? () => setActiveTab("Availability") : handleBookSlot}
                           disabled={isBooking || children.length === 0}
-                          className="w-full !h-14 bg-primary hover:bg-primary-hover text-white text-[16px] font-bold rounded-xl transition-all"
+                          className="w-full !h-14 bg-primary hover:bg-primary-hover text-white text-[16px] font-medium rounded-xl transition-all"
                         >
                           {isBooking ? "Booking..." : (selectedSlots.length > 0 ? `Checkout (${selectedSlots.length} slots)` : "Book this course")}
                         </Button>

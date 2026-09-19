@@ -15,7 +15,7 @@ function MinimalStat({ label, value }: { label: string; value: string | number }
   return (
     <div className="flex flex-col items-center">
       <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-xl font-bold leading-none">{value}</p>
+      <p className="text-xl font-medium leading-none">{value}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ function QuestionReview({
     <div className="border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden">
       <div className="px-5 py-4">
         <div className="flex items-start gap-3">
-          <span className="shrink-0 w-6 h-6 rounded-full bg-[#f0f2f5] dark:bg-[#182329] text-[#54656f] dark:text-[#aebac1] text-[12px] font-bold flex items-center justify-center mt-0.5">
+          <span className="shrink-0 w-6 h-6 rounded-full bg-[#f0f2f5] dark:bg-[#182329] text-[#54656f] dark:text-[#aebac1] text-[12px] font-medium flex items-center justify-center mt-0.5">
             {index + 1}
           </span>
           <div className="min-w-0 flex-1">
@@ -65,12 +65,12 @@ function QuestionReview({
               {isCorrect ? (
                 <>
                   <Check size={15} className="text-[#97CE9D]" />
-                  <span className="text-[12px] font-semibold uppercase tracking-wide text-[#111] dark:text-white">Correct</span>
+                  <span className="text-[12px] font-medium uppercase tracking-wide text-[#111] dark:text-white">Correct</span>
                 </>
               ) : (
                 <>
                   <X size={15} className="text-[#CAA25F]" />
-                  <span className="text-[12px] font-semibold uppercase tracking-wide text-[#111] dark:text-white">Incorrect</span>
+                  <span className="text-[12px] font-medium uppercase tracking-wide text-[#111] dark:text-white">Incorrect</span>
                 </>
               )}
             </div>
@@ -93,12 +93,12 @@ function QuestionReview({
                   >
                     <span className="text-[#111] dark:text-white">{opt}</span>
                     {isRight && (
-                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
+                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
                         <Check size={13} className="text-[#97CE9D]" /> Correct answer
                       </span>
                     )}
                     {isChosenWrong && (
-                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
+                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-[#54656f] dark:text-[#aebac1]">
                         <X size={13} className="text-[#CAA25F]" /> Your answer
                       </span>
                     )}
@@ -131,7 +131,7 @@ function ScoreTrend({ attempts }: { attempts: DiagnosticResult[] }) {
     <div>
       <div className="flex items-center gap-1.5 mb-3">
         <TrendingUp size={15} className="text-[#1099A1]" />
-        <h3 className="text-[15px] font-bold text-[#111] dark:text-white">Your progress</h3>
+        <h3 className="text-[15px] font-medium text-[#111] dark:text-white">Your progress</h3>
       </div>
       <div className="h-[180px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -325,7 +325,7 @@ export function StudentDiagnostics() {
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <div className="min-w-0">
-                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
+                      <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
                       <p className="text-[12px] text-muted-foreground truncate">{cCompleted} / {cTests.length} completed</p>
                     </div>
                   </button>
@@ -406,7 +406,7 @@ export function StudentDiagnostics() {
           ) : !activeTest ? (
             <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
               <Activity size={48} className="mx-auto text-[#aebac1] mb-4" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No tests</h3>
+              <h3 className="text-[18px] font-medium text-[#111] dark:text-white mb-2">No tests</h3>
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">No diagnostics available in this category.</p>
             </div>
           ) : activeTestResult && !takingTest ? (
@@ -414,12 +414,12 @@ export function StudentDiagnostics() {
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden flex flex-col">
                 <div className="bg-primary/5 px-6 py-8 border-b border-[#e9edef] dark:border-[#2a3942] flex flex-col items-center text-center">
                   <CheckCircle2 size={48} className="text-primary mb-4" />
-                  <h3 className="text-xl font-bold text-[#111] dark:text-white mb-1">Test Completed</h3>
+                  <h3 className="text-xl font-medium text-[#111] dark:text-white mb-1">Test Completed</h3>
                   <p className="text-muted-foreground text-sm max-w-md">You have completed the {activeTest.title} diagnostic test. Your tutor can see this result.</p>
                 </div>
                 <div className="px-6 py-6 flex flex-col items-center gap-4">
                   <div className="bg-primary/10 rounded-xl px-8 py-5 border border-primary/20 flex flex-col items-center">
-                    <span className="text-sm font-semibold text-[#888] uppercase tracking-wide block mb-2">Score</span>
+                    <span className="text-sm font-medium text-[#888] uppercase tracking-wide block mb-2">Score</span>
                     <span className="text-3xl font-bold text-primary">
                       {activeTestResult.score} / {activeTestResult.total}
                     </span>
@@ -438,7 +438,7 @@ export function StudentDiagnostics() {
               {/* The point of storing answers, not just a tally: the student can
                   see which questions they missed and read the explanation. */}
               <div>
-                <h3 className="text-[15px] font-bold text-[#111] dark:text-white mb-3">Review your answers</h3>
+                <h3 className="text-[15px] font-medium text-[#111] dark:text-white mb-3">Review your answers</h3>
                 <div className="flex flex-col gap-3">
                   {activeTest.questions.map((q, i) => (
                     <QuestionReview
@@ -458,7 +458,7 @@ export function StudentDiagnostics() {
               <div className="bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-lg overflow-hidden">
                 <div className="px-6 py-5 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between bg-[#f8f9fa] dark:bg-[#182329]">
                   <div className="flex items-center justify-between w-full">
-                    <h3 className="text-base font-bold text-[#111] dark:text-white">{activeTest.title} Diagnostic</h3>
+                    <h3 className="text-base font-medium text-[#111] dark:text-white">{activeTest.title} Diagnostic</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">Question {currentQuestionIndex + 1} of {activeTest.questions.length}</p>
                   </div>
                 </div>
@@ -470,7 +470,7 @@ export function StudentDiagnostics() {
                     const isLast = currentQuestionIndex === activeTest.questions.length - 1;
                     return (
                       <>
-                        <h3 className="text-[16px] md:text-lg font-semibold mb-6 text-[#111] dark:text-white">{q.text}</h3>
+                        <h3 className="text-[16px] md:text-lg font-medium mb-6 text-[#111] dark:text-white">{q.text}</h3>
                         <div className="flex flex-col gap-3 mb-8">
                           {q.options.map((opt, i) => (
                             <button

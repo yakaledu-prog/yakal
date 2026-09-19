@@ -216,7 +216,7 @@ export function StudentExploreUniversities({
       <PageWrapper className="grid place-items-center p-8">
         <div className="max-w-sm text-center">
           <AlertCircle className="mx-auto text-muted-foreground" size={22} />
-          <p className="mt-2 text-[14px] font-semibold text-foreground">
+          <p className="mt-2 text-[14px] font-medium text-foreground">
             The university catalog did not load.
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
@@ -361,7 +361,7 @@ export function StudentExploreUniversities({
         <div className="p-5">
           {results.length === 0 ? (
             <div className="mx-auto max-w-sm py-16 text-center">
-              <p className="text-[14px] font-semibold text-foreground">
+              <p className="text-[14px] font-medium text-foreground">
                 No universities match these filters.
               </p>
               <p className="mt-1 text-[13px] text-muted-foreground">
@@ -370,7 +370,7 @@ export function StudentExploreUniversities({
               <button
                 type="button"
                 onClick={() => setFilters(EMPTY_FILTERS)}
-                className="mt-3 rounded-sm bg-primary px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-primary-hover"
+                className="mt-3 rounded-sm bg-primary px-3 py-1.5 text-[13px] font-medium text-white hover:bg-primary-hover"
               >
                 Clear all filters
               </button>
@@ -406,7 +406,7 @@ export function StudentExploreUniversities({
               <button
                 type="button"
                 onClick={() => setLimit(limit + PAGE_SIZE * 2)}
-                className="rounded-sm border border-[#e9edef] px-4 py-2 text-[13px] font-semibold text-foreground hover:border-[#cbd5d8] dark:border-[#2a3942]"
+                className="rounded-sm border border-[#e9edef] px-4 py-2 text-[13px] font-medium text-foreground hover:border-[#cbd5d8] dark:border-[#2a3942]"
               >
                 Show more ({(results.length - visible.length).toLocaleString()} left)
               </button>
@@ -455,7 +455,7 @@ function CollegeTable({
   onAdd: (c: College) => void;
 }) {
   const th =
-    "px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground";
+    "px-3 py-2 text-left text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground";
   const td = "px-3 py-2.5 text-[13px] text-foreground";
 
   return (
@@ -511,7 +511,7 @@ function CollegeTable({
                     onClick={() => onAdd(c)}
                     disabled={added}
                     className={cn(
-                      "rounded-sm px-2 py-1 text-[12px] font-semibold",
+                      "rounded-sm px-2 py-1 text-[12px] font-medium",
                       added
                         ? "text-muted-foreground"
                         : "bg-primary text-white hover:bg-primary-hover"

@@ -83,7 +83,7 @@ export function CancelSessionDialog({
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">Cancel this lesson</h2>
+            <h2 className="text-[17px] font-medium text-foreground">Cancel this lesson</h2>
             <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
               {session.title}
               {preview ? ` - ${whenText(preview.startsAt)}` : ""}
@@ -113,7 +113,7 @@ export function CancelSessionDialog({
                 <dl className="mt-3 space-y-2 rounded-xl border border-border p-4">
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-[13px] text-muted-foreground">Refunded to your card</dt>
-                    <dd className="text-[15px] font-semibold tabular-nums text-foreground">
+                    <dd className="text-[15px] font-medium tabular-nums text-foreground">
                       {money(preview!.refundCents)}
                     </dd>
                   </div>

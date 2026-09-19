@@ -50,10 +50,10 @@ export function TutorMeeting() {
       <div className="fixed inset-0 z-50 bg-[#111b21] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center px-6">
           <Video size={48} className="text-[#aebac1]" />
-          <h2 className="text-[20px] font-bold text-white">{error}</h2>
+          <h2 className="text-[20px] font-medium text-white">{error}</h2>
           <button
             onClick={() => navigate('/tutor/sessions')}
-            className="px-6 py-2 bg-primary text-white rounded-lg font-semibold text-[14px] hover:opacity-90 transition-opacity"
+            className="px-6 py-2 bg-primary text-white rounded-lg font-medium text-[14px] hover:opacity-90 transition-opacity"
           >
             Back to Sessions
           </button>
@@ -77,7 +77,7 @@ export function TutorMeeting() {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#54656f] dark:text-[#aebac1]">
           <Video className="h-16 w-16 mb-4 opacity-50" />
-          <h2 className="text-[20px] font-bold text-[#111] dark:text-white mb-2">No Zoom Meeting Found</h2>
+          <h2 className="text-[20px] font-medium text-[#111] dark:text-white mb-2">No Zoom Meeting Found</h2>
           <p className="max-w-md mx-auto mb-6">
             This session doesn't have a Zoom meeting associated with it. It may have been created before Zoom integration.
           </p>

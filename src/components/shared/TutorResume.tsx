@@ -167,7 +167,7 @@ export function TutorResume({
             {languages.map((l, i) => (
               <div key={i} className="group flex items-center gap-3">
                 <p className="text-[15px] text-foreground">
-                  <span className="font-bold">{l.name}</span>
+                  <span className="font-medium">{l.name}</span>
                   {l.level && <span className="text-muted-foreground"> - {l.level}</span>}
                 </p>
                 {onRemove && (

@@ -146,7 +146,7 @@ export function TutorSessions() {
                 className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                   selectedCourse === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                 <div className="min-w-0">
-                  <p className={cn("text-[14px] font-semibold truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
+                  <p className={cn("text-[14px] font-medium truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
                   <p className="text-[12px] text-muted-foreground truncate">{sessions.length} sessions total</p>
                 </div>
               </button>
@@ -158,7 +158,7 @@ export function TutorSessions() {
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <div className="min-w-0">
-                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
+                      <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
                       <p className="text-[12px] text-muted-foreground truncate">{cSessions.length} sessions</p>
                     </div>
                   </button>
@@ -262,7 +262,7 @@ function MinimalStat({ label, value }: { label: string; value: string | number }
   return (
     <div className="flex flex-col items-center">
       <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-xl font-bold leading-none">{value}</p>
+      <p className="text-xl font-medium leading-none">{value}</p>
     </div>
   );
 }
@@ -305,7 +305,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <h2 className="text-[18px] font-bold text-[#111] dark:text-white">
+          <h2 className="text-[18px] font-medium text-[#111] dark:text-white">
             Session notes
           </h2>
           <button onClick={onClose} className="p-1.5 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]">
@@ -326,7 +326,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-2">
+          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-medium flex items-center gap-2">
             <span>{saving ? "Saving..." : "Save Notes"}</span>
           </Button>
         </div>

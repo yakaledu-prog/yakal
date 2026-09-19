@@ -12,7 +12,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
   return (
     <div className="week-strip rounded-xl border bg-card dark:bg-[#182329] shadow-sm p-5">
       <div className="week-strip__header flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Sessions this week</h3>
+        <h3 className="text-lg font-medium">Sessions this week</h3>
         <span className="text-[13px] text-muted-foreground">{total} total</span>
       </div>
       <div className="week-strip__grid grid grid-cols-7 gap-2">
@@ -29,7 +29,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
               d.isToday ? "bg-primary/5 border-primary/30" : "border-[#e9edef] dark:border-[#2a3942]"
             )}>
               <div className="text-[11px] font-medium text-muted-foreground">{d.label}</div>
-              <div className={cn("text-[14px] font-bold", d.isToday ? "text-primary" : "text-foreground")}>{d.dayNum}</div>
+              <div className={cn("text-[14px] font-medium", d.isToday ? "text-primary" : "text-foreground")}>{d.dayNum}</div>
             </div>
             <div className="week-strip__daybody flex flex-col gap-1 p-1.5 min-h-[76px]">
               {d.items.length === 0 ? (
@@ -48,7 +48,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
                           : "bg-muted text-muted-foreground line-through"
                     )}
                   >
-                    <div className="font-semibold">{formatTime(it.time)}</div>
+                    <div className="font-medium">{formatTime(it.time)}</div>
                     <div className="truncate opacity-90">{it.subject}</div>
                   </div>
                 ))

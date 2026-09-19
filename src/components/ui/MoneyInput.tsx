@@ -66,7 +66,7 @@ export function MoneyInput({ label, value, onChange, currency, onCurrencyChange 
             type="button"
             onClick={() => onCurrencyChange(c)}
             className={cn(
-              "px-2.5 py-1 text-[12px] font-semibold rounded-md transition-colors",
+              "px-2.5 py-1 text-[12px] font-medium rounded-md transition-colors",
               currency === c
                 ? "bg-white dark:bg-[#202c33] text-primary shadow-sm"
                 : "text-[#54656f] dark:text-[#aebac1]"

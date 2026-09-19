@@ -124,7 +124,7 @@ export function CatalogFilterRail({
         <div className="flex w-full min-w-0 items-center justify-between gap-2">
           {/* min-w-0 so the label yields rather than pushing the control past
               the rail's padding, which left the knob outside the panel. */}
-          <span className="min-w-0 truncate text-[13px] font-semibold text-foreground">
+          <span className="min-w-0 truncate text-[13px] font-medium text-foreground">
             Fit for you
           </span>
           <button
@@ -192,7 +192,7 @@ export function CatalogFilterRail({
       <Section title="Net price" defaultOpen>
         <div className="flex items-baseline justify-between">
           <span className="text-[11px] text-muted-foreground">Up to</span>
-          <span className="text-[13px] font-semibold tabular-nums text-foreground">
+          <span className="text-[13px] font-medium tabular-nums text-foreground">
             {filters.maxNetPrice === null
               ? "Any"
               : `$${filters.maxNetPrice.toLocaleString()}`}
@@ -258,7 +258,7 @@ export function CatalogFilterRail({
       <Section title="Admit rate">
         <div className="flex items-baseline justify-between">
           <span className="text-[11px] text-muted-foreground">Up to</span>
-          <span className="text-[13px] font-semibold tabular-nums text-foreground">
+          <span className="text-[13px] font-medium tabular-nums text-foreground">
             {filters.maxAdmitRate === null ? "Any" : `${filters.maxAdmitRate}%`}
           </span>
         </div>
@@ -300,7 +300,7 @@ export function CatalogFilterRail({
             <button
               type="button"
               onClick={() => onChange({ ...EMPTY_FILTERS, query: filters.query })}
-              className="text-[12px] font-semibold text-primary hover:underline"
+              className="text-[12px] font-medium text-primary hover:underline"
             >
               Clear {activeCount}
             </button>
@@ -328,7 +328,7 @@ function Section({
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-3 py-2.5 text-left"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+        <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {title}
         </span>
         <ChevronDown
@@ -364,7 +364,7 @@ function Chip({
       className={cn(
         "rounded-sm border px-2 py-1 text-[12px] transition-colors",
         active
-          ? "border-primary bg-primary/10 font-semibold text-[#0d757b] dark:text-[#5fc9cf]"
+          ? "border-primary bg-primary/10 font-medium text-[#0d757b] dark:text-[#5fc9cf]"
           : "border-[#e9edef] text-foreground/80 hover:border-[#cbd5d8] dark:border-[#2a3942] dark:hover:border-[#3a4a52]"
       )}
     >
@@ -399,7 +399,7 @@ function StatePicker({
       <button
         type="button"
         onClick={() => setShowAll(!showAll)}
-        className="mt-2 text-[12px] font-semibold text-primary hover:underline"
+        className="mt-2 text-[12px] font-medium text-primary hover:underline"
       >
         {showAll ? "Show fewer" : `Show all ${states.length} states`}
       </button>

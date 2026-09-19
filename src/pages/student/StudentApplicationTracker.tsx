@@ -596,7 +596,7 @@ export function StudentApplicationTracker({
                   className={cn(
                     "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
                     tab === t.id
-                      ? "border-white font-semibold text-white"
+                      ? "border-white font-medium text-white"
                       : "border-transparent text-white/60 hover:text-white"
                   )}
                 >
@@ -617,7 +617,7 @@ export function StudentApplicationTracker({
                   className={cn(
                     "whitespace-nowrap border-b-[3px] py-3 text-[14px] transition-colors",
                     tab === t.id
-                      ? "border-primary font-semibold text-[#111] dark:text-white"
+                      ? "border-primary font-medium text-[#111] dark:text-white"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -653,7 +653,7 @@ export function StudentApplicationTracker({
               {canEdit && !embedded && (
                 <Link
                   to="/student/college-list"
-                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                  className="mt-4 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
                 >
                   Go to my list
                 </Link>

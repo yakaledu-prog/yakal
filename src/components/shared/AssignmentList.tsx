@@ -233,7 +233,7 @@ export function AssignmentList({
 
                   {a.materials.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="mb-2 text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <h4 className="mb-2 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
                         Materials
                       </h4>
                       <div className="space-y-2">

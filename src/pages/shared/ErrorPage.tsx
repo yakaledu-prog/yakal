@@ -116,7 +116,7 @@ export function ErrorScreen({ error, onRetry }: { error: unknown; onRetry?: () =
         <div className="flex flex-col gap-3 mt-8">
           {status === 404 ? null : (
             <Button
-              className="w-full !h-12 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl flex items-center justify-center gap-2"
+              className="w-full !h-12 bg-primary hover:bg-primary-hover text-white font-medium rounded-xl flex items-center justify-center gap-2"
               onClick={() => (stale ? void hardReload() : onRetry ? onRetry() : window.location.reload())}
             >
               <RefreshCw size={18} /> {stale ? "Reload" : "Try again"}
@@ -128,7 +128,7 @@ export function ErrorScreen({ error, onRetry }: { error: unknown; onRetry?: () =
           <a href="/" className="block">
             <Button
               variant="outline"
-              className="w-full !h-12 font-bold rounded-xl hover:scale-[0.99] transition ease-in-out flex items-center justify-center gap-2"
+              className="w-full !h-12 font-medium rounded-xl hover:scale-[0.99] transition ease-in-out flex items-center justify-center gap-2"
             >
               <Home size={18} /> Go home
             </Button>

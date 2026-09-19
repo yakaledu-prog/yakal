@@ -71,7 +71,7 @@ export function CounselorSessionDetail() {
         <div>
           <p
             className={cn(
-              "mb-1 text-[12px] font-semibold uppercase tracking-wider",
+              "mb-1 text-[12px] font-medium uppercase tracking-wider",
               session.status === "cancelled" ? "text-secondary" : "text-primary"
             )}
           >

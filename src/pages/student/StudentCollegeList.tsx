@@ -302,7 +302,7 @@ export function StudentCollegeList({
               {canEdit && (
                 <button
                   onClick={() => setShowAdd(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#0e848b] text-white text-[13px] font-semibold rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#0e848b] text-white text-[13px] font-medium rounded-md transition-colors"
                 >
                   <Plus size={16} /> Add School
                 </button>
@@ -340,7 +340,7 @@ export function StudentCollegeList({
               <button
                 type="button"
                 onClick={() => setShowAdd(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
               >
                 <Plus size={15} /> Add School
               </button>
@@ -372,7 +372,7 @@ export function StudentCollegeList({
               {canEdit && !embedded && (
                 <a
                   href="/student/explore"
-                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
                 >
                   <Search size={15} />
                   Explore colleges

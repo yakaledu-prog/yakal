@@ -149,7 +149,7 @@ export function AvailabilityEditor({ isOpen, onClose, onSave, initialData, initi
                     key={day}
                     onClick={() => toggleDisabledDay(c)}
                     className={cn(
-                      "flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0",
+                      "flex-1 py-3 text-center text-sm font-medium cursor-pointer transition-colors border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0",
                       disabledDays.includes(c) ? "text-[#aebac1] dark:text-[#54656f] bg-[#f0f2f5] dark:bg-[#111b21]" : "text-[#54656f] dark:text-[#aebac1] hover:bg-[#e9edef]/50 dark:hover:bg-white/5"
                     )}
                     title={disabledDays.includes(c) ? "Click to enable this day" : "Click to mark as off-day"}

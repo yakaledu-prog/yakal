@@ -89,7 +89,7 @@ export function CollegeProfilePanel({
           key={t.key}
           onClick={() => setTab(t.key)}
           className={cn(
-            "flex items-center gap-1.5 px-1 py-3 text-[13px] font-bold uppercase tracking-wider whitespace-nowrap border-b-[3px] transition-colors",
+            "flex items-center gap-1.5 px-1 py-3 text-[13px] font-medium uppercase tracking-wider whitespace-nowrap border-b-[3px] transition-colors",
             tab === t.key
               ? "border-white text-white"
               : "border-transparent text-white/70 hover:text-white hover:border-white/30"
@@ -137,7 +137,7 @@ const card = "bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2
 const field =
   "w-full bg-white dark:bg-[#1a2730] border border-[#e9edef] dark:border-[#2a3942] rounded-lg px-3 py-2 text-[14px] text-[#111] dark:text-white outline-none focus:border-primary";
 const btnPrimary =
-  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-white text-[13px] font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60";
+  "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-white text-[13px] font-medium hover:bg-primary-hover transition-colors disabled:opacity-60";
 
 // --- Overview -----------------------------------------------
 function OverviewTab({ data, readOnly, canEditNotes, studentId, run }: TabProps & { canEditNotes: boolean }) {
@@ -176,23 +176,23 @@ function OverviewTab({ data, readOnly, canEditNotes, studentId, run }: TabProps 
       <div className={cn(card, "p-5 space-y-4")}>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">Stage</label>
+            <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">Stage</label>
             <select className={field} value={stage} disabled={readOnly} onChange={(e) => setStage(e.target.value as AppStage)}>
               {STAGES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">Intended major</label>
+            <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">Intended major</label>
             <input className={field} value={major} disabled={readOnly} onChange={(e) => setMajor(e.target.value)} placeholder="e.g. Computer Science" />
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">Graduation year</label>
+            <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">Graduation year</label>
             <input className={field} type="number" value={gradYear} disabled={readOnly} onChange={(e) => setGradYear(e.target.value)} placeholder="2026" />
           </div>
         </div>
 
         <div>
-          <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">
+          <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">
             Counselor notes {canEditNotes ? "" : "(read-only)"}
           </label>
           <textarea
@@ -251,7 +251,7 @@ function ListTab({ data, readOnly, studentId, run }: TabProps) {
               </div>
               <div className="flex gap-2">
                 <button className={btnPrimary} onClick={add}><Plus size={15} /> Add</button>
-                <button className="px-3.5 py-2 text-[13px] font-semibold text-[#667781]" onClick={() => setShowAdd(false)}>Cancel</button>
+                <button className="px-3.5 py-2 text-[13px] font-medium text-[#667781]" onClick={() => setShowAdd(false)}>Cancel</button>
               </div>
             </div>
           ) : (
@@ -268,7 +268,7 @@ function ListTab({ data, readOnly, studentId, run }: TabProps) {
           if (schools.length === 0) return null;
           return (
             <div key={t}>
-              <p className={cn("inline-block text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-2", tierColor[t])}>{tierLabel[t]}</p>
+              <p className={cn("inline-block text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full mb-2", tierColor[t])}>{tierLabel[t]}</p>
               <div className="space-y-2">
                 {schools.map((s) => <SchoolRow key={s.id} school={s} readOnly={readOnly} run={run} />)}
               </div>
@@ -290,14 +290,14 @@ function SchoolRow({ school, readOnly, run }: { school: CollegeListItem; readOnl
     <div className={cn(card, "p-4")}>
       <div className="flex items-center justify-between gap-3">
         <button className="flex-1 min-w-0 text-left" onClick={() => setOpen((v) => !v)}>
-          <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{school.school_name}</p>
+          <p className="text-[15px] font-medium text-[#111] dark:text-white truncate">{school.school_name}</p>
           <p className="text-[12px] text-[#667781] dark:text-[#8696a0] flex items-center gap-2">
             <CalendarDays size={12} /> {fmtDate(school.deadline)}
             {reqs.length > 0 && <span>· {done}/{reqs.length} requirements</span>}
           </p>
         </button>
         <select
-          className="text-[12px] font-semibold rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
+          className="text-[12px] font-medium rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
           value={school.status}
           disabled={readOnly}
           onChange={(e) => run(updateSchool(school.id, { status: e.target.value as SchoolStatus }))}
@@ -374,13 +374,13 @@ function EssaysTab({ data, readOnly, studentId, run }: TabProps) {
         data.essays.map((e) => (
           <div key={e.id} className={cn(card, "p-4 flex items-center justify-between gap-3")}>
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{e.title}</p>
+              <p className="text-[15px] font-medium text-[#111] dark:text-white truncate">{e.title}</p>
               <p className="text-[12px] text-[#667781] dark:text-[#8696a0]">
                 {e.kind === "personal_statement" ? "Personal statement" : "Supplement"} · due {fmtDate(e.due_date)}
               </p>
             </div>
             <select
-              className="text-[12px] font-semibold rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
+              className="text-[12px] font-medium rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
               value={e.status}
               disabled={readOnly}
               onChange={(ev) => run(updateEssay(e.id, { status: ev.target.value as EssayStatus }))}
@@ -432,13 +432,13 @@ function AcademicsTab({ data, readOnly, studentId, run }: TabProps) {
           { label: "TOEFL", value: toefl, set: setToefl, ph: "108" },
         ].map((f) => (
           <div key={f.label}>
-            <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">{f.label}</label>
+            <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">{f.label}</label>
             <input className={field} value={f.value} disabled={readOnly} onChange={(e) => f.set(e.target.value)} placeholder={f.ph} />
           </div>
         ))}
       </div>
       <div>
-        <label className="text-[12px] font-semibold text-[#667781] dark:text-[#8696a0] block mb-1.5">AP courses (comma-separated)</label>
+        <label className="text-[12px] font-medium text-[#667781] dark:text-[#8696a0] block mb-1.5">AP courses (comma-separated)</label>
         <input className={field} value={ap} disabled={readOnly} onChange={(e) => setAp(e.target.value)} placeholder="AP Calculus BC, AP Physics C" />
       </div>
       {!readOnly && (
@@ -474,11 +474,11 @@ function RecsTab({ data, readOnly, studentId, run }: TabProps) {
         data.recommendations.map((r) => (
           <div key={r.id} className={cn(card, "p-4 flex items-center justify-between gap-3")}>
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{r.recommender_name}</p>
+              <p className="text-[15px] font-medium text-[#111] dark:text-white truncate">{r.recommender_name}</p>
               <p className="text-[12px] text-[#667781] dark:text-[#8696a0] truncate">{r.relationship || "-"}</p>
             </div>
             <select
-              className="text-[12px] font-semibold rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
+              className="text-[12px] font-medium rounded-lg border border-[#e9edef] dark:border-[#2a3942] bg-white dark:bg-[#1a2730] px-2 py-1.5 outline-none"
               value={r.status}
               disabled={readOnly}
               onChange={(e) => run(updateRecommendation(r.id, { status: e.target.value as any }))}

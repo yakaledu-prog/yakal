@@ -60,7 +60,7 @@ export function Stepper({
                 className={cn(
                   "whitespace-nowrap text-center text-[12.5px] leading-none transition-colors",
                   active
-                    ? "font-semibold text-[#111] dark:text-white"
+                    ? "font-medium text-[#111] dark:text-white"
                     : "font-normal text-[#a8adb8] dark:text-[#7f8b93]"
                 )}
               >

@@ -77,7 +77,7 @@ export function ReportSessionDialog({
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">Report a problem</h2>
+            <h2 className="text-[17px] font-medium text-foreground">Report a problem</h2>
             <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">{session.title}</p>
           </div>
           <button

@@ -220,7 +220,7 @@ export function MobileExplore({
               className={cn(
                 "flex-1 border-b-[3px] px-2 py-3 text-[13.5px] transition-colors",
                 tab === t.id
-                  ? "border-primary font-semibold text-primary"
+                  ? "border-primary font-medium text-primary"
                   : "border-transparent text-muted-foreground",
                 disabled && "opacity-40"
               )}
@@ -244,7 +244,7 @@ export function MobileExplore({
 
         {shown.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <p className="text-[14px] font-semibold text-foreground">
+            <p className="text-[14px] font-medium text-foreground">
               {tab === "saved" ? "Nothing saved yet." : "No universities match these filters."}
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
@@ -256,7 +256,7 @@ export function MobileExplore({
               <button
                 type="button"
                 onClick={() => onFiltersChange(EMPTY_FILTERS)}
-                className="mt-4 rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold text-white"
+                className="mt-4 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white"
               >
                 Clear all filters
               </button>
@@ -283,7 +283,7 @@ export function MobileExplore({
             <button
               type="button"
               onClick={onShowMore}
-              className="w-full rounded-lg border border-border py-3 text-[13.5px] font-semibold text-foreground"
+              className="w-full rounded-lg border border-border py-3 text-[13.5px] font-medium text-foreground"
             >
               Show more ({moreLeft.toLocaleString()} left)
             </button>
@@ -343,7 +343,7 @@ export function MobileExplore({
               <button
                 type="button"
                 onClick={() => setSheetOpen(false)}
-                className="w-full rounded-lg bg-primary py-3 text-[14px] font-semibold text-white"
+                className="w-full rounded-lg bg-primary py-3 text-[14px] font-medium text-white"
               >
                 Show {resultCount.toLocaleString()}{" "}
                 {resultCount === 1 ? "university" : "universities"}
@@ -371,7 +371,7 @@ function Tile({
         {icon}
         <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1.5 text-[19px] font-bold tabular-nums leading-none">
+      <p className="mt-1.5 text-[19px] font-medium tabular-nums leading-none">
         {value.toLocaleString()}
       </p>
     </div>
@@ -429,7 +429,7 @@ function MobileCollegeCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
-            <h3 className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-foreground">
+            <h3 className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-foreground">
               {college.name}
             </h3>
 
@@ -482,7 +482,7 @@ function MobileCollegeCard({
             onClick={() => onAdd(college)}
             disabled={isAdded}
             className={cn(
-              "shrink-0 rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors",
+              "shrink-0 rounded-lg px-4 py-2 text-[13px] font-medium transition-colors",
               isAdded
                 ? "border border-border text-muted-foreground"
                 : "bg-primary text-white"

@@ -131,7 +131,7 @@ function AvailabilityBlock({ tutorId }: { tutorId: string }) {
         <div className="space-y-2">
           {week!.map(({ day, slots }) => (
             <div key={day} className="flex items-start gap-3">
-              <span className="w-8 shrink-0 text-[12px] font-semibold text-[#111] dark:text-white pt-0.5">
+              <span className="w-8 shrink-0 text-[12px] font-medium text-[#111] dark:text-white pt-0.5">
                 {day}
               </span>
               <div className="flex-1 min-w-0">

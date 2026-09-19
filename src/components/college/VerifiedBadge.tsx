@@ -89,7 +89,7 @@ export function VerifiedBadge({
     >
       <Icon size={size} strokeWidth={2} className="shrink-0" />
       {showLabel && (
-        <span className="text-[11px] font-semibold leading-none">{label}</span>
+        <span className="text-[11px] font-medium leading-none">{label}</span>
       )}
     </span>
   );

@@ -354,18 +354,18 @@ export function ZoomMeeting({
       {status.phase === 'error' ? (
         <div className="max-w-lg space-y-4">
           <Video size={40} className="mx-auto text-[#aebac1]" />
-          <p className="text-[16px] font-semibold text-white">{status.message}</p>
+          <p className="text-[16px] font-medium text-white">{status.message}</p>
           {status.hint && <p className="text-[14px] text-[#aebac1]">{status.hint}</p>}
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => setAttempt((a) => a + 1)}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg font-semibold text-[14px] hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-lg font-medium text-[14px] hover:opacity-90 transition-opacity"
             >
               <RefreshCw size={15} /> Try again
             </button>
             <button
               onClick={() => window.location.assign(leaveUrl)}
-              className="px-5 py-2 text-[#aebac1] hover:text-white rounded-lg font-semibold text-[14px] transition-colors"
+              className="px-5 py-2 text-[#aebac1] hover:text-white rounded-lg font-medium text-[14px] transition-colors"
             >
               Back
             </button>

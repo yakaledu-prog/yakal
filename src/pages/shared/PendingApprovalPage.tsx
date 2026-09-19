@@ -88,7 +88,7 @@ export function PendingApprovalPage({
           <div className="flex items-center gap-3 w-full p-3 rounded-lg">
             <img src={avatar} alt="Profile" className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-background" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{fullName}</p>
+              <p className="text-sm font-medium truncate">{fullName}</p>
               <p className="text-xs text-muted-foreground capitalize flex items-center gap-1">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
                 {rejected ? "Not approved" : "Pending review"}
@@ -136,7 +136,7 @@ export function PendingApprovalPage({
                 </p>
                 {profile?.rejection_reason && (
                   <div className="text-left bg-[#f8f9fa] dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl p-4 mb-6">
-                    <p className="text-[11px] font-semibold text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider mb-1">
+                    <p className="text-[11px] font-medium text-[#54656f] dark:text-[#aebac1] uppercase tracking-wider mb-1">
                       Reason
                     </p>
                     <p className="text-[14px] text-[#111] dark:text-white">{profile.rejection_reason}</p>
@@ -159,7 +159,7 @@ export function PendingApprovalPage({
               <Button
                 onClick={handleCheckStatus}
                 disabled={checking}
-                className="w-full h-11 bg-primary hover:bg-primary-hover text-white rounded-xl text-[14px] font-bold flex items-center justify-center gap-2"
+                className="w-full h-11 bg-primary hover:bg-primary-hover text-white rounded-xl text-[14px] font-medium flex items-center justify-center gap-2"
               >
                 {checking && <Loader2 size={15} className="animate-spin" />}
                 {checking ? "Checking…" : "Check status"}

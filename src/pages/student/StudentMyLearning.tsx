@@ -48,7 +48,7 @@ export function StudentMyLearning() {
         <header className="bg-primary px-5 py-7 text-white md:px-10 md:py-10">
           <div className="mx-auto max-w-[1440px]">
             <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Student workspace</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">My Learning</h1>
+            <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">My Learning</h1>
             <p className="mt-2 max-w-xl text-[15px] text-white/80">Your next session, upcoming work and courses in one place.</p>
           </div>
         </header>
@@ -65,7 +65,7 @@ export function StudentMyLearning() {
                   </p>
                   <Link
                     to={nextSession.course_id ? `/student/my-learning/${nextSession.course_id}/sessions` : "/student/sessions"}
-                    className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-semibold text-white hover:bg-primary-hover"
+                    className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-medium text-white hover:bg-primary-hover"
                   >
                     View session <ArrowRight size={16} />
                   </Link>
@@ -79,7 +79,7 @@ export function StudentMyLearning() {
                 <>
                   <h2 className="mt-3 text-xl font-medium text-foreground">{nextDue.title}</h2>
                   <p className="mt-1 text-[14px] text-muted-foreground">Work due {formatDate(nextDue.nextDue!)}</p>
-                  <Link to={`/student/my-learning/${nextDue.id}/tasks`} className="mt-5 inline-flex min-h-11 items-center gap-2 text-[14px] font-semibold text-primary hover:text-primary-hover">
+                  <Link to={`/student/my-learning/${nextDue.id}/tasks`} className="mt-5 inline-flex min-h-11 items-center gap-2 text-[14px] font-medium text-primary hover:text-primary-hover">
                     View assignments <ArrowRight size={16} />
                   </Link>
                 </>

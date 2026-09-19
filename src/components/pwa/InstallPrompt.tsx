@@ -227,7 +227,7 @@ export function InstallButton({
             <div className="flex items-start gap-3">
               <img src="/icons/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-semibold text-foreground">Install Yakal</p>
+                <p className="text-[15px] font-medium text-foreground">Install Yakal</p>
                 <p className="text-[13px] text-muted-foreground">
                   It opens without browser tabs and loads instantly.
                 </p>
@@ -301,7 +301,7 @@ export function InstallPrompt({ className }: { className?: string }) {
       <div className="flex items-start gap-3">
         <img src="/icons/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
-          <p className="text-[14.5px] font-semibold text-foreground">Install Yakal</p>
+          <p className="text-[14.5px] font-medium text-foreground">Install Yakal</p>
           <p className="text-[13px] text-muted-foreground">
             Opens like an app, and loads instantly.
           </p>
@@ -321,7 +321,7 @@ export function InstallPrompt({ className }: { className?: string }) {
         <button
           type="button"
           onClick={() => (canInstall ? void install() : setShowSteps(true))}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
         >
           <Download size={16} />
           {canInstall ? "Install" : "How to install"}

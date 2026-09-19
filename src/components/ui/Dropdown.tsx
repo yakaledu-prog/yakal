@@ -230,7 +230,7 @@ export function Dropdown<T extends string = string>({
                   "flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-[13px] transition-colors",
                   i === active && "bg-[#f8f9fa] dark:bg-[#111b21]",
                   isSelected
-                    ? "font-semibold text-primary"
+                    ? "font-medium text-primary"
                     : "text-[#111] dark:text-white"
                 )}
               >

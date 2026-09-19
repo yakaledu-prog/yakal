@@ -514,7 +514,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
             <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="pb-2 w-[200px] pr-8 text-left uppercase text-[11px] font-semibold text-muted-foreground">Children</th>
+                  <th className="pb-2 w-[200px] pr-8 text-left uppercase text-[11px] font-medium text-muted-foreground">Children</th>
                   {SERVICES.map((s) => (
                     <th
                       key={s.key}
@@ -566,7 +566,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                               className="h-10 w-10 shrink-0 rounded-full object-cover"
                             />
                             <div className="min-w-0">
-                              <p className="truncate text-[14px] font-semibold text-foreground">
+                              <p className="truncate text-[14px] font-medium text-foreground">
                                 {c.full_name}
                               </p>
                               <p className="truncate text-[12.5px] text-muted-foreground">
@@ -679,7 +679,7 @@ export function ManageChildrenPanel({ className }: { className?: string }) {
                           className="h-10 w-10 shrink-0 rounded-full object-cover"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-[14px] font-semibold text-foreground">
+                          <p className="truncate text-[14px] font-medium text-foreground">
                             {p.full_name}
                           </p>
                           <p className="truncate text-[12.5px] text-muted-foreground">{p.email}</p>

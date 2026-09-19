@@ -65,7 +65,7 @@ export function CollegeCard({
           // Online-only institutions have no campus to photograph. A typographic
           // tile is honest and reads better than a stock building.
           <div className="flex h-full w-full items-center justify-center px-4">
-            <span className="text-center text-[13px] font-semibold leading-tight text-[#8a8a99]">
+            <span className="text-center text-[13px] font-medium leading-tight text-[#8a8a99]">
               {college.name}
             </span>
           </div>
@@ -76,7 +76,7 @@ export function CollegeCard({
         {fit !== "unknown" && (
           <span
             className={cn(
-              "absolute right-2 top-2 rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] shadow-sm",
+              "absolute right-2 top-2 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] shadow-sm",
               FIT_CHIP[fit]
             )}
           >
@@ -87,7 +87,7 @@ export function CollegeCard({
 
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         <button type="button" onClick={() => onOpen(college)} className="text-left">
-          <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">
+          <h3 className="truncate text-[15px] font-medium leading-tight text-foreground">
             {college.name}
           </h3>
           <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
@@ -114,7 +114,7 @@ export function CollegeCard({
             onClick={() => onAdd(college)}
             disabled={isAdded}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-sm px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
+              "inline-flex shrink-0 items-center gap-1 rounded-sm px-2.5 py-1.5 text-[12px] font-medium transition-colors",
               isAdded
                 ? "border border-[#e9edef] text-[#0d757b] dark:border-[#2a3942] dark:text-[#5fc9cf]"
                 : "bg-primary text-white hover:bg-primary-hover"
@@ -148,10 +148,10 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+      <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {label}
       </div>
-      <div className="text-[14px] font-semibold tabular-nums text-foreground">
+      <div className="text-[14px] font-medium tabular-nums text-foreground">
         {value}
         {suffix && value !== "-" && (
           <span className="text-[11px] font-normal text-muted-foreground">{suffix}</span>

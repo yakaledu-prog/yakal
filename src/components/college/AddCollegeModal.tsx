@@ -289,7 +289,7 @@ export function AddCollegeModal({
               header that has a college name to fit. */}
           <div className="flex items-center gap-6">
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-[16px] font-semibold text-[#111] dark:text-white">
+              <h2 className="truncate text-[16px] font-medium text-[#111] dark:text-white">
                 <span className={cn(step > 0 && picked && "md:hidden")}>
                   {step === 0 ? "Add a college" : name}
                 </span>
@@ -392,7 +392,7 @@ export function AddCollegeModal({
                     type="button"
                     onClick={() => manualName.trim() && setStep(1)}
                     disabled={!manualName.trim()}
-                    className="mt-2 h-11 w-full rounded-xl bg-primary text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
+                    className="mt-2 h-11 w-full rounded-xl bg-primary text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
                   >
                     Continue
                   </button>
@@ -636,7 +636,7 @@ export function AddCollegeModal({
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={!name}
-              className="h-10 rounded-xl bg-primary px-5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
+              className="h-10 rounded-xl bg-primary px-5 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               Next
             </button>
@@ -645,7 +645,7 @@ export function AddCollegeModal({
               type="button"
               onClick={submit}
               disabled={saving || !name || (!!targets?.length && !selectedTargets?.length)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-5 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-5 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
               {addLabel}
@@ -763,7 +763,7 @@ function CollegePanel({ college }: { college: College }) {
           the name sat at the bottom of a panel with an empty band above it
           and the photograph cropped to a sliver. */}
       <div className="relative z-10 my-auto min-h-0 overflow-y-auto p-5">
-        <h3 className="text-[17px] font-bold leading-tight text-white">
+        <h3 className="text-[17px] font-medium leading-tight text-white">
           {college.name}
         </h3>
         <p className="mt-1 text-[12.5px] text-white/70">
@@ -848,7 +848,7 @@ function CollegeOption({
           {img && <img src={img} alt="" className="h-full w-full object-cover" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-semibold text-[#111] dark:text-white">
+          <span className="block truncate text-[14px] font-medium text-[#111] dark:text-white">
             {college.name}
           </span>
           <span className="block truncate text-[12px] text-[#717182]">
@@ -857,7 +857,7 @@ function CollegeOption({
           </span>
         </span>
         {added && (
-          <span className="shrink-0 text-[11px] font-semibold text-[#a8adb8]">Added</span>
+          <span className="shrink-0 text-[11px] font-medium text-[#a8adb8]">Added</span>
         )}
       </button>
     </li>

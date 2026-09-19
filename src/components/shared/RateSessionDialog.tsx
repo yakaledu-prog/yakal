@@ -98,7 +98,7 @@ export function RateSessionDialog({
               className="h-16 w-16 shrink-0 rounded-full object-cover"
             />
             <div className="min-w-0">
-              <p className="truncate text-[17px] font-bold text-foreground">{tutorName}</p>
+              <p className="truncate text-[17px] font-medium text-foreground">{tutorName}</p>
               {subject && <p className="truncate text-[14px] text-primary">{subject}</p>}
               {startsAt && endsAt && (
                 <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
@@ -178,7 +178,7 @@ export function RateSessionDialog({
           <Button
             disabled={stars === 0 || saving}
             onClick={submit}
-            className="h-11 px-8 font-semibold"
+            className="h-11 px-8 font-medium"
           >
             {saving ? "Saving..." : "Submit"}
           </Button>

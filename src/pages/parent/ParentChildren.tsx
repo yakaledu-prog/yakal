@@ -131,7 +131,7 @@ export function ParentChildren() {
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <img src={c.avatar || dicebearUrl(c.name)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
                     <div className="min-w-0">
-                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c.name}</p>
+                      <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c.name}</p>
                       <p className="text-[12px] text-muted-foreground truncate">{c.grade}</p>
                     </div>
                   </button>
@@ -145,7 +145,7 @@ export function ParentChildren() {
               <div className="p-3">
                 <button
                   onClick={() => setManaging(true)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-primary/50 text-primary text-[13.5px] font-semibold hover:bg-primary/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-primary/50 text-primary text-[13.5px] font-medium hover:bg-primary/5 transition-colors"
                 >
                   <UserPlus size={15} /> Add child
                 </button>
@@ -177,7 +177,7 @@ export function ParentChildren() {
           <div className="bg-white dark:bg-[#182229] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-5 md:p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <h2 className="text-[18px] font-bold text-foreground">Manage children</h2>
+                <h2 className="text-[18px] font-medium text-foreground">Manage children</h2>
                 <p className="text-[13px] text-muted-foreground mt-1">
                   Add a child by email, then choose which services they can use.
                 </p>
@@ -395,11 +395,11 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
                   <Lock size={32} />
                 </div>
-                <h3 className="text-xl font-bold mb-2">College Admissions Locked</h3>
+                <h3 className="text-xl font-medium mb-2">College Admissions Locked</h3>
                 <p className="text-muted-foreground mb-6 max-w-sm">
                   Upgrade to our College Admissions service to track {child.name}'s application progress, essays, and college list.
                 </p>
-                <Link to={'/parent/billing'} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-2.5 rounded-xl font-bold transition-all">
+                <Link to={'/parent/billing'} className="bg-[#111] dark:bg-white text-white dark:text-[#111] hover:opacity-80 px-6 py-2.5 rounded-xl font-medium transition-all">
                   Manage Services
                 </Link>
               </div>
@@ -448,7 +448,7 @@ function ChildDetailView({ child, onBack }: { child: any; onBack: () => void }) 
 function MinimalStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex flex-col">
-      <span className="text-white/70 text-[11px] font-bold uppercase tracking-wider">{label}</span>
+      <span className="text-white/70 text-[11px] font-medium uppercase tracking-wider">{label}</span>
       <span className="text-2xl font-bold text-white">{value}</span>
     </div>
   );

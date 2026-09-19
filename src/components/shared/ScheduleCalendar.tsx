@@ -245,7 +245,7 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
                     </div>
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
-                      isToday(day) ? "bg-secondary/85 text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
+                      isToday(day) ? "bg-secondary/85 text-white font-medium" : "text-[#54656f] dark:text-[#aebac1]"
                     )}>
                       {day}
                     </span>
@@ -286,7 +286,7 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
             {weekDays.map((day, index) => (
               <div key={index} className="text-center py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
                 <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">{weekdays[index]}</div>
-                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-primary font-bold" : "text-[#111] dark:text-white")}>
+                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-primary font-medium" : "text-[#111] dark:text-white")}>
                   {day.date}
                 </div>
               </div>
@@ -308,7 +308,7 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
                     <div key={dIndex} className={cn("h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1 flex flex-col gap-1 overflow-hidden", isDisabled && "opacity-40 grayscale bg-[#f0f2f5] dark:bg-[#111b21]/50")}>
                       {mode > 0 && sessions.length === 0 && (
                         <div className={cn("flex-1 rounded border flex items-center justify-center pointer-events-none opacity-90", getModeClasses(mode))}>
-                          <div className="flex items-center gap-1 text-[10px] font-bold">
+                          <div className="flex items-center gap-1 text-[10px] font-medium">
                             {renderModeIcon(mode)} <span className="uppercase tracking-wider hidden md:inline">{getModeLabel(mode)}</span>
                           </div>
                         </div>
@@ -437,19 +437,19 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
 
               <div className="flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('day')}
                 >
                   Daily
                 </button>
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('week')}
                 >
                   Weekly
                 </button>
                 <button
-                  className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                  className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                   onClick={() => setCalendarView('month')}
                 >
                   Monthly
@@ -460,7 +460,7 @@ export function ScheduleCalendar({ role }: { role: "tutor" | "counselor" }) {
               <div className="flex gap-2">
                 <Button
                   variant="default"
-                  className="h-9 flex items-center gap-2 bg-[#0E8991] border border-white/30 hover:bg-white/30 rounded-lg font-bold shadow-none"
+                  className="h-9 flex items-center gap-2 bg-[#0E8991] border border-white/30 hover:bg-white/30 rounded-lg font-medium shadow-none"
                   onClick={() => setIsAvailabilityOpen(true)}
                 >
                   <Clock size={16} />

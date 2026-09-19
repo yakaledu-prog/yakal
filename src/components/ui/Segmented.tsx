@@ -60,7 +60,7 @@ export function Segmented<T extends string>({
             aria-checked={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative z-10 flex-1 rounded-lg text-[13px] font-semibold transition-colors",
+              "relative z-10 flex-1 rounded-lg text-[13px] font-medium transition-colors",
               active
                 ? "text-primary"
                 : "text-[#717182] hover:text-[#111] dark:hover:text-white"

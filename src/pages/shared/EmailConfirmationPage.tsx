@@ -84,7 +84,7 @@ export function EmailConfirmationPage() {
             <button
               onClick={handleResend}
               disabled={resending || !email}
-              className="text-primary font-semibold hover:underline disabled:opacity-50"
+              className="text-primary font-medium hover:underline disabled:opacity-50"
             >
               {resending ? "Sending..." : "Resend it"}
             </button>

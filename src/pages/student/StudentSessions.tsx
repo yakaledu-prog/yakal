@@ -180,7 +180,7 @@ export function StudentSessions() {
                 className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                   selectedCourse === null ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                 <div className="min-w-0">
-                  <p className={cn("text-[14px] font-semibold truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
+                  <p className={cn("text-[14px] font-medium truncate", selectedCourse === null ? "text-primary" : "text-[#111] dark:text-white")}>All Sessions</p>
                   <p className="text-[12px] text-muted-foreground truncate">{sessions.length} sessions total</p>
                 </div>
               </button>
@@ -192,7 +192,7 @@ export function StudentSessions() {
                     className={cn("w-full flex items-center gap-3 p-4 text-left border-l-2 transition-colors",
                       active ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]")}>
                     <div className="min-w-0">
-                      <p className={cn("text-[14px] font-semibold truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
+                      <p className={cn("text-[14px] font-medium truncate", active ? "text-primary" : "text-[#111] dark:text-white")}>{c}</p>
                       <p className="text-[12px] text-muted-foreground truncate">{cSessions.length} sessions</p>
                     </div>
                   </button>
@@ -263,7 +263,7 @@ export function StudentSessions() {
           ) : (activeTab === "upcoming" ? upcoming : past).length === 0 ? (
             <div className="text-center py-16 border border-[#e9edef] dark:border-[#2a3942] rounded-md">
               <CalendarRange size={48} className="mx-auto text-[#aebac1] mb-4" />
-              <h3 className="text-[18px] font-bold text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
+              <h3 className="text-[18px] font-medium text-[#111] dark:text-white mb-2">No {activeTab} sessions</h3>
               <p className="text-[#54656f] dark:text-[#aebac1] text-[14px]">Book a session from the course catalog to get started.</p>
             </div>
           ) : activeTab === "upcoming" ? (
@@ -320,7 +320,7 @@ function MinimalStat({ label, value }: { label: string; value: string | number }
   return (
     <div className="flex flex-col items-center">
       <p className="text-white/70 text-[11px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-xl font-bold leading-none">{value}</p>
+      <p className="text-xl font-medium leading-none">{value}</p>
     </div>
   );
 }

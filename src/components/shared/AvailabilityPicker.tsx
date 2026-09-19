@@ -180,7 +180,7 @@ export function AvailabilityPicker({
         >
           <ChevronRight size={16} />
         </Button>
-        <span className="ml-2 text-[14px] font-semibold text-foreground">
+        <span className="ml-2 text-[14px] font-medium text-foreground">
           {days[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} -{" "}
           {days[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
         </span>
@@ -199,7 +199,7 @@ export function AvailabilityPicker({
           return (
             <div key={dIndex} className="text-center">
               <div className="mb-3 border-b-2 border-secondary pb-3">
-                <div className="text-[12px] font-bold uppercase text-muted-foreground">
+                <div className="text-[12px] font-medium uppercase text-muted-foreground">
                   {day.toLocaleDateString("en-US", { weekday: "short" })}
                 </div>
                 <div className="mt-1 text-[18px] text-foreground">{day.getDate()}</div>
@@ -238,7 +238,7 @@ export function AvailabilityPicker({
                           onToggle({ key, date, startTime: time, at });
                         }}
                         className={cn(
-                          "w-full rounded py-2 text-[13px] font-semibold transition-colors",
+                          "w-full rounded py-2 text-[13px] font-medium transition-colors",
                           current
                             ? "cursor-default border border-secondary bg-secondary/10 text-secondary"
                             : taken

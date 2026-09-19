@@ -59,7 +59,7 @@ export function ParentHome() {
             {/* Top row: Welcome + Quick Actions */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight">Welcome back, {firstName}!</h1>
                 {/* A real line when there is one, a welcome when there is
                     not. A new parent has no children, no sessions and no
                     homework, so anything derived would read as an empty
@@ -111,7 +111,7 @@ export function ParentHome() {
           {/* Left: Recent Activity Feed */}
           <div className="lg:col-span-2 space-y-3">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><BadgeDollarSignIcon size={20} className="text-primary" /> Recent payments</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><BadgeDollarSignIcon size={20} className="text-primary" /> Recent payments</h2>
             </div>
             <div className="space-y-0">
               {data.recentPayments.length === 0 ? (
@@ -133,7 +133,7 @@ export function ParentHome() {
           {/* Right: Vertical Agenda */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-primary" /> Children's Agenda</h2>
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground"><CalendarDays size={20} className="text-primary" /> Children's Agenda</h2>
               <button onClick={() => navigate("/parent/children")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View children</button>
             </div>
 
@@ -160,10 +160,10 @@ export function ParentHome() {
                       />
                       {/* Named, because a parent with two children needs to
                           know whose hour this is before anything else. */}
-                      <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-primary">
+                      <span className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-primary">
                         {i === 0 ? `Next up for ${sess.childName.split(" ")[0]}` : sess.childName.split(" ")[0]}
                       </span>
-                      <p className="text-[16px] font-semibold text-foreground">{sess.subject}</p>
+                      <p className="text-[16px] font-medium text-foreground">{sess.subject}</p>
                       <div className="mt-2 flex items-center gap-2 text-[13px] text-muted-foreground">
                         <Clock size={14} /> {whenLabel(sess.startsAt)}
                       </div>

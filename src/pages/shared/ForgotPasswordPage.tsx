@@ -58,7 +58,7 @@ export function ForgotPasswordPage() {
             </div>
             <h1 className="text-[22px] font-bold text-[#111] dark:text-white">Check your email</h1>
             <p className="mt-2 text-[14px] leading-relaxed text-[#54656f] dark:text-[#aebac1]">
-              If an account uses <span className="font-semibold break-all">{email.trim()}</span>, we
+              If an account uses <span className="font-medium break-all">{email.trim()}</span>, we
               have sent a link to reset its password. It expires in an hour.
             </p>
             <Link
@@ -96,7 +96,7 @@ export function ForgotPasswordPage() {
               <Button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
+                className="h-12 w-full rounded-xl bg-primary text-[15px] font-medium text-white hover:bg-primary-hover"
               >
                 {loading ? <Loader2 size={16} className="mx-auto animate-spin" /> : "Send reset link"}
               </Button>

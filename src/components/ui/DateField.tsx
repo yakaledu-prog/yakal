@@ -190,7 +190,7 @@ export function DateField({
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-[13px] font-semibold text-[#111] dark:text-white">
+            <span className="text-[13px] font-medium text-[#111] dark:text-white">
               {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
             </span>
             <button
@@ -209,7 +209,7 @@ export function DateField({
             {DAYS.map((d, i) => (
               <div
                 key={i}
-                className="grid h-7 place-items-center text-[10px] font-semibold uppercase text-[#a8adb8]"
+                className="grid h-7 place-items-center text-[10px] font-medium uppercase text-[#a8adb8]"
               >
                 {d}
               </div>
@@ -228,9 +228,9 @@ export function DateField({
                   className={cn(
                     "grid h-8 place-items-center rounded-lg text-[13px] tabular-nums transition-colors",
                     selected && sameDay(d, selected)
-                      ? "bg-primary font-semibold text-white"
+                      ? "bg-primary font-medium text-white"
                       : sameDay(d, today)
-                        ? "font-semibold text-primary hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
+                        ? "font-medium text-primary hover:bg-[#f3f3f5] dark:hover:bg-[#1c2a32]"
                         : "text-[#111] hover:bg-[#f3f3f5] dark:text-white dark:hover:bg-[#1c2a32]"
                   )}
                 >

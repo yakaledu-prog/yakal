@@ -342,7 +342,7 @@ export function SupportDrawer({
               <div className="flex items-center gap-2 px-4 py-3 justify-between   ">
                 <div className="flex items-center justify-start text-primary gap-1 text-[12.5px] ">
                   <BotMessageSquareIcon className="" strokeWidth={2} size={16} />
-                  <p className="flex-1 font-semibold tracking-wider">Yali Chatbot</p>
+                  <p className="flex-1 font-medium tracking-wider">Yali Chatbot</p>
                 </div>
                 <button
                   onClick={() => setHistoryOpen(false)}

@@ -217,7 +217,7 @@ export function StudentDiagnosticOnboarding() {
                       onClick={() => goToTest(tests.findIndex(x => x.id === t.id))}
                       disabled={inProgress && !isActive}
                       title={inProgress && !isActive ? "Finish or skip this test first" : undefined}
-                      className={`pb-3 border-b-2 font-semibold text-[14px] whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${isActive ? 'border-primary text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
+                      className={`pb-3 border-b-2 font-medium text-[14px] whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${isActive ? 'border-primary text-[#111] dark:text-white' : 'border-transparent text-muted-foreground'}`}
                     >
                       {t.title}
                       {isDone && <span className="ml-1.5 font-normal text-primary">done</span>}
@@ -237,7 +237,7 @@ export function StudentDiagnosticOnboarding() {
 
             <div className="p-6 py-2 md:p-10 md:py-5 flex-1 flex flex-col overflow-y-auto min-h-0">
               <div className="flex items-start justify-between gap-4 mb-8">
-                <h3 className="text-lg md:text-xl font-bold text-[#111] dark:text-white">
+                <h3 className="text-lg md:text-xl font-medium text-[#111] dark:text-white">
                   {q.text}
                 </h3>
               </div>
@@ -262,7 +262,7 @@ export function StudentDiagnosticOnboarding() {
             </div>
 
             <div className="p-4 md:p-6 md:py-4 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] flex items-center justify-between mt-auto">
-              <span className="text-[14px] font-semibold text-primary shrink-0 mt-1">
+              <span className="text-[14px] font-medium text-primary shrink-0 mt-1">
                 Question {currentQuestionIndex + 1} / {activeTest.questions.length}
               </span>
               <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export function StudentDiagnosticOnboarding() {
       {/* Bottom Status Indicator / Progress Bar */}
       <div className="bg-white dark:bg-[#202c33] border-t border-[#e9edef] dark:border-[#2a3942] shrink-0 p-4 py-1 md:px-10 flex flex-col md:flex-row items-center justify-between gap-6 w-full">
         <div className="flex-1 w-full flex items-center gap-4">
-          {/* <div className="text-[13px] font-semibold text-[#111] dark:text-white shrink-0 whitespace-nowrap">
+          {/* <div className="text-[13px] font-medium text-[#111] dark:text-white shrink-0 whitespace-nowrap">
             {currentTestIndex + 1} / {diagnosticTests.length}
           </div> */}
           <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
@@ -320,7 +320,7 @@ export function StudentDiagnosticOnboarding() {
         <Button
           variant="outline"
           onClick={() => setShowSkipConfirm(true)}
-          className="text-muted-foreground border-[#e9edef] dark:border-[#2a3942] hover:bg-[#e9edef] dark:hover:bg-[#2a3942] shrink-0 w-full md:w-auto font-bold"
+          className="text-muted-foreground border-[#e9edef] dark:border-[#2a3942] hover:bg-[#e9edef] dark:hover:bg-[#2a3942] shrink-0 w-full md:w-auto font-medium"
           disabled={loading}
         >
           Skip
@@ -332,7 +332,7 @@ export function StudentDiagnosticOnboarding() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#202c33] max-w-md w-full rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-[#111] dark:text-white mb-2">Skip Assessment?</h3>
+              <h3 className="text-xl font-medium text-[#111] dark:text-white mb-2">Skip Assessment?</h3>
               <p className="text-[#54656f] dark:text-[#aebac1] text-[15px] leading-relaxed">
                 Are you sure you want to skip the diagnostic assessment? Our tutors use these results to tailor your sessions to your exact needs. You can always take these tests later from your dashboard.
               </p>
