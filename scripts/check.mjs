@@ -44,6 +44,7 @@ const NEEDS_DB = [
   ['profiles-not-public.mjs', 'profiles is not readable signed out'],
   ['signup-role.mjs', 'nobody signs up as admin or claims a child'],
   ['session-writes.mjs', 'the browser writes session notes and nothing else'],
+  ['drive-zoom-auth.ts', 'Drive and Zoom answer only to the right person'],
   ['testimonials.mjs', 'testimonials RLS'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],

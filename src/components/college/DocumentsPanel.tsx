@@ -165,7 +165,7 @@ export function DocumentsPanel({
 
   const review = useMutation({
     mutationFn: ({ file, verdict, note }: { file: DriveFile; verdict: ReviewVerdict; note?: string }) =>
-      reviewDocument({ fileId: file.id, verdict, reviewerId, note }),
+      reviewDocument({ studentId, fileId: file.id, verdict, note }),
 
     /**
      * Paint the verdict before the round trip, the way upload already does.
@@ -226,7 +226,7 @@ export function DocumentsPanel({
   const [pendingDelete, setPendingDelete] = useState<DriveFile | null>(null);
 
   const remove = useMutation({
-    mutationFn: (f: DriveFile) => deleteDocument(f.id),
+    mutationFn: (f: DriveFile) => deleteDocument(studentId, f.id),
     onSuccess: (_d, f) => {
       toast.success(`${f.name} moved to trash.`);
 

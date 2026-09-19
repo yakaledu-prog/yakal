@@ -1,51 +1,20 @@
-async function readError(res: Response, fallback: string) {
-  let detail = '';
-  try {
-    const body = await res.json();
-    detail = body?.error || JSON.stringify(body);
-  } catch {
-    detail = await res.text().catch(() => '');
+import { authedPost } from '@/lib/authedFetch';
+
+/**
+ * A signature to join one session's meeting.
+ *
+ * Only the session id: the server decides the meeting and the role from who
+ * you are on that session. This used to send a meeting number and a role, and
+ * the server signed whatever it was given, host included, for anybody.
+ *
+ * Creating, moving and deleting meetings happens on the server
+ * (api/_utils/zoom.ts); the create and delete helpers that lived here had no
+ * callers and are gone with the endpoints that served them.
+ */
+export const generateZoomSignature = async (sessionId: string): Promise<string> => {
+  const out = await authedPost<{ signature?: string }>('/api/zoom?action=signature', { sessionId });
+  if (out.error || !out.signature) {
+    throw new Error(out.error || 'Failed to generate Zoom signature');
   }
-  return `${fallback} (HTTP ${res.status}${detail ? `: ${detail}` : ''})`;
-}
-
-export const generateZoomSignature = async (meetingNumber: string, role: 0 | 1) => {
-  const res = await fetch('/api/zoom?action=signature', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ meetingNumber, role }),
-  });
-  if (!res.ok) throw new Error(await readError(res, 'Failed to generate Zoom signature'));
-  const data = await res.json();
-  return data.signature;
-};
-
-export const createZoomMeeting = async (topic: string, startTime: string, duration: number) => {
-  const res = await fetch('/api/zoom?action=meetings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, startTime, duration }),
-  });
-  if (!res.ok) throw new Error(await readError(res, 'Failed to create Zoom meeting'));
-  return res.json();
-};
-
-export const updateZoomMeeting = async (meetingId: string, topic: string, startTime: string, duration: number) => {
-  const res = await fetch('/api/zoom?action=meetings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ meetingId, topic, startTime, duration }),
-  });
-  if (!res.ok) throw new Error(await readError(res, 'Failed to update Zoom meeting'));
-  return res.json();
-};
-
-export const deleteZoomMeeting = async (meetingId: string) => {
-  const res = await fetch('/api/zoom?action=meetings', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ meetingId }),
-  });
-  if (!res.ok) throw new Error(await readError(res, 'Failed to delete Zoom meeting'));
-  return res.json();
+  return out.signature;
 };

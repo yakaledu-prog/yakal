@@ -8,6 +8,13 @@ import { Readable } from 'node:stream';
 // to invoke at all: FUNCTION_INVOCATION_FAILED, including for the token
 // exchange, which needs no Google client whatsoever. This package is 2.4 MB.
 import { drive_v3, auth as googleAuth } from '@googleapis/drive';
+import { getServiceClient } from '../_utils/supabase.js';
+import {
+  assignedCounselorEmail,
+  callerOrNull,
+  studentAccess,
+  type StudentAccess,
+} from '../_utils/access.js';
 
 /**
  * Student documents, stored in Drive under an account Yakal controls.
@@ -160,6 +167,14 @@ async function ensureFolder(ctx: Ctx, parentId: string, name: string) {
  *
  * Keyed by student id rather than name: names are not unique and change, ids
  * do not. The display name is only there so the drive is readable by a human.
+ *
+ * Matched on the END of the name, and on a tag. It used to match any folder
+ * whose name merely contained the short id, and the display name is something
+ * a user types: a student renamed "Ana (1a2b3c4d)" produced a folder that
+ * matched another student's id, and that student's transcript could land in a
+ * folder the first one could write to. The server always appends the owner's
+ * own short id last, so the end of the name cannot be forged by a name, and
+ * appProperties can only be written by this app's credential.
  */
 async function ensureStudentFolder(
   ctx: Ctx,
@@ -170,24 +185,40 @@ async function ensureStudentFolder(
 ) {
   const root = await ensureFolder(ctx, await rootFolder(ctx), 'Students');
   const shortId = studentId.slice(0, 8);
-  const folderName = `${displayName} (${shortId})`;
+  const suffix = `(${shortId})`;
 
-  // Match on the id suffix so renaming a student does not orphan their folder.
   const res = await ctx.drive.files.list({
     q: `'${root}' in parents and mimeType = '${FOLDER_MIME}' and name contains '${shortId}' and trashed = false`,
-    fields: 'files(id, name)',
+    fields: 'files(id, name, appProperties)',
     ...scope(ctx),
   });
+  const candidates = res.data.files ?? [];
+  const found =
+    candidates.find((f) => f.appProperties?.yakalStudentId === studentId) ??
+    candidates.find((f) => (f.name ?? '').endsWith(suffix));
 
-  let id = res.data.files?.[0]?.id;
+  let id = found?.id ?? undefined;
   if (!id) {
     const created = await ctx.drive.files.create({
-      requestBody: { name: folderName, mimeType: FOLDER_MIME, parents: [root] },
+      requestBody: {
+        name: `${displayName} ${suffix}`,
+        mimeType: FOLDER_MIME,
+        parents: [root],
+        appProperties: { yakalStudentId: studentId },
+      },
       fields: 'id',
       supportsAllDrives: true,
     });
     id = created.data.id!;
     await Promise.all(SUBFOLDERS.map((sub) => ensureFolder(ctx, id!, sub)));
+  } else if (found?.appProperties?.yakalStudentId !== studentId) {
+    // A folder made before tagging existed: tag it on the way through, so the
+    // next lookup does not depend on its name at all.
+    await ctx.drive.files.update({
+      fileId: id,
+      requestBody: { appProperties: { yakalStudentId: studentId } },
+      supportsAllDrives: true,
+    });
   }
 
   // Every call, not just on creation: folders made before this existed still
@@ -196,6 +227,37 @@ async function ensureStudentFolder(
   if (studentEmail) await ensureAccess(ctx, id, studentEmail, 'writer');
 
   return id;
+}
+
+/**
+ * Whether a Drive file is in this student's folder.
+ *
+ * Every action that names a file by id checks this, because the id arrives
+ * from the browser, and so does an essay's drive_url, which a student can
+ * edit. Up the parents until a folder tagged for the student, or named with
+ * their short id at the end, the way ensureStudentFolder names it. Anything
+ * the credential cannot see, or that lives anywhere else, is not theirs.
+ */
+async function fileBelongsTo(ctx: Ctx, fileId: string, studentId: string): Promise<boolean> {
+  const suffix = `(${studentId.slice(0, 8)})`;
+  let id: string | undefined = fileId;
+  try {
+    for (let depth = 0; id && depth < 4; depth++) {
+      const f: { data: drive_v3.Schema$File } = await ctx.drive.files.get({
+        fileId: id,
+        fields: 'id, name, mimeType, parents, appProperties',
+        supportsAllDrives: true,
+      });
+      if (f.data.appProperties?.yakalStudentId === studentId) return true;
+      if (depth > 0 && f.data.mimeType === FOLDER_MIME && (f.data.name ?? '').endsWith(suffix)) {
+        return true;
+      }
+      id = f.data.parents?.[0] ?? undefined;
+    }
+  } catch {
+    return false;
+  }
+  return false;
 }
 
 /** Weakest to strongest, so an existing grant can be compared against a wanted one. */
@@ -421,24 +483,93 @@ function splitAuthor(content: string | null | undefined, fallback: string) {
     : { author: fallback, text };
 }
 
+/**
+ * Who may do each thing, from the screens that actually call it.
+ *
+ * A parent reads (the tracker lists their child's documents and counts essay
+ * words); only the student uploads; a counsellor reviews and comments but
+ * flags rather than deletes a student's file.
+ */
+const ALLOWED: Record<string, StudentAccess[]> = {
+  list: ['self', 'parent', 'counselor', 'admin'],
+  upload: ['self'],
+  createDoc: ['self', 'counselor'],
+  review: ['counselor', 'admin'],
+  doc: ['self', 'counselor', 'admin'],
+  comments: ['self', 'counselor', 'admin'],
+  comment: ['self', 'counselor'],
+  reply: ['self', 'counselor'],
+  wordCount: ['self', 'parent', 'counselor', 'admin'],
+  delete: ['self', 'admin'],
+  repairAccess: ['admin'],
+};
+
+/** Actions that name an essay rather than a student. */
+const BY_ESSAY = new Set(['doc', 'comments', 'comment', 'reply']);
+
+const fileIdFromUrl = (url: string | null | undefined) =>
+  url?.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ?? null;
+
+/**
+ * Every action here used to run for anybody: no sign-in, a studentId and an
+ * email taken from the body, and Yakal's own Google credential doing the rest.
+ * So anyone could list, read, download, upload to or delete any student's
+ * transcripts and essays, and share them with any address. Now the caller comes
+ * from their token, the student from the request or the essay, what they may do
+ * from studentAccess, every file id is checked against the student's folder,
+ * and every name and email comes from the database.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const { action } = req.body ?? {};
+  if (!ALLOWED[action]) return res.status(400).json({ error: `Unknown action: ${action}` });
+
+  // Before Google is touched at all.
+  const caller = await callerOrNull(req);
+  if (!caller) return res.status(401).json({ error: 'Sign in to open documents.' });
 
   try {
+    const db = getServiceClient();
+
+    let studentId: string | null = req.body.studentId ?? null;
+    let essayFileId: string | null = null;
+    if (BY_ESSAY.has(action)) {
+      const { data: essay } = await db
+        .from('essays')
+        .select('student_id, drive_url')
+        .eq('id', String(req.body.essayId ?? ''))
+        .maybeSingle();
+      if (!essay) return res.status(404).json({ error: 'That essay no longer exists.' });
+      studentId = essay.student_id;
+      essayFileId = fileIdFromUrl(essay.drive_url);
+      if (!essayFileId) return res.status(409).json({ error: 'This essay has no Google Doc yet.' });
+    }
+    if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+
+    const access = await studentAccess(db, caller.id, studentId);
+    if (!access || !ALLOWED[action].includes(access)) {
+      return res.status(403).json({ error: 'You do not have access to these documents.' });
+    }
+
+    const [{ data: student }, { data: me }] = await Promise.all([
+      db.from('profiles').select('full_name, email').eq('id', studentId).maybeSingle(),
+      db.from('profiles').select('full_name').eq('id', caller.id).maybeSingle(),
+    ]);
+    const studentName = student?.full_name || 'Student';
+    const studentEmail = student?.email ?? null;
+    const callerName = me?.full_name ?? null;
+
     const ctx = getContext();
+    const owns = (fileId: string) => fileBelongsTo(ctx, fileId, studentId!);
+    const notTheirs = () =>
+      res.status(403).json({ error: 'That file is not in this student\'s documents.' });
 
     switch (action) {
       /** List everything already stored for a student. */
       case 'list': {
-        const { studentId, studentName, studentEmail } = req.body;
-        if (!studentId) return res.status(400).json({ error: 'studentId is required' });
-
-        const folderId = await ensureStudentFolder(
-          ctx, studentId, studentName || 'Student', studentEmail
-        );
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName, studentEmail);
 
         // Anything dropped at the top level rather than into a subfolder.
         const files = await ctx.drive.files.list({
@@ -477,15 +608,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * streaming would be a premature complication.
        */
       case 'upload': {
-        const { studentId, studentName, studentEmail, section, slot, filename, mimeType, dataBase64 } =
-          req.body;
-        if (!studentId || !filename || !dataBase64) {
-          return res.status(400).json({ error: 'studentId, filename and dataBase64 are required' });
+        const { section, slot, filename, mimeType, dataBase64 } = req.body;
+        if (!filename || !dataBase64) {
+          return res.status(400).json({ error: 'filename and dataBase64 are required' });
         }
 
-        const folderId = await ensureStudentFolder(
-          ctx, studentId, studentName || 'Student', studentEmail
-        );
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName, studentEmail);
         const target = SUBFOLDERS.includes(section as Subfolder)
           ? await ensureFolder(ctx, folderId, section)
           : folderId;
@@ -496,7 +624,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             parents: [target],
             // Which named slot this fills, kept on the file rather than inferred
             // from its name so a student renaming it in Drive breaks nothing.
-            ...(slot ? { appProperties: { slot } } : {}),
+            appProperties: { yakalStudentId: studentId, ...(slot ? { slot } : {}) },
           },
           media: {
             mimeType: mimeType || 'application/octet-stream',
@@ -519,18 +647,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * with uploaded files instead would mean emailing versions around.
        */
       case 'createDoc': {
-        const { studentId, studentName, title, studentEmail, counselorEmail } = req.body;
-        if (!studentId || !title) {
-          return res.status(400).json({ error: 'studentId and title are required' });
-        }
+        const { title } = req.body;
+        if (!title) return res.status(400).json({ error: 'title is required' });
 
-        const folderId = await ensureStudentFolder(
-          ctx, studentId, studentName || 'Student', studentEmail
-        );
+        // The plan's counsellor, looked up. Taking this from the request let a
+        // caller share a student's essay with any address they liked.
+        const counselorEmail = await assignedCounselorEmail(db, studentId);
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName, studentEmail);
         const essays = await ensureFolder(ctx, folderId, 'Essays');
 
         const doc = await ctx.drive.files.create({
-          requestBody: { name: title, mimeType: DOC_MIME, parents: [essays] },
+          requestBody: {
+            name: title,
+            mimeType: DOC_MIME,
+            parents: [essays],
+            appProperties: { yakalStudentId: studentId },
+          },
           fields: 'id, name, webViewLink',
           supportsAllDrives: true,
         });
@@ -562,19 +694,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * no second source of truth to stay in sync.
        */
       case 'review': {
-        const { fileId, verdict, reviewerId, note } = req.body;
+        const { fileId, verdict, note } = req.body;
         if (!fileId || !['verified', 'needs_attention', 'pending'].includes(verdict)) {
           return res
             .status(400)
             .json({ error: 'fileId and a verdict of verified, needs_attention or pending are required' });
         }
+        if (!(await owns(fileId))) return notTheirs();
 
         const updated = await ctx.drive.files.update({
           fileId,
           requestBody: {
             appProperties: {
               review: verdict,
-              reviewedBy: reviewerId ?? '',
+              reviewedBy: caller.id,
               reviewedAt: new Date().toISOString(),
               // appProperties caps each value, and a review note is a nudge
               // rather than an essay.
@@ -597,8 +730,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * document is three chances to render half a screen.
        */
       case 'doc': {
-        const { fileId } = req.body;
-        if (!fileId) return res.status(400).json({ error: 'fileId is required' });
+        const fileId = essayFileId!;
+        if (!(await owns(fileId))) return notTheirs();
 
         const meta = await ctx.drive.files.get({
           fileId,
@@ -622,8 +755,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       /** Every comment thread on a Doc, newest last within each thread. */
       case 'comments': {
-        const { fileId } = req.body;
-        if (!fileId) return res.status(400).json({ error: 'fileId is required' });
+        const fileId = essayFileId!;
+        if (!(await owns(fileId))) return notTheirs();
 
         const out = await ctx.drive.comments.list({
           fileId,
@@ -668,15 +801,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       /** A new comment on the document as a whole. */
       case 'comment': {
-        const { fileId, content, authorName } = req.body;
-        if (!fileId || !String(content || '').trim()) {
-          return res.status(400).json({ error: 'fileId and content are required' });
+        const fileId = essayFileId!;
+        const { content } = req.body;
+        if (!String(content || '').trim()) {
+          return res.status(400).json({ error: 'content is required' });
         }
+        if (!(await owns(fileId))) return notTheirs();
 
         const made = await ctx.drive.comments.create({
           fileId,
           fields: 'id',
-          requestBody: { content: withAuthor(String(content).trim(), authorName) },
+          requestBody: { content: withAuthor(String(content).trim(), callerName) },
         });
         return res.status(200).json({ id: made.data.id });
       }
@@ -688,10 +823,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * action 'resolve', which is also why the list above drops empty ones.
        */
       case 'reply': {
-        const { fileId, commentId, content, authorName, resolve, reopen } = req.body;
-        if (!fileId || !commentId) {
-          return res.status(400).json({ error: 'fileId and commentId are required' });
+        const fileId = essayFileId!;
+        const { commentId, content, resolve, reopen } = req.body;
+        if (!commentId) {
+          return res.status(400).json({ error: 'commentId is required' });
         }
+        if (!(await owns(fileId))) return notTheirs();
         const words = String(content || '').trim();
         if (!words && !resolve && !reopen) {
           return res.status(400).json({ error: 'nothing to say' });
@@ -702,7 +839,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           commentId,
           fields: 'id',
           requestBody: {
-            content: words ? withAuthor(words, authorName) : undefined,
+            content: words ? withAuthor(words, callerName) : undefined,
             action: resolve ? 'resolve' : reopen ? 'reopen' : undefined,
           },
         });
@@ -728,6 +865,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const counts = await Promise.all(
           fileIds.slice(0, 25).map(async (fileId: string) => {
+            // Somebody else's essay has no count, rather than a count that
+            // proves it exists.
+            if (!(await owns(fileId))) return { fileId, words: null };
             try {
               const out = await ctx.drive.files.export(
                 { fileId, mimeType: 'text/plain' },
@@ -756,12 +896,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        * lose their contents, so the permissions are repaired in place.
        */
       case 'repairAccess': {
-        const { studentId, studentName, studentEmail } = req.body;
-        if (!studentId || !studentEmail) {
-          return res.status(400).json({ error: 'studentId and studentEmail are required' });
+        if (!studentEmail) {
+          return res.status(400).json({ error: 'This student has no email to share with.' });
         }
 
-        const folderId = await ensureStudentFolder(ctx, studentId, studentName || 'Student');
+        const folderId = await ensureStudentFolder(ctx, studentId, studentName);
         const targets = [folderId];
 
         for (const sub of SUBFOLDERS) {
@@ -789,6 +928,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'delete': {
         const { fileId } = req.body;
         if (!fileId) return res.status(400).json({ error: 'fileId is required' });
+        if (!(await owns(fileId))) return notTheirs();
         // Trash rather than destroy: a student deleting their only transcript
         // by accident should be recoverable.
         await ctx.drive.files.update({

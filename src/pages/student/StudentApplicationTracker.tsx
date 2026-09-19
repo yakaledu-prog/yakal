@@ -176,8 +176,8 @@ export function StudentApplicationTracker({
   // full text export on the server.
   const { data: counts } = useQuery({
     queryKey: ["essay-words", essayFileIds.join(",")],
-    queryFn: () => wordCounts(essayFileIds),
-    enabled: essayFileIds.length > 0,
+    queryFn: () => wordCounts(targetId!, essayFileIds),
+    enabled: !!targetId && essayFileIds.length > 0,
     staleTime: 60_000,
     retry: false,
   });
