@@ -4,6 +4,7 @@
 // and the anon key is in the browser bundle, so every row was readable by
 // anyone: name, email, phone, stripe_account_id. This asserts that is closed,
 // and that closing it did not take the landing page with it.
+import { execSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
 
 const URL = process.env.VITE_SUPABASE_LOCAL_URL || 'http://127.0.0.1:54321';
@@ -76,6 +77,52 @@ async function main() {
       await anon.auth.signOut();
     }
   }
+
+  // ---- the private columns (20260920000400) ----
+  //
+  // Signed in is not the same as entitled. phone, the two Stripe fields, the
+  // CV and a rejection reason are readable by their owner and by admins, and
+  // only through full_profiles; the table no longer hands them to anybody.
+  const PRIVATE = ['phone', 'stripe_account_id', 'stripe_payouts_enabled', 'resume_url', 'rejection_reason'];
+  const signInAs = async (email) => {
+    const c = createClient(URL, ANON, { auth: { persistSession: false } });
+    const { data, error: e } = await c.auth.signInWithPassword({ email, password: 'demo123' });
+    if (e) throw new Error(`could not sign in as ${email}: ${e.message}`);
+    return { c, id: data.user.id };
+  };
+  const student = await signInAs('student@yakal.com');
+  const adminUser = await signInAs('admin@yakal.com');
+
+  for (const col of PRIVATE) {
+    const { error: e } = await student.c.from('profiles').select(`id, ${col}`).neq('id', student.id).limit(1);
+    check(`a student cannot read another user's ${col}`, !!e, e?.message ?? 'it came back');
+  }
+  const { error: starErr } = await student.c.from('profiles').select('*').limit(1);
+  check("select('*') on profiles is refused, so nothing can ask for everything", !!starErr, starErr?.message ?? 'allowed');
+
+  const { data: mine, error: mineErr } = await student.c.rpc('full_profiles').select('id, phone');
+  check(
+    'full_profiles gives a student their own row and nobody else\'s',
+    !mineErr && (mine ?? []).length === 1 && mine[0].id === student.id,
+    mineErr?.message ?? `${(mine ?? []).length} row(s)`
+  );
+  const { data: all, error: allErr } = await adminUser.c.rpc('full_profiles').select('id, phone, resume_url');
+  check('and an admin everybody\'s', !allErr && (all ?? []).length > 1, allErr?.message ?? `${(all ?? []).length} rows`);
+  const { error: anonFp } = await anon.rpc('full_profiles');
+  check('full_profiles is not callable signed out', !!anonFp, anonFp?.message ?? 'allowed');
+
+  // Everything else stays readable. A column the grant missed would break a
+  // dashboard silently, one screen at a time; this names it instead.
+  const missing = execSync(
+    `PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -tAq -c "` +
+      `select string_agg(c.column_name, ', ') from information_schema.columns c ` +
+      `where c.table_schema='public' and c.table_name='profiles' ` +
+      `and c.column_name not in (${PRIVATE.map((x) => `'${x}'`).join(',')}) ` +
+      `and not has_column_privilege('authenticated', 'public.profiles', c.column_name, 'SELECT')"`
+  )
+    .toString()
+    .trim();
+  check('every other column is still readable when signed in', missing === '', missing || '');
 
   console.log(failures === 0 ? '\nall passed' : `\n${failures} failed`);
   process.exit(failures === 0 ? 0 : 1);
