@@ -112,7 +112,7 @@ function StatusPill({ status }: { status: string }) {
         ? "bg-secondary/20 text-[#8a6a2a] dark:text-secondary"
         : "bg-[#8696a0]/20 text-[#54656f] dark:text-[#aebac1]";
   return (
-    <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize", tone)}>
+    <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-medium capitalize", tone)}>
       {status}
     </span>
   );
@@ -273,7 +273,7 @@ function DevConsoleBody() {
           <div className="flex flex-wrap items-center gap-3 mt-4">
             <span
               className={cn(
-                "px-2.5 py-1 rounded-full text-[12px] font-semibold",
+                "px-2.5 py-1 rounded-full text-[12px] font-medium",
                 BACKEND === "local" ? "bg-primary text-white" : "bg-secondary text-[#111]"
               )}
             >
@@ -314,7 +314,7 @@ function DevConsoleBody() {
 
         <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
-            <h2 className="text-[15px] font-semibold">Accounts</h2>
+            <h2 className="text-[15px] font-medium">Accounts</h2>
             <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-0.5">
               Every account uses the password {DEMO_PASSWORD}.
             </p>
@@ -460,7 +460,7 @@ function DevConsoleBody() {
 
         <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
-            <h2 className="text-[15px] font-semibold">Money states</h2>
+            <h2 className="text-[15px] font-medium">Money states</h2>
             <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-0.5">
               A lesson has to finish, an earning waits 72 hours, a counselling month
               waits for the month. These build those states now, so the earnings,
@@ -497,7 +497,7 @@ function DevConsoleBody() {
 
         <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-[#e9edef] dark:border-[#2a3942]">
-            <h2 className="text-[15px] font-semibold">Alternative screens</h2>
+            <h2 className="text-[15px] font-medium">Alternative screens</h2>
             <p className="text-[12px] text-[#667781] dark:text-[#8696a0] mt-0.5">
               Kept for showing a client the options. They are not in the parent's
               sidebar, so nobody reaches them by accident. Sign in as a parent
@@ -523,7 +523,7 @@ function DevConsoleBody() {
         </section>
 
         <section className="bg-white dark:bg-[#182229] border border-[#e9edef] dark:border-[#2a3942] rounded-xl px-4 py-4">
-          <h2 className="text-[15px] font-semibold mb-2">From the terminal</h2>
+          <h2 className="text-[15px] font-medium mb-2">From the terminal</h2>
           <p className="text-[12.5px] text-[#667781] dark:text-[#8696a0] mb-3">
             The same states, scriptable, for resetting between two runs of a demo.
           </p>
@@ -541,7 +541,7 @@ npm run demo clean                     drop leftover test accounts`}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#182229] rounded-2xl w-full max-w-md p-5 shadow-xl">
-            <h3 className="text-[16px] font-bold">Delete {confirmDelete.full_name}?</h3>
+            <h3 className="text-[16px] font-medium">Delete {confirmDelete.full_name}?</h3>
             <p className="text-[13px] text-[#667781] dark:text-[#8696a0] mt-2 leading-relaxed">
               This removes <strong>{confirmDelete.email}</strong> and everything attached to
               it: profile, conversations, messages, sessions. It cannot be undone.
@@ -559,7 +559,7 @@ npm run demo clean                     drop leftover test accounts`}
               <button
                 onClick={() => deleteAccount(confirmDelete)}
                 disabled={busy === confirmDelete.id}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-secondary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium bg-secondary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {busy === confirmDelete.id ? (
                   <Loader2 size={14} className="animate-spin" />

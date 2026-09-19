@@ -875,7 +875,7 @@ function EmptyScope({
           <button
             type="button"
             onClick={() => onSetSuppCount(school.id, count ?? 0)}
-            className="h-11 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="h-11 rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
           >
             Save
           </button>

@@ -97,7 +97,7 @@ export function ImageUpload({ value, onChange, folder = "yakal/uploads", classNa
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <ImageIcon className="w-6 h-6 text-primary" />
               </div>
-              <span className="text-[14px] font-semibold text-[#111] dark:text-white mb-1">Click to upload</span>
+              <span className="text-[14px] font-medium text-[#111] dark:text-white mb-1">Click to upload</span>
               <span className="text-[12px]">SVG, PNG, JPG or GIF (max. 5MB)</span>
             </>
           )}

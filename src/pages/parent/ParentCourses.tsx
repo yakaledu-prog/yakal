@@ -195,13 +195,13 @@ export function ParentCourses() {
                   viewMode === "list" ? "p-4" : "p-5"
                 )}>
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-[16px] font-bold text-[#111] dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-2">
+                    <h3 className="text-[16px] font-medium text-[#111] dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-2 pr-2">
                       {course.title}
                     </h3>
                     <div className="text-right shrink-0 flex flex-col items-end">
                       {course.priceCents != null ? (
                         <div className="flex items-baseline gap-1">
-                          <span className="text-[16px] font-bold text-[#111] dark:text-white leading-none">{money(course.priceCents)}</span>
+                          <span className="text-[16px] font-medium text-[#111] dark:text-white leading-none">{money(course.priceCents)}</span>
                           <span className="text-[11px] text-[#54656f] dark:text-[#aebac1]">/session</span>
                         </div>
                       ) : (

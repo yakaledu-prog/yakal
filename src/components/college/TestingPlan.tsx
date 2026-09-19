@@ -68,7 +68,7 @@ export function TestingPlan() {
                     className={cn(
                       "text-[12px] tabular-nums",
                       now
-                        ? "font-semibold text-[#111] dark:text-white"
+                        ? "font-medium text-[#111] dark:text-white"
                         : "text-[#717182]"
                     )}
                   >

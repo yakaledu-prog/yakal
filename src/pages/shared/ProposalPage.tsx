@@ -329,7 +329,7 @@ export function ProposalPage() {
           
           {/* One Time Fee */}
           <div className="mb-6">
-            <div className="text-xs font-semibold text-[#54656f] uppercase tracking-wider mb-1">One-Time Project Fee</div>
+            <div className="text-xs font-medium text-[#54656f] uppercase tracking-wider mb-1">One-Time Project Fee</div>
             <div className="text-4xl font-black text-primary">${estimatedDevPrice}</div>
             <div className="text-xs text-[#54656f] mt-1 flex justify-between">
               <span>Base MVP: ${BASE_PRICE}</span>
@@ -339,8 +339,8 @@ export function ProposalPage() {
 
           {/* Operating Costs */}
           <div className="pt-4 border-t border-[#e9edef]">
-            <div className="text-xs font-semibold text-[#54656f] uppercase tracking-wider mb-1">Estimated SaaS Costs</div>
-            <div className="text-xl font-bold text-[#111]">
+            <div className="text-xs font-medium text-[#54656f] uppercase tracking-wider mb-1">Estimated SaaS Costs</div>
+            <div className="text-xl font-medium text-[#111]">
                ${estimatedMonthly}<span className="text-xs font-normal text-[#54656f]">/mo</span> 
                {estimatedYearly > 0 && <span className="ml-2">+ ${estimatedYearly}<span className="text-xs font-normal text-[#54656f]">/yr</span></span>}
             </div>
@@ -352,8 +352,8 @@ export function ProposalPage() {
         {/* Progress Bar */}
         <div className="p-6 border-b border-[#e9edef] bg-[#f0faf0]">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-primary">Decisions Made</span>
-            <span className="text-sm font-bold text-primary">{completedDecisions} / {totalDecisions}</span>
+            <span className="text-sm font-medium text-primary">Decisions Made</span>
+            <span className="text-sm font-medium text-primary">{completedDecisions} / {totalDecisions}</span>
           </div>
           <div className="h-2 w-full bg-[#e9edef] rounded-full overflow-hidden">
             <div 
@@ -424,7 +424,7 @@ export function ProposalPage() {
             </p>
             
             <div className="bg-[#f8f9fa] p-5 rounded-lg border border-[#e9edef] my-6">
-              <h4 className="font-semibold text-[#111] flex items-center gap-2 mb-3">
+              <h4 className="font-medium text-[#111] flex items-center gap-2 mb-3">
                 <CheckCircle2 size={18} className="text-primary" /> Progressive Web App (PWA)
               </h4>
               <p className="text-sm">
@@ -433,7 +433,7 @@ export function ProposalPage() {
             </div>
 
             <div className="bg-[#fff9e6] p-5 rounded-lg border border-[#f0e6cc] my-6">
-              <h4 className="font-semibold text-[#111] flex items-center gap-2 mb-3">
+              <h4 className="font-medium text-[#111] flex items-center gap-2 mb-3">
                 <AlertCircle size={18} className="text-secondary" /> File Storage Strategy
               </h4>
               <p className="text-sm text-[#8c7335]">
@@ -456,13 +456,13 @@ export function ProposalPage() {
           
           <div className="space-y-8 text-[#54656f]">
             <div>
-              <h3 className="text-xl font-bold text-[#111] mb-3 border-b border-[#e9edef] pb-2">Public Landing Page</h3>
+              <h3 className="text-xl font-medium text-[#111] mb-3 border-b border-[#e9edef] pb-2">Public Landing Page</h3>
               <p className="mb-2">The marketing face of the platform. Sections include Hero, Why Join Us, Subjects, About, and Contact.</p>
               <p className="text-sm font-medium text-primary bg-[#f0faf0] inline-block px-3 py-1 rounded-md">Built statically for high performance (No CMS included in Base MVP).</p>
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-[#111] mb-3 border-b border-[#e9edef] pb-2">Student Portal</h3>
+              <h3 className="text-xl font-medium text-[#111] mb-3 border-b border-[#e9edef] pb-2">Student Portal</h3>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Dashboard:</strong> Welcome banner, next session countdown, and homework assignments.</li>
                 <li><strong>Course Catalog:</strong> Browse available courses and check tutor availability.</li>
@@ -471,7 +471,7 @@ export function ProposalPage() {
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-[#111] mb-3 border-b border-[#e9edef] pb-2">Tutor Portal</h3>
+              <h3 className="text-xl font-medium text-[#111] mb-3 border-b border-[#e9edef] pb-2">Tutor Portal</h3>
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Availability Editor:</strong> A weekly grid where tutors can paint their availability.</li>
                 <li><strong>Session Management:</strong> Start meetings and mark sessions complete.</li>
@@ -479,7 +479,7 @@ export function ProposalPage() {
             </div>
             
             <div>
-              <h3 className="text-xl font-bold text-[#111] mb-3 border-b border-[#e9edef] pb-2">Admin Portal</h3>
+              <h3 className="text-xl font-medium text-[#111] mb-3 border-b border-[#e9edef] pb-2">Admin Portal</h3>
               <p>Basic platform management tools including User Management (approving/rejecting tutors) and manual session oversight.</p>
             </div>
           </div>
@@ -498,7 +498,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">3. Authentication Method</h2>
             </div>
-            {choices.auth && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.auth && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How will users create accounts and log into the system?</p>
@@ -541,7 +541,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">4. Who can be tutor</h2>
             </div>
-            {choices.onboarding && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.onboarding && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How do tutors join the platform and start accepting students? This determines the quality control mechanisms we need to build into the Admin dashboard.</p>
@@ -577,7 +577,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">5. Course Creation</h2>
             </div>
-            {choices.courses && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.courses && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">Who is responsible for defining the courses taught on the platform?</p>
@@ -613,7 +613,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">6. Session Booking Flow</h2>
             </div>
-            {choices.booking && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.booking && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How do students actually book a tutor?</p>
@@ -649,14 +649,14 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">7. Payment Strategy</h2>
             </div>
-            {choices.paymentMode && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.paymentMode && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">
             The monetization strategy directly impacts the complexity of the platform. More complex payment flows (like escrow or split payouts) require significantly more development time.
           </p>
 
-          <h3 className="font-bold text-[#111] mb-4 text-lg">A. Monetization Model</h3>
+          <h3 className="font-medium text-[#111] mb-4 text-lg">A. Monetization Model</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <SelectionCard 
               title="Course-based"
@@ -681,7 +681,7 @@ export function ProposalPage() {
             />
           </div>
 
-          <h3 className="font-bold text-[#111] mb-4 text-lg">B. Payment Gateways <span className="font-normal text-sm text-[#54656f]">(1st is Free, +$15 Dev Cost per additional)</span></h3>
+          <h3 className="font-medium text-[#111] mb-4 text-lg">B. Payment Gateways <span className="font-normal text-sm text-[#54656f]">(1st is Free, +$15 Dev Cost per additional)</span></h3>
           <div className="flex flex-wrap gap-3">
             {["Stripe (International)", "PayPal (International)", "ArifPay (Local ETB)", "Chapa (Local ETB)", "Telebirr (Local ETB)", "Manual Bank Transfer"].map(gateway => (
               <button
@@ -713,7 +713,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">8. Revenue Split (Commission)</h2>
             </div>
-            {choices.commission && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.commission && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How does the platform make money from tutors? Automated percentage splits require advanced payment APIs.</p>
@@ -749,7 +749,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">9. Video Conferencing</h2>
             </div>
-            {choices.video && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.video && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">A critical decision is how online tutoring sessions are hosted.</p>
@@ -775,7 +775,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">10. Session Recordings</h2>
             </div>
-            {choices.recordings && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.recordings && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <p className="text-[#54656f] mb-6">How are session video recordings handled and stored for students to review later?</p>
@@ -818,7 +818,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">11. Review & Rating System</h2>
             </div>
-            {choices.reviews && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.reviews && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -859,7 +859,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">12. Customer Support</h2>
             </div>
-            {choices.support && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.support && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -900,7 +900,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">13. Localization (Languages)</h2>
             </div>
-            {choices.language && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.language && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -934,7 +934,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">14. Notification Strategy</h2>
             </div>
-            {choices.notifications && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.notifications && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -975,7 +975,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">15. Admin Analytics Dashboard</h2>
             </div>
-            {choices.analytics && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.analytics && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1009,7 +1009,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">16. Refund Policy Engine</h2>
             </div>
-            {choices.refunds && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.refunds && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1043,7 +1043,7 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">17. Infrastructure</h2>
             </div>
-            {choices.infrastructure && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.infrastructure && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1084,11 +1084,11 @@ export function ProposalPage() {
               </div>
               <h2 className="text-3xl font-bold text-[#111]">18. Domain & Branding</h2>
             </div>
-            {choices.domainExt && <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
+            {choices.domainExt && <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide flex items-center gap-1"><Check size={14}/> Selected</span>}
           </div>
           
           <div className="bg-[#fff0f0] p-4 rounded-lg border border-[#fcd5d5] mb-6">
-            <h4 className="font-semibold text-red-600 flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-red-600 flex items-center gap-2 mb-2">
               <AlertCircle size={18} /> yakal.com is Unavailable
             </h4>
             <p className="text-sm text-red-800">
@@ -1127,7 +1127,7 @@ export function ProposalPage() {
             </pre>
             <button 
               onClick={handleCopy}
-              className="absolute top-4 right-4 bg-primary hover:bg-[#0e868d] text-white px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2 transition-colors shadow-sm"
+              className="absolute top-4 right-4 bg-primary hover:bg-[#0e868d] text-white px-4 py-2 rounded-md font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
             >
               <Copy size={16} /> Copy to Clipboard
             </button>
@@ -1164,7 +1164,7 @@ function SelectionCard({
       )}
     >
       <div className="flex justify-between items-start mb-2">
-        <h4 className="font-bold text-[#111] pr-4">{title}</h4>
+        <h4 className="font-medium text-[#111] pr-4">{title}</h4>
         <div className={cn(
           "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
           selected ? "border-primary bg-primary" : "border-[#aebac1]"
@@ -1180,7 +1180,7 @@ function SelectionCard({
           <div className="flex justify-between items-center text-xs">
             <span className="text-[#54656f] font-medium">Dev Fee:</span>
             <span className={cn(
-              "font-semibold px-2 py-0.5 rounded",
+              "font-medium px-2 py-0.5 rounded",
               selected ? "bg-primary/10 text-primary" : "bg-[#f8f9fa] text-[#54656f]"
             )}>
               {costBreakdown.devCost === 0 ? "Included" : `+$${costBreakdown.devCost}`}
@@ -1190,7 +1190,7 @@ function SelectionCard({
           {costBreakdown.recurringText && (
             <div className="flex justify-between items-center text-xs">
               <span className="text-[#54656f] font-medium flex items-center gap-1"><Repeat size={10} /> SaaS Cost:</span>
-              <span className="font-semibold text-orange-600">
+              <span className="font-medium text-orange-600">
                 {costBreakdown.recurringText}
               </span>
             </div>

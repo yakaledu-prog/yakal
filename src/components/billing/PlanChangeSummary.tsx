@@ -64,7 +64,7 @@ export function PlanChangeSummary({
         <dl className="mt-3 space-y-2 rounded-xl border border-border p-4">
           <div className="flex items-center justify-between gap-4">
             <dt className="text-[13px] text-muted-foreground">Charged today</dt>
-            <dd className="text-[15px] font-semibold tabular-nums text-foreground">
+            <dd className="text-[15px] font-medium tabular-nums text-foreground">
               {money(preview.dueNowCents ?? 0)}
             </dd>
           </div>

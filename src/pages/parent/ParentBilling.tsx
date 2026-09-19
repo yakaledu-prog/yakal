@@ -293,7 +293,7 @@ export function ParentBilling() {
                   className={cn(
                     "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
                     tab === t.id
-                      ? "border-white font-semibold text-white"
+                      ? "border-white font-medium text-white"
                       : "border-transparent text-white/60 hover:text-white"
                   )}
                 >
@@ -980,7 +980,7 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="border-b border-border p-5">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-[17px] font-semibold text-foreground">{heading}</h2>
+            <h2 className="text-[17px] font-medium text-foreground">{heading}</h2>
             <button
               onClick={onClose}
               aria-label="Close"
@@ -1194,7 +1194,7 @@ function ManagePlanDialog({ plan, onClose }: { plan: AdmissionsPlan; onClose: ()
 function CardMark({ brand }: { brand: string }) {
   if (brand.toLowerCase() !== "visa") {
     return (
-      <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-bold uppercase text-muted-foreground">
+      <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-[10px] font-medium uppercase text-muted-foreground">
         {brand}
       </span>
     );
@@ -1293,7 +1293,7 @@ function Methods({
         onClick={onPortal}
         disabled={busy !== null}
         variant="outline"
-        className="flex w-full items-center justify-center gap-2 border border-primary text-[14px] font-semibold text-primary"
+        className="flex w-full items-center justify-center gap-2 border border-primary text-[14px] font-medium text-primary"
       >
         {busy === "portal" ? (
           <Loader2 size={16} className="animate-spin" />

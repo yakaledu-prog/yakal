@@ -215,7 +215,7 @@ function Empty({
         <p className="mx-auto mt-1 max-w-sm text-[13px] text-[#717182]">{body}</p>
         <Link
           to={action.to}
-          className="mt-5 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+          className="mt-5 inline-flex h-10 items-center rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
         >
           {action.label}
         </Link>

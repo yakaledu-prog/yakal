@@ -230,7 +230,7 @@ export function ParentProfile() {
         <div className="mx-auto max-w-[1440px] p-6 md:p-10">
           <div className="flex flex-col items-start gap-12 lg:flex-row">
             <div className="w-full shrink-0 space-y-6 lg:w-[320px]">
-              <h3 className="text-[16px] font-bold text-foreground">Contact details</h3>
+              <h3 className="text-[16px] font-medium text-foreground">Contact details</h3>
               <div className="space-y-4">
                 <DetailRow
                   icon={<Mail size={18} />}

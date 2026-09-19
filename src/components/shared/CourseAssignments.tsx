@@ -211,7 +211,7 @@ export function CourseAssignments({
                   is not a topic and is not numbered, or it would claim a
                   position in a sequence it is not part of. */}
               {s.id !== "__ungrouped" && (
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-primary">
                   Topic {String(i + 1).padStart(2, "0")}
                 </p>
               )}

@@ -137,7 +137,7 @@ export function StudentCalendar() {
                   <div className="text-right mb-1">
                     <span className={cn(
                       "inline-flex items-center justify-center w-7 h-7 text-[13px] rounded-full",
-                      isToday(day) ? "bg-secondary/85 text-white font-semibold" : "text-[#54656f] dark:text-[#aebac1]"
+                      isToday(day) ? "bg-secondary/85 text-white font-medium" : "text-[#54656f] dark:text-[#aebac1]"
                     )}>
                       {day}
                     </span>
@@ -174,7 +174,7 @@ export function StudentCalendar() {
             {weekDays.map((day, index) => (
               <div key={index} className="text-center py-3 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0">
                 <div className="text-[12px] text-[#54656f] dark:text-[#aebac1] font-medium uppercase tracking-wider">{weekdays[index]}</div>
-                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-primary font-bold" : "text-[#111] dark:text-white")}>
+                <div className={cn("text-[18px] mt-0.5", isToday(day.date, day.month, day.year) ? "text-primary font-medium" : "text-[#111] dark:text-white")}>
                   {day.date}
                 </div>
               </div>
@@ -193,7 +193,7 @@ export function StudentCalendar() {
                   return (
                     <div key={dayIdx} className="h-14 border-r border-[#e9edef] dark:border-[#2a3942] last:border-r-0 p-1">
                       {sessions.map(s => (
-                        <div key={s.id} className="bg-primary/10 text-primary border border-primary/20 rounded px-2 py-1 text-[11px] font-semibold truncate cursor-pointer hover:bg-primary/15 transition-colors">
+                        <div key={s.id} className="bg-primary/10 text-primary border border-primary/20 rounded px-2 py-1 text-[11px] font-medium truncate cursor-pointer hover:bg-primary/15 transition-colors">
                           {formatTime(s.startTime)} {s.subject}
                         </div>
                       ))}
@@ -230,7 +230,7 @@ export function StudentCalendar() {
                 <div className="p-2 min-h-[60px]">
                   {sessions.map(s => (
                     <div key={s.id} className="bg-primary/10 text-primary border border-primary/20 rounded-md p-3 text-[13px] hover:bg-primary/15 transition-colors cursor-pointer w-full max-w-md">
-                      <div className="font-bold">{s.subject}</div>
+                      <div className="font-medium">{s.subject}</div>
                       <div className="text-primary/80 mt-1 flex items-center gap-2 text-[12px]">
                         <span>{formatTime(s.startTime)}</span>
                         <span>•</span>
@@ -277,19 +277,19 @@ export function StudentCalendar() {
 
             <div className="w-fit mx-auto flex border border-white/30 rounded-lg overflow-hidden bg-black/0">
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'day' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('day')}
               >
                 Daily
               </button>
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'week' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('week')}
               >
                 Weekly
               </button>
               <button
-                className={cn("px-4 py-2 text-[12px] font-bold uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
+                className={cn("px-4 py-2 text-[12px] font-medium uppercase tracking-wider transition ease-in-out duration-500 border-r border-white/30 last:border-r-0", calendarView === 'month' ? 'bg-white/90 text-primary' : 'text-white hover:bg-white/20')}
                 onClick={() => setCalendarView('month')}
               >
                 Monthly

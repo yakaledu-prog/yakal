@@ -126,7 +126,7 @@ export function CounselorProfile() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight mb-2">{profile?.full_name || "Counselor"}</h1>
-                  {/* <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
+                  {/* <span className="bg-white/20 text-white text-[12px] font-medium px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
                 </div>
               </div>
@@ -135,7 +135,7 @@ export function CounselorProfile() {
                   <Edit2 size={16} /> Edit Profile
                 </button>
                 <button onClick={() => signOut()}
-                  className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
+                  className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-medium h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
                   <LogOut size={16} /> Log Out
                 </button>
               </div>
@@ -170,7 +170,7 @@ export function CounselorProfile() {
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {/* Details */}
             <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground">Contact Details</h3>
+              <h3 className="text-[16px] font-medium text-foreground">Contact Details</h3>
               <div className="space-y-4">
                 <DetailRow
                   icon={<Mail size={18} />}
@@ -285,7 +285,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942] sticky top-0 bg-white dark:bg-[#202c33]">
-          <h2 className="text-[20px] font-bold text-[#111] dark:text-white">Edit Profile</h2>
+          <h2 className="text-[20px] font-medium text-[#111] dark:text-white">Edit Profile</h2>
           <button onClick={onClose} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"><X size={20} /></button>
         </div>
         <div className="p-6 space-y-4">
@@ -317,7 +317,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] sticky bottom-0">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={save} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary-hover text-white font-bold">{saving ? "Saving..." : "Save Changes"}</Button>
+          <Button onClick={save} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary-hover text-white font-medium">{saving ? "Saving..." : "Save Changes"}</Button>
         </div>
       </div>
     </div>

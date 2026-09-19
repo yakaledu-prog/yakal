@@ -276,7 +276,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942]">
-          <h2 className="text-[18px] font-bold text-[#111] dark:text-white">
+          <h2 className="text-[18px] font-medium text-[#111] dark:text-white">
             Session notes
           </h2>
           <button onClick={onClose} className="p-1.5 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]">
@@ -297,7 +297,7 @@ function NotesModal({ session, onClose, onSaved }: { session: SessionRow; onClos
         </div>
         <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329]">
           <Button variant="outline" onClick={onClose} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-bold flex items-center gap-2">
+          <Button onClick={submit} disabled={saving} className="h-10 px-4 bg-primary hover:bg-primary-hover text-white font-medium flex items-center gap-2">
             <span>{saving ? "Saving..." : "Save Notes"}</span>
           </Button>
         </div>

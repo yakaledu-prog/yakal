@@ -35,7 +35,7 @@ export function EmptyChatWelcome({ name }: { name: string }) {
           <rect x="40" y="54" width="40" height="26" rx="10" className="fill-transparent stroke-[#8696a0]" strokeWidth="2" strokeDasharray="4 4" />
         </svg>
         <div>
-          <p className="text-[15px] font-semibold text-[#111] dark:text-white">No messages here yet</p>
+          <p className="text-[15px] font-medium text-[#111] dark:text-white">No messages here yet</p>
           <p className="text-[13px] text-[#667781] dark:text-[#8696a0] mt-1">
             Send a message to start the conversation with {name}.
           </p>

@@ -157,7 +157,7 @@ export function ParentMessages({
           emptyState={
             childId ? (
               <>
-                <p className="text-[15px] font-semibold text-[#111] dark:text-white">
+                <p className="text-[15px] font-medium text-[#111] dark:text-white">
                   No conversations yet
                 </p>
                 <p className="max-w-xs text-[13px] text-[#667781] dark:text-[#8696a0]">

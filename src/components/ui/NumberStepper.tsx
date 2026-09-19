@@ -56,7 +56,7 @@ export function NumberStepper({
           const raw = e.target.value.replace(/[^0-9]/g, "");
           onChange(raw === "" ? null : clamp(Number(raw)));
         }}
-        className="w-10 bg-transparent text-center text-[15px] font-semibold tabular-nums text-[#111] outline-none placeholder:font-normal placeholder:text-[#a8adb8] dark:text-white"
+        className="w-10 bg-transparent text-center text-[15px] font-medium tabular-nums text-[#111] outline-none placeholder:font-normal placeholder:text-[#a8adb8] dark:text-white"
       />
       <button
         type="button"

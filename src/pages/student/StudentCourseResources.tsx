@@ -31,7 +31,7 @@ export function StudentCourseResources() {
       {/* Left Sidebar: Filters */}
       <div className="w-full md:w-64 shrink-0 space-y-6">
         <div>
-          <h2 className="text-[16px] font-bold text-[#111] dark:text-white mb-4">Filters</h2>
+          <h2 className="text-[16px] font-medium text-[#111] dark:text-white mb-4">Filters</h2>
           <div className="space-y-1">
             {filters.map(filter => (
               <button
@@ -111,7 +111,7 @@ export function StudentCourseResources() {
                 "flex-1 min-w-0",
                 viewMode === "grid" ? "p-4" : ""
               )}>
-                <h3 className="text-[15px] font-bold text-[#111] dark:text-white truncate">{resource.title}</h3>
+                <h3 className="text-[15px] font-medium text-[#111] dark:text-white truncate">{resource.title}</h3>
                 <div className="flex items-center gap-3 mt-1 text-[13px] text-[#54656f] dark:text-[#aebac1]">
                   <span>{resource.module}</span>
                   <span>•</span>

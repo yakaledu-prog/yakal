@@ -103,7 +103,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
     <div className="space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
         <Banknote size={18} className="text-primary" />
-        <h3 className="text-[18px] font-bold text-[#111] dark:text-white">Payments to you</h3>
+        <h3 className="text-[18px] font-medium text-[#111] dark:text-white">Payments to you</h3>
         {yearTotal && yearTotal.count > 0 && (
           <span className="ml-auto text-[13px] text-muted-foreground">
             {money(yearTotal.totalCents)} paid in {new Date().getFullYear()}
@@ -113,7 +113,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
 
       {status && !status.payoutsEnabled && (
         <div className="rounded-xl border border-secondary/50 bg-secondary/10 p-4">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-[#8a6a2a] dark:text-secondary">
+          <p className="flex items-center gap-2 text-[14px] font-medium text-[#8a6a2a] dark:text-secondary">
             <ShieldCheck size={16} />
             {status.accountId ? "Finish connecting your bank" : "Connect your bank"}
           </p>
@@ -125,7 +125,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
           <button
             onClick={() => void connect()}
             disabled={busy}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
             {status.accountId ? "Carry on" : "Connect with Stripe"}
@@ -139,7 +139,7 @@ export function PayoutHistory({ tutorId }: { tutorId: string }) {
           <button
             onClick={() => void openDashboard()}
             disabled={busy}
-            className="font-semibold text-primary underline-offset-2 transition-colors hover:underline disabled:opacity-50"
+            className="font-medium text-primary underline-offset-2 transition-colors hover:underline disabled:opacity-50"
           >
             Open your Stripe dashboard
           </button>{" "}

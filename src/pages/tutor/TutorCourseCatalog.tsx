@@ -179,7 +179,7 @@ function ApplyDialog({
           <button
             onClick={onSubmit}
             disabled={busy}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             Send application
@@ -448,7 +448,7 @@ export function TutorCourseCatalog() {
                     <p className="text-[12px] font-medium uppercase tracking-wider text-primary">
                       {course.subject}
                     </p>
-                    <h3 className="mt-1 text-[16px] font-semibold text-foreground">
+                    <h3 className="mt-1 text-[16px] font-medium text-foreground">
                       {course.title}
                     </h3>
                     {course.description && (
@@ -498,7 +498,7 @@ export function TutorCourseCatalog() {
                       ) : (
                         <button
                           onClick={() => setApplying(course)}
-                          className="rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                          className="rounded-xl bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
                         >
                           {course.myApplication?.status === "rejected" ? "Apply again" : "Apply"}
                         </button>

@@ -538,7 +538,7 @@ function ReviewNoteDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="border-b border-border p-5">
-          <h2 className="text-[17px] font-semibold text-foreground">
+          <h2 className="text-[17px] font-medium text-foreground">
             {returning ? `Send back to ${firstName}` : `Mark this finished`}
           </h2>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">{essay.title}</p>
@@ -579,7 +579,7 @@ function ReviewNoteDialog({
             type="button"
             disabled={busy || tooShort}
             onClick={() => onSubmit(note.trim() || null)}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : null}
             {returning ? "Send back" : "Finished"}

@@ -81,7 +81,7 @@ export function ConfirmDialog({
           </svg>
 
           <div className="relative z-10 flex items-center gap-3">
-            <h2 className="flex-1 text-[16px] font-semibold">{title}</h2>
+            <h2 className="flex-1 text-[16px] font-medium">{title}</h2>
             <button
               type="button"
               onClick={onCancel}
@@ -115,7 +115,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
             className={cn(
-              "inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[14px] font-semibold text-white transition-colors disabled:opacity-60",
+              "inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-[14px] font-medium text-white transition-colors disabled:opacity-60",
               destructive
                 ? "bg-[#d4183d] hover:bg-[#b31333]"
                 : "bg-primary hover:bg-primary-hover"

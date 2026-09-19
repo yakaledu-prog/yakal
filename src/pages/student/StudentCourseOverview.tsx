@@ -71,7 +71,7 @@ export function StudentCourseOverview() {
                     ) : (
                       <Plus size={20} className={cn("shrink-0", isActive ? "text-primary" : "text-[#54656f] dark:text-[#aebac1]")} />
                     )}
-                    <h3 className="text-[16px] font-bold text-[#111] dark:text-white">{module.title}</h3>
+                    <h3 className="text-[16px] font-medium text-[#111] dark:text-white">{module.title}</h3>
                   </div>
                   <div className="flex items-center gap-4 text-[13px] text-[#54656f] dark:text-[#aebac1] shrink-0">
                     <span>{module.time}</span>
@@ -107,7 +107,7 @@ export function StudentCourseOverview() {
                         <div className="flex-1">
                           <p className={cn(
                             "text-[15px]",
-                            item.active ? "font-bold text-[#111] dark:text-white" : "font-medium text-[#54656f] dark:text-[#aebac1]"
+                            item.active ? "font-medium text-[#111] dark:text-white" : "font-medium text-[#54656f] dark:text-[#aebac1]"
                           )}>
                             {item.title}
                           </p>

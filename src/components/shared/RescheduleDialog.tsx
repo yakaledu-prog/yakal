@@ -136,7 +136,7 @@ export function RescheduleDialog({
           <Button variant="outline" onClick={onClose} className="h-11 px-5 border border-muted">
             Cancel
           </Button>
-          <Button disabled={!picked || saving || (askReason && !reason.trim())} onClick={confirm} className="h-11 px-6 font-semibold">
+          <Button disabled={!picked || saving || (askReason && !reason.trim())} onClick={confirm} className="h-11 px-6 font-medium">
             {saving
               ? "Moving..."
               : !picked

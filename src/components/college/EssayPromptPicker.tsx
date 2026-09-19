@@ -350,7 +350,7 @@ function Picker({ onClose, onSubmit, onWriteYourOwn, schools, saving }: PickerPr
                 />
               )}
               <div className="min-w-0 flex-1">
-                <h2 className="truncate text-base font-semibold text-foreground">{opened.name}</h2>
+                <h2 className="truncate text-base font-medium text-foreground">{opened.name}</h2>
                 <p className="truncate text-sm text-muted-foreground">
                   {deadline
                     ? `${ROUND_LABEL[deadline.round]} ${readableDate(deadline.date)}`
@@ -396,7 +396,7 @@ function Picker({ onClose, onSubmit, onWriteYourOwn, schools, saving }: PickerPr
                         collegeListItemId: opened.unitid ? onList.get(opened.unitid)?.id ?? null : null,
                       })
                     }
-                    className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+                    className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
                   >
                     <PenLine size={15} />
                     {opened.unitid && !onList.has(opened.unitid)
@@ -455,7 +455,7 @@ function Picker({ onClose, onSubmit, onWriteYourOwn, schools, saving }: PickerPr
                       return (
                         <li key={p.id}>
                           {heading && (
-                            <p className="bg-muted/40 px-6 py-2 text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+                            <p className="bg-muted/40 px-6 py-2 text-xs font-medium uppercase tracking-[0.07em] text-muted-foreground">
                               {heading}
                             </p>
                           )}
@@ -561,7 +561,7 @@ function Picker({ onClose, onSubmit, onWriteYourOwn, schools, saving }: PickerPr
                   type="button"
                   onClick={submit}
                   disabled={ticked.size === 0 || saving}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                 >
                   {saving && <Loader2 size={14} className="animate-spin" />}
                   Add {ticked.size || ""} {ticked.size === 1 ? "draft" : "drafts"}

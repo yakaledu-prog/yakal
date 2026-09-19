@@ -38,7 +38,7 @@ export function LockedOverlay({
           <button
             onClick={onRequestAccess}
             disabled={requesting}
-            className="w-full rounded-xl bg-primary px-6 py-3 text-[14px] font-bold text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+            className="w-full rounded-xl bg-primary px-6 py-3 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             {requesting ? "Sending..." : "Request access from parent"}
           </button>

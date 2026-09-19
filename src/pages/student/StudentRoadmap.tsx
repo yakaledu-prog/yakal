@@ -21,7 +21,7 @@ export const ROADMAP_TABS: { id: RoadmapTab; label: string }[] = [
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
       <p className="text-[14px] font-medium text-foreground capitalize mt-0.5">{value}</p>
@@ -149,12 +149,12 @@ export function StudentRoadmap({
                       <span className="text-[19px] font-bold tracking-tight md:text-[22px]">
                         {d.date.getDate()}
                       </span>
-                      <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
+                      <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-white/70">
                         {d.date.toLocaleDateString(undefined, { month: "short" })}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[13.5px] font-semibold text-white md:text-[14px]">{d.short ?? d.label}</p>
+                      <p className="text-[13.5px] font-medium text-white md:text-[14px]">{d.short ?? d.label}</p>
                       <p className="text-[12px] text-white/70 md:text-[12.5px]">
                         {d.daysAway === 0 ? "today" : `in ${d.daysAway} days`}
                       </p>
@@ -263,7 +263,7 @@ export function StudentRoadmap({
                       className="group flex items-start justify-between p-4 border border-[#e9edef] dark:border-[#2a3942] hover:bg-muted/30 transition-colors"
                     >
                       <div>
-                        <p className="font-semibold text-primary group-hover:underline text-[14px]">{r.title}</p>
+                        <p className="font-medium text-primary group-hover:underline text-[14px]">{r.title}</p>
                         <p className="text-[13px] text-muted-foreground mt-0.5">{r.desc}</p>
                         {due && (
                           <p className="text-[12.5px] text-secondary mt-1.5">

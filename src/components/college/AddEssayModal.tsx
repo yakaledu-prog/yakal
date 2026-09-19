@@ -92,7 +92,7 @@ export function AddEssayModal({
     >
       <div className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-[#111b21]">
         <header className="flex items-center justify-between gap-4 border-b border-[#e9edef] px-5 py-4 dark:border-[#2a3942]">
-          <h2 className="text-[16px] font-semibold">Add an essay</h2>
+          <h2 className="text-[16px] font-medium">Add an essay</h2>
           <button
             type="button"
             onClick={onClose}
@@ -202,7 +202,7 @@ export function AddEssayModal({
             type="button"
             onClick={submit}
             disabled={!title.trim() || saving}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Add essay

@@ -130,7 +130,7 @@ export function BookAdvisingDialog({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">
+            <h2 className="text-[17px] font-medium text-foreground">
               {mock ? "Choose a mock interview slot" : "Choose advising slots"}
             </h2>
             <p className="mt-0.5 text-[12.5px] text-muted-foreground">

@@ -138,7 +138,7 @@ export function CompareDialog({
           </svg>
           <div className="relative z-10 flex items-center gap-3">
             <div className="flex-1">
-              <h2 className="text-[16px] font-semibold">Compare</h2>
+              <h2 className="text-[16px] font-medium">Compare</h2>
               <p className="text-[12px] text-white/80">
                 {rows.length} colleges side by side
               </p>
@@ -189,7 +189,7 @@ export function CompareDialog({
                       className={cn(
                         "px-4 py-2.5 text-[13px] tabular-nums",
                         a.highlight?.(r)
-                          ? "font-semibold text-primary"
+                          ? "font-medium text-primary"
                           : "text-[#111] dark:text-white"
                       )}
                     >

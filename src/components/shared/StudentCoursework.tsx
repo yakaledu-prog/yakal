@@ -67,7 +67,7 @@ export function StudentCoursework({
         <section key={course.id}>
           {/* Named even when there is only one, because this list spans courses
               and an unlabelled group would read as the whole of their work. */}
-          <h3 className="mb-4 text-[15px] font-semibold text-foreground">{course.title}</h3>
+          <h3 className="mb-4 text-[15px] font-medium text-foreground">{course.title}</h3>
           <CourseAssignments
             courseId={course.id}
             localAssignments={course.rows}

@@ -73,7 +73,7 @@ export function CollegeLogo({
     return (
       <div className={box} style={{ width: size, height: size }} aria-hidden>
         <span
-          className="font-semibold text-primary"
+          className="font-medium text-primary"
           style={{ fontSize: Math.round(size * 0.4) }}
         >
           {name.replace(/^(The|University of)\s+/i, "").trim().charAt(0).toUpperCase()}

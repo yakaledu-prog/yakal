@@ -101,7 +101,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
       >
         <Bell size={20} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-semibold leading-none text-white">
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-medium leading-none text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -110,7 +110,7 @@ export function NotificationBell({ basePath }: { basePath: string }) {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <p className="text-[14px] font-semibold text-foreground">Notifications</p>
+            <p className="text-[14px] font-medium text-foreground">Notifications</p>
             {unread > 0 && (
               <button
                 type="button"

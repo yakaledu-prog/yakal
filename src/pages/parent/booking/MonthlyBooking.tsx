@@ -163,7 +163,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
               {(mode === "weekly" ? weeks[0] : visibleWeek).map((day, di) => (
                 <div key={di} className="text-center">
                   <div className="mb-2 border-b-2 border-secondary pb-2">
-                    <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                    <p className="text-[11px] font-medium uppercase text-muted-foreground">
                       {WEEKDAYS[di]}
                     </p>
                     {mode === "dates" && (
@@ -191,7 +191,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
                           key={h}
                           onClick={() => toggle(key)}
                           className={cn(
-                            "w-full rounded py-2 text-[12.5px] font-bold transition-colors",
+                            "w-full rounded py-2 text-[12.5px] font-medium transition-colors",
                             on
                               ? "bg-primary text-white"
                               : "bg-primary/10 text-primary hover:bg-primary/20"
@@ -268,7 +268,7 @@ export function MonthlyBooking({ mode }: { mode: "weekly" | "dates" }) {
 
             <button
               disabled={lessonsPerMonth === 0}
-              className="mt-4 w-full rounded-xl bg-primary py-3 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="mt-4 w-full rounded-xl bg-primary py-3 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {mode === "weekly" ? "Start monthly plan" : "Pay for these lessons"}
             </button>

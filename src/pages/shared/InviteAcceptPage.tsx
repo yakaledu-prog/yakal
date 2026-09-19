@@ -123,13 +123,13 @@ function Valid({
         {intro}
         <a
           href={loginHref("signup")}
-          className="mt-2 block h-12 rounded-xl bg-primary text-center text-[15px] font-bold leading-[48px] text-white hover:bg-primary-hover"
+          className="mt-2 block h-12 rounded-xl bg-primary text-center text-[15px] font-medium leading-[48px] text-white hover:bg-primary-hover"
         >
           Create my account
         </a>
         <a
           href={loginHref("login")}
-          className="mt-3 block h-12 rounded-xl border border-primary text-center text-[15px] font-semibold leading-[46px] text-primary hover:bg-primary/5"
+          className="mt-3 block h-12 rounded-xl border border-primary text-center text-[15px] font-medium leading-[46px] text-primary hover:bg-primary/5"
         >
           I already have an account
         </a>
@@ -169,7 +169,7 @@ function Valid({
       <button
         onClick={onAccept}
         disabled={accepting}
-        className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover disabled:opacity-60"
+        className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-medium text-white hover:bg-primary-hover disabled:opacity-60"
       >
         {accepting ? <Loader2 size={16} className="animate-spin" /> : <Check size={17} />}
         Accept invitation
@@ -190,7 +190,7 @@ function Success({ onContinue }: { onContinue: () => void }) {
       </p>
       <button
         onClick={onContinue}
-        className="mt-2 h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
+        className="mt-2 h-12 w-full rounded-xl bg-primary text-[15px] font-medium text-white hover:bg-primary-hover"
       >
         Go to my dashboard
       </button>
@@ -250,7 +250,7 @@ function Notice({
       {cta ? (
         <Link
           to={cta.href}
-          className="mt-5 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-primary-hover"
+          className="mt-5 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-medium leading-[44px] text-white hover:bg-primary-hover"
         >
           {cta.label}
         </Link>

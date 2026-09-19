@@ -107,7 +107,7 @@ export function CounselorHome() {
             {/* Top row: Welcome + Quick Actions */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
                   {upcoming.length > 0
                     ? `You have ${upcoming.length} upcoming session${upcoming.length === 1 ? "" : "s"}. Guide your students through their college journey.`

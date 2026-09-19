@@ -153,7 +153,7 @@ export function MessageBubble({
         )}
       >
         {!isMe && contact && !isConsecutive && (
-          <div className="text-[13px] font-semibold text-primary mb-0.5 leading-tight">
+          <div className="text-[13px] font-medium text-primary mb-0.5 leading-tight">
             {contact.name}
           </div>
         )}
@@ -161,7 +161,7 @@ export function MessageBubble({
         {/* Why it was picked out, above the message itself: a parent scrolling
             a long thread needs to know before they read, not after. */}
         {report && (
-          <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-semibold text-secondary">
+          <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-medium text-secondary">
             <Flag size={11} fill="currentColor" />
             {report.label}
           </div>

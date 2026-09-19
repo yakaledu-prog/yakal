@@ -239,7 +239,7 @@ export function ParentAdmissions() {
           >
             <div className="overflow-y-auto p-6">
               <div className="mb-4 flex items-start justify-between gap-4">
-                <h2 className="text-[18px] font-bold text-foreground">Confirm purchase</h2>
+                <h2 className="text-[18px] font-medium text-foreground">Confirm purchase</h2>
                 <button
                   onClick={closePurchase}
                   aria-label="Close"
@@ -260,7 +260,7 @@ export function ParentAdmissions() {
                   className="h-12 w-12 shrink-0 rounded-full bg-muted object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-semibold text-foreground">
+                  <p className="truncate text-[15px] font-medium text-foreground">
                     {pendingTier.name} admissions
                   </p>
                   <p className="truncate text-[13px] text-muted-foreground">
@@ -268,7 +268,7 @@ export function ParentAdmissions() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-[17px] font-bold leading-tight text-foreground">
+                  <p className="text-[17px] font-medium leading-tight text-foreground">
                     {money(pendingTier.priceCents)}/month
                   </p>
                   <p className="text-[12px] leading-tight text-muted-foreground">
@@ -329,11 +329,11 @@ export function ParentAdmissions() {
                         <div className="p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="truncate text-[15px] font-semibold text-foreground">
+                              <p className="truncate text-[15px] font-medium text-foreground">
                                 {c.name}
                               </p>
                             </div>
-                            <p className="shrink-0 whitespace-nowrap text-[15px] font-bold text-foreground">
+                            <p className="shrink-0 whitespace-nowrap text-[15px] font-medium text-foreground">
                               {money(pendingTier.priceCents)}
                               <span className="text-[12px] font-normal text-muted-foreground">
                                 /month
@@ -371,7 +371,7 @@ export function ParentAdmissions() {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-primary hover:underline"
+                                className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-primary hover:underline"
                               >
                                 <Download size={13} /> Download CV
                               </a>
@@ -424,7 +424,7 @@ export function ParentAdmissions() {
             <div className="flex gap-3 border-t border-border p-6 pt-4">
               <button
                 onClick={() => (step === "slots" ? setStep("counselor") : closePurchase())}
-                className="h-11 flex-1 rounded-xl border border-border text-[14px] font-semibold text-foreground hover:bg-muted/50"
+                className="h-11 flex-1 rounded-xl border border-border text-[14px] font-medium text-foreground hover:bg-muted/50"
               >
                 {step === "slots" ? "Back" : "Cancel"}
               </button>
@@ -444,7 +444,7 @@ export function ParentAdmissions() {
                   void choose(t, picked, chosenSlots);
                 }}
                 disabled={!!busy}
-                className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-white hover:bg-primary-hover disabled:opacity-50"
+                className="h-11 flex-1 rounded-xl bg-primary text-[14px] font-medium text-white hover:bg-primary-hover disabled:opacity-50"
               >
                 {step === "counselor" && chosenCounselor
                   ? "Choose times"
@@ -506,7 +506,7 @@ function SwitchPlanDialog({
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-border p-5">
           <div className="min-w-0">
-            <h2 className="text-[17px] font-semibold text-foreground">Change plan</h2>
+            <h2 className="text-[17px] font-medium text-foreground">Change plan</h2>
             <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
               {/* What Stripe bills this subscription, not the list price. */}
               {plan.studentName} is on {plan.tier.name},{" "}
@@ -594,7 +594,7 @@ function TierCard({
         {current ? "Current plan" : tier.isRecommended ? "Most chosen" : ""}
       </p>
 
-      <h2 className="text-[20px] font-bold text-foreground">{tier.name}</h2>
+      <h2 className="text-[20px] font-medium text-foreground">{tier.name}</h2>
       {tier.blurb && (
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">{tier.blurb}</p>
       )}
@@ -630,7 +630,7 @@ function TierCard({
         onClick={onChoose}
         disabled={disabled || busy || current}
         className={cn(
-          "mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-colors disabled:opacity-50",
+          "mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-medium transition-colors disabled:opacity-50",
           current
             ? "border border-border text-muted-foreground"
             : "bg-primary text-white hover:bg-primary-hover"

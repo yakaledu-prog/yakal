@@ -166,7 +166,7 @@ export function TutorProfile() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight mb-2">{profile?.full_name || "Tutor"}</h1>
-                  {/* <span className="bg-white/20 text-white text-[12px] font-bold px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
+                  {/* <span className="bg-white/20 text-white text-[12px] font-medium px-3 py-1 rounded-full mb-3 inline-block capitalize">{profile?.role}</span> */}
                   {profile?.bio && <p className="text-white/80 text-[14px] max-w-xl">{profile.bio}</p>}
 
                   {/* Framed as findability rather than as an unfinished form.
@@ -189,7 +189,7 @@ export function TutorProfile() {
                   <Edit2 size={16} /> Edit Profile
                 </button>
                 <button onClick={() => signOut()}
-                  className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
+                  className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-medium h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
                   <LogOut size={16} /> Log Out
                 </button>
               </div>
@@ -239,7 +239,7 @@ export function TutorProfile() {
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             {/* Details */}
             <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-              <h3 className="text-[16px] font-bold text-foreground">Contact Details</h3>
+              <h3 className="text-[16px] font-medium text-foreground">Contact Details</h3>
               <div className="space-y-4">
                 <DetailRow
                   icon={<Mail size={18} />}
@@ -368,7 +368,7 @@ function EditModal({ onClose }: { onClose: () => void }) {
         className="flex max-h-[88vh] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.3)] dark:bg-[#202c33]"
       >
         <div className="flex items-center justify-between px-7 pt-6">
-          <h2 className="text-[17px] font-semibold tracking-tight text-[#111] dark:text-white">Edit profile</h2>
+          <h2 className="text-[17px] font-medium tracking-tight text-[#111] dark:text-white">Edit profile</h2>
           <button
             onClick={onClose}
             aria-label="Close"

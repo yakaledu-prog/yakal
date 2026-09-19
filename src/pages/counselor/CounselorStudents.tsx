@@ -98,7 +98,7 @@ export function CounselorStudents() {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-0.5">
-                      <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate pr-2">{s.full_name}</p>
+                      <p className="text-[15px] font-medium text-[#111] dark:text-white truncate pr-2">{s.full_name}</p>
                     </div>
                     <p className="text-[13px] text-[#667781] dark:text-[#8696a0] truncate">
                       {s.program_interest || "Undecided"}
@@ -136,7 +136,7 @@ export function CounselorStudents() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#8696a0]">
             <Users size={48} className="mb-4 opacity-50" />
-            <h2 className="text-xl font-semibold mb-2">Advisees</h2>
+            <h2 className="text-xl font-medium mb-2">Advisees</h2>
             <p className="max-w-[300px]">Select a student from the list to view their progress.</p>
           </div>
         )}

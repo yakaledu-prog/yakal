@@ -93,7 +93,7 @@ export function Billing4() {
                   className={cn(
                     "whitespace-nowrap border-b-[3px] px-4 py-3 text-[14px] transition-colors",
                     tab === t.id
-                      ? "border-white font-semibold text-white"
+                      ? "border-white font-medium text-white"
                       : "border-transparent text-white/60 hover:text-white"
                   )}
                 >

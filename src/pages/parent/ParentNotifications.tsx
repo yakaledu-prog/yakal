@@ -84,7 +84,7 @@ function UnlockRequest({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Service</p>
-          <p className="text-[14px] font-semibold text-foreground mt-0.5">{label}</p>
+          <p className="text-[14px] font-medium text-foreground mt-0.5">{label}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -97,7 +97,7 @@ function UnlockRequest({
           <button
             onClick={setUp}
             disabled={busy}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
           >
             <CreditCard size={14} /> Set up {label}
           </button>

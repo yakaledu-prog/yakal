@@ -441,7 +441,7 @@ export function EarningsScreen({
                   return (
                   <tr key={r.id} className="border-b border-border last:border-0">
                     <td className="py-4 pr-4 align-top">
-                      <p className={cn("text-[14px] text-foreground", fresh && "font-semibold")}>
+                      <p className={cn("text-[14px] text-foreground", fresh && "font-medium")}>
                         {new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -460,7 +460,7 @@ export function EarningsScreen({
                           <p
                             className={cn(
                               "truncate text-[14px] text-foreground",
-                              fresh ? "font-bold" : "font-medium"
+                              fresh ? "font-medium" : "font-medium"
                             )}
                           >
                             {r.subject}

@@ -121,7 +121,7 @@ export function StudentCourseDashboard() {
                   isActive ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
                 )}
               >
-                <p className={cn("text-[14px] font-semibold truncate", isActive ? "text-primary" : "text-[#111] dark:text-white")}>{c.title}</p>
+                <p className={cn("text-[14px] font-medium truncate", isActive ? "text-primary" : "text-[#111] dark:text-white")}>{c.title}</p>
                 <p className="text-[12px] text-muted-foreground truncate mt-0.5">{c.subject} • {c.progress}% done</p>
               </Link>
             );
@@ -168,12 +168,12 @@ export function StudentCourseDashboard() {
             
             <div className="flex items-center gap-6 xl:gap-10 border-t border-white/20 xl:border-t-0 pt-4 xl:pt-0 shrink-0">
               <div className="flex flex-col">
-                <span className="text-[12px] font-semibold text-white/70 uppercase tracking-wider">Progress</span>
-                <span className="text-xl font-bold">{activeCourse.progress}%</span>
+                <span className="text-[12px] font-medium text-white/70 uppercase tracking-wider">Progress</span>
+                <span className="text-xl font-medium">{activeCourse.progress}%</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[12px] font-semibold text-white/70 uppercase tracking-wider">Completed</span>
-                <span className="text-xl font-bold">{activeCourse.completedTasks}/{activeCourse.totalTasks}</span>
+                <span className="text-[12px] font-medium text-white/70 uppercase tracking-wider">Completed</span>
+                <span className="text-xl font-medium">{activeCourse.completedTasks}/{activeCourse.totalTasks}</span>
               </div>
             </div>
           </div>

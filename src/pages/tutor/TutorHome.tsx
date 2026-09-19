@@ -93,7 +93,7 @@ export function TutorHome() {
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
                 <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Home</p>
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
                   {today.length > 0
                     ? `You have ${today.length} session${today.length > 1 ? "s" : ""} scheduled today.`
@@ -180,7 +180,7 @@ export function TutorHome() {
                 <button
                   type="button"
                   onClick={() => navigate("/tutor/earnings")}
-                  className="mt-2 h-11 w-full rounded-md bg-primary text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+                  className="mt-2 h-11 w-full rounded-md bg-primary text-[14px] font-medium text-white transition-opacity hover:opacity-90"
                 >
                   See all {owed.length} unpaid {owed.length === 1 ? "item" : "items"}
                 </button>

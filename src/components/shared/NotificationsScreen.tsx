@@ -229,7 +229,7 @@ export function NotificationsScreen({
                       <span
                         className={cn(
                           "text-[14px] truncate",
-                          n.isRead ? "text-foreground font-medium" : "text-foreground font-bold"
+                          n.isRead ? "text-foreground font-medium" : "text-foreground font-medium"
                         )}
                       >
                         {n.title}
@@ -251,7 +251,7 @@ export function NotificationsScreen({
               // without having chosen something first.
               <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
                 <Mail size={36} className="text-[#aebac1] mb-3" />
-                <p className="text-[15px] font-semibold text-foreground">No notification selected</p>
+                <p className="text-[15px] font-medium text-foreground">No notification selected</p>
                 <p className="text-[13px] text-muted-foreground mt-1">
                   Pick one on the left to read it.
                 </p>
@@ -270,7 +270,7 @@ export function NotificationsScreen({
                   >
                     <ArrowLeft size={18} />
                   </button>
-                  <h2 className="flex-1 min-w-0 text-[15px] md:text-[16px] font-bold text-foreground truncate">
+                  <h2 className="flex-1 min-w-0 text-[15px] md:text-[16px] font-medium text-foreground truncate">
                     {active.title}
                   </h2>
                   <span className="hidden sm:flex items-center gap-1 text-[12px] text-muted-foreground shrink-0">
@@ -331,7 +331,7 @@ export function NotificationsScreen({
                         {detail.action && (
                           <Link
                             to={detail.action.url}
-                            className="mt-5 inline-flex items-center gap-1.5 bg-primary px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                            className="mt-5 inline-flex items-center gap-1.5 bg-primary px-4 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover"
                           >
                             {detail.action.label}
                             <ArrowRight size={15} />

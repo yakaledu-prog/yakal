@@ -402,7 +402,7 @@ export function FlagConversationDialog({
                   >
                     <p
                       className={cn(
-                        "flex items-center gap-1.5 text-[13.5px] font-semibold",
+                        "flex items-center gap-1.5 text-[13.5px] font-medium",
                         reasons.includes(r.value) ? "text-primary" : "text-foreground"
                       )}
                     >
@@ -468,7 +468,7 @@ export function FlagConversationDialog({
             <button
               onClick={() => setStep(2)}
               disabled={!picked}
-              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               Next
             </button>
@@ -476,7 +476,7 @@ export function FlagConversationDialog({
             <button
               onClick={() => void submit()}
               disabled={busy || reasons.length === 0 || !picked}
-              className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
               Send report

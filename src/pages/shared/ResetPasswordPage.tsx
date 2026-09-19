@@ -101,7 +101,7 @@ export function ResetPasswordPage() {
             </p>
             <Link
               to="/forgot-password"
-              className="mt-6 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-semibold leading-[44px] text-white hover:bg-primary-hover"
+              className="mt-6 inline-block h-11 rounded-xl bg-primary px-6 text-[14px] font-medium leading-[44px] text-white hover:bg-primary-hover"
             >
               Request a new link
             </Link>
@@ -117,7 +117,7 @@ export function ResetPasswordPage() {
             </p>
             <button
               onClick={() => navigate("/")}
-              className="mt-6 h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
+              className="mt-6 h-12 w-full rounded-xl bg-primary text-[15px] font-medium text-white hover:bg-primary-hover"
             >
               Continue
             </button>
@@ -168,7 +168,7 @@ export function ResetPasswordPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full rounded-xl bg-primary text-[15px] font-bold text-white hover:bg-primary-hover"
+                className="h-12 w-full rounded-xl bg-primary text-[15px] font-medium text-white hover:bg-primary-hover"
               >
                 {loading ? <Loader2 size={16} className="mx-auto animate-spin" /> : "Update password"}
               </Button>

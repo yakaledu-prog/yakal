@@ -85,7 +85,7 @@ function Row({
             <span
               className={cn(
                 "text-[15px] truncate text-[#333] dark:text-[#e9edef]",
-                unreadCount ? "font-semibold" : "font-medium"
+                unreadCount ? "font-medium" : "font-medium"
               )}
             >
               {name}
@@ -107,7 +107,7 @@ function Row({
               <span
                 className={cn(
                   "text-[12px]",
-                  unreadCount ? "text-primary font-semibold" : "text-[#667781] dark:text-[#8696a0]"
+                  unreadCount ? "text-primary font-medium" : "text-[#667781] dark:text-[#8696a0]"
                 )}
               >
                 {timestamp}
@@ -143,7 +143,7 @@ function Row({
                 previewIsPrompt
                   ? "text-primary font-medium"
                   : previewUnread
-                    ? "text-[#111] dark:text-[#e9edef] font-semibold"
+                    ? "text-[#111] dark:text-[#e9edef] font-medium"
                     : "text-[#667781] dark:text-[#8696a0]"
               )}
             >
@@ -151,7 +151,7 @@ function Row({
             </span>
           )}
           {!!unreadCount && (
-            <span className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none shrink-0">
+            <span className="min-w-[20px] h-5 px-1.5 bg-primary text-white text-[11px] font-medium rounded-full flex items-center justify-center leading-none shrink-0">
               {unreadCount}
             </span>
           )}

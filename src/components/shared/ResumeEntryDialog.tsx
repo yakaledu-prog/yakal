@@ -119,7 +119,7 @@ export function ResumeEntryDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-popover shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-5">
-          <h3 className="text-[17px] font-semibold text-foreground">{title}</h3>
+          <h3 className="text-[17px] font-medium text-foreground">{title}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -161,7 +161,7 @@ export function ResumeEntryDialog({
           <Button variant="outline" onClick={onClose} className="h-11 px-5">
             Cancel
           </Button>
-          <Button disabled={!canSave} onClick={save} className="h-11 px-6 font-semibold">
+          <Button disabled={!canSave} onClick={save} className="h-11 px-6 font-medium">
             Add
           </Button>
         </div>

@@ -39,7 +39,7 @@ export function Section({
   return (
     <section>
       <div className="mb-5 flex items-end justify-between border-b border-border pb-2">
-        <span className="inline-flex items-center gap-2 border-b-2 border-primary pb-2 text-[16px] font-bold text-foreground">
+        <span className="inline-flex items-center gap-2 border-b-2 border-primary pb-2 text-[16px] font-medium text-foreground">
           {icon} {title}
         </span>
         {note ? (
@@ -81,7 +81,7 @@ export function Entry({
         {when}
       </div>
       <div className="min-w-0 flex-1">
-        <h4 className="text-[16px] font-bold text-foreground">{title}</h4>
+        <h4 className="text-[16px] font-medium text-foreground">{title}</h4>
         {subtitle && <p className="text-[14px] text-muted-foreground">{subtitle}</p>}
         {body && <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{body}</p>}
       </div>
