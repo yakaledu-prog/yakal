@@ -188,7 +188,7 @@ export function AdminEssayPrompts() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover"
           >
             <Plus size={16} />
             Add a prompt
@@ -218,7 +218,7 @@ export function AdminEssayPrompts() {
                   ) : (
                     <ApplicationLogo appKey={rows[0].app_key ?? ""} name={owner} size={32} />
                   )}
-                  <h2 className="text-[15px] font-semibold text-foreground">{owner}</h2>
+                  <h2 className="text-[15px] font-medium text-foreground">{owner}</h2>
                   <span className="text-[12.5px] text-muted-foreground">
                     {rows.length} {rows.length === 1 ? "prompt" : "prompts"}
                   </span>
@@ -379,7 +379,7 @@ function PromptEditor({
     >
       <div className="flex max-h-[84vh] w-full max-w-xl flex-col overflow-hidden rounded-lg bg-card shadow-2xl">
         <header className="flex items-center justify-between border-b border-border/50 px-6 py-4">
-          <h2 className="text-[16px] font-semibold text-foreground">
+          <h2 className="text-[16px] font-medium text-foreground">
             {prompt ? "Edit prompt" : "Add a prompt"}
           </h2>
           <button
@@ -515,7 +515,7 @@ function PromptEditor({
             type="button"
             onClick={() => void save()}
             disabled={busy || !title.trim() || !text.trim()}
-            className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-[14px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-[14px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={15} />}
             Save

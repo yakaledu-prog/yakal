@@ -127,7 +127,7 @@ function EditDialog({
         className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl"
       >
         <div className="flex items-start justify-between gap-4 px-5 pt-5 md:px-6 md:pt-6">
-          <h2 className="text-[19px] font-semibold tracking-tight">Testimonial</h2>
+          <h2 className="text-[19px] font-medium tracking-tight">Testimonial</h2>
           <button onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/60">
             <X size={18} />
           </button>
@@ -543,7 +543,7 @@ export function AdminTestimonials() {
 
             <button
               onClick={() => setEditing(null)}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-semibold text-white hover:bg-primary-hover"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-medium text-white hover:bg-primary-hover"
             >
               <MessageCirclePlus size={16} /> Add testimonial
             </button>

@@ -110,11 +110,11 @@ export function AdminProfile() {
 
             <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
               <button onClick={() => { setName(profile?.full_name || ""); setEditOpen(true); }}
-                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto">
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium h-11 px-4 rounded-lg transition-colors backdrop-blur-sm w-full md:w-auto">
                 <SquarePenIcon size={16} /> Edit Profile
               </button>
               <button onClick={() => signOut()}
-                className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-semibold h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
+                className="flex items-center justify-center gap-2 !bg-tertiary/40 border border-tertiary/40 hover:!bg-secondary/30 !text-white font-medium h-11 px-4 rounded-lg transition-colors w-full md:w-auto">
                 <LogOut size={16} /> Log Out
               </button>
             </div>
@@ -136,7 +136,7 @@ export function AdminProfile() {
                      the columns stack, so one group ran straight into the
                      next with only a heading to separate them. */
                   <section key={group} className={i > 0 ? "border-t border-border pt-8" : undefined}>
-                    <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <h3 className="mb-4 text-[13px] font-medium uppercase tracking-wider text-muted-foreground">
                       {group}
                     </h3>
                     <div className="space-y-4">
@@ -180,7 +180,7 @@ export function AdminProfile() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white dark:bg-[#202c33] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-[#e9edef] dark:border-[#2a3942] shrink-0">
-              <h2 className="text-[20px] font-bold text-[#111] dark:text-white">Edit Profile</h2>
+              <h2 className="text-[20px] font-medium text-[#111] dark:text-white">Edit Profile</h2>
               <button onClick={() => setEditOpen(false)} className="p-2 text-[#54656f] hover:text-[#111] dark:text-[#aebac1] dark:hover:text-white transition-colors rounded-full hover:bg-[#f8f9fa] dark:hover:bg-[#111b21]"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-6 flex-1 overflow-y-auto">
@@ -197,7 +197,7 @@ export function AdminProfile() {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-[#e9edef] dark:border-[#2a3942] bg-[#f8f9fa] dark:bg-[#182329] shrink-0">
               <Button variant="outline" onClick={() => setEditOpen(false)} className="h-10 px-6 border-[#e9edef] dark:border-[#2a3942]">Cancel</Button>
-              <Button onClick={saveName} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold">
+              <Button onClick={saveName} disabled={saving} className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-medium">
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
             </div>

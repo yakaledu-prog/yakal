@@ -96,7 +96,7 @@ export function RefundDialog({
               <dl className="space-y-2 rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[13px] text-muted-foreground">Back to the parent</dt>
-                  <dd className="text-[15px] font-semibold tabular-nums text-foreground">
+                  <dd className="text-[15px] font-medium tabular-nums text-foreground">
                     {money(preview?.amountCents ?? 0)}
                   </dd>
                 </div>
@@ -113,7 +113,7 @@ export function RefundDialog({
                     <dt className="text-[13px] text-[#8a6a2a] dark:text-secondary">
                       Yakal absorbs
                     </dt>
-                    <dd className="text-[15px] font-semibold tabular-nums text-[#8a6a2a] dark:text-secondary">
+                    <dd className="text-[15px] font-medium tabular-nums text-[#8a6a2a] dark:text-secondary">
                       {money(preview!.alreadyPaidOutCents)}
                     </dd>
                   </div>

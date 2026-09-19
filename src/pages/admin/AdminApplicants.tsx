@@ -47,7 +47,7 @@ function RejectDialog({
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#182229] rounded-2xl w-full max-w-md p-5 shadow-xl">
-        <h3 className="text-[16px] font-bold text-[#111] dark:text-white">
+        <h3 className="text-[16px] font-medium text-[#111] dark:text-white">
           Reject {applicant.full_name}?
         </h3>
         <p className="text-[13px] text-[#667781] dark:text-[#8696a0] mt-1">
@@ -71,7 +71,7 @@ function RejectDialog({
           </button>
           <button
             onClick={() => onConfirm(reason)}
-            className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-secondary text-white hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-xl text-[13px] font-medium bg-secondary text-white hover:opacity-90 transition-opacity"
           >
             Reject application
           </button>
@@ -160,7 +160,7 @@ export function AdminApplicants() {
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={cn(
-                  "pb-3 text-[13px] font-semibold whitespace-nowrap border-b-2 transition-colors",
+                  "pb-3 text-[13px] font-medium whitespace-nowrap border-b-2 transition-colors",
                   tab === t.key ? "border-white text-white" : "border-transparent text-white/70 hover:text-white"
                 )}
               >
@@ -179,7 +179,7 @@ export function AdminApplicants() {
         ) : applicants.length === 0 ? (
           <div className="text-center py-16">
             <Inbox size={40} className="mx-auto text-[#aebac1] mb-3" />
-            <p className="text-[15px] font-semibold text-foreground">
+            <p className="text-[15px] font-medium text-foreground">
               {tab === "pending" ? "No applications waiting" : `Nothing here`}
             </p>
             <p className="text-[13px] text-muted-foreground mt-1">
@@ -205,8 +205,8 @@ export function AdminApplicants() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-[15px] font-semibold text-foreground">{a.full_name}</h2>
-                        <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        <h2 className="text-[15px] font-medium text-foreground">{a.full_name}</h2>
+                        <span className="text-[11px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                           {a.role}
                         </span>
                         <span className="text-[12px] text-muted-foreground">
@@ -268,7 +268,7 @@ export function AdminApplicants() {
                         <button
                           onClick={() => decide(a, true)}
                           disabled={isBusy}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium bg-primary text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
                         >
                           {isBusy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                           Approve

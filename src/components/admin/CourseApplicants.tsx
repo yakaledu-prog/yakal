@@ -144,7 +144,7 @@ export function CourseApplicants({
                     className="h-14 w-14 shrink-0 rounded-full object-cover"
                   />
                   <div className="min-w-0">
-                    <h3 className="text-[16px] font-bold text-[#111] dark:text-white">
+                    <h3 className="text-[16px] font-medium text-[#111] dark:text-white">
                       {a.tutor.name}
                     </h3>
                     {a.tutor.email && (
@@ -213,7 +213,7 @@ export function CourseApplicants({
                     <button
                       onClick={() => void accept(a)}
                       disabled={busyId === a.id}
-                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
                     >
                       {busyId === a.id ? (
                         <Loader2 size={14} className="animate-spin" />

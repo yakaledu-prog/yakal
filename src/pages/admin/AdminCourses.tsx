@@ -331,12 +331,12 @@ export function AdminCourses() {
                     <div>
                       {/* Top Row: Title and Price */}
                       <div className={cn("flex justify-between items-start gap-4 mb-2", viewMode === "grid" ? "flex-col" : "flex-row")}>
-                        <h3 className={cn("text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white leading-tight truncate w-full flex items-center", viewMode === "grid" ? "justify-between" : "gap-3")}>
+                        <h3 className={cn("text-xl md:text-2xl font-medium tracking-tight text-[#111] dark:text-white leading-tight truncate w-full flex items-center", viewMode === "grid" ? "justify-between" : "gap-3")}>
                           <span className="truncate">{c.title}</span>
                         </h3>
                         {/* Pricing as Text */}
                         <div className={cn("flex", viewMode === "grid" ? "w-full flex-row items-end justify-between" : "flex-col gap-1 text-right")}>
-                          <div className="text-[18px] md:text-xl font-bold text-[#111] dark:text-white flex items-center gap-1">
+                          <div className="text-[18px] md:text-xl font-medium text-[#111] dark:text-white flex items-center gap-1">
                             {c.price_cents != null ? money(c.price_cents) : "—"} <span className="text-[13px] font-normal text-muted-foreground tracking-normal">parent</span>
                           </div>
                           {c.tutor_payout_cents != null && <div className="text-[13px] font-medium text-primary">

@@ -54,7 +54,7 @@ export function AdminHome() {
           <div className="relative z-10 max-w-[1440px] mx-auto p-6 md:p-10 space-y-8">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Welcome back, {firstName}!</h1>
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight">Welcome back, {firstName}!</h1>
                 <p className="text-white/80 text-[15px]">
                   {pendingCount > 0
                     ? `${pendingCount} application${pendingCount > 1 ? "s" : ""} waiting for your review.`
@@ -86,7 +86,7 @@ export function AdminHome() {
           {/* Pending approvals */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground">
                 <UserCheck size={20} className="text-primary" /> Pending approvals
               </h2>
               <button onClick={() => navigate("/admin/users?role=tutor")} className="text-[13px] text-muted-foreground hover:text-primary transition-colors">View all</button>
@@ -102,13 +102,13 @@ export function AdminHome() {
                   <div key={u.id} className="flex items-center gap-3 p-4 bg-white dark:bg-[#111b21] border border-[#e9edef] dark:border-[#2a3942] rounded-xl">
                     <img src={u.avatar_url || dicebearUrl(u.full_name)} alt="" className="w-11 h-11 rounded-full object-cover" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[15px] font-semibold text-[#111] dark:text-white truncate">{u.full_name}</p>
+                      <p className="text-[15px] font-medium text-[#111] dark:text-white truncate">{u.full_name}</p>
                       <p className="text-[12px] text-muted-foreground truncate capitalize">{u.role}{u.email ? ` - ${u.email}` : ""}</p>
                     </div>
-                    <button onClick={() => act(u.id, true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-primary-hover">
+                    <button onClick={() => act(u.id, true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-medium hover:bg-primary-hover">
                       <Check size={14} /> Approve
                     </button>
-                    <button onClick={() => act(u.id, false)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[12px] font-semibold hover:bg-[#c0392b]/5">
+                    <button onClick={() => act(u.id, false)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[#c0392b] text-[12px] font-medium hover:bg-[#c0392b]/5">
                       <X size={14} /> Reject
                     </button>
                   </div>
@@ -120,7 +120,7 @@ export function AdminHome() {
           {/* Users by role */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <h2 className="text-[18px] font-semibold flex items-center gap-2 text-foreground">
+              <h2 className="text-[18px] font-medium flex items-center gap-2 text-foreground">
                 <Users size={20} className="text-primary" /> Users by role
               </h2>
             </div>

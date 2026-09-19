@@ -109,7 +109,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
     if (isError) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-10">
-          <p className="text-[14px] font-bold text-red-500">Error loading details</p>
+          <p className="text-[14px] font-medium text-red-500">Error loading details</p>
           <p className="mt-2 text-[13px] text-muted-foreground">{error instanceof Error ? error.message : "Unknown error"}</p>
         </div>
       );
@@ -128,15 +128,15 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
               {invoices.map((inv: any) => (
                 <div key={inv.id} className="p-4 flex items-center justify-between bg-white dark:bg-[#111b21]">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#111] dark:text-white">{inv.description}</p>
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">{inv.description}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">{safeFormatDate(inv.created_at, "MMM d, yyyy")}</p>
                   </div>
                   <div className="text-right">
                     {/* A parent's row is an invoice and a tutor's is an
                         earning, but the service hands both over in the same
                         shape, so there is nothing to branch on here. */}
-                    <p className="text-[14px] font-bold text-[#111] dark:text-white">{money(inv.amount_cents)}</p>
-                    <p className={cn("text-[11px] font-semibold uppercase mt-1",
+                    <p className="text-[14px] font-medium text-[#111] dark:text-white">{money(inv.amount_cents)}</p>
+                    <p className={cn("text-[11px] font-medium uppercase mt-1",
                       inv.status === "paid" || inv.status === "settled" ? "text-emerald-500" : "text-amber-500"
                     )}>
                       {inv.status}
@@ -162,7 +162,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                 <div key={s.id} className="flex items-center gap-4 p-4 bg-white dark:bg-[#111b21]">
                   <img src={s.avatar_url || dicebearUrl(s.full_name)} alt={s.full_name} className="w-10 h-10 rounded-full border border-black/5" />
                   <div>
-                    <p className="text-[13px] font-bold text-[#111] dark:text-white">{s.full_name}</p>
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">{s.full_name}</p>
                     {s.grade_level && <p className="text-[11px] text-muted-foreground mt-0.5">{s.grade_level}</p>}
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                       />
                     )}
                     <div>
-                      <p className="text-[13px] font-semibold text-[#111] dark:text-white">
+                      <p className="text-[13px] font-medium text-[#111] dark:text-white">
                         {s.other_profile ? s.other_profile.full_name : (s.title || "Untitled Session")}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1">
@@ -201,7 +201,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-[11px] font-semibold uppercase",
+                    <p className={cn("text-[11px] font-medium uppercase",
                       s.status === "completed" ? "text-primary" :
                         s.status === "cancelled" ? "text-red-500" : "text-muted-foreground"
                     )}>
@@ -227,7 +227,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
               {apps.map((a: any) => (
                 <div key={a.id} className="p-4 bg-white dark:bg-[#111b21] flex justify-between items-center">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#111] dark:text-white">Program: {a.program_interest || "Undecided"}</p>
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">Program: {a.program_interest || "Undecided"}</p>
                     <p className="text-[12px] text-muted-foreground mt-1">Stage: <span className="font-medium capitalize">{a.stage}</span></p>
                     {/* Who to go to about this student. A face rather than a
                         name: the row stores an id, and an admin recognises the
@@ -249,7 +249,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">{a.status}</p>
+                    <p className="text-[11px] font-medium uppercase text-muted-foreground">{a.status}</p>
                   </div>
                 </div>
               ))}
@@ -269,9 +269,9 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
             <div className="divide-y divide-[#e9edef] dark:divide-[#2a3942] border border-[#e9edef] dark:border-[#2a3942] rounded-xl overflow-hidden">
               {(list || []).map((item: any) => (
                 <div key={item.id} className="p-4 bg-white dark:bg-[#111b21] flex items-center justify-between">
-                  <p className="text-[13px] font-semibold text-[#111] dark:text-white capitalize">{item.title}</p>
+                  <p className="text-[13px] font-medium text-[#111] dark:text-white capitalize">{item.title}</p>
                   <span className={cn(
-                    "text-[11px] font-semibold uppercase",
+                    "text-[11px] font-medium uppercase",
                     item.is_active ? "text-primary" : "text-muted-foreground"
                   )}>
                     {item.is_active ? "Active" : "Inactive"}
@@ -317,7 +317,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
             />
             <div className={cn("flex-1", user.status !== "active" && "opacity-80")}>
               <div className="flex items-center flex-wrap gap-2 mb-2">
-                <h2 className="text-[20px] font-bold text-white leading-tight">{user.full_name}</h2>
+                <h2 className="text-[20px] font-medium text-white leading-tight">{user.full_name}</h2>
                 {user.role === "student" && !isLoading && details?.child_services && (() => {
                   const activeServices = details.child_services.filter((s: any) => s.is_active);
                   if (activeServices.length === 0) return null;
@@ -367,7 +367,7 @@ export function AdminUserViewModalTabbed({ isOpen, onClose, user }: AdminUserVie
                     <ViewCvButton
                       path={details.profile.cv_url}
                       label="View Resume"
-                      className="mt-2 !rounded-md !border-white/20 bg-white/10 !px-2.5 !py-1 !text-[11px] font-semibold text-white hover:!bg-white/20"
+                      className="mt-2 !rounded-md !border-white/20 bg-white/10 !px-2.5 !py-1 !text-[11px] font-medium text-white hover:!bg-white/20"
                     />
                   )}
                 </div>

@@ -150,7 +150,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
 
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#e9edef] dark:border-[#2a3942] flex items-center justify-between shrink-0">
-          <h2 className="text-xl font-bold text-[#111] dark:text-white">
+          <h2 className="text-xl font-medium text-[#111] dark:text-white">
             {initialData ? "Edit Course" : "Create New Course"}
           </h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#182329] transition-colors">
@@ -278,7 +278,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                     ) : (
                       classroomPreview.slice(0, previewLimit).map((cw, i) => (
                         <div key={i} className="bg-white dark:bg-[#111b21] p-3 rounded-lg border border-[#e9edef] dark:border-[#2a3942] text-[13px]">
-                          <p className="font-semibold text-[#111] dark:text-white truncate">{cw.title}</p>
+                          <p className="font-medium text-[#111] dark:text-white truncate">{cw.title}</p>
                           {cw.description && <p className="text-muted-foreground truncate text-[12px] mt-1">{cw.description}</p>}
                         </div>
                       ))
@@ -306,7 +306,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                         value={formData.price_cents}
                         onChange={e => setFormData({ ...formData, price_cents: e.target.value })}
                         placeholder="0.00"
-                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-semibold"
+                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-medium"
                       />
                     </div>
                   </div>
@@ -319,7 +319,7 @@ export function AdminCourseModal({ isOpen, onClose, initialData, onSubmit, isSub
                         value={formData.tutor_payout_cents}
                         onChange={e => setFormData({ ...formData, tutor_payout_cents: e.target.value })}
                         placeholder="0.00"
-                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-semibold"
+                        className="pl-8 bg-gray-50 dark:bg-[#182329] border-transparent focus:bg-white text-lg font-medium"
                       />
                     </div>
                   </div>
