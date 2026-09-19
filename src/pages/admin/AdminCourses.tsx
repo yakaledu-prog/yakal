@@ -224,8 +224,8 @@ export function AdminCourses() {
                     <SortHeader label="Subject" col="subject" sort={sort} onSort={setSort} className="w-[12%] pr-4" />
                     <SortHeader label="Parent pays" col="price" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
                     <SortHeader label="Tutor gets" col="payout" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
-                    <SortHeader label="Students" col="students" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-8" />
-                    <SortHeader label="Tutor" col="tutor" sort={sort} onSort={setSort} className="w-[16%] pr-4" />
+                    <SortHeader label="Students" col="students" sort={sort} onSort={setSort} align="right" className="w-[12%] pr-10" />
+                    <SortHeader label="Tutor" col="tutor" sort={sort} onSort={setSort} className="w-[15%] pr-4" />
                     <SortHeader label="Active" col="status" sort={sort} onSort={setSort} className="w-[7%] pr-2" />
                     <th className="w-[80px] pb-2" />
                   </tr>
@@ -269,7 +269,7 @@ export function AdminCourses() {
                         <td className="py-3 pr-6 text-right align-middle text-[13px] tabular-nums text-primary">
                           {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "-"}
                         </td>
-                        <td className="py-3 pr-8 text-right align-middle text-[13px] tabular-nums text-muted-foreground">
+                        <td className="py-3 pr-10 text-right align-middle text-[13px] tabular-nums text-muted-foreground">
                           {r?.students ?? 0}
                         </td>
                         <td className="py-3 pr-4 align-middle">
