@@ -10,7 +10,9 @@ function fmtDate(d: string) {
   const dt = new Date(d);
   return isNaN(dt.getTime()) ? "" : dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-const isNew = (m: ContactMessage) => m.status === "new" || !m.status;
+// Anything not yet handled. The column defaults to "unread", which this used
+// to miss, so every new message arrived looking already dealt with.
+const isNew = (m: ContactMessage) => m.status !== "handled";
 
 // Tabs state
 type Tab = "inbox" | "unread" | "archived";

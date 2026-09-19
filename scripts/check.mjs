@@ -47,6 +47,7 @@ const NEEDS_DB = [
   ['drive-zoom-auth.ts', 'Drive and Zoom answer only to the right person'],
   ['testimonials.mjs', 'testimonials RLS'],
   ['push-shared-browser.mjs', 'a shared browser can turn notifications on'],
+  ['public-writes.ts', 'the blog, the contact inbox and notifications answer only to the right people'],
   ['service-entitlements.mjs', 'service access follows payment alone'],
   ['invoice-pricing.ts', 'the browser cannot set a price, a payee or a payout'],
   ['plan-ownership.ts', 'who may change a child\'s counselling plan'],

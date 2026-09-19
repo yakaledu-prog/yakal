@@ -84,9 +84,11 @@ export async function setNotificationArchived(id: string, archived: boolean): Pr
  * stored line and a bare "Open" button, and one that sends no email. Eleven
  * call sites did exactly that; this is what stops a twelfth.
  *
- * The INSERT policy currently allows any signed-in user to write a row for any
- * user_id, which is what makes student-to-parent requests possible without a
- * server. That is a known shortcut, tracked in the hardening checklist.
+ * The INSERT policy only lets a row through when the database agrees the
+ * sender has a reason to send that template to that person (may_notify: a
+ * linked parent, the session's tutor, the assigned counsellor, an admin), and
+ * a trigger stamps who wrote it, which is what the email half checks. A new
+ * template sent from the browser needs a case there, or its insert fails.
  */
 async function sendNotification(input: {
   userId: string;
