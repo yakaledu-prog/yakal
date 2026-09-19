@@ -26,7 +26,8 @@ export function AdminLayout() {
   // is. Thirteen flat links made the rail a list to read rather than scan, and
   // the daily things (Billing, Reports) sat between pages visited once a
   // month. Those two stay top level because they are queues somebody works
-  // through; the groups hold setup that changes rarely.
+  // through; the groups hold setup that changes rarely. They sit below the
+  // groups, beside Notifications, so the working items are together.
   const navItems = [
     { name: "Home", href: "/admin", icon: <Home size={20} /> },
     {
@@ -48,8 +49,6 @@ export function AdminLayout() {
         { name: "Diagnostics", href: "/admin/diagnostics", icon: <ClipboardList size={18} /> },
       ],
     },
-    { name: "Billing", href: "/admin/billing", icon: <CreditCard size={20} /> },
-    { name: "Reports", href: "/admin/reports", icon: <Flag size={20} /> },
     {
       // The public site: what a visitor reads, and who signed up to hear more.
       name: "Website",
@@ -60,6 +59,8 @@ export function AdminLayout() {
         { name: "Subscribers", href: "/admin/subscribers", icon: <Mail size={18} /> },
       ],
     },
+    { name: "Billing", href: "/admin/billing", icon: <CreditCard size={20} /> },
+    { name: "Reports", href: "/admin/reports", icon: <Flag size={20} /> },
     { name: "Notifications", href: "/admin/notifications", icon: <Bell size={20} /> },
   ];
 

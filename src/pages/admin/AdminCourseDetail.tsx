@@ -1,25 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Users, ExternalLink, Calendar, Star, Search, BookOpen, ChevronLeft } from "lucide-react";
-import { getCourse, getCourses, getCourseAssignments, getCourseDetail, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
+import { Users, ExternalLink, Calendar, Star, ChevronLeft } from "lucide-react";
+import { getCourse, getCourseAssignments, getCourseDetail, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
-import { useMasterDetail } from "@/hooks/useMasterDetail";
 import { CourseApplicants } from "@/components/admin/CourseApplicants";
 import { CourseAssignments } from "@/components/shared/CourseAssignments";
 import { useQuery } from "@tanstack/react-query";
 import { StudentsTab } from "@/pages/admin/courses/StudentsTab";
 
 export function AdminCourseDetail() {
-  // One column at a time on a phone, both on a desktop.
-  const { openDetail, closeDetail, listClass, detailClass } = useMasterDetail();
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<AdminCourse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tutors");
-  const [courses, setCourses] = useState<AdminCourse[]>([]);
-  const [query, setQuery] = useState("");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
 
   // The enrolled count in the header, from the same query the Students tab
@@ -39,23 +34,10 @@ export function AdminCourseDetail() {
     }
   }, [id]);
 
-  // The other courses, for the sidebar. Same shape as the tutor's My Courses:
-  // pick one on the left, work on it on the right, without going back to a
-  // list page in between.
+  // Who is waiting on a decision, for the applicants block above the tabs.
   useEffect(() => {
-    getCourses().then(setCourses);
     getPendingApplicantCounts().then(setPendingCounts);
   }, []);
-
-  // Courses with someone waiting float to the top, so the ones needing a
-  // decision are found without opening each in turn.
-  const filtered = courses
-    .filter(
-      (c) =>
-        c.title.toLowerCase().includes(query.toLowerCase()) ||
-        c.subject.toLowerCase().includes(query.toLowerCase())
-    )
-    .sort((a, b) => (pendingCounts[b.id] ?? 0) - (pendingCounts[a.id] ?? 0));
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" /></div>;
@@ -74,87 +56,12 @@ export function AdminCourseDetail() {
   ];
 
   return (
-    <div className="course-page flex h-full min-h-0 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
-      {/* Left pane: search and the course list */}
-      <aside
-        className={cn(
-          "w-full md:shrink-0 flex-col border-b border-[#e9edef] bg-white dark:border-[#2a3942] dark:bg-[#111b21] md:h-full md:w-[300px] md:border-b-0 md:border-r",
-          listClass
-        )}
-      >
-        <div className="border-b border-[#e9edef] px-3 pb-2 pt-4 dark:border-[#2a3942]">
-          {/* Above the search rather than over the banner: the sidebar is
-              where you move between courses, so leaving them belongs here. */}
-          <button
-            onClick={() => navigate("/admin/courses")}
-            className="mb-2 flex items-center gap-1 px-2 text-[13px] font-medium text-primary transition-colors hover:underline"
-          >
-            <ChevronLeft size={15} /> Back to Courses
-          </button>
-
-          <div className="group flex items-center gap-2 border-b-2 border-transparent px-2 py-2 transition focus-within:border-primary">
-            <Search size={18} className="shrink-0 text-[#697780] group-focus-within:text-primary" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search courses..."
-              className="flex-1 bg-transparent text-[14px] text-[#111] outline-none placeholder:text-[#8696a0] dark:text-white"
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map((c) => {
-            const active = c.id === course.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => { openDetail(); navigate(`/admin/courses/${c.id}`); }}
-                className={cn(
-                  "flex w-full items-center gap-3 border-l-2 p-4 text-left transition-colors",
-                  active
-                    ? "border-l-primary bg-primary/5"
-                    : "border-l-transparent hover:bg-[#f8f9fa] dark:hover:bg-[#182329]"
-                )}
-              >
-                {c.thumbnail_url ? (
-                  <img src={c.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                    <BookOpen size={18} />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      "truncate text-[14px] font-semibold",
-                      active ? "text-primary" : "text-[#111] dark:text-white"
-                    )}
-                  >
-                    {c.title}
-                  </p>
-                  <p className="truncate text-[12px] text-muted-foreground">
-                    {c.subject}
-                    {pendingCounts[c.id] ? (
-                      <span className="ml-1.5 font-medium text-[#8a6a2a] dark:text-secondary">
-                        {pendingCounts[c.id]} waiting
-                      </span>
-                    ) : null}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      {/* Right pane */}
-      <section
-        className={cn(
-          "min-w-0 min-h-0 flex-1 flex-col overflow-y-auto bg-[#fafafa] dark:bg-[#111b21] md:h-full",
-          detailClass
-        )}
-      >
+    // One column, the course and nothing beside it. A list of every other
+    // course used to run down the left, which halved the page for a switch
+    // nobody needed: the courses page is one click back, and its table is the
+    // better place to choose from.
+    <div className="course-page flex h-full min-h-0 flex-col overflow-y-auto">
+      <section className="min-w-0 flex-1 bg-[#fafafa] dark:bg-[#111b21]">
         {/* Header Banner */}
         <div className="w-full bg-primary text-white pt-8 px-6 md:px-10 relative overflow-hidden">
           {/* Subtle background decoration */}
@@ -163,15 +70,12 @@ export function AdminCourseDetail() {
           <div className="max-w-[1440px] mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
               <div className="max-w-[800px]">
-                {/* Only the phone needs this: on desktop the catalogue is still
-                  beside the course. */}
                 <button
                   type="button"
-                  onClick={closeDetail}
-                  aria-label="Back"
-                  className="-ml-2 mb-2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+                  onClick={() => navigate("/admin/courses")}
+                  className="mb-3 flex items-center gap-1 text-[13px] font-medium text-white/80 transition-colors hover:text-white"
                 >
-                  <ChevronLeft size={22} />
+                  <ChevronLeft size={15} /> Back to Courses
                 </button>
                 <h1 className="text-[32px] md:text-[48px] font-bold tracking-tight mb-4 leading-tight">{course.title}</h1>
                 {course.description ? (

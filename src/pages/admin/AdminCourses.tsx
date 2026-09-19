@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,7 +10,45 @@ import { Loader2, Plus, Pencil, ExternalLink, Search, LayoutGrid, List } from "l
 import { cn } from "@/utils/cn";
 import { dicebearUrl } from "@/utils/avatar";
 import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { SortHeader, sortRows, type Sort } from "@/components/ui/SortHeader";
 import { AdminCourseModal } from "./courses/AdminCourseModal";
+
+type CourseCol = "title" | "subject" | "price" | "payout" | "students" | "tutor" | "status";
+
+const STATUSES = [
+  { value: "all", label: "Any status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
+
+const STAFFING = [
+  { value: "all", label: "Any tutor" },
+  { value: "staffed", label: "Has a tutor" },
+  { value: "unstaffed", label: "No tutor yet" },
+];
+
+/**
+ * On or off for parents. Its own component so the list and the grid show the
+ * same control in the same place, beside Edit, rather than one inside the title.
+ */
+function ActiveSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={cn("relative h-5 w-10 shrink-0 rounded-full transition-colors", on ? "bg-primary" : "bg-gray-300 dark:bg-gray-700")}
+      title={on ? "Deactivate course" : "Activate course"}
+    >
+      <div className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all", on ? "left-[22px]" : "left-0.5")} />
+    </button>
+  );
+}
 
 export function AdminCourses() {
   const navigate = useNavigate();
@@ -25,10 +63,53 @@ export function AdminCourses() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [status, setStatus] = useState("all");
+  const [staffing, setStaffing] = useState("all");
+  const [subject, setSubject] = useState("all");
+  const [sort, setSort] = useState<Sort<CourseCol>>({ col: "title", dir: "asc" });
 
-  const filteredCourses = courses.filter((c) =>
-    c.title.toLowerCase().includes(searchTerm.toLowerCase())
+  // Built from the courses themselves, so a new subject shows up here the day
+  // somebody creates a course in it.
+  const subjects = useMemo(
+    () => [
+      { value: "all", label: "Any subject" },
+      ...[...new Set(courses.map((c) => c.subject).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b))
+        .map((x) => ({ value: x, label: x })),
+    ],
+    [courses]
   );
+
+  const filteredCourses = useMemo(() => {
+    const needle = searchTerm.trim().toLowerCase();
+    const matched = courses.filter((c) => {
+      if (status === "active" && !c.is_active) return false;
+      if (status === "inactive" && c.is_active) return false;
+      const staffed = !!rollups?.[c.id]?.tutorName;
+      if (staffing === "staffed" && !staffed) return false;
+      if (staffing === "unstaffed" && staffed) return false;
+      if (subject !== "all" && c.subject !== subject) return false;
+      if (!needle) return true;
+      return (
+        c.title.toLowerCase().includes(needle) ||
+        (c.subject ?? "").toLowerCase().includes(needle) ||
+        (rollups?.[c.id]?.tutorName ?? "").toLowerCase().includes(needle)
+      );
+    });
+    return sortRows(matched, sort, (c) => {
+      switch (sort.col) {
+        case "subject": return (c.subject ?? "").toLowerCase();
+        case "price": return c.price_cents ?? -1;
+        case "payout": return c.tutor_payout_cents ?? -1;
+        case "students": return rollups?.[c.id]?.students ?? 0;
+        case "tutor": return (rollups?.[c.id]?.tutorName ?? "").toLowerCase();
+        case "status": return c.is_active ? 0 : 1;
+        default: return c.title.toLowerCase();
+      }
+    });
+  }, [courses, rollups, searchTerm, status, staffing, subject, sort]);
+
+  const filtering = searchTerm.trim() !== "" || status !== "all" || staffing !== "all" || subject !== "all";
 
   const active = courses.filter((c) => c.is_active).length;
   const priced = courses.filter((c) => c.price_cents != null).length;
@@ -85,19 +166,23 @@ export function AdminCourses() {
         />
 
         <div className="max-w-[1440px] mx-auto p-6 md:p-10">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div className="relative w-full sm:w-[480px]">
+          <div className="mb-8 flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[260px] flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search courses..."
+                placeholder="Search by course, subject or tutor"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 dark:bg-[#182329]/50 border border-[#e9edef] dark:border-[#2a3942] rounded-xl text-[13px] focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white dark:focus:bg-[#182329] transition-all placeholder:text-muted-foreground/60"
               />
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Dropdown value={status} onChange={setStatus} options={STATUSES} className="w-[150px]" />
+            <Dropdown value={staffing} onChange={setStaffing} options={STAFFING} className="w-[160px]" />
+            <Dropdown value={subject} onChange={setSubject} options={subjects} className="w-[170px]" />
+
+            <div className="flex items-center gap-3">
               <div className="flex bg-gray-100 dark:bg-[#182329] p-1 rounded-lg border border-[#e9edef] dark:border-[#2a3942]">
                 <button
                   onClick={() => setViewMode("list")}
@@ -122,9 +207,106 @@ export function AdminCourses() {
           {isLoading ? (
             <div className="flex justify-center py-16"><Loader2 className="animate-spin text-primary" /></div>
           ) : filteredCourses.length === 0 ? (
-            <p className="text-center py-16 text-[14px] text-muted-foreground">No courses found matching "{searchTerm}".</p>
+            <p className="text-center py-16 text-[14px] text-muted-foreground">
+              {filtering ? "No course matches those filters." : "No courses yet."}
+            </p>
+          ) : viewMode === "list" ? (
+            // The list is a table: a row per course, every column sortable,
+            // and the switch and Edit on the row's own line. The card list it
+            // replaces took a screen per three courses.
+            <div className="overflow-x-auto">
+              {/* Fixed widths: without them the tutor names and the longer
+                  subjects pushed the row past the page and took Edit with it. */}
+              <table className="w-full min-w-[900px] table-fixed">
+                <thead>
+                  <tr className="border-b border-border">
+                    <SortHeader label="Course" col="title" sort={sort} onSort={setSort} className="w-[30%] pr-4" />
+                    <SortHeader label="Subject" col="subject" sort={sort} onSort={setSort} className="w-[12%] pr-4" />
+                    <SortHeader label="Parent pays" col="price" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
+                    <SortHeader label="Tutor gets" col="payout" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-6" />
+                    <SortHeader label="Students" col="students" sort={sort} onSort={setSort} align="right" className="w-[11%] pr-8" />
+                    <SortHeader label="Tutor" col="tutor" sort={sort} onSort={setSort} className="w-[16%] pr-4" />
+                    <SortHeader label="Active" col="status" sort={sort} onSort={setSort} className="w-[7%] pr-2" />
+                    <th className="w-[80px] pb-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCourses.map((c) => {
+                    const r = rollups?.[c.id];
+                    return (
+                      <tr
+                        key={c.id}
+                        onClick={() => navigate(`/admin/courses/${c.id}`)}
+                        className="cursor-pointer border-b border-border transition-colors hover:bg-primary/5"
+                      >
+                        <td className="py-3 pr-4 align-middle">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-14 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-[#202c33]">
+                              {c.thumbnail_url && <img src={c.thumbnail_url} alt="" className="h-full w-full object-cover" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">{c.title}</p>
+                              {c.google_classroom_url && (
+                                <a
+                                  href={c.google_classroom_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 text-[12px] text-primary hover:underline"
+                                >
+                                  <ExternalLink size={12} /> Classroom
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4 align-middle text-[13px] text-muted-foreground">
+                          <span className="block truncate">{c.subject}</span>
+                        </td>
+                        <td className="py-3 pr-6 text-right align-middle text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
+                          {c.price_cents != null ? money(c.price_cents) : "-"}
+                        </td>
+                        <td className="py-3 pr-6 text-right align-middle text-[13px] tabular-nums text-primary">
+                          {c.tutor_payout_cents != null ? money(c.tutor_payout_cents) : "-"}
+                        </td>
+                        <td className="py-3 pr-8 text-right align-middle text-[13px] tabular-nums text-muted-foreground">
+                          {r?.students ?? 0}
+                        </td>
+                        <td className="py-3 pr-4 align-middle">
+                          {/* Without one a course never reaches the parent
+                              catalog, which is the thing worth seeing here. */}
+                          {r?.tutorName ? (
+                            <span className="flex min-w-0 items-center gap-2 text-[13px] text-[#111] dark:text-white">
+                              <img src={r.tutorAvatarUrl || dicebearUrl(r.tutorName)} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                              <span className="truncate">{r.tutorName}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[13px] text-secondary">No tutor yet</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-2 align-middle">
+                          <ActiveSwitch on={c.is_active} onToggle={() => void toggleActive(c)} />
+                        </td>
+                        <td className="py-3 text-right align-middle">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(c);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
+                          >
+                            <Pencil size={13} /> Edit
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <div className={cn(viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-6")}>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredCourses.map((c) => (
                 <div
                   key={c.id}
@@ -148,17 +330,7 @@ export function AdminCourses() {
                       {/* Top Row: Title and Price */}
                       <div className={cn("flex justify-between items-start gap-4 mb-2", viewMode === "grid" ? "flex-col" : "flex-row")}>
                         <h3 className={cn("text-xl md:text-2xl font-bold tracking-tight text-[#111] dark:text-white leading-tight truncate w-full flex items-center", viewMode === "grid" ? "justify-between" : "gap-3")}>
-                          <span>{c.title}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleActive(c);
-                            }}
-                            className={cn("w-10 h-5 rounded-full relative transition-colors", c.is_active ? "bg-primary" : "bg-gray-300 dark:bg-gray-700")}
-                            title={c.is_active ? "Deactivate course" : "Activate course"}
-                          >
-                            <div className={cn("absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm", c.is_active ? "left-[22px]" : "left-0.5")} />
-                          </button>
+                          <span className="truncate">{c.title}</span>
                         </h3>
                         {/* Pricing as Text */}
                         <div className={cn("flex", viewMode === "grid" ? "w-full flex-row items-end justify-between" : "flex-col gap-1 text-right")}>
@@ -238,7 +410,8 @@ export function AdminCourses() {
                       </div>
 
                       {/* Admin Actions */}
-                      <div className="flex items-center gap-5 ml-auto">
+                      <div className="flex items-center gap-4 ml-auto">
+                        <ActiveSwitch on={c.is_active} onToggle={() => void toggleActive(c)} />
                         <Button
                           variant="outline"
                           onClick={(e) => {
