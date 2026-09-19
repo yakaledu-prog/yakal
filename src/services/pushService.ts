@@ -147,9 +147,15 @@ export async function disablePush(): Promise<void> {
 /**
  * Write the endpoint and its keys.
  *
- * Upsert on the endpoint, because a browser hands back the same one for the
+ * Keyed on the endpoint, because a browser hands back the same one for the
  * same registration: without it, signing in twice on one laptop leaves two
  * rows and every notification arrives twice.
+ *
+ * Through claim_push_subscription rather than an upsert. On a shared browser
+ * the endpoint can already belong to whoever turned notifications on before,
+ * and the upsert then tried to update their row, which RLS refuses: the
+ * second person saw "new row violates row-level security policy" and the
+ * first kept getting pushes on a device they had left.
  */
 async function saveSubscription(sub: PushSubscription): Promise<{ ok: boolean; error?: string }> {
   const { data: session } = await supabase.auth.getSession();
@@ -161,18 +167,14 @@ async function saveSubscription(sub: PushSubscription): Promise<{ ok: boolean; e
     return { ok: false, error: "This browser gave us a subscription with no keys." };
   }
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: userId,
-      endpoint: sub.endpoint,
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth,
-      // Only so somebody can tell their own devices apart. Truncated, because
-      // the full string is long and none of the rest of it helps.
-      user_agent: navigator.userAgent.slice(0, 200),
-    },
-    { onConflict: "endpoint" }
-  );
+  const { error } = await supabase.rpc("claim_push_subscription", {
+    p_endpoint: sub.endpoint,
+    p_p256dh: json.keys.p256dh,
+    p_auth: json.keys.auth,
+    // Only so somebody can tell their own devices apart. Truncated, because
+    // the full string is long and none of the rest of it helps.
+    p_user_agent: navigator.userAgent.slice(0, 200),
+  });
 
   if (error) return { ok: false, error: error.message };
   return { ok: true };
