@@ -71,7 +71,7 @@ export function AdminContact() {
             <div className="flex border-b border-[#e9edef] dark:border-[#2a3942]">
               {(["inbox", "unread", "archived"] as Tab[]).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={cn("flex-1 py-3 text-[13px] font-semibold capitalize border-b-2 transition-colors",
+                  className={cn("flex-1 py-3 text-[13px] font-medium capitalize border-b-2 transition-colors",
                     tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
                   {t}
                 </button>
@@ -88,7 +88,7 @@ export function AdminContact() {
                     className={cn("w-full text-left px-4 py-3.5 border-b border-[#e9edef] dark:border-[#2a3942] transition-colors",
                       m.id === activeId ? "bg-[#f0f2f5] dark:bg-[#2a3942]" : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]")}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className={cn("text-[14px] truncate", isNew(m) ? "font-bold text-[#111] dark:text-white" : "font-medium text-[#54656f] dark:text-[#aebac1]")}>
+                      <span className={cn("text-[14px] truncate", isNew(m) ? "font-medium text-[#111] dark:text-white" : "font-medium text-[#54656f] dark:text-[#aebac1]")}>
                         {m.first_name} {m.last_name}
                       </span>
                       <span className="text-[11px] text-muted-foreground shrink-0">{fmtDate(m.created_at)}</span>
@@ -107,15 +107,15 @@ export function AdminContact() {
             {active ? (
               <>
                 <div className="p-6 md:p-8 overflow-y-auto flex-grow">
-                  <h2 className="text-[24px] font-bold text-[#111] dark:text-white mb-6">{active.subject || "No subject"}</h2>
+                  <h2 className="text-[24px] font-medium text-[#111] dark:text-white mb-6">{active.subject || "No subject"}</h2>
 
                   {/* Sender row */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-[15px] shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center font-medium text-[15px] shrink-0">
                       {(active.first_name?.[0] || "?").toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold text-[#111] dark:text-white leading-tight">{active.first_name} {active.last_name}</p>
+                      <p className="text-[14px] font-medium text-[#111] dark:text-white leading-tight">{active.first_name} {active.last_name}</p>
                       <a href={`mailto:${active.email}`} className="text-[12px] text-muted-foreground hover:text-primary">{active.email}</a>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 justify-center">
@@ -153,7 +153,7 @@ export function AdminContact() {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
                 <Inbox size={44} className="mb-3 opacity-50" />
-                <p className="text-[15px] font-semibold text-[#111] dark:text-white">Select a message to read</p>
+                <p className="text-[15px] font-medium text-[#111] dark:text-white">Select a message to read</p>
                 <p className="text-[13px]">Choose an enquiry from the list to view its contents.</p>
               </div>
             )}

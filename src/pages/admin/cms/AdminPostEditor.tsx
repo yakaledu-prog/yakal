@@ -195,7 +195,7 @@ export function AdminPostEditor() {
         <button
           onClick={() => saveRef.current("published")}
           disabled={isSaving || (status === "published" && !hasChanges)}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-primary transition-all hover:font-bold disabled:opacity-40 disabled:hover:font-medium"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-primary transition-all hover:font-medium disabled:opacity-40 disabled:hover:font-medium"
         >
           {status === "published" ? hasChanges ? <Repeat2Icon strokeWidth={2} size={15} /> : <CheckCheckIcon strokeWidth={2} size={15} /> : <CloudUploadIcon size={15} />}
           {status === "published" ? hasChanges ? "Update" : "Published" : "Publish"}
@@ -235,7 +235,7 @@ export function AdminPostEditor() {
             {thumbnailUrl && <div className="absolute top-4 right-4 opacity-0 group-hover/cover:opacity-100 transition-opacity">
               <button
                 onClick={() => { setThumbnailUrl(""); setShowCoverUpload(false); }}
-                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-lg text-[12px] font-semibold backdrop-blur-sm transition-colors"
+                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-lg text-[12px] font-medium backdrop-blur-sm transition-colors"
               >
                 <ImageMinusIcon />
               </button>

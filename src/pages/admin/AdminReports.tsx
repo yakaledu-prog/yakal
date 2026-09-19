@@ -287,7 +287,7 @@ export function AdminReports() {
                       className={cn(
                         "h-8 min-w-8 rounded-lg border px-2 text-[12.5px] transition-colors",
                         n === current
-                          ? "border-primary font-semibold text-primary"
+                          ? "border-primary font-medium text-primary"
                           : "border-border hover:bg-muted/60"
                       )}
                     >
@@ -436,7 +436,7 @@ function ReviewDialog({
                     )}
                   >
                     {!onRight && (
-                      <p className="mb-0.5 text-[12.5px] font-semibold leading-tight text-primary">
+                      <p className="mb-0.5 text-[12.5px] font-medium leading-tight text-primary">
                         {m.senderName}
                       </p>
                     )}
@@ -524,7 +524,7 @@ function ReviewDialog({
                 </button>
                 <button
                   onClick={() => onDecide(flag, "reviewed")}
-                  className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover"
                 >
                   <Check size={15} /> Mark actioned
                 </button>

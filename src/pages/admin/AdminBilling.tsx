@@ -269,7 +269,7 @@ export function AdminBilling() {
                                 {paid ? <CheckCircle2 size={17} /> : <Clock size={15} />}
                               </span>
                               <div className="min-w-0">
-                                <p className="truncate text-[14px] font-semibold text-[#111] dark:text-white">
+                                <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">
                                   {inv.description}
                                 </p>
                                 <p className="truncate text-[12px] text-muted-foreground">
@@ -301,7 +301,7 @@ export function AdminBilling() {
                           >
                             {fullyRefunded ? "Refunded" : partlyRefunded ? "Part refunded" : inv.status}
                           </td>
-                          <td className="py-4 pr-6 text-right align-middle text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+                          <td className="py-4 pr-6 text-right align-middle text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
                             {money(inv.amount_cents, inv.currency)}
                             {inv.refunded_cents > 0 && (
                               <span className="block text-[12px] font-normal text-muted-foreground">
@@ -558,7 +558,7 @@ function TaxYear() {
         {year} needs a 1099-NEC.{" "}
         {needsCorrection.length > 0 ? (
           <>
-            <span className="font-semibold text-[#8a6a2a] dark:text-secondary">
+            <span className="font-medium text-[#8a6a2a] dark:text-secondary">
               {needsCorrection.length} of them {needsCorrection.length === 1 ? "was" : "were"} paid
               partly outside Stripe
             </span>
@@ -595,7 +595,7 @@ function TaxYear() {
                 className="h-10 w-10 shrink-0 rounded-full object-cover"
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold text-[#111] dark:text-white">
+                <p className="truncate text-[14px] font-medium text-[#111] dark:text-white">
                   {p.name}
                 </p>
                 <p className="truncate text-[12px] text-muted-foreground">
@@ -612,7 +612,7 @@ function TaxYear() {
                   : ""}
               </span>
 
-              <span className="w-24 shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+              <span className="w-24 shrink-0 text-right text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
                 {money(p.totalCents)}
               </span>
 
@@ -672,7 +672,7 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
         <div key={d.id} className="py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold text-[#111] dark:text-white">{d.subject}</p>
+              <p className="text-[15px] font-medium text-[#111] dark:text-white">{d.subject}</p>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">
                 {d.tutorName} with {d.studentName} - {fmtDate(d.sessionDate)} -{" "}
                 {/* No raiser means the scheduled check opened it: somebody was in
@@ -680,7 +680,7 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
                 {d.raisedByName ? `reported by ${d.raisedByName}` : "flagged by the attendance check"}
               </p>
             </div>
-            <span className="shrink-0 text-right text-[14px] font-semibold tabular-nums text-[#111] dark:text-white">
+            <span className="shrink-0 text-right text-[14px] font-medium tabular-nums text-[#111] dark:text-white">
               {d.earningCents != null ? money(d.earningCents) : "-"}
               <span className="ml-2 text-[12px] font-normal text-secondary">
                 {d.earningStatus === "held" ? "held" : d.earningStatus}
@@ -749,7 +749,7 @@ function Reports({ disputes, onDone }: { disputes: OpenDispute[]; onDone: () => 
               type="button"
               disabled={busy === d.id}
               onClick={() => void decide(d, "upheld")}
-              className="h-10 rounded-md border border-destructive px-4 text-[13.5px] font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+              className="h-10 rounded-md border border-destructive px-4 text-[13.5px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
             >
               Uphold and refund
             </button>

@@ -9,7 +9,7 @@ import {
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-border bg-background px-4 py-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">{label}</p>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-1">{label}</p>
       <p className="text-xl font-bold text-foreground">{value}</p>
     </div>
   );
@@ -54,7 +54,7 @@ export function DiagnosticResultsPanel({ tests }: { tests: DiagnosticTest[] }) {
     <div className="space-y-5 rounded-xl border border-border bg-card p-5 md:p-6">
       <div className="flex items-center gap-2">
         <BarChart3 size={16} className="text-[#1099A1]" />
-        <h3 className="text-[15px] font-semibold text-foreground">Results across all students</h3>
+        <h3 className="text-[15px] font-medium text-foreground">Results across all students</h3>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

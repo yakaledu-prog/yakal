@@ -85,7 +85,7 @@ export function AdminPosts() {
             <div className="flex-1" />
             <Link
               to="/admin/posts/new"
-              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-full text-[13px] font-bold transition-colors w-full md:w-auto justify-center"
+              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-full text-[13px] font-medium transition-colors w-full md:w-auto justify-center"
             >
               <Plus size={16} /> New Post
             </Link>
@@ -101,7 +101,7 @@ export function AdminPosts() {
               <div className="w-16 h-16 bg-gray-100 dark:bg-[#182329] rounded-full flex items-center justify-center mb-4">
                 <Search className="w-8 h-8 text-muted-foreground" />
               </div>
-              <p className="text-[14px] font-bold text-[#111] dark:text-white">No posts found</p>
+              <p className="text-[14px] font-medium text-[#111] dark:text-white">No posts found</p>
               <p className="text-[13px] text-muted-foreground mt-1">Try adjusting your search or create a new post.</p>
             </div>
           ) : (
@@ -201,13 +201,13 @@ function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => 
           <span>{format(new Date(post.created_at), "MMM d, yyyy")}</span>
 
           {post.status === "draft" && (
-            <span className="absolute left-4 top-4 bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
+            <span className="absolute left-4 top-4 bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider">
               Draft
             </span>
           )}
         </div>
 
-        <h3 className="text-[22px] md:text-[24px] font-bold text-white line-clamp-2 leading-tight mb-3 group-hover:text-[#42e8f1] transition-colors truncate">
+        <h3 className="text-[22px] md:text-[24px] font-medium text-white line-clamp-2 leading-tight mb-3 group-hover:text-[#42e8f1] transition-colors truncate">
           {post.title}
         </h3>
 
@@ -215,7 +215,7 @@ function PostCard({ post, onDelete, onSend }: { post: BlogPost; onDelete: () => 
           {excerpt}
         </p>
 
-        <span className="text-[13px] -mt-4 font-bold text-primary uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
+        <span className="text-[13px] -mt-4 font-medium text-primary uppercase tracking-wider inline-flex items-center gap-2 transition-all opacity-90 group-hover:opacity-100">
           Read more... <span className="text-[16px] leading-none group-hover:translate-x-1 transition-transform">&rarr;</span>
         </span>
       </Link>

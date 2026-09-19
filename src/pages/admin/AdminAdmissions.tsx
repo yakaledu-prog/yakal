@@ -245,21 +245,21 @@ export function AdminAdmissions() {
                   <div className="pr-[104px]">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <h3 className="text-[20px] font-bold text-[#111] dark:text-white">{t.name}</h3>
+                        <h3 className="text-[20px] font-medium text-[#111] dark:text-white">{t.name}</h3>
                         {t.isRecommended && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-primary">
                             <Star size={12} className="fill-primary" /> Most chosen
                           </span>
                         )}
                         {!t.isActive && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                             <EyeOff size={12} /> Hidden
                           </span>
                         )}
                       </div>
 
                       <div className="mt-3 flex items-baseline gap-2">
-                        <span className="text-[24px] font-bold text-[#111] dark:text-white">
+                        <span className="text-[24px] font-medium text-[#111] dark:text-white">
                           {money(t.priceCents)}
                         </span>
                         <span className="text-[13px] text-muted-foreground">a month</span>
@@ -430,7 +430,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       >
         {label}
       </p>
-      <p title={value} className="mt-0.5 truncate text-[14px] font-semibold text-[#111] dark:text-white">
+      <p title={value} className="mt-0.5 truncate text-[14px] font-medium text-[#111] dark:text-white">
         {value}
       </p>
     </div>
@@ -657,7 +657,7 @@ function SubscribersModal({
       >
         <div className="flex items-center justify-between border-b border-[#e9edef] px-6 py-4 dark:border-[#2a3942]">
           <div>
-            <h2 className="text-[17px] font-semibold text-[#111] dark:text-white">{tier.name}</h2>
+            <h2 className="text-[17px] font-medium text-[#111] dark:text-white">{tier.name}</h2>
             <p className="text-[12.5px] text-muted-foreground">
               {people.length} {people.length === 1 ? "student" : "students"}
               {/* Named here rather than left to be spotted down the column,

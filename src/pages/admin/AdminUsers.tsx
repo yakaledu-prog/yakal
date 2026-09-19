@@ -153,7 +153,7 @@ export function AdminUsers() {
                   key={r}
                   onClick={() => setRole(r)}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-full text-[13px] font-semibold capitalize transition-colors",
+                    "px-3.5 py-1.5 rounded-full text-[13px] font-medium capitalize transition-colors",
                     role === r ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                   )}
                 >

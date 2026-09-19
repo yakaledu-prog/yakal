@@ -139,7 +139,7 @@ export function RecordPayoutModal({
           <button
             onClick={() => void save()}
             disabled={busy || !reference.trim()}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-[13.5px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {busy && <Loader2 size={14} className="animate-spin" />}
             Record it
