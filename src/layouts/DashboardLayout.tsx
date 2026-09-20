@@ -104,6 +104,37 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
 
   const badges = useNavBadges();
 
+  /**
+   * One group open at a time.
+   *
+   * Held here rather than in each group: with a flag per group they all stayed
+   * open once opened, and the rail became a list of everything again, which is
+   * what grouping them was meant to stop.
+   *
+   * The group holding the current page is open by default, so arriving by link
+   * or by reload shows where you are. A click overrides that, and the override
+   * is remembered against the page it was made on: walking to a page in
+   * another group opens that group instead, rather than leaving the one you
+   * opened by hand stuck open over it.
+   */
+  const groupOfCurrentPage = useMemo(
+    () =>
+      navItems.find((i) =>
+        i.children?.some((c) => c.href && matches(c.href, basePath, location.pathname))
+      )?.name ?? null,
+    [navItems, basePath, location.pathname]
+  );
+  const [picked, setPicked] = useState<{ group: string | null; on: string | null } | null>(null);
+  const openGroup = picked && picked.on === groupOfCurrentPage ? picked.group : groupOfCurrentPage;
+  const toggleGroup = useCallback(
+    (name: string) =>
+      setPicked((current) => {
+        const showing = current && current.on === groupOfCurrentPage ? current.group : groupOfCurrentPage;
+        return { group: showing === name ? null : name, on: groupOfCurrentPage };
+      }),
+    [groupOfCurrentPage]
+  );
+
   // Yali answers about how the app works for a given role, so an account
   // whose role it has no guide for is offered nothing rather than a assistant
   // that has to say "not for you" to everything.
@@ -269,6 +300,8 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
                 basePath={basePath}
                 pathname={location.pathname}
                 onNavigate={closeDrawerOnPhone}
+                open={openGroup === item.name}
+                onToggle={() => toggleGroup(item.name)}
               />
             ) : (
               <NavLeaf
@@ -555,16 +588,10 @@ function NavLeaf({
 }
 
 function NavGroup({
-  item, sidebarOpen, basePath, pathname, onNavigate,
-}: NavNodeProps) {
+  item, sidebarOpen, basePath, pathname, onNavigate, open = false, onToggle,
+}: NavNodeProps & { open?: boolean; onToggle?: () => void }) {
   const children = item.children ?? [];
   const hasActiveChild = children.some((c) => matches(c.href ?? "", basePath, pathname));
-
-  // Open when a child route is active, and stay open once opened by hand.
-  const [open, setOpen] = useState(hasActiveChild);
-  useEffect(() => {
-    if (hasActiveChild) setOpen(true);
-  }, [hasActiveChild]);
 
   // A collapsed rail has no room for a header plus indented children, so the
   // group flattens back into plain icons rather than hiding its contents.
@@ -595,7 +622,7 @@ function NavGroup({
     <div>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={onToggle}
         aria-expanded={open}
         className={cn(
           "flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
