@@ -292,7 +292,10 @@ export function InstallPrompt({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-border bg-popover p-4 shadow-2xl md:left-auto md:right-6",
+        // Above the assistant bubble, which is fixed at bottom-5 right-5 and
+        // 56px across: at bottom-4 this card sat on top of it, so the offer and
+        // the way to ask a question covered each other.
+        "fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl border border-border bg-popover p-4 shadow-2xl md:left-auto md:right-6",
         "transition-all duration-500 ease-out motion-reduce:transition-none",
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0",
         className
