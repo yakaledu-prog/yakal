@@ -470,7 +470,14 @@ export function DashboardLayout({ navItems, basePath }: DashboardLayoutProps) {
           // join, so passing "fixed" left both position classes on the element
           // and Tailwind emits relative after fixed: the button stayed in the
           // flow and bottom-5 right-5 shifted it up and left, into the sidebar.
-          <div className="fixed bottom-5 right-5 z-[90] md:bottom-6 md:right-6">
+          <div
+            className={cn(
+              "fixed right-5 z-[90] md:right-6",
+              // Clear of the message composer, whose send button is in exactly
+              // this corner: at bottom-5 the bubble sat on top of it.
+              location.pathname.includes("/messages") ? "bottom-24 md:bottom-24" : "bottom-5 md:bottom-6"
+            )}
+          >
             <Tooltip
               side="left"
               width={150}
