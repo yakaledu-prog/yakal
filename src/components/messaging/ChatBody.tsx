@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Paperclip, Smile, Mic, Send, Trash2, ExternalLink, Info, Flag } from "lucide-react";
+import { Smile, Send, ExternalLink, Info, Flag } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
-import { LiveAudioVisualizer } from "react-audio-visualize";
-import type { ChatConversation, ChatMessage } from "@/services/messageService";
+import type { ChatConversation } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { groupByDay } from "./format";
-import { MessageBubble, type LocalAttachment } from "./MessageBubble";
+import { MessageBubble } from "./MessageBubble";
 
 // ============================================================
 // The conversation itself: history plus composer, and nothing else.
@@ -143,26 +142,14 @@ export function ChatBody({
   const isDark = useIsDark();
   const [inputText, setInputText] = useState(draft ?? "");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-
-  // Attachments are held in the browser only: they are object URLs, and there
-  // is no upload pipeline for chat media yet. They vanish on reload, which is
-  // why they are kept apart from the persisted history rather than faked into
-  // it.
-  const [localAttachments, setLocalAttachments] = useState<
-    { msg: ChatMessage; attachment: LocalAttachment }[]
-  >([]);
-
+  // Text only. Files, images and voice notes were composer buttons that held
+  // the result in the browser as an object URL: they looked sent, and vanished
+  // on reload, because nothing ever uploaded them. Rather than add a media
+  // pipeline and the storage bill under it, the buttons are gone.
   const historyRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
 
   useEffect(() => {
-    setLocalAttachments([]);
     setInputText(draft ?? "");
   }, [conversation.id, draft]);
 
@@ -173,15 +160,6 @@ export function ChatBody({
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [inputText]);
 
-  useEffect(() => {
-    return () => {
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, []);
-
   // Something the scan caught that this reader has not reported yet. Once they
   // have, the flag settles to solid gold and stops moving: it has done its job.
   const unreportedConcern = !!messageReports?.size && !isFlagged;
@@ -191,15 +169,10 @@ export function ChatBody({
       ? "We picked something out here. Have a look and report it."
       : "Report this conversation";
 
-  const attachmentById = useMemo(
-    () => new Map(localAttachments.map((l) => [l.msg.id, l.attachment])),
-    [localAttachments]
+  const allMessages = useMemo(
+    () => [...conversation.messages].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+    [conversation.messages]
   );
-
-  const allMessages = useMemo(() => {
-    const merged = [...conversation.messages, ...localAttachments.map((l) => l.msg)];
-    return merged.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  }, [conversation.messages, localAttachments]);
 
   const groups = useMemo(() => groupByDay(allMessages), [allMessages]);
 
@@ -225,98 +198,6 @@ export function ChatBody({
       e.preventDefault();
       void submit();
     }
-  }
-
-  function addLocalAttachment(attachment: LocalAttachment, text = "") {
-    const msg: ChatMessage = {
-      id: `local-${Date.now()}`,
-      conversationId: conversation.id,
-      senderId: currentUserId ?? "",
-      text,
-      type: attachment.type,
-      isRead: false,
-      createdAt: new Date(),
-    };
-    setLocalAttachments((prev) => [...prev, { msg, attachment }]);
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const type: LocalAttachment["type"] = file.type.startsWith("image/")
-      ? "image"
-      : file.type.startsWith("video/")
-        ? "video"
-        : file.type.startsWith("audio/")
-          ? "audio"
-          : "file";
-    addLocalAttachment({ type, url: URL.createObjectURL(file), name: file.name, size: file.size });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
-  function beginTimer() {
-    setIsRecording(true);
-    setRecordingSeconds(0);
-    recordingIntervalRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
-  }
-
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-      recorder.start(100);
-      beginTimer();
-    } catch (err) {
-      // No microphone, or permission refused. Still run the timer so the UI is
-      // explorable; sendRecording falls back to a text placeholder.
-      console.warn("Microphone unavailable", err);
-      beginTimer();
-    }
-  }
-
-  function stopTracks() {
-    mediaRecorderRef.current?.stream?.getTracks().forEach((t) => t.stop());
-  }
-
-  function endRecording() {
-    setIsRecording(false);
-    if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-    recordingIntervalRef.current = null;
-  }
-
-  function cancelRecording() {
-    endRecording();
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    stopTracks();
-    setRecordingSeconds(0);
-  }
-
-  function sendRecording() {
-    const seconds = recordingSeconds;
-    endRecording();
-    const recorder = mediaRecorderRef.current;
-
-    if (recorder && recorder.state !== "inactive") {
-      recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        addLocalAttachment({ type: "audio", url: URL.createObjectURL(blob) });
-        stopTracks();
-      };
-      recorder.stop();
-    } else {
-      const mm = Math.floor(seconds / 60);
-      const ss = (seconds % 60).toString().padStart(2, "0");
-      void onSendText?.(`[Voice note, ${mm}:${ss}]`);
-      stopTracks();
-    }
-    setRecordingSeconds(0);
   }
 
   return (
@@ -345,7 +226,6 @@ export function ChatBody({
                 contact={conversation.contact}
                 isConsecutive={idx > 0 && group.messages[idx - 1].senderId === msg.senderId}
                 currentUserId={currentUserId}
-                attachment={attachmentById.get(msg.id)}
                 report={messageReports?.get(msg.id)}
               />
             ))}
@@ -411,8 +291,6 @@ export function ChatBody({
             </div>
           )}
 
-          {!isRecording ? (
-            <>
               {onExpand && (
                 <button
                   onClick={onExpand}
@@ -458,15 +336,6 @@ export function ChatBody({
               >
                 <Smile size={22} />
               </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                title="Attach"
-                className="p-2 text-[#54656f] dark:text-[#aebac1] hover:text-primary transition-colors"
-              >
-                <Paperclip size={22} />
-              </button>
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-
               <textarea
                 ref={textareaRef}
                 value={inputText}
@@ -481,65 +350,14 @@ export function ChatBody({
                 className="flex-1 bg-white dark:bg-[#2a3942] text-[15px] text-[#111] dark:text-white placeholder:text-[#8696a0] rounded-xl px-4 py-2.5 outline-none resize-none leading-[1.4] max-h-[120px] overflow-y-auto"
               />
 
-              {inputText.trim() ? (
-                <button
-                  onClick={() => void submit()}
-                  title="Send"
-                  className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover active:scale-95 transition-all shrink-0"
-                >
-                  <Send size={18} className="-ml-0.5 mt-0.5" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => void startRecording()}
-                  title="Record a voice note"
-                  className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover transition-colors shrink-0"
-                >
-                  <Mic size={20} />
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="flex-1 flex items-center gap-3">
               <button
-                onClick={cancelRecording}
-                title="Discard"
-                className="p-2 text-secondary hover:bg-secondary/10 rounded-full transition-colors"
-              >
-                <Trash2 size={22} />
-              </button>
-
-              <div className="flex-1 flex items-center gap-3 bg-white dark:bg-[#2a3942] rounded-xl py-2 px-4 overflow-hidden">
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-2.5 h-2.5 bg-secondary rounded-full animate-pulse" />
-                  <span className="text-[#111] dark:text-white font-medium text-[15px]">
-                    {Math.floor(recordingSeconds / 60)}:
-                    {(recordingSeconds % 60).toString().padStart(2, "0")}
-                  </span>
-                </div>
-                {mediaRecorderRef.current && (
-                  <div className="h-6 flex-1 overflow-hidden hidden sm:flex items-center">
-                    <LiveAudioVisualizer
-                      mediaRecorder={mediaRecorderRef.current}
-                      width={400}
-                      height={24}
-                      barWidth={2}
-                      gap={2}
-                      barColor="#CAA25F"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={sendRecording}
-                title="Send voice note"
-                className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white hover:bg-primary-hover active:scale-95 transition-all shrink-0"
+                onClick={() => void submit()}
+                disabled={!inputText.trim()}
+                title="Send"
+                className="w-[42px] h-[42px] rounded-full bg-primary flex items-center justify-center text-white transition-all shrink-0 hover:bg-primary-hover active:scale-95 disabled:opacity-40 disabled:hover:bg-primary disabled:active:scale-100"
               >
                 <Send size={18} className="-ml-0.5 mt-0.5" />
               </button>
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -13,7 +13,7 @@ export { ChatHeader } from "./ChatHeader";
 export { ContactInfoPanel } from "./ContactInfoPanel";
 export { MessagesPageHeader } from "./MessagesPageHeader";
 export { ChatBody, EmptyChatWelcome, useChatSurface, useIsDark } from "./ChatBody";
-export { MessageBubble, StatusTick, type LocalAttachment } from "./MessageBubble";
+export { MessageBubble, StatusTick } from "./MessageBubble";
 export { RoleIcon, RoleBadge, ROLE_LABEL, normalizeRole, type Role } from "./RoleIcon";
 export { useMessaging } from "./useMessaging";
 export { useDirectConversation } from "./useDirectConversation";
