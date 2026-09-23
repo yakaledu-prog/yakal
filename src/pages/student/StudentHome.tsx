@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PageWrapper } from "@/components/ui/PageWrapper";
 import { CalendarDays, Activity, MessagesSquareIcon, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { studentService, getAllAssignments, getStudentCourses } from "@/services/studentService";
+import { getAllAssignments, getStudentCourses } from "@/services/studentService";
 import { cn } from "@/utils/cn";
 import { getStudentSessions } from "@/services/sessions";
 import { UpcomingSessions, type SessionListItem } from "@/components/shared/SessionList";
@@ -13,11 +12,6 @@ import { UpcomingSessions, type SessionListItem } from "@/components/shared/Sess
 export function StudentHome() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState<any>(null);
-
-  useEffect(() => {
-    studentService.getDashboardSummary().then(setData);
-  }, []);
 
   // What is actually set and not yet turned in. The two blocks this replaced
   // read MOCK_DASHBOARD_SUMMARY.homeworkDue, which is two hardcoded rows.
@@ -51,7 +45,9 @@ export function StudentHome() {
     enabled: !!user?.id,
   });
 
-  if (!data) {
+  // The real queries, not a mock with a 600ms delay in front of them: the page
+  // used to wait on getDashboardSummary, whose figures nothing on screen read.
+  if (sessionsLoading || workLoading) {
     return (
       <PageWrapper>
         <div className="p-8 space-y-6">

@@ -43,7 +43,7 @@
       "email": "edom.tesfaye@yakal.demo",
       "fullName": "Edom Tesfaye",
       "role": "tutor",
-      "bio": "I teach Mathematics and Physics using interactive online whiteboards and practice problems. My goal is to help students in Addis Ababa build strong analytical skills.",
+      "bio": "I teach Mathematics and Physics using interactive online whiteboards and practice problems. My goal is to help students build strong analytical skills.",
       "subjects": [
         "Mathematics",
         "Physics"
@@ -95,9 +95,9 @@
   ],
   "courses": [
     {
-      "title": "Entrance Mathematics Mastery",
+      "title": "College Entrance Mathematics",
       "subject": "Mathematics",
-      "description": "This course covers core national exam topics and suits students aiming for high scores on the Ethiopian University Entrance Examination.",
+      "description": "This course covers the algebra, geometry and data analysis the SAT and ACT test, and suits students aiming for a strong math score.",
       "priceCents": 4000,
       "tutorPayoutCents": 2800
     },
@@ -116,9 +116,9 @@
       "tutorPayoutCents": 5250
     },
     {
-      "title": "National Exam Physics Review",
+      "title": "AP Physics Review",
       "subject": "Physics",
-      "description": "This course reviews mechanics and thermodynamics tailored for students preparing for grade 12 national examinations.",
+      "description": "This course reviews mechanics and thermodynamics for students sitting AP Physics or finishing a high school physics course.",
       "priceCents": 4000,
       "tutorPayoutCents": 2800
     },

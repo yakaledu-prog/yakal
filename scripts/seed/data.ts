@@ -188,7 +188,7 @@ export const USERS: SeedUser[] = [
         from: "2016",
         to: "2020",
         qualification: "B.S. in Mathematics",
-        institution: "Addis Ababa University",
+        institution: "University of Michigan",
       },
       {
         from: "2020",
@@ -209,7 +209,7 @@ export const USERS: SeedUser[] = [
         from: "2019",
         to: "2022",
         role: "Physics Teaching Assistant",
-        organisation: "Addis Ababa University",
+        organisation: "University of Michigan",
         summary: "Ran weekly problem classes for first year mechanics and marked coursework.",
       },
     ],
@@ -290,7 +290,7 @@ export const USERS: SeedUser[] = [
         from: "2015",
         to: "2019",
         qualification: "B.A. in English Literature",
-        institution: "Addis Ababa University",
+        institution: "Rutgers University",
       },
     ],
     workExperience: [
@@ -337,7 +337,7 @@ export const USERS: SeedUser[] = [
         from: "2016",
         to: "2018",
         qualification: "M.Sc. in Analytical Chemistry",
-        institution: "Addis Ababa University",
+        institution: "Ohio State University",
       },
     ],
     workExperience: [
@@ -639,7 +639,7 @@ export const COURSES: SeedCourse[] = [
     title: "Advanced Mathematics, University Entrance Prep",
     subject: "Mathematics",
     description:
-      "Calculus, algebra, trigonometry and statistics, shaped around the Ethiopian University Entrance Examination.",
+      "Calculus, algebra, trigonometry and statistics, shaped around AP exams and college entrance tests.",
     tutors: ["tutor@yakal.com", "tutor2@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&q=80",
     priceCents: 6000,
@@ -732,7 +732,7 @@ export const COURSES: SeedCourse[] = [
     title: "Chemistry, Grade 11 Foundations",
     subject: "Chemistry",
     description:
-      "Atomic structure, bonding and stoichiometry for the national exam.",
+      "Atomic structure, bonding and stoichiometry, for AP Chemistry and the SAT subject material.",
     thumbnailUrl: "https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=800&q=80",
     priceCents: 5500,
     tutorPayoutCents: 4000,
@@ -741,7 +741,7 @@ export const COURSES: SeedCourse[] = [
     title: "English Comprehension and Grammar",
     subject: "English",
     description:
-      "Reading comprehension, grammar and the vocabulary the national exam actually tests.",
+      "Reading comprehension, grammar and the vocabulary the SAT actually tests.",
     tutors: ["tutor3@yakal.com", "tutor@yakal.com"],
     thumbnailUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80",
     priceCents: 5000,
@@ -1059,8 +1059,8 @@ export const COLLEGE_PROFILES: SeedCollegeProfile[] = [
       gpaScale: 4.0,
       satScore: 1450,
       actScore: null,
-      // An Ethiopian student applying abroad needs this, and it is the kind of
-      // detail the invented data never had.
+      // An international applicant needs this, and it is the kind of detail
+      // the invented data never had.
       toeflScore: 104,
       apCourses: ["AP Calculus BC", "AP Physics C", "AP Computer Science A"],
     },

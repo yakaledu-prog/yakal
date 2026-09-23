@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Users, ExternalLink, Calendar, Star, ChevronLeft } from "lucide-react";
+import { Users, ExternalLink, Calendar, ChevronLeft } from "lucide-react";
 import { getCourse, getCourseAssignments, getCourseDetail, getPendingApplicantCounts, type AdminCourse } from "@/services/adminService";
 import { money } from "@/services/billingService";
 import { cn } from "@/utils/cn";
@@ -52,7 +52,6 @@ export function AdminCourseDetail() {
     { id: "students", label: "Students" },
     { id: "assignments", label: "Assignments" },
     { id: "sessions", label: "Sessions" },
-    { id: "reviews", label: "Reviews" },
   ];
 
   return (
@@ -190,26 +189,59 @@ export function AdminCourseDetail() {
           {/* SESSIONS TAB */}
           {activeTab === "sessions" && (
             <div className="animate-in fade-in duration-300">
-              <div className="p-12 flex flex-col items-center justify-center text-center">
-                <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No upcoming sessions</h3>
-                <p className="text-[14px] text-muted-foreground max-w-sm">
-                  There are currently no scheduled sessions for this course. Tutors will schedule sessions as needed.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* REVIEWS TAB */}
-          {activeTab === "reviews" && (
-            <div className="animate-in fade-in duration-300">
-              <div className="p-12 flex flex-col items-center justify-center text-center">
-                <Star className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">4.8 Average Rating</h3>
-                <p className="text-[14px] text-muted-foreground max-w-sm">
-                  Reviews will appear here once students complete course feedback forms.
-                </p>
-              </div>
+              {(detail?.sessions.length ?? 0) === 0 ? (
+                <div className="p-12 flex flex-col items-center justify-center text-center">
+                  <Calendar className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                  <h3 className="text-[16px] font-medium text-[#111] dark:text-white mb-2">No lessons booked</h3>
+                  <p className="text-[14px] text-muted-foreground max-w-sm">
+                    A lesson appears here when a family books one of this course's hours.
+                  </p>
+                </div>
+              ) : (
+                /* The real thing, from getCourseDetail. This tab used to say
+                   "No upcoming sessions" whatever was booked, because it read
+                   nothing at all. */
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border text-left text-[11px] font-medium text-muted-foreground">
+                      <th className="pb-2.5 pr-4">When</th>
+                      <th className="pb-2.5 pr-4">Student</th>
+                      <th className="pb-2.5 pr-4">Length</th>
+                      <th className="pb-2.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail!.sessions.map((s) => (
+                      <tr key={s.id} className="border-b border-border">
+                        <td className="py-3 pr-4 text-[14px] text-[#111] dark:text-white">
+                          {new Date(`${s.date}T00:00:00`).toLocaleDateString(undefined, {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })}
+                          <span className="ml-2 text-[13px] text-muted-foreground">{s.startTime?.slice(0, 5)}</span>
+                        </td>
+                        <td className="py-3 pr-4 text-[13px] text-muted-foreground">{s.studentName ?? "A student"}</td>
+                        <td className="py-3 pr-4 text-[13px] tabular-nums text-muted-foreground">
+                          {s.durationMinutes ?? 60} min
+                        </td>
+                        <td
+                          className={cn(
+                            "py-3 text-[12.5px] font-medium capitalize",
+                            s.status === "completed"
+                              ? "text-primary"
+                              : s.status === "cancelled" || s.status === "no-show"
+                                ? "text-muted-foreground"
+                                : "text-[#8a6a2a] dark:text-secondary"
+                          )}
+                        >
+                          {s.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
 

@@ -61,7 +61,9 @@ import { useMasterDetail } from "@/hooks/useMasterDetail";
 // ============================================================
 
 const TABS = [
-  { id: "plans", label: "Plans" },
+  // "What you are paying for": a block of lessons is not a plan, and this tab
+  // and the figure above it both count courses as well as counselling.
+  { id: "plans", label: "Services" },
   { id: "payments", label: "Payments" },
   { id: "methods", label: "Payment methods" },
 ] as const;
@@ -251,7 +253,7 @@ export function ParentBilling() {
   }
 
   const stats: { label: string; value: string | number }[] = [
-    { label: "Plans", value: planCount },
+    { label: "Services", value: planCount },
     { label: "Paid to date", value: money(paidTotal) },
   ];
   if (dueCents > 0) stats.unshift({ label: "Due now", value: money(dueCents) });

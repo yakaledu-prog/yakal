@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { Check, CheckCheck, Clock, AlertCircle, Flag, Play, Pause, FileText } from "lucide-react";
-import WaveSurfer from "wavesurfer.js";
+import { Check, CheckCheck, Clock, AlertCircle, Flag } from "lucide-react";
 import type { ChatContact, ChatMessage } from "@/services/messageService";
 import { cn } from "@/utils/cn";
 import { formatTime } from "./format";
@@ -16,81 +14,17 @@ export function StatusTick({ msg }: { msg: ChatMessage }) {
   return <Check size={12} />;
 }
 
-/** Locally attached audio (a voice note that has not been uploaded yet). */
-function AudioPlayer({ url, isMe }: { url: string; isMe: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const waveSurferRef = useRef<WaveSurfer | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState("0:00");
-  const [currentTime, setCurrentTime] = useState("0:00");
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ws = WaveSurfer.create({
-      container: containerRef.current,
-      waveColor: isMe ? "rgba(255,255,255,0.5)" : "rgba(16,153,161,0.5)",
-      progressColor: isMe ? "#ffffff" : "#087b82",
-      barWidth: 2,
-      barGap: 2,
-      barRadius: 2,
-      height: 30,
-      url,
-    });
-
-    const clock = (t: number) =>
-      `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, "0")}`;
-
-    ws.on("ready", () => setDuration(clock(ws.getDuration())));
-    ws.on("audioprocess", () => setCurrentTime(clock(ws.getCurrentTime())));
-    ws.on("finish", () => setIsPlaying(false));
-
-    waveSurferRef.current = ws;
-    return () => ws.destroy();
-  }, [url, isMe]);
-
-  return (
-    <div className="flex items-center gap-3 w-[200px] md:w-[250px]">
-      <button
-        onClick={() => {
-          waveSurferRef.current?.playPause();
-          setIsPlaying(!!waveSurferRef.current?.isPlaying());
-        }}
-        className="w-10 h-10 shrink-0 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center hover:scale-105 transition-transform"
-      >
-        {isPlaying ? (
-          <Pause size={20} className={isMe ? "text-white" : "text-[#111] dark:text-white"} />
-        ) : (
-          <Play size={20} className={cn("ml-1", isMe ? "text-white" : "text-[#111] dark:text-white")} />
-        )}
-      </button>
-      <div className="flex-1 overflow-hidden">
-        <div ref={containerRef} className="w-full" />
-        <div className="text-[11px] mt-1 opacity-70">{isPlaying ? currentTime : duration}</div>
-      </div>
-    </div>
-  );
-}
-
-export interface LocalAttachment {
-  type: "image" | "video" | "audio" | "file";
-  url: string;
-  name?: string;
-  size?: number;
-}
-
 export function MessageBubble({
   msg,
   contact,
   isConsecutive,
   currentUserId,
-  attachment,
   report,
 }: {
   msg: ChatMessage;
   contact?: ChatContact;
   isConsecutive?: boolean;
   currentUserId?: string;
-  attachment?: LocalAttachment;
   /**
    * What the scan picked out of this message. Only ever passed on the parent's
    * monitoring view: the people in the conversation are not told, because
@@ -101,7 +35,7 @@ export function MessageBubble({
 }) {
   const isMe = msg.senderId === currentUserId;
   const isOnlyEmoji =
-    !attachment && msg.text.trim().length > 0 && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text);
+    msg.text.trim().length > 0 && /^[\p{Extended_Pictographic}\s]+$/u.test(msg.text);
 
   const avatarSlot = !isMe && (
     <div className="w-8 shrink-0 flex items-end pb-0.5">
@@ -164,33 +98,6 @@ export function MessageBubble({
           <div className="mb-1 flex items-center gap-1.5 text-[11.5px] font-medium text-secondary">
             <Flag size={11} fill="currentColor" />
             {report.label}
-          </div>
-        )}
-
-        {attachment && (
-          <div className={cn("mb-1", msg.text ? "pb-2" : "")}>
-            {attachment.type === "image" && (
-              <img src={attachment.url} alt="" className="rounded-md max-h-[250px] object-cover" />
-            )}
-            {attachment.type === "video" && (
-              <video src={attachment.url} controls className="rounded-md max-h-[250px] w-full bg-black" />
-            )}
-            {attachment.type === "audio" && <AudioPlayer url={attachment.url} isMe={isMe} />}
-            {attachment.type === "file" && (
-              <div className="flex items-center gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-md min-w-[200px]">
-                <div className="p-2 bg-primary text-white rounded-full">
-                  <FileText size={20} />
-                </div>
-                <div className="overflow-hidden flex-1">
-                  <div className="font-medium text-[13.5px] truncate">{attachment.name || "File"}</div>
-                  <div className="text-[11px] opacity-70 mt-0.5">
-                    {attachment.size ? `${(attachment.size / 1024).toFixed(1)} KB` : "Unknown size"}
-                    {" - "}
-                    {attachment.type.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 

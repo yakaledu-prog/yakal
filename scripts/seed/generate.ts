@@ -137,9 +137,9 @@ async function main() {
 
   // ---------- people ----------
   const people: GeneratedPerson[] = await ask(
-    `Invent ${peopleCount} people for an Ethiopian online tutoring platform based in Addis Ababa.
+    `Invent ${peopleCount} people for a US online tutoring platform.
 Mix of roles: about half students, a third tutors, the rest parents.
-Use realistic Ethiopian names (Amharic, Oromo, Tigrinya origins). Do not reuse these names:
+Use names that read as a mixed American school roll. Do not reuse these names:
 Amen Worku, Bethlehem Alemu, Daniel Haile, Tigist Worku, Almaz Tadesse, Selam Girma.
 
 For tutors write a two-sentence bio in the first person about what they teach and how, and pick one to three subjects from exactly this list: ${SUBJECTS.join(", ")}.
@@ -170,8 +170,8 @@ Write plain English with no em dashes and no emoji.`,
 
   // ---------- courses ----------
   const courses: GeneratedCourse[] = await ask(
-    `Invent ${courseCount} tutoring courses for Ethiopian secondary school students preparing for the
-Ethiopian University Entrance Examination and for applications abroad.
+    `Invent ${courseCount} tutoring courses for US high school students preparing for AP exams,
+the SAT and the ACT, and for their college applications.
 Each needs a title, a subject taken from exactly this list: ${SUBJECTS.join(", ")},
 and a one-sentence description of what it covers and who it suits.
 Do not reuse these titles: K-12 Mathematics, Advanced Mathematics, Physics, Chemistry, Biology, College Essay Writing.
